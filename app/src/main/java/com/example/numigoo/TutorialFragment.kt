@@ -5,78 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.databinding.FragmentTutorialBinding
-import com.example.numigoo.model.TutorialStep
 import com.example.numigoo.model.BeadAnimation
+import com.example.numigoo.model.TutorialStep
 
 class TutorialFragment : Fragment() {
     private lateinit var binding: FragmentTutorialBinding
-    private lateinit var adapter: TutorialAdapter
     private var currentStep = 0
 
-    // Tutorial adımlarını tutan liste
-    private val tutorialSteps = listOf(
-        TutorialStep(
-            "Abaküsün her bir sütunu sayının basamağını ifade eder.",
-            null
-        ),
-        TutorialStep(
-            "Yukarıdaki boncuklar 5'lik değere sahipken aşağıdakiler 1'lik değere sahiptir.",
-            null
-        ),
-        TutorialStep(
-            "Boncukları ortadaki değer çubuğuna değdirerek sayılar ifade ederiz.",
-            null
-        ),
-        TutorialStep(
-            "Örneğin 1 sayısı abaküste bu şekilde gösterilir.",
-            BeadAnimation(4, 1)  // en sağdaki sütun (4), 1 boncuk
-        ),
-        TutorialStep(
-            "2",
-            BeadAnimation(4, 2)
-        ),
-        TutorialStep(
-            "3",
-            BeadAnimation(4, 3)
-        ),
-        TutorialStep(
-            "10",
-            BeadAnimation(3, 1)  // sağdan ikinci sütun (3), 1 boncuk
-        ),
-        TutorialStep(
-            "5",
-            BeadAnimation(4, 5)  // en sağdaki sütun (4), üst boncuk
-        ),
-        TutorialStep(
-            "17",
-            listOf(
-                BeadAnimation(3, 1),  // 10 için
-                BeadAnimation(4, 7)   // 7 için
-            )
-        ),
-        TutorialStep(
-            "53",
-            listOf(
-                BeadAnimation(2, 5),  // 50 için
-                BeadAnimation(4, 3)   // 3 için
-            )
-        ),
-        TutorialStep(
-            "126",
-            listOf(
-                BeadAnimation(1, 1),  // 100 için
-                BeadAnimation(2, 2),  // 20 için
-                BeadAnimation(4, 6)   // 6 için
-            )
-        ),
-        TutorialStep(
-            "Şimdi tahtaya yazacağım sayıları abaküste doğru şekilde göstermeye çalış.",
-            null
-        )
-    )
+    companion object {
+        fun newInstance() = TutorialFragment()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -89,35 +28,102 @@ class TutorialFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        setupRecyclerView()
+        setupTutorial()
         setupBackButton()
     }
 
-    private fun setupRecyclerView() {
-        adapter = TutorialAdapter(tutorialSteps) {
+    private fun setupTutorial() {
+        // İlk adımı göster
+        showStep(currentStep)
+
+        // Ekrana tıklama ile ilerleme
+        binding.root.setOnClickListener {
             if (currentStep < tutorialSteps.size - 1) {
                 currentStep++
-                binding.recyclerView.smoothScrollToPosition(currentStep)
+                showStep(currentStep)
             }
         }
-        
-        binding.recyclerView.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = this@TutorialFragment.adapter
-        }
+    }
+
+    private fun showStep(position: Int) {
+        val step = tutorialSteps[position]
+        binding.tutorialText.text = step.text
+        step.animation?.forEach { it.animate() }
     }
 
     private fun setupBackButton() {
         binding.backButton.setOnClickListener {
             if (currentStep > 0) {
                 currentStep--
-                binding.recyclerView.smoothScrollToPosition(currentStep)
+                showStep(currentStep)
+            } else {
+                // Fragment'i kapat ve MapFragment'e dön
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_left // Çıkış animasyonu
+                    )
+                    .remove(this)
+                    .commit()
             }
         }
     }
 
-    companion object {
-        fun newInstance() = TutorialFragment()
-    }
+    // Tutorial adımları
+    private val tutorialSteps = listOf(
+        TutorialStep(
+            "Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.",
+            null
+        ),
+        TutorialStep(
+            "Her sütun bir basamağı temsil eder. Sağdan sola doğru birler, onlar, yüzler basamağı şeklinde ilerler.",
+            null
+        ),
+        TutorialStep(
+            "Her sütunda 5 boncuk vardır. Üstteki boncuk 5 değerini, alttaki boncuklar ise 1 değerini temsil eder.",
+            null
+        ),
+        TutorialStep(
+            "Örneğin 1 sayısı abaküste bu şekilde gösterilir.",
+            listOf(BeadAnimation(this, "rod4_bead_bottom1", 1))  // en sağdaki sütun (4), 1 boncuk
+        ),
+        TutorialStep(
+            "5 sayısı için üstteki boncuk kullanılır.",
+            listOf(
+                BeadAnimation(this, "rod4_bead_bottom1", 2),
+                BeadAnimation(this, "rod4_bead_top", 3)
+                // İhtiyaca göre daha fazla animasyon eklenebilir
+            )
+        ),
+        TutorialStep(
+            "6 sayısı için üstteki boncuk ve bir alttaki boncuk kullanılır.",
+            listOf(BeadAnimation(this, "rod4_bead_bottom1", 1))  // en sağdaki sütun (4), 6 boncuk
+        ),
+        TutorialStep(
+            "17 sayısı ise böyle gösterilir.",
+            listOf(BeadAnimation(this, "rod3_bead_bottom1", 1),
+                BeadAnimation(this, "rod4_bead_bottom2", 1))  // en sağdaki sütun (4), 6 boncuk
+        ),
+        TutorialStep(
+            "51 sayısı böyle.",
+            listOf(BeadAnimation(this, "rod3_bead_bottom1", 2),
+                BeadAnimation(this, "rod3_bead_top", 3),
+                BeadAnimation(this, "rod4_bead_bottom2", 2),
+                BeadAnimation(this, "rod4_bead_top", 4))  // en sağdaki sütun (4), 6 boncuk
+        ),
+        TutorialStep(
+            "126 sayısı ise böyle gösterilir.",
+            listOf(BeadAnimation(this, "rod2_bead_bottom1", 1),
+                BeadAnimation(this, "rod3_bead_bottom2", 1),
+                BeadAnimation(this, "rod3_bead_top", 4),
+                BeadAnimation(this, "rod3_bead_bottom1", 1),
+                BeadAnimation(this, "rod4_bead_top", 1))  // en sağdaki sütun (4), 6 boncuk
+        )
+
+    )
+
+    data class TutorialStep(
+        val text: String,
+        val animation: List<BeadAnimation>?
+    )
 } 

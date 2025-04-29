@@ -37,7 +37,7 @@ class MapFragment : Fragment() {
 
         // Adapter'ı oluştur
         lessonsAdapter = LessonAdapter(
-            context = requireContext(), 
+            context = requireContext(),
             items = lessonItems,
             onLessonClick = { item, position ->
                 if (!item.isCompleted) {
