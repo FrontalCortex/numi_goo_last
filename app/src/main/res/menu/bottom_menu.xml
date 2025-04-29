@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/map"
+        android:icon="@mipmap/map"
+        app:showAsAction="always"
+        >
+
+    </item>
+    <item
+        android:id="@+id/profile"
+        android:icon="@mipmap/user"
+        app:showAsAction="always">
+
+    </item>
+    <item
+        android:id="@+id/notification"
+        android:icon="@mipmap/notification"
+        app:showAsAction="always">
+
+    </item>
+
+    <item
+        android:id="@+id/tasks"
+        android:icon="@mipmap/tasks"
+        app:showAsAction="always">
+
+    </item>
+
+
+
+</menu>

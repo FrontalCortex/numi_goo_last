@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Basıldığında -->
+    <item android:state_pressed="true">
+        <set android:ordering="together">
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="300"
+                android:valueTo="0.80"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/overshoot"/>
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="300"
+                android:valueTo="0.80"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/overshoot"/>
+        </set>
+    </item>
+
+    <!-- Normal duruma dönüş -->
+    <item>
+        <set android:ordering="together">
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="400"
+                android:valueTo="1"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/bounce"/>
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="400"
+                android:valueTo="1"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/bounce"/>
+        </set>
+    </item>
+</selector>
