@@ -20,11 +20,11 @@
 
     <ImageView
         android:id="@+id/blackboardImage"
-        android:layout_width="350dp"
+        android:layout_width="match_parent"
         android:layout_height="300dp"
         android:scaleType="centerCrop"
-        android:layout_marginTop="50dp"
-        android:src="@drawable/class_board2"
+        android:layout_marginTop="20dp"
+        android:src="@drawable/class_board3"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
@@ -39,7 +39,7 @@
         android:fontFamily="@font/font_regular"
         android:text="23"
         android:padding="16dp"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
         app:layout_constraintStart_toStartOf="@id/blackboardImage"
@@ -53,7 +53,7 @@
 
         android:textSize="40sp"
         android:textColor="@color/white"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         app:layout_constraintStart_toStartOf="@id/firstNumberText"
         app:layout_constraintEnd_toEndOf="@id/secondNumberText"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
@@ -71,22 +71,13 @@
         android:fontFamily="@font/font_regular"
         android:text="45"
         android:padding="16dp"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
         app:layout_constraintStart_toEndOf="@id/firstNumberText"
         app:layout_constraintEnd_toEndOf="@id/blackboardImage"/>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Sayıları abaküste göster"
-        app:layout_constraintTop_toBottomOf="@id/blackboardImage"
-        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
-        android:textSize="20sp"
-        android:textColor="@color/white"
-        android:gravity="center"
-        android:fontFamily="@font/font_regular"/>
+
 
     <LinearLayout
         android:id="@+id/abacusLinear"
@@ -96,16 +87,18 @@
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="30dp">
+        android:layout_marginBottom="10dp">
 
         <FrameLayout
+            android:id="@+id/rod0"
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
-            android:layout_marginEnd="12dp">
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="4dp"
+                android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888"/>
@@ -113,40 +106,40 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod0_bead_bottom4"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="10dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="34dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="58dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="82dp"
                 android:src="@drawable/soroban_bead"/>
 
             <!-- Bariyer -->
             <View
-                android:layout_width="32dp"
-                android:layout_height="4dp"
+                android:layout_width="40dp"
+                android:layout_height="6dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
                 android:background="#888"/>
@@ -154,21 +147,22 @@
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod0_bead_top"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
         </FrameLayout>
 
         <FrameLayout
+            android:id="@+id/rod1"
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
-            android:layout_marginEnd="12dp">
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="4dp"
+                android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888"/>
@@ -176,40 +170,40 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod1_bead_bottom4"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="10dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="34dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="58dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="82dp"
                 android:src="@drawable/soroban_bead"/>
 
             <!-- Bariyer -->
             <View
-                android:layout_width="32dp"
-                android:layout_height="4dp"
+                android:layout_width="40dp"
+                android:layout_height="6dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
                 android:background="#888"/>
@@ -217,21 +211,22 @@
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod1_bead_top"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead"/>
 
         </FrameLayout>
 
         <FrameLayout
+            android:id="@+id/rod2"
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
-            android:layout_marginEnd="12dp">
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="4dp"
+                android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888"/>
@@ -239,40 +234,40 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod2_bead_bottom4"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="10dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="34dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="58dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="82dp"
                 android:src="@drawable/soroban_bead"/>
 
             <!-- Bariyer -->
             <View
-                android:layout_width="32dp"
-                android:layout_height="4dp"
+                android:layout_width="40dp"
+                android:layout_height="6dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
                 android:background="#888"/>
@@ -280,21 +275,22 @@
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod2_bead_top"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead"/>
 
         </FrameLayout>
 
         <FrameLayout
+            android:id="@+id/rod3"
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
-            android:layout_marginEnd="12dp">
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="4dp"
+                android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888"/>
@@ -302,40 +298,40 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod3_bead_bottom4"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="10dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="34dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="58dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="82dp"
                 android:src="@drawable/soroban_bead"/>
 
             <!-- Bariyer -->
             <View
-                android:layout_width="32dp"
-                android:layout_height="4dp"
+                android:layout_width="40dp"
+                android:layout_height="6dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
                 android:background="#888"/>
@@ -343,21 +339,22 @@
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod3_bead_top"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead"/>
 
         </FrameLayout>
 
         <FrameLayout
+            android:id="@+id/rod4"
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
-            android:layout_marginEnd="12dp">
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="4dp"
+                android:layout_width="6dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888"/>
@@ -365,40 +362,40 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod4_bead_bottom4"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="10dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom3"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="34dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom2"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="58dp"
                 android:src="@drawable/soroban_bead"/>
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom1"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="bottom|center_horizontal"
                 android:layout_marginBottom="82dp"
                 android:src="@drawable/soroban_bead"/>
 
             <!-- Bariyer -->
             <View
-                android:layout_width="32dp"
-                android:layout_height="4dp"
+                android:layout_width="40dp"
+                android:layout_height="5dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
                 android:background="#888"/>
@@ -406,8 +403,8 @@
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod4_bead_top"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead"/>
 
@@ -421,7 +418,7 @@
         android:layout_height="60dp"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="15dp"
         android:fontFamily="@font/font_regular"
         android:text="Kontrol Et"
         android:textAllCaps="false"

@@ -746,7 +746,7 @@ class AbacusFragment : Fragment() {
     private fun animateBeadsUp(vararg beads: ImageView) {
         isAnimating = true
         val animationDuration = 300L // milisaniye cinsinden
-        val moveDistance = 120 // piksel cinsinden
+        val moveDistance = 135 // piksel cinsinden
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -778,7 +778,7 @@ class AbacusFragment : Fragment() {
     private fun animateBeadDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 20
+        val moveDistance = 90
 
         bead.animate()
             .setDuration(animationDuration)
@@ -797,7 +797,7 @@ class AbacusFragment : Fragment() {
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 20
+        val moveDistance = 90
 
         bead.animate()
             .setDuration(animationDuration)
@@ -816,7 +816,7 @@ class AbacusFragment : Fragment() {
     private fun animateBeadsDown(vararg beads: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 120
+        val moveDistance = 135
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams

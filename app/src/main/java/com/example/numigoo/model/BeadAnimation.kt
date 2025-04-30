@@ -20,6 +20,10 @@ class BeadAnimation(
     fun getAnimationType(): Int = animationType
     fun getBeadId(): String = beadId
 
+    fun isAnimating(): Boolean {
+        return isAnimating
+    }
+
     fun animate() {
         if (isAnimating) return
 
@@ -44,7 +48,7 @@ class BeadAnimation(
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 45
+        val moveDistance = 90
         bead.setImageResource(R.drawable.soroban_bead)
 
         bead.animate()
@@ -60,7 +64,7 @@ class BeadAnimation(
     private fun animateBeadDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 45
+        val moveDistance = 90
 
         bead.setImageResource(R.drawable.soroban_bead_selected)
         bead.animate()
@@ -76,7 +80,7 @@ class BeadAnimation(
     private fun animateBeadsUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 95
+        val moveDistance = 135
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
@@ -98,7 +102,7 @@ class BeadAnimation(
     private fun animateBeadsDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 95
+        val moveDistance = 135
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
