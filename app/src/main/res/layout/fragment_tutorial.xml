@@ -5,6 +5,17 @@
     android:layout_height="match_parent"
     android:background="@color/background_color">
 
+    <ImageButton
+        android:id="@+id/quitButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="20dp"
+        android:background="@color/background_color"
+        android:src="@mipmap/quit_ic"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/lesson_completed" />
 
     <TextView
         android:id="@+id/tutorialText"
@@ -19,6 +30,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/abacusLinear" />
+
 
     <LinearLayout
         android:id="@+id/abacusLinear"
@@ -81,7 +93,7 @@
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="60dp"
+                android:layout_marginBottom="50dp"
                 android:background="#888"/>
 
             <!-- Üst boncuk -->
@@ -145,7 +157,7 @@
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="60dp"
+                android:layout_marginBottom="50dp"
                 android:background="#888"/>
 
             <!-- Üst boncuk -->
@@ -209,7 +221,7 @@
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="60dp"
+                android:layout_marginBottom="50dp"
                 android:background="#888"/>
 
             <!-- Üst boncuk -->
@@ -273,7 +285,7 @@
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="60dp"
+                android:layout_marginBottom="50dp"
                 android:background="#888"/>
 
             <!-- Üst boncuk -->
@@ -337,7 +349,7 @@
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
-                android:layout_marginBottom="60dp"
+                android:layout_marginBottom="50dp"
                 android:background="#888"/>
 
             <!-- Üst boncuk -->

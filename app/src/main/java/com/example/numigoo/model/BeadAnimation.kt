@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
+import com.example.numigoo.R
 
 class BeadAnimation(
     private val fragment: Fragment,
@@ -15,6 +16,9 @@ class BeadAnimation(
     private val animationType: Int
 ) {
     private var isAnimating = false
+
+    fun getAnimationType(): Int = animationType
+    fun getBeadId(): String = beadId
 
     fun animate() {
         if (isAnimating) return
@@ -40,16 +44,13 @@ class BeadAnimation(
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 20
+        val moveDistance = 45
+        bead.setImageResource(R.drawable.soroban_bead)
 
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
-            .withStartAction {
-                // Animasyon başlamadan önce yapılacak işlemler
-            }
             .withEndAction {
-                // Animasyon bittiğinde isAnimating'i false yap
                 isAnimating = false
             }
             .translationY(0f)  // Orijinal konumuna dön
@@ -59,16 +60,13 @@ class BeadAnimation(
     private fun animateBeadDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 20
+        val moveDistance = 45
 
+        bead.setImageResource(R.drawable.soroban_bead_selected)
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
-            .withStartAction {
-                // Animasyon başlamadan önce yapılacak işlemler
-            }
             .withEndAction {
-                // Animasyon bittiğinde isAnimating'i false yap
                 isAnimating = false
             }
             .translationY(moveDistance.toFloat())
@@ -78,20 +76,16 @@ class BeadAnimation(
     private fun animateBeadsUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 120
+        val moveDistance = 95
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
         val endMargin = startMargin + moveDistance
-
+        bead.setImageResource(R.drawable.soroban_bead_selected)
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
-            .withStartAction {
-                // Animasyon başlamadan önce yapılacak işlemler
-            }
             .withEndAction {
-                // Animasyon bittiğinde yapılacak işlemler
                 params.bottomMargin = endMargin
                 bead.layoutParams = params
                 bead.translationY = 0f // Translation'ı sıfırla
@@ -104,20 +98,17 @@ class BeadAnimation(
     private fun animateBeadsDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 120
+        val moveDistance = 95
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
         val endMargin = startMargin - moveDistance  // Yukarı çıktığı mesafe kadar aşağı in
+        bead.setImageResource(R.drawable.soroban_bead)
 
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
-            .withStartAction {
-                // Animasyon başlamadan önce yapılacak işlemler
-            }
             .withEndAction {
-                // Animasyon bittiğinde yapılacak işlemler
                 params.bottomMargin = endMargin
                 bead.layoutParams = params
                 bead.translationY = 0f // Translation'ı sıfırla

@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.FragmentTutorialBinding
 import com.example.numigoo.model.BeadAnimation
-import com.example.numigoo.model.TutorialStep
 
 class TutorialFragment : Fragment() {
     private lateinit var binding: FragmentTutorialBinding
     private var currentStep = 0
+    private var backOrFront = true
 
     companion object {
         fun newInstance() = TutorialFragment()
@@ -30,6 +30,7 @@ class TutorialFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupTutorial()
         setupBackButton()
+        setupQuitButton()
     }
 
     private fun setupTutorial() {
@@ -40,6 +41,7 @@ class TutorialFragment : Fragment() {
         binding.root.setOnClickListener {
             if (currentStep < tutorialSteps.size - 1) {
                 currentStep++
+                backOrFront = true
                 showStep(currentStep)
             }
         }
@@ -48,25 +50,49 @@ class TutorialFragment : Fragment() {
     private fun showStep(position: Int) {
         val step = tutorialSteps[position]
         binding.tutorialText.text = step.text
-        step.animation?.forEach { it.animate() }
+        if(backOrFront) {
+            step.animation?.forEach { it.animate() }
+        } else {
+            // Önceki adımdaki animasyonları tersine çevirerek çalıştır
+            tutorialSteps[position+1].animation?.forEach { originalAnimation ->
+                val reversedType = when(originalAnimation.getAnimationType()) {
+                    1 -> 2
+                    2 -> 1
+                    3 -> 4
+                    4 -> 3
+                    else -> originalAnimation.getAnimationType()
+                }
+                BeadAnimation(this, originalAnimation.getBeadId(), reversedType).animate()
+            }
+        }
+    }
+
+    private fun setupQuitButton(){
+        binding.quitButton.setOnClickListener{
+            closeFragment()
+        }
     }
 
     private fun setupBackButton() {
         binding.backButton.setOnClickListener {
             if (currentStep > 0) {
                 currentStep--
+                backOrFront = false
                 showStep(currentStep)
             } else {
-                // Fragment'i kapat ve MapFragment'e dön
-                parentFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_left // Çıkış animasyonu
-                    )
-                    .remove(this)
-                    .commit()
+                closeFragment()
             }
         }
+    }
+    private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,  // Giriş animasyonu
+                R.anim.slide_out_left // Çıkış animasyonu
+            )
+            .remove(this)
+            .commit()
+
     }
 
     // Tutorial adımları
@@ -117,7 +143,11 @@ class TutorialFragment : Fragment() {
                 BeadAnimation(this, "rod3_bead_bottom2", 1),
                 BeadAnimation(this, "rod3_bead_top", 4),
                 BeadAnimation(this, "rod3_bead_bottom1", 1),
-                BeadAnimation(this, "rod4_bead_top", 1))  // en sağdaki sütun (4), 6 boncuk
+                BeadAnimation(this, "rod4_bead_top", 3))  // en sağdaki sütun (4), 6 boncuk
+        ),
+        TutorialStep(
+            "Şimdi tahtaya yazacağım sayıları abaküste göstermeye çalış.",
+            null
         )
 
     )
