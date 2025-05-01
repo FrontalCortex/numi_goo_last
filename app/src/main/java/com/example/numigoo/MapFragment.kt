@@ -12,10 +12,40 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.databinding.FragmentMapBinding
 import com.example.numigoo.model.LessonItem
+import kotlin.math.pow
 
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
     private lateinit var lessonsAdapter: LessonAdapter
+    companion object{
+        val lessonOperationsMap = mapOf(
+            1 to listOf(
+                MathOperation(null,"2", null),
+                MathOperation(null,"5", null),
+                MathOperation(null,"3", null),
+                MathOperation(null,"8", null),
+                MathOperation(null,"4", null),
+                MathOperation(null,"13", null),
+                MathOperation(null,"9", null),
+                MathOperation(null,"41", null),
+                MathOperation(null,"32", null),
+                MathOperation(null,"23", null),
+            ),
+            2 to listOf(
+                MathOperation(10, "-", 3),
+                MathOperation(15, "-", 7),
+                MathOperation(8, "-", 2),
+                MathOperation(12, "-", 5),
+                MathOperation(9, "-", 4),
+                MathOperation(14, "-", 6),
+                MathOperation(7, "-", 3),
+                MathOperation(11, "-", 4),
+                MathOperation(13, "-", 5),
+                MathOperation(6, "-", 2)
+            )
+            // Diğer dersler için benzer şekilde devam edebilirsiniz
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,11 +74,13 @@ class MapFragment : Fragment() {
                     Toast.makeText(context, "Bu ders henüz kilitli!", Toast.LENGTH_SHORT).show()
                     return@LessonAdapter
                 }
-                val fragment = item.fragment()
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, fragment)
-                    .addToBackStack(null)
-                    .commit()
+                val fragment = item.fragment?.let { it() }
+                if (fragment != null) {
+                    parentFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerID, fragment)
+                        .addToBackStack(null)
+                        .commit()
+                }
             }
         )
 
@@ -84,7 +116,7 @@ class MapFragment : Fragment() {
                     val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
                     val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
                     val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-                    if (headerTitle != null && sectionUnit != null) {
+                    if (headerTitle != null) {
                         stickySectionUnit.text = sectionUnit
                         stickyHeaderTitle.text = headerTitle
                         stickyHeader.visibility = View.VISIBLE
@@ -105,7 +137,6 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 1,
                 currentStep = 1,
-                fragment = { AbacusFragment.newInstance("+", "Kuralsız Toplama") }
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -114,7 +145,9 @@ class MapFragment : Fragment() {
                 isCompleted = true,
                 stepCount = 0,
                 currentStep = 3,
-                fragment = { TutorialFragment.newInstance() }
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -123,7 +156,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 0,
                 currentStep = 4,
-                fragment = { AbacusFragment.newInstance("+", "Kuralsız Toplama") }
+                fragment = { TutorialFragment.newInstance() }
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
@@ -136,8 +169,24 @@ class MapFragment : Fragment() {
             )
         )
     }
+    private fun generateRandomNumber(digitCount: Int): Int {
+        // Basamak sayısı kontrolü
+        if (digitCount < 1) return 0
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+        // Minimum ve maksimum değerleri hesapla
+        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
+        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
+
+        // Random sayı üret
+        return (min..max).random()
+    }
+    private fun randomNumberChangeToString(digitCount: Int): String{
+
+        // Minimum ve maksimum değerleri hesapla
+        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
+        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
+
+        // Random sayı üret
+        return (min..max).random().toString()
     }
 }

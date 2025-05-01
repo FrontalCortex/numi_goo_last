@@ -11,11 +11,54 @@ import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Button
 import android.widget.ImageView
-import androidx.core.view.marginBottom
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.FragmentAbacusBinding
+import java.io.Serializable
 
 class AbacusFragment : Fragment() {
+    private var operations: List<MathOperation> = emptyList()
+    private var currentIndex = 0
+    private  var answerNumber = 0
+    private var controlNumber = 0
+    private lateinit var firstNumberText: TextView
+    private lateinit var operatorText: TextView
+    private lateinit var secondNumberText: TextView
+
+    private lateinit var rod0BottomBead4: ImageView
+    private lateinit var rod0BottomBead3: ImageView
+    private lateinit var rod0BottomBead2: ImageView
+    private lateinit var rod0BottomBead1: ImageView
+    private lateinit var rod0TopBead: ImageView
+
+    // 2. sütun için boncuklar
+    private lateinit var rod1BottomBead4: ImageView
+    private lateinit var rod1BottomBead3: ImageView
+    private lateinit var rod1BottomBead2: ImageView
+    private lateinit var rod1BottomBead1: ImageView
+    private lateinit var rod1TopBead: ImageView
+
+    // 3. sütun için boncuklar
+    private lateinit var rod2BottomBead4: ImageView
+    private lateinit var rod2BottomBead3: ImageView
+    private lateinit var rod2BottomBead2: ImageView
+    private lateinit var rod2BottomBead1: ImageView
+    private lateinit var rod2TopBead: ImageView
+
+    // 4. sütun için boncuklar
+    private lateinit var rod3BottomBead4: ImageView
+    private lateinit var rod3BottomBead3: ImageView
+    private lateinit var rod3BottomBead2: ImageView
+    private lateinit var rod3BottomBead1: ImageView
+    private lateinit var rod3TopBead: ImageView
+
+    // 5. sütun için boncuklar
+    private lateinit var rod4BottomBead4: ImageView
+    private lateinit var rod4BottomBead3: ImageView
+    private lateinit var rod4BottomBead2: ImageView
+    private lateinit var rod4BottomBead1: ImageView
+    private lateinit var rod4TopBead: ImageView
+
     private var isAnimating = false
     private var oneIsUp = false
     private var twoIsUp = false
@@ -54,6 +97,12 @@ class AbacusFragment : Fragment() {
     private lateinit var binding: FragmentAbacusBinding
     private lateinit var resultDialog: Dialog
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        operations = (arguments?.getSerializable("operations") as? List<MathOperation>)!!
+
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -65,60 +114,162 @@ class AbacusFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        findIDs()
+        firstNumberText = binding.firstNumberText
+        operatorText = binding.operator
+        secondNumberText = binding.secondNumberText
+        showCurrentOperation()
 
         binding.kontrolButton.setOnClickListener {
             showResultPanel()
+            controlNumber=0
         }
 
         setupBeads(view)
     }
+    private fun findIDs() {
+        // 1. sütun için boncukları bul
+        rod0BottomBead4 = binding.rod0BeadBottom4
+        rod0BottomBead3 = binding.rod0BeadBottom3
+        rod0BottomBead2 = binding.rod0BeadBottom2
+        rod0BottomBead1 = binding.rod0BeadBottom1
+        rod0TopBead = binding.rod0BeadTop
+
+        // 2. sütun için boncukları bul
+        rod1BottomBead4 = binding.rod1BeadBottom4
+        rod1BottomBead3 = binding.rod1BeadBottom3
+        rod1BottomBead2 = binding.rod1BeadBottom2
+        rod1BottomBead1 = binding.rod1BeadBottom1
+        rod1TopBead = binding.rod1BeadTop
+
+        // 3. sütun için boncukları bul
+        rod2BottomBead4 = binding.rod2BeadBottom4
+        rod2BottomBead3 = binding.rod2BeadBottom3
+        rod2BottomBead2 = binding.rod2BeadBottom2
+        rod2BottomBead1 = binding.rod2BeadBottom1
+        rod2TopBead = binding.rod2BeadTop
+
+        // 4. sütun için boncukları bul
+        rod3BottomBead4 = binding.rod3BeadBottom4
+        rod3BottomBead3 = binding.rod3BeadBottom3
+        rod3BottomBead2 = binding.rod3BeadBottom2
+        rod3BottomBead1 = binding.rod3BeadBottom1
+        rod3TopBead = binding.rod3BeadTop
+
+        // 5. sütun için boncukları bul
+        rod4BottomBead4 = binding.rod4BeadBottom4
+        rod4BottomBead3 = binding.rod4BeadBottom3
+        rod4BottomBead2 = binding.rod4BeadBottom2
+        rod4BottomBead1 = binding.rod4BeadBottom1
+        rod4TopBead = binding.rod4BeadTop
+    }
+    private fun showCurrentOperation() {
+        if (currentIndex < operations.size) {
+            val currentOperation = operations[currentIndex]
+            currentOperation.firstNumber?.let { number ->
+                firstNumberText.text = number.toString()
+            }
+
+            currentOperation.operator?.let { op ->
+                operatorText.text = op
+            }
+
+            currentOperation.secondNumber?.let { number ->
+                secondNumberText.text = number.toString()
+            }
+        }
+    }
+    private fun stepAnswerAlgorithm(): Boolean{
+        if(operations[currentIndex].secondNumber==null && operations[currentIndex].firstNumber==null){
+            answerNumber= operations[currentIndex].operator?.toInt() ?: 0
+        }else{
+            answerNumber= (operations[currentIndex].secondNumber?.toInt() ?: 0) + (operations[currentIndex].firstNumber?.toInt()
+                ?: 0)
+        }
+        abacusNumberReturn()
+        return if (controlNumber == answerNumber){
+            true
+        }else{
+            false
+        }
+
+    }
+    private fun abacusNumberReturn(){
+        if(rod4FourIsUp){
+            controlNumber+=4
+        }else if(rod4ThreeIsUp){
+            controlNumber+=3
+        }else if(rod4TwoIsUp){
+            controlNumber+=2
+        }else if(rod4OneIsUp){
+            controlNumber+=1
+        }
+        if(rod4TopIsDown){
+            controlNumber+=5
+        }
+        if(rod3FourIsUp){
+            controlNumber+=40
+        }else if(rod3ThreeIsUp){
+            controlNumber+=30
+        }else if(rod3TwoIsUp){
+            controlNumber+=20
+        }else if(rod3OneIsUp){
+            controlNumber+=10
+        }
+        if(rod3TopIsDown){
+            controlNumber+=50
+        }
+        if(rod2FourIsUp){
+            controlNumber+=400
+        }else if(rod2ThreeIsUp){
+            controlNumber+=300
+        }else if(rod2TwoIsUp){
+            controlNumber+=200
+        }else if(rod2OneIsUp){
+            controlNumber+=100
+        }
+        if(rod2TopIsDown){
+            controlNumber+=500
+        }
+        if(rod1FourIsUp){
+            controlNumber+=4000
+        }else if(rod1ThreeIsUp){
+            controlNumber+=3000
+        }else if(rod1TwoIsUp){
+            controlNumber+=2000
+        }else if(rod1OneIsUp){
+            controlNumber+=1000
+        }
+        if(rod1TopIsDown){
+            controlNumber+=5000
+        }
+        if(fourIsUp){
+            controlNumber+=40000
+        }else if(threeIsUp){
+            controlNumber+=30000
+        }else if(twoIsUp){
+            controlNumber+=20000
+        }else if(oneIsUp){
+            controlNumber+=10000
+        }
+        if(topIsDown){
+            controlNumber+=50000
+        }
+
+    }
 
     private fun setupBeads(view: View) {
-        // İlk sütun için boncukları bul
-        val bottomBead4 = view.findViewById<ImageView>(R.id.rod0_bead_bottom4)
-        val bottomBead3 = view.findViewById<ImageView>(R.id.rod0_bead_bottom3)
-        val bottomBead2 = view.findViewById<ImageView>(R.id.rod0_bead_bottom2)
-        val bottomBead1 = view.findViewById<ImageView>(R.id.rod0_bead_bottom1)
-        // Üst boncuğu bul
-        val topBead = view.findViewById<ImageView>(R.id.rod0_bead_top)
-        
-        // İkinci sütun için boncukları bul
-        val rod1BottomBead4 = view.findViewById<ImageView>(R.id.rod1_bead_bottom4)
-        val rod1BottomBead3 = view.findViewById<ImageView>(R.id.rod1_bead_bottom3)
-        val rod1BottomBead2 = view.findViewById<ImageView>(R.id.rod1_bead_bottom2)
-        val rod1BottomBead1 = view.findViewById<ImageView>(R.id.rod1_bead_bottom1)
-        val rod1TopBead = view.findViewById<ImageView>(R.id.rod1_bead_top)
 
-        // Üçüncü sütun için boncukları bul
-        val rod2BottomBead4 = view.findViewById<ImageView>(R.id.rod2_bead_bottom4)
-        val rod2BottomBead3 = view.findViewById<ImageView>(R.id.rod2_bead_bottom3)
-        val rod2BottomBead2 = view.findViewById<ImageView>(R.id.rod2_bead_bottom2)
-        val rod2BottomBead1 = view.findViewById<ImageView>(R.id.rod2_bead_bottom1)
-        val rod2TopBead = view.findViewById<ImageView>(R.id.rod2_bead_top)
-
-        // Dördüncü sütun için boncukları bul
-        val rod3BottomBead4 = view.findViewById<ImageView>(R.id.rod3_bead_bottom4)
-        val rod3BottomBead3 = view.findViewById<ImageView>(R.id.rod3_bead_bottom3)
-        val rod3BottomBead2 = view.findViewById<ImageView>(R.id.rod3_bead_bottom2)
-        val rod3BottomBead1 = view.findViewById<ImageView>(R.id.rod3_bead_bottom1)
-        val rod3TopBead = view.findViewById<ImageView>(R.id.rod3_bead_top)
-
-        // Beşinci sütun için boncukları bul
-        val rod4BottomBead4 = view.findViewById<ImageView>(R.id.rod4_bead_bottom4)
-        val rod4BottomBead3 = view.findViewById<ImageView>(R.id.rod4_bead_bottom3)
-        val rod4BottomBead2 = view.findViewById<ImageView>(R.id.rod4_bead_bottom2)
-        val rod4BottomBead1 = view.findViewById<ImageView>(R.id.rod4_bead_bottom1)
-        val rod4TopBead = view.findViewById<ImageView>(R.id.rod4_bead_top)
         
         // Boncuklara tıklama işlemleri
-        bottomBead4.setOnClickListener {
+        rod0BottomBead4.setOnClickListener {
             if (!isAnimating) {
                 if (!fourIsUp) {
                     val beadsToAnimate = mutableListOf<ImageView>()
-                    if (!fourIsUp) beadsToAnimate.add(bottomBead4)
-                    if (!threeIsUp) beadsToAnimate.add(bottomBead3)
-                    if (!twoIsUp) beadsToAnimate.add(bottomBead2)
-                    if (!oneIsUp) beadsToAnimate.add(bottomBead1)
+                    if (!fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsUp(*beadsToAnimate.toTypedArray())
@@ -129,20 +280,20 @@ class AbacusFragment : Fragment() {
                         updateRod0BeadsAppearance()
                     }
                 } else {
-                    animateBeadsDown(bottomBead4)
+                    animateBeadsDown(rod0BottomBead4)
                     fourIsUp = false
                     updateRod0BeadsAppearance()
                 }
             }
         }
 
-        bottomBead3.setOnClickListener {
+        rod0BottomBead3.setOnClickListener {
             if (!isAnimating) {
                 if (!threeIsUp) {
                     val beadsToAnimate = mutableListOf<ImageView>()
-                    if (!threeIsUp) beadsToAnimate.add(bottomBead3)
-                    if (!twoIsUp) beadsToAnimate.add(bottomBead2)
-                    if (!oneIsUp) beadsToAnimate.add(bottomBead1)
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsUp(*beadsToAnimate.toTypedArray())
@@ -154,8 +305,8 @@ class AbacusFragment : Fragment() {
                 } else {
                     val beadsToAnimate = mutableListOf<ImageView>()
                     // Yukarıda olan boncukları kontrol et ve aşağı indir
-                    if (fourIsUp) beadsToAnimate.add(bottomBead4)
-                    if (threeIsUp) beadsToAnimate.add(bottomBead3)
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsDown(*beadsToAnimate.toTypedArray())
@@ -167,12 +318,12 @@ class AbacusFragment : Fragment() {
             }
         }
 
-        bottomBead2.setOnClickListener {
+        rod0BottomBead2.setOnClickListener {
             if (!isAnimating) {
                 if (!twoIsUp) {
                     val beadsToAnimate = mutableListOf<ImageView>()
-                    if (!twoIsUp) beadsToAnimate.add(bottomBead2)
-                    if (!oneIsUp) beadsToAnimate.add(bottomBead1)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsUp(*beadsToAnimate.toTypedArray())
@@ -183,9 +334,9 @@ class AbacusFragment : Fragment() {
                 } else {
                     val beadsToAnimate = mutableListOf<ImageView>()
                     // Yukarıda olan boncukları kontrol et ve aşağı indir
-                    if (fourIsUp) beadsToAnimate.add(bottomBead4)
-                    if (threeIsUp) beadsToAnimate.add(bottomBead3)
-                    if (twoIsUp) beadsToAnimate.add(bottomBead2)
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsDown(*beadsToAnimate.toTypedArray())
@@ -198,18 +349,18 @@ class AbacusFragment : Fragment() {
             }
         }
 
-        bottomBead1.setOnClickListener {
+        rod0BottomBead1.setOnClickListener {
             if (!isAnimating) {
                 if (!oneIsUp) {
-                    animateBeadsUp(bottomBead1)
+                    animateBeadsUp(rod0BottomBead1)
                     oneIsUp = true
                     updateRod0BeadsAppearance()
                 } else {
                     val beadsToAnimate = mutableListOf<ImageView>()
-                    if (fourIsUp) beadsToAnimate.add(bottomBead4)
-                    if (threeIsUp) beadsToAnimate.add(bottomBead3)
-                    if (twoIsUp) beadsToAnimate.add(bottomBead2)
-                    if (oneIsUp) beadsToAnimate.add(bottomBead1)
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
                     
                     if (beadsToAnimate.isNotEmpty()) {
                         animateBeadsDown(*beadsToAnimate.toTypedArray())
@@ -224,14 +375,14 @@ class AbacusFragment : Fragment() {
         }
 
         // 1. sütun üst boncuk
-        topBead.setOnClickListener {
+        rod0TopBead.setOnClickListener {
             if (!isAnimating) {
                 if (!topIsDown) {
-                    animateBeadDown(topBead)
+                    animateBeadDown(rod0TopBead)
                     topIsDown = true
                     updateTopBeadsAppearance()
                 } else {
-                    animateBeadUp(topBead)
+                    animateBeadUp(rod0TopBead)
                     topIsDown = false
                     updateTopBeadsAppearance()
                 }
@@ -947,25 +1098,156 @@ class AbacusFragment : Fragment() {
         }
     }
 
+    private fun resetAbacus() {
+        // 1. sütun için
+        if (fourIsUp) {
+            animateBeadsDown(rod0BottomBead4)
+            fourIsUp = false
+        }
+        if (threeIsUp) {
+            animateBeadsDown(rod0BottomBead3)
+            threeIsUp = false
+        }
+        if (twoIsUp) {
+            animateBeadsDown(rod0BottomBead2)
+            twoIsUp = false
+        }
+        if (oneIsUp) {
+            animateBeadsDown(rod0BottomBead1)
+            oneIsUp = false
+        }
+        if (topIsDown) {
+            animateBeadUp(rod0TopBead)
+            topIsDown = false
+        }
+        updateRod0BeadsAppearance()
+
+        // 2. sütun için
+        if (rod1FourIsUp) {
+            animateBeadsDown(rod1BottomBead4)
+            rod1FourIsUp = false
+        }
+        if (rod1ThreeIsUp) {
+            animateBeadsDown(rod1BottomBead3)
+            rod1ThreeIsUp = false
+        }
+        if (rod1TwoIsUp) {
+            animateBeadsDown(rod1BottomBead2)
+            rod1TwoIsUp = false
+        }
+        if (rod1OneIsUp) {
+            animateBeadsDown(rod1BottomBead1)
+            rod1OneIsUp = false
+        }
+        if (rod1TopIsDown) {
+            animateBeadUp(rod1TopBead)
+            rod1TopIsDown = false
+        }
+        updateRod1BeadsAppearance()
+
+        // 3. sütun için
+        if (rod2FourIsUp) {
+            animateBeadsDown(rod2BottomBead4)
+            rod2FourIsUp = false
+        }
+        if (rod2ThreeIsUp) {
+            animateBeadsDown(rod2BottomBead3)
+            rod2ThreeIsUp = false
+        }
+        if (rod2TwoIsUp) {
+            animateBeadsDown(rod2BottomBead2)
+            rod2TwoIsUp = false
+        }
+        if (rod2OneIsUp) {
+            animateBeadsDown(rod2BottomBead1)
+            rod2OneIsUp = false
+        }
+        if (rod2TopIsDown) {
+            animateBeadUp(rod2TopBead)
+            rod2TopIsDown = false
+        }
+        updateRod2BeadsAppearance()
+
+        // 4. sütun için
+        if (rod3FourIsUp) {
+            animateBeadsDown(rod3BottomBead4)
+            rod3FourIsUp = false
+        }
+        if (rod3ThreeIsUp) {
+            animateBeadsDown(rod3BottomBead3)
+            rod3ThreeIsUp = false
+        }
+        if (rod3TwoIsUp) {
+            animateBeadsDown(rod3BottomBead2)
+            rod3TwoIsUp = false
+        }
+        if (rod3OneIsUp) {
+            animateBeadsDown(rod3BottomBead1)
+            rod3OneIsUp = false
+        }
+        if (rod3TopIsDown) {
+            animateBeadUp(rod3TopBead)
+            rod3TopIsDown = false
+        }
+        updateRod3BeadsAppearance()
+
+        // 5. sütun için
+        if (rod4FourIsUp) {
+            animateBeadsDown(rod4BottomBead4)
+            rod4FourIsUp = false
+        }
+        if (rod4ThreeIsUp) {
+            animateBeadsDown(rod4BottomBead3)
+            rod4ThreeIsUp = false
+        }
+        if (rod4TwoIsUp) {
+            animateBeadsDown(rod4BottomBead2)
+            rod4TwoIsUp = false
+        }
+        if (rod4OneIsUp) {
+            animateBeadsDown(rod4BottomBead1)
+            rod4OneIsUp = false
+        }
+        if (rod4TopIsDown) {
+            animateBeadUp(rod4TopBead)
+            rod4TopIsDown = false
+        }
+        updateRod4BeadsAppearance()
+        updateTopBeadsAppearance()
+    }
     private fun showResultPanel() {
         resultDialog = Dialog(requireContext(), R.style.FullScreenDialog).apply {
             // Dialog'u hemen oluştur
             create()
             
             // İçeriği ayarla
-            if (twoIsUp) {
+            if (stepAnswerAlgorithm()) {
                 val correctView = layoutInflater.inflate(R.layout.result_panel_correct, null)
                 setContentView(correctView)
                 
                 correctView.findViewById<Button>(R.id.continueButton).setOnClickListener {
+                    resetAbacus()
+                    currentIndex++
                     dismiss()
+                    if (currentIndex < operations.size - 1) {
+                        showCurrentOperation()
+                    } else {
+                        //Ders bidi
+                    }
                 }
             } else {
                 val incorrectView = layoutInflater.inflate(R.layout.result_panel_incorrect, null)
                 setContentView(incorrectView)
                 
                 incorrectView.findViewById<Button>(R.id.continueButton).setOnClickListener {
+                    resetAbacus()
+                    currentIndex++
                     dismiss()
+                    if (currentIndex < operations.size - 1) {
+                        showCurrentOperation()
+                    } else {
+                        //Ders bidi
+                    }
                 }
             }
 
@@ -985,16 +1267,14 @@ class AbacusFragment : Fragment() {
     }
 
     companion object {
-        private const val ARG_PARAM1 = "param1"
-        private const val ARG_PARAM2 = "param2"
-
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            AbacusFragment().apply {
+        fun newInstance(operator: String, title: String, operations: List<MathOperation>? = null): AbacusFragment {
+            return AbacusFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+                    putString("operator", operator)
+                    putString("title", title)
+                    putSerializable("operations", operations as? Serializable)
                 }
             }
+        }
     }
 }

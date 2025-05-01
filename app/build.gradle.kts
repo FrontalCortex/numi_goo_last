@@ -56,4 +56,7 @@ dependencies {
     //character animation
     implementation(libs.lottie)
 
+    //bundle off
+    //noinspection UseTomlInstead
+
 }

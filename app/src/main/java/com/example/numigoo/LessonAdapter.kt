@@ -128,18 +128,20 @@ class LessonAdapter(
                 fragmentContainer.visibility = View.VISIBLE
 
                 // AbacusFragment'i oluştur
-                val fragment = item.fragment()
+                val fragment = item?.fragment?.invoke()
                 
                 // Animasyon için slide-in efekti
                 val slideIn = android.R.anim.slide_in_left
                 val slideOut = android.R.anim.slide_out_right
                 
                 // Fragment'ı container'a ekle
-                activity.supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(slideIn, slideOut)
-                    .replace(R.id.abacusFragmentContainer, fragment)
-                    .addToBackStack(null)
-                    .commit()
+                fragment?.let { it1 ->
+                    activity.supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, it1)
+                        .addToBackStack(null)
+                        .commit()
+                }
             } else {
                 // Kilitli durum için sadece collapse et
                 behavior.state = BottomSheetBehavior.STATE_COLLAPSED

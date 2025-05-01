@@ -10,25 +10,32 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginLeft="15dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="10dp"
         android:background="@color/background_color"
         android:src="@mipmap/quit_ic"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/lesson_completed" />
 
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.2" />
+
     <TextView
         android:id="@+id/tutorialText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="150dp"
         android:lineSpacingExtra="8dp"
         android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="30sp"
+        android:text="Deneme"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/guideline4" />
 
     <View
         android:id="@+id/focusView"
@@ -45,30 +52,23 @@
 
     </View>
 
-    <View
-        android:id="@+id/upFocusView"
-        android:layout_width="245dp"
-        android:layout_height="180dp"
-        android:layout_marginLeft="0dp"
-        android:layout_marginRight="0dp"
-        android:background="@drawable/rectangle_border"
-        android:translationZ="5dp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
-        app:layout_constraintTop_toTopOf="@id/guideline">
-
-    </View>
-
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.4" />
 
     <LinearLayout
         android:id="@+id/abacusLinear"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="130dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/guideline3"
+        >
 
 
         <FrameLayout
@@ -438,13 +438,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_begin="450dp" />
+        app:layout_constraintGuide_percent="0.54" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_begin="550dp" />
+        app:layout_constraintGuide_percent="0.655" />
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

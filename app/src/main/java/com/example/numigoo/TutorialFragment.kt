@@ -71,8 +71,8 @@ class TutorialFragment : Fragment() {
         }
 
         if (position == tutorialSteps.size - 1) {
-            devametFragment(AbacusFragment()) // veya geçmek istediğiniz başka bir fragment
-        }
+            val operations = MapFragment.lessonOperationsMap[1]
+            devametFragment(AbacusFragment.newInstance("+", "Kuralsız Toplama", operations))        }
 
         currentAnimations.clear()
 
@@ -212,7 +212,7 @@ class TutorialFragment : Fragment() {
         return (dp * resources.displayMetrics.density).toInt()
     }
     private fun createTutorialSteps(){
-         tutorialSteps = listOf(
+        tutorialSteps = listOf(
             TutorialStep(
                 "Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.",
                 null
@@ -221,37 +221,37 @@ class TutorialFragment : Fragment() {
                 "Her sütun bir basamağı temsil eder. Basamaklar sağdan sola doğru artarak ilerler.",
                 null
             ),
-             TutorialStep(
-                 "Birler",
-                 null,
-                 listOf(
-                     { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                     {
-                         WidgetOperation.AnimateMargin(
-                             view = focusView,
-                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                             toMarginRight = dpToPx(0),
-                             fromMarginLeft = 0,
-                             toMarginLeft = 0,
-                             duration = 200
-                         )
-                     }
-                 )
-             ),
-             TutorialStep(
-                 "Onlar",
-                 null,
-                 listOf {
-                     WidgetOperation.AnimateMargin(
-                         view = focusView,
-                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                         toMarginRight = dpToPx(45),
-                         fromMarginLeft = 0,
-                         toMarginLeft = 0,
-                         duration = 200
-                     )
-                 }
-             ),
+            TutorialStep(
+                "Birler",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = dpToPx(0),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                )
+            ),
+            TutorialStep(
+                "Onlar",
+                null,
+                listOf {
+                    WidgetOperation.AnimateMargin(
+                        view = focusView,
+                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                        toMarginRight = dpToPx(45),
+                        fromMarginLeft = 0,
+                        toMarginLeft = 0,
+                        duration = 200
+                    )
+                }
+            ),
             TutorialStep(
                 "Yüzler",
                 null,listOf {
@@ -319,68 +319,68 @@ class TutorialFragment : Fragment() {
                 }
 
             ), TutorialStep(
-                 "Üstteki boncuklar 5'lik değere sahipken",
-                 null,
-                 listOf(
-                     { WidgetOperation.ChangeMargin(focusView, 0, 0) },
-                     {
-                         WidgetOperation.ChangeConstraints(
-                             view = focusView,
-                             topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
-                             bottomToBottom = ConstraintLayout.LayoutParams.UNSET
-                         )
-                     },
-                     {
-                         WidgetOperation.AnimateSize(
-                             view = focusView,
-                             fromWidth = focusView.width,
-                             toWidth = dpToPx(245),
-                             fromHeight = focusView.height,
-                             toHeight = dpToPx(60),
-                             duration = 400
-                         )
-                     }
-                 ),
-                 onStep = { view ->
-                     sizeHistory.add(Pair(view.width, view.height))
-                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                 }
-             ),
-             TutorialStep(
-                 "Alttaki boncuklar 1'lik değere sahiptir.",
-                 null,
-                 listOf(
-                     { WidgetOperation.AnimateMargin(
-                         view = focusView,
-                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                         toMarginRight = 0,
-                         fromMarginLeft = 0,
-                         toMarginLeft = 0,
-                         duration = 200
-                     ) },
-                     {
-                         WidgetOperation.ChangeConstraints(
-                             view = focusView,
-                             topToTop = R.id.guideline2
-                             // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
-                         )
-                     },
-                     {
-                         WidgetOperation.AnimateSize(
-                             view = focusView,
-                             fromWidth = focusView.width,
-                             toWidth = dpToPx(245),
-                             fromHeight = focusView.height,
-                             toHeight = dpToPx(180),
-                             duration = 400
-                         )
-                     }
-                 ),
-                 onStep = { view ->
-                     sizeHistory.add(Pair(view.width, view.height))
-                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                 }
-             ),
+                "Üstteki boncuklar 5'lik değere sahipken",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeMargin(focusView, 0, 0) },
+                    {
+                        WidgetOperation.ChangeConstraints(
+                            view = focusView,
+                            topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
+                            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                        )
+                    },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(245),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(60),
+                            duration = 400
+                        )
+                    }
+                ),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),
+            TutorialStep(
+                "Alttaki boncuklar 1'lik değere sahiptir.",
+                null,
+                listOf(
+                    { WidgetOperation.AnimateMargin(
+                        view = focusView,
+                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                        toMarginRight = 0,
+                        fromMarginLeft = 0,
+                        toMarginLeft = 0,
+                        duration = 200
+                    ) },
+                    {
+                        WidgetOperation.ChangeConstraints(
+                            view = focusView,
+                            topToTop = R.id.guideline2
+                            // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
+                        )
+                    },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(245),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(180),
+                            duration = 400
+                        )
+                    }
+                ),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),
             TutorialStep(
                 "Örneğin 1 sayısı abaküste bu şekilde gösterilir.",
                 listOf(BeadAnimation(this, "rod4_bead_bottom1", 1)),
@@ -457,28 +457,28 @@ class TutorialFragment : Fragment() {
                     operation.view.layoutParams = params
                 }
                 is WidgetOperation.AnimateMargin -> {
-                val params = operation.view.layoutParams as ViewGroup.MarginLayoutParams
+                    val params = operation.view.layoutParams as ViewGroup.MarginLayoutParams
 
-                // Sağ margin animasyonu
-                ValueAnimator.ofInt(operation.fromMarginRight, operation.toMarginRight).apply {
-                    duration = operation.duration
-                    addUpdateListener { animator ->
-                        params.rightMargin = animator.animatedValue as Int
-                        operation.view.layoutParams = params
+                    // Sağ margin animasyonu
+                    ValueAnimator.ofInt(operation.fromMarginRight, operation.toMarginRight).apply {
+                        duration = operation.duration
+                        addUpdateListener { animator ->
+                            params.rightMargin = animator.animatedValue as Int
+                            operation.view.layoutParams = params
+                        }
+                        start()
                     }
-                    start()
-                }
 
-                // Sol margin animasyonu
-                ValueAnimator.ofInt(operation.fromMarginLeft, operation.toMarginLeft).apply {
-                    duration = operation.duration
-                    addUpdateListener { animator ->
-                        params.leftMargin = animator.animatedValue as Int
-                        operation.view.layoutParams = params
+                    // Sol margin animasyonu
+                    ValueAnimator.ofInt(operation.fromMarginLeft, operation.toMarginLeft).apply {
+                        duration = operation.duration
+                        addUpdateListener { animator ->
+                            params.leftMargin = animator.animatedValue as Int
+                            operation.view.layoutParams = params
+                        }
+                        start()
                     }
-                    start()
                 }
-            }
                 is WidgetOperation.AnimateSize -> {
                     val params = operation.view.layoutParams
 
