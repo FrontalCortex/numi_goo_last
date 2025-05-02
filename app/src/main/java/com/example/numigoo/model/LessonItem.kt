@@ -9,7 +9,8 @@ data class LessonItem(
     var isCompleted: Boolean,
     val stepCount: Int,      // toplam adım sayısı
     var currentStep: Int,     // mevcut adım (0'dan başlar)
-    val fragment: (() -> Fragment)? = null // Fragment oluşturma fonksiyonu
+    val fragment: (() -> Fragment)? = null, // Fragment oluşturma fonksiyonu
+    val color: Int? = null    // Renk değeri, varsayılanı null
 ) {
     companion object {
         const val TYPE_LESSON = 0

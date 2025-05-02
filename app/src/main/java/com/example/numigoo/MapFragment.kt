@@ -1,5 +1,6 @@
 package com.example.numigoo
 
+import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -8,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.databinding.FragmentMapBinding
@@ -28,8 +30,8 @@ class MapFragment : Fragment() {
                 MathOperation(null,"13", null),
                 MathOperation(null,"9", null),
                 MathOperation(null,"41", null),
-                MathOperation(null,"32", null),
-                MathOperation(null,"23", null),
+                MathOperation(null,"36", null),
+                MathOperation(null,"23", ),
             ),
             2 to listOf(
                 MathOperation(10, "-", 3),
@@ -87,7 +89,9 @@ class MapFragment : Fragment() {
         // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
-
+            val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
+            val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
+            val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
             // Maksimum offset değerini al
             val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
 
@@ -110,12 +114,14 @@ class MapFragment : Fragment() {
                         if (item.type == LessonItem.TYPE_HEADER) {
                             headerTitle = item.title
                             sectionUnit = "${item.stepCount}. KISIM, ${item.currentStep}. ÜNİTE"
+
+                            val colorRes = item.color
+                            if (colorRes != null) {
+                                val color = ContextCompat.getColor(requireContext(), colorRes)
+                                stickyHeader.backgroundTintList = ColorStateList.valueOf(color)                            }
                             break
                         }
                     }
-                    val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
-                    val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
-                    val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
                     if (headerTitle != null) {
                         stickySectionUnit.text = sectionUnit
                         stickyHeaderTitle.text = headerTitle
@@ -137,14 +143,15 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 1,
                 currentStep = 1,
+                color = R.color.lesson_header_blue
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "Sayıları abaküste tanıma",
                 offset = 0,
                 isCompleted = true,
-                stepCount = 0,
-                currentStep = 3,
+                stepCount = 3,
+                currentStep = 1,
                 fragment = {
                     TutorialFragment.newInstance()
                 }
@@ -152,21 +159,227 @@ class MapFragment : Fragment() {
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "Kuralsız toplama",
-                offset = 50,
+                offset = 30,
                 isCompleted = false,
-                stepCount = 0,
-                currentStep = 4,
+                stepCount = 4,
+                currentStep = 1,
                 fragment = { TutorialFragment.newInstance() }
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
                 title = "Ünite Değerlendirme",
-                offset = -50,
+                offset = 0,
+                isCompleted = false,
+                stepCount = 0,
+                currentStep = 1,
+                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_HEADER,
+                title = "5'lik toplama",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                currentStep = 1,
+                color = R.color.lesson_header_pink
+
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Basit 5'lik toplama",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Zor 5'lik toplama",
+                offset = -60,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "İmkansız 5'lik toplama",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_CHEST,
+                title = "Ünite Değerlendirme",
+                offset = 0,
                 isCompleted = false,
                 stepCount = 0,
                 currentStep = 0,
                 fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
-            )
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_HEADER,
+                title = "10'luk Toplama 1-2-3-4-5",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                currentStep = 1,
+                color = R.color.lesson_header_blue
+
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Temel 10'luk toplama",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Zor 10'luk toplama",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "İmkansız 10'luk toplama",
+                offset = 30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),LessonItem(
+                type = LessonItem.TYPE_CHEST,
+                title = "Ünite Değerlendirme",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 0,
+                currentStep = 0,
+                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_HEADER,
+                title = "10'luk Toplama 6-7-8-9",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                currentStep = 1,
+                color = R.color.lesson_header_orange
+
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Orta seviye 10'luk toplama",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "İleri seviye 10'luk toplama",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Çılgın 10'luk toplama",
+                offset = 30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_CHEST,
+                title = "Ünite Değerlendirme",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 0,
+                currentStep = 0,
+                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+        ),
+            LessonItem(
+                type = LessonItem.TYPE_HEADER,
+                title = "Boncuk kuralı",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                currentStep = 1,
+                color = R.color.lesson_header_red
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Temel Boncuk Kuralı",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Zor Boncuk Kuralı",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "İmkansız Boncuk Kuralı",
+                offset = -30,
+                isCompleted = false,
+                stepCount = 4,
+                currentStep = 1,
+                fragment = {
+                    TutorialFragment.newInstance()
+                }
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_CHEST,
+                title = "Ünite Değerlendirme",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 0,
+                currentStep = 0,
+                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+            ),
         )
     }
     private fun generateRandomNumber(digitCount: Int): Int {

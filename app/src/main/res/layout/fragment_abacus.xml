@@ -1,14 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="#222"
     android:padding="16dp">
 
-    <!-- Geri dönüş butonu -->
+    <LinearLayout
+        android:id="@+id/progressBarContainer"
+        android:layout_width="250dp"
+        android:layout_height="16dp"
+        android:orientation="horizontal"
+        android:background="#333"
+        android:layout_margin="16dp"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="ExtraText">
+
+        <View
+            android:id="@+id/progressBarFill"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/progress_bar_fill"
+            android:layout_weight="0" />
+
+        <View
+            android:id="@+id/progressBarEmpty"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/progress_bar_fill"
+            android:backgroundTint="#444"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- Kapatma butonu -->
     <ImageButton
-        android:id="@+id/backButton"
+        android:id="@+id/quitButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:src="@android:drawable/ic_menu_close_clear_cancel"
@@ -24,7 +54,7 @@
         android:layout_height="300dp"
         android:scaleType="centerCrop"
         android:layout_marginTop="20dp"
-        android:src="@drawable/class_board3"
+        android:src="@drawable/class_board"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
@@ -49,7 +79,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/font_regular"
-
+        android:textStyle="bold"
         android:textSize="40sp"
         android:textColor="@color/white"
         android:layout_marginBottom="20dp"

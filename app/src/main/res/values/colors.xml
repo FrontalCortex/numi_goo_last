@@ -3,9 +3,16 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#808080</color>
+    <color name="yellow">#FFFFD600</color>
+    <color name="lesson_header_red">#FF5A5F</color>
+    <color name="lesson_header_orange">#FFA726</color>
+    <color name="lesson_header_blue">#29B6F6</color>
+    <color name="lesson_header_pink">#F48FB1</color>
+    <color name="lesson_header_purple">#B39DDB</color>
+    <color name="lesson_header_green">#21D07A</color>
     <color name="lesson_completed">#8FD14F</color>
-    <color name="lesson_locked">#666666</color>
-    <color name="background_color">#211F1F</color>
+    <color name="lesson_locked">#343D43</color>
+    <color name="background_color">#21272B</color>
     <color name="circleBackground_color">#383535</color>
     <color name="circleForeground_color">#8A7E18</color>
 </resources>

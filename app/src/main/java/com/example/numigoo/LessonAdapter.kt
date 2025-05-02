@@ -54,14 +54,29 @@ class LessonAdapter(
         titleText.text = item.title
 
         if (item.isCompleted) {
-            descriptionText.text = "${item.currentStep}/${item.stepCount}"
-            actionButton.text = "BAŞLAT +10 PUAN"
-            actionButton.setBackgroundResource(R.drawable.button_background)
-            actionButton.isEnabled = true
+            descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
+            bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
+            titleText.setTextColor(ContextCompat.getColor(context, R.color.white))
+            descriptionText.setTextColor(ContextCompat.getColor(context, R.color.white))
+
+            actionButton.apply {
+                text = "-5                           BAŞLAT"
+                 // Beyaz, köşeleri yuvarlatılmış
+                actionButton.setBackgroundColor(context.getColor(R.color.white))
+                setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
+                isEnabled = true
+                // İkon ekle (solda)
+                setCompoundDrawablesWithIntrinsicBounds(R.drawable.lighting__1_, 0, 0, 0)
+            }
         } else {
             descriptionText.text = "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"
+            titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.background_color)
+
             actionButton.text = "KİLİTLİ"
-            actionButton.setBackgroundColor(context.getColor(R.color.gray))
+            actionButton.setBackgroundColor(context.getColor(R.color.circleBackground_color))
+            actionButton.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
             actionButton.isEnabled = false
         }
 

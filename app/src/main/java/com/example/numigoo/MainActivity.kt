@@ -41,6 +41,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun changeFragment(fragment: Fragment) {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        // Eğer mevcut fragment ile yeni fragment aynı tipteyse, işlem yapma
+        if (currentFragment != null && currentFragment::class == fragment::class) {
+            return
+        }
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID, fragment)
             addToBackStack(null)

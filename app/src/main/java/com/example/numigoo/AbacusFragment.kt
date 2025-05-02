@@ -1,20 +1,31 @@
 package com.example.numigoo
 
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.BounceInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.FragmentAbacusBinding
 import java.io.Serializable
+import kotlin.math.log
 
 class AbacusFragment : Fragment() {
     private var operations: List<MathOperation> = emptyList()
@@ -24,6 +35,7 @@ class AbacusFragment : Fragment() {
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
+    private lateinit var controlButton: Button
 
     private lateinit var rod0BottomBead4: ImageView
     private lateinit var rod0BottomBead3: ImageView
@@ -95,8 +107,7 @@ class AbacusFragment : Fragment() {
     private var rod4TopIsDown = false
 
     private lateinit var binding: FragmentAbacusBinding
-    private lateinit var resultDialog: Dialog
-
+    private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         operations = (arguments?.getSerializable("operations") as? List<MathOperation>)!!
@@ -118,14 +129,119 @@ class AbacusFragment : Fragment() {
         firstNumberText = binding.firstNumberText
         operatorText = binding.operator
         secondNumberText = binding.secondNumberText
+        controlButton = binding.kontrolButton
+        controlButtonAnim()
         showCurrentOperation()
+        setupBeads(view)
+        setupQuitButton()
+    }
+    private fun updateProgressBar() {
+        val fill = requireView().findViewById<View>(R.id.progressBarFill)
+        val empty = requireView().findViewById<View>(R.id.progressBarEmpty)
 
-        binding.kontrolButton.setOnClickListener {
-            showResultPanel()
-            controlNumber=0
+        val startWeight = (fill.layoutParams as LinearLayout.LayoutParams).weight
+        val endWeight = (currentIndex + 1).toFloat() / operations.size
+
+        // Renkler: yeşil -> sarı -> yeşil
+        val colorGreen  = Color.parseColor("#7CFC00")    // Yeşil
+        val colorYellow = Color.parseColor("#FFFF99")    // Açık sarı
+        val colorDarkRed = Color.parseColor("#990000")
+
+        if(stepAnswerAlgorithm()){
+            Log.d("selam","1")
+
+            val animator = ValueAnimator.ofFloat(startWeight, endWeight)
+            animator.duration = 700
+            animator.interpolator = DecelerateInterpolator()
+
+            animator.addUpdateListener { animation ->
+                val value = animation.animatedValue as Float
+                (fill.layoutParams as LinearLayout.LayoutParams).weight = value
+                (empty.layoutParams as LinearLayout.LayoutParams).weight = 1 - value
+                fill.requestLayout()
+                empty.requestLayout()
+
+                // Renk geçişi: ilk yarıda yeşilden sarıya, ikinci yarıda sarıdan yeşile
+                val fraction = (value - startWeight) / (endWeight - startWeight)
+                val color = when {
+                    fraction <= 0.5f -> {
+                        // İlk yarı: turuncu -> açık sarı
+                        ArgbEvaluator().evaluate(fraction * 2, colorGreen, colorYellow) as Int
+                    }
+                    else -> {
+                        // İkinci yarı: açık sarı -> yeşil
+                        ArgbEvaluator().evaluate((fraction - 0.5f) * 2, colorYellow, colorGreen) as Int
+                    }
+                }
+
+                // Drawable'ın rengini güncelle
+                val background = fill.background
+                if (background is GradientDrawable) {
+                    background.setColor(color)
+                }
+            }
+
+            animator.start()
+        }else{
+            Log.d("selam","2")
+            val animator = ValueAnimator.ofFloat(startWeight, endWeight)
+            animator.duration = 700
+            animator.interpolator = DecelerateInterpolator()
+
+            animator.addUpdateListener { animation ->
+                // Weight (genişlik) animasyonu
+                val value = animation.animatedValue as Float
+                (fill.layoutParams as LinearLayout.LayoutParams).weight = value
+                (empty.layoutParams as LinearLayout.LayoutParams).weight = 1 - value
+                fill.requestLayout()
+                empty.requestLayout()
+
+                // Basit renk geçişi: yeşilden kırmızıya
+                val fraction = (value - startWeight) / (endWeight - startWeight)
+                val color = ArgbEvaluator().evaluate(fraction, colorGreen, colorDarkRed) as Int
+
+                // Drawable'ın rengini güncelle
+                val background = fill.background
+                if (background is GradientDrawable) {
+                    background.setColor(color)
+                }
+            }
+
+            animator.start()
         }
 
-        setupBeads(view)
+    }
+    @SuppressLint("ClickableViewAccessibility")
+    private fun controlButtonAnim() {
+        controlButton.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.animate()
+                        .scaleX(0.85f)
+                        .scaleY(0.85f)
+                        .setDuration(100)
+                        .setInterpolator(AccelerateDecelerateInterpolator())
+                        .start()
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(400)
+                        .setInterpolator(BounceInterpolator())
+                        .start()
+
+                    // Tıklama işlemini gerçekleştir
+                    updateProgressBar()
+                    showResultPanel()
+                    controlNumber = 0
+                    true
+                }
+                else -> false
+            }
+        }
+
     }
     private fun findIDs() {
         // 1. sütun için boncukları bul
@@ -164,7 +280,7 @@ class AbacusFragment : Fragment() {
         rod4TopBead = binding.rod4BeadTop
     }
     private fun showCurrentOperation() {
-        if (currentIndex < operations.size) {
+        if (currentIndex <= operations.size) {
             val currentOperation = operations[currentIndex]
             currentOperation.firstNumber?.let { number ->
                 firstNumberText.text = number.toString()
@@ -188,10 +304,27 @@ class AbacusFragment : Fragment() {
         }
         abacusNumberReturn()
         return if (controlNumber == answerNumber){
+            controlNumber=0
             true
         }else{
+            controlNumber=0
             false
         }
+
+    }
+    private fun setupQuitButton(){
+        binding.quitButton.setOnClickListener{
+            closeFragment()
+        }
+    }
+    private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,  // Giriş animasyonu
+                R.anim.slide_out_left // Çıkış animasyonu
+            )
+            .remove(this)
+            .commit()
 
     }
     private fun abacusNumberReturn(){
@@ -1215,7 +1348,13 @@ class AbacusFragment : Fragment() {
         updateRod4BeadsAppearance()
         updateTopBeadsAppearance()
     }
+    @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
     private fun showResultPanel() {
+        // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
+        if (resultDialog?.isShowing == true) {
+            return
+        }
+
         resultDialog = Dialog(requireContext(), R.style.FullScreenDialog).apply {
             // Dialog'u hemen oluştur
             create()
@@ -1224,29 +1363,78 @@ class AbacusFragment : Fragment() {
             if (stepAnswerAlgorithm()) {
                 val correctView = layoutInflater.inflate(R.layout.result_panel_correct, null)
                 setContentView(correctView)
-                
-                correctView.findViewById<Button>(R.id.continueButton).setOnClickListener {
-                    resetAbacus()
-                    currentIndex++
-                    dismiss()
-                    if (currentIndex < operations.size - 1) {
-                        showCurrentOperation()
-                    } else {
-                        //Ders bidi
+
+                //Continue buttonu animasyonu yazılmıştır. SetOnClick kısmı içeride belirtilmiştir
+                correctView.findViewById<Button>(R.id.continueButton).setOnTouchListener() { v, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            v.animate()
+                                .scaleX(0.85f)
+                                .scaleY(0.85f)
+                                .setDuration(100)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
+                            //SetOnClick kısmı buranın aşağısı
+                            currentIndex++
+
+                            true
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(400)
+                                .setInterpolator(BounceInterpolator())
+                                .start()
+                            resetAbacus()
+                            dismiss()
+                            if (currentIndex <= operations.size - 1) {
+                                showCurrentOperation()
+                            } else {
+                                //Ders bidi
+                            }
+
+                            true
+                        }
+
+                        else -> false
                     }
                 }
             } else {
                 val incorrectView = layoutInflater.inflate(R.layout.result_panel_incorrect, null)
                 setContentView(incorrectView)
-                
-                incorrectView.findViewById<Button>(R.id.continueButton).setOnClickListener {
-                    resetAbacus()
-                    currentIndex++
-                    dismiss()
-                    if (currentIndex < operations.size - 1) {
-                        showCurrentOperation()
-                    } else {
-                        //Ders bidi
+
+                incorrectView.findViewById<Button>(R.id.okayButton).setOnTouchListener { v, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            v.animate()
+                                .scaleX(0.85f)
+                                .scaleY(0.85f)
+                                .setDuration(100)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
+                            //SetOnClick kısmı bıranın aşağısı
+                            currentIndex++
+
+                            true
+                        }
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(400)
+                                .setInterpolator(BounceInterpolator())
+                                .start()
+                            resetAbacus()
+                            dismiss()
+                            if (currentIndex <= operations.size - 1) {
+                                showCurrentOperation()
+                            } else {
+                                //Ders bidi
+                            }
+                            true
+                        }
+                        else -> false
                     }
                 }
             }
@@ -1263,7 +1451,7 @@ class AbacusFragment : Fragment() {
         }
         
         // Dialog'u hemen göster
-        resultDialog.show()
+        resultDialog!!.show()
     }
 
     companion object {

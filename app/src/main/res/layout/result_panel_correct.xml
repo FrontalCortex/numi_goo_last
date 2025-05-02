@@ -10,8 +10,8 @@
         android:id="@+id/correctIcon"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:src="@mipmap/correct_ic"
-        android:tint="#8CC63F"
+        android:src="@drawable/circle_correct"
+
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

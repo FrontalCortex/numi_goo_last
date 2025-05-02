@@ -1,5 +1,7 @@
 package com.example.numigoo
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.util.Log
@@ -13,7 +15,7 @@ import com.example.numigoo.model.BeadAnimation
 
 class TutorialFragment : Fragment() {
     private var currentAnimations: MutableList<BeadAnimation> = mutableListOf()
-
+    private val widgetAnimators = mutableListOf<ValueAnimator>()
     private lateinit var binding: FragmentTutorialBinding
     private var currentStep = 0
     private var backOrFront = true
@@ -186,15 +188,6 @@ class TutorialFragment : Fragment() {
 
         // Devam butonuna tıklama olayını ekle
         binding.devamButton.setOnClickListener {
-            // TutorialFragment'i kapat
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_left,  // Giriş animasyonu
-                    R.anim.slide_out_left  // Çıkış animasyonu
-                )
-                .remove(this)
-                .commit()
-
             // Yeni fragment'i göster
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -203,10 +196,19 @@ class TutorialFragment : Fragment() {
                 )
                 .replace(R.id.abacusFragmentContainer, fragment)  // fragment_container, ana layout'taki container ID'si
                 .commit()
+
+            // TutorialFragment'i kapat
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_left,  // Giriş animasyonu
+                    R.anim.slide_out_right  // Çıkış animasyonu
+                )
+                .remove(this)
+                .commit()
         }
     }
     private fun isAnyAnimationRunning(): Boolean {
-        return currentAnimations.any { it.isAnimating() }
+        return currentAnimations.any { it.isAnimating() } || widgetAnimators.any { it.isRunning }
     }
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
@@ -466,6 +468,12 @@ class TutorialFragment : Fragment() {
                             params.rightMargin = animator.animatedValue as Int
                             operation.view.layoutParams = params
                         }
+                        addListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                widgetAnimators.remove(this@apply)
+                            }
+                        })
+                        widgetAnimators.add(this)
                         start()
                     }
 
@@ -476,8 +484,13 @@ class TutorialFragment : Fragment() {
                             params.leftMargin = animator.animatedValue as Int
                             operation.view.layoutParams = params
                         }
-                        start()
-                    }
+                        addListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                widgetAnimators.remove(this@apply)
+                            }
+                        })
+                        widgetAnimators.add(this)
+                        start()                    }
                 }
                 is WidgetOperation.AnimateSize -> {
                     val params = operation.view.layoutParams
@@ -489,8 +502,13 @@ class TutorialFragment : Fragment() {
                             params.width = animator.animatedValue as Int
                             operation.view.layoutParams = params
                         }
-                        start()
-                    }
+                        addListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                widgetAnimators.remove(this@apply)
+                            }
+                        })
+                        widgetAnimators.add(this)
+                        start()                    }
 
                     // Height animasyonu
                     ValueAnimator.ofInt(operation.fromHeight, operation.toHeight).apply {
@@ -499,8 +517,13 @@ class TutorialFragment : Fragment() {
                             params.height = animator.animatedValue as Int
                             operation.view.layoutParams = params
                         }
-                        start()
-                    }
+                        addListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                widgetAnimators.remove(this@apply)
+                            }
+                        })
+                        widgetAnimators.add(this)
+                        start()                    }
                 }
             }
         }

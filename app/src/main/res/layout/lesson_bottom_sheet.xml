@@ -31,12 +31,15 @@
             android:textColor="#4B4B4B"
             android:layout_marginBottom="16dp"/>
 
+
         <Button
             android:id="@+id/actionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="12dp"
+            android:backgroundTint="@color/white"
             android:textAllCaps="true"
+            android:textAlignment="textStart"
             android:textStyle="bold"/>
 
     </LinearLayout>

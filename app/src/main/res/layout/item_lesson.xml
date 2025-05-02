@@ -35,7 +35,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_centerInParent="true"
-                android:src="@drawable/book_ic"
+                android:src="@drawable/book_icon"
                 />
 
         </RelativeLayout>
