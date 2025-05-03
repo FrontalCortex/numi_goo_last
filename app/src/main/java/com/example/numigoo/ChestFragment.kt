@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -16,15 +17,13 @@ class ChestFragment : Fragment() {
     private var pulseAnimatorSet: AnimatorSet? = null
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
-    private var succsessRate: Int = 0
+    private var successRate: Float = 0F
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        arguments?.let { bundle ->
-            succsessRate = bundle.getInt("succsessRate", 0)
-        }
+
         _binding = FragmentChestBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -32,7 +31,13 @@ class ChestFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Pulse animasyonu başlat
+        Log.d("Pepsi", "onViewCreated başladı")
+        
+        arguments?.let { bundle ->
+            successRate = bundle.getFloat("successRate", 0F)
+        }
+
+
         goldValueAlgorithm()
         startPulseAnimation(binding.chestImage)
 
@@ -85,16 +90,16 @@ class ChestFragment : Fragment() {
         _binding = null
     }
     private fun goldValueAlgorithm(){
-        val gold: Int = when (succsessRate*100) {
-            100 -> {
+        val gold: Int = when (successRate) {
+            100F -> {
                 // %90 ihtimalle 100-200, %10 ihtimalle 500
                 if ((0..9).random() == 0) 500 else (100..200).random()
             }
-            in 76..99 -> {
+            in 76F..99F -> {
                 // 50-100 arası
                 (50..100).random()
             }
-            in 51..75 -> {
+            in 51F..75F -> {
                 // 25-50 arası
                 (25..50).random()
             }

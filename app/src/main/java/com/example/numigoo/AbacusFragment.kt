@@ -1446,6 +1446,7 @@ class AbacusFragment : Fragment() {
                                 if (currentIndex <= operations.size - 1) {
                                     showCurrentOperation()
                                 } else {
+                                    Log.d("ronaldo", "Doğru cevap - showLessonResult çağrılıyor")
                                     showLessonResult()
                                 }
                                 true
@@ -1506,6 +1507,7 @@ class AbacusFragment : Fragment() {
                                 if (currentIndex <= operations.size - 1) {
                                     showCurrentOperation()
                                 } else {
+                                    Log.d("ronaldo", "Yanlış cevap - showLessonResult çağrılıyor")
                                     showLessonResult()
                                 }
                                 true
@@ -1517,11 +1519,21 @@ class AbacusFragment : Fragment() {
         }
 
         private fun showLessonResult() {
+            Log.d("ronaldo", "showLessonResult başladı - currentIndex: $currentIndex, operations.size: ${operations.size}")
             val lessonResultFragment = LessonResult()
+            
+            // Başarı oranını hesapla
+            val successRate = if (totalQuestions > 0) {
+                (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+            } else {
+                0f
+            }
+            
             val args = Bundle().apply {
-                Log.d("ronaldo","$correctAnswer + $totalQuestions")
+                Log.d("ronaldo","correctAnswer: $correctAnswer, totalQuestions: $totalQuestions, successRate: $successRate")
                 putInt("correctAnswers", correctAnswer)
                 putInt("totalQuestions", totalQuestions)
+                putFloat("successRate", successRate)
             }
             lessonResultFragment.arguments = args
 

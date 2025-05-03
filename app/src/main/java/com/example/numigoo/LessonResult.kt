@@ -1,6 +1,7 @@
 package com.example.numigoo
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -28,7 +29,7 @@ class LessonResult : Fragment() {
     private var currentAnimIndex = 0
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
-    private var succsessRate: Int = 0
+    private var succsessRate: Float = 0F
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,14 +46,20 @@ class LessonResult : Fragment() {
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
-            succsessRate = correctAnswers/totalQuestions
+            Log.d("mesi","$correctAnswers, $totalQuestions")
+            succsessRate = if (totalQuestions > 0) {
+                (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
+            } else {
+                0f
+            }
+            Log.d("mesi","$succsessRate")
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
         }
         binding.claimButton.setOnClickListener {
             val chestFragment = ChestFragment()
             val args = Bundle().apply {
-                putInt("successRate", succsessRate)
+                putFloat("successRate", succsessRate)
             }
             chestFragment.arguments = args
             parentFragmentManager.beginTransaction()
@@ -68,8 +75,8 @@ class LessonResult : Fragment() {
 
     private fun updateUI() {
         // Örnek: Doğru cevap sayısını göster
-        succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions) * 100).toInt() else 0
-        binding.successRate.text = "$succsessRate%"
+        succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions.toFloat()) * 100) else 0f
+        binding.successRate.text = "${succsessRate.toInt()}%"
 
         // Başarı durumuna göre farklı animasyon gösterebilirsiniz
         /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı
