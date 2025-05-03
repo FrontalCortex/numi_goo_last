@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -18,12 +19,20 @@ class ChestFragment : Fragment() {
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
     private var successRate: Float = 0F
+    private var goldAmount: Int = 0
+    private var goldUpdateListener: GoldUpdateListener? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is GoldUpdateListener) {
+            goldUpdateListener = context
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentChestBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -36,7 +45,6 @@ class ChestFragment : Fragment() {
         arguments?.let { bundle ->
             successRate = bundle.getFloat("successRate", 0F)
         }
-
 
         goldValueAlgorithm()
         startPulseAnimation(binding.chestImage)
@@ -53,11 +61,16 @@ class ChestFragment : Fragment() {
                         binding.flashView.visibility = View.GONE
                         binding.chestImage.setImageResource(R.drawable.open_chest)
                         binding.goldText.visibility = View.VISIBLE
-                        binding.claimRewardButton.visibility = View.VISIBLE // <-- BUTONU GÖSTER
+                        binding.claimRewardButton.visibility = View.VISIBLE
                     }
                 })
                 flashAnim.start()
             }
+        }
+
+        binding.claimRewardButton.setOnClickListener {
+            goldUpdateListener?.onGoldUpdated(goldAmount)
+            parentFragmentManager.popBackStack()
         }
     }
 
@@ -89,8 +102,9 @@ class ChestFragment : Fragment() {
         pulseAnimatorSet?.cancel()
         _binding = null
     }
+
     private fun goldValueAlgorithm(){
-        val gold: Int = when (successRate) {
+        goldAmount = when (successRate) {
             100F -> {
                 // %90 ihtimalle 100-200, %10 ihtimalle 500
                 if ((0..9).random() == 0) 500 else (100..200).random()
@@ -109,7 +123,7 @@ class ChestFragment : Fragment() {
             }
         }
 
-// Sonucu ekrana yaz
-        binding.goldText.text = "$gold altın"
+        // Sonucu ekrana yaz
+        binding.goldText.text = "$goldAmount altın"
     }
 }

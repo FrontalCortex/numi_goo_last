@@ -12,9 +12,10 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var coin:TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -99,5 +100,16 @@ class MainActivity : AppCompatActivity() {
     fun getCurrency(context: Context): Int {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         return prefs.getInt("currency", 0)
+    }
+
+    override fun onGoldUpdated(amount: Int) {
+        updateGoldAmount(amount)
+    }
+
+    fun updateGoldAmount(amount: Int) {
+        val currentGold = binding.currencyText.text.toString().toIntOrNull() ?: 0
+        val newGold = currentGold + amount
+        binding.currencyText.text = newGold.toString()
+        saveCurrency(this, newGold)
     }
 }
