@@ -16,6 +16,8 @@
         <!-- Font family -->
         <item name="android:fontFamily">@font/font_regular</item>
         <item name="fontFamily">@font/font_regular</item>
+        <!-- Text style -->
+        <item name="android:textStyle">bold</item>
         <!-- Default text appearances -->
         <item name="android:textViewStyle">@style/Widget.NumiGoo.TextView</item>
         <item name="buttonStyle">@style/Widget.NumiGoo.Button</item>
@@ -25,12 +27,14 @@
     <style name="Widget.NumiGoo.TextView" parent="Widget.MaterialComponents.TextView">
         <item name="android:fontFamily">@font/font_regular</item>
         <item name="fontFamily">@font/font_regular</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <!-- Button için özel stil -->
     <style name="Widget.NumiGoo.Button" parent="Widget.MaterialComponents.Button">
         <item name="android:fontFamily">@font/font_regular</item>
         <item name="fontFamily">@font/font_regular</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">false</item>
         <item name="textAllCaps">false</item>
     </style>

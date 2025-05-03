@@ -1,25 +1,28 @@
 package com.example.numigoo
 
+import android.content.Context
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-
+    private lateinit var coin:TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        coin = binding.currencyText
+        coin.text = getCurrency(this).toString()
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID,MapFragment())
             addToBackStack(null)
@@ -43,9 +46,7 @@ class MainActivity : AppCompatActivity() {
     private fun changeFragment(fragment: Fragment) {
         val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         // Eğer mevcut fragment ile yeni fragment aynı tipteyse, işlem yapma
-        if (currentFragment != null && currentFragment::class == fragment::class) {
-            return
-        }
+
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID, fragment)
             addToBackStack(null)
@@ -90,5 +91,13 @@ class MainActivity : AppCompatActivity() {
             .replace(R.id.abacusFragmentContainer, fragment)
             .addToBackStack(null)
             .commit()
+    }
+    fun saveCurrency(context: Context, value: Int) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("currency", value).apply()
+    }
+    fun getCurrency(context: Context): Int {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        return prefs.getInt("currency", 0)
     }
 }
