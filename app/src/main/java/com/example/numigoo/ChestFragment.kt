@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.example.numigoo.databinding.FragmentChestBinding
+import androidx.fragment.app.FragmentManager
 
 class ChestFragment : Fragment() {
     private var isOpened = false
@@ -69,8 +70,15 @@ class ChestFragment : Fragment() {
         }
 
         binding.claimRewardButton.setOnClickListener {
+            // Önce MapFragment'ı aç
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerID, MapFragment())
+                .remove(this@ChestFragment)
+                .commit()
+
+            // Sonra altın miktarını güncelle ve fragment'ları temizle
             goldUpdateListener?.onGoldUpdated(goldAmount)
-            parentFragmentManager.popBackStack()
+            parentFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
         }
     }
 

@@ -461,6 +461,20 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+    <View
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#00000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/incorrectPanel"
@@ -538,18 +552,59 @@
             app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <View
-        android:id="@+id/overlay"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/correctPanel"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#00000000"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_height="wrap_content"
+        android:background="#222"
+        android:translationZ="0dp"
+        android:elevation="4dp"
+        android:clickable="false"
+        android:focusable="false"
+        android:fitsSystemWindows="true"
+        android:descendantFocusability="blocksDescendants"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:visibility="invisible">
+
+        <ImageView
+            android:id="@+id/correctIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/circle_correct"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/correctText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Aferin!"
+            android:textColor="#8CC63F"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/correctIcon"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/continueButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#8CC63F"
+            android:text="Devam et"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:cornerRadius="15dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/correctText" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

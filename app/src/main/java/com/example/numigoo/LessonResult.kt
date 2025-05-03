@@ -64,7 +64,6 @@ class LessonResult : Fragment() {
             chestFragment.arguments = args
             parentFragmentManager.beginTransaction()
                 .replace(R.id.resultFragmentContainer, chestFragment)
-                .addToBackStack(null)
                 .commit()
         }
 
