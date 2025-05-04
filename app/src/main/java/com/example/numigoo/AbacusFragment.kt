@@ -1432,8 +1432,8 @@ class AbacusFragment : Fragment() {
                                 .start()
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
-                            incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
+                            correctPanel.animate()
+                                .translationY(correctPanel.height.toFloat())
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
