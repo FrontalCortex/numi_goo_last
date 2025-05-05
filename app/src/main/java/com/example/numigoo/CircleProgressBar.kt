@@ -7,11 +7,15 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 
-class CircleProgressBar(context: Context, attrs: AttributeSet) : View(context, attrs) {
+class CircleProgressBar @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
 
     // Gerekli değişkenler
     private var strokeWidth = 4f
-    private var progress = 0f
+    var progress = 0f
     private var min = 0
     private var max = 100
     private val startAngle = -90
@@ -26,7 +30,7 @@ class CircleProgressBar(context: Context, attrs: AttributeSet) : View(context, a
     }
 
     // XML'den gelen değerleri alıp başlatıyoruz
-    private fun init(context: Context, attrs: AttributeSet) {
+    private fun init(context: Context, attrs: AttributeSet?) {
         val typedArray = context.theme.obtainStyledAttributes(
             attrs,
             R.styleable.CircleProgressBar,
@@ -85,7 +89,7 @@ class CircleProgressBar(context: Context, attrs: AttributeSet) : View(context, a
     }
 
     // Progress değerini ayarlayan setter metodu
-    fun setProgress(progress: Float) {
+    fun setProgressValue(progress: Float) {
         this.progress = progress
         invalidate()  // Görünümün yeniden çizilmesini sağlıyoruz
     }

@@ -12,41 +12,60 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.numigoo.GlobalValues.randomNumberChangeToString
 import com.example.numigoo.databinding.FragmentMapBinding
 import com.example.numigoo.model.LessonItem
 import kotlin.math.pow
 
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
-    private lateinit var lessonsAdapter: LessonAdapter
-    companion object{
-        val lessonOperationsMap = mapOf(
-            1 to listOf(
-                MathOperation(null,"2", null),
-                MathOperation(null,"5", null),
-                MathOperation(null,"3", null),
-                MathOperation(null,"8", null),
-                MathOperation(null,"4", null),
-                MathOperation(null,"13", null),
-                MathOperation(null,"9", null),
-                MathOperation(null,"41", null),
-                MathOperation(null,"36", null),
-                MathOperation(null,"23", ),
-            ),
-            2 to listOf(
-                MathOperation(10, "-", 3),
-                MathOperation(15, "-", 7),
-                MathOperation(8, "-", 2),
-                MathOperation(12, "-", 5),
-                MathOperation(9, "-", 4),
-                MathOperation(14, "-", 6),
-                MathOperation(7, "-", 3),
-                MathOperation(11, "-", 4),
-                MathOperation(13, "-", 5),
-                MathOperation(6, "-", 2)
-            )
-            // Diğer dersler için benzer şekilde devam edebilirsiniz
-        )
+    lateinit var lessonsAdapter: LessonAdapter
+    companion object {
+        fun getLessonOperations(lessonId: Int): List<MathOperation> {
+            return when (lessonId) {
+                1 -> listOf(
+                    MathOperation(null,"2", null),
+                    MathOperation(null,"5", null),
+                    MathOperation(null,"3", null),
+                    MathOperation(null,"8", null),
+                    MathOperation(null,"4", null),
+                    MathOperation(null,"13", null),
+                    MathOperation(null,"9", null),
+                    MathOperation(null,"41", null),
+                    MathOperation(null,"36", null),
+                    MathOperation(null,"23", null)
+                )
+                2 -> listOf(
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(5), null)
+                )
+                3 -> listOf(
+                    MathOperation(null,randomNumberChangeToString(2), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null)
+                )
+                else -> emptyList()
+            }
+        }
     }
 
     override fun onCreateView(
@@ -60,17 +79,28 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Global verileri kullan
+        val items = GlobalLessonData.lessonItems
+        if (items.isEmpty()) {
+            // İlk kez çalışıyorsa varsayılan verileri yükle
+            GlobalLessonData.initialize(createLessonItems())
+        }
+        
         setupRecyclerView()
     }
 
-    private fun setupRecyclerView() {
-        // Örnek veri listesi oluştur
-        val lessonItems = createLessonItems()
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Verileri kaydet
+        LessonDataManager.saveLessonItems(requireContext(), GlobalLessonData.lessonItems)
+    }
 
+    private fun setupRecyclerView() {
         // Adapter'ı oluştur
         lessonsAdapter = LessonAdapter(
             context = requireContext(),
-            items = lessonItems,
+            items = GlobalLessonData.lessonItems.toMutableList(),
             onLessonClick = { item, position ->
                 if (!item.isCompleted) {
                     Toast.makeText(context, "Bu ders henüz kilitli!", Toast.LENGTH_SHORT).show()
@@ -85,6 +115,9 @@ class MapFragment : Fragment() {
                 }
             }
         )
+
+        // LessonManager'a adapter'ı set et
+        LessonManager.setAdapter(lessonsAdapter)
 
         // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
@@ -152,9 +185,8 @@ class MapFragment : Fragment() {
                 isCompleted = true,
                 stepCount = 3,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+                lessonOperationsMap = 1,
+                finishStepNumber = 3
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -328,7 +360,7 @@ class MapFragment : Fragment() {
                 stepCount = 0,
                 currentStep = 0,
                 fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
-        ),
+            ),
             LessonItem(
                 type = LessonItem.TYPE_HEADER,
                 title = "Boncuk kuralı",
@@ -382,24 +414,6 @@ class MapFragment : Fragment() {
             ),
         )
     }
-    private fun generateRandomNumber(digitCount: Int): Int {
-        // Basamak sayısı kontrolü
-        if (digitCount < 1) return 0
 
-        // Minimum ve maksimum değerleri hesapla
-        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
-        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
 
-        // Random sayı üret
-        return (min..max).random()
-    }
-    private fun randomNumberChangeToString(digitCount: Int): String{
-
-        // Minimum ve maksimum değerleri hesapla
-        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
-        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
-
-        // Random sayı üret
-        return (min..max).random().toString()
-    }
 }

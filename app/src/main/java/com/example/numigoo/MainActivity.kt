@@ -81,11 +81,11 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
         // Fragment'ı oluştur
         val fragment = AbacusFragment.newInstance("", "")
-        
+
         // Animasyon için slide-in efekti
         val slideIn = android.R.anim.slide_in_left
         val slideOut = android.R.anim.slide_out_right
-        
+
         // Fragment'ı container'a ekle
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(slideIn, slideOut)

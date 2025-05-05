@@ -42,7 +42,7 @@ class ChestFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         Log.d("Pepsi", "onViewCreated başladı")
-        
+
         arguments?.let { bundle ->
             successRate = bundle.getFloat("successRate", 0F)
         }
@@ -71,6 +71,8 @@ class ChestFragment : Fragment() {
 
         binding.claimRewardButton.setOnClickListener {
             // Önce MapFragment'ı aç
+            updateMapProgress()
+
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerID, MapFragment())
                 .remove(this@ChestFragment)
@@ -133,5 +135,32 @@ class ChestFragment : Fragment() {
 
         // Sonucu ekrana yaz
         binding.goldText.text = "$goldAmount altın"
+    }
+
+    private fun updateMapProgress() {
+
+        val lessonItem = LessonManager.getLessonItem(1) //Global verilerden 1. indeksteki ders öğesini alıyor
+
+        lessonItem?.let { item ->
+            // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
+            val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
+
+            if(item.stepCount == item.currentStep){
+                val updatedItem = item.copy(
+                    stepCompletionStatus = newStepCompletionStatus,
+                    stepIsFinish = true
+                )
+                Log.d("teyze","çalıştı")
+                LessonManager.updateLessonItem(1, updatedItem)
+            }
+            else{
+                val updatedItem = item.copy(
+                    stepCompletionStatus = newStepCompletionStatus,
+                    currentStep = item.currentStep + 1
+                )
+                LessonManager.updateLessonItem(1, updatedItem)
+            }
+
+        }
     }
 }

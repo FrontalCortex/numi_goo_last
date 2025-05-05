@@ -5,27 +5,24 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
-import android.view.Gravity
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.BounceInterpolator
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.OvershootInterpolator
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.airbnb.lottie.LottieAnimationView
+import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.databinding.FragmentAbacusBinding
 import java.io.Serializable
 import kotlin.math.log
@@ -41,9 +38,11 @@ class AbacusFragment : Fragment() {
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
+    private lateinit var correctAnswerText: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
     private lateinit var correctPanel: View
+    private lateinit var lottieView: LottieAnimationView
 
     private lateinit var rod0BottomBead4: ImageView
     private lateinit var rod0BottomBead3: ImageView
@@ -118,8 +117,7 @@ class AbacusFragment : Fragment() {
     private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        operations = (arguments?.getSerializable("operations") as? List<MathOperation>)!!
-
+        uploadLessonData()
     }
 
     override fun onCreateView(
@@ -134,6 +132,8 @@ class AbacusFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         findIDs()
+        lottieView = binding.lottieView
+        correctAnswerText = binding.correctAnswerText
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
         firstNumberText = binding.firstNumberText
@@ -145,6 +145,25 @@ class AbacusFragment : Fragment() {
         showCurrentOperation()
         setupBeads(view)
         setupQuitButton()
+    }
+    private fun uploadLessonData(){
+        val lessonItem = LessonManager.getLessonItem(1) //Global verilerden 1. indeksteki ders öğesini alıyor
+        operations = arguments?.getSerializable("operations") as? List<MathOperation> ?: emptyList()
+        if (operations.isEmpty()) {
+            Log.d("AbacusFragment", "stepIsFinish: ${lessonItem?.stepIsFinish}, finishStepNumber: ${lessonItem?.finishStepNumber}, lessonStep: $lessonStep")
+            
+            // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
+            val currentLessonStep = if (lessonStep > 0) lessonStep else 1
+            Log.d("AbacusFragment", "Using lessonStep: $currentLessonStep")
+            
+            if(lessonItem?.stepIsFinish == true){
+                operations = MapFragment.getLessonOperations(lessonItem?.finishStepNumber!!)
+            } else {
+                operations = MapFragment.getLessonOperations(currentLessonStep)
+            }
+            
+            Log.d("AbacusFragment", "Loaded operations size: ${operations.size}")
+        }
     }
 
     private fun updateProgressBar() {
@@ -305,7 +324,12 @@ class AbacusFragment : Fragment() {
     }
 
     private fun showCurrentOperation() {
-        if (currentIndex <= operations.size) {
+        if (operations.isEmpty()) {
+            Log.e("AbacusFragment", "Operations list is empty")
+            return
+        }
+        
+        if (currentIndex < operations.size) {
             val currentOperation = operations[currentIndex]
             currentOperation.firstNumber?.let { number ->
                 firstNumberText.text = number.toString()
@@ -322,6 +346,11 @@ class AbacusFragment : Fragment() {
     }
 
     private fun stepAnswerAlgorithm(): Boolean {
+        if (operations.isEmpty()) {
+            Log.e("AbacusFragment", "Operations list is empty")
+            return false
+        }
+
         if (operations[currentIndex].secondNumber == null && operations[currentIndex].firstNumber == null) {
             answerNumber = operations[currentIndex].operator?.toInt() ?: 0
         } else {
@@ -337,7 +366,21 @@ class AbacusFragment : Fragment() {
             controlNumber = 0
             false
         }
+    }
 
+    private fun incorrectText(): String {
+        var result = ""
+        val answerStr = answerNumber.toString().padStart(5, '0')
+        val controlStr = controlNumber.toString().padStart(5, '0')
+
+        // 5. basamaktan başlayarak kontrol ediyoruz
+        for (i in 0..4) {
+            if (answerStr[i] != controlStr[i]) {
+                // Basamak numarasını ekliyoruz (5-i şeklinde)
+                result += "${5-i} "
+            }
+        }
+        return result
     }
 
     private fun setupQuitButton() {
@@ -1383,6 +1426,7 @@ class AbacusFragment : Fragment() {
         updateTopBeadsAppearance()
     }
 
+
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
     private fun showResultPanel() {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
@@ -1390,10 +1434,16 @@ class AbacusFragment : Fragment() {
             return
         }
 
+
         if (stepAnswerAlgorithm()) {
             // Doğru cevap durumu
+
             correctAnswer++
 
+            if (currentIndex == operations.size -1 && correctAnswer == totalQuestions) {
+                lottieView.visibility=View.VISIBLE
+                lottieView.playAnimation() // Animasyonu başlat
+            }
             correctPanel.translationY = correctPanel.height.toFloat()
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
@@ -1457,7 +1507,7 @@ class AbacusFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
-
+            correctAnswerText.text = incorrectText()
             incorrectPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -1513,6 +1563,7 @@ class AbacusFragment : Fragment() {
 
     private fun showLessonResult() {
         val lessonResultFragment = LessonResult()
+        val lessonResultFalse = LessonResultFalse()
 
         // Başarı oranını hesapla
         val successRate = if (totalQuestions > 0) {
@@ -1527,6 +1578,12 @@ class AbacusFragment : Fragment() {
             putFloat("successRate", successRate)
         }
         lessonResultFragment.arguments = args
+        val argsFalse = Bundle().apply {
+            putInt("correctAnswers", correctAnswer)
+            putInt("totalQuestions", totalQuestions)
+            putFloat("successRate", successRate)
+        }
+        lessonResultFalse.arguments = argsFalse
 
         // Önce mevcut fragment'ı kaldır
         parentFragmentManager.beginTransaction()
@@ -1534,9 +1591,16 @@ class AbacusFragment : Fragment() {
             .commit()
 
         // Sonra yeni fragment'ı ekle
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.resultFragmentContainer, lessonResultFragment)
-            .commit()
+        if(successRate<0){
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.resultFragmentContainer, lessonResultFalse)
+                .commit()
+        }else{
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.resultFragmentContainer, lessonResultFragment)
+                .commit()
+        }
+
     }
 
 

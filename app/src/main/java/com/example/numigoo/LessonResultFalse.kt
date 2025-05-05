@@ -7,12 +7,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.example.numigoo.databinding.FragmentLessonResultBinding
-import com.example.numigoo.databinding.FragmentTasksBinding
-import com.example.numigoo.model.LessonItem
+import com.example.numigoo.databinding.FragmentLessonResultFalseBinding
 
-
-class LessonResult : Fragment() {
-    private lateinit var binding: FragmentLessonResultBinding
+class LessonResultFalse : Fragment() {
+    private lateinit var binding: FragmentLessonResultFalseBinding
     private val animations = listOf(
         "animation_one.json",
         "animaton_two.json",
@@ -43,14 +41,12 @@ class LessonResult : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentLessonResultBinding.inflate(inflater, container, false)
+        binding = FragmentLessonResultFalseBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        GlobalValues.lessonStep++
-        GlobalValues.tutorialIsWorked=true
 
 // Başka bir sınıfta (örneğin LessonResult'ta)
         arguments?.let { bundle ->
@@ -67,24 +63,11 @@ class LessonResult : Fragment() {
             updateUI()
         }
         binding.claimButton.setOnClickListener {
-            val lessonItem = LessonManager.getLessonItem(1)
 
-            val chestFragment = ChestFragment()
-            val args = Bundle().apply {
-                putFloat("successRate", succsessRate)
-            }
-            if(lessonItem?.stepIsFinish==true){
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, MapFragment())
-                    .remove(this@LessonResult)
-                    .commit()
-            }else{
-                chestFragment.arguments = args
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.resultFragmentContainer, chestFragment)
-                    .commit()
-            }
-
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerID, MapFragment())
+                .remove(this@LessonResultFalse)
+                .commit()
         }
 
         // Animasyonları başlat

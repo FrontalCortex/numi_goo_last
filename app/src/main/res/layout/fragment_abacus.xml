@@ -9,6 +9,21 @@
     android:background="#222"
     android:padding="16dp">
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/lottieView"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        app:lottie_autoPlay="false"
+        android:translationZ="1dp"
+        app:lottie_loop="false"
+        android:visibility="gone"
+        app:lottie_fileName="animaton_thirteen.json"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
     <LinearLayout
         android:id="@+id/progressBarContainer"
         android:layout_width="250dp"
@@ -519,7 +534,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Doğru cevap:"
+            android:text="Hatalı basamaklar:"
             android:textColor="#FF4B4B"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"

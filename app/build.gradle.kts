@@ -60,4 +60,6 @@ dependencies {
     //bundle off
     //noinspection UseTomlInstead
 
+    //gson
+    implementation("com.google.code.gson:gson:2.10.1")
 }

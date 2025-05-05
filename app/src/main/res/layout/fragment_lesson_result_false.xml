@@ -26,11 +26,20 @@
         android:id="@+id/resultTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ders Bitti!"
-        android:textColor="#FFF200"
+        android:text="Ders Geçilemedi!"
+        android:textColor="#E93939"
         android:textSize="28sp"
         android:textStyle="bold"
         />
+    <TextView
+        android:id="@+id/resultTitleComment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Başarı oranı %80'den düşük!"
+        android:textColor="#E00000"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"/>
 
     <!-- Sonuç kutuları -->
     <LinearLayout
@@ -100,7 +109,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:fontFamily="@font/font_regular"
-        android:text="PUANI AL"
+        android:text="Çıkış"
         android:textStyle="bold"
         android:textColor="#101820"
         android:backgroundTint="#29B6F6"

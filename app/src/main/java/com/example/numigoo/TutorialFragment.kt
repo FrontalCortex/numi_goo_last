@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
+import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.databinding.FragmentTutorialBinding
 import com.example.numigoo.model.BeadAnimation
 
@@ -73,8 +74,9 @@ class TutorialFragment : Fragment() {
         }
 
         if (position == tutorialSteps.size - 1) {
-            val operations = MapFragment.lessonOperationsMap[1]
-            devametFragment(AbacusFragment.newInstance("+", "Kuralsız Toplama", operations))        }
+            val operations = MapFragment.getLessonOperations(lessonStep)
+            devametFragment(AbacusFragment.newInstance("+", "Kuralsız Toplama", operations))
+        }
 
         currentAnimations.clear()
 
