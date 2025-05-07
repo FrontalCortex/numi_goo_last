@@ -4,6 +4,7 @@ import kotlin.math.pow
 
 object GlobalValues {
     var lessonStep: Int = 1
+    var mapFragmentStepIndex: Int = 1
     var stepIndex=0
     var tutorialIsWorked = false
     fun randomNumberChangeToString(digitCount: Int): String{

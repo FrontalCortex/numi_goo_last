@@ -5,15 +5,20 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.TouchDelegate
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.view.animation.BounceInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
@@ -23,6 +28,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.numigoo.GlobalValues.lessonStep
+import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentAbacusBinding
 import java.io.Serializable
 import kotlin.math.log
@@ -113,6 +119,11 @@ class AbacusFragment : Fragment() {
     private var rod4FourIsUp = false
     private var rod4TopIsDown = false
 
+    private lateinit var fabHint: LottieAnimationView
+    private lateinit var tvHint: TextView
+    private var isHintVisible = false
+    private lateinit var fabHintTouchArea: View
+
     private lateinit var binding: FragmentAbacusBinding
     private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,6 +143,17 @@ class AbacusFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         findIDs()
+        fabHint = binding.fabHint
+        tvHint = binding.tvHint
+        fabHintTouchArea = binding.fabHintTouchArea
+        fabHintTouchArea.setOnClickListener {
+                if (!isHintVisible) {
+                    showHint()
+                } else {
+                    hideHint()
+                }
+             // veya doğrudan fabHint'in tıklama fonksiyonunu çağır
+        }
         lottieView = binding.lottieView
         correctAnswerText = binding.correctAnswerText
         incorrectPanel = binding.incorrectPanel
@@ -143,21 +165,57 @@ class AbacusFragment : Fragment() {
         totalQuestions = operations.size
         controlButtonAnim()
         showCurrentOperation()
-        setupBeads(view)
+        setupBeads()
         setupQuitButton()
     }
+    private fun showHint() {
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+        tvHint.text = lessonItem?.lessonHint
+
+        // Play Lottie animation
+        fabHint.playAnimation()
+        fabHint.setFrame(25)
+
+        // Show and animate TextView
+        tvHint.visibility = View.VISIBLE
+        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.slide_in_right))
+
+        isHintVisible = true
+    }
+    private fun hideHint() {
+        // Sağa kayma animasyonunu başlat
+        fabHint.cancelAnimation()
+        fabHint.setFrame(0)
+
+        val slideOutAnimation = AnimationUtils.loadAnimation(context, R.anim.slide_out_right_hint)
+
+        // Animasyon bittiğinde TextView'ı gizle
+        slideOutAnimation.setAnimationListener(object : Animation.AnimationListener {
+            override fun onAnimationStart(animation: Animation?) {}
+
+            override fun onAnimationEnd(animation: Animation?) {
+                tvHint.visibility = View.GONE
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {}
+        })
+
+        // Animasyonu başlat
+        tvHint.startAnimation(slideOutAnimation)
+        isHintVisible = false
+    }
     private fun uploadLessonData(){
-        val lessonItem = LessonManager.getLessonItem(1) //Global verilerden 1. indeksteki ders öğesini alıyor
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden LessonItem'de belirtilen indeksteki ders öğesini alıyor
         operations = arguments?.getSerializable("operations") as? List<MathOperation> ?: emptyList()
         if (operations.isEmpty()) {
             Log.d("AbacusFragment", "stepIsFinish: ${lessonItem?.stepIsFinish}, finishStepNumber: ${lessonItem?.finishStepNumber}, lessonStep: $lessonStep")
-            
+            lessonStep= lessonItem?.startStepNumber!!
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
             Log.d("AbacusFragment", "Using lessonStep: $currentLessonStep")
             
             if(lessonItem?.stepIsFinish == true){
-                operations = MapFragment.getLessonOperations(lessonItem?.finishStepNumber!!)
+                operations = MapFragment.getLessonOperations(lessonItem.finishStepNumber!!)
             } else {
                 operations = MapFragment.getLessonOperations(currentLessonStep)
             }
@@ -464,7 +522,7 @@ class AbacusFragment : Fragment() {
 
     }
 
-    private fun setupBeads(view: View) {
+    private fun setupBeads() {
 
 
         // Boncuklara tıklama işlemleri
@@ -1293,19 +1351,13 @@ class AbacusFragment : Fragment() {
 
     // Üst boncukların görünümünü güncelleyen fonksiyonlar
     private fun updateTopBeadsAppearance() {
-        view?.let { view ->
-            val rod0TopBead = view.findViewById<ImageView>(R.id.rod0_bead_top)
-            val rod1TopBead = view.findViewById<ImageView>(R.id.rod1_bead_top)
-            val rod2TopBead = view.findViewById<ImageView>(R.id.rod2_bead_top)
-            val rod3TopBead = view.findViewById<ImageView>(R.id.rod3_bead_top)
-            val rod4TopBead = view.findViewById<ImageView>(R.id.rod4_bead_top)
 
             updateBeadAppearance(rod0TopBead, topIsDown)
             updateBeadAppearance(rod1TopBead, rod1TopIsDown)
             updateBeadAppearance(rod2TopBead, rod2TopIsDown)
             updateBeadAppearance(rod3TopBead, rod3TopIsDown)
             updateBeadAppearance(rod4TopBead, rod4TopIsDown)
-        }
+
     }
 
     private fun resetAbacus() {

@@ -93,4 +93,9 @@ class CircleProgressBar @JvmOverloads constructor(
         this.progress = progress
         invalidate()  // Görünümün yeniden çizilmesini sağlıyoruz
     }
+
+    fun setProgressColor(color: Int) {
+        foregroundPaint.color = color
+        invalidate()
+    }
 }

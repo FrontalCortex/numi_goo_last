@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.GlobalValues.randomNumberChangeToString
 import com.example.numigoo.databinding.FragmentMapBinding
 import com.example.numigoo.model.LessonItem
-import kotlin.math.pow
 
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
@@ -62,6 +61,64 @@ class MapFragment : Fragment() {
                     MathOperation(null,randomNumberChangeToString(5), null),
                     MathOperation(null,randomNumberChangeToString(5), null),
                     MathOperation(null,randomNumberChangeToString(5), null)
+                )
+                4 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+
+                )
+                5 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 3),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 1),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                )
+                6 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 4),
+                    MathOperationGenerator.generateRelatedNumbers(4, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(3, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    )
+                7 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 4),
+                    MathOperationGenerator.generateRelatedNumbers(4, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+
                 )
                 else -> emptyList()
             }
@@ -186,16 +243,22 @@ class MapFragment : Fragment() {
                 stepCount = 3,
                 currentStep = 1,
                 lessonOperationsMap = 1,
-                finishStepNumber = 3
+                finishStepNumber = 3,
+                tutorialNumber = 1,
+                startStepNumber = 1,
+                mapFragmentIndex = 1,
+                lessonHint = getString(R.string.lesson_hint_step2)
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "Kuralsız toplama",
                 offset = 30,
-                isCompleted = false,
+                isCompleted = true,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = { TutorialFragment.newInstance() }
+                tutorialNumber = 2,
+                startStepNumber = 4,
+                mapFragmentIndex = 2
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
@@ -223,9 +286,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -234,9 +295,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -245,9 +304,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
@@ -275,9 +332,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -286,9 +341,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -297,9 +350,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),LessonItem(
                 type = LessonItem.TYPE_CHEST,
                 title = "Ünite Değerlendirme",
@@ -326,9 +377,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -337,9 +386,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -348,9 +395,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
@@ -377,9 +422,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -388,9 +431,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -399,9 +440,7 @@ class MapFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 4,
                 currentStep = 1,
-                fragment = {
-                    TutorialFragment.newInstance()
-                }
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,

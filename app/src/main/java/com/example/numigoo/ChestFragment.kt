@@ -13,6 +13,8 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.numigoo.databinding.FragmentChestBinding
 import androidx.fragment.app.FragmentManager
+import com.example.numigoo.GlobalValues.lessonStep
+import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 
 class ChestFragment : Fragment() {
     private var isOpened = false
@@ -138,9 +140,8 @@ class ChestFragment : Fragment() {
     }
 
     private fun updateMapProgress() {
-
-        val lessonItem = LessonManager.getLessonItem(1) //Global verilerden 1. indeksteki ders öğesini alıyor
-
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
+        val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
         lessonItem?.let { item ->
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
@@ -151,16 +152,25 @@ class ChestFragment : Fragment() {
                     stepIsFinish = true
                 )
                 Log.d("teyze","çalıştı")
-                LessonManager.updateLessonItem(1, updatedItem)
+                LessonManager.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                
+                lessonItem2?.let { item2 ->
+                    val updatedItem2 = item2.copy(
+                        isCompleted = true
+                    )
+                    Log.d("teyze","çalıştı")
+                    LessonManager.updateLessonItem(mapFragmentStepIndex+1, updatedItem2)
+                }
             }
             else{
+                Log.d("virüs","gerçekleş")
                 val updatedItem = item.copy(
                     stepCompletionStatus = newStepCompletionStatus,
-                    currentStep = item.currentStep + 1
+                    currentStep = item.currentStep + 1,
+                    startStepNumber = item.startStepNumber?.plus(1)
                 )
-                LessonManager.updateLessonItem(1, updatedItem)
+                LessonManager.updateLessonItem(mapFragmentStepIndex, updatedItem)
             }
-
         }
     }
 }

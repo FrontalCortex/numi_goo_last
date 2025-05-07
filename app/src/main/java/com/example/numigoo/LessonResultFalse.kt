@@ -33,7 +33,6 @@ class LessonResultFalse : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lessonStep = arguments?.getInt("lessonStep", 0) ?: 0
     }
 
     override fun onCreateView(

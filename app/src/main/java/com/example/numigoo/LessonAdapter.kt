@@ -4,8 +4,6 @@ import android.animation.ValueAnimator
 import android.app.Activity
 import android.widget.Button
 import android.content.Context
-import android.provider.Settings.Global
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.example.numigoo.model.LessonItem
 import android.view.animation.AccelerateDecelerateInterpolator
+import com.example.numigoo.GlobalValues.lessonStep
+import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 
 class LessonAdapter(
     private val context: Context,
@@ -37,7 +37,6 @@ class LessonAdapter(
     }
 
     private fun showLessonBottomSheet(item: LessonItem, position: Int) {
-        val lessonItem = LessonManager.getLessonItem(1)
         // Activity'deki view'ları bul
         val activity = context as Activity
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
@@ -69,9 +68,10 @@ class LessonAdapter(
             if(item.stepIsFinish){
                 descriptionText.text = "Ders Tamamlandı"
                 bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
-                titleText.setTextColor(ContextCompat.getColor(context, R.color.white))
-                descriptionText.setTextColor(ContextCompat.getColor(context, R.color.white))
-            }else{
+
+                
+                // Progress bar rengini güncelle
+            } else {
                 descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
                 bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
                 titleText.setTextColor(ContextCompat.getColor(context, R.color.white))
@@ -166,17 +166,20 @@ class LessonAdapter(
                 // Animasyon için slide-in efekti
                 val slideIn = android.R.anim.slide_in_left
                 val slideOut = android.R.anim.slide_out_right
-
-                if(GlobalValues.tutorialIsWorked){
+                item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
+                item.startStepNumber.also { lessonStep = it!! }
+                if(item.tutorialIsFinish){
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, AbacusFragment())
                         .addToBackStack(null)
                         .commit()
                 } else {
+                    //startStepNumber'ı global lessonStep'e atadık
+
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment())
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
                         .addToBackStack(null)
                         .commit()
                 }
@@ -293,6 +296,10 @@ class LessonAdapter(
             animator.start()
         }
 
+        fun updateProgressBarColor(color: Int) {
+            progressBar.setProgressColor(color)
+        }
+
         fun bind(item: LessonItem) {
             when (item.type) {
                 LessonItem.TYPE_CHEST -> {
@@ -311,7 +318,6 @@ class LessonAdapter(
                 LessonItem.TYPE_LESSON -> {
                     val backgroundColor = if (item.isCompleted) {
                         ContextCompat.getColor(context, R.color.lesson_completed)
-
                     } else {
                         ContextCompat.getColor(context, R.color.lesson_locked)
                     }
@@ -328,6 +334,9 @@ class LessonAdapter(
                         3 -> updateProgress((3f / item.stepCount) * 100)
                         4 -> updateProgress((4f / item.stepCount) * 100)
                         else -> progressBar.setProgressValue(0F)
+                    }
+                    if(item.stepIsFinish){
+                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
                     }
                 }
             }

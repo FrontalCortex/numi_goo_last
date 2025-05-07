@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentLessonResultBinding
 import com.example.numigoo.databinding.FragmentTasksBinding
 import com.example.numigoo.model.LessonItem
@@ -31,11 +32,9 @@ class LessonResult : Fragment() {
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
-    private var lessonStep: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lessonStep = arguments?.getInt("lessonStep", 0) ?: 0
     }
 
     override fun onCreateView(
@@ -67,8 +66,9 @@ class LessonResult : Fragment() {
             updateUI()
         }
         binding.claimButton.setOnClickListener {
-            val lessonItem = LessonManager.getLessonItem(1)
 
+            val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+            lessonItem?.tutorialIsFinish = true
             val chestFragment = ChestFragment()
             val args = Bundle().apply {
                 putFloat("successRate", succsessRate)

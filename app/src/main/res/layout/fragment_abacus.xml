@@ -7,7 +7,9 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="#222"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/lottieView"
@@ -621,5 +623,65 @@
             app:layout_constraintTop_toBottomOf="@id/correctText" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout
+        android:id="@+id/hintContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="20dp"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
+        app:layout_constraintTop_toBottomOf="@id/blackboardImage">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clipChildren="true"
+            android:clipToPadding="true"
+            android:layout_gravity="center">
+            <TextView
+                android:id="@+id/tvHint"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:background="@drawable/hint_background"
+                android:textColor="@android:color/white"
+                android:layout_marginEnd="35dp"
+                android:paddingLeft="10dp"
+                android:clipChildren="true"
+                android:clipToPadding="true"
+                android:paddingRight="20dp"
+                android:text="Toplamaya 2. sayının en büyük basamağından başla"
+                android:visibility="visible"
+                android:textSize="16sp"
+                app:layout_constraintStart_toStartOf="parent"
+                />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/fabHint"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/fab_background"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            android:translationZ="3dp"
+            android:padding="5dp"
+            app:lottie_rawRes="@raw/lesson_hint_ic"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="-25dp" />
+    </FrameLayout>
+    <View
+        android:id="@+id/fabHintTouchArea"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="20dp"
+        android:background="@android:color/transparent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="-15dp"
+        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
+        app:layout_constraintTop_toBottomOf="@id/blackboardImage"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -20,7 +20,12 @@ data class LessonItem(
     var lessonOperationsMap: Int? = null,
     val stepCompletionStatus: List<Boolean> = List(stepCount) { false },// Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
-    var stepIsFinish: Boolean = false
+    var startStepNumber: Int? = null,
+    var mapFragmentIndex: Int? = null,
+    var stepIsFinish: Boolean = false,
+    var tutorialNumber: Int = 0,
+    var tutorialIsFinish: Boolean = false,
+    var lessonHint: String? = null
 ) {
     companion object {
         const val TYPE_LESSON = 0
