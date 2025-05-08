@@ -11,7 +11,7 @@
     <color name="lesson_header_purple">#B39DDB</color>
     <color name="lesson_header_green">#21D07A</color>
     <color name="lesson_completed">#8FD14F</color>
-    <color name="lesson_locked">#343D43</color>
+    <color name="lesson_locked">#505D66</color>
     <color name="background_color">#21272B</color>
     <color name="circleBackground_color">#383535</color>
     <color name="circleForeground_color">#8A7E18</color>

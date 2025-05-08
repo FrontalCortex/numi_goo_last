@@ -5,14 +5,13 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
-import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MotionEvent
-import android.view.TouchDelegate
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
@@ -30,8 +29,9 @@ import com.airbnb.lottie.LottieAnimationView
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentAbacusBinding
+import com.example.numigoo.model.LessonItem
 import java.io.Serializable
-import kotlin.math.log
+
 
 class AbacusFragment : Fragment() {
     private var operations: List<MathOperation> = emptyList()
@@ -123,11 +123,20 @@ class AbacusFragment : Fragment() {
     private lateinit var tvHint: TextView
     private var isHintVisible = false
     private lateinit var fabHintTouchArea: View
+    private var seconds = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var runnable: Runnable
+    private lateinit var timerTextView: TextView
+    private var isTimerStarted = false
+    private lateinit var lessonItem : LessonItem
+    private var currentTime: String = "0:00"
+
 
     private lateinit var binding: FragmentAbacusBinding
     private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
         uploadLessonData()
     }
 
@@ -143,17 +152,12 @@ class AbacusFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         findIDs()
+        //global lessonItem alınıyor
+        timerTextView = binding.timerTextView
         fabHint = binding.fabHint
         tvHint = binding.tvHint
         fabHintTouchArea = binding.fabHintTouchArea
-        fabHintTouchArea.setOnClickListener {
-                if (!isHintVisible) {
-                    showHint()
-                } else {
-                    hideHint()
-                }
-             // veya doğrudan fabHint'in tıklama fonksiyonunu çağır
-        }
+        fubHintClickListener()
         lottieView = binding.lottieView
         correctAnswerText = binding.correctAnswerText
         incorrectPanel = binding.incorrectPanel
@@ -167,10 +171,57 @@ class AbacusFragment : Fragment() {
         showCurrentOperation()
         setupBeads()
         setupQuitButton()
+        timeStarter()
+    }
+    private fun splitTextEqually(text: String): String {
+        val words = text.split(" ")
+        val totalWords = words.size
+
+        // Kelimeleri iki gruba böl
+        val firstLine = words.take(totalWords / 2).joinToString(" ")
+        val secondLine = words.drop(totalWords / 2).joinToString(" ")
+
+        return "$firstLine\n$secondLine"
+    }
+    @SuppressLint("SuspiciousIndentation")
+    private fun timeStarter(){
+        if(lessonItem.type == 2)
+        timerTextView.visibility = View.VISIBLE
+            if (!isTimerStarted) {
+                startTimer()
+                isTimerStarted = true
+
+        }
+    }
+    private fun startTimer() {
+        runnable = object : Runnable {
+            override fun run() {
+                seconds++
+                val minutes = seconds / 60
+                val secs = seconds % 60
+                currentTime = String.format("%d:%02d", minutes, secs)
+                timerTextView.text = currentTime
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.post(runnable)
+    }
+
+    private fun stopTimer() {
+        handler.removeCallbacks(runnable)
+    }
+    private fun fubHintClickListener(){
+        fabHintTouchArea.setOnClickListener {
+            if (!isHintVisible) {
+                showHint()
+            } else {
+                hideHint()
+            }
+            // veya doğrudan fabHint'in tıklama fonksiyonunu çağır
+        }
     }
     private fun showHint() {
-        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
-        tvHint.text = lessonItem?.lessonHint
+        tvHint.text = lessonItem.lessonHint?.let { splitTextEqually(it) }
 
         // Play Lottie animation
         fabHint.playAnimation()
@@ -205,16 +256,15 @@ class AbacusFragment : Fragment() {
         isHintVisible = false
     }
     private fun uploadLessonData(){
-        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden LessonItem'de belirtilen indeksteki ders öğesini alıyor
         operations = arguments?.getSerializable("operations") as? List<MathOperation> ?: emptyList()
         if (operations.isEmpty()) {
-            Log.d("AbacusFragment", "stepIsFinish: ${lessonItem?.stepIsFinish}, finishStepNumber: ${lessonItem?.finishStepNumber}, lessonStep: $lessonStep")
-            lessonStep= lessonItem?.startStepNumber!!
+            Log.d("AbacusFragment", "stepIsFinish: ${lessonItem.stepIsFinish}, finishStepNumber: ${lessonItem?.finishStepNumber}, lessonStep: $lessonStep")
+            lessonStep= lessonItem.startStepNumber!!
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
             Log.d("AbacusFragment", "Using lessonStep: $currentLessonStep")
             
-            if(lessonItem?.stepIsFinish == true){
+            if(lessonItem.stepIsFinish){
                 operations = MapFragment.getLessonOperations(lessonItem.finishStepNumber!!)
             } else {
                 operations = MapFragment.getLessonOperations(currentLessonStep)
@@ -1545,7 +1595,12 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                showLessonResult()
+                                if(lessonItem.type == 2){
+                                    showChestResult()
+                                }
+                                else{
+                                    showLessonResult()
+                                }
                             }
                             true
                         }
@@ -1601,8 +1656,12 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                Log.d("ronaldo", "Yanlış cevap - showLessonResult çağrılıyor")
-                                showLessonResult()
+                                if(lessonItem.type == 2){
+                                    showChestResult()
+                                }
+                                else{
+                                    showLessonResult()
+                                }
                             }
                             true
                         }
@@ -1652,6 +1711,38 @@ class AbacusFragment : Fragment() {
                 .replace(R.id.resultFragmentContainer, lessonResultFragment)
                 .commit()
         }
+
+    }
+    private fun showChestResult() {
+        val chestResultFragment = ChestResult()
+
+        // Başarı oranını hesapla
+        val successRate = if (totalQuestions > 0) {
+            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        } else {
+            0f
+        }
+
+        val args = Bundle().apply {
+            putInt("correctAnswers", correctAnswer)
+            putInt("totalQuestions", totalQuestions)
+            putFloat("successRate", successRate)
+            putString("time",currentTime)
+        }
+        chestResultFragment.arguments = args
+        stopTimer()
+
+        // Önce mevcut fragment'ı kaldır
+        parentFragmentManager.beginTransaction()
+            .remove(this@AbacusFragment)
+            .commit()
+
+        // Sonra yeni fragment'ı ekle
+
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.resultFragmentContainer, chestResultFragment)
+                .commit()
+
 
     }
 

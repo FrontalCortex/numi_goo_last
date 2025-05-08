@@ -13,7 +13,6 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -66,19 +65,27 @@ class LessonAdapter(
 
         if (item.isCompleted) {
             if(item.stepIsFinish){
+                if(item.type == 2){
+                    actionButton.text = "Tekrar dene"
+                }
+                else{
+                    actionButton.text = "Gözden geçir"
+                }
                 descriptionText.text = "Ders Tamamlandı"
                 bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                actionButton.apply {
+                    setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
+                }
 
                 
                 // Progress bar rengini güncelle
             } else {
                 descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
                 bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
-                titleText.setTextColor(ContextCompat.getColor(context, R.color.white))
-                descriptionText.setTextColor(ContextCompat.getColor(context, R.color.white))
 
                 actionButton.apply {
                     text = "-5                           BAŞLAT"
+                    textAlignment = View.TEXT_ALIGNMENT_TEXT_START  // veya
                     // Beyaz, köşeleri yuvarlatılmış
                     actionButton.setBackgroundColor(context.getColor(R.color.white))
                     setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
@@ -94,6 +101,7 @@ class LessonAdapter(
             bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.background_color)
 
             actionButton.text = "KİLİTLİ"
+            actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
             actionButton.setBackgroundColor(context.getColor(R.color.circleBackground_color))
             actionButton.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
             actionButton.isEnabled = false
@@ -303,16 +311,34 @@ class LessonAdapter(
         fun bind(item: LessonItem) {
             when (item.type) {
                 LessonItem.TYPE_CHEST -> {
-                    lessonIcon.setImageResource(R.mipmap.cup_ic)
+                    val backgroundColor = if (item.isCompleted) {
+                        ContextCompat.getColor(context, R.color.lesson_completed)
+                    } else {
+                        ContextCompat.getColor(context, R.color.lesson_locked)
+                    }
+                    lessonCard.setCardBackgroundColor(backgroundColor)
+
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
-                    lessonCard.setCardBackgroundColor(
-                        ContextCompat.getColor(
-                            context,
-                            R.color.lesson_locked
-                        )
-                    )
+                    if(item.stepIsFinish){
+                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                        lessonIcon.setImageResource(item.stepCupIcon)
+                    }else{
+                        lessonIcon.setImageResource(item.stepCupIcon)
+                    }
+                    val completedSteps = item.stepCompletionStatus.count { it }
+                    when (completedSteps) {
+                        1 -> updateProgress((1f / item.stepCount) * 100)
+                        2 -> updateProgress((2f / item.stepCount) * 100)
+                        3 -> updateProgress((3f / item.stepCount) * 100)
+                        4 -> updateProgress((4f / item.stepCount) * 100)
+                        else -> progressBar.setProgressValue(0F)
+                    }
+                    if(item.stepIsFinish){
+                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                    }
+
                 }
 
                 LessonItem.TYPE_LESSON -> {

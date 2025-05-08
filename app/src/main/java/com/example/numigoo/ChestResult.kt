@@ -7,13 +7,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
-import com.example.numigoo.databinding.FragmentLessonResultBinding
-import com.example.numigoo.databinding.FragmentTasksBinding
-import com.example.numigoo.model.LessonItem
+import com.example.numigoo.databinding.FragmentChestResultBinding
 
+class ChestResult : Fragment() {
+    private lateinit var binding: FragmentChestResultBinding
 
-class LessonResult : Fragment() {
-    private lateinit var binding: FragmentLessonResultBinding
+    private var correctAnswers: Int = 0
+    private var totalQuestions: Int = 0
+    private var succsessRate: Float = 0F
+    private var time:String = ""
     private val animations = listOf(
         "animation_one.json",
         "animaton_two.json",
@@ -28,33 +30,23 @@ class LessonResult : Fragment() {
         "animaton_twelve.json",
         "animaton_thirteen.json"
     )
-    private var currentAnimIndex = 0
-    private var correctAnswers: Int = 0
-    private var totalQuestions: Int = 0
-    private var succsessRate: Float = 0F
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentLessonResultBinding.inflate(inflater, container, false)
+        binding = FragmentChestResultBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        GlobalValues.lessonStep++
-        GlobalValues.tutorialIsWorked=true
-
-// Başka bir sınıfta (örneğin LessonResult'ta)
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
+            time = bundle.getString("time","")
+            Log.d("KEKEKE","$time")
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
             } else {
@@ -63,39 +55,28 @@ class LessonResult : Fragment() {
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
         }
-        binding.claimButton.setOnClickListener {
-
-            val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
-            lessonItem?.tutorialIsFinish = true
-            val chestFragment = ChestFragment()
-            val args = Bundle().apply {
-                putFloat("successRate", succsessRate)
-            }
-            if(lessonItem?.stepIsFinish==true){
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, MapFragment())
-                    .remove(this@LessonResult)
-                    .commit()
-            }else{
-                chestFragment.arguments = args
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.resultFragmentContainer, chestFragment)
-                    .commit()
-            }
-
-        }
-
-        // Animasyonları başlat
         showRandomAnimation()
-
-
+        continueFragment()
     }
 
+    private fun continueFragment(){
+        binding.claimButton.setOnClickListener {
+            val args = Bundle().apply {
+                putString("time",time)
+            }
+            val cupFragment = CupFragment()
+            cupFragment.arguments = args
 
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.resultFragmentContainer, cupFragment)
+                .commit()
+        }
+    }
     private fun updateUI() {
         // Örnek: Doğru cevap sayısını göster
         succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions.toFloat()) * 100) else 0f
         binding.successRate.text = "${succsessRate.toInt()}%"
+        binding.totalTime.text = time
 
         // Başarı durumuna göre farklı animasyon gösterebilirsiniz
         /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı
@@ -105,12 +86,10 @@ class LessonResult : Fragment() {
         }
         binding.lottieView.playAnimation()*/
     }
-
     private fun showRandomAnimation() {
         val randomAnim = animations.random()
         binding.lottieView.setAnimation(randomAnim)
         binding.lottieView.playAnimation()
     }
-
 
 }

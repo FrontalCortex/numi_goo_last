@@ -88,7 +88,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(3, 1),
+                    MathOperationGenerator.generateRelatedNumbers(3, 2),
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
                 )
                 6 -> listOf(
@@ -247,7 +247,7 @@ class MapFragment : Fragment() {
                 tutorialNumber = 1,
                 startStepNumber = 1,
                 mapFragmentIndex = 1,
-                lessonHint = getString(R.string.lesson_hint_step2)
+                lessonHint = getString(R.string.lesson_hint_step1)
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -258,16 +258,23 @@ class MapFragment : Fragment() {
                 currentStep = 1,
                 tutorialNumber = 2,
                 startStepNumber = 4,
-                mapFragmentIndex = 2
+                mapFragmentIndex = 2,
+                finishStepNumber = 7,
+                lessonHint = getString(R.string.lesson_hint_step2)
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
                 title = "Ünite Değerlendirme",
                 offset = 0,
-                isCompleted = false,
-                stepCount = 0,
+                isCompleted = true,
+                stepCount = 1,
                 currentStep = 1,
-                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+                mapFragmentIndex = 3,
+                finishStepNumber = 7,
+                startStepNumber = 7,
+                tutorialIsFinish = true,
+                lessonHint = getString(R.string.lesson_hint_step3)
+
             ),
             LessonItem(
                 type = LessonItem.TYPE_HEADER,
@@ -283,9 +290,13 @@ class MapFragment : Fragment() {
                 type = LessonItem.TYPE_LESSON,
                 title = "Basit 5'lik toplama",
                 offset = -30,
-                isCompleted = false,
+                isCompleted = true,
                 stepCount = 4,
                 currentStep = 1,
+                tutorialNumber = 3,
+                startStepNumber = 8,
+                mapFragmentIndex = 5,
+
 
             ),
             LessonItem(

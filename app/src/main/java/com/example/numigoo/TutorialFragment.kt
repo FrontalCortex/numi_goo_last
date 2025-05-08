@@ -106,6 +106,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var focusView: View
     private var tutorialSteps: List<TutorialStep> = emptyList()
     private var tutorialSteps2: List<TutorialStep> = emptyList()
+    private var tutorialSteps3: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -745,6 +746,227 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),TutorialStep(
                 "Bakalım senin için hazırladığım testi çözebilecek misin ?"
             ))
+        tutorialSteps3 = listOf(
+            TutorialStep(
+                "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin.",
+
+            ),
+            TutorialStep(
+                "5'lik toplama",
+
+            ),TutorialStep(
+                "5’lik toplama kuralında ekleyeceğimiz sayıların 5’e tamamlayan kardeşleri vardır.",
+
+            ),TutorialStep(
+                "1’in kardeşi 4’tür.",
+
+            ),TutorialStep(
+                "2’nin kardeşi 3",
+
+            ),TutorialStep(
+                "3’ün kardeşi 2",
+
+            ),TutorialStep(
+                "4’ün kardeşi 1’dir",
+
+            ),TutorialStep(
+                "Örneğin bu işlemi yapmaya çalışalım.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "İlk olarak abaküse ilk sayıyı yazıyoruz.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Ama 1'i doğrudan ekleyemiyoruz.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "O yüzden burada 5'lik toplama kuralını uygulayacağız.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "1'in kardeşi 4'tür",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 4 gider.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 4 gider.",
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 5.",
+            ),TutorialStep(
+                "Bu işlemi ele alalım.",
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Önce abaküse 4'ü yazıyoruz.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Sonrasında 2'yi ekleyeceğiz. Ama 2'yi doğrudan ekleyemiyoruz.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "2'nin kardeşi 3'tür.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 3 gider.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 3 gider.",questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 6.",
+            ),TutorialStep(
+                "Bu işlemi ele alalım.",
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Önce abaküse  3'ü yazıyoruz.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Sonrasında 3'ü ekleyeceğiz. Ama 3'ü doğrudan ekleyemiyoruz.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "3'nin kardeşi 2'dir.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 2 gider.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 2 gider.",questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 6.",
+            ),TutorialStep(
+                "Son olarak bu işlemi ele alalım.",
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Önce abaküse  2'yi yazıyoruz.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Sonrasında 4'ü ekleyeceğiz. Ama 4'ü doğrudan ekleyemiyoruz.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "4'ün kardeşi 1'dir.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 1 gider.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 1 gider.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 6.",questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu kural her basamak için aynıdır.",
+            ),TutorialStep(
+                "Bu işlemde de aynı kuralı uygularız.",
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "30'u abaküse yazıyoruz.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "40'ı doğrudan ekleyemiyoruz.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "4'ün kardeşi 1'dir.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 1 gider.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 1 gider.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 70.",questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Beraber örnek yaparak pekiştirelim.",
+            ),TutorialStep(
+                "Önce abaküse ilk sayıyı yazalım.",
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "Sonrasında 4'ü ekleyelim.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "4'ün kardeşi 1'dir.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gelir.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Kardeşi 1 gider.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Ve cevap 8.",questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi öğrendiklerini uygulama zamanı.",
+            )
+        )
     }
 
     private fun applyWidgetOperations(operations: List<WidgetOperation>) {

@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import com.example.numigoo.AbacusFragment
 import com.example.numigoo.TutorialFragment
 import com.example.numigoo.MapFragment
+import com.example.numigoo.R
 
 data class LessonItem(
     val type: Int,
@@ -25,7 +26,8 @@ data class LessonItem(
     var stepIsFinish: Boolean = false,
     var tutorialNumber: Int = 0,
     var tutorialIsFinish: Boolean = false,
-    var lessonHint: String? = null
+    var lessonHint: String? = null,
+    var stepCupIcon: Int = R.drawable.cup_ic
 ) {
     companion object {
         const val TYPE_LESSON = 0
