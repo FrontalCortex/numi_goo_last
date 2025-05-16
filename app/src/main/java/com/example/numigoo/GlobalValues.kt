@@ -7,6 +7,7 @@ object GlobalValues {
     var mapFragmentStepIndex: Int = 1
     var stepIndex=0
     var tutorialIsWorked = false
+    var scrollPosition = 0  // Scroll pozisyonunu global olarak tutacak değişken
     fun randomNumberChangeToString(digitCount: Int): String{
 
         // Minimum ve maksimum değerleri hesapla

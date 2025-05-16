@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.example.numigoo.databinding.FragmentChestBinding
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 
@@ -71,18 +72,25 @@ class ChestFragment : Fragment() {
             }
         }
 
-        binding.claimRewardButton.setOnClickListener {
-            // Önce MapFragment'ı aç
-            updateMapProgress()
+        setupClaimRewardButton()
+    }
 
+    private fun setupClaimRewardButton() {
+        binding.claimRewardButton.setOnClickListener {
+            // Önce map progress'i güncelle
+            updateMapProgress()
+            
+            // Abacus container'daki fragment'ı kaldır
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, MapFragment())
+                .setCustomAnimations(
+                    R.anim.slide_in_left,  // Giriş animasyonu
+                    R.anim.slide_out_left // Çıkış animasyonu
+                )
                 .remove(this@ChestFragment)
                 .commit()
-
-            // Sonra altın miktarını güncelle ve fragment'ları temizle
+                
+            // Gold miktarını güncelle
             goldUpdateListener?.onGoldUpdated(goldAmount)
-            parentFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
         }
     }
 

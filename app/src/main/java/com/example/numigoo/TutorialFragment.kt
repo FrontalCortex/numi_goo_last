@@ -107,6 +107,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps: List<TutorialStep> = emptyList()
     private var tutorialSteps2: List<TutorialStep> = emptyList()
     private var tutorialSteps3: List<TutorialStep> = emptyList()
+    private var tutorialSteps4: List<TutorialStep> = emptyList()
+    private var tutorialSteps5: List<TutorialStep> = emptyList()
+    private var tutorialSteps6: List<TutorialStep> = emptyList()
+    private var tutorialSteps7: List<TutorialStep> = emptyList()
+    private var tutorialSteps8: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -143,6 +148,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         currentTutorialSteps = when (tutorialNumber) {
             1 -> tutorialSteps
             2 -> tutorialSteps2
+            3 -> tutorialSteps3
+            4 -> tutorialSteps4
+            5 -> tutorialSteps5
+            6 -> tutorialSteps6
+            7 -> tutorialSteps7
+            8 -> tutorialSteps8
             else -> tutorialSteps
         }
         setupTutorial()
@@ -152,7 +163,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun setupTutorial() {
         if(currentStep == currentTutorialSteps.size){
-            Log.d("pervane","çal")
             return
         }
         // İlk adımı göster
@@ -172,7 +182,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             if (currentStep < currentTutorialSteps.size - 1 && getCurrentStep().nextStepAvailable) {
                 currentStep++
                 getCurrentStep().onStepComplete?.invoke()
-                Log.d("Fonk","Çalıştı")
                 backOrFront = true
                 showStep(currentStep)
             }
@@ -192,6 +201,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.tutorialText.text = step.text
         binding.questionText.text = step.questionText
         binding.questionText.visibility = step.questionTextVisibility
+        when (tutorialNumber) {
+            3 -> binding.fiveRuleTable.visibility = step.rulesPanelVisibility
+            5 -> binding.tenRuleTable.visibility = step.rulesPanelVisibility
+            6 -> binding.tenRuleTable.visibility = step.rulesPanelVisibility
+            7 -> binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
+            8 -> binding.BeadRuleTable.visibility = step.rulesPanelVisibility
+            else -> View.GONE
+        }
         answerNumber=step.answerNumber
         setupBeads()
         if(getCurrentStep().abacusClickable){
@@ -321,7 +338,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 disableAllClickable(binding.abacusLinear)
                 currentStep--
                 backOrFront = false
-                resetAbacus()
+                if(currentTutorialSteps[currentStep].abacusClickable){
+                    resetAbacus()
+                }
                 showStep(currentStep)
                 binding.devamButton.visibility = View.GONE
                 binding.abacusLinear.visibility = View.VISIBLE
@@ -749,77 +768,93 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         tutorialSteps3 = listOf(
             TutorialStep(
                 "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin.",
-
+                rulesPanelVisibility = View.INVISIBLE
             ),
             TutorialStep(
                 "5'lik toplama",
+                rulesPanelVisibility = View.INVISIBLE
 
             ),TutorialStep(
                 "5’lik toplama kuralında ekleyeceğimiz sayıların 5’e tamamlayan kardeşleri vardır.",
 
             ),TutorialStep(
                 "1’in kardeşi 4’tür.",
-
             ),TutorialStep(
                 "2’nin kardeşi 3",
-
             ),TutorialStep(
                 "3’ün kardeşi 2",
-
             ),TutorialStep(
                 "4’ün kardeşi 1’dir",
-
             ),TutorialStep(
                 "Örneğin bu işlemi yapmaya çalışalım.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
 
             ),TutorialStep(
                 "İlk olarak abaküse ilk sayıyı yazıyoruz.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
 
             ),TutorialStep(
                 "Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "Ama 1'i doğrudan ekleyemiyoruz.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "O yüzden burada 5'lik toplama kuralını uygulayacağız.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "1'in kardeşi 4'tür",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "5 gelir.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "5 gelir.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 4 gider.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "Kardeşi 4 gider.",
                 questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
             ),TutorialStep(
                 "Cevap 5.",
             ),TutorialStep(
                 "Bu işlemi ele alalım.",
                 questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
             ),TutorialStep(
                 "Önce abaküse 4'ü yazıyoruz.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
             ),TutorialStep(
                 "Sonrasında 2'yi ekleyeceğiz. Ama 2'yi doğrudan ekleyemiyoruz.",questionText = "4 + 2",
                 questionTextVisibility = View.VISIBLE
@@ -834,22 +869,40 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "5 gelir.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
             ),TutorialStep(
                 "Kardeşi 3 gider.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+
             ),TutorialStep(
                 "Kardeşi 3 gider.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
             ),TutorialStep(
                 "Cevap 6.",
             ),TutorialStep(
                 "Bu işlemi ele alalım.",
                 questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                )
+
             ),TutorialStep(
                 "Önce abaküse  3'ü yazıyoruz.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1))
+
             ),TutorialStep(
                 "Sonrasında 3'ü ekleyeceğiz. Ama 3'ü doğrudan ekleyemiyoruz.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE
@@ -857,29 +910,43 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
-                "3'nin kardeşi 2'dir.",questionText = "3 + 3",
+                "3'ün kardeşi 2'dir.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "5 gelir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+
             ),TutorialStep(
                 "5 gelir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 2 gider.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Kardeşi 2 gider.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2))
+
             ),TutorialStep(
                 "Cevap 6.",
             ),TutorialStep(
                 "Son olarak bu işlemi ele alalım.",
                 questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                )
             ),TutorialStep(
                 "Önce abaküse  2'yi yazıyoruz.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1))
             ),TutorialStep(
                 "Sonrasında 4'ü ekleyeceğiz. Ama 4'ü doğrudan ekleyemiyoruz.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE
@@ -894,18 +961,26 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "5 gelir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2))
             ),TutorialStep(
                 "Cevap 6.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Bu kural her basamak için aynıdır.",
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                )
             ),TutorialStep(
                 "Bu işlemde de aynı kuralı uygularız.",
                 questionText = "30 + 40",
@@ -913,7 +988,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),TutorialStep(
                 "30'u abaküse yazıyoruz.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1))
             ),TutorialStep(
                 "40'ı doğrudan ekleyemiyoruz.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE
@@ -925,29 +1004,41 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "5 gelir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "5 gelir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 2))
             ),TutorialStep(
                 "Cevap 70.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Beraber örnek yaparak pekiştirelim.",
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4))
             ),TutorialStep(
                 "Önce abaküse ilk sayıyı yazalım.",
                 questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                answerNumber = 4,
+                abacusClickable = true,
 
-            ),TutorialStep(
+
+                ),TutorialStep(
                 "Sonrasında 4'ü ekleyelim.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
             ),TutorialStep(
                 "Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.",questionText = "4 + 4",
                 questionTextVisibility = View.VISIBLE
@@ -956,15 +1047,1496 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "5 gelir.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
-            ),TutorialStep(
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                answerNumber = 9,
+                abacusClickable = true,
+
+                ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
-            ),TutorialStep(
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                answerNumber = 8,
+                abacusClickable = true,
+
+                ),TutorialStep(
                 "Ve cevap 8.",questionText = "4 + 4",
                 questionTextVisibility = View.VISIBLE
             ),TutorialStep(
                 "Şimdi öğrendiklerini uygulama zamanı.",
+            )
+        )
+        tutorialSteps4 = listOf(
+            TutorialStep(
+                "İki basamaklı sayılarda eklenecek sayının büyük basamağından başlanır.",
+            ),TutorialStep(
+                "Bu örneğe bakalım.",
+                questionText = "22 + 31",
+                questionTextVisibility = View.VISIBLE,
+
+            ),TutorialStep(
+                "İlk sayıyı abaküse yazıyoruz.",
+                questionText = "22 + 31",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1))
+            ),TutorialStep(
+                "Sonrasında 31 sayısını en büyük basamağından başlayarak ekliyoruz.",
+                questionText = "22 + 31",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu şekilde en küçük basamağa doğru ilerliyoruz.",
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_top", 3)),
+                questionText = "22 + 31",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Cevap 53.",
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
+                questionText = "22 + 31",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi senin sıran.",
+
+            )
+        )
+        tutorialSteps5 = listOf(
+            TutorialStep(
+                "Bu derste 10'luk toplamayı öğreneceğiz.",
+                rulesPanelVisibility = View.INVISIBLE
+            ),TutorialStep(
+                "10’luk toplamayı 5 ekleyemediğimiz zamanlar uygularız.",
+                rulesPanelVisibility = View.INVISIBLE
+            ),TutorialStep(
+                "Örneğin bu işlemde.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                )
+
+            ),TutorialStep(
+                "9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE
+
+            ),TutorialStep(
+                "Hemde 5’lik kuralı uygulamak için ekleyeceğim 5’lik boncuk yok.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE
+
+            ),TutorialStep(
+                "Yani 1'in kardeşi 4. Ama 5 gelir 4 gider diyemiyoruz.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE
+
+            ),TutorialStep(
+                "Bu durumda büyük kardeşler devreye giriyor.",
+                rulesPanelVisibility = View.INVISIBLE
+            ),TutorialStep(
+                "Büyük kardeşler sayıları 10’a tamamlar.",
+                rulesPanelVisibility = View.INVISIBLE
+
+            ),TutorialStep(
+                "10 gelir büyük kardeş gider.",
+                rulesPanelVisibility = View.INVISIBLE
+
+            ),TutorialStep(
+                "1’in büyük kardeşi 9’dur.",
+
+            ),TutorialStep(
+                "2’nin büyük kardeşi 8’dir.",
+            ),TutorialStep(
+                "3’ün büyük kardeşi 7’dir.",
+            ),TutorialStep(
+                "4’ün büyük kardeşi 6’dır.",
+            ),TutorialStep(
+                "5’in büyük kardeşi 5’tir.",
+            ),TutorialStep(
+                "Bu işleme tekrar bakalım.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi 1 eklemek istiyorum.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Önce doğrudan ekleyebilir miyim diye bakıyorum ama aşağıda ekstra boncuk yok.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf( { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
+
+                    { WidgetOperation.AnimateMargin(
+                        view = focusView,
+                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                        toMarginRight = 0,
+                        fromMarginLeft = 0,
+                        toMarginLeft = 0,
+                        duration = 200
+                    ) },
+                    {
+                        WidgetOperation.ChangeConstraints(
+                            view = focusView,
+                            topToTop = R.id.guideline2
+                            // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
+                        )
+                    },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(60),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(180),
+                            duration = 400
+                        )
+                    }),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),TutorialStep(
+                "5'lik kuralı uygulamak için yukarı bakıyorum ama yukarıda da ekleyebileceğim boncuk yok.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf({ WidgetOperation.ChangeMargin(focusView, 0, 0) },
+                {
+                    WidgetOperation.ChangeConstraints(
+                        view = focusView,
+                        topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
+                        bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                    )
+                },
+                {
+                    WidgetOperation.AnimateSize(
+                        view = focusView,
+                        fromWidth = focusView.width,
+                        toWidth = dpToPx(60),
+                        fromHeight = focusView.height,
+                        toHeight = dpToPx(100),
+                        duration = 400
+                    )
+                })
+
+            ),TutorialStep(
+                "O zaman son seçenek olan 10'luk kurala geçiyorum.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf { WidgetOperation.ChangeVisibility(focusView, View.GONE) },
+
+                ),TutorialStep(
+                "10 gelir.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+
+                ),TutorialStep(
+                "10 gelir.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                        BeadAnimation(this, "rod3_bead_bottom1", 1))
+            ),TutorialStep(
+                "1’in büyük kardeşi olan 9 gider.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "1’in büyük kardeşi olan 9 gider.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Cevap 10.",
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Aynısını bu işlem için yapacak olsaydık",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2))
+            ),TutorialStep(
+                "8 abaküse yazılır.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                )
+            ),TutorialStep(
+                "2'yi doğrudan veya 5'lik kural ile ekleyebilir miyim ? Diye kontrol edilir.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "İkiside yapılamadığı için 10'luk kural uygulanır.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "2’nin büyük kardeşi 8 gider.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "2’nin büyük kardeşi 8 gider.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Cevap 10.",
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu işlem için",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2))
+            ),TutorialStep(
+                "9 abaküse yazılır.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                )
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+            ),TutorialStep(
+                "3’ün büyük kardeşi 7 gider.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "3’ün büyük kardeşi 7 gider.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Cevap 12.",
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+
+            ),TutorialStep(
+                "Bu işlem için",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                )
+            ),TutorialStep(
+                "7 abaküse yazılır.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                )
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                )
+            ),TutorialStep(
+                "4’ün büyük kardeşi 6 gider.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "4’ün büyük kardeşi 6 gider.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Cevap 11.",
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+
+                )
+            ,TutorialStep(
+                "Bu işlem için",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                )
+            ),TutorialStep(
+                "6 abaküse yazılır.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                )
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                )
+            ),TutorialStep(
+                "5’in büyük kardeşi 5 gider.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5’in büyük kardeşi 5 gider.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Ve cevap 11.",
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+
+            ),TutorialStep(
+                "Bu örneği beraber yapalım.",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                )
+            ),TutorialStep(
+                "İlk sayıyı abaküse yazalım.",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                answerNumber = 18,
+                abacusClickable = true
+
+            ),TutorialStep(
+                "Şimdi ise 4'ü doğrudan mı ? 5'lik kuralla mı ? Yoksa 10'luk kuralla mı ? Ekleyeceğimize karar verelim.",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Ve ekleyelim",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                answerNumber = 22,
+                abacusClickable = true
+            ),TutorialStep(
+                "Çok güzel. Göründüğünden kolaymış değil mi ?",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi kendini ispatlama zamanı.",
+            )
+        )
+        tutorialSteps6 = listOf(
+            TutorialStep(
+                "10’luk toplamada “10 gelir” işlemini yaparken 5’lik veya 10’luk kuralı kullanmamız gerekebilir.",
+            ),TutorialStep(
+                "Örnek olarak bu işlemde.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                )
+
+            ),TutorialStep(
+                "49 sayısına 5 eklemek istiyorum.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 sayısını doğrudan ekleyemiyorum. O zaman 10'luk kural uygulayacağım.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Yapacağım işlem 10 gelir 5'in büyük kardeşi 5 gider.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Fakat onlar basamağına 10’u eklerken doğrudan ekleyemiyorum.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf(
+
+                    {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
+                    {WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = dpToPx(45),
+                            toMarginRight = dpToPx(45),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+
+                )
+            ),TutorialStep(
+                "Böyle olduğunda 5’lik veya 10’luk kurallardan yardım alacağız.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Burada 10 sayısını eklemek için 5’lik kuralı uygulayabilirim. Çünkü yukarıdaki 5’lik boncuğum boşta.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf(
+                    { WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(60),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(100),
+                            duration = 400
+                        )
+                    },
+                    {
+                        WidgetOperation.ChangeConstraints(
+                            view = focusView,
+                            topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
+                            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                        )
+                    }
+                ),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),TutorialStep(
+                "5 gelir. 1'in kardeşi 4 gider.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2)
+                ),
+                widgetOperations = listOf {
+                    WidgetOperation.ChangeVisibility(focusView, View.GONE)},
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),TutorialStep(
+                "Bu şekilde 10’luk kuralındaki 10 gelir adımını gerçekleştirmiş oldum.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE)
+            ,TutorialStep(
+                " Şimdi 5 gider adımını yapıp işlemi sonlandıracağız.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+
+            ),TutorialStep(
+                " Şimdi 5 gider adımını yapıp işlemi sonlandıracağız.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Ve cevap 54.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Yaptığımız işlemleri tekrar edelim.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                )
+            ),TutorialStep(
+                "49’u abaküse yazıyorum.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                )
+
+            ),TutorialStep(
+                "5’i doğrudan ekleyemiyorum. Bu yüzden 10’luk kuralı uygulayacağım.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir 5’in büyük kardeşi 5 gider.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2)
+                )
+
+            ),TutorialStep(
+                "Ve büyük kardeş 5 gider.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Ve büyük kardeş 5 gider.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                )
+            ),TutorialStep(
+                "Cevap 54.",
+                questionText = "49 + 5",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bir de bu örneğe bakalım.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                )
+            ),TutorialStep(
+                "İlk sayıyı abaküse yazıyorum.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3),
+
+                    )
+
+
+            ),TutorialStep(
+                "Şimdi 4 sayısını 10’luk kuralla ekleyeceğim.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir. 4’ün büyük kardeşi 6 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Onlar basamağına 10 gelebilmesi için bu sefer 10’luk kuralı uygulamamız gerekir.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf(
+
+                    { WidgetOperation.AnimateSize(
+                        view = focusView,
+                        fromWidth = focusView.width,
+                        toWidth = dpToPx(60),
+                        fromHeight = focusView.height,
+                        toHeight = dpToPx(250),
+                        duration = 400
+                    )
+                    },
+                    {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
+                    {WidgetOperation.AnimateMargin(
+                        view = focusView,
+                        fromMarginRight = dpToPx(45),
+                        toMarginRight = dpToPx(45),
+                        fromMarginLeft = 0,
+                        toMarginLeft = 0,
+                        duration = 200
+                    )
+                    }
+
+                ),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+            ),TutorialStep(
+                "10 gelir. 1’in büyük kardeşi 9 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                widgetOperations = listOf (
+                    {WidgetOperation.ChangeVisibility(focusView, View.GONE)}),
+                onStep = { view ->
+                    sizeHistory.add(Pair(view.width, view.height))
+                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+                }
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1))
+            ),TutorialStep(
+                "1’in büyük kardeşi 9 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "1’in büyük kardeşi 9 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+
+                    )
+            ),TutorialStep(
+                "Şimdi de 4’ün büyük kardeşi 6’yı götüreceğiz.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi de 4’ün büyük kardeşi 6’yı götüreceğiz.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),TutorialStep(
+                "Ve cevap 102.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Yaptığımız işlemleri tekrar edelim.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2))
+            ),TutorialStep(
+                "98’i abaküse yazıyorum.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3),
+
+                    )
+
+            ),TutorialStep(
+                "4 sayısını 10’luk kuralla ekleyeceğim.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir. 4’ün büyük kardeşi 6 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),)
+            ),TutorialStep(
+                "4’ün büyük kardeşi 6 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "4’ün büyük kardeşi 6 gider.",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),TutorialStep(
+                "Cevap 102. ",
+                questionText = "98 + 4",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Şimdi öğrendiklerini uygulama zamanı.",
+            ),TutorialStep(
+                "Nasıl bir canavar olduğunu onlara göster.",
+            ),
+        )
+        tutorialSteps7 = listOf(
+            TutorialStep(
+                "Bu derste 10’luk kuralın devamını göreceğiz.",
+                rulesPanelVisibility = View.GONE
+
+                ),
+            TutorialStep(
+                "Aslında bir önceki derste gördüğümüz kardeşlerin tersini kullanacağız.",
+                rulesPanelVisibility = View.GONE
+
+                ),
+            TutorialStep(
+                "6'nın kardeşi 4'tür.",
+                ),
+            TutorialStep(
+                "7'nin kardeşi 3",
+
+                ),
+            TutorialStep(
+                "8'in kardeşi 2",
+
+                ),
+            TutorialStep(
+                "9'un kardeşi 1'dir",
+
+                ),TutorialStep(
+                "Bu kuralı abaküse 6,7,8,9 sayılarından herhangi birini ekleyemediğimiz zaman uygulayacağız.",
+
+                ),
+            TutorialStep(
+                "Yani bu işlemi yaparken değil çünkü burada 7’yi kardeşine ihtiyaç duymadan ekleyebiliyoruz.",
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1))
+
+                ),
+            TutorialStep(
+                "Yani bu işlemi yaparken değil çünkü burada 7’yi kardeşine ihtiyaç duymadan ekleyebiliyoruz.",
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1))
+
+            ),TutorialStep(
+                "Ama bu işleme bakacak olursak. Birler basamağında 7 tane boncuğumuz olmadığı için 10'luk kuralı uygulayacağız.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+            ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+                ),
+            TutorialStep(
+                "7’nin kardeşi 3 gider.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                "7’nin kardeşi 3 gider.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+
+                ),
+            TutorialStep(
+                "Cevap 11.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                "Bu işleme bakacak olursak.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+            ),
+            TutorialStep(
+                "6'yı doğrudan ekleyemiyoruz",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE
+
+            ),
+            TutorialStep(
+                    "Bu yüzden 10'luk kuralı uygulayacağız",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "10 gelir",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE
+
+            ),
+            TutorialStep(
+                "10 gelir",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+                ),
+            TutorialStep(
+                "6'nın kardeşi 4 gider.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                "6'nın kardeşi 4 gider.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+                ),
+            TutorialStep(
+                "Cevap 10.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE
+                ),
+            TutorialStep(
+                "Bu işlem için",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1))
+                ),
+            TutorialStep(
+                "8'i doğrudan ekleyemiyoruz.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                " 10 gelir.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE,
+
+
+                ),
+            TutorialStep(
+                " 10 gelir.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+                ),
+            TutorialStep(
+                "Kardeşi 2 gider.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE,
+
+
+                ),
+            TutorialStep(
+                "Kardeşi 2 gider.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2))
+
+                ),
+            TutorialStep(
+                "Cevap 11.",
+                questionText = "3 + 8",
+                questionTextVisibility = View.VISIBLE
+
+                ),
+            TutorialStep(
+                "Bu işlemi beraber yapalım",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2))
+
+                ),
+            TutorialStep(
+                "Abaküse ilk sayıyı yazalım.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 4
+
+                ),
+            TutorialStep(
+                "Şimdi 9'u ekleyeceğiz. 9'u doğrudan mı ? Yoksa 10'luk kuralla mı ekleyeceğimize karar verelim.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE
+                ),
+            TutorialStep(
+                "10'luk kuralla ekleyeceğiz.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE
+                ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 14
+                ),
+            TutorialStep(
+                "9'un kardeşi 1 gider.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 13
+                ),
+            TutorialStep(
+                "Süpersin! Hemen kaptın.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE
+                ),
+            TutorialStep(
+                "Şimdi senin sıran bu soruları kurala uygun çözmeye çalış.",
+
+                )
+        )
+        tutorialSteps8 = listOf(
+            TutorialStep(
+                "Bu derste abaküste toplamanın son kuralı olan boncuk kuralını göreceğiz.",
+                rulesPanelVisibility = View.GONE
+            ),TutorialStep(
+                "Bu kural 6,7,8,9 sayılarıyla toplama yaparken kullanılır.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "Normalde 6 sayısı ile toplama yaparken öğrendiğimiz 2 tane yöntem vardı.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "1. yöntem doğrudan ekleme.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "Örneğin bu işlemi yaparken doğrudan ekleme yaparız. Yani hiçbir kural uygulamadan doğrudan ekleriz.",
+                questionText = "1 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Örneğin bu işlemi yaparken doğrudan ekleme yaparız. Yani hiçbir kural uygulamadan doğrudan ekleriz.",
+                questionText = "1 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
+            ),TutorialStep(
+                "2. yöntem 10’luk kural ile ekleme.",
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+            ),TutorialStep(
+                "Bu işlemde 6’yı doğrudan ekleyemediğimiz için 10’luk kuralı uyguluyorduk. 10 gelir kardeşi 4 gider.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+            ),TutorialStep(
+                "10 gelir.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Kardeşi 4 gider.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "Kardeşi 4 gider.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+
+            ),TutorialStep(
+                "Cevap 10.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "Bu kuralları uygulayamadığımız zamanlarda boncuk kuralını uygularız.",
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2))
+
+            ),TutorialStep(
+                "Örneğin bu işlemde 6’yı doğrudan ekleyemiyoruz.",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
+            ),TutorialStep(
+                "10’luk kuralı uygulamak istesek 10 gelir ama kardeşi 4 gidemez.",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Yani 6,7,8,9 sayılarından herhangi birini eklerken eğer sayının kardeşini götüremiyorsak. O zaman boncuk kuralını uygulayacağız.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "Her bir sayının boncuk kuralı ve 10’luk kuralına örnek vererek pekiştirelim.",
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2))
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayabilirim. Çünkü 6’nın kardeşi 4 gider diyebilirim.",
+                questionText = "4 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayamam. Çünkü 6’nın kardeşi 4 gider diyemem.",
+                questionText = "8 + 6",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+
+
+            ),TutorialStep(
+                "Bu işleminde 10’luk kuralı uygulayabilirim. Çünkü 7’nin kardeşi 3 gider diyebilirim.",
+                questionText = "4 + 7",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayamam. Çünkü 7’nin kardeşi 3 gider diyemem.",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayabilirim. Çünkü 8’in kardeşi 2 gider diyebilirim.",
+                questionText = "2 + 8",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayamam. Çünkü 8’in kardeşi 2 gider diyemem.",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2))
+
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayabilirim. Çünkü 9’un kardeşi 1 gider diyebilirim.",
+                questionText = "4 + 9",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+
+            ),TutorialStep(
+                "Bu işlemde 10’luk kuralı uygulayamam. Çünkü 9’un kardeşi 1 gider diyemem.",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
+
+            ),TutorialStep(
+                "İşte boncuk kuralını bunu diyemediğimiz zamanlar uygulayacağız.",
+                rulesPanelVisibility = View.GONE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+            ),TutorialStep(
+                "Kural şu şekildedir.",
+                rulesPanelVisibility = View.GONE
+
+            ),TutorialStep(
+                "6 için: 1 boncuk gelir. 5 gider. 10 gelir.",
+
+            ),TutorialStep(
+                "7 için: 2 boncuk gelir. 5 gider. 10 gelir.",
+
+            ),TutorialStep(
+                "8 için: 3 boncuk gelir. 5 gider. 10 gelir.",
+
+            ),TutorialStep(
+                "9 için: 4 boncuk gelir. 5 gider. 10 gelir.",
+
+            ),TutorialStep(
+                "Bu kurala göre bu işlemi yapacak olursak",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+
+            ),TutorialStep(
+                "1 boncuk gelir",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "1 boncuk gelir",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1))
+
+            ),TutorialStep(
+                "5 gider",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE
+
+
+            ),TutorialStep(
+                "5 gider",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Cevap 12.",
+                questionText = "6 + 6",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "Bu işlem için.",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),TutorialStep(
+                "2 boncuk gelir",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "2 boncuk gelir",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1))
+            ),TutorialStep(
+                "5 gider ",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "5 gider ",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+            ),TutorialStep(
+                "Cevap 12.",
+                questionText = "5 + 7",
+                questionTextVisibility = View.VISIBLE
+            ),TutorialStep(
+                "Bu işlem için",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),TutorialStep(
+                "3 boncuk gelir",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "3 boncuk gelir",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+            ),TutorialStep(
+                "5 gider",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "5 gider",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Cevap 14.",
+                questionText = "6 + 8",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "Bu işlem için.",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2))
+
+            ),TutorialStep(
+                "4 boncuk gelir",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "4 boncuk gelir",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+
+            ),TutorialStep(
+                "5 gider ",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "5 gider ",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+
+            ),TutorialStep(
+                "10 gelir",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1))
+
+            ),TutorialStep(
+                "Cevap 14.",
+                questionText = "5 + 9",
+                questionTextVisibility = View.VISIBLE
+
+            ),TutorialStep(
+                "Şimdi öğrendiklerimizi uygulayalım.",
+                rulesPanelVisibility = View.GONE
+
             )
         )
     }
@@ -1110,8 +2682,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         var nextStepAvailable: Boolean = true,
         var abacusClickable:Boolean = false,
         val answerNumber: Int = 0,
-        val onStepComplete: (() -> Unit)? = null  // Yeni eklenen fonksiyon parametresi
-    )
+        val onStepComplete: (() -> Unit)? = null,  // Yeni eklenen fonksiyon parametresi
+        val rulesPanelVisibility: Int = View.VISIBLE,
+        )
     private fun stepAnswerAlgorithm(): Boolean {
 
         abacusNumberReturn()

@@ -79,7 +79,8 @@ class LessonResult : Fragment() {
             }else{
                 chestFragment.arguments = args
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.resultFragmentContainer, chestFragment)
+                    .replace(R.id.abacusFragmentContainer, chestFragment)
+                    .remove(this@LessonResult)
                     .commit()
             }
 

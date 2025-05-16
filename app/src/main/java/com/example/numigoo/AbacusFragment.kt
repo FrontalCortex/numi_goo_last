@@ -25,11 +25,13 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.airbnb.lottie.LottieAnimationView
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentAbacusBinding
 import com.example.numigoo.model.LessonItem
+import com.example.numigoo.model.RulesFragment
 import java.io.Serializable
 
 
@@ -130,6 +132,7 @@ class AbacusFragment : Fragment() {
     private var isTimerStarted = false
     private lateinit var lessonItem : LessonItem
     private var currentTime: String = "0:00"
+    private lateinit var rulesBookButton: ImageView
 
 
     private lateinit var binding: FragmentAbacusBinding
@@ -153,6 +156,7 @@ class AbacusFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         findIDs()
         //global lessonItem alınıyor
+        rulesBookButton = binding.rulesBookButton
         timerTextView = binding.timerTextView
         fabHint = binding.fabHint
         tvHint = binding.tvHint
@@ -172,6 +176,19 @@ class AbacusFragment : Fragment() {
         setupBeads()
         setupQuitButton()
         timeStarter()
+        rulesBookButtonClick()
+    }
+    private fun rulesBookButtonClick(){
+        rulesBookButton.setOnClickListener{
+            childFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_down,
+                    0
+                )
+                .replace(R.id.rulesFragmentContainer, RulesFragment())
+                .commit()
+        }
+
     }
     private fun splitTextEqually(text: String): String {
         val words = text.split(" ")
@@ -263,13 +280,13 @@ class AbacusFragment : Fragment() {
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
             Log.d("AbacusFragment", "Using lessonStep: $currentLessonStep")
-            
+
             if(lessonItem.stepIsFinish){
                 operations = MapFragment.getLessonOperations(lessonItem.finishStepNumber!!)
             } else {
                 operations = MapFragment.getLessonOperations(currentLessonStep)
             }
-            
+
             Log.d("AbacusFragment", "Loaded operations size: ${operations.size}")
         }
     }
@@ -436,7 +453,7 @@ class AbacusFragment : Fragment() {
             Log.e("AbacusFragment", "Operations list is empty")
             return
         }
-        
+
         if (currentIndex < operations.size) {
             val currentOperation = operations[currentIndex]
             currentOperation.firstNumber?.let { number ->
@@ -497,15 +514,15 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    private fun closeFragment() {// Fragment'i kapat ve MapFragment'e dön
+    private fun closeFragment() {
+        // BackStack'i temizle ve MapFragment'e dön
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 R.anim.slide_in_left,  // Giriş animasyonu
                 R.anim.slide_out_left // Çıkış animasyonu
             )
-            .remove(this)
+            .remove(this@AbacusFragment)
             .commit()
-
     }
 
     private fun abacusNumberReturn() {
@@ -1696,23 +1713,26 @@ class AbacusFragment : Fragment() {
         }
         lessonResultFalse.arguments = argsFalse
 
-        // Önce mevcut fragment'ı kaldır
-        parentFragmentManager.beginTransaction()
-            .remove(this@AbacusFragment)
-            .commit()
-
-        // Sonra yeni fragment'ı ekle
-        if(successRate<0){
+        // Yeni fragment'ı abacus container'a ekle
+        if(successRate < 0) {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.resultFragmentContainer, lessonResultFalse)
+                .setCustomAnimations(
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.abacusFragmentContainer, lessonResultFalse)
                 .commit()
-        }else{
+        } else {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.resultFragmentContainer, lessonResultFragment)
+                .setCustomAnimations(
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.abacusFragmentContainer, lessonResultFragment)
                 .commit()
         }
-
     }
+
     private fun showChestResult() {
         val chestResultFragment = ChestResult()
 
@@ -1727,23 +1747,19 @@ class AbacusFragment : Fragment() {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
-            putString("time",currentTime)
+            putString("time", currentTime)
         }
         chestResultFragment.arguments = args
         stopTimer()
 
-        // Önce mevcut fragment'ı kaldır
+        // Yeni fragment'ı abacus container'a ekle
         parentFragmentManager.beginTransaction()
-            .remove(this@AbacusFragment)
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+            .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
-
-        // Sonra yeni fragment'ı ekle
-
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.resultFragmentContainer, chestResultFragment)
-                .commit()
-
-
     }
 
 

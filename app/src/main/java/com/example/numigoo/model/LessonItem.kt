@@ -27,7 +27,9 @@ data class LessonItem(
     var tutorialNumber: Int = 0,
     var tutorialIsFinish: Boolean = false,
     var lessonHint: String? = null,
-    var stepCupIcon: Int = R.drawable.cup_ic
+    var stepCupIcon: Int = R.drawable.cup_ic,
+    var cupTime1: String? = null,
+    var cupTime2: String? = null,
 ) {
     companion object {
         const val TYPE_LESSON = 0

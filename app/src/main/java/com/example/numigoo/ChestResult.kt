@@ -68,7 +68,7 @@ class ChestResult : Fragment() {
             cupFragment.arguments = args
 
             parentFragmentManager.beginTransaction()
-                .replace(R.id.resultFragmentContainer, cupFragment)
+                .replace(R.id.abacusFragmentContainer, cupFragment)
                 .commit()
         }
     }

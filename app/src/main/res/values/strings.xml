@@ -5,4 +5,5 @@
     <string name="lesson_hint_step1">Sayıları abaküse en büyük basamaktan başlayarak yaz.</string>
     <string name="lesson_hint_step2">İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla.</string>
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>
+    <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
 </resources>

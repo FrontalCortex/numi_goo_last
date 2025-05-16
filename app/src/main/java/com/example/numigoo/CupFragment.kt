@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentCupBinding
+import com.example.numigoo.model.LessonItem
 
 class CupFragment : Fragment() {
     private lateinit var binding: FragmentCupBinding
@@ -25,6 +26,8 @@ class CupFragment : Fragment() {
     private lateinit var cupImageView: ImageView
     private lateinit var cupName: TextView
     private lateinit var motivationText: TextView
+    private lateinit var lessonItem : LessonItem
+
     private var icon: Int = 0
 
     override fun onCreateView(
@@ -37,6 +40,7 @@ class CupFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
         cupImageView = binding.cupImageView
         cupName = binding.cupNameTextView
         motivationText = binding.motivationTextView
@@ -65,7 +69,7 @@ class CupFragment : Fragment() {
         }
     }
     private fun ChangeCupIcon(){
-        if (targetTime < "1:30") {
+        if (targetTime < lessonItem.cupTime1.toString()) {
             icon= R.drawable.cup_ic3
             cupName.text = "Bilgelik Kupası"
             val cupMotivation = listOf("Tüm sorular senin zekânla boy ölçüştü, ama kazanan sensin",
@@ -73,7 +77,7 @@ class CupFragment : Fragment() {
                 "Bu seviye, sadece çok çalışanların ulaşabildiği yer.",
                 "Sen artık bu konunun ustasısın – neyi başaramazsın ki?",)
             motivationText.text = cupMotivation.random()
-        } else if (targetTime < "2:00") {
+        } else if (targetTime < lessonItem.cupTime2.toString()) {
             icon = R.drawable.cup_ic2
             cupName.text = "Usta Kupası"
             val cupMotivation = listOf("Gerçek ustalık; bilgi, sabır ve kararlılıkla gelir. Tebrikler!",

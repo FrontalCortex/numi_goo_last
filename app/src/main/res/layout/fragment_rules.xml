@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".model.RulesFragment"
+    android:background="@drawable/result_box_green"
+    android:backgroundTint="#333C42"
+    >
+    <ImageButton
+        android:id="@+id/quitButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="-5dp"
+        android:elevation="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/fiveRuleTableLinearLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5'lik kural"
+                android:layout_gravity="center"
+                android:textColor="@color/lesson_header_green"
+                android:textAlignment="center"
+                android:textSize="16sp">
+
+            </TextView>
+            <TableLayout
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:background="#222"
+                android:padding="2dp">
+
+                <TableRow>
+                    <TextView
+                        android:text="Eklenecek sayı"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="Kardeşi"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+            </TableLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/tenRuleFiveTableLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center"
+
+            android:layout_marginTop="20dp"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10'luk kural 1-2-3-4-5"
+                android:layout_gravity="center"
+                android:textColor="@color/lesson_header_green"
+                android:textAlignment="center"
+                android:textSize="16sp">
+
+            </TextView>
+            <TableLayout
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:background="#222"
+                android:padding="2dp">
+
+                <TableRow>
+                    <TextView
+                        android:text="Eklenecek sayı"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="Büyük Kardeşi"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+
+                    <TextView
+                        android:text="9"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="8"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="7"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="6"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+                <TableRow>
+                    <TextView
+                        android:text="5"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="5"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+            </TableLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/tenRuleTableLinearLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10'luk kural 6-7-8-9"
+                android:layout_gravity="center"
+                android:textColor="@color/lesson_header_green"
+                android:textAlignment="center"
+                android:textSize="16sp">
+
+            </TextView>
+            <TableLayout
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:background="#222"
+                android:padding="2dp">
+
+                <TableRow>
+                    <TextView
+                        android:text="Eklenecek sayı"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="Kardeşi"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="6"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="7"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="9"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+            </TableLayout>
+
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/BeadRuleTable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Boncuk kuralı"
+                android:layout_gravity="center"
+                android:textColor="@color/lesson_header_green"
+                android:textAlignment="center"
+                android:textSize="16sp">
+
+            </TextView>
+            <TableLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:layout_marginHorizontal="50dp"
+                android:background="#222"
+                android:padding="2dp">
+
+                <TableRow>
+                    <TextView
+                        android:text="Eklenecek sayı"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="İşlem"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="6"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+
+                    <TextView
+                        android:text="1 gelir - 5 gider - 10 gelir"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="7"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="2 gelir - 5 gider - 10 gelir"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="3 gelir - 5 gider - 10 gelir"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="9"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="4 gelir - 5 gider - 10 gelir"
+                        android:textColor="#fff"
+                        android:padding="2dp"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+            </TableLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+
+</ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
