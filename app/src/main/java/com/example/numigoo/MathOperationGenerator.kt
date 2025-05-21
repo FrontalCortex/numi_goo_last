@@ -186,6 +186,8 @@ object MathOperationGenerator {
         // İlk sayının onlar basamağı (0, 4 ve 9 hariç)
         val tensDigit = listOf(1, 2, 3, 5, 6, 7, 8).random()
 
+        val random = Random()
+
         // İlk sayının birler basamağı (5,6,7,8,9)
         val onesDigit = (5..9).random()
 
@@ -196,9 +198,9 @@ object MathOperationGenerator {
         val secondNumber = when (onesDigit) {
             5 -> 5
             6 -> (4..5).random()
-            7 -> if (Math.random() < 0.5) 3 else (3..5).random()
-            8 -> if (Math.random() < 0.5) 2 else (2..5).random()
-            9 -> if (Math.random() < 0.5) 1 else (1..5).random()
+            7 -> if (random.nextBoolean()) 3 else (4..5).random()
+            8 -> if (random.nextBoolean()) 2 else (3..5).random()
+            9 -> if (random.nextBoolean()) 1 else (2..5).random()
             else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
         }
 
@@ -363,5 +365,57 @@ object MathOperationGenerator {
     //Ünite değerlendirmeye eklenecek bu yapı 2'ye 2 3'e 3 olarak sorulsa kıyak
 
     //Şimdi 2 basamaklıya 2 basamaklı toplama gelsin. Kuralsız Kurallı hepsi olabilir. Önce adım 2 eklensin ondan sonra bu dediğim eklensin.
+    fun generateMathOperationBeadRule(): MathOperation { //boncuk kuralı
+        // İlk sayının onlar basamağı (0, 4 ve 9 hariç)
+        val tensDigit = listOf(1, 2, 3, 5, 6, 7, 8).random()
+
+        // İlk sayının birler basamağı (5,6,7,8,9)
+        val onesDigit = (5..8).random()
+
+        val random = Random()
+
+        // İlk sayıyı oluştur
+        val firstNumber = tensDigit * 10 + onesDigit
+
+        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
+        val secondNumber = when (onesDigit) {
+            8 -> 6
+            7 -> (6..7).random()
+            6 -> if (random.nextBoolean()) 8 else (6..7).random()
+            5 -> if (random.nextBoolean()) 9 else (6..8).random()
+            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+        }
+
+        return MathOperation(firstNumber, "+", secondNumber)
+    }
+
+    fun generateMathOperationWithDigitsBeadRule(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
+        // İlk sayıyı oluştur
+        var firstNumber = 0
+        for (i in 0 until firstNumberDigits) {
+            val digit = listOf(5, 6, 7, 8).random() // Sadece 5,6,7,8 sayılarından seçim yap
+            firstNumber = firstNumber * 10 + digit
+        }
+
+        // İkinci sayıyı oluştur
+        var secondNumber = 0
+        val firstNumberStr = firstNumber.toString()
+
+        for (i in 0 until secondNumberDigits) {
+            val currentDigit = firstNumberStr[i].toString().toInt()
+            val possibleDigits = when (currentDigit) {
+                5 -> listOf(6, 7, 8, 9)
+                6 -> listOf(6, 7, 8)
+                7 -> listOf(6, 7)
+                8 -> listOf(6)
+                else -> listOf(6, 7, 8, 9) // Bu duruma hiç girmeyecek ama yine de yazdım
+            }
+
+            val digit = possibleDigits.random()
+            secondNumber = secondNumber * 10 + digit
+        }
+
+        return MathOperation(firstNumber, "+", secondNumber)
+    }
 
 }

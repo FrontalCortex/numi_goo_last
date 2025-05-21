@@ -112,6 +112,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps6: List<TutorialStep> = emptyList()
     private var tutorialSteps7: List<TutorialStep> = emptyList()
     private var tutorialSteps8: List<TutorialStep> = emptyList()
+    private var tutorialSteps9: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -154,6 +155,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             6 -> tutorialSteps6
             7 -> tutorialSteps7
             8 -> tutorialSteps8
+            9 -> tutorialSteps9
             else -> tutorialSteps
         }
         setupTutorial()
@@ -207,6 +209,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             6 -> binding.tenRuleTable.visibility = step.rulesPanelVisibility
             7 -> binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             8 -> binding.BeadRuleTable.visibility = step.rulesPanelVisibility
+            9 -> binding.BeadRuleTable.visibility = step.rulesPanelVisibility
             else -> View.GONE
         }
         answerNumber=step.answerNumber
@@ -2537,6 +2540,240 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Şimdi öğrendiklerimizi uygulayalım.",
                 rulesPanelVisibility = View.GONE
 
+            )
+        )
+        tutorialSteps9 = listOf(
+            TutorialStep(
+                "Boncuk kuralını bir örnekle iki basamaklı sayılarda nasıl kullanacağımızı görelim.",
+            ),
+            TutorialStep(
+                "Örneğin bu soruda",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Önce 68 sayısını abaküse yazıyoruz.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3),
+                    )
+            ),
+            TutorialStep(
+                "Sonrasında ekleyeceğimiz sayının en büyük basamağından başlayıp topluyoruz.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Onlar basamağında 6’ya 7’yi hangi kural ile ekleyebileceğime bakıyorum.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Doğrudan ekleyemem. Ekleyebileceğim 7 adet boncuk yok.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "10’luk kurallada ekleyemem çünkü 10 gelir 7’nin kardeşi 3 gider derken 3’ü çıkartamam.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "O zaman boncuk kuralını uygulayacağım.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "2 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "2 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1))
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 4))
+            ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1))
+            ),
+            TutorialStep(
+                "Onlar basamağını ekledim. Şimdi birler basamağını ekleyeceğim.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Birler basamağında 8’e 6’yı hangi kural ile ekleyeceğime bakıyorum.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Doğrudan ekleyemem. Ekleyebileceğim 6 adet boncuk yok.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "10’luk kuralla ekleyemem çünkü 10 gelir 6’nın kardeşi 4 gider derken 4’ü çıkartamam.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "O zaman boncuk kuralını uygulayacağım.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "1 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "1 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "10 gelir.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 1))
+            ),
+            TutorialStep(
+                "Cevap 144.",
+                questionText = "68 + 76",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Beraber bir örnek yapalım.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+            ),
+            TutorialStep(
+                "Önce ilk sayıyı abaküse yazalım.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 58
+            ),
+            TutorialStep(
+                "Şimdi de 2. sayının onlar basamağını abaküsümüzdeki sayıya nasıl ekleyeceğimize karar verelim.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Kuralsız mı ? Onluk kural mı ? Yoksa boncuk kuralı mı ?",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Boncuk kuralı ile ekleyeceğiz.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "9’u boncuk kuralına göre onlar basamağına ekleyelim.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 148
+            ),
+            TutorialStep(
+                "Güzel! Şimdi sıra birler basamağında.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "9’a 6’yı hangi kuralla ekleyeceğimize karar verelim.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Kuralsız mı ? Onluk kural mı ? Yoksa boncuk kuralı mı ?",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Boncuk kuralı ile ekleyeceğiz.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "6’yı boncuk kuralıne göre birler basamağına ekleyelim.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 154
+            ),
+            TutorialStep(
+                "Çok güzel hızlı öğreniyorsun.",
+                questionText = "58 + 96",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Şimdi kendini ispatla!",
+                rulesPanelVisibility = View.GONE
             )
         )
     }

@@ -244,6 +244,12 @@ class LessonAdapter(
             LessonItem.TYPE_CHEST -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
             )
+            LessonItem.TYPE_RACE -> LessonViewHolder(
+                inflater.inflate(R.layout.item_race, parent, false)
+            )
+            LessonItem.TYPE_PART -> PartViewHolder(
+                inflater.inflate(R.layout.item_part, parent, false)
+            )
             else -> throw IllegalArgumentException("Unknown view type")
         }
     }
@@ -281,6 +287,16 @@ class LessonAdapter(
     }
 
     // ViewHolder sınıfları
+    inner class PartViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
+        private val sectionDescription: TextView = itemView.findViewById(R.id.sectionDescription)
+
+        fun bind(item: LessonItem) {
+            sectionTitle.text = item.sectionTitle ?: ""
+            sectionDescription.text = item.sectionDescription ?: ""
+        }
+    }
+
     inner class LessonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val lessonIcon: ImageView = itemView.findViewById(R.id.lessonIcon)
         private val lessonCard: CardView = itemView.findViewById(R.id.lessonCard)

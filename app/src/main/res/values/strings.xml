@@ -6,4 +6,5 @@
     <string name="lesson_hint_step2">İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla.</string>
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>
     <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
+    <string name="lesson_hint_step5">10 gelir adımını uygularken 5\'lik kuralı kullanman gerekebilir.</string>
 </resources>

@@ -1,10 +1,6 @@
 package com.example.numigoo.model
 
-import android.util.Log
 import androidx.fragment.app.Fragment
-import com.example.numigoo.AbacusFragment
-import com.example.numigoo.TutorialFragment
-import com.example.numigoo.MapFragment
 import com.example.numigoo.R
 
 data class LessonItem(
@@ -30,11 +26,15 @@ data class LessonItem(
     var stepCupIcon: Int = R.drawable.cup_ic,
     var cupTime1: String? = null,
     var cupTime2: String? = null,
+    var sectionTitle: String? = null,
+    var sectionDescription: String? = null,
 ) {
     companion object {
         const val TYPE_LESSON = 0
         const val TYPE_HEADER = 1
         const val TYPE_CHEST = 2
+        const val TYPE_RACE = 3
+        const val TYPE_PART = 4
 
         // Fragment ID sabitleri
 

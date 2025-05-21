@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="#181C23"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <!-- "2. Kısım" başlığı -->
+    <TextView
+        android:id="@+id/sectionTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2. Kısım"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="24sp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="6dp"/>
+
+    <!-- Açıklama -->
+    <TextView
+        android:id="@+id/sectionDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Basit konuşmalar için kelime, ifade ve dil bilgisi konseptlerini öğren"
+        android:textColor="#B0BEC5"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="18dp"/>
+
+    <!-- "DEVAM ET" butonu -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fastForwardButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Devam ET"
+        android:textAllCaps="true"
+        android:textStyle="bold"
+        android:textColor="#7FB3D5"
+        app:cornerRadius="16dp"
+        app:strokeColor="#5B5D5F"
+        app:strokeWidth="3dp"
+        android:backgroundTint="#152121"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"/>
+
+</LinearLayout>

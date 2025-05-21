@@ -15,4 +15,5 @@
     <color name="background_color">#21272B</color>
     <color name="circleBackground_color">#383535</color>
     <color name="circleForeground_color">#8A7E18</color>
+    <color name="partLocked_color">#232428</color>
 </resources>

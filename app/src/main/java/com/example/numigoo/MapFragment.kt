@@ -747,6 +747,199 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateMathOperationWithDigits2(3,3),
 
                     )
+                53 -> listOf(
+                    MathOperation(6,"+", 6),
+                    MathOperation(7,"+", 7),
+                    MathOperation(5,"+", 8),
+                    MathOperation(5,"+", 9),
+                    MathOperation(8,"+", 6),
+                    MathOperation(6,"+", 7),
+                    MathOperation(6,"+", 8),
+                    MathOperation(5,"+", 9),
+                    MathOperation(16,"+", 7),
+                    MathOperation(28,"+", 6)
+                )
+                54 -> listOf(
+                    MathOperation(5,"+", 9),
+                    MathOperation(8,"+", 6),
+                    MathOperation(5,"+", 6),
+                    MathOperation(16,"+", 7),
+                    MathOperation(16,"+", 18),
+                    MathOperation(5,"+", 8),
+                    MathOperation(50,"+", 90),
+                    MathOperation(17,"+", 7),
+                    MathOperation(5,"+", 8),
+                    MathOperation(15,"+", 9)
+                )
+                55 -> listOf(
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                )
+                56 -> listOf(
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    )
+                57 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                )
+                58 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                )
+                59 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                )
+                60 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                )
+                61 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                )
+                62 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                )
+                63 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                )
+                64 -> listOf(
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                )
+                65 -> listOf(
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationBeadRule(),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+
+                    )
                 else -> emptyList()
             }
         }
@@ -801,6 +994,9 @@ class MapFragment : Fragment() {
 
     private fun setupRecyclerView() {
         // Adapter'ı oluştur
+        // Burada Çıkartma adapter'ini bağlayacağımız yer olacak. Belkide aynı adapter içerisinde
+        // Çıkartma kısmı ekleriz. Yani devam et'e tıklandığında çıkartma item'leri bağlanabilir.
+        // Yapıyı cursor'a açıkla ve nasıl kurgulayabileceğini öğren. En mantıklısı ona sormak.
         lessonsAdapter = LessonAdapter(
             context = requireContext(),
             items = GlobalLessonData.lessonItems.toMutableList(),
@@ -1194,39 +1390,87 @@ class MapFragment : Fragment() {
                 isCompleted = true,
                 stepCount = 4,
                 currentStep = 1,
-                startStepNumber = 37,
+                startStepNumber = 53,
                 mapFragmentIndex = 22,
-                finishStepNumber = 40,
-                tutorialNumber = 8
+                finishStepNumber = 56,
+                tutorialNumber = 8,
 
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "Zor Boncuk Kuralı",
                 offset = 0,
-                isCompleted = false,
+                isCompleted = true,
                 stepCount = 4,
                 currentStep = 1,
+                startStepNumber = 57,
+                mapFragmentIndex = 23,
+                finishStepNumber = 60,
+                tutorialNumber = 9,
+                lessonHint = getString(R.string.lesson_hint_step5)
 
             ),
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "İmkansız Boncuk Kuralı",
                 offset = -30,
-                isCompleted = false,
+                isCompleted = true,
                 stepCount = 4,
                 currentStep = 1,
+                startStepNumber = 61,
+                mapFragmentIndex = 24,
+                finishStepNumber = 64,
+                tutorialIsFinish = true,
+                lessonHint = getString(R.string.lesson_hint_step5)
 
             ),
             LessonItem(
                 type = LessonItem.TYPE_CHEST,
                 title = "Ünite Değerlendirme",
                 offset = 0,
-                isCompleted = false,
-                stepCount = 0,
-                currentStep = 0,
-                fragment = { AbacusFragment.newInstance("+", "Ünite Değerlendirme") }
+                isCompleted = true,
+                stepCount = 1,
+                currentStep = 1,
+                tutorialIsFinish = true,
+                mapFragmentIndex = 25,
+                startStepNumber = 65,
+                finishStepNumber = 65,
+                cupTime1 = "3:00",
+                cupTime2 = "4:00"
             ),
+            LessonItem(
+                type = LessonItem.TYPE_HEADER,
+                title = "Ustalık Yolu",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                currentStep = 1,
+                color = R.color.lesson_header_green
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_RACE,
+                title = "Ustalık Yolu",
+                offset = 0,
+                isCompleted = true,
+                stepCount = 1,
+                currentStep = 1,
+                tutorialIsFinish = true,
+                mapFragmentIndex = 27,
+
+            ),
+            LessonItem(
+                type = LessonItem.TYPE_PART,
+                title = "2. Kısım",
+                offset = 0,
+                isCompleted = true,
+                stepCount = 1,
+                currentStep = 1,
+                tutorialIsFinish = true,
+                mapFragmentIndex = 27,
+                sectionTitle = "2. Kısım Çıkartma",
+                sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz. "
+
+            )
         )
     }
 

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    >
+
+    <View
+        android:id="@+id/cizgiIsteBra"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@color/lesson_locked"
+        app:layout_constraintTop_toTopOf="parent" />
+    <View
+        android:id="@+id/cizgiIsteBra2"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@color/lesson_locked"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/partLocked_color"
+        android:padding="24dp"
+        android:gravity="center_horizontal"
+        app:layout_constraintTop_toBottomOf="@id/cizgiIsteBra"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/cizgiIsteBra2">
+
+    <!-- Kilitli başlık -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="4dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/lock_ic"
+            android:tint="#B0B0B0"
+            android:layout_marginEnd="6dp"/>
+
+        <TextView
+            android:id="@+id/sectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2. Kısım"
+            android:textColor="#B0B0B0"
+            android:textStyle="bold"
+            android:textSize="25sp"/>
+    </LinearLayout>
+
+    <!-- Açıklama -->
+    <TextView
+        android:id="@+id/sectionDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Basit konuşmalar için kelime, ifade ve dil bilgisi konseptlerini öğren"
+        android:textColor="#A0A0A0"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="18dp"/>
+
+    <!-- "İLERİ SAR!" butonu -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fastForwardButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="İLERİ SAR!"
+        android:textAllCaps="true"
+        android:textStyle="bold"
+        android:textColor="#7FB3D5"
+        app:cornerRadius="16dp"
+        app:strokeColor="#5B5D5F"
+        app:strokeWidth="3dp"
+        android:backgroundTint="#152121"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="4dp"/>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
