@@ -82,7 +82,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateRelatedNumbers2(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
         // İlk sayıyı oluştur
         val firstNumber = generateRandomNumber(firstDigitCount)
@@ -136,7 +135,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateRandomMathOperation1(): MathOperation {
         // İlk sayının onlar basamağı için rastgele sayı (1-9 arası)
         val firstNumberTens = Random().nextInt(9) + 1
@@ -181,7 +179,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperation(): MathOperation { //basit 10'luk toplama
         // İlk sayının onlar basamağı (0, 4 ve 9 hariç)
         val tensDigit = listOf(1, 2, 3, 5, 6, 7, 8).random()
@@ -206,7 +203,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperation2(): MathOperation {
         // İlk sayı için onlar basamağı (sadece 4 veya 9)
         val tensDigit = listOf(4, 9).random()
@@ -232,7 +228,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperationWithDigits(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber = 0
@@ -265,7 +260,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperation3(): MathOperation {
         // İki basamaklı random sayı üret (10-99 arası)
         // Birler basamağı 0 olmayan sayıları seç
@@ -294,7 +288,6 @@ object MathOperationGenerator {
         // MathOperation formatında döndür
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperationWithDigits2(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber = 0
@@ -388,7 +381,6 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
-
     fun generateMathOperationWithDigitsBeadRule(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber = 0
@@ -416,6 +408,37 @@ object MathOperationGenerator {
         }
 
         return MathOperation(firstNumber, "+", secondNumber)
+    }
+    fun irregularExtraction(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
+        var firstNumber = 0
+        repeat(firstNumberDigits) {
+            val digit = (1..9).random()
+            firstNumber = firstNumber * 10 + digit
+        }
+
+        // İkinci sayıyı oluştur
+        var secondNumber = 0
+        val firstNumberStr = firstNumber.toString()
+
+        for (i in 0 until secondNumberDigits) {
+            val currentDigit = firstNumberStr[i].toString().toInt()
+            val possibleDigits = when (currentDigit) {
+                1 -> listOf(1)
+                2 -> listOf(2, 1)
+                3 -> listOf(3, 2, 1)
+                4 -> listOf(4, 3, 2, 1)
+                5 -> listOf(5,4,3,2,1)
+                6 -> listOf(6,5,4,3,2,1)
+                7 -> listOf(7,6,5,4,3,2,1)
+                8 -> listOf(8,7,6,5,4,3,2,1)
+                9 -> listOf(9,8,7,6,5,4,3,2,1)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val digit = possibleDigits.random()
+            secondNumber = secondNumber * 10 + digit
+        }
+        return MathOperation(firstNumber, "-", secondNumber)
     }
 
 }

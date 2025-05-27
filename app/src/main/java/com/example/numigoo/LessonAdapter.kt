@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.app.Activity
 import android.widget.Button
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,14 +19,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.example.numigoo.model.LessonItem
 import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.activity.viewModels
+import androidx.recyclerview.widget.ListAdapter
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
+import com.example.numigoo.model.LessonViewModel
 
 class LessonAdapter(
     private val context: Context,
-    private val items: MutableList<LessonItem>,
+    private val viewModel: LessonViewModel,
     private val onLessonClick: (LessonItem, Int) -> Unit
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : androidx.recyclerview.widget.ListAdapter<LessonItem, RecyclerView.ViewHolder>(LessonDiffCallback()) {
 
     interface OnProgressUpdateListener {
         fun updateProgress(position: Int, progress: Int)
@@ -229,11 +233,10 @@ class LessonAdapter(
         onLessonClickListener = listener
     }
 
-    override fun getItemViewType(position: Int): Int = GlobalLessonData.getLessonItem(position)?.type ?: items[position].type
+    override fun getItemViewType(position: Int): Int = getItem(position).type
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-
         return when (viewType) {
             LessonItem.TYPE_LESSON -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
@@ -255,35 +258,16 @@ class LessonAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = GlobalLessonData.getLessonItem(position) ?: items[position]
+        val item = getItem(position)
         when (holder) {
-            is LessonViewHolder -> {
-                holder.bind(item)
-            }
+            is LessonViewHolder -> holder.bind(item)
             is HeaderViewHolder -> holder.bind(item)
+            is PartViewHolder -> holder.bind(item)
         }
     }
 
-    override fun getItemCount(): Int = GlobalLessonData.lessonItems.size
-
-    fun getItem(position: Int): LessonItem = GlobalLessonData.getLessonItem(position) ?: items[position]
-
-    fun updateLessonOffset(position: Int, newOffset: Int) {
-        if (position in items.indices) {
-            items[position].let { item ->
-                if (item.type == LessonItem.TYPE_LESSON) {
-                    item.offset = newOffset
-                    notifyItemChanged(position)
-                }
-            }
-        }
-    }
-
-    fun updateLessonItem(position: Int, newItem: LessonItem) {
-        if (position in items.indices) {
-            items[position] = newItem
-            notifyItemChanged(position)
-        }
+    fun getLessonItemAt(position: Int): LessonItem? {
+        return if (position in 0 until itemCount) getItem(position) else null
     }
 
     // ViewHolder sınıfları
@@ -291,9 +275,16 @@ class LessonAdapter(
         private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
         private val sectionDescription: TextView = itemView.findViewById(R.id.sectionDescription)
 
+        private val fastForwardButton: Button = itemView.findViewById(R.id.fastForwardButton)
         fun bind(item: LessonItem) {
-            sectionTitle.text = item.sectionTitle ?: ""
-            sectionDescription.text = item.sectionDescription ?: ""
+            // ... diğer kodlar ...
+            fastForwardButton.setOnClickListener {
+                // Burada ViewModel'daki fonksiyonu çağıracaksın
+                (itemView.context as? FragmentActivity)?.let { activity ->
+                    item.id?.let { it1 -> viewModel.showSubLessons(it1)
+                    }
+                }
+            }
         }
     }
 
@@ -391,6 +382,17 @@ class LessonAdapter(
 
         fun bind(item: LessonItem) {
             headerText.text = item.title
+        }
+    }
+    class LessonDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<LessonItem>() {
+        override fun areItemsTheSame(oldItem: LessonItem, newItem: LessonItem): Boolean {
+            // Her LessonItem'ın benzersiz bir id'si varsa onu kullan
+            return oldItem.id == newItem.id
+            // Eğer id yoksa, başka bir benzersiz alan kullanabilirsin
+        }
+
+        override fun areContentsTheSame(oldItem: LessonItem, newItem: LessonItem): Boolean {
+            return oldItem == newItem
         }
     }
 

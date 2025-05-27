@@ -4,6 +4,7 @@ import androidx.fragment.app.Fragment
 import com.example.numigoo.R
 
 data class LessonItem(
+    val id: Int? = null,
     val type: Int,
     val title: String,
     var offset: Int, // -50 sol, 0 orta, 50 sağ

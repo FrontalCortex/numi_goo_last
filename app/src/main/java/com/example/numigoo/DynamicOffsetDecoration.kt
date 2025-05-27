@@ -17,8 +17,7 @@ class DynamicOffsetDecoration(private val maxOffset: Int) : RecyclerView.ItemDec
         if (position == RecyclerView.NO_POSITION) return
 
         val adapter = parent.adapter as? LessonAdapter ?: return
-        val item = adapter.getItem(position)
-
+        val item = adapter.getLessonItemAt(position) ?: return
         if (item.type == LessonItem.TYPE_LESSON) {
             // Ekranın ortasını referans noktası olarak al
             val centerOffset = parent.width / 2 - view.layoutParams.width / 2

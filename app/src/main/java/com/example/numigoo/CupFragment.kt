@@ -11,9 +11,12 @@ import android.os.CountDownTimer
 import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.fragment.app.FragmentActivity
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentCupBinding
 import com.example.numigoo.model.LessonItem
+import com.example.numigoo.model.LessonViewModel
 
 class CupFragment : Fragment() {
     private lateinit var binding: FragmentCupBinding
@@ -120,14 +123,18 @@ class CupFragment : Fragment() {
                     stepIsFinish = true,
                     stepCupIcon = icon
                 )
-                LessonManager.updateLessonItem(mapFragmentStepIndex, updatedItem)
-
+                (requireActivity() as? FragmentActivity)?.let { activity ->
+                    val viewModel: LessonViewModel by activity.viewModels()
+                    viewModel.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                }
                 lessonItem2?.let { item2 ->
                     val updatedItem2 = item2.copy(
                         isCompleted = true
                     )
-                    LessonManager.updateLessonItem(mapFragmentStepIndex +1, updatedItem2)
-                }
+                    (requireActivity() as? FragmentActivity)?.let { activity ->
+                        val viewModel: LessonViewModel by activity.viewModels()
+                        viewModel.updateLessonItem(mapFragmentStepIndex+1, updatedItem2)
+                    }                }
             }
             else{
                 val updatedItem = item.copy(
@@ -135,7 +142,10 @@ class CupFragment : Fragment() {
                     currentStep = item.currentStep + 1,
                     startStepNumber = item.startStepNumber?.plus(1)
                 )
-                LessonManager.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                (requireActivity() as? FragmentActivity)?.let { activity ->
+                    val viewModel: LessonViewModel by activity.viewModels()
+                    viewModel.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                }
             }
         }
     }

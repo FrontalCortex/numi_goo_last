@@ -13,10 +13,5 @@ object LessonManager {
         return GlobalLessonData.getLessonItem(position)
     }
 
-    fun updateLessonItem(position: Int, item: LessonItem) {
-        // Global veriyi güncelle
-        GlobalLessonData.updateLessonItem(position, item)
-        // Adapter'ı güncelle
-        adapter?.updateLessonItem(position, item)
-    }
+
 } 

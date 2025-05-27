@@ -113,6 +113,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps7: List<TutorialStep> = emptyList()
     private var tutorialSteps8: List<TutorialStep> = emptyList()
     private var tutorialSteps9: List<TutorialStep> = emptyList()
+    private var tutorialSteps10: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -156,6 +157,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             7 -> tutorialSteps7
             8 -> tutorialSteps8
             9 -> tutorialSteps9
+            10 -> tutorialSteps10
             else -> tutorialSteps
         }
         setupTutorial()
@@ -2020,8 +2022,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 " 10 gelir.",
                 questionText = "3 + 8",
                 questionTextVisibility = View.VISIBLE,
-
-
                 ),
             TutorialStep(
                 " 10 gelir.",
@@ -2774,6 +2774,153 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "Şimdi kendini ispatla!",
                 rulesPanelVisibility = View.GONE
+            )
+        )
+        tutorialSteps10 = listOf(
+            TutorialStep(
+                "Kuralsız çıkarma, herhangi bir kural uygulamadan abaküs üzerinde yapılan basit çıkarma işlemlerini ifade eder.",
+            ),
+            TutorialStep(
+                "Bu işlemi ele alalım.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Önce 8 sayısını abaküse yazarız.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Önce 8 sayısını abaküse yazarız.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),
+            TutorialStep(
+                "Sonra 6 değere sahip boncukları çıkartırız.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE,
+
+            ),
+            TutorialStep(
+                "Sonra 6 değere sahip boncukları çıkartırız.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "Cevap 2.",
+                questionText = "8 - 6",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Bu işleme bakalım",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2))
+            ),
+            TutorialStep(
+                "78 sayısını abaküse yazıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3))
+            ),
+            TutorialStep(
+                "Sonrasında çıkartacağımız sayının en büyük basamağından başlayarak işlemleri yapıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Önce 60'ı çıkartıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Önce 60'ı çıkartıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4))
+            ),
+            TutorialStep(
+                "Sonra 3'ü çıkartıp işlemi sonlandırıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Sonra 3'ü çıkartıp işlemi sonlandırıyoruz.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2))
+            ),
+            TutorialStep(
+                "Cevap 15.",
+                questionText = "78 - 63",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Bu işlemi beraber yapalım.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "Önce 94'ü abaküse yazalım.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 94
+            ),
+            TutorialStep(
+                "Şimdi ise 2. sayının en büyük basamağından başlayarak çıkarma işlemini yapalım.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "İlk 50 sayısını çıkartacağız.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 44
+            ),
+            TutorialStep(
+                "Şimdi ise 2 sayısını çıkartıp işlemi bitireceğiz.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE,
+                abacusClickable = true,
+                nextStepAvailable = false,
+                answerNumber = 42
+            ),
+            TutorialStep(
+                "Ve cevap 42.",
+                questionText = "94 - 52",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Şimdi senin sıran.",
             )
         )
     }

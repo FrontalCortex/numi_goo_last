@@ -2,6 +2,7 @@ package com.example.numigoo
 
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -16,10 +17,20 @@ import com.example.numigoo.GlobalValues.randomNumberChangeToString
 import com.example.numigoo.MathOperationGenerator.generateRandomMathOperation1
 import com.example.numigoo.databinding.FragmentMapBinding
 import com.example.numigoo.model.LessonItem
-
+import com.example.numigoo.model.LessonViewModel
+import androidx.fragment.app.viewModels
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
-    lateinit var lessonsAdapter: LessonAdapter
+    private val viewModel: LessonViewModel by viewModels()
+    private val adapter by lazy {
+        LessonAdapter(requireContext(), viewModel) { item, position ->
+            // TYPE_PART ise ve fastForwardButton'a tıklandıysa:
+            if (item.type == LessonItem.TYPE_PART) {
+                item.id?.let { viewModel.showSubLessons(it) }
+            }
+            // Diğer tıklama işlemleri (örneğin, kart tıklaması) burada olabilir
+        }
+    }
     companion object {
         fun getLessonOperations(lessonId: Int): List<MathOperation> {
             return when (lessonId) {
@@ -940,6 +951,62 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
 
                     )
+                66 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                )
+                67 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                )
+                68 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                )
+                69 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                )
                 else -> emptyList()
             }
         }
@@ -961,24 +1028,10 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Global verileri kullan
-        val items = GlobalLessonData.lessonItems
-        if (items.isEmpty()) {
-            // İlk kez çalışıyorsa varsayılan verileri yükle
-            GlobalLessonData.initialize(createLessonItems())
-        }
-
         setupRecyclerView()
-
-        // View hazır olduğunda scroll listener'ı tetikle
-        view.post {
-            if (GlobalValues.scrollPosition > 0) {
-                binding.lessonsRecyclerView.scrollToPosition(GlobalValues.scrollPosition)
-            }
-        }
+        observeLessons()
+        restoreScrollPosition()
     }
-
     override fun onPause() {
         super.onPause()
         // Scroll pozisyonunu GlobalValues'a kaydet
@@ -991,67 +1044,50 @@ class MapFragment : Fragment() {
         // Verileri kaydet
         LessonDataManager.saveLessonItems(requireContext(), GlobalLessonData.lessonItems)
     }
+    private fun observeLessons() {
+        viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
+            adapter.submitList(lessons)
+            Log.d("SesKes","Cals")
+        }
+    }
+    private fun restoreScrollPosition() {
+        view?.post {
+            if (com.example.numigoo.GlobalValues.scrollPosition > 0) {
+                binding.lessonsRecyclerView.scrollToPosition(com.example.numigoo.GlobalValues.scrollPosition)
+            }
+        }
+    }
 
     private fun setupRecyclerView() {
-        // Adapter'ı oluştur
-        // Burada Çıkartma adapter'ini bağlayacağımız yer olacak. Belkide aynı adapter içerisinde
-        // Çıkartma kısmı ekleriz. Yani devam et'e tıklandığında çıkartma item'leri bağlanabilir.
-        // Yapıyı cursor'a açıkla ve nasıl kurgulayabileceğini öğren. En mantıklısı ona sormak.
-        lessonsAdapter = LessonAdapter(
-            context = requireContext(),
-            items = GlobalLessonData.lessonItems.toMutableList(),
-            onLessonClick = { item, position ->
-                if (!item.isCompleted) {
-                    Toast.makeText(context, "Bu ders henüz kilitli!", Toast.LENGTH_SHORT).show()
-                    return@LessonAdapter
-                }
-                val fragment = item.fragment?.let { it() }
-                if (fragment != null) {
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainerID, fragment)
-                        .addToBackStack(null)
-                        .commit()
-                }
-            }
-        )
-
-        // LessonManager'a adapter'ı set et
-        LessonManager.setAdapter(lessonsAdapter)
-
-        // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
+
+            // Maksimum offset değerini al
+            val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
+            addItemDecoration(DynamicOffsetDecoration(maxOffset))
+
+            // Adapter'ı bağla (yeni isimle!)
+            adapter = this@MapFragment.adapter
+
+            // Sticky header için view'ları bul
             val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
             val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
             val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-            
-            // Maksimum offset değerini al
-            val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
-
-            // ItemDecoration'ı ekle
-            addItemDecoration(DynamicOffsetDecoration(maxOffset))
-
-            // Adapter'ı bağla
-            adapter = lessonsAdapter
 
             // Scroll listener'ı ekle
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-                    android.util.Log.d("MapFragment", "Scroll detected: dx=$dx, dy=$dy")
                     updateStickyHeader(recyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
                 }
             })
 
             // İlk yüklemede sticky header'ı güncelle
             post {
-                android.util.Log.d("MapFragment", "Initial update of sticky header")
                 updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
             }
         }
-    }
-
-    private fun updateStickyHeader(
+    }    private fun updateStickyHeader(
         recyclerView: RecyclerView,
         stickyHeader: LinearLayout,
         stickySectionUnit: TextView,
@@ -1066,8 +1102,8 @@ class MapFragment : Fragment() {
         var headerTitle: String? = null
         var sectionUnit: String? = null
         for (i in firstVisible downTo 0) {
-            val item = adapter.getItem(i)
-            if (item.type == LessonItem.TYPE_HEADER) {
+            val item = viewModel.currentLessons.value?.get(i)
+            if (item?.type == LessonItem.TYPE_HEADER) {
                 headerTitle = item.title
                 sectionUnit = "${item.stepCount}. KISIM, ${item.currentStep}. ÜNİTE"
 
@@ -1102,7 +1138,7 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun createLessonItems(): List<LessonItem> {
+    /*private fun createLessonItems(): List<LessonItem> {
         return listOf(
             LessonItem(
                 type = LessonItem.TYPE_HEADER,
@@ -1472,7 +1508,7 @@ class MapFragment : Fragment() {
 
             )
         )
-    }
+    }*/
 
 
 }
