@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.viewModels
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentCupBinding
 import com.example.numigoo.model.LessonItem
@@ -20,6 +21,7 @@ import com.example.numigoo.model.LessonViewModel
 
 class CupFragment : Fragment() {
     private lateinit var binding: FragmentCupBinding
+    private val viewModel: LessonViewModel by viewModels()
     private var targetTime: String = ""
     private var currentSeconds: Int = 0
     private var timer: CountDownTimer? = null
@@ -43,7 +45,7 @@ class CupFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex, viewModel)
         cupImageView = binding.cupImageView
         cupName = binding.cupNameTextView
         motivationText = binding.motivationTextView
@@ -111,8 +113,9 @@ class CupFragment : Fragment() {
         cupImageView.setImageResource(icon)
     }
     private fun updateMapProgress() {
-        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
-        val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex +1)
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex, viewModel) //Global verilerden tıklanan indeksteki adım öğesini alıyor
+        val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex + 1, viewModel)
+        Log.d("akkoyun","$lessonItem2 + $lessonItem")
         lessonItem?.let { item ->
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
@@ -125,7 +128,7 @@ class CupFragment : Fragment() {
                 )
                 (requireActivity() as? FragmentActivity)?.let { activity ->
                     val viewModel: LessonViewModel by activity.viewModels()
-                    viewModel.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                    viewModel.updateLessonItem(1,mapFragmentStepIndex, updatedItem)
                 }
                 lessonItem2?.let { item2 ->
                     val updatedItem2 = item2.copy(
@@ -133,7 +136,7 @@ class CupFragment : Fragment() {
                     )
                     (requireActivity() as? FragmentActivity)?.let { activity ->
                         val viewModel: LessonViewModel by activity.viewModels()
-                        viewModel.updateLessonItem(mapFragmentStepIndex+1, updatedItem2)
+                        viewModel.updateLessonItem(1,mapFragmentStepIndex+1, updatedItem2)
                     }                }
             }
             else{
@@ -144,7 +147,7 @@ class CupFragment : Fragment() {
                 )
                 (requireActivity() as? FragmentActivity)?.let { activity ->
                     val viewModel: LessonViewModel by activity.viewModels()
-                    viewModel.updateLessonItem(mapFragmentStepIndex, updatedItem)
+                    viewModel.updateLessonItem(1,mapFragmentStepIndex, updatedItem)
                 }
             }
         }

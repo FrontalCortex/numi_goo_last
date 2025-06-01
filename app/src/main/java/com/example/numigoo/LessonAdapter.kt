@@ -1,9 +1,11 @@
 package com.example.numigoo
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.widget.Button
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.example.numigoo.model.LessonItem
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.activity.viewModels
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
@@ -29,11 +32,12 @@ class LessonAdapter(
     private val context: Context,
     private val viewModel: LessonViewModel,
     private val onLessonClick: (LessonItem, Int) -> Unit
-) : androidx.recyclerview.widget.ListAdapter<LessonItem, RecyclerView.ViewHolder>(LessonDiffCallback()) {
+) : ListAdapter<LessonItem, RecyclerView.ViewHolder>(LessonDiffCallback()) {
 
     interface OnProgressUpdateListener {
         fun updateProgress(position: Int, progress: Int)
     }
+
     private var progressUpdateListener: OnProgressUpdateListener? = null
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
@@ -68,25 +72,26 @@ class LessonAdapter(
         titleText.text = item.title
 
         if (item.isCompleted) {
-            if(item.stepIsFinish){
-                if(item.type == 2){
+            if (item.stepIsFinish) {
+                if (item.type == 2) {
                     actionButton.text = "Tekrar dene"
-                }
-                else{
+                } else {
                     actionButton.text = "Gözden geçir"
                 }
                 descriptionText.text = "Ders Tamamlandı"
-                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                bottomSheetLayout.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.lesson_completed)
                 actionButton.apply {
                     setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
                 }
 
-                
+
                 // Progress bar rengini güncelle
             } else {
                 descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
-                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
-
+                bottomSheetLayout.backgroundTintList =
+                    ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                Log.d("keçisütü","${item.currentStep}")
                 actionButton.apply {
                     text = "-5                           BAŞLAT"
                     textAlignment = View.TEXT_ALIGNMENT_TEXT_START  // veya
@@ -102,7 +107,8 @@ class LessonAdapter(
             descriptionText.text = "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"
             titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
             descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
-            bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.background_color)
+            bottomSheetLayout.backgroundTintList =
+                ContextCompat.getColorStateList(context, R.color.background_color)
 
             actionButton.text = "KİLİTLİ"
             actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
@@ -175,23 +181,33 @@ class LessonAdapter(
                 // AbacusFragment'i oluştur
                 val fragment = item?.fragment?.invoke()
 
+                val abacusFragment = AbacusFragment()
+                val bundle = Bundle()
+                bundle.putSerializable("lessonItem", item) // item Serializable olmalı!
+                abacusFragment.arguments = bundle
+
                 // Animasyon için slide-in efekti
                 val slideIn = android.R.anim.slide_in_left
                 val slideOut = android.R.anim.slide_out_right
                 item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
                 item.startStepNumber.also { lessonStep = it!! }
-                if(item.tutorialIsFinish){
+                if (item.tutorialIsFinish) {
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, AbacusFragment())
+                        .replace(R.id.abacusFragmentContainer, abacusFragment)
                         .addToBackStack(null)
                         .commit()
                 } else {
                     //startStepNumber'ı global lessonStep'e atadık
 
+                    val tutorialFragment = TutorialFragment(item.tutorialNumber)
+                    val bundle = Bundle()
+                    bundle.putSerializable("lessonItem", item) // item Serializable olmalı!
+                    tutorialFragment.arguments = bundle
+
+                    // Fragment transaction:
                     activity.supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .replace(R.id.abacusFragmentContainer, tutorialFragment)
                         .addToBackStack(null)
                         .commit()
                 }
@@ -241,29 +257,61 @@ class LessonAdapter(
             LessonItem.TYPE_LESSON -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
             )
+
             LessonItem.TYPE_HEADER -> HeaderViewHolder(
                 inflater.inflate(R.layout.item_header, parent, false)
             )
+
             LessonItem.TYPE_CHEST -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
             )
+
             LessonItem.TYPE_RACE -> LessonViewHolder(
                 inflater.inflate(R.layout.item_race, parent, false)
             )
+
             LessonItem.TYPE_PART -> PartViewHolder(
                 inflater.inflate(R.layout.item_part, parent, false)
             )
+
             else -> throw IllegalArgumentException("Unknown view type")
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
+        Log.d("LessonAdapter", "Binding item at position $position - currentStep: ${item.currentStep}")
         when (holder) {
             is LessonViewHolder -> holder.bind(item)
             is HeaderViewHolder -> holder.bind(item)
             is PartViewHolder -> holder.bind(item)
         }
+    }
+
+    override fun submitList(list: List<LessonItem>?) {
+        Log.d("LessonAdapter", "Submitting new list - size: ${list?.size}")
+        
+        if (list == null) {
+            super.submitList(null)
+            return
+        }
+        
+        // Yeni listeyi oluştur ve her item'ı kopyala
+        val newList = list.map { item ->
+            item.copy(
+                currentStep = item.currentStep,
+                stepCompletionStatus = item.stepCompletionStatus.toList(),
+                stepIsFinish = item.stepIsFinish,
+                isCompleted = item.isCompleted
+            )
+        }
+        
+        Log.d("LessonAdapter", "Submitting final list - size: ${newList.size}")
+        newList.forEachIndexed { index, item ->
+            Log.d("LessonAdapter", "Final item at $index - currentStep: ${item.currentStep}")
+        }
+        
+        super.submitList(newList)
     }
 
     fun getLessonItemAt(position: Int): LessonItem? {
@@ -281,7 +329,8 @@ class LessonAdapter(
             fastForwardButton.setOnClickListener {
                 // Burada ViewModel'daki fonksiyonu çağıracaksın
                 (itemView.context as? FragmentActivity)?.let { activity ->
-                    item.id?.let { it1 -> viewModel.showSubLessons(it1)
+                    item.id?.let { it1 ->
+                        viewModel.showSubLessons(it1)
                     }
                 }
             }
@@ -328,24 +377,25 @@ class LessonAdapter(
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
-                    if(item.stepIsFinish){
-                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
-                        lessonIcon.setImageResource(item.stepCupIcon)
-                    }else{
-                        lessonIcon.setImageResource(item.stepCupIcon)
-                    }
-                    val completedSteps = item.stepCompletionStatus.count { it }
-                    when (completedSteps) {
-                        1 -> updateProgress((1f / item.stepCount) * 100)
-                        2 -> updateProgress((2f / item.stepCount) * 100)
-                        3 -> updateProgress((3f / item.stepCount) * 100)
-                        4 -> updateProgress((4f / item.stepCount) * 100)
-                        else -> progressBar.setProgressValue(0F)
-                    }
-                    if(item.stepIsFinish){
-                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
-                    }
 
+                    // Önce icon'u güncelle
+                    lessonIcon.setImageResource(item.stepCupIcon)
+
+                    // Progress bar'ı güncelle
+                    val completedSteps = item.stepCompletionStatus.count { it }
+                    val progress = when (completedSteps) {
+                        1 -> (1f / item.stepCount) * 100
+                        2 -> (2f / item.stepCount) * 100
+                        3 -> (3f / item.stepCount) * 100
+                        4 -> (4f / item.stepCount) * 100
+                        else -> 0f
+                    }
+                    updateProgress(progress)
+
+                    // Eğer stepIsFinish true ise rengi güncelle
+                    if (item.stepIsFinish) {
+                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                    }
                 }
 
                 LessonItem.TYPE_LESSON -> {
@@ -355,20 +405,25 @@ class LessonAdapter(
                         ContextCompat.getColor(context, R.color.lesson_locked)
                     }
                     lessonCard.setCardBackgroundColor(backgroundColor)
+
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
 
-                    // stepCompletionStatus kontrolü
+                    // Progress bar'ı güncelle
                     val completedSteps = item.stepCompletionStatus.count { it }
-                    when (completedSteps) {
-                        1 -> updateProgress((1f / item.stepCount) * 100)
-                        2 -> updateProgress((2f / item.stepCount) * 100)
-                        3 -> updateProgress((3f / item.stepCount) * 100)
-                        4 -> updateProgress((4f / item.stepCount) * 100)
-                        else -> progressBar.setProgressValue(0F)
+                    Log.d("keçiboynuzu","$item")
+                    val progress = when (completedSteps) {
+                        1 -> (1f / item.stepCount) * 100
+                        2 -> (2f / item.stepCount) * 100
+                        3 -> (3f / item.stepCount) * 100
+                        4 -> (4f / item.stepCount) * 100
+                        else -> 0f
                     }
-                    if(item.stepIsFinish){
+                    updateProgress(progress)
+
+                    // Eğer stepIsFinish true ise rengi güncelle
+                    if (item.stepIsFinish) {
                         updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
                     }
                 }
@@ -384,20 +439,20 @@ class LessonAdapter(
             headerText.text = item.title
         }
     }
-    class LessonDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<LessonItem>() {
+
+    class LessonDiffCallback : DiffUtil.ItemCallback<LessonItem>() {
         override fun areItemsTheSame(oldItem: LessonItem, newItem: LessonItem): Boolean {
-            // Her LessonItem'ın benzersiz bir id'si varsa onu kullan
-            return oldItem.id == newItem.id
-            // Eğer id yoksa, başka bir benzersiz alan kullanabilirsin
+            return oldItem.mapFragmentIndex == newItem.mapFragmentIndex
         }
 
         override fun areContentsTheSame(oldItem: LessonItem, newItem: LessonItem): Boolean {
-            return oldItem == newItem
+            return oldItem.currentStep == newItem.currentStep &&
+                   oldItem.stepCompletionStatus == newItem.stepCompletionStatus &&
+                   oldItem.stepIsFinish == newItem.stepIsFinish &&
+                   oldItem.isCompleted == newItem.isCompleted
         }
     }
-
 }
-
 
 
 

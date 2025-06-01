@@ -427,11 +427,37 @@ object MathOperationGenerator {
                 2 -> listOf(2, 1)
                 3 -> listOf(3, 2, 1)
                 4 -> listOf(4, 3, 2, 1)
-                5 -> listOf(5,4,3,2,1)
-                6 -> listOf(6,5,4,3,2,1)
-                7 -> listOf(7,6,5,4,3,2,1)
-                8 -> listOf(8,7,6,5,4,3,2,1)
+                5 -> listOf(5)
+                6 -> listOf(6,5,1)
+                7 -> listOf(7,6,5,2,1)
+                8 -> listOf(8,7,6,5,3,2,1)
                 9 -> listOf(9,8,7,6,5,4,3,2,1)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val digit = possibleDigits.random()
+            secondNumber = secondNumber * 10 + digit
+        }
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+    fun irregularExtractionFiveRules(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
+        var firstNumber = 0
+        repeat(firstNumberDigits) {
+            val digit = (5..8).random()
+            firstNumber = firstNumber * 10 + digit
+        }
+
+        // İkinci sayıyı oluştur
+        var secondNumber = 0
+        val firstNumberStr = firstNumber.toString()
+
+        for (i in 0 until secondNumberDigits) {
+            val currentDigit = firstNumberStr[i].toString().toInt()
+            val possibleDigits = when (currentDigit) {
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
                 else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
             }
 

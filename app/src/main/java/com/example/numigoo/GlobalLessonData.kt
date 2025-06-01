@@ -11,11 +11,11 @@ object GlobalLessonData {
         _lessonItems = items.toMutableList()
     }
 
-    fun updateLessonItem(position: Int, newItem: LessonItem) {
+    /*fun updateLessonItem(position: Int, newItem: LessonItem) {
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem
         }
-    }
+    }*/
 
     fun getLessonItem(position: Int): LessonItem? {
         return if (position in _lessonItems.indices) {

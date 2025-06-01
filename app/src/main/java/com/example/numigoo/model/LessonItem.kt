@@ -2,6 +2,7 @@ package com.example.numigoo.model
 
 import androidx.fragment.app.Fragment
 import com.example.numigoo.R
+import java.io.Serializable
 
 data class LessonItem(
     val id: Int? = null,
@@ -29,7 +30,7 @@ data class LessonItem(
     var cupTime2: String? = null,
     var sectionTitle: String? = null,
     var sectionDescription: String? = null,
-) {
+) : Serializable {
     companion object {
         const val TYPE_LESSON = 0
         const val TYPE_HEADER = 1

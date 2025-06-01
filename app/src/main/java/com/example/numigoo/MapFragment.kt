@@ -22,7 +22,8 @@ import androidx.fragment.app.viewModels
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
     private val viewModel: LessonViewModel by viewModels()
-    private val adapter by lazy {
+    lateinit var lessonsAdapter: LessonAdapter
+    /*private val adapter by lazy {
         LessonAdapter(requireContext(), viewModel) { item, position ->
             // TYPE_PART ise ve fastForwardButton'a tıklandıysa:
             if (item.type == LessonItem.TYPE_PART) {
@@ -30,7 +31,7 @@ class MapFragment : Fragment() {
             }
             // Diğer tıklama işlemleri (örneğin, kart tıklaması) burada olabilir
         }
-    }
+    }*/
     companion object {
         fun getLessonOperations(lessonId: Int): List<MathOperation> {
             return when (lessonId) {
@@ -1007,6 +1008,109 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.irregularExtraction(2,2),
                     MathOperationGenerator.irregularExtraction(2,2),
                 )
+                70 -> listOf(
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+
+                    )
+                71 -> listOf(
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+
+                    )
+                72 -> listOf(
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+
+                    )
+                73 -> listOf(
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    )
+                74 -> listOf(
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(5,5),
+
+                )
+                75 -> listOf(
+                    MathOperation(5, "-", 4),
+                    MathOperation(7, "-", 3),
+                    MathOperation(8, "-", 4),
+                    MathOperation(60, "-", 20),
+                    MathOperation(5, "-", 1),
+                    MathOperation(6, "-", 2),
+                    MathOperation(5, "-", 3),
+                    MathOperation(50, "-", 10),
+                    MathOperation(6, "-", 4),
+                    MathOperation(6, "-", 3),
+                    MathOperation(5, "-", 2),
+                    MathOperation(5, "-", 1),
+                )
+                76 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+
+                    )
                 else -> emptyList()
             }
         }
@@ -1028,10 +1132,15 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
+            if (viewModel.currentLessons.value.isNullOrEmpty()) {
+                viewModel.initializeLessons()
+            }
+        }
         setupRecyclerView()
-        observeLessons()
         restoreScrollPosition()
     }
+
     override fun onPause() {
         super.onPause()
         // Scroll pozisyonunu GlobalValues'a kaydet
@@ -1041,12 +1150,14 @@ class MapFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Verileri kaydet
-        LessonDataManager.saveLessonItems(requireContext(), GlobalLessonData.lessonItems)
+        // Verileri kaydet - ViewModel'dan al
+        viewModel.currentLessons.value?.let { lessons ->
+            LessonDataManager.saveLessonItems(requireContext(), lessons)
+        }
     }
     private fun observeLessons() {
         viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
-            adapter.submitList(lessons)
+            lessonsAdapter.submitList(lessons)
             Log.d("SesKes","Cals")
         }
     }
@@ -1059,35 +1170,69 @@ class MapFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
+        // Adapter'ı oluştur
+        lessonsAdapter = LessonAdapter(
+            context = requireContext(),
+            viewModel = viewModel,  // ViewModel'ı ekle
+            onLessonClick = { item, position ->
+                if (!item.isCompleted) {
+                    Toast.makeText(context, "Bu ders henüz kilitli!", Toast.LENGTH_SHORT).show()
+                    return@LessonAdapter
+                }
+                val fragment = item.fragment?.let { it() }
+                if (fragment != null) {
+                    parentFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerID, fragment)
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+        )
+
+        // LessonManager'a adapter'ı set et
+        LessonManager.setAdapter(lessonsAdapter)
+
+        // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
-
-            // Maksimum offset değerini al
-            val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
-            addItemDecoration(DynamicOffsetDecoration(maxOffset))
-
-            // Adapter'ı bağla (yeni isimle!)
-            adapter = this@MapFragment.adapter
-
-            // Sticky header için view'ları bul
             val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
             val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
             val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
+
+            // Maksimum offset değerini al
+            val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
+
+            // ItemDecoration'ı ekle
+            addItemDecoration(DynamicOffsetDecoration(maxOffset))
+
+            // Adapter'ı bağla
+            adapter = lessonsAdapter
+
+            // LiveData'yı dinle
+            viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
+                lessons.forEachIndexed { index, item ->
+                    Log.d("LESSON_OBSERVER", "[$index] ${item.title} - currentStep: ${item.currentStep} - isCompleted: ${item.isCompleted}")
+                }
+                lessonsAdapter.submitList(lessons)
+            }
 
             // Scroll listener'ı ekle
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
+                    android.util.Log.d("MapFragment", "Scroll detected: dx=$dx, dy=$dy")
                     updateStickyHeader(recyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
                 }
             })
 
             // İlk yüklemede sticky header'ı güncelle
             post {
+                android.util.Log.d("MapFragment", "Initial update of sticky header")
                 updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
             }
         }
-    }    private fun updateStickyHeader(
+    }
+    private fun updateStickyHeader(
         recyclerView: RecyclerView,
         stickyHeader: LinearLayout,
         stickySectionUnit: TextView,
@@ -1138,377 +1283,7 @@ class MapFragment : Fragment() {
         }
     }
 
-    /*private fun createLessonItems(): List<LessonItem> {
-        return listOf(
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "Kuralsız Toplama",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_blue
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Sayıları abaküste tanıma",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 3,
-                currentStep = 1,
-                lessonOperationsMap = 1,
-                finishStepNumber = 3,
-                tutorialNumber = 1,
-                startStepNumber = 1,
-                mapFragmentIndex = 1,
-                lessonHint = getString(R.string.lesson_hint_step1)
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Kuralsız toplama",
-                offset = 30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                tutorialNumber = 2,
-                startStepNumber = 4,
-                mapFragmentIndex = 2,
-                finishStepNumber = 7,
-                lessonHint = getString(R.string.lesson_hint_step2)
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_CHEST,
-                title = "Ünite Değerlendirme",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                mapFragmentIndex = 3,
-                finishStepNumber = 7,
-                startStepNumber = 7,
-                tutorialIsFinish = true,
-                lessonHint = getString(R.string.lesson_hint_step3),
-                cupTime1 = "1:30",
-                cupTime2 = "2:00"
 
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "5'lik toplama",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_pink
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Basit 5'lik toplama",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                tutorialNumber = 3,
-                startStepNumber = 8,
-                mapFragmentIndex = 5,
-                finishStepNumber = 9,
-                lessonHint = getString(R.string.lesson_hint_step4)
-
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Zor 5'lik toplama",
-                offset = -60,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 12,
-                mapFragmentIndex = 6,
-                finishStepNumber = 15,
-                tutorialNumber = 4
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "İmkansız 5'lik toplama",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 15,
-                mapFragmentIndex = 7,
-                finishStepNumber = 18,
-                tutorialIsFinish = true
-
-
-                ),
-            LessonItem(
-                type = LessonItem.TYPE_CHEST,
-                title = "Ünite Değerlendirme",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 8,
-                startStepNumber = 19,
-                finishStepNumber = 19,
-                cupTime1 = "2:00",
-                cupTime2 = "3:00"
-
-                ),
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "10'luk Toplama 1-2-3-4-5",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_blue
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Temel 10'luk toplama",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 20,
-                mapFragmentIndex = 10,
-                finishStepNumber = 23,
-                tutorialNumber = 5
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Zor 10'luk toplama",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 24,
-                mapFragmentIndex = 11,
-                finishStepNumber = 27,
-                tutorialNumber = 6
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "İmkansız 10'luk toplama",
-                offset = -60,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 28,
-                mapFragmentIndex = 12,
-                finishStepNumber = 31,
-                tutorialIsFinish = true
-            ),LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Çılgın 10'luk toplama",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 32,
-                mapFragmentIndex = 13,
-                finishStepNumber = 35,
-                tutorialIsFinish = true
-            ),LessonItem(
-                type = LessonItem.TYPE_CHEST,
-                title = "Ünite Değerlendirme",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 14,
-                startStepNumber = 36,
-                finishStepNumber = 36,
-                cupTime1 = "2:00",
-                cupTime2 = "3:00"
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "10'luk Toplama 6-7-8-9",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_orange
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Orta seviye 10'luk toplama",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 37,
-                mapFragmentIndex = 16,
-                finishStepNumber = 40,
-                tutorialNumber = 7
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "10'luk toplama mantığı",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 3,
-                currentStep = 1,
-                startStepNumber = 41,
-                mapFragmentIndex = 17,
-                finishStepNumber = 43,
-                tutorialIsFinish = true,
-                lessonHint = getString(R.string.lesson_hint_step2)
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Zor 10'luk toplama",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 44,
-                mapFragmentIndex = 18,
-                finishStepNumber = 47,
-                tutorialIsFinish = true,
-                lessonHint = getString(R.string.lesson_hint_step2)
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Çılgın 10'luk toplama",
-                offset = 30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 48,
-                mapFragmentIndex = 19,
-                finishStepNumber = 51,
-                tutorialIsFinish = true,
-                lessonHint = getString(R.string.lesson_hint_step2)
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_CHEST,
-                title = "Ünite Değerlendirme",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 20,
-                startStepNumber = 52,
-                finishStepNumber = 52,
-                cupTime1 = "3:00",
-                cupTime2 = "4:00"
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "Boncuk kuralı",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_red
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Temel Boncuk Kuralı",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 53,
-                mapFragmentIndex = 22,
-                finishStepNumber = 56,
-                tutorialNumber = 8,
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "Zor Boncuk Kuralı",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 57,
-                mapFragmentIndex = 23,
-                finishStepNumber = 60,
-                tutorialNumber = 9,
-                lessonHint = getString(R.string.lesson_hint_step5)
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_LESSON,
-                title = "İmkansız Boncuk Kuralı",
-                offset = -30,
-                isCompleted = true,
-                stepCount = 4,
-                currentStep = 1,
-                startStepNumber = 61,
-                mapFragmentIndex = 24,
-                finishStepNumber = 64,
-                tutorialIsFinish = true,
-                lessonHint = getString(R.string.lesson_hint_step5)
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_CHEST,
-                title = "Ünite Değerlendirme",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 25,
-                startStepNumber = 65,
-                finishStepNumber = 65,
-                cupTime1 = "3:00",
-                cupTime2 = "4:00"
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_HEADER,
-                title = "Ustalık Yolu",
-                offset = 0,
-                isCompleted = false,
-                stepCount = 1,
-                currentStep = 1,
-                color = R.color.lesson_header_green
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_RACE,
-                title = "Ustalık Yolu",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 27,
-
-            ),
-            LessonItem(
-                type = LessonItem.TYPE_PART,
-                title = "2. Kısım",
-                offset = 0,
-                isCompleted = true,
-                stepCount = 1,
-                currentStep = 1,
-                tutorialIsFinish = true,
-                mapFragmentIndex = 27,
-                sectionTitle = "2. Kısım Çıkartma",
-                sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz. "
-
-            )
-        )
-    }*/
 
 
 }

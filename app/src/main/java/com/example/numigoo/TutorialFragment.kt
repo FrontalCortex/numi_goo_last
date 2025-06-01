@@ -19,9 +19,11 @@ import androidx.fragment.app.Fragment
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.databinding.FragmentTutorialBinding
 import com.example.numigoo.model.BeadAnimation
+import com.example.numigoo.model.LessonItem
 
 class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var currentTutorialSteps: List<TutorialStep>
+    private var lessonItem: LessonItem? = null
     private lateinit var controlButton: View
     private lateinit var correctPanel:View
     private lateinit var incorrectPanel:View
@@ -114,6 +116,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps8: List<TutorialStep> = emptyList()
     private var tutorialSteps9: List<TutorialStep> = emptyList()
     private var tutorialSteps10: List<TutorialStep> = emptyList()
+    private var tutorialSteps11: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -128,6 +131,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lessonItem = arguments?.getSerializable("lessonItem") as? LessonItem
+        if (lessonItem == null) {
+            throw IllegalStateException("LessonItem argument is missing!")
+        }
     }
 
     override fun onCreateView(
@@ -158,6 +165,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             8 -> tutorialSteps8
             9 -> tutorialSteps9
             10 -> tutorialSteps10
+            11 -> tutorialSteps11
             else -> tutorialSteps
         }
         setupTutorial()
@@ -212,6 +220,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             7 -> binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             8 -> binding.BeadRuleTable.visibility = step.rulesPanelVisibility
             9 -> binding.BeadRuleTable.visibility = step.rulesPanelVisibility
+            11 -> binding.extractionFiveRuleTable.visibility = step.rulesPanelVisibility
             else -> View.GONE
         }
         answerNumber=step.answerNumber
@@ -254,7 +263,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         //tutorialStep bittiyse lessonStep değerine sahip Abacus'ü yükler
         if (position == currentTutorialSteps.size - 1) {
             val operations = MapFragment.getLessonOperations(lessonStep)
-            devametFragment(AbacusFragment.newInstance("+", "Kuralsız Toplama", operations))
+            val abacusFragment = AbacusFragment()
+            val bundle = Bundle()
+            bundle.putSerializable("lessonItem", lessonItem) // item Serializable olmalı!
+            abacusFragment.arguments = bundle
+            devametFragment(abacusFragment)
         }
 
         currentAnimations.clear()
@@ -2922,6 +2935,191 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "Şimdi senin sıran.",
             )
+        )
+        tutorialSteps11 = listOf(
+            TutorialStep(
+                "5’lik çıkarmaya, 5’lik toplamanın tersi diyebiliriz.",
+                rulesPanelVisibility = View.GONE
+            ),
+            TutorialStep(
+                "Sayılarımız ve kardeşleri aynı.",
+
+            ),
+            TutorialStep(
+                "Tek farkı, 5'lik toplamada '5 gelir, kardeş gider' diyorduk.",
+            ),
+            TutorialStep(
+                "5'lik çıkarmada, '5 gider, kardeş gelir' kuralını uyguluyoruz.",
+            ),
+            TutorialStep(
+                "Örneğin bu işlemi yapalım",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Öncelikle ilk sayıyı abaküse yazıyoruz.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),
+            TutorialStep(
+                "1'i doğrudan çıkaramıyoruz, bu yüzden 5'lik çıkarma kuralını uygulayacağız.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "1’in kardeşi 4.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "Kardeşi 4 gelir.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Kardeşi 4 gelir.",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+            ),
+            TutorialStep(
+                "Cevap 4",
+                questionText = "5 - 1",
+                questionTextVisibility = View.VISIBLE
+            ),
+            TutorialStep(
+                "Bu işleme bakalım",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+            ),
+            TutorialStep(
+                "İlk sayıyı abaküse yazıyoruz.",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),
+            TutorialStep(
+                "3'ü doğrudan çıkaramıyoruz.",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Bu yüzden 5'lik çıkarma kuralını uygulayacağız.",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "5 gider",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "5 gider",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "Kardeşi 2 gelir.",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Kardeşi 2 gelir.",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1))
+            ),
+            TutorialStep(
+                "Cevap 3",
+                questionText = "6 - 3",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Bu işleme bakalım.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2))
+            ),
+            TutorialStep(
+                "İlk sayıyı abaküse yazıyorum.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3))
+            ),
+            TutorialStep(
+                "8'i doğrudan çıkaramıyorum. Bu yüzden 5'lik kuralı uygulayacağım.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "5 gider.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4))
+            ),
+            TutorialStep(
+                "Kardeşi 1 gelir.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Kardeşi 1 gelir.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+            ),
+            TutorialStep(
+                "Cevap 4.",
+                questionText = "8 - 4",
+                questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Şimdi öğrendiklerimizi uygulayalım.",
+            )
+
         )
     }
 

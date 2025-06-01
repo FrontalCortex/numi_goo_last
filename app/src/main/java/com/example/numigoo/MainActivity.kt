@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         fragmentContainer.visibility = View.VISIBLE
 
         // Fragment'ı oluştur
-        val fragment = AbacusFragment.newInstance("", "")
+        val fragment = AbacusFragment()
 
         // Animasyon için slide-in efekti
         val slideIn = android.R.anim.slide_in_left

@@ -1,6 +1,6 @@
 package com.example.numigoo.model
 
-import com.example.numigoo.GlobalLessonData
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,6 +11,28 @@ class LessonViewModel : ViewModel() {
     private val _currentLessons = MutableLiveData<List<LessonItem>>()
     val currentLessons: LiveData<List<LessonItem>> = _currentLessons
 
+    private val allLessons = mutableMapOf<Int, MutableList<LessonItem>>(
+        1 to getSubLessonsForPart(1).toMutableList(),
+        2 to getSubLessonsForPart(2).toMutableList(),
+        // ... diğer partId'ler
+    )
+
+    fun initializeLessons() {
+        // Tüm parçaların derslerini birleştir
+        val allLessons = mutableListOf<LessonItem>()
+
+        // Her parça için dersleri al ve listeye ekle
+        for (partNumber in 1..5) { // veya kaç parça varsa
+            val partLessons = getSubLessonsForPart(partNumber)
+            allLessons.addAll(partLessons)
+            
+            // allLessons map'ini güncelle
+            this.allLessons[partNumber] = partLessons.toMutableList()
+        }
+
+        _currentLessons.value = allLessons
+        Log.d("LessonViewModel", "Initialized lessons - Total items: ${allLessons.size}")
+    }
     // İlk yüklemede ana dersleri göster
     init {
         // Başlangıçta partId 1'in alt derslerini göster
@@ -19,15 +41,16 @@ class LessonViewModel : ViewModel() {
 
     // Alt derslere geçiş fonksiyonu
     fun showSubLessons(partId: Int) {
-        // partId'ye göre alt dersleri getir
-        val subLessons = getSubLessonsForPart(partId)
-        _currentLessons.value = subLessons
+        Log.d("LessonViewModel", "Showing sub lessons for part $partId")
+        allLessons[partId]?.let { list ->
+            val newList = ArrayList(list)
+            _currentLessons.postValue(newList)
+            Log.d("LessonViewModel", "Updated current lessons - size: ${newList.size}")
+        }
     }
 
     // Ana derslere geri dönüş fonksiyonu
-    fun showMainLessons() {
-        _currentLessons.value = GlobalLessonData.lessonItems
-    }
+
 
     // Alt dersleri getiren yardımcı fonksiyon
     private fun getSubLessonsForPart(partId: Int): List<LessonItem> {
@@ -358,7 +381,7 @@ class LessonViewModel : ViewModel() {
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Değerlendirme",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
@@ -421,7 +444,7 @@ class LessonViewModel : ViewModel() {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 66,
-                    mapFragmentIndex = 1,
+                    mapFragmentIndex = 29,
                     finishStepNumber = 69,
                     tutorialNumber = 10,
                     tutorialIsFinish = true
@@ -434,23 +457,108 @@ class LessonViewModel : ViewModel() {
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
-                    tutorialNumber = 2,
-                    startStepNumber = 4,
+                    tutorialIsFinish = true,
+                    startStepNumber = 70,
                     mapFragmentIndex = 2,
-                    finishStepNumber = 7,
-                    lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
+                    finishStepNumber = 73,
+                    lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
                 ),
-            )
+                LessonItem(
+                    type = LessonItem.TYPE_CHEST,
+                    title = "Ünite Değerlendirme",
+                    offset = 60,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    mapFragmentIndex = 3,
+                    finishStepNumber = 74,
+                    startStepNumber = 74,
+                    tutorialIsFinish = true,
+                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupTime1 = "1:30",
+                    cupTime2 = "2:00"
 
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "5'lik Çıkarma",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_green
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Temel 5'lik çıkarma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    tutorialNumber = 11,
+                    startStepNumber = 75,
+                    mapFragmentIndex = 2,
+                    finishStepNumber = 78,
+                    lessonHint = "5 gider. Kardeş gelir"
+                )
+            )
             // ... diğer partId'ler için case'ler
             else -> emptyList()
         }
     }
-    fun updateLessonItem(position: Int, newItem: LessonItem) {
+
+
+    fun updateLessonItem(partId: Int, index: Int, updatedItem: LessonItem) {
+        Log.d("LessonViewModel", "Updating item - partId: $partId, index: $index")
+        
+        // Mevcut listeyi al
         val currentList = _currentLessons.value?.toMutableList() ?: return
-        if (position in currentList.indices) {
-            currentList[position] = newItem
-            _currentLessons.value = currentList
+        Log.d("LessonViewModel", "Current list size: ${currentList.size}")
+        
+        // Güncellenecek item'ı bul
+        val itemToUpdate = currentList.getOrNull(index) ?: return
+        Log.d("LessonViewModel", "Current item at index $index: ${itemToUpdate.currentStep}")
+        
+        // Item'ı güncelle
+        currentList[index] = updatedItem
+        Log.d("LessonViewModel", "Updated item at index $index: ${currentList[index].currentStep}")
+        
+        // Yeni bir liste oluştur ve tüm item'ları kopyala
+        val newList = currentList.map { item ->
+            if (item.mapFragmentIndex == updatedItem.mapFragmentIndex) {
+                updatedItem.copy(
+                    currentStep = updatedItem.currentStep,
+                    stepCompletionStatus = updatedItem.stepCompletionStatus.toList(),
+                    stepIsFinish = updatedItem.stepIsFinish,
+                    isCompleted = updatedItem.isCompleted
+                )
+            } else {
+                item.copy(
+                    currentStep = item.currentStep,
+                    stepCompletionStatus = item.stepCompletionStatus.toList(),
+                    stepIsFinish = item.stepIsFinish,
+                    isCompleted = item.isCompleted
+                )
+            }
+        }
+        
+        // LiveData'yı güncelle
+        _currentLessons.value = newList
+        
+        // Güncellenmiş listeyi logla
+        Log.d("LessonViewModel", "New list size: ${newList.size}")
+        Log.d("LessonViewModel", "New list item at index $index: ${newList[index].currentStep}")
+        
+        // allLessons map'ini de güncelle
+        allLessons[partId]?.let { list ->
+            if (index in list.indices) {
+                list[index] = updatedItem.copy(
+                    currentStep = updatedItem.currentStep,
+                    stepCompletionStatus = updatedItem.stepCompletionStatus.toList(),
+                    stepIsFinish = updatedItem.stepIsFinish,
+                    isCompleted = updatedItem.isCompleted
+                )
+            }
         }
     }
 }

@@ -139,7 +139,12 @@ class AbacusFragment : Fragment() {
     private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        val arg = arguments?.getSerializable("lessonItem")
+        if (arg is LessonItem) {
+            lessonItem = arg
+        } else {
+            throw IllegalStateException("LessonItem argument is missing!")
+        }
         uploadLessonData()
     }
 
@@ -479,9 +484,14 @@ class AbacusFragment : Fragment() {
         if (operations[currentIndex].secondNumber == null && operations[currentIndex].firstNumber == null) {
             answerNumber = operations[currentIndex].operator?.toInt() ?: 0
         } else {
-            answerNumber = (operations[currentIndex].secondNumber?.toInt()
-                ?: 0) + (operations[currentIndex].firstNumber?.toInt()
-                ?: 0)
+            val result = when (operations[currentIndex].operator) {
+                "+" -> operations[currentIndex].firstNumber?.plus(operations[currentIndex].secondNumber!!)
+                "-" -> operations[currentIndex].firstNumber?.minus(operations[currentIndex].secondNumber!!)
+                "*" -> operations[currentIndex].firstNumber?.times(operations[currentIndex].secondNumber!!)
+                "/" -> 1
+                else -> 0
+            }
+            answerNumber = result!!
         }
         abacusNumberReturn()
         return if (controlNumber == answerNumber) {
@@ -1763,15 +1773,4 @@ class AbacusFragment : Fragment() {
     }
 
 
-    companion object {
-        fun newInstance(operator: String, title: String, operations: List<MathOperation>? = null): AbacusFragment {
-            return AbacusFragment().apply {
-                arguments = Bundle().apply {
-                    putString("operator", operator)
-                    putString("title", title)
-                    putSerializable("operations", operations as? Serializable)
-                }
-            }
-        }
-    }
 }
