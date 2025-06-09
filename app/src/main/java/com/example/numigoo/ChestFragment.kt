@@ -11,14 +11,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.viewModels
-import androidx.fragment.app.FragmentActivity
 import com.example.numigoo.databinding.FragmentChestBinding
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
-import com.example.numigoo.model.LessonViewModel
 
 class ChestFragment : Fragment() {
     private var isOpened = false
@@ -82,7 +79,7 @@ class ChestFragment : Fragment() {
         binding.claimRewardButton.setOnClickListener {
             // Önce map progress'i güncelle
             updateMapProgress()
-
+            
             // Abacus container'daki fragment'ı kaldır
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -91,7 +88,7 @@ class ChestFragment : Fragment() {
                 )
                 .remove(this@ChestFragment)
                 .commit()
-
+                
             // Gold miktarını güncelle
             goldUpdateListener?.onGoldUpdated(goldAmount)
         }
@@ -126,23 +123,20 @@ class ChestFragment : Fragment() {
         _binding = null
     }
 
-    private fun goldValueAlgorithm() {
+    private fun goldValueAlgorithm(){
         goldAmount = when (successRate) {
             100F -> {
                 // %90 ihtimalle 100-200, %10 ihtimalle 500
                 if ((0..9).random() == 0) 500 else (100..200).random()
             }
-
             in 76F..99F -> {
                 // 50-100 arası
                 (50..100).random()
             }
-
             in 51F..75F -> {
                 // 25-50 arası
                 (25..50).random()
             }
-
             else -> {
                 // 10-25 arası
                 (10..25).random()
@@ -154,46 +148,36 @@ class ChestFragment : Fragment() {
     }
 
     private fun updateMapProgress() {
-        // ViewModel'ı al
-        val viewModel: LessonViewModel by requireActivity().viewModels()
-
-        // Güncel listeyi al (LiveData'nın son değerinden)
-        val currentList = viewModel.currentLessons.value ?: return
-        Log.d("ChestFragment", "Current list size: ${currentList.size}")
-
-        // Mevcut ve bir sonraki LessonItem'ı bul
-        val lessonItem = currentList.getOrNull(mapFragmentStepIndex)
-        val lessonItem2 = currentList.getOrNull(mapFragmentStepIndex + 1)
-        Log.d("ChestFragment", "Current lesson item at index $mapFragmentStepIndex: ${lessonItem?.currentStep}")
-
+        val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
+        val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
         lessonItem?.let { item ->
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
-            Log.d("ChestFragment", "Creating new step completion status for step ${item.currentStep}")
 
-            if (item.stepCount == item.currentStep) {
+            if(item.stepCount == item.currentStep){
                 val updatedItem = item.copy(
                     stepCompletionStatus = newStepCompletionStatus,
                     stepIsFinish = true
                 )
-                Log.d("ChestFragment", "Updating item to finished state")
-                viewModel.updateLessonItem(1, mapFragmentStepIndex, updatedItem)
-
+                Log.d("teyze","çalıştı")
+                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                
                 lessonItem2?.let { item2 ->
                     val updatedItem2 = item2.copy(
                         isCompleted = true
                     )
-                    Log.d("ChestFragment", "Updating next item to completed state")
-                    viewModel.updateLessonItem(1, mapFragmentStepIndex + 1, updatedItem2)
+                    Log.d("teyze","çalıştı")
+                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
                 }
-            } else {
+            }
+            else{
+                Log.d("virüs","gerçekleş")
                 val updatedItem = item.copy(
                     stepCompletionStatus = newStepCompletionStatus,
                     currentStep = item.currentStep + 1,
                     startStepNumber = item.startStepNumber?.plus(1)
                 )
-                Log.d("ChestFragment", "Updating item to next step: ${updatedItem.currentStep}")
-                viewModel.updateLessonItem(1, mapFragmentStepIndex, updatedItem)
+                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
             }
         }
     }

@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("com.google.devtools.ksp") version "1.9.21-1.0.15"
 }
 
 android {
@@ -19,6 +20,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Room şeması için
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {
@@ -39,8 +45,14 @@ android {
     }
 }
 
-dependencies {
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains:annotations:23.0.0")
+        exclude(group = "com.intellij", module = "annotations")
+    }
+}
 
+dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -60,10 +72,15 @@ dependencies {
     //bundle off
     //noinspection UseTomlInstead
 
-    //gson
+    //gson verilerin kaydedilmesi için
     implementation("com.google.code.gson:gson:2.10.1")
 
     //bu da bişi ama ne bilmiyom
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
+
+
+
+
+
 }

@@ -1,0 +1,178 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "c816e72d11b9171d01300ad854d8db3a",
+    "entities": [
+      {
+        "tableName": "lessons",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `type` INTEGER NOT NULL, `title` TEXT NOT NULL, `offset` INTEGER NOT NULL, `isCompleted` INTEGER NOT NULL, `progressBarLevel` INTEGER NOT NULL, `stepCount` INTEGER NOT NULL, `currentStep` INTEGER NOT NULL, `color` INTEGER, `LESSON_ID` INTEGER, `lessonOperationsMap` INTEGER, `stepCompletionStatus` TEXT NOT NULL, `finishStepNumber` INTEGER, `startStepNumber` INTEGER, `mapFragmentIndex` INTEGER, `stepIsFinish` INTEGER NOT NULL, `tutorialNumber` INTEGER NOT NULL, `tutorialIsFinish` INTEGER NOT NULL, `lessonHint` TEXT, `stepCupIcon` INTEGER NOT NULL, `cupTime1` TEXT, `cupTime2` TEXT, `sectionTitle` TEXT, `sectionDescription` TEXT, `partId` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "offset",
+            "columnName": "offset",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCompleted",
+            "columnName": "isCompleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "progressBarLevel",
+            "columnName": "progressBarLevel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepCount",
+            "columnName": "stepCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentStep",
+            "columnName": "currentStep",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "LESSON_ID",
+            "columnName": "LESSON_ID",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lessonOperationsMap",
+            "columnName": "lessonOperationsMap",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "stepCompletionStatus",
+            "columnName": "stepCompletionStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishStepNumber",
+            "columnName": "finishStepNumber",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "startStepNumber",
+            "columnName": "startStepNumber",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "mapFragmentIndex",
+            "columnName": "mapFragmentIndex",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "stepIsFinish",
+            "columnName": "stepIsFinish",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tutorialNumber",
+            "columnName": "tutorialNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tutorialIsFinish",
+            "columnName": "tutorialIsFinish",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lessonHint",
+            "columnName": "lessonHint",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "stepCupIcon",
+            "columnName": "stepCupIcon",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cupTime1",
+            "columnName": "cupTime1",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "cupTime2",
+            "columnName": "cupTime2",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sectionTitle",
+            "columnName": "sectionTitle",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sectionDescription",
+            "columnName": "sectionDescription",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "partId",
+            "columnName": "partId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c816e72d11b9171d01300ad854d8db3a')"
+    ]
+  }
+}

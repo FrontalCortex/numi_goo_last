@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        deleteAllLessonItems(this)
         coin = binding.currencyText
         coin.text = getCurrency(this).toString()
         supportFragmentManager.beginTransaction().apply {
@@ -74,7 +74,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             }
         }
     }
-
+    fun deleteAllLessonItems(context: Context) {
+        val prefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+    }
     private fun showAbacusFragment() {
         val fragmentContainer = binding.abacusFragmentContainer
         fragmentContainer.visibility = View.VISIBLE

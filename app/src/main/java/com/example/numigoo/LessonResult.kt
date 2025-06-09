@@ -6,17 +6,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.viewModels
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentLessonResultBinding
 import com.example.numigoo.databinding.FragmentTasksBinding
 import com.example.numigoo.model.LessonItem
-import com.example.numigoo.model.LessonViewModel
 
 
 class LessonResult : Fragment() {
     private lateinit var binding: FragmentLessonResultBinding
-    private val viewModel: LessonViewModel by viewModels()
     private val animations = listOf(
         "animation_one.json",
         "animaton_two.json",
@@ -68,7 +65,7 @@ class LessonResult : Fragment() {
         }
         binding.claimButton.setOnClickListener {
 
-            val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex, viewModel)
+            val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
             lessonItem?.tutorialIsFinish = true
             val chestFragment = ChestFragment()
             val args = Bundle().apply {
@@ -82,7 +79,7 @@ class LessonResult : Fragment() {
             }else{
                 chestFragment.arguments = args
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.abacusFragmentContainer, chestFragment)
+                    .replace(R.id.resultFragmentContainer, chestFragment)
                     .remove(this@LessonResult)
                     .commit()
             }

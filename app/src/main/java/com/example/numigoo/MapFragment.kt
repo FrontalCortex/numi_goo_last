@@ -2,36 +2,24 @@ package com.example.numigoo
 
 import android.content.res.ColorStateList
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.randomNumberChangeToString
 import com.example.numigoo.MathOperationGenerator.generateRandomMathOperation1
 import com.example.numigoo.databinding.FragmentMapBinding
 import com.example.numigoo.model.LessonItem
-import com.example.numigoo.model.LessonViewModel
-import androidx.fragment.app.viewModels
+
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
-    private val viewModel: LessonViewModel by viewModels()
-    lateinit var lessonsAdapter: LessonAdapter
-    /*private val adapter by lazy {
-        LessonAdapter(requireContext(), viewModel) { item, position ->
-            // TYPE_PART ise ve fastForwardButton'a tıklandıysa:
-            if (item.type == LessonItem.TYPE_PART) {
-                item.id?.let { viewModel.showSubLessons(it) }
-            }
-            // Diğer tıklama işlemleri (örneğin, kart tıklaması) burada olabilir
-        }
-    }*/
+    private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
     companion object {
         fun getLessonOperations(lessonId: Int): List<MathOperation> {
             return when (lessonId) {
@@ -1098,19 +1086,415 @@ class MapFragment : Fragment() {
                     MathOperation(5, "-", 1),
                 )
                 76 -> listOf(
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
 
                     )
+                77 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
+
+                    )
+                78 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
+
+                    )
+                79 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+
+                    )
+                80 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+
+                    )
+                81 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+
+                    )
+                82 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+
+                    )
+                83 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+
+                    )
+                84 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+
+                    )
+                85 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+
+                    )
+                86 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+
+                    )
+                87 -> listOf(
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+
+                    )
+                88 -> listOf(
+                    MathOperation(10, "-", 1),
+                    MathOperation(11, "-", 2),
+                    MathOperation(12, "-", 3),
+                    MathOperation(13, "-", 4),
+                    MathOperation(14, "-", 5),
+                    MathOperation(15, "-", 6),
+                    MathOperation(16, "-", 7),
+                    MathOperation(17, "-", 8),
+                    MathOperation(18, "-", 9)
+                )
+                89 -> listOf(
+                    MathOperation(100, "-", 10),
+                    MathOperation(10, "-", 2),
+                    MathOperation(11, "-", 3),
+                    MathOperation(12, "-", 4),
+                    MathOperation(13, "-", 5),
+                    MathOperation(10, "-", 6),
+                    MathOperation(15, "-", 7),
+                    MathOperation(17, "-", 8),
+                    MathOperation(10, "-", 9)
+                )
+                90 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                )
+                91 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                )
+                92 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                )
+                93 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                )
+                94 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                )
+                95 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                )
+                96 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                )
+                97 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                )
+                98 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                )
+                99 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
+                )
+                100 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                )
+                101 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                )
+                102 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                )
+                103 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                )
+                104 -> listOf(
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperation(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTen(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+
+                )
                 else -> emptyList()
             }
         }
@@ -1132,13 +1516,21 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
-            if (viewModel.currentLessons.value.isNullOrEmpty()) {
-                viewModel.initializeLessons()
+
+        // Kayıtlı verileri yükle
+        GlobalLessonData.loadFromPreferences(requireContext())
+
+        // Eğer veri yoksa veya farklı bir part'a geçiliyorsa initialize et
+        GlobalLessonData.initialize(requireContext(),globalPartId)
+
+        setupRecyclerView()
+        changeAdapterList()
+        // View hazır olduğunda scroll listener'ı tetikle
+        view.post {
+            if (GlobalValues.scrollPosition > 0) {
+                binding.lessonsRecyclerView.scrollToPosition(GlobalValues.scrollPosition)
             }
         }
-        setupRecyclerView()
-        restoreScrollPosition()
     }
 
     override fun onPause() {
@@ -1150,42 +1542,22 @@ class MapFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Verileri kaydet - ViewModel'dan al
-        viewModel.currentLessons.value?.let { lessons ->
-            LessonDataManager.saveLessonItems(requireContext(), lessons)
-        }
-    }
-    private fun observeLessons() {
-        viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
-            lessonsAdapter.submitList(lessons)
-            Log.d("SesKes","Cals")
-        }
-    }
-    private fun restoreScrollPosition() {
-        view?.post {
-            if (com.example.numigoo.GlobalValues.scrollPosition > 0) {
-                binding.lessonsRecyclerView.scrollToPosition(com.example.numigoo.GlobalValues.scrollPosition)
-            }
-        }
+        // Verileri kaydet
+        GlobalLessonData.saveToPreferences(requireContext())
     }
 
     private fun setupRecyclerView() {
         // Adapter'ı oluştur
+        // Burada Çıkartma adapter'ini bağlayacağımız yer olacak. Belkide aynı adapter içerisinde
+        // Çıkartma kısmı ekleriz. Yani devam et'e tıklandığında çıkartma item'leri bağlanabilir.
+        // Yapıyı cursor'a açıkla ve nasıl kurgulayabileceğini öğren. En mantıklısı ona sormak.
         lessonsAdapter = LessonAdapter(
             context = requireContext(),
-            viewModel = viewModel,  // ViewModel'ı ekle
-            onLessonClick = { item, position ->
-                if (!item.isCompleted) {
-                    Toast.makeText(context, "Bu ders henüz kilitli!", Toast.LENGTH_SHORT).show()
-                    return@LessonAdapter
-                }
-                val fragment = item.fragment?.let { it() }
-                if (fragment != null) {
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainerID, fragment)
-                        .addToBackStack(null)
-                        .commit()
-                }
+            items = GlobalLessonData.lessonItems.toMutableList(),
+            onPartChange = { newPartId ->
+                globalPartId = newPartId  // currentPartId yerine globalPartId kullanıyoruz
+                GlobalLessonData.initialize(requireContext(),newPartId)
+                lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
             }
         )
 
@@ -1198,7 +1570,7 @@ class MapFragment : Fragment() {
             val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
             val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
             val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-
+            
             // Maksimum offset değerini al
             val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
 
@@ -1207,14 +1579,6 @@ class MapFragment : Fragment() {
 
             // Adapter'ı bağla
             adapter = lessonsAdapter
-
-            // LiveData'yı dinle
-            viewModel.currentLessons.observe(viewLifecycleOwner) { lessons ->
-                lessons.forEachIndexed { index, item ->
-                    Log.d("LESSON_OBSERVER", "[$index] ${item.title} - currentStep: ${item.currentStep} - isCompleted: ${item.isCompleted}")
-                }
-                lessonsAdapter.submitList(lessons)
-            }
 
             // Scroll listener'ı ekle
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -1232,6 +1596,13 @@ class MapFragment : Fragment() {
             }
         }
     }
+
+    private fun changeAdapterList(){
+        GlobalLessonData.initialize(requireContext(),globalPartId)
+        lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+
+    }
+
     private fun updateStickyHeader(
         recyclerView: RecyclerView,
         stickyHeader: LinearLayout,
@@ -1247,8 +1618,8 @@ class MapFragment : Fragment() {
         var headerTitle: String? = null
         var sectionUnit: String? = null
         for (i in firstVisible downTo 0) {
-            val item = viewModel.currentLessons.value?.get(i)
-            if (item?.type == LessonItem.TYPE_HEADER) {
+            val item = adapter.getItem(i)
+            if (item.type == LessonItem.TYPE_HEADER) {
                 headerTitle = item.title
                 sectionUnit = "${item.stepCount}. KISIM, ${item.currentStep}. ÜNİTE"
 
@@ -1282,7 +1653,6 @@ class MapFragment : Fragment() {
             updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
         }
     }
-
 
 
 

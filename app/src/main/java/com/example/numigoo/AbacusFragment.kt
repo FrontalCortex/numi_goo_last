@@ -139,12 +139,9 @@ class AbacusFragment : Fragment() {
     private var resultDialog: Dialog? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val arg = arguments?.getSerializable("lessonItem")
-        if (arg is LessonItem) {
-            lessonItem = arg
-        } else {
-            throw IllegalStateException("LessonItem argument is missing!")
-        }
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+
+
         uploadLessonData()
     }
 
