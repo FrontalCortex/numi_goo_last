@@ -672,4 +672,143 @@ object MathOperationGenerator {
 
         return MathOperation(firstNumber, "-", secondNumber)
     }
+    fun extractionBeadRules(): MathOperation { //basit 10'luk toplama
+        // İlk sayının onlar basamağı (5 hariç)
+        val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
+
+
+        // İlk sayının birler basamağı (0..5,6,7,8,9)
+        val onesDigit = (1..4).random()
+
+        // İlk sayıyı oluştur
+        val firstNumber = tensDigit * 10 + onesDigit
+
+        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
+        val secondNumber = when (onesDigit) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> listOf(6,7,8).random()
+            4 -> listOf(6,7,8,9).random()
+            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+        }
+
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+    fun extractionBeadRulesThreeTwo(): MathOperation {
+
+        // Yüzler basamağı: 1,2,3,4,6,7,8,9
+        val hundreds = listOf(1,2,3,4,5,6,7,8,9).random()
+        // Onlar ve birler basamağı: 0-8 (9 hariç)
+        val tens = (1..4).random()
+        val ones = (0..9).random()
+
+        val firstNumber = hundreds * 100 + tens * 10 + ones
+
+        // Onlar basamağına göre ikinci sayının onlar basamağı
+        val secondTens = when (tens) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> listOf(6,7,8).random()
+            4 -> listOf(6,7,8,9).random()
+            else -> 1
+        }
+
+        // Birler basamağına göre ikinci sayının birler basamağı
+        val secondOnes = (0..9).random()
+
+        val secondNumber = secondTens * 10 + secondOnes
+
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+    fun extractionBeadRulesFourThree(): MathOperation {
+
+        val thousands = listOf(1,2,3,4,5,6,7,8,9).random()
+        // Yüzler basamağı: 1,2,3,4,6,7,8,9
+        val hundreds = listOf(1,2,3,4).random()
+        // Onlar ve birler basamağı: 0-8 (9 hariç)
+        val tens = (1..4).random()
+        val ones = (0..9).random()
+
+        val firstNumber = thousands * 1000 + hundreds * 100 + tens * 10 + ones
+        //yüzlere göre yüzler basamağı
+        val secondhundreds = when (hundreds) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> listOf(6,7,8).random()
+            4 -> listOf(6,7,8,9).random()
+            else -> 1
+        }
+
+        // Onlar basamağına göre ikinci sayının onlar basamağı
+        val secondTens = when (tens) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> listOf(6,7,8).random()
+            4 -> listOf(6,7,8,9).random()
+            else -> 1
+        }
+
+        // Birler basamağına göre ikinci sayının birler basamağı
+        val secondOnes = (0..9).random()
+
+        val secondNumber = secondhundreds * 100 + secondTens * 10 + secondOnes
+
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+
+    fun multiplicationLessFive(): MathOperation{
+        val tens = (1..5).random()
+        val ones = (0..5).random()
+        val firstNumber = tens * 10 + ones
+
+        val secondNumber = (2..5).random()
+
+        return MathOperation(firstNumber, "x", secondNumber)
+
+    }
+    fun multiplicationLessFiveFull(): MathOperation{
+        val tens = (5..9).random()
+        val ones = (5..9).random()
+        val firstNumber = tens * 10 + ones
+
+        val secondNumber = (5..9).random()
+
+        return MathOperation(firstNumber, "x", secondNumber)
+
+    }
+    fun multiplicationFull(): MathOperation{
+        val tens = (1..9).random()
+        val ones = (0..9).random()
+        val firstNumber = tens * 10 + ones
+
+        val secondNumber = (2..9).random()
+
+        return MathOperation(firstNumber, "x", secondNumber)
+
+    }
+    fun multiplicationTwo(): MathOperation{
+        val tens = (1..5).random()
+        val ones = (0..5).random()
+        val firstNumber = tens * 10 + ones
+
+        val secondTens = (2..5).random()
+        val secondOnes = (0..5).random()
+        val secondNumber = secondTens * 10 + secondOnes
+
+        return MathOperation(firstNumber, "x", secondNumber)
+
+    }
+    fun multiplicationTwoFull(): MathOperation{
+        val tens = (1..9).random()
+        val ones = (0..9).random()
+        val firstNumber = tens * 10 + ones
+
+        val secondTens = (1..9).random()
+        val secondOnes = (0..9).random()
+        val secondNumber = secondTens * 10 + secondOnes
+
+        return MathOperation(firstNumber, "x", secondNumber)
+
+    }
+
 }

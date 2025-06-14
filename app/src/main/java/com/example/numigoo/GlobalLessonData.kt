@@ -442,7 +442,6 @@ object GlobalLessonData {
                     mapFragmentIndex = 2,
                     finishStepNumber = 69,
                     tutorialNumber = 10,
-                    tutorialIsFinish = true
 
                 ),
                 LessonItem(
@@ -624,16 +623,234 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "İmkansız 10'luk Çıkarma",
+                    title = "Temel Boncuk Çıkarma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    tutorialNumber = 16,
+                    startStepNumber = 105,
+                    mapFragmentIndex = 17,
+                    finishStepNumber = 108,
+                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zor Boncuk Çıkarma",
+                    offset = 60,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    tutorialNumber = 17,
+                    startStepNumber = 109,
+                    mapFragmentIndex = 18,
+                    finishStepNumber = 112,
+                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "İmkansız Boncuk Çıkarma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    startStepNumber = 113,
+                    mapFragmentIndex = 19,
+                    finishStepNumber = 116,
+                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_CHEST,
+                    title = "Ünite Değerlendirme",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    mapFragmentIndex = 20,
+                    finishStepNumber = 117,
+                    startStepNumber = 117,
+                    tutorialIsFinish = true,
+                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupTime1 = "2:00",
+                    cupTime2 = "3:00"
+                ),
+                LessonItem(
+                    partId = 3,
+                    type = LessonItem.TYPE_PART,
+                    title = "3. Kısım",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    mapFragmentIndex = 21,
+                    sectionTitle = "3. Kısım Çarpma",
+                    sectionDescription = "Abaküste çarpmaya dair her şey. "
+
+                )
+            )
+            3 -> listOf(
+                LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "2'ye 1 Çarpma",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_blue
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_BACK_PART,
+                    title = "2. Kısım",
+                    offset = 0,
+                    isCompleted = true,
+                    partId = 2,
+                    stepCount = 1,
+                    currentStep = 1,
+                    backPart = true,
+                    sectionTitle = "3. Kısım Çarpma",
+                    sectionDescription = "Abaküste çarpmaya dair her şey. "
+
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Temel 2'ye 1 çarpma",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 118,
+                    mapFragmentIndex = 2,
+                    finishStepNumber = 121,
+                    tutorialNumber = 18,
+                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zor 2'ye 1 çarpma",
+                    offset = -30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 122,
+                    mapFragmentIndex = 3,
+                    finishStepNumber = 125,
+                    tutorialNumber = 19,
+                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "İmkansız 2'ye 1 çarpma",
                     offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
-                    tutorialNumber = 15,
-                    startStepNumber = 100,
-                    mapFragmentIndex = 14,
-                    finishStepNumber = 103,
-                    lessonHint = "10 gider. Kardeş gelir."
+                    startStepNumber = 126,
+                    mapFragmentIndex = 4,
+                    finishStepNumber = 129,
+                    tutorialIsFinish = true,
+                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_CHEST,
+                    title = "Ünite Değerlendirme",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    mapFragmentIndex = 5,
+                    finishStepNumber = 130,
+                    startStepNumber = 130,
+                    tutorialIsFinish = true,
+                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupTime1 = "1:00",
+                    cupTime2 = "1:45"
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "2'ye 2 Çarpma",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_blue
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Temel 2'ye 2 çarpma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 131,
+                    mapFragmentIndex = 7,
+                    finishStepNumber = 134,
+                    tutorialNumber = 20,
+                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zor 2'ye 2 çarpma",
+                    offset = 60,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 131,
+                    mapFragmentIndex = 8,
+                    finishStepNumber = 134,
+                    tutorialIsFinish = true,
+                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "İmkansız 2'ye 2 çarpma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 135,
+                    mapFragmentIndex = 9,
+                    finishStepNumber = 138,
+                    tutorialIsFinish = true,
+                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_CHEST,
+                    title = "Ünite Değerlendirme",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    mapFragmentIndex = 10,
+                    finishStepNumber = 139,
+                    startStepNumber = 139,
+                    tutorialIsFinish = true,
+                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupTime1 = "3:30",
+                    cupTime2 = "5:00"
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "3'e 1 Çarpma",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_orange
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Temel 3'e 1 çarpma",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 4,
+                    currentStep = 1,
+                    startStepNumber = 135,
+                    mapFragmentIndex = 9,
+                    finishStepNumber = 138,
+                    tutorialNumber = 21,
+                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 )
             )
             else -> emptyList()

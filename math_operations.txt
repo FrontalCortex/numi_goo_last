@@ -1,0 +1,10 @@
+MathOperation(6,"+", 6),
+MathOperation(7,"+", 7),
+MathOperation(5,"+", 8),
+MathOperation(5,"+", 9),
+MathOperation(8,"+", 6),
+MathOperation(6,"+", 7),
+MathOperation(6,"+", 8),
+MathOperation(5,"+", 9),
+MathOperation(16,"+", 7),
+MathOperation(28,"+", 6) 

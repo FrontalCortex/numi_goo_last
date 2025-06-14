@@ -484,7 +484,7 @@ class AbacusFragment : Fragment() {
             val result = when (operations[currentIndex].operator) {
                 "+" -> operations[currentIndex].firstNumber?.plus(operations[currentIndex].secondNumber!!)
                 "-" -> operations[currentIndex].firstNumber?.minus(operations[currentIndex].secondNumber!!)
-                "*" -> operations[currentIndex].firstNumber?.times(operations[currentIndex].secondNumber!!)
+                "x" -> operations[currentIndex].firstNumber?.times(operations[currentIndex].secondNumber!!)
                 "/" -> 1
                 else -> 0
             }
