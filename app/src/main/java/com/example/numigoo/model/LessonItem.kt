@@ -17,6 +17,7 @@ data class LessonItem(
     @Transient var fragment: (() -> Fragment?)? = null, // Fragment oluşturma fonksiyonu
     val color: Int? = null,    // Renk değeri, varsayılanı null
     var LESSON_ID: Int? = null,
+    var isBlinding: Boolean? = null,
     var lessonOperationsMap: Int? = null,
     var stepCompletionStatus: List<Boolean> = List(stepCount) { false },// Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
@@ -32,6 +33,7 @@ data class LessonItem(
     var sectionTitle: String? = null,
     var backPart: Boolean? = null,
     var sectionDescription: String? = null,
+    var timePeriod: Long? = null,
 ) : Serializable {
     companion object {
         const val TYPE_LESSON = 0

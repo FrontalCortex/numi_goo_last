@@ -17,4 +17,8 @@
     <color name="circleBackground_color">#383535</color>
     <color name="circleForeground_color">#8A7E18</color>
     <color name="partLocked_color">#232428</color>
+    <color name="button_enabled">#8CC63F</color>
+    <color name="button_disabled">#CCCCCC</color>
+    <color name="button_text_enabled">#000000</color>
+    <color name="button_text_disabled">#666666</color>
 </resources>

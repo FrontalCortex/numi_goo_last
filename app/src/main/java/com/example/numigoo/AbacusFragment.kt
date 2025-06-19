@@ -277,11 +277,9 @@ class AbacusFragment : Fragment() {
     private fun uploadLessonData(){
         operations = arguments?.getSerializable("operations") as? List<MathOperation> ?: emptyList()
         if (operations.isEmpty()) {
-            Log.d("AbacusFragment", "stepIsFinish: ${lessonItem.stepIsFinish}, finishStepNumber: ${lessonItem?.finishStepNumber}, lessonStep: $lessonStep")
             lessonStep= lessonItem.startStepNumber!!
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
-            Log.d("AbacusFragment", "Using lessonStep: $currentLessonStep")
 
             if(lessonItem.stepIsFinish){
                 operations = MapFragment.getLessonOperations(lessonItem.finishStepNumber!!)
@@ -289,7 +287,6 @@ class AbacusFragment : Fragment() {
                 operations = MapFragment.getLessonOperations(currentLessonStep)
             }
 
-            Log.d("AbacusFragment", "Loaded operations size: ${operations.size}")
         }
     }
 

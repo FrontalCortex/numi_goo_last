@@ -178,6 +178,27 @@ class LessonAdapter(
                 val slideOut = android.R.anim.slide_out_right
                 item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
                 item.startStepNumber.also { lessonStep = it!! }
+                if(item.isBlinding == true){
+                    if(item.tutorialIsFinish){
+                        activity.supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(slideIn, slideOut)
+                            .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
+                            .addToBackStack(null)
+                            .commit()
+                    } else {
+                        //startStepNumber'ı global lessonStep'e atadık
+
+                        activity.supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(slideIn, slideOut)
+                            .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                            .addToBackStack(null)
+                            .commit()
+                    }
+                }
+
+                else{
+
+
                 if(item.tutorialIsFinish){
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
@@ -192,8 +213,10 @@ class LessonAdapter(
                         .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
                         .addToBackStack(null)
                         .commit()
+                    }
                 }
-            } else {
+            }
+            else {
                 // Kilitli durum için sadece collapse et
                 behavior.state = BottomSheetBehavior.STATE_COLLAPSED
             }
