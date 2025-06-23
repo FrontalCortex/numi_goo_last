@@ -2234,6 +2234,475 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
                 )
+                14 -> listOf(
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3)
+                )
+                15 -> listOf(
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3)
+                )
+                16 -> listOf(
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3)
+                )
+                17 -> listOf(
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3)
+                )
+                18 -> listOf(
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3),
+                    MathOperationGenerator.generateSequence5Rules(3)
+                )
+                19 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                )
+                20 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                )
+                21 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                )
+                22 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                )
+                23 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasy(3),
+
+                    )
+                24 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                )
+                25 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                )
+                26 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                )
+                27 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                )
+                28 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
+                )
+                29 -> listOf(
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                )
+                30 -> listOf(
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                )
+                31 -> listOf(
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                )
+                32 -> listOf(
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                )
+                33 -> listOf(
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                    MathOperationGenerator.generateSequenceBeadRules(3),
+                )
+                34 -> listOf(
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                )
+                35 -> listOf(
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                )
+                36 -> listOf(
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                )
+                37 -> listOf(
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                )
+                38 -> listOf(
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                )
+                39 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                )
+                40 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                )
+                41 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                )
+                42 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                )
+                43 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
+                )
+                44 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                )
+                45 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                )
+                46 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                )
+                47 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                )
+                48 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
+                )
+                49 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                )
+                50 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                )
+                51 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                )
+                52 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                )
+                53 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
+                )
+                54 -> listOf(
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+
+                )
+                55 -> listOf(
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+
+                )
+                56 -> listOf(
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+
+                )
+                57 -> listOf(
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+
+                )
+                58 -> listOf(
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                )
+                59 -> listOf(
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                )
+                60 -> listOf(
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                )
+                61 -> listOf(
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                )
+                62 -> listOf(
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFive(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull(),
+                    MathOperationGenerator.multiplicationLessFiveFull()
+                )
+                63 -> listOf(
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                )
+                64-> listOf(
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                )
+                65 -> listOf(
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                )
+                66 -> listOf(
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                )
+                67 -> listOf(
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                    MathOperationGenerator.multiplicationFull(),
+                )
+                68 -> listOf(
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                )
+                69 -> listOf(
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                )
+                70 -> listOf(
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                )
+                71 -> listOf(
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                )
+                72 -> listOf(
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                    MathOperationGenerator.multiplicationTwo(),
+                )
+                73 -> listOf(
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                )
+                74 -> listOf(
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                )
+                75 -> listOf(
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                )
+                76 -> listOf(
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                )
+                77 -> listOf(
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                    MathOperationGenerator.multiplicationTwoFull(),
+                )
                 else -> emptyList()
             }
         }

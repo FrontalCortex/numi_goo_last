@@ -34,6 +34,7 @@ data class LessonItem(
     var backPart: Boolean? = null,
     var sectionDescription: String? = null,
     var timePeriod: Long? = null,
+    var blindingMultiplication: Boolean? = null
 ) : Serializable {
     companion object {
         const val TYPE_LESSON = 0

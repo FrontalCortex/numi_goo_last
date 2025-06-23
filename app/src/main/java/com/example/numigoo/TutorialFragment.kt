@@ -133,6 +133,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps23: List<TutorialStep> = emptyList()
     private var tutorialSteps24: List<TutorialStep> = emptyList()
     private var tutorialSteps25: List<TutorialStep> = emptyList()
+    private var tutorialSteps26: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
     
     // Tutorial için gerekli state'ler
@@ -195,13 +196,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             23 -> tutorialSteps23
             24 -> tutorialSteps24
             25 -> tutorialSteps25
+            26 -> tutorialSteps26
             else -> tutorialSteps
         }
         setupTutorial()
         setupBackButton()
         setupQuitButton()
         // Tutorial 24 için özel kontrol
-        if (tutorialNumber == 24) {
+        if (tutorialNumber == 24 || tutorialNumber == 25 || tutorialNumber == 26) {
             binding.abacusLinear.visibility = View.INVISIBLE
         }
     }
@@ -396,17 +398,96 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 disableAllClickable(binding.abacusLinear)
                 currentStep--
                 backOrFront = false
+
                 if(currentTutorialSteps[currentStep].abacusClickable){
                     resetAbacus()
                 }
+                //amaç geriye gidilirken en sonki answerNumber'ı alıp abaküse yazmak.
+                for(i in currentStep downTo  0){
+                    if(currentTutorialSteps[currentStep].answerNumber == null){
+                        continue
+                    }else{
+                        val backAnswerNumber = currentTutorialSteps[currentStep-1].answerNumber
+                        writeAnswerNumber(backAnswerNumber)
+                        break
+                    }
+                }
                 showStep(currentStep)
                 binding.devamButton.visibility = View.GONE
-                if(tutorialNumber != 24){
-                    binding.abacusLinear.visibility = View.VISIBLE
-                }
+
             } else {
                 closeFragment()
             }
+        }
+    }
+    private fun writeAnswerNumber(number:Int){
+        val numberStr = number.toString().padStart(5, '0')
+
+        var tenThousands = numberStr[0].toString().toInt()    // On binler basamağı
+        var thousands = numberStr[1].toString().toInt()    // Binler basamağı
+        var hundreds = numberStr[2].toString().toInt()    // Yüzler basamağı
+        var tens = numberStr[3].toString().toInt()    // Onlar basamağı
+        var ones = numberStr[4].toString().toInt()    // Birler basamağı
+
+        val rod4BottomBeads = listOf(rod0BottomBead1, rod0BottomBead2, rod0BottomBead3, rod0BottomBead4)
+        val rod3BottomBeads = listOf(rod1BottomBead1, rod1BottomBead2, rod1BottomBead3, rod1BottomBead4)
+        val rod2BottomBeads = listOf(rod2BottomBead1, rod2BottomBead2, rod2BottomBead3, rod2BottomBead4)
+        val rod1BottomBeads = listOf(rod3BottomBead1, rod3BottomBead2, rod3BottomBead3, rod3BottomBead4)
+        val rod0BottomBeads = listOf(rod4BottomBead1, rod4BottomBead2, rod4BottomBead3, rod4BottomBead4)
+
+        // Birler basamağı kontrolleri
+        if (ones >= 5) {
+            animateBeadDown(rod4TopBead)
+            ones -= 5
+            Log.d("buzluk","$ones")
+
+        }
+        for (i in 0 until ones) {
+            Log.d("buzluk2","$ones")
+            animateBeadsUp(rod0BottomBeads[i])
+            when(i) {
+                0 -> rod4OneIsUp = true
+                1 -> rod4TwoIsUp = true
+                2 -> rod4ThreeIsUp = true
+                3 -> rod4FourIsUp = true
+            }
+            updateBeadAppearance(rod0BottomBeads[i], true)
+        }
+
+        // Onlar basamağı kontrolleri
+        if (tens >= 5) {
+            animateBeadDown(rod3TopBead)
+            ones -= 5
+        }
+        for(i in 1..tens){
+            animateBeadsUp(rod1BottomBeads[i])
+        }
+
+        // Yüzler basamağı kontrolleri
+        if (hundreds >= 5) {
+            animateBeadDown(rod2TopBead)
+            ones -= 5
+        }
+        for(i in 1..hundreds){
+            animateBeadsUp(rod2BottomBeads[i])
+        }
+
+        // Binler basamağı kontrolleri
+        if (thousands >= 5) {
+            animateBeadDown(rod1TopBead)
+            ones -= 5
+        }
+        for(i in 1..thousands){
+            animateBeadsUp(rod3BottomBeads[i])
+        }
+
+        // On binler basamağı kontrolleri
+        if (tenThousands >= 5) {
+            animateBeadDown(rod4TopBead)
+            ones -= 5
+        }
+        for(i in 1..thousands){
+            animateBeadsUp(rod4BottomBeads[i])
         }
     }
     private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
@@ -6419,6 +6500,46 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 )
             )
         )
+        tutorialSteps25 = listOf(
+            TutorialStep(
+                "Bu derste abaküsü hayal ederek aklımızdan kuralsız çıkarma yapacağız.",
+            ),
+            TutorialStep(
+                "İlk sayı hariç diğer sayıları çıkaracağız.",
+            ),
+            TutorialStep(
+                "Örneğin sayılar şu şekilde gelebilir.",
+            ),
+            TutorialStep(
+                "86",
+            ),
+            TutorialStep(
+                "-10",
+            ),
+            TutorialStep(
+                "-11",
+            ),
+            TutorialStep(
+                "-50",
+            ),
+            TutorialStep(
+                "Başarılar.",
+            )
+        )
+        tutorialSteps26 = listOf(
+            TutorialStep(
+                "Bu derste abaküsü hayal ederek aklımızdan çarpma yapacağız.",
+            ),
+            TutorialStep(
+                "Çarpılacak sayılar ekrana gelecek.",
+            ),
+            TutorialStep(
+                "Ve abaküsü hayal ederek çarpma işlemini yapacağız.",
+            ),
+            TutorialStep(
+                "Teste geç.",
+            )
+        )
     }
 
     private fun applyWidgetOperations(operations: List<WidgetOperation>) {
@@ -7552,7 +7673,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     // Boncukların görünümünü güncelleyen fonksiyon
     private fun updateBeadAppearance(bead: ImageView, isSelected: Boolean) {
         val resourceId = if (isSelected) {
-            Log.d("debugs","123")
+            Log.d("buzluk2","12141343")
             resources.getIdentifier(
                 "soroban_bead_selected",
                 "drawable",
@@ -7657,7 +7778,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun resetAbacus() {
         // 1. sütun için
-        Log.d("fonk","buda")
         if (fourIsUp) {
             animateBeadsDown(rod0BottomBead4)
             fourIsUp = false

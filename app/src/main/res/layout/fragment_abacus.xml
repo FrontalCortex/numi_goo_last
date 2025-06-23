@@ -124,7 +124,6 @@
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
         app:layout_constraintStart_toStartOf="@id/blackboardImage"
         app:layout_constraintEnd_toStartOf="@id/secondNumberText"/>
-
     <TextView
         android:id="@+id/operator"
         android:layout_width="wrap_content"
@@ -140,7 +139,6 @@
         app:layout_constraintTop_toTopOf="@id/blackboardImage">
 
     </TextView>
-
     <!-- İkinci sayı widget'ı -->
     <TextView
         android:id="@+id/secondNumberText"

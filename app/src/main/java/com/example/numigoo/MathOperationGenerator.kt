@@ -911,14 +911,78 @@ object MathOperationGenerator {
 
         return numbers
     }
-    fun generateSequence1Full(count: Int): List<Int> {
+    fun generateSequence5Rules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
         // İlk sayıyı oluştur (iki basamaklı olabilir)
         // Onlar basamağı: 0,1,2 değerlerini alabilir
         // Birler basamağı: 1,2 değerlerini alabilir
-        val firstTensDigit = (0..2).random()
-        val firstOnesDigit = (1..2).random()
+        val firstTensDigit = (1..3).random()
+        val firstOnesDigit = (1..3).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = (1..3).random()
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = (1..3).random()
+
+            val newNumber = possibleTensDigits * 10 + possibleOnesDigits
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequence10RulesEasy(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (1..3).random()
+        val firstOnesDigit = (5..8).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = (1..2).random()
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = (1..5).random()
+
+            val newNumber = possibleTensDigits * 10 + possibleOnesDigits
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequence10RulesEasyOld(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (1..3).random()
+        val firstOnesDigit = (1..4).random()
         val firstNumber = firstTensDigit * 10 + firstOnesDigit
         numbers.add(firstNumber)
 
@@ -934,12 +998,12 @@ object MathOperationGenerator {
 
             // Onlar basamağı için olası değerleri belirle
             val possibleTensDigits = when (tensDigit) {
-                0 -> listOf(1, 2, 3, 5, 6, 7)
-                1 -> listOf(1, 2, 5, 6, 7)
-                2 -> listOf(1, 5, 6)
+                0 -> listOf(1, 2, 5)
+                1 -> listOf(1, 2, 5)
+                2 -> listOf(1, 5)
                 3 -> listOf(1, 5)
                 4 -> listOf(5)
-                5 -> listOf(1, 2, 3)
+                5 -> listOf(1, 2)
                 6 -> listOf(1, 2)
                 7 -> listOf(1)
                 8 -> listOf(1)
@@ -949,16 +1013,15 @@ object MathOperationGenerator {
 
             // Birler basamağı için olası değerleri belirle
             val possibleOnesDigits = when (onesDigit) {
-                0 -> listOf(1, 2, 3, 5, 6, 7)
-                1 -> listOf(1, 2, 5, 6, 7)
-                2 -> listOf(1, 5, 6)
-                3 -> listOf(1, 5)
-                4 -> listOf(5)
-                5 -> listOf(1, 2, 3)
-                6 -> listOf(1, 2)
-                7 -> listOf(1)
-                8 -> listOf(1)
-                9 -> listOf(0)
+                1 -> listOf(9)
+                2 -> listOf(9,8)
+                3 -> listOf(9,8,7)
+                4 -> listOf(9,8,7,6)
+                5 -> listOf(1, 2,3,4)
+                6 -> listOf(9)
+                7 -> listOf(9,8)
+                8 -> listOf(9,8,7)
+                9 -> listOf(9,8,7,6)
                 else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
             }
 
@@ -972,6 +1035,314 @@ object MathOperationGenerator {
 
         return numbers
     }
+    fun generateSequenceBeadRules(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (1..2).random()
+        val firstOnesDigit = (1..4).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                0 -> listOf(1, 2, 5)
+                1 -> listOf(1, 2, 5)
+                2 -> listOf(1, 5)
+                3 -> listOf(1, 5)
+                4 -> listOf(5)
+                5 -> listOf(1, 2)
+                6 -> listOf(1, 2)
+                7 -> listOf(1)
+                8 -> listOf(1)
+                9 -> listOf(0)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                1 -> listOf(4,5,6,7)
+                2 -> listOf(3,4,5,6)
+                3 -> listOf(2,3,4,5)
+                4 -> listOf(1,2,3,4)
+                5 -> listOf(6)
+                6 -> listOf(6,7,8)
+                7 -> listOf(6,7)
+                8 -> listOf(6)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+            val newTensDigit = possibleTensDigits.random()
+            val newOnesDigit = possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtraction(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (8..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(5)
+                6 -> listOf(1,5)
+                7 -> listOf(1,5)
+                8 -> listOf(1,2,5)
+                9 -> listOf(1,2,3,5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(5)
+                6 -> listOf(1,5)
+                7 -> listOf(1,2,5)
+                8 -> listOf(1,2,3,5)
+                9 -> listOf(1,2,3,5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionFiveRules(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (8..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionTenRules(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (5..8).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2,1,5)
+                7 -> listOf(4,3,5,2,1)
+                8 -> listOf(4,3,5,2,1)
+                9 -> listOf(1,2,5,6)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                1 -> listOf(2,3,4,5,7,8,9)
+                2 -> listOf(3,4,5,8,9)
+                3 -> listOf(4,5,9)
+                4 -> listOf(5)
+                5 -> listOf(9,8,7,6)
+                6 -> listOf(9,8,7)
+                7 -> listOf(9,8)
+                8 -> listOf(9)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionBeadRules(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (1..4).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        var control = false
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2)
+                5 -> listOf(1,2,3,4)
+                6 -> listOf(1,5)
+                7 -> listOf(1)
+                8 -> listOf(1,2)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                1 -> listOf(6)
+                2 -> listOf(6,7)
+                3 -> listOf(6,7,8)
+                4 -> listOf(6,7,8,9)
+                5 -> listOf(1,2,3,4)
+                6 -> listOf(2,3,4)
+                7 -> listOf(3,4)
+                8 -> listOf(4)
+                9 -> listOf(5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+
+            val newTensDigit = if (control) {
+                control = false
+                -possibleTensDigits.random()
+            } else {
+                control = true
+                0
+            }
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
+
 //Bir basamaktaki sayı 0 değilse diğeri 0 olsun
 
 }

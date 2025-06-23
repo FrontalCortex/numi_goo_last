@@ -43,6 +43,10 @@ class BlindingLessonFragment : Fragment() {
     private var controlNumber = 0
     private var correctAnswer = 0
     private var totalQuestions = 0
+    private lateinit var firstNumberText: TextView
+    private lateinit var firstNumberText2: TextView
+    private lateinit var operatorText: TextView
+    private lateinit var secondNumberText: TextView
     private lateinit var correctAnswerText: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
@@ -53,14 +57,18 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var tvHint: TextView
     private var isHintVisible = false
     private lateinit var fabHintTouchArea: View
-    private var seconds = 0
-    private val handler = Handler(Looper.getMainLooper())
-    private lateinit var runnable: Runnable
     private lateinit var lessonItem : LessonItem
     private lateinit var rulesBookButton: ImageView
     private var resultDialog: Dialog? = null
 
+    private var seconds = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private lateinit var runnable: Runnable
+    private lateinit var timerTextView: TextView
+    private var isTimerStarted = false
     private lateinit var binding: FragmentBlindingLessonBinding
+    private var currentTime: String = "0:00"
+
 
     private var isShowingSequence = false
     private var currentSequenceIndex = 0
@@ -135,9 +143,30 @@ class BlindingLessonFragment : Fragment() {
             Log.d("AbacusFragment", "Loaded operations size: ${operations.size}")
         }
     }
+    private fun timeStarter(){
+        if(lessonItem.type == 2)
+            timerTextView.visibility = View.VISIBLE
+        if (!isTimerStarted) {
+            startTimer()
+            isTimerStarted = true
 
-
+        }
+    }
+    private fun startTimer() {
+        runnable = object : Runnable {
+            override fun run() {
+                seconds++
+                val minutes = seconds / 60
+                val secs = seconds % 60
+                currentTime = String.format("%d:%02d", minutes, secs)
+                timerTextView.text = currentTime
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.post(runnable)
+    }
     private fun findsId(){
+        timerTextView = binding.timerTextView
         binding.resetButton.frame = 20
         rulesBookButton = binding.rulesBookButton
         fabHint = binding.fabHint
@@ -151,6 +180,12 @@ class BlindingLessonFragment : Fragment() {
         numberText = binding.firstNumberText
         controlButton = binding.kontrolButton
         totalQuestions = operations.size
+        firstNumberText = binding.firstNumberText
+        firstNumberText2 = binding.firstNumberText2
+        operatorText = binding.operator
+        secondNumberText = binding.secondNumberText
+        timeStarter()
+
     }
     private fun resetClickListener() {
         // İlk başta 20. frame'de başlat
@@ -298,20 +333,38 @@ class BlindingLessonFragment : Fragment() {
             return
         }
 
-        if (currentIndex < operations.size) {
-            val currentOperation = operations[currentIndex]
-            when (currentOperation) {
-                is List<*> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    startShowingSequence(currentOperation as List<Int>)
+        if(lessonItem.blindingMultiplication == true){
+            if (currentIndex < operations.size) {
+                val currentOperation = operations[currentIndex] as MathOperation
+                currentOperation.firstNumber?.let { number ->
+                    firstNumberText2.text = number.toString()
                 }
-                is Int -> {
-                    // Eğer operations bir Int listesi ise, direkt olarak sequence olarak göster
-                    startShowingSequence(operations as List<Int>)
+
+                currentOperation.operator?.let { op ->
+                    operatorText.text = op
                 }
-                is MathOperation -> {
-                    currentOperation.firstNumber?.let { number ->
-                        numberText.text = number.toString()
+
+                currentOperation.secondNumber?.let { number ->
+                    secondNumberText.text = number.toString()
+                }
+            }
+        }
+        else{
+            if (currentIndex < operations.size) {
+                val currentOperation = operations[currentIndex]
+                when (currentOperation) {
+                    is List<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        startShowingSequence(currentOperation as List<Int>)
+                    }
+                    is Int -> {
+                        // Eğer operations bir Int listesi ise, direkt olarak sequence olarak göster
+                        startShowingSequence(operations as List<Int>)
+                    }
+                    is MathOperation -> {
+                        currentOperation.firstNumber?.let { number ->
+                            numberText.text = number.toString()
+                        }
                     }
                 }
             }
@@ -558,7 +611,6 @@ class BlindingLessonFragment : Fragment() {
                     background.setColor(color)
                 }
             }
-
             animator.start()
         }
 
@@ -570,13 +622,36 @@ class BlindingLessonFragment : Fragment() {
 
         val currentOperation = operations[currentIndex]
         return when (currentOperation) {
+            is MathOperation -> {
+                if (lessonItem.blindingMultiplication == true) {
+                    answerNumber = currentOperation.firstNumber?.times(currentOperation.secondNumber!!) ?: 0
+                    val inputText = binding.numberInput.text.toString()
+                    if (inputText.isNotEmpty()) {
+                        try {
+                            controlNumber = inputText.toInt()
+                            if (controlNumber == answerNumber) {
+                                controlNumber = 0
+                                true
+                            } else {
+                                controlNumber = 0
+                                false
+                            }
+                        } catch (e: NumberFormatException) {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    // Normal MathOperation işlemi
+                    false
+                }
+            }
             is List<*> -> {
                 @Suppress("UNCHECKED_CAST")
                 val sequence = currentOperation as List<Int>
-                // Sequence'in toplamını hesapla ve result'a ata
                 val result = sequence.sum()
                 answerNumber = result
-                // Son gösterilen sayıyı kontrol et
                 if (currentSequenceIndex > 0) {
                     val inputText = binding.numberInput.text.toString()
                     if (inputText.isNotEmpty()) {
@@ -590,22 +665,18 @@ class BlindingLessonFragment : Fragment() {
                                 false
                             }
                         } catch (e: NumberFormatException) {
-                            // Geçersiz sayı formatı
                             false
                         }
                     } else {
-                        // Boş input
                         false
                     }
                 } else {
                     false
                 }
             }
-
             else -> false
         }
-    }
-    private fun showChestResult() {
+    }    private fun showChestResult() {
         val chestResultFragment = ChestResult()
 
         // Başarı oranını hesapla
@@ -619,6 +690,7 @@ class BlindingLessonFragment : Fragment() {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
+            putString("time", currentTime)
         }
         chestResultFragment.arguments = args
 
