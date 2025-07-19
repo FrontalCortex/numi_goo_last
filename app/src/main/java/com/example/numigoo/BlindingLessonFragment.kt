@@ -481,7 +481,7 @@ class BlindingLessonFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
-            correctAnswerText.text = incorrectText()
+            correctAnswerText.text = answerNumber.toString()
             incorrectPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -745,20 +745,6 @@ class BlindingLessonFragment : Fragment() {
                 .replace(R.id.abacusFragmentContainer, lessonResultFragment)
                 .commit()
         }
-    }
-    private fun incorrectText(): String {
-        var result = ""
-        val answerStr = answerNumber.toString().padStart(5, '0')
-        val controlStr = controlNumber.toString().padStart(5, '0')
-
-        // 5. basamaktan başlayarak kontrol ediyoruz
-        for (i in 0..4) {
-            if (answerStr[i] != controlStr[i]) {
-                // Basamak numarasını ekliyoruz (5-i şeklinde)
-                result += "${5-i} "
-            }
-        }
-        return result
     }
 
 

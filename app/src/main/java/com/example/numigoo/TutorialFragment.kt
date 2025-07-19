@@ -3,7 +3,10 @@ package com.example.numigoo
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.graphics.Color
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -14,6 +17,7 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.BounceInterpolator
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import com.example.numigoo.GlobalValues.lessonStep
@@ -30,7 +34,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var incorrectPanel:View
     private lateinit var questionText:View
     private var controlNumber=0
-    private var answerNumber=0
+    private var answerNumber: Int?= null
     private var isAnimating2 = false
 
 
@@ -135,7 +139,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps25: List<TutorialStep> = emptyList()
     private var tutorialSteps26: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
-    
+
     // Tutorial için gerekli state'ler
     private var tutorialControlNumber: Int = 0
     private var tutorialRod4FourIsUp: Boolean = false
@@ -202,6 +206,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         setupTutorial()
         setupBackButton()
         setupQuitButton()
+        tutorialSkipSetup()
         // Tutorial 24 için özel kontrol
         if (tutorialNumber == 24 || tutorialNumber == 25 || tutorialNumber == 26) {
             binding.abacusLinear.visibility = View.INVISIBLE
@@ -248,6 +253,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.tutorialText.text = step.text
         binding.questionText.text = step.questionText
         binding.questionText.visibility = step.questionTextVisibility
+        if (step.questionText != null) {
+
+            // Renklendirme varsa uygula
+            step.questionTextColorPositions?.let { colorPositions ->
+                setTextWithColoredPositions(
+                    binding.questionText,
+                    step.questionText,
+                    colorPositions
+                )
+            }
+        }
         when (tutorialNumber) {
             3 -> binding.fiveRuleTable.visibility = step.rulesPanelVisibility
             5 -> binding.tenRuleTable.visibility = step.rulesPanelVisibility
@@ -398,19 +414,34 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 disableAllClickable(binding.abacusLinear)
                 currentStep--
                 backOrFront = false
+                var notBackNumber = false
 
-                if(currentTutorialSteps[currentStep].abacusClickable){
-                    resetAbacus()
+                if(binding.abacusLinear.visibility == View.GONE && tutorialNumber<24){
+                    binding.abacusLinear.visibility = View.VISIBLE
                 }
-                //amaç geriye gidilirken en sonki answerNumber'ı alıp abaküse yazmak.
-                for(i in currentStep downTo  0){
-                    if(currentTutorialSteps[currentStep].answerNumber == null){
-                        continue
+                for(i in currentStep  downTo  0){
+                    if(currentTutorialSteps[i].answerNumber == null){
+                        break
                     }else{
-                        val backAnswerNumber = currentTutorialSteps[currentStep-1].answerNumber
-                        writeAnswerNumber(backAnswerNumber)
+                        for(a in i-1  downTo  0) {
+                            if(currentTutorialSteps[a].answerNumber == null){
+                                continue
+                            }else{
+                                val backAnswerNumber = currentTutorialSteps[a].answerNumber
+                                notBackNumber = true
+                                Log.d("dongu","$backAnswerNumber")
+
+                                if (backAnswerNumber != null) {
+                                    writeAnswerNumber(backAnswerNumber)
+                                }
+                                break
+                            }
+                        }
                         break
                     }
+                }
+                if(!notBackNumber){
+                    resetAbacus()
                 }
                 showStep(currentStep)
                 binding.devamButton.visibility = View.GONE
@@ -420,6 +451,39 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         }
     }
+    private fun updateBeadForDigit(
+        digit: Int,
+        beadViews: List<ImageView>,
+        beadStates: MutableList<Boolean>
+    ) {
+        // Her boncuk için hedef durumu belirle
+        val targetStates = listOf(
+            digit >= 1,  // 1. boncuk
+            digit >= 2,  // 2. boncuk  
+            digit >= 3,  // 3. boncuk
+            digit >= 4   // 4. boncuk
+        )
+        
+        // Her boncuk için durum değişikliğini kontrol et ve animasyon yap
+        for (i in 0..3) {
+            val currentState = beadStates[i]
+            val targetState = targetStates[i]
+            
+            if (currentState != targetState) {
+                if (targetState) {
+                    // False'dan true'ya geçiyor - yukarı animasyon
+                    animateBeadsUp(beadViews[i])
+                    updateBeadAppearance(beadViews[i], true)
+                } else {
+                    // True'dan false'ya geçiyor - aşağı animasyon
+                    animateBeadsDown(beadViews[i])
+                    updateBeadAppearance(beadViews[i], false)
+                }
+                beadStates[i] = targetState
+            }
+        }
+    }
+
     private fun writeAnswerNumber(number:Int){
         val numberStr = number.toString().padStart(5, '0')
 
@@ -429,66 +493,119 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         var tens = numberStr[3].toString().toInt()    // Onlar basamağı
         var ones = numberStr[4].toString().toInt()    // Birler basamağı
 
-        val rod4BottomBeads = listOf(rod0BottomBead1, rod0BottomBead2, rod0BottomBead3, rod0BottomBead4)
-        val rod3BottomBeads = listOf(rod1BottomBead1, rod1BottomBead2, rod1BottomBead3, rod1BottomBead4)
-        val rod2BottomBeads = listOf(rod2BottomBead1, rod2BottomBead2, rod2BottomBead3, rod2BottomBead4)
-        val rod1BottomBeads = listOf(rod3BottomBead1, rod3BottomBead2, rod3BottomBead3, rod3BottomBead4)
-        val rod0BottomBeads = listOf(rod4BottomBead1, rod4BottomBead2, rod4BottomBead3, rod4BottomBead4)
 
         // Birler basamağı kontrolleri
+        if(ones < 5 && rod4TopIsDown){
+            animateBeadUp(rod4TopBead)
+            rod4TopIsDown = false
+            updateBeadAppearance(rod4TopBead, false)
+        }
         if (ones >= 5) {
             animateBeadDown(rod4TopBead)
             ones -= 5
-            Log.d("buzluk","$ones")
+            rod4TopIsDown = true
+            updateBeadAppearance(rod4TopBead, true)
 
         }
-        for (i in 0 until ones) {
-            Log.d("buzluk2","$ones")
-            animateBeadsUp(rod0BottomBeads[i])
-            when(i) {
-                0 -> rod4OneIsUp = true
-                1 -> rod4TwoIsUp = true
-                2 -> rod4ThreeIsUp = true
-                3 -> rod4FourIsUp = true
-            }
-            updateBeadAppearance(rod0BottomBeads[i], true)
-        }
+            // Birler basamağı için boncukları güncelle
+            val rod4BeadViews = listOf(rod4BottomBead1, rod4BottomBead2, rod4BottomBead3, rod4BottomBead4)
+            val rod4BeadStates = mutableListOf(rod4OneIsUp, rod4TwoIsUp, rod4ThreeIsUp, rod4FourIsUp)
+            updateBeadForDigit(ones, rod4BeadViews, rod4BeadStates)
+            
+            // Boolean değişkenleri güncelle
+            rod4OneIsUp = rod4BeadStates[0]
+            rod4TwoIsUp = rod4BeadStates[1]
+            rod4ThreeIsUp = rod4BeadStates[2]
+            rod4FourIsUp = rod4BeadStates[3]
 
         // Onlar basamağı kontrolleri
+        if(tens < 5 && rod3TopIsDown){
+            animateBeadUp(rod3TopBead)
+            rod3TopIsDown = false
+            updateBeadAppearance(rod3TopBead, false)
+        }
         if (tens >= 5) {
             animateBeadDown(rod3TopBead)
-            ones -= 5
+            rod3TopIsDown = true
+            updateBeadAppearance(rod3TopBead, true)
+            tens -= 5
         }
-        for(i in 1..tens){
-            animateBeadsUp(rod1BottomBeads[i])
-        }
-
+        // Onlar basamağı için boncukları güncelle
+        val rod3BeadViews = listOf(rod3BottomBead1, rod3BottomBead2, rod3BottomBead3, rod3BottomBead4)
+        val rod3BeadStates = mutableListOf(rod3OneIsUp, rod3TwoIsUp, rod3ThreeIsUp, rod3FourIsUp)
+        updateBeadForDigit(tens, rod3BeadViews, rod3BeadStates)
+        
+        // Boolean değişkenleri güncelle
+        rod3OneIsUp = rod3BeadStates[0]
+        rod3TwoIsUp = rod3BeadStates[1]
+        rod3ThreeIsUp = rod3BeadStates[2]
+        rod3FourIsUp = rod3BeadStates[3]
         // Yüzler basamağı kontrolleri
+        if(hundreds < 5 && rod2TopIsDown){
+            animateBeadUp(rod2TopBead)
+            rod2TopIsDown = false
+            updateBeadAppearance(rod2TopBead, false)
+        }
         if (hundreds >= 5) {
             animateBeadDown(rod2TopBead)
-            ones -= 5
+            rod2TopIsDown = true
+            updateBeadAppearance(rod2TopBead, true)
+            hundreds -= 5
         }
-        for(i in 1..hundreds){
-            animateBeadsUp(rod2BottomBeads[i])
-        }
-
+        // Yüzler basamağı için boncukları güncelle
+        val rod2BeadViews = listOf(rod2BottomBead1, rod2BottomBead2, rod2BottomBead3, rod2BottomBead4)
+        val rod2BeadStates = mutableListOf(rod2OneIsUp, rod2TwoIsUp, rod2ThreeIsUp, rod2FourIsUp)
+        updateBeadForDigit(hundreds, rod2BeadViews, rod2BeadStates)
+        
+        // Boolean değişkenleri güncelle
+        rod2OneIsUp = rod2BeadStates[0]
+        rod2TwoIsUp = rod2BeadStates[1]
+        rod2ThreeIsUp = rod2BeadStates[2]
+        rod2FourIsUp = rod2BeadStates[3]
         // Binler basamağı kontrolleri
+        if(thousands < 5 && rod1TopIsDown){
+            animateBeadUp(rod1TopBead)
+            rod1TopIsDown = false
+            updateBeadAppearance(rod1TopBead, false)
+        }
         if (thousands >= 5) {
             animateBeadDown(rod1TopBead)
-            ones -= 5
+            rod1TopIsDown = true
+            updateBeadAppearance(rod1TopBead, true)
+            thousands -= 5
         }
-        for(i in 1..thousands){
-            animateBeadsUp(rod3BottomBeads[i])
-        }
-
+        // Binler basamağı için boncukları güncelle
+        val rod1BeadViews = listOf(rod1BottomBead1, rod1BottomBead2, rod1BottomBead3, rod1BottomBead4)
+        val rod1BeadStates = mutableListOf(rod1OneIsUp, rod1TwoIsUp, rod1ThreeIsUp, rod1FourIsUp)
+        updateBeadForDigit(thousands, rod1BeadViews, rod1BeadStates)
+        
+        // Boolean değişkenleri güncelle
+        rod1OneIsUp = rod1BeadStates[0]
+        rod1TwoIsUp = rod1BeadStates[1]
+        rod1ThreeIsUp = rod1BeadStates[2]
+        rod1FourIsUp = rod1BeadStates[3]
         // On binler basamağı kontrolleri
+        if(ones < 5 && topIsDown){
+            animateBeadUp(rod0TopBead)
+            topIsDown = false
+            updateBeadAppearance(rod0TopBead, false)
+        }
         if (tenThousands >= 5) {
-            animateBeadDown(rod4TopBead)
-            ones -= 5
+            animateBeadDown(rod0TopBead)
+            topIsDown = true
+            updateBeadAppearance(rod0TopBead, true)
+            tenThousands -= 5
         }
-        for(i in 1..thousands){
-            animateBeadsUp(rod4BottomBeads[i])
-        }
+        // On binler basamağı için boncukları güncelle
+        val rod0BeadViews = listOf(rod0BottomBead1, rod0BottomBead2, rod0BottomBead3, rod0BottomBead4)
+        val rod0BeadStates = mutableListOf(oneIsUp, twoIsUp, threeIsUp, fourIsUp)
+        updateBeadForDigit(tenThousands, rod0BeadViews, rod0BeadStates)
+        
+        // Boolean değişkenleri güncelle
+        oneIsUp = rod0BeadStates[0]
+        twoIsUp = rod0BeadStates[1]
+        threeIsUp = rod0BeadStates[2]
+        fourIsUp = rod0BeadStates[3]
     }
     private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
         parentFragmentManager.beginTransaction()
@@ -5610,12 +5727,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "3 ile 6’nın çarpımı 18.",
                 questionText = "30 x 60",
-                questionTextVisibility = View.VISIBLE
-            ),
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                    5 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
+                )            ),
             TutorialStep(
                 "Sonucun birler basamağı, yüzler basamağına gelecek şekilde yazıyoruz.",
                 questionText = "30 x 60",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                    5 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
+                )
             ),
             TutorialStep(
                 "Sonucun birler basamağı, yüzler basamağına gelecek şekilde yazıyoruz.",
@@ -5627,6 +5751,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_top", 3),
                     BeadAnimation(this, "rod2_bead_bottom3", 1),
                     BeadAnimation(this, "rod2_bead_bottom2", 1)),
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                    5 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
+                )
             ),
             TutorialStep(
                 "Bu işleme bakalım.",
@@ -5642,12 +5770,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "2. sayının birler basamağından çarpma işlemine başlıyoruz.",
                 questionText = "43 x 21",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW
+                )
             ),
             TutorialStep(
                 "Önce 1 ile 3’ü çarpıp birler basamağına ekliyoruz.",
                 questionText = "43 x 21",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Önce 1 ile 3’ü çarpıp birler basamağına ekliyoruz.",
@@ -5657,11 +5792,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1)),
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Şimdi 1 ile 4’ü çarpıp onlar basamağına ekliyoruz.",
                 questionText = "43 x 21",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Şimdi 1 ile 4’ü çarpıp onlar basamağına ekliyoruz.",
@@ -5672,6 +5815,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom4", 1),
                     BeadAnimation(this, "rod3_bead_bottom3", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1)),
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "2. sayının onlar basamağınıda aynı şekilde ekliyoruz.",
@@ -5681,7 +5828,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "2 ile 3’ü çarpıp onlar basamağına ekliyoruz.",
                 questionText = "43 x 21",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "2 ile 3’ü çarpıp onlar basamağına ekliyoruz.",
@@ -5693,11 +5844,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom4", 2),
                     BeadAnimation(this, "rod3_bead_bottom3", 2),
                     BeadAnimation(this, "rod3_bead_bottom2", 2)),
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "2 ile 4’ü çarpıp yüzler basamağına ekliyoruz.",
                 questionText = "43 x 21",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "2 ile 4’ü çarpıp yüzler basamağına ekliyoruz.",
@@ -5708,6 +5867,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom4", 1),
                     BeadAnimation(this, "rod2_bead_bottom3", 1),
                     BeadAnimation(this, "rod2_bead_bottom2", 1)),
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Cevap 903.",
@@ -5732,13 +5895,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "2. sayının birler basamağından çarpma işlemine başlıyoruz.",
                 questionText = "78 x 43",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                )
             ),
             TutorialStep(
                 "Önce 3 ile 8’i çarpıp birler basamağına ekliyoruz.",
                 questionText = "78 x 43",
                 questionTextVisibility = View.VISIBLE,
-
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Önce 3 ile 8’i çarpıp birler basamağına ekliyoruz.",
@@ -5750,12 +5919,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Şimdi 3 ile 7’yi çarpıp onlar basamağına ekliyoruz.",
                 questionText = "78 x 43",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Şimdi 3 ile 7’yi çarpıp onlar basamağına ekliyoruz.",
@@ -5764,12 +5941,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod2_bead_bottom2", 1),
                     BeadAnimation(this, "rod2_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1))
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)),
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "4 ile 8’i çarpıp onlar basamağına ekliyoruz.",
                 questionText = "78 x 43",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "4 ile 8’i çarpıp onlar basamağına ekliyoruz.",
@@ -5782,12 +5967,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2))
+                    BeadAnimation(this, "rod3_bead_bottom3", 2)),
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "4 ile 7’yi çarpıp yüzler basamağına ekliyoruz.",
                 questionText = "78 x 43",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "4 ile 7’yi çarpıp yüzler basamağına ekliyoruz.",
@@ -5800,7 +5993,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom1", 1),
                     BeadAnimation(this, "rod2_bead_bottom2", 1),
                     BeadAnimation(this, "rod2_bead_bottom3", 1),
-                    BeadAnimation(this, "rod2_bead_top", 4))
+                    BeadAnimation(this, "rod2_bead_top", 4)),
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "Cevap 3354",
@@ -5827,7 +6024,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             TutorialStep(
                 "2. sayının birler basamağından işlemlere başlayacağız.",
                 questionText = "69 x 54",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                )
             ),
             TutorialStep(
                 "4 ile 9'u çarpıp birler basamağına ekleyelim.",
@@ -5835,7 +6035,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 36,
                 nextStepAvailable = false,
-                abacusClickable = true
+                abacusClickable = true,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "4 ile 6'yı çarpıp onlar basamağına ekleyelim.",
@@ -5843,7 +6047,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 276,
                 nextStepAvailable = false,
-                abacusClickable = true
+                abacusClickable = true,
+                questionTextColorPositions = listOf(
+                    6 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "5 ile 9'u çarpıp onlar basamağına ekleyelim.",
@@ -5851,7 +6059,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 726,
                 nextStepAvailable = false,
-                abacusClickable = true
+                abacusClickable = true,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    1 to Color.parseColor("#00BFFF")
+                )
             ),
             TutorialStep(
                 "5 ile 6'yı çarpıp yüzler basamağına ekleyelim.",
@@ -5859,7 +6071,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 3726,
                 nextStepAvailable = false,
-                abacusClickable = true
+                abacusClickable = true,
+                questionTextColorPositions = listOf(
+                    5 to Color.YELLOW,
+                    0 to Color.parseColor("#00BFFF")
+                )
+
             ),
             TutorialStep(
                 "Cevap 3726.",
@@ -6542,6 +6759,27 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         )
     }
 
+    private fun setTextWithColoredPositions(
+        textView: TextView,
+        text: String,
+        colorPositions: List<Pair<Int, Int>>
+    ) {
+        val spannableString = SpannableString(text)
+
+        colorPositions.forEach { (position, color) ->
+            if (position >= 0 && position < text.length) {
+                spannableString.setSpan(
+                    ForegroundColorSpan(color),
+                    position,
+                    position + 1,
+                    SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+
+        textView.text = spannableString
+    }
+
     private fun applyWidgetOperations(operations: List<WidgetOperation>) {
         operations.forEach { operation ->
             when (operation) {
@@ -6684,10 +6922,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val questionTextVisibility: Int = View.INVISIBLE,
         var nextStepAvailable: Boolean = true,
         var abacusClickable:Boolean = false,
-        val answerNumber: Int = 0,
+        val answerNumber: Int? = null,
         val onStepComplete: (() -> Unit)? = null,  // Yeni eklenen fonksiyon parametresi
         val rulesPanelVisibility: Int = View.VISIBLE,
-        )
+        val questionTextColorPositions: List<Pair<Int, Int>>? = null
+
+    )
     private fun stepAnswerAlgorithm(): Boolean {
 
         abacusNumberReturn()
@@ -6738,7 +6978,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 getCurrentStep().onStepComplete?.invoke()
 
                             }
-                            controlButton.visibility= View.GONE
+                            controlButton.visibility= View.INVISIBLE
                             showStep(currentStep)
                             true
                         }
@@ -6799,6 +7039,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 .setInterpolator(BounceInterpolator())
                                 .start()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                            incorrectButtonClick()
                             incorrectPanel.animate()
                                 .translationY(incorrectPanel.height.toFloat())
                                 .setDuration(200)
@@ -6816,7 +7057,108 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 }
         }
     }
+    private fun tutorialSkipSetup(){
+        binding.skipTutorialButton.setOnClickListener {
+            val abacusFragment = AbacusFragment()
+            val blindingLessonFragment = BlindingLessonFragment()
+            val bundle = Bundle()
+            bundle.putSerializable("lessonItem", lessonItem) // item Serializable olmalı!
+            abacusFragment.arguments = bundle
+            if(lessonItem!!.isBlinding == true){
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
 
+                    .replace(R.id.abacusFragmentContainer, blindingLessonFragment)  // fragment_container, ana layout'taki container ID'si
+                    .commit()
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
+
+                    .replace(R.id.abacusFragmentContainer, blindingLessonFragment)  // fragment_container, ana layout'taki container ID'si
+                    .commit()
+
+
+
+                // TutorialFragment'i kapat
+                currentStep=0
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
+                    .remove(this)
+                    .commit()
+            }else{
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
+
+                    .replace(R.id.abacusFragmentContainer, abacusFragment)  // fragment_container, ana layout'taki container ID'si
+                    .commit()
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
+
+                    .replace(R.id.abacusFragmentContainer, abacusFragment)  // fragment_container, ana layout'taki container ID'si
+                    .commit()
+
+
+
+                // TutorialFragment'i kapat
+                currentStep=0
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_left,  // Giriş animasyonu
+                        R.anim.slide_out_right  // Çıkış animasyonu
+                    )
+                    .remove(this)
+                    .commit()            }
+        }
+    }
+    private fun incorrectButtonClick(){
+        if (currentStep > 0) {
+            var notBackNumber = false
+
+            for(i in currentStep  downTo  0){
+                if(currentTutorialSteps[i].answerNumber == null){
+                    break
+                }else{
+                    for(a in i-1  downTo  0) {
+                        if(currentTutorialSteps[a].answerNumber == null){
+                            continue
+                        }else{
+                            val backAnswerNumber = currentTutorialSteps[a].answerNumber
+                            notBackNumber = true
+                            Log.d("dongu","$backAnswerNumber")
+
+                            if (backAnswerNumber != null) {
+                                writeAnswerNumber(backAnswerNumber)
+                            }
+                            break
+                        }
+                    }
+                    break
+                }
+            }
+            if(!notBackNumber){
+                resetAbacus()
+            }
+            showStep(currentStep)
+            binding.devamButton.visibility = View.GONE
+
+        } else {
+            closeFragment()
+        }
+    }
 
     private fun findIDs() {
         // 1. sütun için boncukları bul
@@ -6925,7 +7267,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             // Tüm alt view'lerin tıklanabilirliğini engelle
             disableAllClickable(binding.abacusLinear)
             // Kontrol butonunu gizle
-            controlButton.visibility = View.GONE
+            controlButton.visibility = View.INVISIBLE
             return
         }
 

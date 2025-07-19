@@ -323,7 +323,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Hatalı basamaklar:"
+            android:text="Doğru cevap"
             android:textColor="#FF4B4B"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"

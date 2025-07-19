@@ -51,7 +51,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_LESSON,
                     title = "Sayıları abaküste tanıma",
                     offset = 0,
-                    isCompleted = false,
+                    isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
                     lessonOperationsMap = 1,

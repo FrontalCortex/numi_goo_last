@@ -14,14 +14,41 @@
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/lessonTitle"
+        <LinearLayout
+            android:id="@+id/skipTutorialButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#4B4B4B"
-            android:layout_marginBottom="8dp"/>
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/lessonTitle"
+                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#4B4B4B"
+                android:layout_marginBottom="8dp"/>
+            <TextView
+                android:id="@+id/againTutorial"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:visibility="invisible"
+                android:paddingHorizontal="10dp"
+                android:text="Eğitimi tekrarla"
+                android:background="@drawable/skip_tutorial"
+                android:backgroundTint="#fff"
+                android:textAlignment="center"
+                android:textColor="#4B4B4B"
+                android:textSize="15sp">
+
+            </TextView>
+
+        </LinearLayout>
+
+
 
         <TextView
             android:id="@+id/lessonDescription"

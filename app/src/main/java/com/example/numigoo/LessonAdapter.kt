@@ -61,11 +61,21 @@ class LessonAdapter(
         val descriptionText = bottomSheetView.findViewById<TextView>(R.id.lessonDescription)
         val actionButton = bottomSheetView.findViewById<Button>(R.id.actionButton)
         val bottomSheetLayout = bottomSheetView.findViewById<LinearLayout>(R.id.bottomSheetLayout)
+        val againTutorial = bottomSheetView.findViewById<TextView>(R.id.againTutorial)
 
         // İçerikleri ayarla
         titleText.text = item.title
 
         if (item.isCompleted) {
+            if(item.tutorialNumber != 0 && item.tutorialIsFinish){
+                Log.d("cetvel","getir")
+                againTutorial.visibility = View.VISIBLE
+            }
+            else{
+                Log.d("cetvel","getir2")
+
+                againTutorial.visibility = View.INVISIBLE
+            }
             if(item.stepIsFinish){
                 if(item.type == 2){
                     actionButton.text = "Tekrar dene"
@@ -85,6 +95,7 @@ class LessonAdapter(
                 descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
                 bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
 
+                //tutorial olanlarda ve tutorialIsFinish olanlarda çıkacak.
                 actionButton.apply {
                     text = "-5                           BAŞLAT"
                     textAlignment = View.TEXT_ALIGNMENT_TEXT_START  // veya
@@ -99,6 +110,7 @@ class LessonAdapter(
         } else {
             descriptionText.text = "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"
             titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            againTutorial.visibility = View.INVISIBLE
             descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
             bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.background_color)
 
@@ -154,6 +166,34 @@ class LessonAdapter(
             }
         })
 
+        againTutorial.setOnClickListener{
+            // Bottom sheet'i aşağı doğru kaydırarak gizle
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+
+            // Activity'yi bul ve FragmentActivity olarak cast et
+            val activity = context as FragmentActivity
+
+            // Fragment container'ı görünür yap
+            val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
+            fragmentContainer.visibility = View.VISIBLE
+            val slideIn = android.R.anim.slide_in_left
+            val slideOut = android.R.anim.slide_out_right
+            item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
+            item.startStepNumber.also { lessonStep = it!! }
+
+
+
+                    activity.supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .addToBackStack(null)
+                        .commit()
+
+
+
+
+        }
         // Button tıklama
         actionButton.setOnClickListener {
             if (item.isCompleted) {
@@ -197,8 +237,6 @@ class LessonAdapter(
                 }
 
                 else{
-
-
                 if(item.tutorialIsFinish){
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)

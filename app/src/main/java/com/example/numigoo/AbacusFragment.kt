@@ -27,6 +27,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.airbnb.lottie.LottieAnimationView
+import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import com.example.numigoo.databinding.FragmentAbacusBinding
@@ -47,6 +48,7 @@ class AbacusFragment : Fragment() {
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
     private lateinit var correctAnswerText: TextView
+    private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
     private lateinit var correctPanel: View
@@ -159,6 +161,7 @@ class AbacusFragment : Fragment() {
         findIDs()
         //global lessonItem alınıyor
         rulesBookButton = binding.rulesBookButton
+        rulesBookButtonClick()
         timerTextView = binding.timerTextView
         fabHint = binding.fabHint
         tvHint = binding.tvHint
@@ -166,6 +169,7 @@ class AbacusFragment : Fragment() {
         fubHintClickListener()
         lottieView = binding.lottieView
         correctAnswerText = binding.correctAnswerText
+        correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
         firstNumberText = binding.firstNumberText
@@ -178,7 +182,7 @@ class AbacusFragment : Fragment() {
         setupBeads()
         setupQuitButton()
         timeStarter()
-        rulesBookButtonClick()
+        rulesBookVisibility()
     }
     private fun rulesBookButtonClick(){
         rulesBookButton.setOnClickListener{
@@ -187,10 +191,119 @@ class AbacusFragment : Fragment() {
                     R.anim.slide_down,
                     0
                 )
-                .replace(R.id.rulesFragmentContainer, RulesFragment())
+                .replace(R.id.rulesFragmentContainer, RulesFragment(),"rules_fragment")
                 .commit()
+
+            // Fragment eklendikten sonra visibility'yi ayarla
+            rulesBookSetup()
+            changeRulesTableText()
         }
 
+    }
+
+    private fun rulesBookVisibility(){
+        if (lessonItem.mapFragmentIndex!! < 4 && globalPartId == 1) {
+            rulesBookButton.visibility = View.INVISIBLE
+        }
+        else if (lessonItem.mapFragmentIndex!! < 5 && globalPartId == 2) {
+            rulesBookButton.visibility = View.INVISIBLE
+        }
+    }
+    private fun rulesBookSetup(){
+        childFragmentManager.executePendingTransactions()
+        Log.d("sansas","1")
+
+        if(lessonItem.mapFragmentIndex!! in 4..9 && globalPartId == 1){
+            Log.d("sansas","3")
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.GONE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.GONE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 10..15 && globalPartId == 1) {
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.GONE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 16..21 && globalPartId == 1) {
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 22..25 && globalPartId == 1) {
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 6..10 && globalPartId == 2){
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.GONE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.GONE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 11..15 && globalPartId == 2){
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        }
+        else if(lessonItem.mapFragmentIndex!! in 16..20 && globalPartId == 2){
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+        }
+        else if(globalPartId == 3){
+            rulesBookButton.visibility = View.VISIBLE
+            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+        }
+    }
+
+    private fun changeRulesTableText(){
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+        rulesFragment?.let { fragment ->
+            // Fragment'ın view'ından widget'a erişim
+            val fiveText = fragment.view?.findViewById<TextView>(R.id.fiveText)
+            val tenText = fragment.view?.findViewById<TextView>(R.id.tenText)
+            val tenTextSecond = fragment.view?.findViewById<TextView>(R.id.tenTextSecond)
+            val beadText = fragment.view?.findViewById<TextView>(R.id.beadText)
+
+            if (globalPartId == 2) {
+                // Widget'ı kullan
+                fiveText?.text = "Çıkarılacak Sayı"
+                tenText?.text = "Çıkarılacak Sayı"
+                tenTextSecond?.text = "Çıkarılacak Sayı"
+                beadText?.text = "Çıkarılacak Sayı"
+
+            }
+            else{
+                fiveText?.text = "Eklenecek Sayı"
+                tenText?.text = "Eklenecek Sayı"
+                tenTextSecond?.text = "Eklenecek Sayı"
+                beadText?.text = "Eklenecek Sayı"
+            }
+        }
     }
     private fun splitTextEqually(text: String): String {
         val words = text.split(" ")
@@ -492,24 +605,15 @@ class AbacusFragment : Fragment() {
             controlNumber = 0
             true
         } else {
+            incorrectText()
             controlNumber = 0
             false
         }
     }
 
-    private fun incorrectText(): String {
-        var result = ""
-        val answerStr = answerNumber.toString().padStart(5, '0')
-        val controlStr = controlNumber.toString().padStart(5, '0')
-
-        // 5. basamaktan başlayarak kontrol ediyoruz
-        for (i in 0..4) {
-            if (answerStr[i] != controlStr[i]) {
-                // Basamak numarasını ekliyoruz (5-i şeklinde)
-                result += "${5-i} "
-            }
-        }
-        return result
+    private fun incorrectText() {
+        correctAnswerText.text = "Senin cevabın $controlNumber"
+        correctAnswerLabel.text = "Doğru cevap $answerNumber"
     }
 
     private fun setupQuitButton() {
@@ -1635,7 +1739,7 @@ class AbacusFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
-            correctAnswerText.text = incorrectText()
+            //correctAnswerText.text = incorrectText()
             incorrectPanel.animate()
                 .alpha(1f)
                 .translationY(0f)

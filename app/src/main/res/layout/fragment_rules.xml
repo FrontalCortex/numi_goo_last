@@ -55,6 +55,7 @@
 
                 <TableRow>
                     <TextView
+                        android:id="@+id/fiveText"
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
@@ -161,6 +162,7 @@
 
                 <TableRow>
                     <TextView
+                        android:id="@+id/tenText"
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
@@ -280,6 +282,7 @@
 
                 <TableRow>
                     <TextView
+                        android:id="@+id/tenTextSecond"
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
@@ -386,6 +389,7 @@
 
                 <TableRow>
                     <TextView
+                        android:id="@+id/beadText"
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"

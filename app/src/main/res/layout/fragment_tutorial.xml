@@ -17,673 +17,748 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/lesson_completed" />
+
     <LinearLayout
         android:id="@+id/fiveRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="10dp">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableLayout
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Eklenecek sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Kardeşi"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="3"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
-                    android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="3"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/extractionFiveRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="10dp">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableLayout
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Çıkarılacak sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Kardeşi"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="3"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
-                    android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="3"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/tenRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="10dp"
-        >
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableLayout
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Eklenecek sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Büyük Kardeşi"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="9"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="8"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="7"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="7"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="6"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
-                    android:text="5"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="5"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="5"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="5"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/tenRuleTableLinearLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="10dp"
-        android:visibility="gone">
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableLayout
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Eklenecek sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Kardeşi"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="6"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="7"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="3"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="8"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="2"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="2"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="9"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="1"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="1"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/BeadRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_gravity="center"
+        android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/quitButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        >
+        app:layout_constraintTop_toBottomOf="@id/quitButton">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Boncuk kuralı"
             android:layout_gravity="center"
-            android:textColor="@color/lesson_header_green"
+            android:text="Boncuk kuralı"
             android:textAlignment="center"
+            android:textColor="@color/lesson_header_green"
             android:textSize="16sp">
 
         </TextView>
+
         <TableLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:layout_marginHorizontal="50dp"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Eklenecek sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="İşlem"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="6"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="1 gelir - 5 gider - 10 gelir"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="7"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="2 gelir - 5 gider - 10 gelir"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="8"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="3 gelir - 5 gider - 10 gelir"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="3 gelir - 5 gider - 10 gelir"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="9"
-                    android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="4 gelir - 5 gider - 10 gelir"
-                    android:textColor="#fff"
-                    android:padding="2dp"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:padding="2dp"
+                    android:text="4 gelir - 5 gider - 10 gelir"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/tenRuleExtractionTableLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginEnd="10dp"
         android:orientation="vertical"
         android:visibility="gone"
-        android:layout_gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
 
-        android:layout_marginEnd="10dp"
-        >
+        app:layout_constraintTop_toTopOf="parent">
 
 
         <TableLayout
             android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:stretchColumns="*"
             android:background="#222"
-            android:padding="2dp">
+            android:padding="2dp"
+            android:stretchColumns="*">
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Çıkarılacak sayı"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
+                    android:padding="2dp"
                     android:text="Kardeşi"
-                    android:textStyle="bold"
+                    android:textAlignment="center"
                     android:textColor="#fff"
-                    android:padding="2dp"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textStyle="bold" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
 
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="9"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="8"
-                    android:textColor="#fff"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:text="8"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="3"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="7"
-                    android:textColor="#fff"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:text="7"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
 
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="6"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
-                    android:text="5"
-                    android:textColor="#fff"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:text="5"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
-                    android:text="5"
-                    android:textColor="#fff"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:text="5"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="6"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="4"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="7"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="3"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
-                    android:text="8"
-                    android:textColor="#fff"
                     android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:text="8"
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="2"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
+
             <TableRow>
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="9"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
+
                 <TextView
+                    android:background="@drawable/table_cell_border"
                     android:text="1"
-                    android:textColor="#fff"
-                    android:background="@drawable/table_cell_border"
-                    android:textAlignment="center"/>
+                    android:textAlignment="center"
+                    android:textColor="#fff" />
             </TableRow>
         </TableLayout>
 
     </LinearLayout>
-
-
 
 
     <androidx.constraintlayout.widget.Guideline
@@ -693,33 +768,34 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.2" />
 
-        <TextView
-            android:id="@+id/tutorialText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:lineSpacingExtra="8dp"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="30sp"
-            android:lineSpacingMultiplier="0.5"
-            android:text="Deneme"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/questionText"/>
-        <TextView
-            android:id="@+id/questionText"
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:lineSpacingExtra="8dp"
-            android:textAlignment="center"
-            android:textColor="@color/white"
-            android:textSize="30sp"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/rectangle_border"
-            android:text="Deneme"
-            app:layout_constraintBottom_toTopOf="@id/abacusLinear"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"/>
+    <TextView
+        android:id="@+id/tutorialText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lineSpacingExtra="8dp"
+        android:lineSpacingMultiplier="0.5"
+        android:text="Deneme"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toTopOf="@id/questionText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/questionText"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/rectangle_border"
+        android:lineSpacingExtra="8dp"
+        android:text="Deneme"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <View
         android:id="@+id/focusView"
@@ -747,34 +823,36 @@
         android:id="@+id/blinding_tutorial2"
         android:layout_width="270dp"
         android:layout_height="579dp"
-        android:visibility="invisible"
         android:layout_marginBottom="20dp"
         android:background="@drawable/blinding_tutorial1"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent" />
+
     <ImageView
         android:id="@+id/blinding_tutorial1"
         android:layout_width="270dp"
         android:layout_height="579dp"
-        android:visibility="invisible"
         android:layout_marginBottom="20dp"
         android:background="@drawable/blinding_tutorial2"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintStart_toStartOf="parent">
 
     </ImageView>
+
     <ImageView
         android:id="@+id/blinding_tutorial3"
         android:layout_width="270dp"
         android:layout_height="579dp"
-        android:visibility="invisible"
         android:layout_marginBottom="20dp"
         android:background="@drawable/blinding_tutorial3"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintStart_toStartOf="parent">
 
     </ImageView>
 
@@ -787,8 +865,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/guideline3"
-        >
+        app:layout_constraintTop_toTopOf="@id/guideline3">
 
 
         <FrameLayout
@@ -1118,46 +1195,72 @@
 
     </LinearLayout>
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_marginBottom="20dp">
-
-    <ImageButton
-        android:id="@+id/backButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginLeft="10dp"
-        android:background="@color/background_color"
-        android:paddingLeft="20dp"
-        android:src="@mipmap/back_ic"
-        android:layout_gravity="center"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginBottom="20dp"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:tint="@color/lesson_completed" />
-    <Button
-        android:id="@+id/kontrolButton"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:layout_weight="1"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:fontFamily="@font/font_regular"
-        android:text="Kontrol Et"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:elevation="0dp"
-        android:visibility="gone"
-        android:textColor="#000000"
-        android:backgroundTint="#8CC63F"
-        app:cornerRadius="15dp" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-</LinearLayout>
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            android:background="@color/background_color"
+            android:paddingLeft="20dp"
+            android:src="@mipmap/back_ic"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:tint="@color/lesson_completed" />
+
+        <Button
+            android:id="@+id/kontrolButton"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_weight="1"
+            android:backgroundTint="#8CC63F"
+            android:elevation="0dp"
+            android:fontFamily="@font/font_regular"
+            android:text="Kontrol Et"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="visible"
+            app:cornerRadius="15dp" />
+
+
+        <LinearLayout
+            android:id="@+id/skipTutorialButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:background="@drawable/skip_tutorial">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="10dp"
+                android:gravity="center"
+                android:text="Eğitimi atla"
+                android:textAlignment="center"
+                android:textColor="@color/white"
+                android:textSize="15sp">
+
+            </TextView>
+
+        </LinearLayout>
+
+
+
+    </LinearLayout>
 
 
     <Button
@@ -1199,38 +1302,39 @@
         android:id="@+id/overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:alpha="0"
         android:background="#00000000"
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone"
-        android:alpha="0"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/incorrectPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bottom_sheet_background"
-        android:translationZ="0dp"
-        android:elevation="4dp"
         android:clickable="false"
-        android:focusable="false"
-        android:fitsSystemWindows="true"
         android:descendantFocusability="blocksDescendants"
+        android:elevation="4dp"
+        android:fitsSystemWindows="true"
+        android:focusable="false"
         android:importantForAccessibility="no"
+        android:translationZ="0dp"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="invisible">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:id="@+id/incorrectIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@android:drawable/ic_delete"
             android:layout_margin="10dp"
+            android:src="@android:drawable/ic_delete"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tint="#FF4B4B" />
@@ -1239,12 +1343,12 @@
             android:id="@+id/incorrectText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="10dp"
             android:layout_marginStart="8dp"
             android:text="Yanlış"
             android:textColor="#FF4B4B"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_margin="10dp"
             app:layout_constraintStart_toEndOf="@id/incorrectIcon"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -1252,11 +1356,11 @@
             android:id="@+id/correctAnswerLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="10dp"
             android:layout_marginTop="16dp"
             android:text="Talimata uygun işlemi yap"
             android:textColor="#FF4B4B"
             android:textSize="16sp"
-            android:layout_margin="10dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/incorrectText" />
 
@@ -1318,9 +1422,9 @@
             android:id="@+id/correctText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="10dp"
             android:layout_marginStart="8dp"
             android:text="Aferin!"
-            android:layout_margin="10dp"
 
             android:textColor="#8CC63F"
             android:textSize="18sp"
@@ -1332,12 +1436,12 @@
             android:id="@+id/continueButton"
             android:layout_width="match_parent"
             android:layout_height="60dp"
+            android:layout_margin="5dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
             android:text="Devam et"
             android:textAllCaps="false"
             android:textColor="#000000"
-            android:layout_margin="5dp"
             android:textSize="18sp"
             android:textStyle="bold"
             app:cornerRadius="15dp"
