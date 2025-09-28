@@ -427,7 +427,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     backPart = true,
                     sectionTitle = "2. Kısım Çıkartma",
-                    sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz. "
+                    sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz."
 
                 ),
                 LessonItem(
@@ -709,7 +709,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     backPart = true,
                     sectionTitle = "3. Kısım Çarpma",
-                    sectionDescription = "Abaküste çarpmaya dair her şey. "
+                    sectionDescription = "Abaküste çarpmaya dair her şey."
 
                 ),
                 LessonItem(
@@ -930,7 +930,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 3'e 2 çarpma",
-                    offset = -60,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -995,7 +995,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit Kuralsız Toplama",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1025,7 +1025,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit Kuralsız Toplama",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1066,7 +1066,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Temel 5'lik Toplama",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1081,7 +1081,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 5'lik Toplama",
-                    offset = 0,
+                    offset = 60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1096,7 +1096,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 5'lik Toplama",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1137,7 +1137,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit 10'luk Toplama",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1167,7 +1167,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 10'luk Toplama",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1199,7 +1199,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 6,7,8,9",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
@@ -1223,7 +1223,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 10'luk Toplama",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1238,7 +1238,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 10'luk Toplama",
-                    offset = 0,
+                    offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1279,7 +1279,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Temel Boncuk Toplama",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1294,7 +1294,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor Boncuk Toplama",
-                    offset = 0,
+                    offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1309,7 +1309,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız Boncuk Toplama",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1394,7 +1394,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor Kuralsız Çıkarma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1409,7 +1409,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız Kuralsız Çıkarma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1450,7 +1450,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit 5'lik Çıkarma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1465,7 +1465,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 5'lik Çıkarma",
-                    offset = 0,
+                    offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1480,7 +1480,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 5'lik Çıkarma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1536,7 +1536,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 10'luk Çıkarma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1551,7 +1551,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 10'luk Çıkarma",
-                    offset = 0,
+                    offset = 60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1592,7 +1592,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Temel Boncuk Çıkarma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1607,7 +1607,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Temel Boncuk Çıkarma",
-                    offset = 0,
+                    offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1622,7 +1622,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Temel Boncuk Çıkarma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1691,7 +1691,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit Temel Çarpma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1706,7 +1706,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor Temel Çarpma",
-                    offset = 0,
+                    offset = 60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1721,7 +1721,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız Çarpma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1777,7 +1777,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1792,7 +1792,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
-                    offset = 0,
+                    offset = -60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1833,7 +1833,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Basit 2'ye 2 Çarpma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1848,7 +1848,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor 2'ye 2 Çarpma",
-                    offset = 0,
+                    offset = 60,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1863,7 +1863,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 2'ye 2 Çarpma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1904,7 +1904,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
@@ -1934,7 +1934,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,

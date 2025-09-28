@@ -37,6 +37,28 @@
             android:textStyle="bold"
             android:textSize="20sp"
             android:layout_marginStart="8dp"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+
+        <ImageView
+            android:id="@+id/energyIcon"
+            android:src="@drawable/energy_ic"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="Energy" />
+
+        <TextView
+            android:id="@+id/energyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5/5"
+            android:textColor="#FFD600"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:layout_marginStart="8dp"/>
     </LinearLayout>
 
     <!-- Abacus Fragment Container -->

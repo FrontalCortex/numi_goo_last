@@ -820,11 +820,48 @@
         app:layout_constraintGuide_percent="0.4" />
 
     <ImageView
+        android:id="@+id/backButtonArrow"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:background="@drawable/arrow1"
+        android:rotation="90"
+        app:layout_constraintBottom_toTopOf="@id/bottomPanelID"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginStart="-10dp"
+        android:visibility="invisible">
+
+    </ImageView>
+    <ImageView
+        android:id="@+id/skipTutorialButtonArrow"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:background="@drawable/arrow1"
+        android:rotation="90"
+        app:layout_constraintBottom_toTopOf="@id/bottomPanelID"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="-10dp"
+        android:visibility="invisible">
+
+
+    </ImageView>
+
+    <ImageView
         android:id="@+id/blinding_tutorial2"
         android:layout_width="270dp"
         android:layout_height="579dp"
         android:layout_marginBottom="20dp"
         android:background="@drawable/blinding_tutorial1"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/rulesBookTutorial"
+        android:layout_width="263dp"
+        android:layout_height="533dp"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/rules_book_image"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -1196,6 +1233,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/bottomPanelID"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="5dp"
@@ -1241,6 +1279,7 @@
             android:id="@+id/skipTutorialButton"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
+            android:visibility="visible"
             android:layout_gravity="center"
             android:background="@drawable/skip_tutorial">
 
@@ -1257,7 +1296,6 @@
             </TextView>
 
         </LinearLayout>
-
 
 
     </LinearLayout>

@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
@@ -36,6 +37,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var controlNumber=0
     private var answerNumber: Int?= null
     private var isAnimating2 = false
+    
+    // Ses çalma için MediaPlayer
+    private var mediaPlayer: MediaPlayer? = null
+    
+    // Typewriter effect için
+    private var typewriterRunnable: Runnable? = null
 
 
     private var oneIsUp = false
@@ -239,7 +246,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
             else{
                 backOrFront = true
-                showStep(currentStep)
+                //showStep(currentStep) her tıkladığımızda aynı adımı tekrar gösteriyordu. Gösterme bra dedim
         }
         }
     }
@@ -250,9 +257,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun showStep(position: Int) {
         val step = currentTutorialSteps[position]
-        binding.tutorialText.text = step.text
+        
+        // Typewriter effect kullanılıp kullanılmayacağını kontrol et
+        if (step.useTypewriterEffect) {
+            showTextWithTypewriter(step.text, binding.tutorialText, step.typewriterSpeed)
+        } else {
+            binding.tutorialText.text = step.text
+        }
+        
         binding.questionText.text = step.questionText
         binding.questionText.visibility = step.questionTextVisibility
+        
+        // Ses dosyasını çal
+        playSound(step.soundResource)
         if (step.questionText != null) {
 
             // Renklendirme varsa uygula
@@ -621,6 +638,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // Devam butonunu görünür yap
         binding.abacusLinear.visibility = View.GONE
         binding.devamButton.visibility = View.VISIBLE
+        binding.skipTutorialButton.visibility = View.INVISIBLE
 
         // Devam butonuna tıklama olayını ekle
         binding.devamButton.setOnClickListener {
@@ -656,7 +674,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
     private fun isAnyAnimationRunning(): Boolean {
-        return currentAnimations.any { it.isAnimating() } || widgetAnimators.any { it.isRunning }
+        return currentAnimations.any { it.isAnimating() } || 
+               widgetAnimators.any { it.isRunning }
+               // || typewriterRunnable != null  // Typewriter effect devam ediyorsa true döndür
     }
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
@@ -664,12 +684,63 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun createTutorialSteps(){
         tutorialSteps = listOf(
             TutorialStep(
+                "Eğitim bölümüne hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.backButton, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButton, View.INVISIBLE) },
+                    ),
+                soundResource = R.raw.tutorial1_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
+            ),TutorialStep(
+                "Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeVisibility(binding.backButtonArrow, View.VISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.backButton, View.VISIBLE) },
+
+                    ),
+                soundResource = R.raw.tutorial1_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
+            ),TutorialStep(
+                "Eğer konuyu biliyorsan. Sağ alttaki eğitimi atla butonuna tıklayarak direkt teste geçebilirsin.",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeVisibility(binding.backButtonArrow, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButtonArrow, View.VISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButton, View.VISIBLE) },
+
+                    ),
+                soundResource = R.raw.tutorial1_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
+            ),TutorialStep(
+                "Şimdi başlayalım.",
+                null,
+                listOf(
+                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.VISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButtonArrow, View.INVISIBLE) },
+                    ),
+                soundResource = R.raw.tutorial1_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
+            ),
+            TutorialStep(
                 "Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.",
-                null
+                null,
+                soundResource = R.raw.tutorial1_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Her sütun bir basamağı temsil eder. Basamaklar sağdan sola doğru artarak ilerler.",
-                null
+                null,
+                soundResource = R.raw.tutorial1_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Birler",
@@ -686,7 +757,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                             duration = 200
                         )
                     }
-                )
+                ),
+                soundResource = R.raw.tutorial1_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Onlar",
@@ -700,7 +774,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         toMarginLeft = 0,
                         duration = 200
                     )
-                }
+                },
+                soundResource = R.raw.tutorial1_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Yüzler",
@@ -713,7 +790,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         toMarginLeft = 0,
                         duration = 200
                     )
-                }
+                },
+                soundResource = R.raw.tutorial1_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Binler",
@@ -726,10 +806,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         toMarginLeft = 0,
                         duration = 200
                     )
-                }
+                },
+                soundResource = R.raw.tutorial1_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
-                "Ve on binler",
+                "Ve on binler.",
                 null,listOf {
                     WidgetOperation.AnimateMargin(
                         view = focusView,
@@ -739,7 +822,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         toMarginLeft = 0,
                         duration = 200
                     )
-                }
+                },
+                soundResource = R.raw.tutorial1_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Her sütunda 5 boncuk vardır.",
@@ -766,7 +852,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 onStep = { view ->
                     sizeHistory.add(Pair(view.width, view.height))
                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                }
+                },
+                soundResource = R.raw.tutorial1_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ), TutorialStep(
                 "Üstteki boncuklar 5'lik değere sahipken,",
@@ -794,7 +883,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 onStep = { view ->
                     sizeHistory.add(Pair(view.width, view.height))
                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                }
+                },
+                soundResource = R.raw.tutorial1_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Alttaki boncuklar 1'lik değere sahiptir.",
@@ -829,7 +921,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 onStep = { view ->
                     sizeHistory.add(Pair(view.width, view.height))
                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                }
+                },
+                soundResource = R.raw.tutorial1_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Örneğin 1 sayısı abaküste bu şekilde gösterilir.",
@@ -838,7 +933,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 onStep = { view ->
                     sizeHistory.add(Pair(view.width, view.height))
                     Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                }
+                },
+                soundResource = R.raw.tutorial1_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "5 sayısı için üstteki boncuk kullanılır.",
@@ -846,23 +944,35 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
                     BeadAnimation(this, "rod4_bead_top", 3)
                     // İhtiyaca göre daha fazla animasyon eklenebilir
-                )
+                ),
+                soundResource = R.raw.tutorial1_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "6 sayısı için üstteki boncuk ve bir alttaki boncuk kullanılır.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom1", 1))  // en sağdaki sütun (4), 6 boncuk
+                listOf(BeadAnimation(this, "rod4_bead_bottom1", 1)),
+                soundResource = R.raw.tutorial1_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L  // en sağdaki sütun (4), 6 boncuk
             ),
             TutorialStep(
                 "17 sayısı ise böyle gösterilir.",
                 listOf(BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1))  // en sağdaki sütun (4), 6 boncuk
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)),
+                soundResource = R.raw.tutorial1_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L  // en sağdaki sütun (4), 6 boncuk
             ),
             TutorialStep(
                 "51 sayısı böyle.",
                 listOf(BeadAnimation(this, "rod3_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_top", 3),
                     BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4))  // en sağdaki sütun (4), 6 boncuk
+                    BeadAnimation(this, "rod4_bead_top", 4)),
+                soundResource = R.raw.tutorial1_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L  // en sağdaki sütun (4), 6 boncuk
             ),
             TutorialStep(
                 "126 sayısı ise böyle gösterilir.",
@@ -870,27 +980,42 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
                     BeadAnimation(this, "rod3_bead_top", 4),
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3))  // en sağdaki sütun (4), 6 boncuk
+                    BeadAnimation(this, "rod4_bead_top", 3)),
+                soundResource = R.raw.tutorial1_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L  // en sağdaki sütun (4), 6 boncuk
             ),
             TutorialStep(
-                "Şimdi tahtaya yazacağım sayıları abaküste göstermeye çalış.",
-                null
+                "Şimdi tahtaya yazacağım sayıları, abaküste göstermeye çalış.",
+                null,
+                soundResource = R.raw.tutorial1_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             )
 
         )
         tutorialSteps2 = listOf(
             TutorialStep(
-            "Bu derste çok büyük sayıları bile ne kadar kolay toplayabileceğini öğreneceksin.",
-            null
+            "Bu derste, çok büyük sayıları bile ne kadar kolay toplayabileceğini öğreneceksin.",
+            null,
+                soundResource = R.raw.tutorial2_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
         ),
             TutorialStep(
                 "Kuralsız Toplama",
-                null
+                null,
+                soundResource = R.raw.tutorial2_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 text = "Bu işlemle başlayalım.",
                 questionText = "3 + 5",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "ilk önce abaküse 3 yazıyoruz.",
@@ -898,7 +1023,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1))
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
+                soundResource = R.raw.tutorial2_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),
             TutorialStep(
@@ -906,30 +1034,42 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionText = "3 + 5",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3))
+                    BeadAnimation(this, "rod4_bead_top", 3)),
+                soundResource = R.raw.tutorial2_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),
             TutorialStep(
-                "Cevap 8."
+                "Cevap 8.",
+                soundResource = R.raw.tutorial2_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
-                "Şimdi beraber bu örneği yapalım.",
+                "Şimdi bu örneği beraber yapalım.",
                 questionText = "2 + 6",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 4),
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
                     BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2))
+                    BeadAnimation(this, "rod4_bead_bottom3", 2)),
+                soundResource = R.raw.tutorial2_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),
             TutorialStep(
-                "ilk önce abaküse 2 yazalım.",
+                "İlk önce abaküse 2 yazıp kontrol ete tıklayalım.",
                 questionTextVisibility = View.VISIBLE,
                 questionText = "2 + 6",
                 nextStepAvailable = false,
                 abacusClickable = true,
-                answerNumber = 2
+                answerNumber = 2,
+                soundResource = R.raw.tutorial2_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Şimdi de 6'yı ekleyelim.",
                 questionText = "2 + 6",
@@ -937,28 +1077,43 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 answerNumber = 8,
                 abacusClickable = true,
                 nextStepAvailable = false,
+                soundResource = R.raw.tutorial2_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
 
             ),TutorialStep(
                 "Çabuk öğreniyorsun.",
                 onStepComplete = { resetAbacus() },
+                soundResource = R.raw.tutorial2_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),
             TutorialStep(
-                "İki basamaklı sayılar toplanırken, sayılar en büyük basamaktan başlanarak toplanır."
+                "İki basamaklı sayılar toplanırken, sayılar en büyük basamaktan başlanarak toplanır.",
+                soundResource = R.raw.tutorial2_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Mesela bu işleme bakalım.",
                 questionText = "21 + 13",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
 
             ),TutorialStep(
-                "ilk önce 21 yazıyoruz.",
+                "İlk önce 21 yazıyoruz.",
                 questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
-                "ilk önce 21 yazıyoruz.",
+                "İlk önce 21 yazıyoruz.",
                 questionText = "21 + 13",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(BeadAnimation(this, "rod3_bead_bottom1", 1),
@@ -967,17 +1122,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
 
             ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'u onlar basamağına, sonra da 3'ü birler basamağına ekliyoruz.",
+                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
                 questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'u onlar basamağına, sonra da 3'ü birler basamağına ekliyoruz.",
+                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
                 questionText = "21 + 13",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(BeadAnimation(this, "rod3_bead_bottom3", 1))
 
         ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'u onlar basamağına, sonra da 3'ü birler basamağına ekliyoruz.",
+                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
                 questionText = "21 + 13",
                 questionTextVisibility = View.VISIBLE ,
                 animation = listOf(
@@ -985,7 +1143,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
                     BeadAnimation(this, "rod4_bead_bottom4", 1))
             ), TutorialStep(
-                "Cevap 34."
+                "Cevap 34.",
+                soundResource = R.raw.tutorial2_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
                 "Beraber örnek yaparak pekiştirelim.",
@@ -996,68 +1157,108 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
                     BeadAnimation(this, "rod4_bead_bottom2", 2),
                     BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
+                soundResource = R.raw.tutorial2_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "Bu işlemi ele alalım.",
                 questionText = "16 + 21",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "ilk önce 16 yazalım.",
+                "İlk önce 16 yazıp kontrol ete tıklayalım.",
                 questionText = "16 + 21",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                answerNumber = 16
+                answerNumber = 16,
+                soundResource = R.raw.tutorial2_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
 
             ),TutorialStep(
-                "Sonrasında, 21'i eklemek için önce 20'yi onlar basamağına ekleyelim",
+                "Sonrasında, 21'i eklemek için önce 20'yi onlar basamağına ekleyelim.",
                 questionText = "16 + 21",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                answerNumber = 36
+                answerNumber = 36,
+                soundResource = R.raw.tutorial2_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "sonra da 1'i birler basamağına ekleyelim.",
+                "Sonra da 1'i birler basamağına ekleyelim.",
                 questionText = "16 + 21",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                answerNumber = 37
+                answerNumber = 37,
+                soundResource = R.raw.tutorial2_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),
             TutorialStep(
-                "Çok güzel. Hemen kaptın."
+                "Çok güzel. Hemen kaptın.",
+                soundResource = R.raw.tutorial2_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
-                "Şimdi kendini deneme zamanı."
+                "Şimdi kendini deneme zamanı.",
+                soundResource = R.raw.tutorial2_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "Bakalım senin için hazırladığım testi çözebilecek misin ?"
+                "Bakalım senin için hazırladığım testi çözebilecek misin ?",
+                soundResource = R.raw.tutorial2_23,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ))
         tutorialSteps3 = listOf(
             TutorialStep(
                 "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin.",
-                rulesPanelVisibility = View.INVISIBLE
-            ),
-            TutorialStep(
-                "5'lik toplama",
-                rulesPanelVisibility = View.INVISIBLE
-
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial3_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5’lik toplama kuralında ekleyeceğimiz sayıların 5’e tamamlayan kardeşleri vardır.",
+                soundResource = R.raw.tutorial3_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "1’in kardeşi 4’tür.",
+                soundResource = R.raw.tutorial3_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "2’nin kardeşi 3",
+                soundResource = R.raw.tutorial3_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "3’ün kardeşi 2",
+                soundResource = R.raw.tutorial3_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "4’ün kardeşi 1’dir",
+                "4’ün kardeşi 1’dir.",
+                soundResource = R.raw.tutorial3_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Örneğin bu işlemi yapmaya çalışalım.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "İlk olarak abaküse ilk sayıyı yazıyoruz.",
@@ -1067,38 +1268,59 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
+                soundResource = R.raw.tutorial3_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Ama 1'i doğrudan ekleyemiyoruz.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "O yüzden burada 5'lik toplama kuralını uygulayacağız.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "1'in kardeşi 4'tür",
+                "1'in kardeşi 4'tür.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3))
+                    BeadAnimation(this, "rod4_bead_top", 3)),
             ),TutorialStep(
                 "Kardeşi 4 gider.",
                 questionText = "4 + 1",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Kardeşi 4 gider.",
                 questionText = "4 + 1",
@@ -1107,35 +1329,56 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
                     BeadAnimation(this, "rod4_bead_bottom2", 2),
                     BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2))
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
             ),TutorialStep(
                 "Cevap 5.",
+                soundResource = R.raw.tutorial3_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu işlemi ele alalım.",
                 questionText = "4 + 2",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4))
+                    BeadAnimation(this, "rod4_bead_top", 4)),
+                soundResource = R.raw.tutorial3_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "Önce abaküse 4'ü yazıyoruz.",questionText = "4 + 2",
+                "Önce abaküse 4 yazıyoruz.",questionText = "4 + 2",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1))
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
+                soundResource = R.raw.tutorial3_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Sonrasında 2'yi ekleyeceğiz. Ama 2'yi doğrudan ekleyemiyoruz.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "2'nin kardeşi 3'tür.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "4 + 2",
                 questionTextVisibility = View.VISIBLE,
@@ -1145,6 +1388,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),TutorialStep(
                 "Kardeşi 3 gider.",questionText = "4 + 2",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "Kardeşi 3 gider.",questionText = "4 + 2",
@@ -1155,6 +1401,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom4", 2))
             ),TutorialStep(
                 "Cevap 6.",
+                soundResource = R.raw.tutorial3_23,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu işlemi ele alalım.",
                 questionText = "3 + 3",
@@ -1162,7 +1411,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 4),
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
-                )
+                ),
+                soundResource = R.raw.tutorial3_24,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "Önce abaküse  3'ü yazıyoruz.",questionText = "3 + 3",
@@ -1170,20 +1422,35 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1))
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
+                soundResource = R.raw.tutorial3_25,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "Sonrasında 3'ü ekleyeceğiz. Ama 3'ü doğrudan ekleyemiyoruz.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_26,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "3'ün kardeşi 2'dir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_28,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "5 gelir.",questionText = "3 + 3",
@@ -1192,7 +1459,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 2 gider.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_30,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Kardeşi 2 gider.",questionText = "3 + 3",
                 questionTextVisibility = View.VISIBLE,
@@ -1202,6 +1472,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),TutorialStep(
                 "Cevap 6.",
+                soundResource = R.raw.tutorial3_31,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Son olarak bu işlemi ele alalım.",
                 questionText = "2 + 4",
@@ -1209,25 +1482,43 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 4),
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
-                )
+                ),
+                soundResource = R.raw.tutorial3_32,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
-                "Önce abaküse  2'yi yazıyoruz.",questionText = "2 + 4",
+                "Önce abaküse 2'yi yazıyoruz.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1))
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)),
+                soundResource = R.raw.tutorial3_33,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Sonrasında 4'ü ekleyeceğiz. Ama 4'ü doğrudan ekleyemiyoruz.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_34,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_35,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "4'ün kardeşi 1'dir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE,
@@ -1235,7 +1526,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "2 + 4",
                 questionTextVisibility = View.VISIBLE,
@@ -1243,17 +1537,26 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 2))
             ),TutorialStep(
                 "Cevap 6.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_38,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu kural her basamak için aynıdır.",
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 4),
                     BeadAnimation(this, "rod4_bead_bottom1", 2),
-                )
+                ),
+                soundResource = R.raw.tutorial3_39,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu işlemde de aynı kuralı uygularız.",
                 questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_40,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
             ),TutorialStep(
                 "30'u abaküse yazıyoruz.",questionText = "30 + 40",
@@ -1261,19 +1564,34 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1))
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)),
+                soundResource = R.raw.tutorial3_41,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "40'ı doğrudan ekleyemiyoruz.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_42,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_43,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "4'ün kardeşi 1'dir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE,
@@ -1281,7 +1599,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 3))
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "30 + 40",
                 questionTextVisibility = View.VISIBLE,
@@ -1289,13 +1610,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom3", 2))
             ),TutorialStep(
                 "Cevap 70.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_44,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Beraber örnek yaparak pekiştirelim.",
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4))
+                    BeadAnimation(this, "rod3_bead_top", 4)),
+                soundResource = R.raw.tutorial3_45,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Önce abaküse ilk sayıyı yazalım.",
                 questionText = "4 + 4",
@@ -1303,23 +1630,38 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 nextStepAvailable = false,
                 answerNumber = 4,
                 abacusClickable = true,
+                soundResource = R.raw.tutorial3_46,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
 
                 ),TutorialStep(
                 "Sonrasında 4'ü ekleyelim.",questionText = "4 + 4",
                 questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_47,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_48,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "4'ün kardeşi 1'dir.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "5 gelir.",questionText = "4 + 4",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 answerNumber = 9,
                 abacusClickable = true,
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
                 ),TutorialStep(
                 "Kardeşi 1 gider.",questionText = "4 + 4",
@@ -1327,12 +1669,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 nextStepAvailable = false,
                 answerNumber = 8,
                 abacusClickable = true,
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
 
                 ),TutorialStep(
                 "Ve cevap 8.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_49,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             ),TutorialStep(
                 "Şimdi öğrendiklerini uygulama zamanı.",
+                soundResource = R.raw.tutorial3_50,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L
             )
         )
         tutorialSteps4 = listOf(
@@ -6925,7 +7276,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val answerNumber: Int? = null,
         val onStepComplete: (() -> Unit)? = null,  // Yeni eklenen fonksiyon parametresi
         val rulesPanelVisibility: Int = View.VISIBLE,
-        val questionTextColorPositions: List<Pair<Int, Int>>? = null
+        val questionTextColorPositions: List<Pair<Int, Int>>? = null,
+        val soundResource: Int? = null,  // Ses dosyası resource ID'si
+        val useTypewriterEffect: Boolean = false,  // Typewriter effect kullanılsın mı?
+        val typewriterSpeed: Long = 50L  // Harf başına milisaniye (varsayılan 50ms)
 
     )
     private fun stepAnswerAlgorithm(): Boolean {
@@ -8254,5 +8608,82 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 enableAllClickable(view.getChildAt(i))
             }
         }
+    }
+    
+    // Ses çalma fonksiyonu
+    private fun playSound(soundResource: Int?) {
+        soundResource?.let { resourceId ->
+            try {
+                // Önceki ses varsa durdur
+                mediaPlayer?.release()
+                
+                // Yeni ses dosyasını çal
+                mediaPlayer = MediaPlayer.create(requireContext(), resourceId)
+                mediaPlayer?.setOnCompletionListener {
+                    mediaPlayer?.release()
+                    mediaPlayer = null
+                }
+                mediaPlayer?.start()
+            } catch (e: Exception) {
+                Log.e("TutorialFragment", "Ses çalma hatası: ${e.message}")
+            }
+        }
+    }
+    
+    // Typewriter effect fonksiyonu
+    private fun showTextWithTypewriter(text: String, textView: TextView, speed: Long) {
+        // Önceki typewriter işlemini durdur
+        typewriterRunnable?.let { 
+            textView.removeCallbacks(it)
+        }
+        
+        // Önce tam metni set et ki TextView boyutu sabitlensin
+        textView.visibility = View.INVISIBLE
+        textView.text = text
+        // TextView'in boyutunu hesaplaması için bir frame bekleyelim
+        textView.post {
+            // İlk harfi ortaya yerleştir ve sonraki harfleri sağa doğru ekle
+            textView.text = ""
+            var currentIndex = 0
+
+            typewriterRunnable = object : Runnable {
+                override fun run() {
+                    if (currentIndex < text.length) {
+                        // Mevcut metni al ve yeni harfi ekle
+                        textView.visibility = View.VISIBLE
+                        val currentText = if (currentIndex == 0) {
+                            // İlk harf için boş string + harf
+                            text[currentIndex].toString()
+
+                        } else {
+                            // Sonraki harfler için mevcut metin + yeni harf
+                            textView.text.toString() + text[currentIndex]
+                        }
+
+                        textView.text = currentText
+                        currentIndex++
+                        textView.postDelayed(this, speed)
+                    } else {
+                        // Typewriter effect tamamlandı
+                        typewriterRunnable = null
+                    }
+                }
+            }
+            
+            textView.post(typewriterRunnable!!)
+        }
+    }
+    
+    // Fragment destroy olduğunda MediaPlayer'ı temizle
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        mediaPlayer = null
+        
+        // Typewriter işlemini durdur
+        typewriterRunnable?.let {
+            binding.tutorialText.removeCallbacks(it)
+        }
+        typewriterRunnable = null
     }
 } 

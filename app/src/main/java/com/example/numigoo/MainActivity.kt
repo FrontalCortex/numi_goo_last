@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import com.google.android.gms.ads.MobileAds
 
 import androidx.fragment.app.Fragment
 import com.example.numigoo.databinding.ActivityMainBinding
@@ -15,15 +16,32 @@ import com.example.numigoo.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var coin:TextView
+    private lateinit var energyManager: EnergyManager
+    private lateinit var adManager: AdManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // AdMob'u başlat
+        MobileAds.initialize(this) {}
+        
         deleteAllLessonItems(this)
         coin = binding.currencyText
         coin.text = getCurrency(this).toString()
+        
+        // Enerji sistemini başlat
+        energyManager = EnergyManager(this)
+        energyManager.setEnergyUpdateCallback { energy ->
+            updateEnergyDisplay(energy)
+        }
+        updateEnergyDisplay(energyManager.getCurrentEnergy())
+        
+        // Reklam yöneticisini başlat
+        adManager = AdManager(this)
+        
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID,MapFragment())
             addToBackStack(null)
@@ -41,6 +59,23 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 R.id.notification -> changeFragment(NotificationFragment())
             }
             true
+        }
+        
+        // Enerji test için uzun basma
+        binding.energyText.setOnLongClickListener {
+            // Test için enerjiyi sıfırla
+            energyManager.useEnergy(energyManager.getCurrentEnergy())
+            true
+        }
+        
+        // Enerji paneli tıklama
+        binding.energyText.setOnClickListener {
+            showEnergyRefillDialog()
+        }
+        
+        // Enerji ikonu tıklama
+        binding.energyIcon.setOnClickListener {
+            showEnergyRefillDialog()
         }
     }
 
@@ -114,5 +149,72 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val newGold = currentGold + amount
         binding.currencyText.text = newGold.toString()
         saveCurrency(this, newGold)
+    }
+    
+    private fun updateEnergyDisplay(energy: Int) {
+        binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+    }
+    
+    fun getEnergyManager(): EnergyManager {
+        return energyManager
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        energyManager.destroy()
+    }
+    
+    fun showEnergyRefillDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_energy_refill, null)
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        val currentEnergyText = dialogView.findViewById<android.widget.TextView>(R.id.currentEnergyText)
+        val timeUntilNextText = dialogView.findViewById<android.widget.TextView>(R.id.timeUntilNextText)
+        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
+        val watchAdButton = dialogView.findViewById<android.widget.Button>(R.id.watchAdButton)
+        
+        // Mevcut enerjiyi göster
+        currentEnergyText.text = "${energyManager.getCurrentEnergy()}/${energyManager.getMaxEnergy()}"
+        
+        // Timer için Handler
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val updateTimer = object : Runnable {
+            override fun run() {
+                val timeUntilNext = energyManager.getTimeUntilNextEnergy()
+                val minutes = (timeUntilNext / 60000).toInt()
+                val seconds = ((timeUntilNext % 60000) / 1000).toInt()
+                timeUntilNextText.text = "Bir sonraki enerji: ${minutes}:${String.format("%02d", seconds)}"
+                
+                // Eğer dialog hala açıksa, 1 saniye sonra tekrar güncelle
+                if (dialog.isShowing) {
+                    handler.postDelayed(this, 1000)
+                }
+            }
+        }
+        
+        // Timer'ı başlat
+        handler.post(updateTimer)
+        
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        watchAdButton.setOnClickListener {
+            if (adManager.isAdReady()) {
+                dialog.dismiss()
+                adManager.showRewardedAd(this) {
+                    // Reklam tamamlandı, 1 enerji ver
+                    energyManager.addEnergy(1)
+                    android.widget.Toast.makeText(this, "Reklam izlendi! +1 Enerji kazandınız!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                android.widget.Toast.makeText(this, "Reklam yükleniyor, lütfen bekleyin...", android.widget.Toast.LENGTH_SHORT).show()
+                adManager.preloadAd()
+            }
+        }
+        
+        dialog.show()
     }
 }

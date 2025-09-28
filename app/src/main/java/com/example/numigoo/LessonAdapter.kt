@@ -197,7 +197,18 @@ class LessonAdapter(
         // Button tıklama
         actionButton.setOnClickListener {
             if (item.isCompleted) {
-                // lessonStep değerini güncelle
+                // Enerji kontrolü
+                val mainActivity = context as MainActivity
+                val energyManager = mainActivity.getEnergyManager()
+                
+                if (!energyManager.hasEnoughEnergy(1)) {
+                    // Yeterli enerji yok, kullanıcıya uyarı göster
+                    showEnergyWarning(context)
+                    return@setOnClickListener
+                }
+                
+                // Enerjiyi kullan
+                energyManager.useEnergy(1)
 
                 // Bottom sheet'i aşağı doğru kaydırarak gizle
                 behavior.isHideable = true
@@ -291,6 +302,12 @@ class LessonAdapter(
     fun setOnLessonClickListener(listener: OnLessonClickListener) {
         onLessonClickListener = listener
     }
+    
+    private fun showEnergyWarning(context: Context) {
+        val mainActivity = context as MainActivity
+        // Doğrudan enerji yenileme dialog'unu göster
+        mainActivity.showEnergyRefillDialog()
+    }
 
     override fun getItemViewType(position: Int): Int = GlobalLessonData.getLessonItem(position)?.type ?: items[position].type
 
@@ -367,20 +384,21 @@ class LessonAdapter(
                 item.partId?.let { partId ->
                     onPartChange(partId)
                 }
-
+                sectionTitle.text=item.sectionTitle
+                sectionDescription.text=item.sectionDescription
             }
         }
     }
     inner class BackPartViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-
-
         private val fastForwardButton: Button = itemView.findViewById(R.id.fastForwardButton)
+        private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
         fun bind(item: LessonItem) {
             fastForwardButton.setOnClickListener {
                 globalPartId = item.partId!!
                 onPartChange(item.partId!!)
-
             }
+
+            sectionTitle.text=item.sectionTitle
         }
     }
 

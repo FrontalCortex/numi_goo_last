@@ -75,11 +75,15 @@ dependencies {
     //gson verilerin kaydedilmesi için
     implementation("com.google.code.gson:gson:2.10.1")
 
+    //reklam için
+    implementation("com.google.android.gms:play-services-ads:22.6.0")
+
     //bu da bişi ama ne bilmiyom
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
 
 
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
 
 
 
