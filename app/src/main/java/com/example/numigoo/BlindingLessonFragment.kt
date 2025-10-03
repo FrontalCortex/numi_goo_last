@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -35,6 +36,7 @@ import com.example.numigoo.model.LessonItem
 import com.example.numigoo.model.RulesFragment
 
 class BlindingLessonFragment : Fragment() {
+    private var mediaPlayer: MediaPlayer? = null
     private var operations: List<Any> = emptyList()
     private lateinit var numberText: TextView
     private var currentIndex = 0
@@ -397,6 +399,11 @@ class BlindingLessonFragment : Fragment() {
         }
 
     }
+    private fun playSound(soundResId: Int) {
+        mediaPlayer?.release() // Önceki sesi serbest bırak
+        mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.start()
+    }
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
     private fun showResultPanel() {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
@@ -409,6 +416,7 @@ class BlindingLessonFragment : Fragment() {
             // Doğru cevap durumu
 
             correctAnswer++
+            playSound(R.raw.correct_answer_sound)
 
             if (currentIndex == operations.size -1 && correctAnswer == totalQuestions) {
                 lottieView.visibility=View.VISIBLE
@@ -477,6 +485,7 @@ class BlindingLessonFragment : Fragment() {
                 }
         } else {
             // Yanlış cevap durumu
+            playSound(R.raw.incorrect_answer_sound)
             incorrectPanel.translationY = incorrectPanel.height.toFloat()
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
@@ -537,6 +546,7 @@ class BlindingLessonFragment : Fragment() {
                 }
         }
     }
+
     private fun updateProgressBar() {
         val fill = requireView().findViewById<View>(R.id.progressBarFill)
         val empty = requireView().findViewById<View>(R.id.progressBarEmpty)

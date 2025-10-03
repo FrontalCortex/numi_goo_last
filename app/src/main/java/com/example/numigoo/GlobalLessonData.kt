@@ -1964,6 +1964,7 @@ object GlobalLessonData {
                     cupTime2 = "3:00"
                 )
             )
+            7 -> listOf()
             else -> emptyList()
         }
     }

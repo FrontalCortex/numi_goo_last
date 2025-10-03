@@ -8857,11 +8857,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_8,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    7 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_8
             ),
             TutorialStep(
                 "4x5 = 20. Birler basamağına ekleyelim.",
@@ -8872,11 +8868,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_9,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    7 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_9
             ),
             TutorialStep(
                 "4x6 = 24. Onlar basamağına ekleyelim.",
@@ -8887,11 +8879,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_10,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    7 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_10
             ),
             TutorialStep(
                 "4x7 = 28. Yüzler basamağına ekleyelim.",
@@ -8902,11 +8890,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_12,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    7 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_12
             ),
             TutorialStep(
                 "Diğer basamağa geçiyoruz.",
@@ -8925,11 +8909,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_13,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    6 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_13
             ),
             TutorialStep(
                 "8x6 = 48. Yüzler basamağına ekleyelim.",
@@ -8940,11 +8920,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_14,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    6 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_14
             ),
             TutorialStep(
                 "8x7= 56. Binler basamağına ekleyelim.",
@@ -8955,11 +8931,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial23_15,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                    6 to Color.YELLOW   // "32" içindeki "2" (5. pozisyon)
-                )
+                soundResource = R.raw.tutorial23_15
             ),
             TutorialStep(
                 "Cevap 64260.",
@@ -9370,6 +9342,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         if (stepAnswerAlgorithm()) {
             // Doğru cevap durumu
 
+            playCorretSound(R.raw.correct_answer_sound)
 
             correctPanel.translationY = correctPanel.height.toFloat()
             correctPanel.visibility = View.VISIBLE
@@ -9430,6 +9403,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 }
         } else {
             // Yanlış cevap durumu
+            playCorretSound(R.raw.incorrect_answer_sound)
+
             incorrectPanel.translationY = incorrectPanel.height.toFloat()
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
@@ -10678,7 +10653,18 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         }
     }
-    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Bellek sızıntısı olmaması için bırak
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
+    private fun playCorretSound(soundResId: Int) {
+        mediaPlayer?.release() // Önceki sesi serbest bırak
+        mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.start()
+    }
     // Ses çalma fonksiyonu
     private fun playSound(soundResource: Int?) {
         soundResource?.let { resourceId ->

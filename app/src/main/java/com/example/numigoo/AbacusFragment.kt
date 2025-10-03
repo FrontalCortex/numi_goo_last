@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -37,6 +38,8 @@ import java.io.Serializable
 
 
 class AbacusFragment : Fragment() {
+    private var mediaPlayer: MediaPlayer? = null
+
     private var operations: List<MathOperation> = emptyList()
     private var currentIndex = 0
     private var answerNumber = 0
@@ -1653,7 +1656,19 @@ class AbacusFragment : Fragment() {
         updateTopBeadsAppearance()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Bellek sızıntısı olmaması için bırak
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
 
+    private fun playSound(soundResId: Int) {
+        mediaPlayer?.release() // Önceki sesi serbest bırak
+        mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.start()
+    }
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
     private fun showResultPanel() {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
@@ -1664,6 +1679,7 @@ class AbacusFragment : Fragment() {
 
         if (stepAnswerAlgorithm()) {
             // Doğru cevap durumu
+            playSound(R.raw.correct_answer_sound)
 
             correctAnswer++
 
@@ -1735,6 +1751,8 @@ class AbacusFragment : Fragment() {
                 }
         } else {
             // Yanlış cevap durumu
+            playSound(R.raw.incorrect_answer_sound)
+
             incorrectPanel.translationY = incorrectPanel.height.toFloat()
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
