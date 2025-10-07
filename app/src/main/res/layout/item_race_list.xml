@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/raceCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Race Icon -->
+        <ImageView
+            android:id="@+id/raceIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/flag_ic"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Race Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/raceName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Race Name"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:id="@+id/raceDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Race Description"
+                android:textSize="14sp"
+                android:textColor="@color/lesson_locked"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Status/Progress -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/raceStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BAŞLA"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/button_background"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp" />
+
+            <TextView
+                android:id="@+id/raceTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="--:--"
+                android:textSize="10sp"
+                android:textColor="@color/lesson_locked"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

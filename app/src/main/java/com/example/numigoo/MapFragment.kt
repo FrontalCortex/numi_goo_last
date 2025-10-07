@@ -2703,6 +2703,62 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
+                78 -> listOf(
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                )
+                79 -> listOf(
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                )
+                80 -> listOf(
+                    MathOperationGenerator.generalCollectionTwoDigits(7),
+                    MathOperationGenerator.generalCollectionTwoDigits(7),
+                    MathOperationGenerator.generalCollectionTwoDigits(7),
+                    MathOperationGenerator.generalCollectionTwoDigits(7),
+                    MathOperationGenerator.generalCollectionTwoDigits(7)
+                )
+                81 -> listOf(
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                    MathOperationGenerator.generalCollectionThreeDigits(4),
+                )
+                82 -> listOf(
+                    MathOperationGenerator.generalCollectionThreeDigits(7),
+                    MathOperationGenerator.generalCollectionThreeDigits(7),
+                    MathOperationGenerator.generalCollectionThreeDigits(7),
+                    MathOperationGenerator.generalCollectionThreeDigits(7)
+                )
+                83 -> listOf(
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    MathOperationGenerator.generalCollectionFourDigits(4),
+                )
+                84 -> listOf(
+                    MathOperationGenerator.generalCollectionFourDigits(7),
+                    MathOperationGenerator.generalCollectionFourDigits(7),
+                    MathOperationGenerator.generalCollectionFourDigits(7),
+                    MathOperationGenerator.generalCollectionFourDigits(7)
+                )
                 else -> emptyList()
             }
         }

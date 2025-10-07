@@ -22,6 +22,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
+import androidx.recyclerview.widget.LinearLayoutManager
 
 class LessonAdapter(
     private val context: Context,
@@ -309,6 +310,141 @@ class LessonAdapter(
         mainActivity.showEnergyRefillDialog()
     }
 
+    private fun showRacePanel(item: LessonItem, position: Int) {
+        // Activity'deki view'ları bul
+        val activity = context as Activity
+        val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        val scrimView = activity.findViewById<View>(R.id.scrimView)
+
+        scrimView.visibility = View.VISIBLE
+        scrimView.alpha = 0f
+
+        // Eğer daha önce oluşturulmuş bir race panel varsa kaldır
+        coordinatorLayout.findViewWithTag<View>("race_panel")?.let {
+            coordinatorLayout.removeView(it)
+        }
+
+        // Race panel'i inflate et
+        val racePanelView = LayoutInflater.from(context)
+            .inflate(R.layout.race_bottom_sheet, coordinatorLayout, false)
+        racePanelView.tag = "race_panel"
+
+        // View'ları bul
+        val raceTitle = racePanelView.findViewById<TextView>(R.id.raceTitle)
+        val closeButton = racePanelView.findViewById<TextView>(R.id.closeButton)
+        val raceRecyclerView = racePanelView.findViewById<RecyclerView>(R.id.raceRecyclerView)
+        val racePanelLayout = racePanelView.findViewById<CoordinatorLayout>(R.id.racePanelLayout)
+        val raceContentLayout = racePanelView.findViewById<LinearLayout>(R.id.raceContentLayout)
+
+        // Başlığı ayarla
+        raceTitle.text = item.title
+
+        // Race verilerini al (item'ın racePartId'sinden)
+        val racePartId = item.racePartId ?: 7  // Varsayılan olarak 7 kullan
+        val raceItems = GlobalLessonData.createLessonItems(racePartId)
+        globalPartId = racePartId
+        onPartChange(globalPartId)
+
+
+        // RecyclerView'ı ayarla
+        raceRecyclerView.layoutManager = LinearLayoutManager(context)
+        val raceAdapter = RaceAdapter(context, raceItems) { raceItem, clickedIndex ->
+            onRaceStartClicked(raceItem, clickedIndex)
+        }
+        raceRecyclerView.adapter = raceAdapter
+
+        // Race panel'i CoordinatorLayout'a ekle
+        coordinatorLayout.addView(racePanelView)
+
+        // BottomSheetBehavior oluştur
+        val behavior = BottomSheetBehavior.from(raceContentLayout)
+
+        // Scrim view'ı göster ve tıklama listener'ı ekle
+        scrimView.visibility = View.VISIBLE
+        scrimView.animate()
+            .alpha(0.5f)
+            .setDuration(300)
+            .start()
+
+        // Scrim'e tıklandığında race panel'i kapat
+        scrimView.setOnClickListener {
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        }
+
+        // Close button'a tıklandığında race panel'i kapat
+        closeButton.setOnClickListener {
+            globalPartId = item.backRaceId!!
+            onPartChange(globalPartId)
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        }
+
+        // Bottom sheet callback'i ekle
+        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    // Race panel tamamen kapandığında view'ı kaldır
+
+                    globalPartId = item.backRaceId!!
+                    onPartChange(globalPartId)
+                    coordinatorLayout.removeView(racePanelView)
+
+                    // Scrim'i animate ederek kapat
+                    scrimView.animate()
+                        .alpha(0f)
+                        .setDuration(100)
+                        .withEndAction {
+                            scrimView.visibility = View.GONE
+                        }
+                        .start()
+                }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                // Kaydırma sırasında arka plan transparanlığını ayarla
+                val alpha = 0.5f * (slideOffset + 1) // 0f ile 0.5f arası
+                scrimView.alpha = alpha
+            }
+        })
+
+        // Race panel'in pozisyonunu ayarla
+        val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
+            .layoutManager?.findViewByPosition(position)
+
+        lessonView?.let {
+            val location = IntArray(2)
+            it.getLocationInWindow(location)
+            val lessonY = location[1]
+
+            // Race panel'in peekHeight'ını lesson kartının altına ayarla
+            behavior.peekHeight = lessonY + it.height
+        }
+
+        // Race panel'i göster
+        behavior.isHideable = true
+        behavior.state = BottomSheetBehavior.STATE_HIDDEN  // Önce gizli duruma getir
+        racePanelView.post {  // Bir sonraki frame'de göster
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
+    }
+
+    private fun onRaceStartClicked(raceItem: LessonItem, clickedIndex: Int) {
+        Log.d("körlemeSatranç", "Start clicked: ${raceItem}")
+        val activity = context as FragmentActivity
+        
+        // Race item'ının mapFragmentIndex değerini global mapFragmentStepIndex'e ata
+        raceItem.mapFragmentIndex.also { GlobalValues.mapFragmentStepIndex = it!! }
+        raceItem.startStepNumber.also { GlobalValues.lessonStep = it!! }
+        
+        Log.d("körlemeSatranç", "mapFragmentStepIndex: ${GlobalValues.mapFragmentStepIndex}, lessonStep: ${GlobalValues.lessonStep}")
+        
+        activity.supportFragmentManager.beginTransaction()
+            .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+
     override fun getItemViewType(position: Int): Int = GlobalLessonData.getLessonItem(position)?.type ?: items[position].type
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -324,7 +460,7 @@ class LessonAdapter(
             LessonItem.TYPE_CHEST -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
             )
-            LessonItem.TYPE_RACE -> LessonViewHolder(
+                LessonItem.TYPE_RACE -> RaceViewHolder(
                 inflater.inflate(R.layout.item_race, parent, false)
             )
             LessonItem.TYPE_PART -> PartViewHolder(
@@ -346,6 +482,7 @@ class LessonAdapter(
             is HeaderViewHolder -> holder.bind(item)
             is PartViewHolder -> holder.bind(item)
             is BackPartViewHolder -> holder.bind(item)
+            is RaceViewHolder -> holder.bind(item)
         }
     }
 
@@ -495,6 +632,53 @@ class LessonAdapter(
 
         fun bind(item: LessonItem) {
             headerText.text = item.title
+        }
+    }
+
+    inner class RaceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val lessonIcon: ImageView = itemView.findViewById(R.id.lessonIcon)
+        private val lessonCard: CardView = itemView.findViewById(R.id.lessonCard)
+        private val progressBar: CircleProgressBar = itemView.findViewById(R.id.progressBar)
+
+        fun bind(item: LessonItem) {
+            // Race item'ı için özel styling
+            val backgroundColor = if (item.isCompleted) {
+                ContextCompat.getColor(context, R.color.lesson_completed)
+            } else {
+                ContextCompat.getColor(context, R.color.lesson_locked)
+            }
+            lessonCard.setCardBackgroundColor(backgroundColor)
+
+            // Race item'a tıklandığında race panel'i göster
+            lessonCard.setOnClickListener {
+                showRacePanel(item, adapterPosition)
+            }
+
+            // Progress bar'ı ayarla
+            if (item.isCompleted) {
+                updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                updateProgress(100f)
+            } else {
+                updateProgressBarColor(ContextCompat.getColor(context, R.color.circleBackground_color))
+                updateProgress(0f)
+            }
+        }
+
+        private fun updateProgress(progress: Float) {
+            val currentProgress = progressBar.progress
+            val animator = ValueAnimator.ofFloat(currentProgress, progress)
+            animator.duration = 500
+            animator.interpolator = AccelerateDecelerateInterpolator()
+
+            animator.addUpdateListener { animation ->
+                val animatedValue = animation.animatedValue as Float
+                progressBar.setProgressValue(animatedValue)
+            }
+            animator.start()
+        }
+
+        private fun updateProgressBarColor(color: Int) {
+            progressBar.setProgressColor(color)
         }
     }
     fun updateItems(newItems: List<LessonItem>) {

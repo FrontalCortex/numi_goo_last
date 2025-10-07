@@ -7,6 +7,7 @@
     tools:context=".BlindingLessonFragment"
     android:background="#222"
     android:padding="10dp"
+    android:clickable="true"
     android:clipChildren="false"
     android:clipToPadding="false"
     >
@@ -162,6 +163,7 @@
         android:layout_height="98dp"
         android:background="@drawable/rounded_edittext"
         android:inputType="number"
+        android:visibility="invisible"
         android:gravity="center"
         android:textSize="32sp"
         android:textColor="#222222"
@@ -172,6 +174,340 @@
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
+    <LinearLayout
+        android:id="@+id/abacusLinear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/kontrolButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="10dp">
+
+        <FrameLayout
+            android:id="@+id/rod0"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp">
+
+            <!-- Dikey çizgi -->
+            <View
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#888"/>
+
+            <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
+            <ImageView
+                android:id="@+id/rod0_bead_bottom4"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="34dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="58dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="82dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <!-- Bariyer -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="6dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="50dp"
+                android:background="#888"/>
+
+            <!-- Üst boncuk -->
+            <ImageView
+                android:id="@+id/rod0_bead_top"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead" />
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/rod1"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
+
+            <!-- Dikey çizgi -->
+            <View
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#888"/>
+
+            <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
+            <ImageView
+                android:id="@+id/rod1_bead_bottom4"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="34dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="58dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="82dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <!-- Bariyer -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="6dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="50dp"
+                android:background="#888"/>
+
+            <!-- Üst boncuk -->
+            <ImageView
+                android:id="@+id/rod1_bead_top"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"/>
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/rod2"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
+
+            <!-- Dikey çizgi -->
+            <View
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#888"/>
+
+            <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
+            <ImageView
+                android:id="@+id/rod2_bead_bottom4"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="34dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="58dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="82dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <!-- Bariyer -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="6dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="50dp"
+                android:background="#888"/>
+
+            <!-- Üst boncuk -->
+            <ImageView
+                android:id="@+id/rod2_bead_top"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"/>
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/rod3"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
+
+            <!-- Dikey çizgi -->
+            <View
+                android:layout_width="5dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#888"/>
+
+            <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
+            <ImageView
+                android:id="@+id/rod3_bead_bottom4"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="34dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="58dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="82dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <!-- Bariyer -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="6dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="50dp"
+                android:background="#888"/>
+
+            <!-- Üst boncuk -->
+            <ImageView
+                android:id="@+id/rod3_bead_top"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"/>
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/rod4"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_marginEnd="5dp">
+
+            <!-- Dikey çizgi -->
+            <View
+                android:layout_width="6dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#888"/>
+
+            <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
+            <ImageView
+                android:id="@+id/rod4_bead_bottom4"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="10dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom3"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="34dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom2"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="58dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom1"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="82dp"
+                android:src="@drawable/soroban_bead"/>
+
+            <!-- Bariyer -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="5dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="50dp"
+                android:background="#888"/>
+
+            <!-- Üst boncuk -->
+            <ImageView
+                android:id="@+id/rod4_bead_top"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"/>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/kontrolButton"
         android:layout_width="0dp"

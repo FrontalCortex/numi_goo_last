@@ -1341,8 +1341,128 @@ object MathOperationGenerator {
 
         return numbers
     }
+    fun generalCollectionOneDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstOnesDigit = (1..9).random()
+        numbers.add(firstOnesDigit)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = (1..9).toList()
 
 
-//Bir basamaktaki sayı 0 değilse diğeri 0 olsun
+            // Yeni sayıyı oluştur
+            val newOnesDigit = possibleOnesDigits.random()
+
+            numbers.add(newOnesDigit)
+        }
+
+        return numbers
+    }
+    fun generalCollectionTwoDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        Log.d("imkansızım","selam")
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (1..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+            val possibleTensDigits = (1..9).toList()
+
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = (1..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newTensDigit = possibleTensDigits.random()
+            val newOnesDigit = possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generalCollectionThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        Log.d("imkansızım","selam")
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (0..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstHundredsDigit = (1..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit + firstHundredsDigit * 100
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            val possibleHundredsDigits = (1..9).toList()
+            val possibleTensDigits = (0..9).toList()
+            val possibleOnesDigits = (0..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newHundredsDigit = possibleHundredsDigits.random()
+            val newTensDigit = possibleTensDigits.random()
+            val newOnesDigit = possibleOnesDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit + newHundredsDigit * 100
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+    fun generalCollectionFourDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        Log.d("imkansızım","selam")
+        // İlk sayıyı oluştur (iki basamaklı olabilir)
+        // Onlar basamağı: 0,1,2 değerlerini alabilir
+        // Birler basamağı: 1,2 değerlerini alabilir
+        val firstTensDigit = (0..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstThousandsDigit = (1..9).random()
+        val firstHundredsDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit + firstHundredsDigit * 100 + firstThousandsDigit * 1000
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            val possibleHundredsDigits = (0..9).toList()
+            val possibleTensDigits = (0..9).toList()
+            val possibleOnesDigits = (0..9).toList()
+            val possibleThousandsDigits = (1..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newHundredsDigit = possibleHundredsDigits.random()
+            val newTensDigit = possibleTensDigits.random()
+            val newOnesDigit = possibleOnesDigits.random()
+            val newThousandsDigit = possibleThousandsDigits.random()
+            val newNumber = newTensDigit * 10 + newOnesDigit + newHundredsDigit * 100 + newThousandsDigit * 1000
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
+
 
 }

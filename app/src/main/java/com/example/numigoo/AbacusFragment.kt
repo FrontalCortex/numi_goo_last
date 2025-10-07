@@ -1451,7 +1451,6 @@ class AbacusFragment : Fragment() {
         }
         bead.setImageResource(resourceId)
     }
-
     // 1. sütun için görünüm güncellemeleri
     private fun updateRod0BeadsAppearance() {
         view?.let { view ->
@@ -1466,7 +1465,6 @@ class AbacusFragment : Fragment() {
             updateBeadAppearance(bottomBead4, fourIsUp)
         }
     }
-
     // 2. sütun için görünüm güncellemeleri
     private fun updateRod1BeadsAppearance() {
         view?.let { view ->
@@ -1481,7 +1479,6 @@ class AbacusFragment : Fragment() {
             updateBeadAppearance(bottomBead4, rod1FourIsUp)
         }
     }
-
     // 3. sütun için görünüm güncellemeleri
     private fun updateRod2BeadsAppearance() {
         view?.let { view ->
@@ -1496,7 +1493,6 @@ class AbacusFragment : Fragment() {
             updateBeadAppearance(bottomBead4, rod2FourIsUp)
         }
     }
-
     // 4. sütun için görünüm güncellemeleri
     private fun updateRod3BeadsAppearance() {
         view?.let { view ->
@@ -1511,7 +1507,6 @@ class AbacusFragment : Fragment() {
             updateBeadAppearance(bottomBead4, rod3FourIsUp)
         }
     }
-
     // 5. sütun için görünüm güncellemeleri
     private fun updateRod4BeadsAppearance() {
         view?.let { view ->
