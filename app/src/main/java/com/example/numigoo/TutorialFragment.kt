@@ -233,7 +233,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             if (isAnyAnimationRunning()) {
                 return@setOnClickListener
             }
+            if (typewriterRunnable != null) {
+                // Animasyonu durdur ve metni tamamen göster
+                typewriterRunnable?.let {
+                    binding.tutorialText.removeCallbacks(it)
+                }
+                typewriterRunnable = null
 
+                // Metni tamamen göster
+                val currentStep = getCurrentStep()
+                binding.tutorialText.text = currentStep.text
+                binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                return@setOnClickListener
+            }
             //ekrana tıkladıktan sonra sıradaki index'in nextStepAvailable değeri false ise index artışı kontol ile
             //gerçekleşecek
 

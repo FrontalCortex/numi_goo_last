@@ -36,7 +36,8 @@ data class LessonItem(
     var timePeriod: Long? = null,
     var blindingMultiplication: Boolean? = null,
     var racePartId: Int? = null,  // Race item'ının hangi partId'den veri göstereceği
-    var backRaceId: Int? = null
+    var backRaceId: Int? = null,
+    var raceBusyLevel: Int? = null,
 ) : Serializable {
     companion object {
         const val TYPE_LESSON = 0

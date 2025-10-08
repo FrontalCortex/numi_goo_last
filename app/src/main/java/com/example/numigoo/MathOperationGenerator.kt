@@ -1463,6 +1463,109 @@ object MathOperationGenerator {
         return numbers
     }
 
+    fun generateSequenceExtractionRace(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstTensDigit = (5..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+
+            val possibleOnesDigits = (1..9).toList()
+
+            // Yeni sayıyı oluştur
+            val newOnesDigit = -possibleOnesDigits.random()
+
+            numbers.add(newOnesDigit)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionRaceTwoDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstHundredsDigit = (5..9).random()
+        val firstTensDigit = (0..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit + firstHundredsDigit * 100
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+
+            val possibleOnesDigits = (1..9).toList()
+            val possibleTensDigits = (1..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newOnesDigit = -possibleOnesDigits.random() -possibleTensDigits.random() * 10
+
+            numbers.add(newOnesDigit)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionRaceThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstThousandsDigit = (5..9).random()
+        val firstHundredsDigit = (0..9).random()
+        val firstTensDigit = (0..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit + firstHundredsDigit * 100 + firstThousandsDigit * 1000
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+
+            val possibleHundredsDigits = (1..9).toList()
+            val possibleOnesDigits = (1..9).toList()
+            val possibleTensDigits = (1..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newOnesDigit = -possibleOnesDigits.random() -possibleTensDigits.random() * 10 -possibleHundredsDigits.random() * 100
+
+            numbers.add(newOnesDigit)
+        }
+
+        return numbers
+    }
+    fun generateSequenceExtractionRaceFourDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstTenThousandsDigit = (5..9).random()
+        val firstThousandsDigit = (0..9).random()
+        val firstHundredsDigit = (0..9).random()
+        val firstTensDigit = (0..9).random()
+        val firstOnesDigit = (0..9).random()
+        val firstNumber = firstTensDigit * 10 + firstOnesDigit + firstHundredsDigit * 100 + firstThousandsDigit * 1000 + firstTenThousandsDigit * 10000
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+
+
+            val possibleHundredsDigits = (1..9).toList()
+            val possibleThousandsDigits = (1..9).toList()
+            val possibleOnesDigits = (1..9).toList()
+            val possibleTensDigits = (1..9).toList()
+
+
+            // Yeni sayıyı oluştur
+            val newOnesDigit = -possibleOnesDigits.random() -possibleTensDigits.random() * 10 -possibleHundredsDigits.random() * 100 -possibleThousandsDigits.random() * 1000
+
+            numbers.add(newOnesDigit)
+        }
+
+        return numbers
+    }
 
 
 }

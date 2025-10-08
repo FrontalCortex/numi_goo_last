@@ -2759,6 +2759,60 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionFourDigits(7),
                     MathOperationGenerator.generalCollectionFourDigits(7)
                 )
+                85 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                )
+                86 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                )
+                87 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7)
+                )
+                88 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                )
+                89 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7)
+                )
+                90 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                )
+                91 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7)
+                )
                 else -> emptyList()
             }
         }

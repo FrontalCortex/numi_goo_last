@@ -430,15 +430,13 @@ class LessonAdapter(
     }
 
     private fun onRaceStartClicked(raceItem: LessonItem, clickedIndex: Int) {
-        Log.d("körlemeSatranç", "Start clicked: ${raceItem}")
         val activity = context as FragmentActivity
         
         // Race item'ının mapFragmentIndex değerini global mapFragmentStepIndex'e ata
-        raceItem.mapFragmentIndex.also { GlobalValues.mapFragmentStepIndex = it!! }
-        raceItem.startStepNumber.also { GlobalValues.lessonStep = it!! }
+        raceItem.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
+        raceItem.startStepNumber.also { lessonStep = it!! }
         
-        Log.d("körlemeSatranç", "mapFragmentStepIndex: ${GlobalValues.mapFragmentStepIndex}, lessonStep: ${GlobalValues.lessonStep}")
-        
+
         activity.supportFragmentManager.beginTransaction()
             .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
             .addToBackStack(null)

@@ -676,6 +676,27 @@ object GlobalLessonData {
                     cupTime2 = "3:00"
                 ),
                 LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "Ustalık Yolu",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_green
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_RACE,
+                    title = "Ustalık Yolu",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    mapFragmentIndex = 21,
+                    racePartId = 8,
+                    backRaceId = 2
+                ),
+                LessonItem(
                     partId = 3,
                     type = LessonItem.TYPE_PART,
                     title = "3. Kısım",
@@ -1978,6 +1999,7 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
+                    raceBusyLevel = 0
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -1991,6 +2013,7 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
+                    raceBusyLevel = 1
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2004,6 +2027,7 @@ object GlobalLessonData {
                     finishStepNumber = 79,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2017,6 +2041,7 @@ object GlobalLessonData {
                     finishStepNumber = 79,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2030,6 +2055,7 @@ object GlobalLessonData {
                     finishStepNumber = 80,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2043,6 +2069,7 @@ object GlobalLessonData {
                     finishStepNumber = 80,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2056,6 +2083,7 @@ object GlobalLessonData {
                     finishStepNumber = 81,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2069,6 +2097,7 @@ object GlobalLessonData {
                     finishStepNumber = 81,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2082,6 +2111,7 @@ object GlobalLessonData {
                     finishStepNumber = 82,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2095,6 +2125,7 @@ object GlobalLessonData {
                     finishStepNumber = 82,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2108,6 +2139,7 @@ object GlobalLessonData {
                     finishStepNumber = 83,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2121,6 +2153,7 @@ object GlobalLessonData {
                     finishStepNumber = 83,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2134,6 +2167,7 @@ object GlobalLessonData {
                     finishStepNumber = 84,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2147,6 +2181,7 @@ object GlobalLessonData {
                     finishStepNumber = 84,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2160,8 +2195,207 @@ object GlobalLessonData {
                     finishStepNumber = 84,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
+                    raceBusyLevel = 2
                 )
             )
+            8 -> listOf(
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Acemi Çırak",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 85,
+                    mapFragmentIndex = 0,
+                    finishStepNumber = 85,
+                    tutorialIsFinish = true,
+                    timePeriod = 5000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Başlangıç Ustası",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 85,
+                    mapFragmentIndex = 1,
+                    finishStepNumber = 85,
+                    tutorialIsFinish = true,
+                    timePeriod = 3000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Bilgi Avcısı",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 86,
+                    mapFragmentIndex = 2,
+                    finishStepNumber = 86,
+                    tutorialIsFinish = true,
+                    timePeriod = 8000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Öğrenme Ustası",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 86,
+                    mapFragmentIndex = 3,
+                    finishStepNumber = 86,
+                    tutorialIsFinish = true,
+                    timePeriod = 5000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zihin Kaşifi",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 87,
+                    mapFragmentIndex = 4,
+                    finishStepNumber = 87,
+                    tutorialIsFinish = true,
+                    timePeriod = 4000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Bilgelik Ustası",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 87,
+                    mapFragmentIndex = 5,
+                    finishStepNumber = 87,
+                    tutorialIsFinish = true,
+                    timePeriod = 3000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zeka Kaşifi",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 88,
+                    mapFragmentIndex = 6,
+                    finishStepNumber = 88,
+                    tutorialIsFinish = true,
+                    timePeriod = 8000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Beyin Mühendisi",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 88,
+                    mapFragmentIndex = 7,
+                    finishStepNumber = 88,
+                    tutorialIsFinish = true,
+                    timePeriod = 5000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Mantık Üstadı",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 89,
+                    mapFragmentIndex = 8,
+                    finishStepNumber = 89,
+                    tutorialIsFinish = true,
+                    timePeriod = 4000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Deha",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 89,
+                    mapFragmentIndex = 9,
+                    finishStepNumber = 89,
+                    tutorialIsFinish = true,
+                    timePeriod = 3000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Üst Zihin",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1, //burdayız bra
+                    startStepNumber = 90,
+                    mapFragmentIndex = 10,
+                    finishStepNumber = 90,
+                    tutorialIsFinish = true,
+                    timePeriod = 8000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Bilge Şampiyon",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 90,
+                    mapFragmentIndex = 11,
+                    finishStepNumber = 90,
+                    tutorialIsFinish = true,
+                    timePeriod = 5000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Zeka Mimarı",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 90,
+                    mapFragmentIndex = 12,
+                    finishStepNumber = 90,
+                    tutorialIsFinish = true,
+                    timePeriod = 4000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Ustalık Efendisi",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 91,
+                    mapFragmentIndex = 13,
+                    finishStepNumber = 91,
+                    tutorialIsFinish = true,
+                    timePeriod = 3000,
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Efsanevi Bilge",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    startStepNumber = 91,
+                    mapFragmentIndex = 14,
+                    finishStepNumber = 91,
+                    tutorialIsFinish = true,
+                    timePeriod = 2500,
+                )
+            )
+
 
             else -> emptyList()
         }

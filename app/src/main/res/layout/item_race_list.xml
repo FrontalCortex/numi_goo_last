@@ -40,22 +40,16 @@
                 android:textStyle="bold"
                 android:textColor="@color/black" />
 
-            <TextView
-                android:id="@+id/raceDescription"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Race Description"
-                android:textSize="14sp"
-                android:textColor="@color/lesson_locked"
-                android:layout_marginTop="4dp" />
 
         </LinearLayout>
 
         <!-- Status/Progress -->
         <LinearLayout
+            android:id="@+id/buttonBackgroundID"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:orientation="horizontal"
+
             android:gravity="center">
 
             <TextView
@@ -63,22 +57,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="BAŞLA"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="@color/white"
-                android:background="@drawable/button_background"
+                android:textColor="@color/black"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="6dp" />
-
-            <TextView
-                android:id="@+id/raceTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="--:--"
-                android:textSize="10sp"
-                android:textColor="@color/lesson_locked"
-                android:layout_marginTop="4dp"
-                android:visibility="gone" />
+            <ImageView
+                android:id="@+id/lock"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/lock_ic"
+                android:visibility="gone"
+                android:tint="#B0B0B0"
+                android:layout_marginEnd="6dp"/>
 
         </LinearLayout>
 
