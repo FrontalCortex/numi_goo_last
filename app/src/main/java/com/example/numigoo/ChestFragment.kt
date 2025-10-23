@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import com.example.numigoo.databinding.FragmentChestBinding
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 
@@ -154,24 +155,52 @@ class ChestFragment : Fragment() {
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
 
+            if(item.raceBusyLevel == 1){
+                val updatedItem = item.copy(
+                    raceBusyLevel = 0
+                )
+                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                
+                // Güncelleme sonrası yeni değeri al
+                val updatedLessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+                Log.d("senko", "Güncellenmiş: ${updatedLessonItem?.raceBusyLevel}")
+                Log.d("senko", "Güncellenmiş: ${updatedLessonItem?.title}")
+                Log.d("senko", globalPartId.toString())
+
+                lessonItem2?.let { item2 ->
+                    val updatedItem2 = item2.copy(
+                        raceBusyLevel = 1
+                    )
+                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
+                    
+                    // Güncelleme sonrası yeni değeri al
+                    val updatedLessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
+                    Log.d("teyze", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
+                    Log.d("teyze", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
+
+                }
+                
+                // UI'ı yenile - RaceAdapter'ı güncelle (sadece race panel açıksa)
+                if (isRacePanelOpen()) {
+                    notifyRaceAdapterRefresh()
+                }
+            }
+
             if(item.stepCount == item.currentStep){
                 val updatedItem = item.copy(
                     stepCompletionStatus = newStepCompletionStatus,
                     stepIsFinish = true
                 )
-                Log.d("teyze","çalıştı")
                 LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
-                
+
                 lessonItem2?.let { item2 ->
                     val updatedItem2 = item2.copy(
                         isCompleted = true
                     )
-                    Log.d("teyze","çalıştı")
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
                 }
             }
             else{
-                Log.d("virüs","gerçekleş")
                 val updatedItem = item.copy(
                     stepCompletionStatus = newStepCompletionStatus,
                     currentStep = item.currentStep + 1,
@@ -179,6 +208,24 @@ class ChestFragment : Fragment() {
                 )
                 LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
             }
+        }
+    }
+    
+    private fun isRacePanelOpen(): Boolean {
+        // Race panel açık mı kontrol et
+        val activity = requireActivity()
+        if (activity is MainActivity) {
+            val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
+            return coordinatorLayout?.findViewWithTag<View>("race_panel") != null
+        }
+        return false
+    }
+    
+    private fun notifyRaceAdapterRefresh() {
+        // MainActivity'deki LessonAdapter'ı bul ve race panelini yenile
+        val activity = requireActivity()
+        if (activity is MainActivity) {
+            activity.refreshRacePanel()
         }
     }
 }

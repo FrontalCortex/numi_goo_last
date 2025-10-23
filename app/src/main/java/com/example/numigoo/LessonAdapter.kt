@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.example.numigoo.model.LessonItem
 import android.view.animation.AccelerateDecelerateInterpolator
+import androidx.core.content.ContentProviderCompat.requireContext
 import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
@@ -33,6 +34,7 @@ class LessonAdapter(
     interface OnProgressUpdateListener {
         fun updateProgress(position: Int, progress: Int)
     }
+    private lateinit var raceAdapter: RaceAdapter // Adapter'ı tanımla
     private var progressUpdateListener: OnProgressUpdateListener? = null
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
@@ -341,17 +343,39 @@ class LessonAdapter(
 
         // Race verilerini al (item'ın racePartId'sinden)
         val racePartId = item.racePartId ?: 7  // Varsayılan olarak 7 kullan
-        val raceItems = GlobalLessonData.createLessonItems(racePartId)
+        val baseRaceItems = GlobalLessonData.createLessonItems(racePartId)
+        // Güncellenmiş verilerle değiştir
+        val raceItems = baseRaceItems.map { baseItem ->
+            val updatedItem = GlobalLessonData.lessonItems.find { it.title == baseItem.title }
+            updatedItem ?: baseItem
+        }
         globalPartId = racePartId
         onPartChange(globalPartId)
-
+        Log.d("hendek", globalPartId.toString())
 
         // RecyclerView'ı ayarla
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
-        val raceAdapter = RaceAdapter(context, raceItems) { raceItem, clickedIndex ->
-            onRaceStartClicked(raceItem, clickedIndex)
-        }
+        raceAdapter = RaceAdapter(
+            context,
+            GlobalLessonData.lessonItems.toMutableList(),
+            { raceItem, clickedIndex ->
+                onRaceStartClicked(raceItem, clickedIndex)
+            },
+            onPartChange = { newPartId ->
+                globalPartId = newPartId  // currentPartId yerine globalPartId kullanıyoruz
+                GlobalLessonData.initialize(context,newPartId)
+                raceAdapter.raceUpdateItems(GlobalLessonData.lessonItems)
+            }
+        )
+        LessonManager.setRaceAdapter(raceAdapter)
+
         raceRecyclerView.adapter = raceAdapter
+        
+        // RaceAdapter'ı da LessonManager'a bağla (güncellemeler için)
+        val updatedLessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
+        Log.d("RaceAdapter", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
+        Log.d("RaceAdapter", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
+
 
         // Race panel'i CoordinatorLayout'a ekle
         coordinatorLayout.addView(racePanelView)
@@ -503,6 +527,47 @@ class LessonAdapter(
         if (position in items.indices) {
             items[position] = newItem
             notifyItemChanged(position)
+        }
+    }
+    
+    fun refreshRacePanelIfOpen() {
+        // Race panel açıksa sadece adapter'ı güncelle
+        val activity = context as FragmentActivity
+        val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        coordinatorLayout?.findViewWithTag<View>("race_panel")?.let { racePanel ->
+            try {
+                // RaceAdapter'ı bul ve güncelle
+                val raceRecyclerView = racePanel.findViewById<RecyclerView>(R.id.raceRecyclerView)
+                val currentAdapter = raceRecyclerView.adapter as? RaceAdapter
+                
+                if (currentAdapter != null) {
+                    // Race panel'deki mevcut verileri al (racePartId'den)
+                    val raceTitle = racePanel.findViewById<TextView>(R.id.raceTitle)
+                    val currentTitle = raceTitle.text.toString()
+                    
+                    // Hangi race item'ının açık olduğunu bul
+                    val raceItem = GlobalLessonData.lessonItems.find { it.title == currentTitle }
+                    val racePartId = raceItem?.racePartId ?: 7
+                    
+                    // Güncel verileri al ve adapter'ı güncelle
+                    // Önce createLessonItems ile oluştur, sonra güncellenmiş verilerle değiştir
+                    val baseRaceItems = GlobalLessonData.createLessonItems(racePartId)
+                    val updatedRaceItems = baseRaceItems.map { baseItem ->
+                        // Güncellenmiş veriyi bul
+                        val updatedItem = GlobalLessonData.lessonItems.find { it.title == baseItem.title }
+                        updatedItem ?: baseItem
+                    }
+                    currentAdapter.raceUpdateItems(updatedRaceItems)
+                    Log.d("RaceAdapter", "Race adapter güncellendi: ${updatedRaceItems.size} item")
+                    Log.d("RaceAdapter", "Race adapter instance: ${currentAdapter.hashCode()}")
+                    Log.d("RaceAdapter", "Race partId: $racePartId")
+                } else {
+                    Log.d("RaceAdapter", "Race adapter bulunamadı")
+                    Log.d("RaceAdapter", "RecyclerView adapter: ${raceRecyclerView.adapter?.javaClass?.simpleName}")
+                }
+            } catch (e: Exception) {
+                Log.e("RaceAdapter", "Race panel güncellenirken hata: ${e.message}")
+            }
         }
     }
 

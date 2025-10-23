@@ -14,8 +14,10 @@ import com.example.numigoo.model.LessonItem
 
 class RaceAdapter(
     private val context: Context,
-    private val raceItems: List<LessonItem>,
-    private val onRaceItemClick: (LessonItem, Int) -> Unit
+    private val raceItems: MutableList<LessonItem>,
+    private val onRaceItemClick: (LessonItem, Int) -> Unit,
+    private val onPartChange: (Int) -> Unit
+
 ) : RecyclerView.Adapter<RaceAdapter.RaceViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RaceViewHolder {
@@ -41,26 +43,42 @@ class RaceAdapter(
         fun bind(item: LessonItem) {
             raceName.text = item.title
 
-            // Set status and styling based on completion
+            // Reset ALL visual state to avoid recycling artifacts
+            lock.visibility = View.GONE
+            raceStatus.isEnabled = true
+            raceStatus.alpha = 1f
+            buttonBackground.setBackgroundResource(0)
+            raceStatus.setBackgroundResource(0)
+            raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+
+            // Apply state per raceBusyLevel (set everything explicitly)
             when (item.raceBusyLevel) {
                 0 -> {
                     raceStatus.text = "TAMAMLANDI"
-                    raceStatus.setBackgroundColor(ContextCompat.getColor(context, R.color.lesson_completed))
                     raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_completed))
+                    lock.visibility = View.GONE
                 }
                 2 -> {
-                    buttonBackground.setBackgroundResource(R.drawable.race_button_background)
-                    raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_locked))
                     raceStatus.text = "KİLİTLİ"
                     lock.visibility = View.VISIBLE
-
+                    buttonBackground.setBackgroundResource(R.drawable.race_button_background)
+                    raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_locked))
+                    raceStatus.isEnabled = false
+                    raceStatus.alpha = 0.8f
                 }
                 1 -> {
                     raceStatus.text = "BAŞLA"
-                    raceStatus.setBackgroundColor(ContextCompat.getColor(context, R.color.lesson_header_green))
-                    raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.button_disabled))
+                    lock.visibility = View.GONE
+                    buttonBackground.setBackgroundResource(R.drawable.button_background)
                     raceStatus.setBackgroundResource(R.drawable.button_background)
-
+                    raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                }
+                else -> {
+                    raceStatus.text = "BAŞLA"
+                    lock.visibility = View.GONE
+                    buttonBackground.setBackgroundResource(R.drawable.button_background)
+                    raceStatus.setBackgroundResource(R.drawable.button_background)
+                    raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
                 }
             }
 
@@ -75,6 +93,17 @@ class RaceAdapter(
                 val pos = adapterPosition
                 if (pos != RecyclerView.NO_POSITION) onRaceItemClick(item, pos)
             }
+        }
+    }
+    fun raceUpdateItems(newItems: List<LessonItem>) {
+        raceItems.clear()
+        raceItems.addAll(newItems)
+        notifyDataSetChanged()
+    }
+    fun updateRaceItem(position: Int, newItem: LessonItem) {
+        if (position in raceItems.indices) {
+            raceItems[position] = newItem
+            notifyItemChanged(position)
         }
     }
 }

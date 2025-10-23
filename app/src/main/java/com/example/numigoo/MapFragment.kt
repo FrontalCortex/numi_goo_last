@@ -2704,14 +2704,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
                 78 -> listOf(
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
-                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(2),
                 )
                 79 -> listOf(
                     MathOperationGenerator.generalCollectionTwoDigits(4),
@@ -2865,10 +2858,6 @@ class MapFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        // Adapter'ı oluştur
-        // Burada Çıkartma adapter'ini bağlayacağımız yer olacak. Belkide aynı adapter içerisinde
-        // Çıkartma kısmı ekleriz. Yani devam et'e tıklandığında çıkartma item'leri bağlanabilir.
-        // Yapıyı cursor'a açıkla ve nasıl kurgulayabileceğini öğren. En mantıklısı ona sormak.
         lessonsAdapter = LessonAdapter(
             context = requireContext(),
             items = GlobalLessonData.lessonItems.toMutableList(),
@@ -2919,6 +2908,11 @@ class MapFragment : Fragment() {
         GlobalLessonData.initialize(requireContext(),globalPartId)
         lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
 
+    }
+    
+    fun refreshRacePanel() {
+        // Race panel açıksa yenile
+        lessonsAdapter.refreshRacePanelIfOpen()
     }
 
     private fun updateStickyHeader(

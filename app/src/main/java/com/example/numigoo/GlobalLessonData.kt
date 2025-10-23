@@ -2013,7 +2013,7 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    raceBusyLevel = 1
+                    raceBusyLevel = 1,
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,

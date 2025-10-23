@@ -150,6 +150,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding.currencyText.text = newGold.toString()
         saveCurrency(this, newGold)
     }
+
+    fun refreshRacePanel() {
+        // Race panel açıksa sadece adapter'ı güncelle
+        findViewById<CoordinatorLayout>(R.id.coordinator_layout)?.let { coordinatorLayout ->
+            coordinatorLayout.findViewWithTag<View>("race_panel")?.let { racePanel ->
+                // MapFragment'teki LessonAdapter'ı bul ve sadece adapter'ı güncelle
+                val mapFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                mapFragment?.refreshRacePanel()
+            }
+        }
+    }
     
     private fun updateEnergyDisplay(energy: Int) {
         binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
