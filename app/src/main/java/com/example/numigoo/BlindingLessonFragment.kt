@@ -585,7 +585,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2){
+                                if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
                                     showChestResult()
                                 }
                                 else{
@@ -649,7 +649,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2){
+                                if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
                                     showChestResult()
                                 }
                                 else{
@@ -1829,8 +1829,11 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun showChestResult() {
-        val chestResultFragment = ChestResult()
-
+        val chestResultFragment = if (lessonItem.raceBusyLevel != null) {
+            ChestFragment()
+        } else {
+            ChestResult()
+        }
         // Başarı oranını hesapla
         val successRate = if (totalQuestions > 0) {
             (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100

@@ -1,6 +1,7 @@
 package com.example.numigoo
 
 import android.content.Context
+import android.util.Log
 import com.example.numigoo.model.LessonItem
 
 object LessonManager {
@@ -32,7 +33,13 @@ object LessonManager {
         GlobalLessonData.updateLessonItem(context, position, item)
         // Adapter'ı güncelle
         adapter?.updateLessonItem(position, item)
+    }
+    fun updateRaceItem(context: Context, position: Int, item: LessonItem) {
+        // Global veriyi güncelle
+        GlobalLessonData.updateLessonItem(context, position, item)
         // RaceAdapter'ı da güncelle (eğer race item'ı ise)
         raceAdapter?.updateRaceItem(position,item)
+        Log.d("mert",item.title)
+        Log.d("mert",item.raceBusyLevel.toString())
     }
 } 

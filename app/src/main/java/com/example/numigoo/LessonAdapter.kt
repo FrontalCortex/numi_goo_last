@@ -342,8 +342,8 @@ class LessonAdapter(
         raceTitle.text = item.title
 
         // Race verilerini al (item'ın racePartId'sinden)
-        val racePartId = item.racePartId ?: 7  // Varsayılan olarak 7 kullan
-        val baseRaceItems = GlobalLessonData.createLessonItems(racePartId)
+        val racePartId = item.racePartId  // Varsayılan olarak 7 kullan
+        val baseRaceItems = GlobalLessonData.createLessonItems(racePartId!!)
         // Güncellenmiş verilerle değiştir
         val raceItems = baseRaceItems.map { baseItem ->
             val updatedItem = GlobalLessonData.lessonItems.find { it.title == baseItem.title }
@@ -355,16 +355,23 @@ class LessonAdapter(
 
         // RecyclerView'ı ayarla
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
+        Log.d("ukucc",raceItems[2].title)
+        Log.d("ukucc",raceItems[2].raceBusyLevel.toString())
         raceAdapter = RaceAdapter(
             context,
-            GlobalLessonData.lessonItems.toMutableList(),
+            raceItems = GlobalLessonData.lessonItems.toMutableList(),
             { raceItem, clickedIndex ->
                 onRaceStartClicked(raceItem, clickedIndex)
             },
             onPartChange = { newPartId ->
-                globalPartId = newPartId  // currentPartId yerine globalPartId kullanıyoruz
-                GlobalLessonData.initialize(context,newPartId)
-                raceAdapter.raceUpdateItems(GlobalLessonData.lessonItems)
+                globalPartId = newPartId
+                GlobalLessonData.initialize(context, newPartId)
+
+                // ✅ Güncel veriyi doğrudan al
+                val updatedRaceItems = GlobalLessonData.lessonItems.filter {
+                    it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
+                }
+                raceAdapter.raceUpdateItems(updatedRaceItems)
             }
         )
         LessonManager.setRaceAdapter(raceAdapter)
@@ -392,6 +399,8 @@ class LessonAdapter(
 
         // Scrim'e tıklandığında race panel'i kapat
         scrimView.setOnClickListener {
+            globalPartId = item.backRaceId!!
+            onPartChange(globalPartId)
             behavior.isHideable = true
             behavior.state = BottomSheetBehavior.STATE_HIDDEN
         }

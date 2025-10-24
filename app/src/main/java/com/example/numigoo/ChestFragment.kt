@@ -159,7 +159,7 @@ class ChestFragment : Fragment() {
                 val updatedItem = item.copy(
                     raceBusyLevel = 0
                 )
-                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                LessonManager.updateRaceItem(requireContext(),mapFragmentStepIndex, updatedItem)
                 
                 // Güncelleme sonrası yeni değeri al
                 val updatedLessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
@@ -171,18 +171,18 @@ class ChestFragment : Fragment() {
                     val updatedItem2 = item2.copy(
                         raceBusyLevel = 1
                     )
-                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
+                    LessonManager.updateRaceItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
                     
                     // Güncelleme sonrası yeni değeri al
                     val updatedLessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
-                    Log.d("teyze", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
-                    Log.d("teyze", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
+                    Log.d("ukucc", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
+                    Log.d("ukucc", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
 
                 }
                 
                 // UI'ı yenile - RaceAdapter'ı güncelle (sadece race panel açıksa)
                 if (isRacePanelOpen()) {
-                    notifyRaceAdapterRefresh()
+                    //notifyRaceAdapterRefresh()
                 }
             }
 
@@ -225,7 +225,7 @@ class ChestFragment : Fragment() {
         // MainActivity'deki LessonAdapter'ı bul ve race panelini yenile
         val activity = requireActivity()
         if (activity is MainActivity) {
-            activity.refreshRacePanel()
+            //activity.refreshRacePanel()
         }
     }
 }
