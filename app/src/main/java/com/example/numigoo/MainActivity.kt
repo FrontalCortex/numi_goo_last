@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         
         // AdMob'u başlat
         MobileAds.initialize(this) {}
-        
-        //deleteAllLessonItems(this)
+
+        deleteAllLessonItems(this)
         coin = binding.currencyText
         coin.text = getCurrency(this).toString()
         

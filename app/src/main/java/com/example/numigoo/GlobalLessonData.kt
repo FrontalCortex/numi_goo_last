@@ -1,6 +1,7 @@
 package com.example.numigoo
 
 import android.content.Context
+import android.util.Log
 import com.example.numigoo.model.LessonItem
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -23,6 +24,8 @@ object GlobalLessonData {
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem
             saveToPreferences(context)
+            Log.d("sussus",newItem.raceBusyLevel.toString())
+            Log.d("sussus",newItem.title)
         }
     }
 

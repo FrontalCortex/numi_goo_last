@@ -179,34 +179,37 @@ class ChestFragment : Fragment() {
                     Log.d("ukucc", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
 
                 }
-                
+
+
                 // UI'ı yenile - RaceAdapter'ı güncelle (sadece race panel açıksa)
                 if (isRacePanelOpen()) {
                     //notifyRaceAdapterRefresh()
                 }
             }
 
-            if(item.stepCount == item.currentStep){
-                val updatedItem = item.copy(
-                    stepCompletionStatus = newStepCompletionStatus,
-                    stepIsFinish = true
-                )
-                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
-
-                lessonItem2?.let { item2 ->
-                    val updatedItem2 = item2.copy(
-                        isCompleted = true
+            if(item.raceBusyLevel == null){
+                if(item.stepCount == item.currentStep){
+                    val updatedItem = item.copy(
+                        stepCompletionStatus = newStepCompletionStatus,
+                        stepIsFinish = true
                     )
-                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
+                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+
+                    lessonItem2?.let { item2 ->
+                        val updatedItem2 = item2.copy(
+                            isCompleted = true
+                        )
+                        LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
+                    }
                 }
-            }
-            else{
-                val updatedItem = item.copy(
-                    stepCompletionStatus = newStepCompletionStatus,
-                    currentStep = item.currentStep + 1,
-                    startStepNumber = item.startStepNumber?.plus(1)
-                )
-                LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                else{
+                    val updatedItem = item.copy(
+                        stepCompletionStatus = newStepCompletionStatus,
+                        currentStep = item.currentStep + 1,
+                        startStepNumber = item.startStepNumber?.plus(1)
+                    )
+                    LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                }
             }
         }
     }

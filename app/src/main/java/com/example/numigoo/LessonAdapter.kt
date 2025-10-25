@@ -24,6 +24,7 @@ import com.example.numigoo.GlobalLessonData.globalPartId
 import com.example.numigoo.GlobalValues.lessonStep
 import com.example.numigoo.GlobalValues.mapFragmentStepIndex
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.numigoo.GlobalLessonData.saveToPreferences
 
 class LessonAdapter(
     private val context: Context,
@@ -758,6 +759,7 @@ class LessonAdapter(
         items.addAll(newItems)
         notifyDataSetChanged()
     }
+
 }
 
 
