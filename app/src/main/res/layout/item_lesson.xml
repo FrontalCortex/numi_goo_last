@@ -15,7 +15,7 @@
         android:stateListAnimator="@animator/lesson_state_animator"
         >
 
-        <com.example.numigoo.CircleProgressBar
+        <com.example.app.CircleProgressBar
             android:id="@+id/progressBar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -23,7 +23,7 @@
             app:progressBarThickness="6dp"
             app:progressbarColor="@color/circleForeground_color"
             app:backgroundBarColor="@color/circleBackground_color">
-        </com.example.numigoo.CircleProgressBar>
+        </com.example.app.CircleProgressBar>
 
         <RelativeLayout
             android:layout_width="match_parent"

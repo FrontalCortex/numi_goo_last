@@ -4,6 +4,8 @@
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#808080</color>
     <color name="yellow">#FFFFD600</color>
+    <color name="blue">#2196F3</color>
+    <color name="red">#F44336</color>
     <color name="lesson_header_red">#FF5A5F</color>
     <color name="lesson_header_orange">#FFA726</color>
     <color name="lesson_header_blue">#29B6F6</color>
@@ -21,4 +23,16 @@
     <color name="button_disabled">#CCCCCC</color>
     <color name="button_text_enabled">#000000</color>
     <color name="button_text_disabled">#666666</color>
+    
+    <!-- Modern Koyu Tema Renkleri -->
+    <color name="dark_background">#0D1117</color>
+    <color name="dark_surface">#161B22</color>
+    <color name="dark_primary">#58A6FF</color>
+    <color name="dark_secondary">#7C3AED</color>
+    <color name="dark_accent">#FF6B6B</color>
+    <color name="dark_text">#F0F6FC</color>
+    <color name="dark_text_secondary">#8B949E</color>
+    <color name="dark_success">#3FB950</color>
+    <color name="dark_warning">#D29922</color>
+    <color name="dark_error">#F85149</color>
 </resources>

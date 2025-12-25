@@ -2,6 +2,9 @@
     <string name="app_name">NumiGoo</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <!-- Google Sign-In Web Client ID - Firebase Console > Authentication > Sign-in method > Google'dan alınmalı -->
+    <!-- Web Client ID (client_type: 3) - Android Client ID değil! -->
+    <string name="default_web_client_id">1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com</string>
     <string name="lesson_hint_step1">Sayıları abaküse en büyük basamaktan başlayarak yaz.</string>
     <string name="lesson_hint_step2">İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla.</string>
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>

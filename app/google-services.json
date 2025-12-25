@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1056334163260",
+    "project_id": "numigo-new",
+    "storage_bucket": "numigo-new.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1056334163260:android:3dff62535ea550a81e4239",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsl8G0GUZ7YByoOU9RHfN04kmE38r30Sc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

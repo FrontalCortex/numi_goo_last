@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Logo -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="40dp"
+            android:src="@drawable/ic_education_logo"
+            android:background="@drawable/circle_background" />
+
+        <!-- Başlık -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:text="E-posta Doğrulama"
+            android:textColor="@color/dark_text"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- Açıklama -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:text="E-posta adresinize doğrulama kodu gönderildi"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="16sp"
+            android:gravity="center" />
+
+        <!-- E-posta adresi -->
+        <TextView
+            android:id="@+id/tvEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:text="test@student.com"
+            android:textColor="@color/dark_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Doğrulama kartı -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:cardBackgroundColor="@color/dark_surface"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <!-- Açıklama -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="E-posta adresinize gönderilen 6 haneli doğrulama kodunu girin"
+                    android:textColor="@color/dark_text_secondary"
+                    android:textSize="14sp"
+                    android:gravity="center" />
+
+                <!-- Kod girişi -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    app:boxBackgroundColor="@color/dark_surface"
+                    app:hintTextColor="@color/dark_text_secondary"
+                    app:startIconTint="@color/dark_primary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etVerificationCode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Doğrulama Kodu"
+                        android:inputType="number"
+                        android:maxLength="6"
+                        android:textAlignment="center"
+                        android:textColor="@color/dark_text"
+                        android:textSize="24sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Doğrulama kontrolü butonu -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckVerification"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="24dp"
+                    android:text="Kodu Doğrula"
+                    android:textSize="16sp"
+                    app:backgroundTint="@color/dark_primary"
+                    app:cornerRadius="28dp" />
+
+                <!-- Tekrar gönder butonu -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResendEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:text="E-postayı Tekrar Gönder"
+                    android:textColor="@color/dark_primary"
+                    app:backgroundTint="@android:color/transparent"
+                    app:cornerRadius="24dp"
+                    app:strokeColor="@color/dark_primary"
+                    app:strokeWidth="2dp" />
+
+                <!-- Giriş sayfasına dön -->
+                <TextView
+                    android:id="@+id/btnBackToLogin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="24dp"
+                    android:text="Giriş Sayfasına Dön"
+                    android:textColor="@color/dark_text_secondary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Bilgi -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:text="E-posta gelmedi mi? Spam klasörünü kontrol edin"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            android:gravity="center" />
+
+    </LinearLayout>
+</ScrollView>

@@ -19,8 +19,13 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
+            
+        <!-- Firebase Analytics -->
+        <meta-data
+            android:name="com.google.firebase.analytics.collection_enabled"
+            android:value="true" />
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.NumiGoo"
             android:screenOrientation="portrait">
@@ -29,6 +34,36 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".TeacherLoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".EmailVerificationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
