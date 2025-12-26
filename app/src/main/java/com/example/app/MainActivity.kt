@@ -1,13 +1,18 @@
 package com.example.app
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 //import com.google.android.gms.ads.MobileAds
 
@@ -19,6 +24,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var coin:TextView
     private lateinit var energyManager: EnergyManager
     private lateinit var adManager: AdManager
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+    
+    private val subscriptionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Plan değişti, enerji gösterimini güncelle
+            checkSubscriptionAndUpdateEnergy()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +57,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         
         // Reklam yöneticisini başlat
         adManager = AdManager(this)
+        
+        // Süre takibini initialize et (onResume'da başlatılacak)
+        TimeTracker.initialize(this)
+        
+        // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
+        checkSubscriptionAndUpdateEnergy()
         
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID,MapFragment())
@@ -154,15 +176,71 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     
     private fun updateEnergyDisplay(energy: Int) {
-        binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+        // Abonelik durumunu kontrol et
+        checkSubscriptionAndUpdateEnergy()
+    }
+    
+    private fun checkSubscriptionAndUpdateEnergy() {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // Kullanıcı giriş yapmamış, normal gösterim
+            val energy = energyManager.getCurrentEnergy()
+            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            return
+        }
+        
+        // Firestore'dan abonelik durumunu kontrol et
+        firestore.collection("users").document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val plan = doc.getString("plan") ?: "Free"
+                    val isPremium = doc.getBoolean("isPremium") ?: false
+                    
+                    // Pro veya Premium ise sonsuz işareti göster
+                    if (plan == "Pro" || plan == "Premium" || isPremium) {
+                        binding.energyText.text = "∞"
+                    } else {
+                        // Free plan - normal gösterim
+                        val energy = energyManager.getCurrentEnergy()
+                        binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    }
+                } else {
+                    // Firestore'da kayıt yok, normal gösterim
+                    val energy = energyManager.getCurrentEnergy()
+                    binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("MainActivity", "Abonelik durumu kontrol edilemedi", e)
+                // Hata durumunda normal gösterim
+                val energy = energyManager.getCurrentEnergy()
+                binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            }
     }
     
     fun getEnergyManager(): EnergyManager {
         return energyManager
     }
     
+    override fun onResume() {
+        super.onResume()
+        // Uygulama aktifken süre takibini başlat
+        TimeTracker.startTracking()
+        // Abonelik durumunu kontrol et (plan değişmiş olabilir)
+        checkSubscriptionAndUpdateEnergy()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Uygulama background'a geçtiğinde süre takibini durdur
+        TimeTracker.stopTracking()
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
+        // Uygulama kapanırken süre takibini durdur
+        TimeTracker.stopTracking()
         energyManager.destroy()
     }
     

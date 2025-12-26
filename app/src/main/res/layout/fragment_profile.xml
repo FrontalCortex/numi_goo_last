@@ -65,13 +65,17 @@
                     android:id="@+id/tvMembershipStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Premium Üye"
+                    android:text=""
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:background="@drawable/premium_badge"
                     android:padding="8dp"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground"
+                    android:visibility="gone" />
 
                 <!-- E-posta Doğrulama Uyarısı -->
                 <androidx.cardview.widget.CardView
@@ -133,27 +137,30 @@
                     android:id="@+id/tvCompletedLessons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📚 12 Ders"
+                    android:text=""
                     android:textSize="16sp"
                     android:textColor="@color/white"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvTotalTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔥 4 Gün 15 saat 22 dakika"
+                    android:text=""
                     android:textSize="16sp"
                     android:textColor="@color/white"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tvSubscriptionInfo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⏳ Abonelik: Aktif (22 Ocak son gün)"
+                    android:text=""
                     android:textSize="16sp"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/white"
+                    android:visibility="gone" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>

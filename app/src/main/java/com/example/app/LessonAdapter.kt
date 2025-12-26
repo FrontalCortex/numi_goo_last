@@ -2,6 +2,7 @@ package com.example.app
 
 import android.animation.ValueAnimator
 import android.app.Activity
+import android.content.Intent
 import android.widget.Button
 import android.content.Context
 import android.util.Log
@@ -11,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
@@ -23,6 +25,8 @@ import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LessonAdapter(
     private val context: Context,
@@ -35,8 +39,33 @@ class LessonAdapter(
     }
     private lateinit var raceAdapter: RaceAdapter // Adapter'ı tanımla
     private var progressUpdateListener: OnProgressUpdateListener? = null
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+    
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
+    }
+    
+    private fun getCurrentPlan(callback: (String) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            callback("Free")
+            return
+        }
+        
+        firestore.collection("users").document(currentUser.uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val plan = doc.getString("plan") ?: "Free"
+                    callback(plan)
+                } else {
+                    callback("Free")
+                }
+            }
+            .addOnFailureListener {
+                callback("Free")
+            }
     }
 
     private fun showLessonBottomSheet(item: LessonItem, position: Int) {
@@ -80,7 +109,14 @@ class LessonAdapter(
             }
             if(item.stepIsFinish){
                 if(item.type == 2){
-                    actionButton.text = "Tekrar dene"
+                    // Abonelik durumuna göre buton metnini ayarla
+                    getCurrentPlan { plan ->
+                        if (plan == "Free") {
+                            actionButton.text = "Tekrar etmek için planı yükselt"
+                        } else {
+                            actionButton.text = "Tekrar dene"
+                        }
+                    }
                 }
                 else{
                     actionButton.text = "Gözden geçir"
@@ -199,72 +235,34 @@ class LessonAdapter(
         // Button tıklama
         actionButton.setOnClickListener {
             if (item.isCompleted) {
-                // Enerji kontrolü
-                val mainActivity = context as MainActivity
-                val energyManager = mainActivity.getEnergyManager()
-                
-                if (!energyManager.hasEnoughEnergy(1)) {
-                    // Yeterli enerji yok, kullanıcıya uyarı göster
-                    showEnergyWarning(context)
-                    return@setOnClickListener
-                }
-                
-                // Enerjiyi kullan
-                energyManager.useEnergy(1)
-
-                // Bottom sheet'i aşağı doğru kaydırarak gizle
-                behavior.isHideable = true
-                behavior.state = BottomSheetBehavior.STATE_HIDDEN
-
-                // Activity'yi bul ve FragmentActivity olarak cast et
-                val activity = context as FragmentActivity
-
-                // Fragment container'ı görünür yap
-                val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
-                fragmentContainer.visibility = View.VISIBLE
-
-                // AbacusFragment'i oluştur
-                val fragment = item?.fragment?.invoke()
-
-                // Animasyon için slide-in efekti
-                val slideIn = android.R.anim.slide_in_left
-                val slideOut = android.R.anim.slide_out_right
-                item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
-                item.startStepNumber.also { lessonStep = it!! }
-                if(item.isBlinding == true){
-                    if(item.tutorialIsFinish){
-                        activity.supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(slideIn, slideOut)
-                            .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
-                            .addToBackStack(null)
-                            .commit()
-                    } else {
-                        //startStepNumber'ı global lessonStep'e atadık
-
-                        activity.supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(slideIn, slideOut)
-                            .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
-                            .addToBackStack(null)
-                            .commit()
+                getCurrentPlan { plan ->
+                    // Eğer type == 2 ve Free plan ise, abonelik sayfasına yönlendir
+                    if (item.type == 2 && item.stepIsFinish && plan == "Free") {
+                        // Abonelik sayfasına yönlendir
+                        val intent = Intent(context, SubscriptionActivity::class.java)
+                        context.startActivity(intent)
+                        // Bottom sheet'i kapat
+                        behavior.isHideable = true
+                        behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                        return@getCurrentPlan
                     }
-                }
-
-                else{
-                if(item.tutorialIsFinish){
-                    activity.supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, AbacusFragment())
-                        .addToBackStack(null)
-                        .commit()
-                } else {
-                    //startStepNumber'ı global lessonStep'e atadık
-
-                    activity.supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
-                        .addToBackStack(null)
-                        .commit()
+                    
+                    // Enerji kontrolü (sadece Free plan için)
+                    val mainActivity = context as MainActivity
+                    val energyManager = mainActivity.getEnergyManager()
+                    
+                    if (plan == "Free") {
+                        if (!energyManager.hasEnoughEnergy(1)) {
+                            // Yeterli enerji yok, kullanıcıya uyarı göster
+                            showEnergyWarning(context)
+                            return@getCurrentPlan
+                        }
+                        // Enerjiyi kullan
+                        energyManager.useEnergy(1)
                     }
+                    
+                    // Ders başlat
+                    continueWithLesson(item, behavior)
                 }
             }
             else {
@@ -291,6 +289,63 @@ class LessonAdapter(
         behavior.state = BottomSheetBehavior.STATE_HIDDEN  // Önce gizli duruma getir
         bottomSheetView.post {  // Bir sonraki frame'de göster
             behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
+    }
+    
+    private fun continueWithLesson(item: LessonItem, behavior: BottomSheetBehavior<LinearLayout>) {
+        // Bottom sheet'i aşağı doğru kaydırarak gizle
+        behavior.isHideable = true
+        behavior.state = BottomSheetBehavior.STATE_HIDDEN
+
+        // Activity'yi bul ve FragmentActivity olarak cast et
+        val activity = context as FragmentActivity
+
+        // Fragment container'ı görünür yap
+        val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
+        fragmentContainer.visibility = View.VISIBLE
+
+        // AbacusFragment'i oluştur
+        val fragment = item?.fragment?.invoke()
+
+        // Animasyon için slide-in efekti
+        val slideIn = android.R.anim.slide_in_left
+        val slideOut = android.R.anim.slide_out_right
+        item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
+        item.startStepNumber.also { lessonStep = it!! }
+        if(item.isBlinding == true){
+            if(item.tutorialIsFinish){
+                activity.supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(slideIn, slideOut)
+                    .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
+                    .addToBackStack(null)
+                    .commit()
+            } else {
+                //startStepNumber'ı global lessonStep'e atadık
+
+                activity.supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(slideIn, slideOut)
+                    .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                    .addToBackStack(null)
+                    .commit()
+            }
+        }
+
+        else{
+            if(item.tutorialIsFinish){
+                activity.supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(slideIn, slideOut)
+                    .replace(R.id.abacusFragmentContainer, AbacusFragment())
+                    .addToBackStack(null)
+                    .commit()
+            } else {
+                //startStepNumber'ı global lessonStep'e atadık
+
+                activity.supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(slideIn, slideOut)
+                    .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                    .addToBackStack(null)
+                    .commit()
+            }
         }
     }
 
