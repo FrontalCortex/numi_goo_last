@@ -131,8 +131,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
     fun deleteAllLessonItems(context: Context) {
-        val prefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
+        // Lesson verilerini temizle
+        val lessonPrefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
+        lessonPrefs.edit().clear().apply()
+        
+        // GuidePanel animasyon flag'lerini temizle (test için)
+        val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
+        guidePanelPrefs.edit().clear().apply()
     }
     private fun showAbacusFragment() {
         val fragmentContainer = binding.abacusFragmentContainer

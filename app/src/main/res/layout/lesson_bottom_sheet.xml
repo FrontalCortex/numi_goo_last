@@ -12,13 +12,17 @@
         android:orientation="vertical"
         android:background="@drawable/bottom_sheet_background"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_gravity="center"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
             <!-- SOL YARI -->
             <TextView
@@ -36,14 +40,18 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:elevation="20dp">
+                android:elevation="20dp"
+                android:clipChildren="false"
+                android:clipToPadding="false">
                 <LinearLayout
                     android:id="@+id/recordLayout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_gravity="end|center_vertical"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:clipChildren="false"
+                    android:clipToPadding="false">
 
                 <com.airbnb.lottie.LottieAnimationView
                     android:id="@+id/fireAnimID"

@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -15,12 +16,25 @@ import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.randomNumberChangeToString
 import com.example.app.MathOperationGenerator.generateRandomMathOperation1
 import com.example.app.databinding.FragmentMapBinding
+import com.example.app.model.GuidePanelData
 import com.example.app.model.LessonItem
 
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
+    
     companion object {
+        const val ARG_SHOW_GUIDE = "show_guide"
+        
+        fun newInstance(showGuide: Boolean = false): MapFragment {
+            val fragment = MapFragment()
+            val args = Bundle().apply {
+                putBoolean(ARG_SHOW_GUIDE, showGuide)
+            }
+            fragment.arguments = args
+            return fragment
+        }
+        
         fun getLessonOperations(lessonId: Int): List<MathOperation> {
             return when (lessonId) {
                 1 -> listOf(
@@ -2836,12 +2850,258 @@ class MapFragment : Fragment() {
 
         setupRecyclerView()
         changeAdapterList()
+        setupGuidePanel()
+        
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
             if (GlobalValues.scrollPosition > 0) {
                 binding.lessonsRecyclerView.scrollToPosition(GlobalValues.scrollPosition)
             }
+            
+            // Guide panel gösterilmeli mi kontrol et
+            val showGuide = arguments?.getBoolean(ARG_SHOW_GUIDE, false) ?: false
+            if (showGuide) {
+                // CupFragment'ten ilk defa çağrıldığında mı kontrol et
+                val prefs = requireContext().getSharedPreferences("GuidePanelPrefs", android.content.Context.MODE_PRIVATE)
+                val cupFragmentGuideShown = prefs.getBoolean("cupFragment_guide_shown", false)
+                
+                if (!cupFragmentGuideShown) {
+                    // İlk defa gösteriliyorsa flag'i kaydet
+                    prefs.edit().putBoolean("cupFragment_guide_shown", true).apply()
+                    // Önce tıklamaları engelle (gecikme süresinde de tıklanamaz)
+                    disableMainActivityViews()
+                    disableMapFragmentViews() // Overlay ekle
+                    // MapFragment'in görünmesini beklemek için 1 saniye geciktir
+                    view.postDelayed({
+                        showGuidePanel()
+                    }, 1000)
+                }
+            }
         }
+    }
+    
+    private fun setupGuidePanel() {
+        binding.guidePanel.setOnBackClickListener {
+            // İlk adımdaysa ve back'e basılırsa paneli kapat
+            binding.guidePanel.hide()
+        }
+        
+        // Panel kapandığında MainActivity view'larını tekrar aktif et
+        binding.guidePanel.setOnPanelHideListener {
+            enableMainActivityViews()
+        }
+        
+        // GuidePanel'in son adımına gelindiğinde recordLayout animasyonunu başlat
+        // Her GuidePanel kendi animasyonunu bu callback içinde tanımlayabilir
+        binding.guidePanel.setOnLastStepReachedListener {
+            if (::lessonsAdapter.isInitialized) {
+                // MapFragment için: recordLayout animasyonu
+                val activity = requireActivity()
+                val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
+                val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
+                val recordLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.recordLayout)
+                
+                recordLayout?.let { recordLayoutView ->
+                    // Animasyonun daha önce gösterilip gösterilmediğini kontrol et
+                    val prefs = requireContext().getSharedPreferences("GuidePanelPrefs", android.content.Context.MODE_PRIVATE)
+                    val animationShown = prefs.getBoolean("recordLayout_animation_shown", false)
+                    
+                    // Eğer animasyon daha önce gösterilmemişse başlat
+                    if (!animationShown) {
+                        lessonsAdapter.startPulseAnimationForView(recordLayoutView, stopAnimationOnClick = false)
+                    }
+                    
+                    // recordLayout'a tıklandığında: animasyonu durdur + paneli kapat + bottomSheet'i kapat + activity view'larını aktif et + flag'i kaydet
+                    binding.guidePanel.setTargetViewForLastStep(recordLayoutView) {
+                        // Animasyonu durdur
+                        val animator = recordLayoutView.tag as? android.animation.ValueAnimator
+                        animator?.cancel()
+                        recordLayoutView.tag = null
+                        recordLayoutView.scaleX = 1f
+                        recordLayoutView.scaleY = 1f
+                        
+                        // Animasyonun gösterildiğini kaydet (bir daha gösterilmesin)
+                        prefs.edit().putBoolean("recordLayout_animation_shown", true).apply()
+                        
+                        // BottomSheet'i kapat
+                        val activity = requireActivity()
+                        val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
+                        val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
+                        val bottomSheetLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.bottomSheetLayout)
+                        bottomSheetLayout?.let { layout ->
+                            val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(layout)
+                            behavior.isHideable = true
+                            behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
+                        }
+                        
+                        // Activity view'larını aktif et
+                        enableMainActivityViews()
+                        
+                        // Panel kapatma işlemi setTargetViewForLastStep içinde otomatik yapılacak
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun showGuidePanel() {
+        // Guide panel verilerini oluştur
+        val guideData = listOf(
+            GuidePanelData(
+                imageResId = R.drawable.teacher_emotes_gpt4,
+                text = "Ünite değerlendirmede hatasız en hızlı çözümler kaydedilir."
+            ),
+            GuidePanelData(
+                imageResId = R.drawable.teacher_emotes_gpt3,
+                text = "Ünite değerlendirme panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
+            )
+            // Daha fazla resim/text eklenebilir
+        )
+        
+        binding.guidePanel.setGuideData(guideData)
+        
+        // MainActivity'deki view'lar zaten disableMainActivityViews() ile devre dışı bırakıldı
+        // (gecikme süresinde tıklamalar engellenmesi için onViewCreated'da çağrılıyor)
+        
+        // Panel'i göster
+        binding.guidePanel.show()
+        
+        // Panel animasyonu tamamlandıktan sonra overlay'i kaldır (panel 500ms animasyon + 1000ms ek güvenlik)
+        view?.postDelayed({
+            enableMapFragmentViews() // Overlay'i kaldır (Panel tamamen göründükten sonra)
+        }, 1500) // Panel animasyonu (500ms) + ek güvenlik (1000ms)
+        
+        // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
+        // 1. listenin 3. index'i (0-based index: 3)
+        view?.postDelayed({
+            val lessonItem = GlobalLessonData.getLessonItem(3)
+            if (lessonItem != null && ::lessonsAdapter.isInitialized) {
+                lessonsAdapter.showLessonBottomSheet(lessonItem, 3)
+            }
+        }, 600) // Panel animasyonu tamamlandıktan sonra
+    }
+    
+    private fun disableMainActivityViews() {
+        val activity = requireActivity()
+        
+        // Currency panel (üstteki panel)
+        activity.findViewById<View>(R.id.currencyPanel)?.apply {
+            isClickable = false
+            isFocusable = false
+            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
+        }
+        
+        // Enerji text
+        activity.findViewById<View>(R.id.energyText)?.apply {
+            isClickable = false
+            isFocusable = false
+            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
+            setOnClickListener(null) // Click listener'ı kaldır
+        }
+        
+        // Enerji icon
+        activity.findViewById<View>(R.id.energyIcon)?.apply {
+            isClickable = false
+            isFocusable = false
+            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
+            setOnClickListener(null) // Click listener'ı kaldır
+        }
+        
+        // Bottom navigation
+        activity.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationID)?.apply {
+            isClickable = false
+            isFocusable = false
+            isEnabled = false // Tamamen devre dışı bırak (tıklama efektleri de engellenir)
+            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
+            setOnItemSelectedListener(null) // Item selected listener'ı kaldır
+            
+            // Menu item'lerini de devre dışı bırak
+            menu.setGroupEnabled(0, false)
+        }
+        
+        android.util.Log.d("MapFragment", "MainActivity views disabled")
+    }
+    
+    private var overlayView: View? = null
+    
+    private fun disableMapFragmentViews() {
+        // RecyclerView'ı devre dışı bırak (kaydırmayı engelle)
+        binding.lessonsRecyclerView.apply {
+            isClickable = false
+            isFocusable = false
+            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
+        }
+        
+        // Overlay view oluştur ve ekle (tüm touch event'leri consume edecek)
+        overlayView = View(requireContext()).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setOnTouchListener { _, _ -> true } // Tüm touch event'leri consume et
+        }
+        // Overlay'i root view'a ekle
+        (binding.root as? ViewGroup)?.addView(overlayView)
+    }
+    
+    private fun enableMapFragmentViews() {
+        // RecyclerView'ı tekrar aktif et
+        binding.lessonsRecyclerView.apply {
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener(null) // Touch listener'ı kaldır
+        }
+        
+        // Overlay'i kaldır
+        overlayView?.let { overlay ->
+            (binding.root as? ViewGroup)?.removeView(overlay)
+            overlayView = null
+        }
+    }
+    
+    private fun enableMainActivityViews() {
+        val activity = requireActivity()
+        
+        // Currency panel (üstteki panel)
+        activity.findViewById<View>(R.id.currencyPanel)?.apply {
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener(null) // Touch listener'ı kaldır
+        }
+        
+        // Enerji text - MainActivity'deki listener'ı geri yükle
+        activity.findViewById<View>(R.id.energyText)?.apply {
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener(null) // Touch listener'ı kaldır
+            // MainActivity'deki click listener otomatik olarak geri yüklenecek
+            // çünkü MainActivity'de setOnClickListener zaten var
+        }
+        
+        // Enerji icon - MainActivity'deki listener'ı geri yükle
+        activity.findViewById<View>(R.id.energyIcon)?.apply {
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener(null) // Touch listener'ı kaldır
+            // MainActivity'deki click listener otomatik olarak geri yüklenecek
+        }
+        
+        // Bottom navigation - MainActivity'deki listener'ı geri yükle
+        activity.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationID)?.apply {
+            isClickable = true
+            isFocusable = true
+            isEnabled = true // Tekrar aktif et
+            setOnTouchListener(null) // Touch listener'ı kaldır
+            // Menu item'lerini tekrar aktif et
+            menu.setGroupEnabled(0, true)
+            // MainActivity'deki item selected listener otomatik olarak geri yüklenecek
+        }
+        
+        // MapFragment view'larını da tekrar aktif et
+        enableMapFragmentViews()
+        
+        android.util.Log.d("MapFragment", "MainActivity views enabled")
     }
 
     override fun onPause() {

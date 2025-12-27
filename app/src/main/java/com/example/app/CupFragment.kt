@@ -20,8 +20,6 @@ class CupFragment : Fragment() {
     private var targetTime: String = ""
     private var currentSeconds: Int = 0
     private var timer: CountDownTimer? = null
-    private var recordMinutes: Int? = null
-    private var recordSeconds: Int? = null
     private var record: Int? = null
     private val TICK_INTERVAL = 50L // 50 milisaniye
     private val SPEED_MULTIPLIER = 1 // Her tick'te 3 saniye artacak
@@ -63,8 +61,11 @@ class CupFragment : Fragment() {
             // Önce MapFragment'ı aç
             updateMapProgress()
 
+            // Guide panel ile birlikte MapFragment'ı aç
+            val mapFragment = MapFragment.newInstance(showGuide = true)
+            
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, MapFragment())
+                .replace(R.id.fragmentContainerID, mapFragment)
                 .remove(this@CupFragment)
                 .commit()
 

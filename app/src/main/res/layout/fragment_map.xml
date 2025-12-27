@@ -69,4 +69,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
          />
 
+    <!-- Guide Panel -->
+    <com.example.app.GuidePanelView
+        android:id="@+id/guidePanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:elevation="100dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -70,14 +70,24 @@ class LessonAdapter(
     }
 
     @SuppressLint("MissingInflatedId")
-    private fun showLessonBottomSheet(item: LessonItem, position: Int) {
+    fun showLessonBottomSheet(item: LessonItem, position: Int) {
         // Activity'deki view'ları bul
         val activity = context as Activity
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
         val scrimView = activity.findViewById<View>(R.id.scrimView)
+        
+        // GuidePanel açık mı kontrol et
+        val guidePanel = activity.findViewById<View>(R.id.guidePanel)
+        val isGuidePanelVisible = guidePanel?.visibility == View.VISIBLE
 
-        scrimView.visibility = View.VISIBLE
-        scrimView.alpha = 0f
+        // GuidePanel açıksa scrimView'ı gösterme (ekran karartma)
+        if (!isGuidePanelVisible) {
+            scrimView.visibility = View.VISIBLE
+            scrimView.alpha = 0f
+        } else {
+            scrimView.visibility = View.GONE
+            scrimView.alpha = 0f
+        }
 
         // Eğer daha önce oluşturulmuş bir bottom sheet varsa kaldır
         coordinatorLayout.findViewWithTag<View>("bottom_sheet")?.let {
@@ -120,6 +130,10 @@ class LessonAdapter(
                     // Abonelik durumuna göre buton metnini ayarla
                     record.text="Rekor: ${item.record}"
                     fireAnim.visibility = View.VISIBLE
+                    
+                    // GuidePanel'in son adımında animasyon başlatma işlemi MapFragment'te yapılıyor
+                    // Burada animasyon başlatmıyoruz çünkü kontrol ve başlatma MapFragment'te setOnLastStepReachedListener içinde yapılıyor
+                    
                     getCurrentPlan { plan ->
                         if (plan == "Free") {
                             actionButton.text = "Tekrar etmek için planı yükselt"
@@ -175,43 +189,63 @@ class LessonAdapter(
 
         // BottomSheetBehavior oluştur
         val behavior = BottomSheetBehavior.from(bottomSheetLayout)
+        
+        // GuidePanel açıksa bottom sheet'in tıklanabilirliğini engelle
+        if (isGuidePanelVisible) {
+            disableBottomSheetInteractions(bottomSheetView, bottomSheetLayout, actionButton, againTutorial, behavior)
+        }
 
-        // Scrim view'ı göster ve tıklama listener'ı ekle
-        scrimView.visibility = View.VISIBLE
-        scrimView.animate()
-            .alpha(0.5f)
-            .setDuration(300)
-            .start()
+        // Scrim view'ı göster ve tıklama listener'ı ekle (sadece GuidePanel açık değilse)
+        if (!isGuidePanelVisible) {
+            scrimView.visibility = View.VISIBLE
+            scrimView.animate()
+                .alpha(0.5f)
+                .setDuration(300)
+                .start()
 
-        // Scrim'e tıklandığında bottom sheet'i kapat
-        scrimView.setOnClickListener {
-            // Bottom sheet'i gizlenebilir yap ve aşağı kaydır
-            behavior.isHideable = true
-            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+            // Scrim'e tıklandığında bottom sheet'i kapat
+            scrimView.setOnClickListener {
+                // Bottom sheet'i gizlenebilir yap ve aşağı kaydır
+                behavior.isHideable = true
+                behavior.state = BottomSheetBehavior.STATE_HIDDEN
+            }
+        } else {
+            // GuidePanel açıkken scrimView tıklanamaz ve görünmez
+            scrimView.setOnClickListener(null)
         }
 
         // Bottom sheet callback'i ekle
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    // recordLayout animasyonunu durdur (eğer varsa)
+                    val recordLayout = bottomSheetView.findViewById<LinearLayout>(R.id.recordLayout)
+                    val animator = recordLayout?.tag as? ValueAnimator
+                    animator?.cancel()
+                    recordLayout?.tag = null
+                    
                     // Bottom sheet tamamen kapandığında view'ı kaldır
                     coordinatorLayout.removeView(bottomSheetView)
 
-                    // Scrim'i animate ederek kapat
-                    scrimView.animate()
-                        .alpha(0f)
-                        .setDuration(100)
-                        .withEndAction {
-                            scrimView.visibility = View.GONE
-                        }
-                        .start()
+                    // Scrim'i animate ederek kapat (sadece GuidePanel açık değilse)
+                    if (!isGuidePanelVisible) {
+                        scrimView.animate()
+                            .alpha(0f)
+                            .setDuration(100)
+                            .withEndAction {
+                                scrimView.visibility = View.GONE
+                            }
+                            .start()
+                    }
                 }
             }
 
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                // Kaydırma sırasında arka plan transparanlığını ayarla
-                val alpha = 0.5f * (slideOffset + 1) // 0f ile 0.5f arası
-                scrimView.alpha = alpha
+                // Kaydırma sırasında arka plan transparanlığını ayarla (sadece GuidePanel açık değilse)
+                if (!isGuidePanelVisible) {
+                    val alpha = 0.5f * (slideOffset + 1) // 0f ile 0.5f arası
+                    scrimView.alpha = alpha
+                }
             }
         })
 
@@ -822,6 +856,151 @@ class LessonAdapter(
         items.clear()
         items.addAll(newItems)
         notifyDataSetChanged()
+    }
+
+    /**
+     * Belirtilen view için pulse animasyonu başlatır (eğer animasyon zaten çalışmıyorsa)
+     * @param view Animasyon uygulanacak view
+     * @param stopAnimationOnClick View'a tıklandığında animasyonu durdursun mu? (default: true)
+     *                            Eğer false ise, click listener eklenmez (setTargetViewForLastStep gibi başka bir mekanizma kullanılabilir)
+     * @param onViewClicked View'a tıklandığında çağrılacak callback (opsiyonel, sadece stopAnimationOnClick true ise çalışır)
+     */
+    fun startPulseAnimationForView(
+        view: View, 
+        stopAnimationOnClick: Boolean = true,
+        onViewClicked: (() -> Unit)? = null
+    ) {
+        // Eğer animasyon zaten çalışıyorsa başlatma
+        if (view.tag is ValueAnimator) {
+            return
+        }
+        
+        // Animasyonu başlat
+        val animator = startRecordLayoutPulseAnimation(view)
+        view.tag = animator
+        
+        // View'a tıklandığında animasyonu durdur (eğer isteniyorsa)
+        if (stopAnimationOnClick) {
+            view.setOnClickListener {
+                val currentAnimator = view.tag as? ValueAnimator
+                currentAnimator?.cancel()
+                view.tag = null
+                view.scaleX = 1f
+                view.scaleY = 1f
+                // Opsiyonel callback'i çağır
+                onViewClicked?.invoke()
+            }
+        }
+    }
+    
+    /**
+     * View için pulse animasyonu oluşturur ve başlatır
+     * @param view Animasyon uygulanacak view (herhangi bir View tipi olabilir)
+     * @return Başlatılan ValueAnimator
+     */
+    private fun startRecordLayoutPulseAnimation(view: View): ValueAnimator {
+        // Scale animasyonu: 1.0 -> 1.2 -> 1.0 (balon gibi büyüyüp küçülme)
+        val animator = ValueAnimator.ofFloat(1.0f, 1.05f, 1.0f)
+        animator.duration = 1200 // 800ms sürecek
+        animator.repeatCount = ValueAnimator.INFINITE // Sürekli tekrar et
+        animator.interpolator = AccelerateDecelerateInterpolator() // Yumuşak geçiş
+        
+        animator.addUpdateListener { animation ->
+            val scale = animation.animatedValue as Float
+            view.scaleX = scale
+            view.scaleY = scale
+        }
+        
+        animator.start()
+        return animator
+    }
+    
+    private fun disableBottomSheetInteractions(
+        bottomSheetView: View,
+        bottomSheetLayout: LinearLayout,
+        actionButton: Button,
+        againTutorial: TextView,
+        behavior: BottomSheetBehavior<LinearLayout>
+    ) {
+        // Bottom sheet view'ın tıklanabilirliğini kapat
+        // Touch event'leri GuidePanel'e iletmek için consume etmiyoruz
+        bottomSheetView.apply {
+            isClickable = false
+            isFocusable = false
+            // Touch listener koymuyoruz, böylece touch event'ler alt view'lara (GuidePanel'e) geçebilir
+        }
+        
+        // Bottom sheet layout'un tıklanabilirliğini kapat
+        // Touch event'leri GuidePanel'e iletmek için consume etmiyoruz
+        bottomSheetLayout.apply {
+            isClickable = false
+            isFocusable = false
+            // Touch listener koymuyoruz, böylece touch event'ler alt view'lara (GuidePanel'e) geçebilir
+        }
+        
+        // Action button'un tıklanabilirliğini kapat
+        actionButton.apply {
+            isClickable = false
+            isEnabled = false
+            setOnClickListener(null) // Click listener'ı kaldır
+            setOnTouchListener { _, _ -> true } // Sadece button için touch event'leri consume et
+        }
+        
+        // Again tutorial text'in tıklanabilirliğini kapat
+        againTutorial.apply {
+            isClickable = false
+            isFocusable = false
+            setOnClickListener(null) // Click listener'ı kaldır
+            setOnTouchListener { _, _ -> true } // Sadece text için touch event'leri consume et
+        }
+        
+        // BottomSheetBehavior'ın drag özelliğini kapat (kaydırma engellenmeli)
+        behavior.isDraggable = false
+        
+        // BottomSheetView'in touch event'lerini GuidePanel'e iletmek için
+        // Eğer touch event BottomSheet'in içindeki tıklanabilir elementlere geliyorsa consume et,
+        // değilse consume etme (false döndür) ve alt view'lara (GuidePanel'e) ilet
+        bottomSheetView.setOnTouchListener { view, event ->
+            // Touch event'in koordinatlarını al
+            val x = event.x
+            val y = event.y
+            
+            // ActionButton veya AgainTutorial'a tıklanıyorsa consume et
+            val actionButtonRect = android.graphics.Rect()
+            actionButton.getHitRect(actionButtonRect)
+            
+            val againTutorialRect = android.graphics.Rect()
+            againTutorial.getHitRect(againTutorialRect)
+            
+            // BottomSheetView'in koordinat sistemine göre dönüştür
+            val location = IntArray(2)
+            bottomSheetView.getLocationInWindow(location)
+            val bottomSheetX = location[0]
+            val bottomSheetY = location[1]
+            
+            actionButton.getLocationInWindow(location)
+            val actionButtonX = location[0] - bottomSheetX
+            val actionButtonY = location[1] - bottomSheetY
+            
+            againTutorial.getLocationInWindow(location)
+            val againTutorialX = location[0] - bottomSheetX
+            val againTutorialY = location[1] - bottomSheetY
+            
+            val actionButtonHit = x >= actionButtonX && 
+                                 x <= actionButtonX + actionButton.width &&
+                                 y >= actionButtonY && 
+                                 y <= actionButtonY + actionButton.height
+            
+            val againTutorialHit = x >= againTutorialX && 
+                                  x <= againTutorialX + againTutorial.width &&
+                                  y >= againTutorialY && 
+                                  y <= againTutorialY + againTutorial.height
+            
+            // Eğer tıklanabilir elementlere tıklanıyorsa consume et, değilse GuidePanel'e ilet
+            actionButtonHit || againTutorialHit
+        }
+        
+        android.util.Log.d("LessonAdapter", "BottomSheet interactions disabled")
     }
 
 }
