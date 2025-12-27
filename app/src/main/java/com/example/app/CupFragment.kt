@@ -20,6 +20,9 @@ class CupFragment : Fragment() {
     private var targetTime: String = ""
     private var currentSeconds: Int = 0
     private var timer: CountDownTimer? = null
+    private var recordMinutes: Int? = null
+    private var recordSeconds: Int? = null
+    private var record: Int? = null
     private val TICK_INTERVAL = 50L // 50 milisaniye
     private val SPEED_MULTIPLIER = 1 // Her tick'te 3 saniye artacak
     private lateinit var claimButton: View
@@ -50,6 +53,7 @@ class CupFragment : Fragment() {
             startTimer()
         }
         ChangeCupIcon()
+        record()
         resumeClick()
 
     }
@@ -66,6 +70,15 @@ class CupFragment : Fragment() {
 
             // Sonra kupa ikonunu güncelle ve fragment'ları temizle
 
+        }
+    }
+    private fun record(){
+        if(lessonItem.record == null){
+            lessonItem.record = "99:40"
+        }
+        if(targetTime < lessonItem.record.toString()){
+
+            lessonItem.record = targetTime
         }
     }
     private fun ChangeCupIcon(){

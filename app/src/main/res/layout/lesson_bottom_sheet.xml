@@ -15,48 +15,88 @@
         android:padding="16dp">
 
         <LinearLayout
-            android:id="@+id/skipTutorialButton"
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_gravity="center"
             android:orientation="horizontal">
 
+            <!-- SOL YARI -->
             <TextView
                 android:id="@+id/lessonTitle"
                 android:layout_width="wrap_content"
-                android:layout_weight="1"
+                android:maxLines="1"
                 android:layout_height="wrap_content"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="#4B4B4B"
                 android:layout_marginBottom="8dp"/>
-            <TextView
-                android:id="@+id/againTutorial"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:visibility="invisible"
-                android:paddingHorizontal="10dp"
-                android:text="Eğitimi tekrarla"
-                android:background="@drawable/skip_tutorial"
-                android:backgroundTint="#fff"
-                android:textAlignment="center"
-                android:textColor="#4B4B4B"
-                android:textSize="15sp">
 
-            </TextView>
+            <!-- SAĞ YARI -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:elevation="20dp">
+                <LinearLayout
+                    android:id="@+id/recordLayout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="end|center_vertical"
+                    android:gravity="center_vertical">
+
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/fireAnimID"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_marginEnd="6dp"
+                    android:visibility="gone"
+                    app:lottie_fileName="fire_anim.json"
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    android:paddingBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/recordText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#4B4B4B"
+                    android:paddingEnd="25dp"
+                    android:gravity="center_vertical"/>
+
+                </LinearLayout>
+                <!-- ÜZERİNDEKİ -->
+                <TextView
+                    android:id="@+id/againTutorial"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:visibility="invisible"
+                    android:paddingHorizontal="10dp"
+                    android:text="Eğitimi tekrarla"
+                    android:background="@drawable/skip_tutorial"
+                    android:backgroundTint="#fff"
+                    android:textAlignment="center"
+                    android:textColor="#4B4B4B"
+                    android:layout_gravity="end"
+                    android:textSize="15sp">
+
+                </TextView>
+            </FrameLayout>
 
         </LinearLayout>
 
 
+            <TextView
+                android:id="@+id/lessonDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:layout_weight="1"
+                android:textColor="#4B4B4B"
+                android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:id="@+id/lessonDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="#4B4B4B"
-            android:layout_marginBottom="16dp"/>
 
 
         <LinearLayout

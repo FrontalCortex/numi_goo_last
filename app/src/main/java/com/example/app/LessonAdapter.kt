@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.widget.Button
@@ -12,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
@@ -25,6 +25,7 @@ import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.airbnb.lottie.LottieAnimationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -68,6 +69,7 @@ class LessonAdapter(
             }
     }
 
+    @SuppressLint("MissingInflatedId")
     private fun showLessonBottomSheet(item: LessonItem, position: Int) {
         // Activity'deki view'ları bul
         val activity = context as Activity
@@ -93,29 +95,38 @@ class LessonAdapter(
         val actionButton = bottomSheetView.findViewById<Button>(R.id.actionButton)
         val bottomSheetLayout = bottomSheetView.findViewById<LinearLayout>(R.id.bottomSheetLayout)
         val againTutorial = bottomSheetView.findViewById<TextView>(R.id.againTutorial)
+        val record = bottomSheetView.findViewById<TextView>(R.id.recordText)
+        val fireAnim = bottomSheetView.findViewById<LottieAnimationView>(R.id.fireAnimID)
+        val recordLayout = bottomSheetView.findViewById<LinearLayout>(R.id.recordLayout)
+
 
         // İçerikleri ayarla
         titleText.text = item.title
 
         if (item.isCompleted) {
             if(item.tutorialNumber != 0 && item.tutorialIsFinish){
-                Log.d("cetvel","getir")
                 againTutorial.visibility = View.VISIBLE
             }
             else{
-                Log.d("cetvel","getir2")
 
                 againTutorial.visibility = View.INVISIBLE
             }
             if(item.stepIsFinish){
                 if(item.type == 2){
+                    // Buton metnini başta boş bırak (plan kontrolü tamamlanana kadar)
+                    actionButton.text = ""
+                    actionButton.isEnabled = false // Plan kontrolü tamamlanana kadar devre dışı
+                    recordLayout.setBackgroundResource(R.drawable.record_background)
                     // Abonelik durumuna göre buton metnini ayarla
+                    record.text="Rekor: ${item.record}"
+                    fireAnim.visibility = View.VISIBLE
                     getCurrentPlan { plan ->
                         if (plan == "Free") {
                             actionButton.text = "Tekrar etmek için planı yükselt"
                         } else {
                             actionButton.text = "Tekrar dene"
                         }
+                        actionButton.isEnabled = true // Plan kontrolü tamamlandı, butonu aktif et
                     }
                 }
                 else{

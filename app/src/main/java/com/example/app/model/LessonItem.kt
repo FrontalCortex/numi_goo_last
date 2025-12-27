@@ -38,6 +38,7 @@ data class LessonItem(
     var racePartId: Int? = null,  // Race item'ının hangi partId'den veri göstereceği
     var backRaceId: Int? = null,
     var raceBusyLevel: Int? = null,
+    var record: String? = null,
 ) : Serializable {
     companion object {
         const val TYPE_LESSON = 0

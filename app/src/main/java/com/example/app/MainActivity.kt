@@ -100,7 +100,6 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             showEnergyRefillDialog()
         }
     }
-
     private fun changeFragment(fragment: Fragment) {
         val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         // Eğer mevcut fragment ile yeni fragment aynı tipteyse, işlem yapma
