@@ -3070,24 +3070,21 @@ class MapFragment : Fragment() {
             setOnTouchListener(null) // Touch listener'ı kaldır
         }
         
-        // Enerji text - MainActivity'deki listener'ı geri yükle
+        // Enerji text
         activity.findViewById<View>(R.id.energyText)?.apply {
             isClickable = true
             isFocusable = true
             setOnTouchListener(null) // Touch listener'ı kaldır
-            // MainActivity'deki click listener otomatik olarak geri yüklenecek
-            // çünkü MainActivity'de setOnClickListener zaten var
         }
         
-        // Enerji icon - MainActivity'deki listener'ı geri yükle
+        // Enerji icon
         activity.findViewById<View>(R.id.energyIcon)?.apply {
             isClickable = true
             isFocusable = true
             setOnTouchListener(null) // Touch listener'ı kaldır
-            // MainActivity'deki click listener otomatik olarak geri yüklenecek
         }
         
-        // Bottom navigation - MainActivity'deki listener'ı geri yükle
+        // Bottom navigation
         activity.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationID)?.apply {
             isClickable = true
             isFocusable = true
@@ -3095,7 +3092,11 @@ class MapFragment : Fragment() {
             setOnTouchListener(null) // Touch listener'ı kaldır
             // Menu item'lerini tekrar aktif et
             menu.setGroupEnabled(0, true)
-            // MainActivity'deki item selected listener otomatik olarak geri yüklenecek
+        }
+        
+        // MainActivity'deki click listener'ları yeniden set et
+        if (activity is MainActivity) {
+            activity.setupClickListeners()
         }
         
         // MapFragment view'larını da tekrar aktif et

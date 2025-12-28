@@ -72,6 +72,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
         binding.bottomNavigationID.itemIconTintList = null
 
+        // Listener'ları set et
+        setupClickListeners()
+    }
+    
+    /**
+     * Click listener'ları set eder (GuidePanel kapandıktan sonra yeniden aktif etmek için)
+     */
+    fun setupClickListeners() {
         binding.bottomNavigationID.setOnItemSelectedListener {
             closeBottomSheet()
             when (it.itemId) {

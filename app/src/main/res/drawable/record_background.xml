@@ -5,10 +5,7 @@
     <!-- Arka plan rengi -->
     <solid android:color="#FFB703"/>
 
-    <stroke
-        android:width="4dp"
-        android:color="#332F2F"/>
-    <!-- Köşe yuvarlama -->
+
     <corners android:radius="12dp"/>
 
 </shape>

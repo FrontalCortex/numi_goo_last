@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.animation.ObjectAnimator
+import android.app.Activity
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -11,6 +12,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import android.widget.TextView
 import com.example.app.model.GuidePanelData
 
@@ -191,6 +193,9 @@ class GuidePanelView @JvmOverloads constructor(
     fun show() {
         visibility = View.VISIBLE
         
+        // MapFragment'teki coordinator_layout'u karart (animasyon başlamadan önce)
+        dimCoordinatorLayout(true)
+        
         // İçeriği güncelle (eğer henüz güncellenmediyse)
         if (guideDataList.isNotEmpty() && currentIndex in guideDataList.indices) {
             updateContent()
@@ -220,6 +225,9 @@ class GuidePanelView @JvmOverloads constructor(
     }
 
     fun hide() {
+        // MapFragment'teki coordinator_layout'u normale döndür (animasyon başladığında)
+        dimCoordinatorLayout(false)
+        
         // Animasyon sırasında tıklamaları engelle
         isAnimating = true
         panelContent.isClickable = false
@@ -228,7 +236,7 @@ class GuidePanelView @JvmOverloads constructor(
         // Sağa kayarak kaybol (normal kapanma)
         val screenWidth = resources.displayMetrics.widthPixels
         val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, screenWidth.toFloat())
-        translateX.duration = 300
+        translateX.duration = 500
         translateX.interpolator = AccelerateDecelerateInterpolator()
         
         translateX.addListener(object : android.animation.AnimatorListenerAdapter() {
@@ -244,6 +252,9 @@ class GuidePanelView @JvmOverloads constructor(
     }
     
     fun hideToLeft() {
+        // MapFragment'teki coordinator_layout'u normale döndür (animasyon başladığında)
+        dimCoordinatorLayout(false)
+        
         // Animasyon sırasında tıklamaları engelle
         isAnimating = true
         panelContent.isClickable = false
@@ -269,6 +280,24 @@ class GuidePanelView @JvmOverloads constructor(
     
     fun isOnLastStep(): Boolean {
         return guideDataList.isNotEmpty() && currentIndex == guideDataList.size - 1
+    }
+    
+    /**
+     * MapFragment'teki coordinator_layout'u karartır veya normale döndürür
+     * @param dim true ise karart, false ise normale döndür
+     */
+    private fun dimCoordinatorLayout(dim: Boolean) {
+        // GuidePanelView'in parent'ı coordinator_layout (ConstraintLayout)
+        val parent = parent as? ConstraintLayout
+        parent?.let { coordinatorLayout ->
+            if (dim) {
+                // Karart (koyu gri renk - ARGB format: FF = tam opacity, 242222 = RGB renk)
+                coordinatorLayout.setBackgroundColor(0xFF1A1F23.toInt())
+            } else {
+                // Normale döndür (orijinal background color'a geri dön)
+                coordinatorLayout.setBackgroundColor(context.getColor(R.color.background_color))
+            }
+        }
     }
 }
 

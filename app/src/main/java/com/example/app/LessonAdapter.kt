@@ -147,24 +147,18 @@ class LessonAdapter(
                     actionButton.text = "Gözden geçir"
                 }
                 descriptionText.text = "Ders Tamamlandı"
-                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
-                actionButton.apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
-                }
-
-
                 // Progress bar rengini güncelle
             } else {
                 descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
-                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.panel_background)
 
                 //tutorial olanlarda ve tutorialIsFinish olanlarda çıkacak.
                 actionButton.apply {
-                    text = "-5                           BAŞLAT"
+                    text = "-1                           BAŞLAT"
                     textAlignment = View.TEXT_ALIGNMENT_TEXT_START  // veya
                     // Beyaz, köşeleri yuvarlatılmış
-                    actionButton.setBackgroundColor(context.getColor(R.color.white))
-                    setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
+                    actionButton.setBackgroundColor(context.getColor(R.color.lesson_completed))
+                    setTextColor(ContextCompat.getColor(context, R.color.panel_background))
                     isEnabled = true
                     // İkon ekle (solda)
                     setCompoundDrawablesWithIntrinsicBounds(R.drawable.lighting__1_, 0, 0, 0)

@@ -710,7 +710,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.",
                 null,
                 listOf(
-                    { WidgetOperation.ChangeVisibility(binding.backButtonArrow, View.VISIBLE) },
                     { WidgetOperation.ChangeVisibility(binding.backButton, View.VISIBLE) },
 
                     ),
@@ -721,8 +720,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Eğer konuyu biliyorsan. Sağ alttaki eğitimi atla butonuna tıklayarak direkt teste geçebilirsin.",
                 null,
                 listOf(
-                    { WidgetOperation.ChangeVisibility(binding.backButtonArrow, View.INVISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButtonArrow, View.VISIBLE) },
                     { WidgetOperation.ChangeVisibility(binding.skipTutorialButton, View.VISIBLE) },
 
                     ),
@@ -734,7 +731,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 null,
                 listOf(
                     { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.VISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButtonArrow, View.INVISIBLE) },
                     ),
                 soundResource = R.raw.tutorial1_4,
                 useTypewriterEffect = true,
