@@ -17,6 +17,24 @@ object MathOperationGenerator {
         9 to listOf(0)
     )
 
+    fun generateRelatedNumbers0(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
+        val onesDigitFirst = (1..8).random()
+        val onesDigitSecond = when (onesDigitFirst) {
+            1 -> listOf(1, 2, 3, 5, 6, 7, 8)
+            2 -> listOf(1, 2, 5, 6, 7)
+            3 -> listOf(1, 5, 6)
+            4 -> listOf(5)
+            5 -> listOf(1, 2, 3, 4)
+            6 -> listOf(1, 2, 3)
+            7 -> listOf(1, 2)
+            8 -> listOf(1)
+            else -> listOf()
+        }
+        val secondNumberOnes = onesDigitSecond[Random().nextInt(onesDigitSecond.size)]
+        return MathOperation(onesDigitFirst, "+", secondNumberOnes)
+
+    }
+
     fun generateRelatedNumbers(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber: Int

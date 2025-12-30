@@ -6,12 +6,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="#222"
+    android:background="@color/background_color"
     android:padding="10dp"
     android:clickable="true"
     android:clipChildren="false"
     android:clipToPadding="false">
-
 
     <ImageView
         android:id="@+id/rulesBookButton"
@@ -524,28 +523,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/incorrectPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#222"
-        android:translationZ="0dp"
-        android:elevation="4dp"
+        android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
-        android:focusable="false"
-        android:fitsSystemWindows="true"
         android:descendantFocusability="blocksDescendants"
+        android:elevation="4dp"
+        android:fitsSystemWindows="true"
+        android:layout_marginStart="-10dp"
+        android:layout_marginEnd="-10dp"
+        android:layout_marginBottom="-10dp"
+        android:focusable="false"
         android:importantForAccessibility="no"
+        android:translationZ="0dp"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="invisible">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:id="@+id/incorrectIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
+            android:layout_margin="10dp"
             android:src="@android:drawable/ic_delete"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -555,6 +557,7 @@
             android:id="@+id/incorrectText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="10dp"
             android:layout_marginStart="8dp"
             android:text="Yanlış"
             android:textColor="#FF4B4B"
@@ -567,8 +570,9 @@
             android:id="@+id/correctAnswerLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_margin="10dp"
             android:layout_marginTop="16dp"
-            android:text="Hatalı basamaklar:"
+            android:text="Talimata uygun işlemi yap"
             android:textColor="#FF4B4B"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -578,8 +582,8 @@
             android:id="@+id/correctAnswerText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Doğru cevap burada gösterilecek"
+            android:layout_marginStart="10dp"
+            android:text=""
             android:textColor="#FFFFFF"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -591,7 +595,8 @@
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#FF4B4B"
-            android:text="Tamam"
+            android:text="Tekrar Dene"
+            android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="18sp"
@@ -603,27 +608,30 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/correctPanel"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="#222"
-        android:translationZ="0dp"
-        android:elevation="4dp"
+        android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
-        android:focusable="false"
-        android:fitsSystemWindows="true"
         android:descendantFocusability="blocksDescendants"
+        android:elevation="4dp"
+        android:padding="16dp"
+        android:clipToPadding="false"
+        android:focusable="false"
         android:importantForAccessibility="no"
+        android:translationZ="0dp"
+        android:layout_marginStart="-10dp"
+        android:layout_marginEnd="-10dp"
+        android:layout_marginBottom="-10dp"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="invisible">
+        app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
             android:id="@+id/correctIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/circle_correct"
-
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -641,7 +649,7 @@
 
         <Button
             android:id="@+id/continueButton"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
@@ -652,7 +660,9 @@
             android:textStyle="bold"
             app:cornerRadius="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/correctText" />
+            app:layout_constraintTop_toBottomOf="@id/correctText"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

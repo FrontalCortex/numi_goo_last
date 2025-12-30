@@ -1365,6 +1365,16 @@
             app:layout_constraintStart_toEndOf="@id/incorrectIcon"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <ImageView
+            android:id="@+id/infoRequest"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="10dp"
+            android:src="@drawable/request"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#8BC34A" />
+
         <TextView
             android:id="@+id/correctAnswerLabel"
             android:layout_width="wrap_content"
@@ -1394,6 +1404,7 @@
             android:layout_marginTop="16dp"
             android:backgroundTint="#FF4B4B"
             android:text="Tekrar Dene"
+            android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="18sp"
@@ -1406,13 +1417,14 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/correctPanel"
-        android:layout_width="409dp"
-        android:layout_height="107dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
         android:elevation="4dp"
-        android:fitsSystemWindows="true"
+        android:padding="16dp"
+        android:clipToPadding="false"
         android:focusable="false"
         android:importantForAccessibility="no"
         android:translationZ="0dp"
@@ -1425,9 +1437,7 @@
             android:id="@+id/correctIcon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:layout_margin="10dp"
             android:src="@drawable/circle_correct"
-
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -1435,10 +1445,8 @@
             android:id="@+id/correctText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
             android:layout_marginStart="8dp"
             android:text="Aferin!"
-
             android:textColor="#8CC63F"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -1447,9 +1455,8 @@
 
         <Button
             android:id="@+id/continueButton"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="60dp"
-            android:layout_margin="5dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
             android:text="Devam et"
@@ -1459,7 +1466,9 @@
             android:textStyle="bold"
             app:cornerRadius="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/correctText" />
+            app:layout_constraintTop_toBottomOf="@id/correctText"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

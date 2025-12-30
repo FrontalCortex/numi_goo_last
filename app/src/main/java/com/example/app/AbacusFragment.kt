@@ -1662,6 +1662,7 @@ class AbacusFragment : Fragment() {
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
         mediaPlayer?.start()
     }
+
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
     private fun showResultPanel() {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma

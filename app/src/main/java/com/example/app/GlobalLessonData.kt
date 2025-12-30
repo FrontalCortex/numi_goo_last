@@ -43,7 +43,7 @@ object GlobalLessonData {
             1 -> listOf(
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
-                    title = "Kuralsız Toplama",
+                    title = "Sayıları Abaküste Tanıma",
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -62,20 +62,77 @@ object GlobalLessonData {
                     tutorialNumber = 1,
                     startStepNumber = 1,
                     mapFragmentIndex = 1,
+                    lessonHint = "En sağdaki sütunu kullan. Aşağıda boncuklar birlik, yukarıdaki beşlik değere sahip."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "İki basamaklı sayılar",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 3,
+                    currentStep = 1,
+                    lessonOperationsMap = 1,
+                    finishStepNumber = 1002,
+                    tutorialNumber = 100,
+                    startStepNumber = 1000,
+                    mapFragmentIndex = 2,
                     lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
                 ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Üç basamaklı sayılar",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 2,
+                    currentStep = 1,
+                    lessonOperationsMap = 1,
+                    finishStepNumber = 1004,
+                    tutorialNumber = 101,
+                    startStepNumber = 1003,
+                    mapFragmentIndex = 3,
+                    lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Dört basamaklı sayılar",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 2,
+                    currentStep = 1,
+                    lessonOperationsMap = 1,
+                    finishStepNumber = 1006,
+                    tutorialIsFinish = true,
+                    startStepNumber = 1005,
+                    mapFragmentIndex = 4,
+                    lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
+                ),
+                LessonItem(
+                    type = LessonItem.TYPE_HEADER,
+                    title = "Kuralsız toplama",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    color = R.color.lesson_header_red
+
+                ),
+                //İlk adım 1 basamaklı tutorial + 2 test
+                //2. adım 2 basamaklı  tutorial + 3 test
+                //3. adım 3 basamaklı tutorial + 3 test
+                //4. adım 4 basamaklı tutorial + 3 test
+                //5. adım 5 basamaklı tutorial + 3 test
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama",
                     offset = 30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 2,
                     startStepNumber = 4,
-                    mapFragmentIndex = 2,
-                    finishStepNumber = 7,
-                    lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
+                    mapFragmentIndex = 6,
+                    finishStepNumber = 6,
+                    lessonHint = "Toplanacak sayı değerinde boncuk ekle."
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
@@ -84,7 +141,7 @@ object GlobalLessonData {
                     isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
-                    mapFragmentIndex = 3,
+                    mapFragmentIndex = 7,
                     finishStepNumber = 7,
                     startStepNumber = 7,
                     tutorialIsFinish = true,

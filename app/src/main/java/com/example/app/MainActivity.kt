@@ -18,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.ActivityMainBinding
+import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var binding: ActivityMainBinding
@@ -64,16 +65,59 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
         
-        supportFragmentManager.beginTransaction().apply {
-            replace(R.id.fragmentContainerID,MapFragment())
-            addToBackStack(null)
-            commit()
+        // İlk açılış kontrolü - TutorialFragment gösterilecek mi?
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+        
+        if (!firstTutorialShown) {
+            // İlk açılış - TutorialFragment göster
+            showFirstTutorial()
+            // Flag'i kaydet (TutorialFragment gösterildikten sonra bir daha gösterilmesin)
+            prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+        } else {
+            // Normal akış - MapFragment göster
+            supportFragmentManager.beginTransaction().apply {
+                replace(R.id.fragmentContainerID, MapFragment())
+                addToBackStack(null)
+                commit()
+            }
         }
         window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
         binding.bottomNavigationID.itemIconTintList = null
 
         // Listener'ları set et
         setupClickListeners()
+    }
+    
+    /**
+     * İlk açılışta TutorialFragment'ı gösterir
+     */
+    private fun showFirstTutorial() {
+        // GlobalLessonData'yı initialize et (partId = 1)
+        GlobalLessonData.globalPartId = 1
+        GlobalLessonData.initialize(this, 1)
+        
+        // GlobalLessonData'dan 1. index'teki item'ı al (createLessonItems'den değil, initialize edilen verilerden)
+        val item = GlobalLessonData.getLessonItem(1)
+        item?.let {
+            // Global değerleri set et (TutorialFragment onCreate'de kullanılacak)
+            it.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
+            it.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
+            
+            // Önce MapFragment'i back stack'e ekle (ChestFragment'ten geri dönüş için)
+            val mapFragment = MapFragment()
+            supportFragmentManager.beginTransaction()
+                .add(R.id.fragmentContainerID, mapFragment)
+                .addToBackStack(null)
+                .commit()
+            
+            // TutorialFragment'ı başlat (abacusFragmentContainer'da gösterilecek)
+            binding.abacusFragmentContainer.visibility = View.VISIBLE
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.abacusFragmentContainer, TutorialFragment(it.tutorialNumber))
+                .addToBackStack(null)
+                .commit()
+        }
     }
     
     /**
@@ -146,6 +190,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // GuidePanel animasyon flag'lerini temizle (test için)
         val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
         guidePanelPrefs.edit().clear().apply()
+        
+        // İlk tutorial flag'ini de temizle (test için)
+        val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        appPrefs.edit().putBoolean("first_tutorial_shown", false).apply()
     }
     private fun showAbacusFragment() {
         val fragmentContainer = binding.abacusFragmentContainer

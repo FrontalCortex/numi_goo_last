@@ -34,12 +34,15 @@
         android:layout_marginTop="16dp"
         android:backgroundTint="#8CC63F"
         android:text="Devam et"
+        android:layout_marginHorizontal="10dp"
         android:textAllCaps="false"
         android:textColor="#000000"
         android:textSize="18sp"
         android:textStyle="bold"
         app:cornerRadius="15dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/correctText" />
+        app:layout_constraintTop_toBottomOf="@id/correctText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout> 
