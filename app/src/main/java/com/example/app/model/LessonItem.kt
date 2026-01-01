@@ -39,6 +39,7 @@ data class LessonItem(
     var backRaceId: Int? = null,
     var raceBusyLevel: Int? = null,
     var record: String? = null,
+    var abacusGuideNumber: Int? = null,
 ) : Serializable {
     companion object {
         const val TYPE_LESSON = 0

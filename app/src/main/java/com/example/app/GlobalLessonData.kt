@@ -132,7 +132,8 @@ object GlobalLessonData {
                     startStepNumber = 4,
                     mapFragmentIndex = 6,
                     finishStepNumber = 6,
-                    lessonHint = "Toplanacak sayı değerinde boncuk ekle."
+                    lessonHint = "Toplanacak sayı değerinde boncuk ekle.",
+                    abacusGuideNumber = 1
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
