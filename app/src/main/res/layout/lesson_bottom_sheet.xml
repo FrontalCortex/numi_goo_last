@@ -74,36 +74,40 @@
                     android:gravity="center_vertical"/>
 
                 </LinearLayout>
-                <!-- ÜZERİNDEKİ -->
-                <TextView
-                    android:id="@+id/againTutorial"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:visibility="invisible"
-                    android:paddingHorizontal="10dp"
-                    android:text="Eğitimi tekrarla"
-                    android:background="@drawable/skip_tutorial"
-                    android:backgroundTint="@color/lesson_completed"
-                    android:textAlignment="center"
-                    android:textColor="@color/background_color"
-                    android:layout_gravity="end"
-                    android:textSize="15sp">
-
-                </TextView>
             </FrameLayout>
 
         </LinearLayout>
 
-
+        <!-- lessonDescription ve againTutorial yan yana -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            
             <TextView
                 android:id="@+id/lessonDescription"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
                 android:layout_weight="1"
-                android:textColor="@color/lesson_completed"
-                android:layout_marginBottom="16dp"/>
+                android:textSize="16sp"
+                android:textColor="@color/lesson_completed"/>
+            
+            <TextView
+                android:id="@+id/againTutorial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:visibility="invisible"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp"
+                android:text="Eğitimi tekrarla"
+                android:background="@drawable/skip_tutorial"
+                android:backgroundTint="@color/lesson_completed"
+                android:textAlignment="center"
+                android:textColor="@color/background_color"
+                android:textSize="15sp"/>
+        </LinearLayout>
 
 
 

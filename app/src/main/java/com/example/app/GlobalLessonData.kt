@@ -53,7 +53,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Sayıları abaküste tanıma",
-                    offset = 0,
+                    offset = -30,
                     isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
@@ -81,7 +81,7 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Üç basamaklı sayılar",
-                    offset = 0,
+                    offset = 30,
                     isCompleted = true,
                     stepCount = 2,
                     currentStep = 1,
@@ -93,18 +93,20 @@ object GlobalLessonData {
                     lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
                 ),
                 LessonItem(
-                    type = LessonItem.TYPE_LESSON,
-                    title = "Dört basamaklı sayılar",
+                    type = LessonItem.TYPE_CHEST,
+                    title = "Ünite Değerlendirme",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 2,
+                    stepCount = 1,
                     currentStep = 1,
-                    lessonOperationsMap = 1,
-                    finishStepNumber = 1006,
-                    tutorialIsFinish = true,
-                    startStepNumber = 1005,
                     mapFragmentIndex = 4,
-                    lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
+                    finishStepNumber = 1005,
+                    startStepNumber = 1005,
+                    tutorialIsFinish = true,
+                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupTime1 = "1:00",
+                    cupTime2 = "2:00"
+
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -123,8 +125,8 @@ object GlobalLessonData {
                 //5. adım 5 basamaklı tutorial + 3 test
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız toplama",
-                    offset = 30,
+                    title = "Kuralsız toplama - 1 basamaklı",
+                    offset = 0,
                     isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
@@ -132,8 +134,44 @@ object GlobalLessonData {
                     startStepNumber = 4,
                     mapFragmentIndex = 6,
                     finishStepNumber = 6,
-                    lessonHint = "Toplanacak sayı değerinde boncuk ekle.",
+                    lessonHint = "İlk sayıyı yaz. Toplanacak sayı değerinde boncuk ekle.",
                     abacusGuideNumber = 1
+                ),LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Kuralsız toplama - 2 basamaklı",
+                    offset = -30,
+                    isCompleted = true,
+                    stepCount = 3,
+                    currentStep = 1,
+                    tutorialNumber = 102,
+                    startStepNumber = 1007,
+                    mapFragmentIndex = 7,
+                    finishStepNumber = 1009,
+                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
+                ),LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Kuralsız toplama - 3 basamaklı",
+                    offset = 0,
+                    isCompleted = true,
+                    stepCount = 3,
+                    currentStep = 1,
+                    tutorialNumber = 103,
+                    startStepNumber = 1010,
+                    mapFragmentIndex = 8,
+                    finishStepNumber = 1012,
+                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
+                ),LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Kuralsız toplama - 4,5 basamaklı",
+                    offset = 30,
+                    isCompleted = true,
+                    stepCount = 3,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    startStepNumber = 1013,
+                    mapFragmentIndex = 9,
+                    finishStepNumber = 1015,
+                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
@@ -142,12 +180,12 @@ object GlobalLessonData {
                     isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
-                    mapFragmentIndex = 7,
+                    mapFragmentIndex = 10,
                     finishStepNumber = 7,
                     startStepNumber = 7,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:30",
+                    cupTime1 = "1:00",
                     cupTime2 = "2:00"
 
                 ),

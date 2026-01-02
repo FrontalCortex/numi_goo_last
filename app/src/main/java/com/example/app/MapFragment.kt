@@ -118,27 +118,19 @@ class MapFragment : Fragment() {
                     MathOperation(null,randomNumberChangeToString(3), null),
                 )
                 1005 -> listOf(
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
                     MathOperation(null,randomNumberChangeToString(4), null),
                     MathOperation(null,randomNumberChangeToString(4), null),
                     MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                )
-                1006 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
                 )
                 4 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
+                    MathOperation(4,"+", 5),
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
@@ -174,21 +166,104 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
                     )
-                7 -> listOf(
+                1007 -> listOf(
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 2),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 4),
-                    MathOperationGenerator.generateRelatedNumbers(4, 3),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(4, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
 
                 )
+                1008 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+
+                )
+                1009 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+
+                )
+                1010 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                )
+                1011 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                )
+                1012 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                )
+                1013 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                )
+                1014 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                )
+                7 -> listOf(
+                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    )
                 8-> listOf(
                     MathOperation(3,"+", 4),
                     MathOperation(2,"+", 3),
@@ -2954,17 +3029,17 @@ class MapFragment : Fragment() {
                 val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
                 val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
                 val recordLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.recordLayout)
-                
+
                 recordLayout?.let { recordLayoutView ->
                     // Animasyonun daha önce gösterilip gösterilmediğini kontrol et
                     val prefs = requireContext().getSharedPreferences("GuidePanelPrefs", android.content.Context.MODE_PRIVATE)
                     val animationShown = prefs.getBoolean("recordLayout_animation_shown", false)
-                    
+
                     // Eğer animasyon daha önce gösterilmemişse başlat
                     if (!animationShown) {
                         lessonsAdapter.startPulseAnimationForView(recordLayoutView, stopAnimationOnClick = false)
                     }
-                    
+
                     // recordLayout'a tıklandığında: animasyonu durdur + paneli kapat + bottomSheet'i kapat + activity view'larını aktif et + flag'i kaydet
                     binding.guidePanel.setTargetViewForLastStep(recordLayoutView) {
                         // Animasyonu durdur
@@ -2973,10 +3048,10 @@ class MapFragment : Fragment() {
                         recordLayoutView.tag = null
                         recordLayoutView.scaleX = 1f
                         recordLayoutView.scaleY = 1f
-                        
+
                         // Animasyonun gösterildiğini kaydet (bir daha gösterilmesin)
                         prefs.edit().putBoolean("recordLayout_animation_shown", true).apply()
-                        
+
                         // BottomSheet'i kapat
                         val activity = requireActivity()
                         val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
@@ -2987,10 +3062,10 @@ class MapFragment : Fragment() {
                             behavior.isHideable = true
                             behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
                         }
-                        
+
                         // Activity view'larını aktif et
                         enableMainActivityViews()
-                        
+
                         // Panel kapatma işlemi setTargetViewForLastStep içinde otomatik yapılacak
                     }
                 }
@@ -3028,9 +3103,9 @@ class MapFragment : Fragment() {
         // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
         // 1. listenin 3. index'i (0-based index: 3)
         view?.postDelayed({
-            val lessonItem = GlobalLessonData.getLessonItem(3)
+            val lessonItem = GlobalLessonData.getLessonItem(4)
             if (lessonItem != null && ::lessonsAdapter.isInitialized) {
-                lessonsAdapter.showLessonBottomSheet(lessonItem, 3)
+                lessonsAdapter.showLessonBottomSheet(lessonItem, 4)
             }
         }, 600) // Panel animasyonu tamamlandıktan sonra
     }

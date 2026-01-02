@@ -143,7 +143,9 @@ class AbacusFragment : Fragment() {
         val text: String,
         val onContentShown: (() -> Unit)? = null, // Her içerik gösterildiğinde çağrılacak callback
         val bubbleAnimationTarget: View? = null, // Baloncuk animasyonu uygulanacak widget (opsiyonel)
-        val bubbleAnimationColor: Int? = null // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
+        val bubbleAnimationColor: Int? = null, // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
+        val beadIds: List<String>? = null, // Hareket ettirilecek boncuk ID'leri (opsiyonel) - adım gösterildiğinde çalışır
+        val finishBeadIds: List<String>? = null // Adım biterken hareket ettirilecek boncuk ID'leri (opsiyonel)
     )
     
     private val guideContentList = mutableListOf<GuideContent>()
@@ -155,6 +157,7 @@ class AbacusFragment : Fragment() {
     private var currentAnimatedView: View? = null // Şu anda animasyon uygulanan view
     private var originalTextColor: Int? = null // TextView için orijinal renk
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
+    private var fabHintTouchAreaListener: View.OnClickListener? = null // Hint touch area listener'ını saklamak için
 
     private lateinit var binding: FragmentAbacusBinding
     private var resultDialog: Dialog? = null
@@ -226,18 +229,25 @@ class AbacusFragment : Fragment() {
         }
         
         // abacusGuideNumber'a göre içerikleri yükle
-        val guideContents = getGuideContentsForNumber(lessonItem.abacusGuideNumber!!)
-        if (guideContents.isNotEmpty()) {
-            setGuideContents(guideContents)
-            panelContent.visibility = View.VISIBLE
-            binding.btnBack.visibility = View.VISIBLE
-            // İlk adım gösterildikten sonra guide panel modunu aktif et
-            enableGuidePanelMode()
-        } else {
-            panelContent.visibility = View.GONE
-            binding.btnBack.visibility = View.GONE
-            Log.d("oyuncu","work")
+
+        if(lessonItem.abacusGuideNumber != null){
+            if(lessonItem.currentStep == 1){
+                val guideContents = getGuideContentsForNumber(lessonItem.abacusGuideNumber!!)
+                if (guideContents.isNotEmpty()) {
+                    setGuideContents(guideContents)
+                    panelContent.visibility = View.VISIBLE
+                    binding.btnBack.visibility = View.VISIBLE
+                    // İlk adım gösterildikten sonra guide panel modunu aktif et
+                    enableGuidePanelMode()
+                }
+            }
+            else {
+                panelContent.visibility = View.GONE
+                binding.btnBack.visibility = View.GONE
+                Log.d("oyuncu","work")
+            }
         }
+
     }
     
     /**
@@ -262,7 +272,8 @@ class AbacusFragment : Fragment() {
                         // İkinci içerik gösterildiğinde yapılacak işlemler
                     },
                     bubbleAnimationTarget = binding.firstNumberText,
-                    bubbleAnimationColor = Color.YELLOW
+                    bubbleAnimationColor = Color.YELLOW,
+                    beadIds = listOf("rod4BottomBead1","rod4BottomBead2","rod4BottomBead3","rod4BottomBead4")
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
@@ -271,7 +282,9 @@ class AbacusFragment : Fragment() {
                         // İkinci içerik gösterildiğinde yapılacak işlemler
                     },
                     bubbleAnimationTarget = binding.secondNumberText,
-                    bubbleAnimationColor = Color.YELLOW
+                    bubbleAnimationColor = Color.YELLOW,
+                    beadIds = listOf("rod4TopBead")
+
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
@@ -281,11 +294,12 @@ class AbacusFragment : Fragment() {
                     }
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
+                    imageResource = R.drawable.teacher_emotes_gpt3,
                     text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin. ",
                     onContentShown = {
                         // İkinci içerik gösterildiğinde yapılacak işlemler
-                    }
+                    },
+                    finishBeadIds = listOf("rod4BottomBead4","rod4TopBead")
                 )
                 // Daha fazla içerik eklenebilir
             )
@@ -317,6 +331,12 @@ class AbacusFragment : Fragment() {
     private fun showNextGuideContent() {
         if (guideContentList.isEmpty() || panelContent.visibility != View.VISIBLE) return
 
+        // Mevcut adımın finishBeadIds'ini kontrol et ve animasyonları çalıştır
+        val currentContent = guideContentList[currentGuideIndex]
+        currentContent.finishBeadIds?.forEach { beadId ->
+            animateGuideBead(beadId)
+        }
+
         // Son adıma geldiysek guide panel'i kapat ve normal ders akışına geç
         if (currentGuideIndex >= guideContentList.size - 1) {
             // Guide panel'i kapat
@@ -339,12 +359,89 @@ class AbacusFragment : Fragment() {
     private fun showPreviousGuideContent() {
         if (guideContentList.isEmpty() || panelContent.visibility != View.VISIBLE) return
 
+        // Mevcut adımın beadIds ve finishBeadIds'ini kontrol et ve animasyonları ters yönde çalıştır
+        // (Geriye döndüğümüz için bu adımı geri alıyoruz)
+        val currentContent = guideContentList[currentGuideIndex]
+        
+        // Önce finishBeadIds'i ters yönde çalıştır (eğer varsa)
+        // Aynı rod'un alt boncuklarından sadece en yüksek numaralı olanı çağır
+        currentContent.finishBeadIds?.let { beadIds ->
+            optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
+                animateGuideBead(beadId)
+            }
+        }
+        
+        // Sonra beadIds'i ters yönde çalıştır (bu adımı geri alıyoruz)
+        // Aynı rod'un alt boncuklarından sadece en yüksek numaralı olanı çağır
+        currentContent.beadIds?.let { beadIds ->
+            optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
+                animateGuideBead(beadId)
+            }
+        }
+
         currentGuideIndex = if (currentGuideIndex == 0) {
             guideContentList.size - 1 // Son adıma git
         } else {
             currentGuideIndex - 1
         }
-        showGuideContent(currentGuideIndex)
+        // Önceki adımı göster ama beadIds'ini çalıştırma (çünkü geri dönüşte zaten ters yönde çalıştırdık)
+        showGuideContentWithoutBeads(currentGuideIndex)
+    }
+    
+    /**
+     * Geri dönüş için boncuk ID'lerini optimize eder
+     * Aynı rod'un alt boncuklarından sadece en yüksek numaralı olanı bırakır
+     * (Çünkü en yüksek numaralı boncuk zaten tüm boncukları hareket ettirir)
+     * @param beadIds Boncuk ID'leri listesi
+     * @return Optimize edilmiş boncuk ID'leri listesi
+     */
+    private fun optimizeBeadIdsForReverse(beadIds: List<String>): List<String> {
+        val optimized = mutableListOf<String>()
+        val rodGroups = mutableMapOf<String, MutableList<String>>()
+        
+        // Boncukları rod'lara göre grupla
+        beadIds.forEach { beadId ->
+            when {
+                beadId.startsWith("rod0BottomBead") -> {
+                    rodGroups.getOrPut("rod0") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod1BottomBead") -> {
+                    rodGroups.getOrPut("rod1") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod2BottomBead") -> {
+                    rodGroups.getOrPut("rod2") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod3BottomBead") -> {
+                    rodGroups.getOrPut("rod3") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod4BottomBead") -> {
+                    rodGroups.getOrPut("rod4") { mutableListOf() }.add(beadId)
+                }
+                else -> {
+                    // Top boncuklar veya diğer boncuklar için direkt ekle
+                    optimized.add(beadId)
+                }
+            }
+        }
+        
+        // Her rod için en yüksek numaralı alt boncuğu ekle
+        rodGroups.forEach { (_, beads) ->
+            if (beads.isNotEmpty()) {
+                // En yüksek numaralı boncuğu bul (Bead4 > Bead3 > Bead2 > Bead1)
+                val sortedBeads = beads.sortedByDescending { it ->
+                    when {
+                        it.contains("Bead4") -> 4
+                        it.contains("Bead3") -> 3
+                        it.contains("Bead2") -> 2
+                        it.contains("Bead1") -> 1
+                        else -> 0
+                    }
+                }
+                optimized.add(sortedBeads.first())
+            }
+        }
+        
+        return optimized
     }
     
     /**
@@ -392,6 +489,8 @@ class AbacusFragment : Fragment() {
         // Hint touch area'yı tıklanamaz yap
         binding.fabHintTouchArea.isClickable = false
         binding.fabHintTouchArea.isFocusable = false
+        // Hint touch area'nın listener'ını geçici olarak kaldır
+        binding.fabHintTouchArea.setOnClickListener(null)
         
         // Diğer butonları da tıklanamaz yap
         binding.quitButton.isClickable = false
@@ -429,6 +528,10 @@ class AbacusFragment : Fragment() {
         // Hint touch area'yı tekrar tıklanabilir yap
         binding.fabHintTouchArea.isClickable = true
         binding.fabHintTouchArea.isFocusable = true
+        // Hint touch area'nın listener'ını geri yükle
+        fabHintTouchAreaListener?.let { listener ->
+            binding.fabHintTouchArea.setOnClickListener(listener)
+        }
         
         // Diğer butonları da tekrar tıklanabilir yap
         binding.quitButton.isClickable = true
@@ -483,6 +586,618 @@ class AbacusFragment : Fragment() {
         // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
         content.bubbleAnimationTarget?.let { target ->
             animateBubbleEffect(target, content.bubbleAnimationColor)
+        }
+        
+        // Eğer bu içerik için hareket ettirilecek boncuklar varsa animasyonu başlat
+        content.beadIds?.forEach { beadId ->
+            animateGuideBead(beadId)
+        }
+    }
+    
+    /**
+     * Belirli bir index'teki rehber içeriğini gösterir ama boncuk animasyonlarını çalıştırmaz
+     * (Geri dönüş için kullanılır)
+     * @param index Gösterilecek içeriğin index'i
+     */
+    private fun showGuideContentWithoutBeads(index: Int) {
+        if (index < 0 || index >= guideContentList.size) return
+        
+        // Önceki baloncuk animasyonunu durdur
+        stopBubbleAnimation()
+        
+        val content = guideContentList[index]
+        
+        // ImageView ve TextView içeriğini güncelle
+        ivGuideImage.setImageResource(content.imageResource)
+        tvGuideText.text = content.text
+        
+        // Callback fonksiyonunu çağır
+        content.onContentShown?.invoke()
+        
+        // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
+        content.bubbleAnimationTarget?.let { target ->
+            animateBubbleEffect(target, content.bubbleAnimationColor)
+        }
+        
+        // Boncuk animasyonlarını çalıştırma (geri dönüş için)
+    }
+    
+    /**
+     * Guide içeriğinde belirtilen boncuğu hareket ettirir
+     * Eğer boncuk daha önce hareket ettirildiyse ters yönde hareket ettirir
+     * @param beadId Hareket ettirilecek boncuk ID'si (örn: "rod1BottomBead4", "rod0TopBead")
+     */
+    private fun animateGuideBead(beadId: String) {
+        when (beadId) {
+            // Rod 0 (1. sütun) - Alt boncuklar
+            "rod0BottomBead1" -> {
+                if (!oneIsUp) {
+                    animateBeadsUp(rod0BottomBead1)
+                    oneIsUp = true
+                    updateRod0BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        fourIsUp = false
+                        threeIsUp = false
+                        twoIsUp = false
+                        oneIsUp = false
+                        updateRod0BeadsAppearance()
+                    }
+                }
+            }
+            "rod0BottomBead2" -> {
+                if (!twoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        fourIsUp = false
+                        threeIsUp = false
+                        twoIsUp = false
+                        oneIsUp = false
+                        updateRod0BeadsAppearance()
+                    }
+                }
+            }
+            "rod0BottomBead3" -> {
+                if (!threeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        threeIsUp = true
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        fourIsUp = false
+                        threeIsUp = false
+                        twoIsUp = false
+                        oneIsUp = false
+                        updateRod0BeadsAppearance()
+                    }
+                }
+            }
+            "rod0BottomBead4" -> {
+                if (!fourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        fourIsUp = true
+                        threeIsUp = true
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
+                    animateBeadsDown(rod0BottomBead4)
+                    fourIsUp = false
+                    updateRod0BeadsAppearance()
+                }
+            }
+            "rod0TopBead" -> {
+                if (!topIsDown) {
+                    animateBeadDown(rod0TopBead)
+                    topIsDown = true
+                    updateTopBeadsAppearance()
+                } else {
+                    animateBeadUp(rod0TopBead)
+                    topIsDown = false
+                    updateTopBeadsAppearance()
+                }
+            }
+            
+            // Rod 1 (2. sütun) - Alt boncuklar
+            "rod1BottomBead1" -> {
+                if (!rod1OneIsUp) {
+                    animateBeadsUp(rod1BottomBead1)
+                    rod1OneIsUp = true
+                    updateRod1BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod1FourIsUp = false
+                        rod1ThreeIsUp = false
+                        rod1TwoIsUp = false
+                        rod1OneIsUp = false
+                        updateRod1BeadsAppearance()
+                    }
+                }
+            }
+            "rod1BottomBead2" -> {
+                if (!rod1TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod1FourIsUp = false
+                        rod1ThreeIsUp = false
+                        rod1TwoIsUp = false
+                        rod1OneIsUp = false
+                        updateRod1BeadsAppearance()
+                    }
+                }
+            }
+            "rod1BottomBead3" -> {
+                if (!rod1ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1ThreeIsUp = true
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod1FourIsUp = false
+                        rod1ThreeIsUp = false
+                        rod1TwoIsUp = false
+                        rod1OneIsUp = false
+                        updateRod1BeadsAppearance()
+                    }
+                }
+            }
+            "rod1BottomBead4" -> {
+                if (!rod1FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1FourIsUp = true
+                        rod1ThreeIsUp = true
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
+                    animateBeadsDown(rod1BottomBead4)
+                    rod1FourIsUp = false
+                    updateRod1BeadsAppearance()
+                }
+            }
+            "rod1TopBead" -> {
+                if (!rod1TopIsDown) {
+                    animateBeadDown(rod1TopBead)
+                    rod1TopIsDown = true
+                    updateTopBeadsAppearance()
+                } else {
+                    animateBeadUp(rod1TopBead)
+                    rod1TopIsDown = false
+                    updateTopBeadsAppearance()
+                }
+            }
+            
+            // Rod 2 (3. sütun)
+            "rod2BottomBead1" -> {
+                if (!rod2OneIsUp) {
+                    animateBeadsUp(rod2BottomBead1)
+                    rod2OneIsUp = true
+                    updateRod2BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod2FourIsUp = false
+                        rod2ThreeIsUp = false
+                        rod2TwoIsUp = false
+                        rod2OneIsUp = false
+                        updateRod2BeadsAppearance()
+                    }
+                }
+            }
+            "rod2BottomBead2" -> {
+                if (!rod2TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod2FourIsUp = false
+                        rod2ThreeIsUp = false
+                        rod2TwoIsUp = false
+                        rod2OneIsUp = false
+                        updateRod2BeadsAppearance()
+                    }
+                }
+            }
+            "rod2BottomBead3" -> {
+                if (!rod2ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2ThreeIsUp = true
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod2FourIsUp = false
+                        rod2ThreeIsUp = false
+                        rod2TwoIsUp = false
+                        rod2OneIsUp = false
+                        updateRod2BeadsAppearance()
+                    }
+                }
+            }
+            "rod2BottomBead4" -> {
+                if (!rod2FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2FourIsUp = true
+                        rod2ThreeIsUp = true
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
+                    animateBeadsDown(rod2BottomBead4)
+                    rod2FourIsUp = false
+                    updateRod2BeadsAppearance()
+                }
+            }
+            "rod2TopBead" -> {
+                if (!rod2TopIsDown) {
+                    animateBeadDown(rod2TopBead)
+                    rod2TopIsDown = true
+                    updateTopBeadsAppearance()
+                } else {
+                    animateBeadUp(rod2TopBead)
+                    rod2TopIsDown = false
+                    updateTopBeadsAppearance()
+                }
+            }
+            
+            // Rod 3 (4. sütun)
+            "rod3BottomBead1" -> {
+                if (!rod3OneIsUp) {
+                    animateBeadsUp(rod3BottomBead1)
+                    rod3OneIsUp = true
+                    updateRod3BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod3FourIsUp = false
+                        rod3ThreeIsUp = false
+                        rod3TwoIsUp = false
+                        rod3OneIsUp = false
+                        updateRod3BeadsAppearance()
+                    }
+                }
+            }
+            "rod3BottomBead2" -> {
+                if (!rod3TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod3FourIsUp = false
+                        rod3ThreeIsUp = false
+                        rod3TwoIsUp = false
+                        rod3OneIsUp = false
+                        updateRod3BeadsAppearance()
+                    }
+                }
+            }
+            "rod3BottomBead3" -> {
+                if (!rod3ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3ThreeIsUp = true
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod3FourIsUp = false
+                        rod3ThreeIsUp = false
+                        rod3TwoIsUp = false
+                        rod3OneIsUp = false
+                        updateRod3BeadsAppearance()
+                    }
+                }
+            }
+            "rod3BottomBead4" -> {
+                if (!rod3FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3FourIsUp = true
+                        rod3ThreeIsUp = true
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
+                    animateBeadsDown(rod3BottomBead4)
+                    rod3FourIsUp = false
+                    updateRod3BeadsAppearance()
+                }
+            }
+            "rod3TopBead" -> {
+                if (!rod3TopIsDown) {
+                    animateBeadDown(rod3TopBead)
+                    rod3TopIsDown = true
+                    updateTopBeadsAppearance()
+                } else {
+                    animateBeadUp(rod3TopBead)
+                    rod3TopIsDown = false
+                    updateTopBeadsAppearance()
+                }
+            }
+            
+            // Rod 4 (5. sütun)
+            "rod4BottomBead1" -> {
+                if (!rod4OneIsUp) {
+                    animateBeadsUp(rod4BottomBead1)
+                    rod4OneIsUp = true
+                    updateRod4BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = false
+                        rod4ThreeIsUp = false
+                        rod4TwoIsUp = false
+                        rod4OneIsUp = false
+                        updateRod4BeadsAppearance()
+                    }
+                }
+            }
+            "rod4BottomBead2" -> {
+                if (!rod4TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = false
+                        rod4ThreeIsUp = false
+                        rod4TwoIsUp = false
+                        rod4OneIsUp = false
+                        updateRod4BeadsAppearance()
+                    }
+                }
+            }
+            "rod4BottomBead3" -> {
+                if (!rod4ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4ThreeIsUp = true
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = false
+                        rod4ThreeIsUp = false
+                        rod4TwoIsUp = false
+                        rod4OneIsUp = false
+                        updateRod4BeadsAppearance()
+                    }
+                }
+            }
+            "rod4BottomBead4" -> {
+                if (!rod4FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = true
+                        rod4ThreeIsUp = true
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
+                    // Tüm yukarıda olan boncukları aşağı indir
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = false
+                        rod4ThreeIsUp = false
+                        rod4TwoIsUp = false
+                        rod4OneIsUp = false
+                        updateRod4BeadsAppearance()
+                    }
+                }
+            }
+            "rod4TopBead" -> {
+                if (!rod4TopIsDown) {
+                    animateBeadDown(rod4TopBead)
+                    rod4TopIsDown = true
+                    updateTopBeadsAppearance()
+                } else {
+                    animateBeadUp(rod4TopBead)
+                    rod4TopIsDown = false
+                    updateTopBeadsAppearance()
+                }
+            }
+            
+            else -> {
+                Log.e("AbacusFragment", "Bilinmeyen boncuk ID: $beadId")
+            }
         }
     }
     
@@ -766,7 +1481,8 @@ class AbacusFragment : Fragment() {
         handler.removeCallbacks(runnable)
     }
     private fun fubHintClickListener(){
-        fabHintTouchArea.setOnClickListener {
+        // Hint touch area listener'ını sakla
+        fabHintTouchAreaListener = View.OnClickListener {
             if (!isHintVisible) {
                 showHint()
             } else {
@@ -774,6 +1490,7 @@ class AbacusFragment : Fragment() {
             }
             // veya doğrudan fabHint'in tıklama fonksiyonunu çağır
         }
+        fabHintTouchArea.setOnClickListener(fabHintTouchAreaListener)
     }
     private fun showHint() {
         tvHint.text = lessonItem.lessonHint?.let { splitTextEqually(it) }
@@ -1758,7 +2475,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsUp(vararg beads: ImageView) {
         isAnimating = true
-        val animationDuration = 300L // milisaniye cinsinden
+        val animationDuration = if (lessonItem.type == 2) 50L else 300L // milisaniye cinsinden
         val moveDistance = 135 // piksel cinsinden
 
         beads.forEach { bead ->
@@ -1790,7 +2507,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadDown(bead: ImageView) {
         isAnimating = true
-        val animationDuration = 300L
+        val animationDuration = if (lessonItem.type == 2) 50L else 300L
         val moveDistance = 90
 
         bead.animate()
@@ -1809,7 +2526,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
-        val animationDuration = 300L
+        val animationDuration = if (lessonItem.type == 2) 50L else 300L
         val moveDistance = 90
 
         bead.animate()
@@ -1828,7 +2545,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsDown(vararg beads: ImageView) {
         isAnimating = true
-        val animationDuration = 300L
+        val animationDuration = if (lessonItem.type == 2) 50L else 300L
         val moveDistance = 135
 
         beads.forEach { bead ->
@@ -2110,6 +2827,11 @@ class AbacusFragment : Fragment() {
             // Overlay'i görünür yap
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
 
+            // Control button'u devre dışı bırak
+            controlButton.isClickable = false
+            controlButton.isFocusable = false
+            controlButton.setOnTouchListener(null)
+
             correctPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -2141,6 +2863,14 @@ class AbacusFragment : Fragment() {
                                 .start()
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                            
+                            // Control button'u tekrar aktif hale getir
+                            controlButton.isClickable = true
+                            controlButton.isFocusable = true
+                            controlButtonListener?.let { listener ->
+                                controlButton.setOnTouchListener(listener)
+                            }
+                            
                             correctPanel.animate()
                                 .translationY(correctPanel.height.toFloat())
                                 .setDuration(200)
@@ -2173,6 +2903,12 @@ class AbacusFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
+            
+            // Control button'u devre dışı bırak
+            controlButton.isClickable = false
+            controlButton.isFocusable = false
+            controlButton.setOnTouchListener(null)
+            
             //correctAnswerText.text = incorrectText()
             incorrectPanel.animate()
                 .alpha(1f)
@@ -2204,6 +2940,14 @@ class AbacusFragment : Fragment() {
                                 .start()
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                            
+                            // Control button'u tekrar aktif hale getir
+                            controlButton.isClickable = true
+                            controlButton.isFocusable = true
+                            controlButtonListener?.let { listener ->
+                                controlButton.setOnTouchListener(listener)
+                            }
+                            
                             incorrectPanel.animate()
                                 .translationY(incorrectPanel.height.toFloat())
                                 .setDuration(200)
