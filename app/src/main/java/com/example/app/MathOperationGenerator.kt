@@ -101,9 +101,25 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateRelatedNumbers2(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
-        // İlk sayıyı oluştur
-        val firstNumber = generateRandomNumber(firstDigitCount)
-
+        // İlk sayıyı oluştur - her basamak için %80 ihtimalle 1,2,3,4; %20 ihtimalle 5,6,7,8,9
+        val firstNumberDigits = mutableListOf<Int>()
+        val lowDigits = listOf(1, 2, 3, 4) // %80 ihtimalle
+        val highDigits = listOf(5, 6, 7, 8, 9) // %20 ihtimalle
+        
+        for (i in 0 until firstDigitCount) {
+            val digit = if (Math.random() < 0.8) {
+                // %80 ihtimalle 1,2,3,4
+                lowDigits.random()
+            } else {
+                // %20 ihtimalle 5,6,7,8,9
+                highDigits.random()
+            }
+            firstNumberDigits.add(digit)
+        }
+        
+        // Basamakları birleştirerek ilk sayıyı oluştur
+        val firstNumber = firstNumberDigits.fold(0) { acc, digit -> acc * 10 + digit }
+        
         // İlk sayının basamaklarını al
         val firstNumberStr = firstNumber.toString()
 
@@ -132,10 +148,10 @@ object MathOperationGenerator {
                 var allowedDigits = digitRules[firstDigit] ?: listOf(0)
 
                 // Özel durumlar için kontrol
-                if (firstDigit == 1 && Math.random() < 0.5) {
+                if (firstDigit == 1 && Math.random() < 0.8) {
                     // %50 ihtimalle 4
                     secondNumberDigits.add(0, 4)
-                } else if (firstDigit == 2 && Math.random() < 0.5) {
+                } else if (firstDigit == 2 && Math.random() < 0.8) {
                     // %50 ihtimalle 3 veya 4
                     secondNumberDigits.add(0, listOf(3, 4).random())
                 } else {
@@ -154,46 +170,79 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateRandomMathOperation1(): MathOperation {
-        // İlk sayının onlar basamağı için rastgele sayı (1-9 arası)
-        val firstNumberTens = Random().nextInt(9) + 1
 
-        // İlk sayının birler basamağı için rastgele sayı (1-4 arası)
-        val firstNumberOnes = Random().nextInt(4) + 1
+        val firstNumberTens = (1..9).random()
+        val firstNumberOnes: Int
+        val secondNumberTens: Int
+        val secondNumberOnes: Int
 
-        // İlk sayıyı oluştur
-        val firstNumber = (firstNumberTens * 10) + firstNumberOnes
+        if (firstNumberTens < 5) {
+            val secondNumberTensList = when (firstNumberTens) {
+                1 -> listOf(1, 2, 3, 4, 5, 6, 7, 8)
+                2 -> listOf(1, 2, 3, 4, 5, 6, 7)
+                3 -> listOf(1, 2, 3, 4, 5, 6)
+                4 -> listOf(1, 2, 3, 4, 5)
+                else -> listOf()
+            }
+            secondNumberTens = secondNumberTensList.random()
+            val fiveRuleActive = when (firstNumberTens) {
+                1 -> secondNumberTens == 4
+                2 -> secondNumberTens == 3 || secondNumberTens == 4
+                3 -> secondNumberTens in 2..4
+                4 -> secondNumberTens in 1..4
+                else -> false
+            }
+            if (fiveRuleActive) {
+                firstNumberOnes = (1..9).random()
+                val secondNumberOnesList = when (firstNumberOnes) {
+                    1 -> listOf(1, 2, 3, 5, 6, 7, 8)
+                    2 -> listOf(1, 2, 5, 6, 7)
+                    3 -> listOf(1, 5, 6)
+                    4 -> listOf(5)
+                    5 -> listOf(1, 2, 3, 4)
+                    6 -> listOf(1, 2, 3)
+                    7 -> listOf(1, 2)
+                    8 -> listOf(1)
+                    9 -> listOf(0)
+                    else -> listOf()
+                }
+                secondNumberOnes = secondNumberOnesList.random()
+            } else {
+                firstNumberOnes = (1..4).random()
+                val secondNumberOnesList = when (firstNumberOnes) {
+                    1 -> listOf(4)
+                    2 -> listOf(3, 4)
+                    3 -> listOf(2, 3, 4)
+                    4 -> listOf(1, 2, 3, 4)
+                    else -> listOf()
+                }
+                secondNumberOnes = secondNumberOnesList.random()
+            }
 
-        // İkinci sayının onlar basamağı için olası değerler
-        val possibleSecondTens = when (firstNumberTens) {
-            1 -> listOf(1, 2, 3, 5, 6, 7, 8)
-            2 -> listOf(1, 2, 5, 6, 7)
-            3 -> listOf(1, 5, 6)
-            4 -> listOf(5)
-            5 -> listOf(1, 2, 3, 4)
-            6 -> listOf(1, 2, 3)
-            7 -> listOf(1, 2)
-            8 -> listOf(1)
-            9 -> listOf(0)
-            else -> listOf()
         }
-
-        // İkinci sayının onlar basamağını seç
-        val secondNumberTens = possibleSecondTens[Random().nextInt(possibleSecondTens.size)]
-
-        // İkinci sayının birler basamağı için olası değerler
-        val possibleSecondOnes = when (firstNumberOnes) {
-            1 -> listOf(4)
-            2 -> listOf(3, 4)
-            3 -> listOf(2, 3, 4)
-            4 -> listOf(1, 2, 3, 4)
-            else -> listOf()
+        else {
+            val secondNumberTensList = when (firstNumberTens) {
+                5 -> listOf(1, 2, 3, 4)
+                6 -> listOf(1, 2, 3)
+                7 -> listOf(1, 2)
+                8 -> listOf(1)
+                9 -> listOf(0)
+                else -> listOf()
+            }
+            secondNumberTens = secondNumberTensList.random()
+            firstNumberOnes = (1..4).random()
+            val secondNumberOnesList = when (firstNumberOnes) {
+                1 -> listOf(4)
+                2 -> listOf(3, 4)
+                3 -> listOf(2, 3, 4)
+                4 -> listOf(1, 2, 3, 4)
+                else -> listOf()
+            }
+            secondNumberOnes = secondNumberOnesList.random()
         }
+        val firstNumber = firstNumberTens * 10 + firstNumberOnes
+        val secondNumber = secondNumberTens * 10 + secondNumberOnes
 
-        // İkinci sayının birler basamağını seç
-        val secondNumberOnes = possibleSecondOnes[Random().nextInt(possibleSecondOnes.size)]
-
-        // İkinci sayıyı oluştur
-        val secondNumber = (secondNumberTens * 10) + secondNumberOnes
 
         return MathOperation(firstNumber, "+", secondNumber)
     }

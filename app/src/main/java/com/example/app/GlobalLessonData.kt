@@ -208,8 +208,8 @@ object GlobalLessonData {
                     currentStep = 1,
                     tutorialNumber = 3,
                     startStepNumber = 8,
-                    mapFragmentIndex = 5,
-                    finishStepNumber = 9,
+                    mapFragmentIndex = 12,
+                    finishStepNumber = 11,
                     lessonHint = "5 gelir kardeş gider."
 
 
@@ -222,7 +222,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 12,
-                    mapFragmentIndex = 6,
+                    mapFragmentIndex = 13,
                     finishStepNumber = 15,
                     tutorialNumber = 4
 
@@ -234,8 +234,8 @@ object GlobalLessonData {
                     isCompleted = true,
                     stepCount = 4,
                     currentStep = 1,
-                    startStepNumber = 15,
-                    mapFragmentIndex = 7,
+                    startStepNumber = 16,
+                    mapFragmentIndex = 14,
                     finishStepNumber = 18,
                     tutorialIsFinish = true
 
@@ -249,7 +249,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 8,
+                    mapFragmentIndex = 15,
                     startStepNumber = 19,
                     finishStepNumber = 19,
                     cupTime1 = "2:00",

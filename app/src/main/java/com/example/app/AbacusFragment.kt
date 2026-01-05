@@ -144,6 +144,7 @@ class AbacusFragment : Fragment() {
         val onContentShown: (() -> Unit)? = null, // Her içerik gösterildiğinde çağrılacak callback
         val bubbleAnimationTarget: View? = null, // Baloncuk animasyonu uygulanacak widget (opsiyonel)
         val bubbleAnimationColor: Int? = null, // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
+        val bubbleAnimationMaxScale: Float = 1.4f, // Baloncuk animasyonunun maksimum büyüme değeri (varsayılan: 1.4f)
         val beadIds: List<String>? = null, // Hareket ettirilecek boncuk ID'leri (opsiyonel) - adım gösterildiğinde çalışır
         val finishBeadIds: List<String>? = null // Adım biterken hareket ettirilecek boncuk ID'leri (opsiyonel)
     )
@@ -153,6 +154,7 @@ class AbacusFragment : Fragment() {
     private lateinit var panelContent: View
     private lateinit var ivGuideImage: ImageView
     private lateinit var tvGuideText: TextView
+    private lateinit var stepDotsContainer: LinearLayout
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null // Mevcut baloncuk animasyonu
     private var currentAnimatedView: View? = null // Şu anda animasyon uygulanan view
     private var originalTextColor: Int? = null // TextView için orijinal renk
@@ -219,6 +221,7 @@ class AbacusFragment : Fragment() {
         panelContent = binding.panelContent
         ivGuideImage = binding.ivGuideImage
         tvGuideText = binding.tvGuideText
+        stepDotsContainer = binding.stepDotsContainer
         
         // abacusGuideNumber kontrolü
         if (lessonItem.abacusGuideNumber == null) {
@@ -233,12 +236,25 @@ class AbacusFragment : Fragment() {
         if(lessonItem.abacusGuideNumber != null){
             if(lessonItem.currentStep == 1){
                 val guideContents = getGuideContentsForNumber(lessonItem.abacusGuideNumber!!)
+                // Başlangıçta panel ve btnBack gizli olsun
+                panelContent.visibility = View.GONE
+                binding.btnBack.visibility = View.GONE
                 if (guideContents.isNotEmpty()) {
                     setGuideContents(guideContents)
-                    panelContent.visibility = View.VISIBLE
-                    binding.btnBack.visibility = View.VISIBLE
-                    // İlk adım gösterildikten sonra guide panel modunu aktif et
-                    enableGuidePanelMode()
+                    // 0.5 saniye beklenirken ekrana tıklanmasını engellemek için overlay'i hemen aktif et
+                    binding.overlay.visibility = View.VISIBLE
+                    binding.overlay.isClickable = true
+                    binding.overlay.isFocusable = true
+                    binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
+                    // Overlay'e tıklandığında hiçbir şey yapma (panel gelene kadar)
+                    binding.overlay.setOnClickListener { /* Panel gelene kadar tıklamayı engelle */ }
+                    // Fragment açıldıktan 0.5 saniye sonra panel'i soldan kayarak göster
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        showGuidePanelWithAnimation()
+                        // İlk adım gösterildikten sonra guide panel modunu aktif et
+                        enableGuidePanelMode()
+                    }, 500)
+
                 }
             }
             else {
@@ -289,6 +305,8 @@ class AbacusFragment : Fragment() {
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
                     text = "ve işlem bitince kontrol et butonuna tıkla.",
+                    bubbleAnimationTarget = binding.kontrolButton,
+                    bubbleAnimationMaxScale = 1.1F,
                     onContentShown = {
                         // İkinci içerik gösterildiğinde yapılacak işlemler
                     }
@@ -319,10 +337,44 @@ class AbacusFragment : Fragment() {
         guideContentList.addAll(contents)
         currentGuideIndex = 0
         
+        // Adım göstergesini oluştur
+        updateStepIndicator()
+        
         // İlk içeriği göster
         if (guideContentList.isNotEmpty()) {
             showGuideContent(0)
         }
+    }
+    
+    /**
+     * Adım göstergesini günceller (noktalar)
+     */
+    private fun updateStepIndicator() {
+        val totalSteps = guideContentList.size
+        
+        // Nokta göstergelerini oluştur
+        stepDotsContainer.removeAllViews()
+        for (i in 0 until totalSteps) {
+            val dotView = TextView(requireContext()).apply {
+                text = if (i == currentGuideIndex) "●" else "○"
+                textSize = 16f
+                setTextColor(android.graphics.Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginEnd = if (i < totalSteps - 1) 8.dpToPx() else 0
+                }
+            }
+            stepDotsContainer.addView(dotView)
+        }
+    }
+    
+    /**
+     * dp değerini px'e çevirir
+     */
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
     }
     
     /**
@@ -341,7 +393,8 @@ class AbacusFragment : Fragment() {
         if (currentGuideIndex >= guideContentList.size - 1) {
             // Guide panel'i kapat
             disableGuidePanelMode()
-            panelContent.visibility = View.GONE
+            // Panel'i sola kayarak gizle
+            hideGuidePanelWithAnimation()
             binding.btnBack.visibility = View.GONE
             
             // Normal ders akışını başlat
@@ -358,6 +411,9 @@ class AbacusFragment : Fragment() {
      */
     private fun showPreviousGuideContent() {
         if (guideContentList.isEmpty() || panelContent.visibility != View.VISIBLE) return
+        
+        // İlk adımdaysa hiçbir şey yapma
+        if (currentGuideIndex == 0) return
 
         // Mevcut adımın beadIds ve finishBeadIds'ini kontrol et ve animasyonları ters yönde çalıştır
         // (Geriye döndüğümüz için bu adımı geri alıyoruz)
@@ -379,11 +435,18 @@ class AbacusFragment : Fragment() {
             }
         }
 
-        currentGuideIndex = if (currentGuideIndex == 0) {
-            guideContentList.size - 1 // Son adıma git
-        } else {
-            currentGuideIndex - 1
+        // Bir önceki adıma git
+        currentGuideIndex--
+        
+        // Önceki adımın finishBeadIds'ini ters yönde çalıştır
+        // (Çünkü önceki adımdan mevcut adıma geçerken finishBeadIds çalışmıştı)
+        val previousContent = guideContentList[currentGuideIndex]
+        previousContent.finishBeadIds?.let { beadIds ->
+            optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
+                animateGuideBead(beadId)
+            }
         }
+        
         // Önceki adımı göster ama beadIds'ini çalıştırma (çünkü geri dönüşte zaten ters yönde çalıştırdık)
         showGuideContentWithoutBeads(currentGuideIndex)
     }
@@ -580,12 +643,15 @@ class AbacusFragment : Fragment() {
         ivGuideImage.setImageResource(content.imageResource)
         tvGuideText.text = content.text
         
+        // Adım göstergesini güncelle
+        updateStepIndicator()
+        
         // Callback fonksiyonunu çağır
         content.onContentShown?.invoke()
         
         // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
         content.bubbleAnimationTarget?.let { target ->
-            animateBubbleEffect(target, content.bubbleAnimationColor)
+            animateBubbleEffect(target, content.bubbleAnimationColor, maxScale = content.bubbleAnimationMaxScale)
         }
         
         // Eğer bu içerik için hareket ettirilecek boncuklar varsa animasyonu başlat
@@ -611,12 +677,15 @@ class AbacusFragment : Fragment() {
         ivGuideImage.setImageResource(content.imageResource)
         tvGuideText.text = content.text
         
+        // Adım göstergesini güncelle
+        updateStepIndicator()
+        
         // Callback fonksiyonunu çağır
         content.onContentShown?.invoke()
         
         // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
         content.bubbleAnimationTarget?.let { target ->
-            animateBubbleEffect(target, content.bubbleAnimationColor)
+            animateBubbleEffect(target, content.bubbleAnimationColor, maxScale = content.bubbleAnimationMaxScale)
         }
         
         // Boncuk animasyonlarını çalıştırma (geri dönüş için)
@@ -1206,7 +1275,7 @@ class AbacusFragment : Fragment() {
      * @param view Animasyon uygulanacak widget
      * @param targetColor Animasyon sırasında kullanılacak hedef renk (null ise sadece scale animasyonu)
      */
-    private fun animateBubbleEffect(view: View, targetColor: Int?) {
+    private fun animateBubbleEffect(view: View, targetColor: Int?, maxScale: Float = 1.4f) {
         // Önceki animasyonu durdur (güvenlik için)
         stopBubbleAnimation()
         
@@ -1234,8 +1303,8 @@ class AbacusFragment : Fragment() {
         
         currentAnimatedView = view
         
-        // Scale animasyonu
-        val scaleAnimator = ValueAnimator.ofFloat(1.0f, 1.4f, 1.0f).apply {
+        // Scale animasyonu (maxScale parametresine göre)
+        val scaleAnimator = ValueAnimator.ofFloat(1.0f, maxScale, 1.0f).apply {
             duration = 600 // 0.6 saniye
             repeatCount = ValueAnimator.INFINITE // Sonsuz tekrar
             repeatMode = ValueAnimator.RESTART
@@ -1248,7 +1317,8 @@ class AbacusFragment : Fragment() {
                 
                 // Renk animasyonu (eğer renk belirtilmişse)
                 if (targetColor != null && originalColor != null) {
-                    val fraction = (scale - 1.0f) / 0.4f // 1.0 -> 1.4 arası fraction (0.0 -> 1.0)
+                    val scaleRange = maxScale - 1.0f // Örn: 1.4 - 1.0 = 0.4 veya 1.15 - 1.0 = 0.15
+                    val fraction = (scale - 1.0f) / scaleRange // 1.0 -> maxScale arası fraction (0.0 -> 1.0)
                     val clampedFraction = fraction.coerceIn(0f, 1f)
                     
                     val currentColor = ArgbEvaluator().evaluate(
@@ -1310,7 +1380,69 @@ class AbacusFragment : Fragment() {
      * @param visible true ise gösterir, false ise gizler
      */
     fun setGuidePanelVisibility(visible: Boolean) {
-        panelContent.visibility = if (visible) View.VISIBLE else View.GONE
+        if (visible) {
+            showGuidePanelWithAnimation()
+        } else {
+            hideGuidePanelWithAnimation()
+        }
+    }
+    
+    /**
+     * Guide panel'i soldan kayarak gösterir
+     */
+    private fun showGuidePanelWithAnimation() {
+        // Önce panel'i INVISIBLE yaparak genişliğini ölçebilmek için görünür yap (ama görünmez)
+        panelContent.visibility = View.INVISIBLE
+        panelContent.alpha = 1f
+        
+        // Panel'in genişliğini ölçmek için layout'u zorla
+        panelContent.post {
+            // Panel'in genişliğini al
+            val panelWidth = panelContent.width
+            // Eğer genişlik hala 0 ise, parent'ın genişliğini kullan
+            val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
+            
+            // Panel'i ekranın soluna taşı (genişliği kadar sola)
+            panelContent.translationX = -widthToUse.toFloat()
+            
+            // Şimdi panel'i görünür yap
+            panelContent.visibility = View.VISIBLE
+            
+            // Soldan sağa kayarak göster
+            panelContent.animate()
+                .translationX(0f)
+                .setDuration(300)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    // Animasyon bittikten sonra btnBack'i görünür yap
+                    binding.btnBack.visibility = View.VISIBLE
+                }
+                .start()
+        }
+    }
+    
+    /**
+     * Guide panel'i sola kayarak gizler
+     */
+    private fun hideGuidePanelWithAnimation() {
+        // Panel'in genişliğini al
+        val panelWidth = panelContent.width
+        if (panelWidth == 0) {
+            // Eğer genişlik henüz ölçülmemişse, direkt gizle
+            panelContent.visibility = View.GONE
+            return
+        }
+        
+        // Sola kayarak gizle
+        panelContent.animate()
+            .translationX(-panelWidth.toFloat())
+            .setDuration(300)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                panelContent.visibility = View.GONE
+                panelContent.translationX = 0f // Translation'ı sıfırla
+            }
+            .start()
     }
     
     /**
