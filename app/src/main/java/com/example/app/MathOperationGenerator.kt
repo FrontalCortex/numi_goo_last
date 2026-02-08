@@ -253,20 +253,20 @@ object MathOperationGenerator {
         val random = Random()
 
         // İlk sayının birler basamağı (5,6,7,8,9)
-        val onesDigit = (5..9).random()
+        val secondNumber = (1..5).random()
+
+        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
+        val onesDigit = when (secondNumber) {
+            1 -> 9
+            2 -> (8..9).random()
+            3 -> (7..9).random()
+            4 -> (6..9).random()
+            5 -> (5..9).random()
+            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+        }
 
         // İlk sayıyı oluştur
         val firstNumber = tensDigit * 10 + onesDigit
-
-        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
-        val secondNumber = when (onesDigit) {
-            5 -> 5
-            6 -> (4..5).random()
-            7 -> if (random.nextBoolean()) 3 else (4..5).random()
-            8 -> if (random.nextBoolean()) 2 else (3..5).random()
-            9 -> if (random.nextBoolean()) 1 else (2..5).random()
-            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
-        }
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
@@ -287,7 +287,7 @@ object MathOperationGenerator {
             7 -> listOf(5, 4, 3)
             8 -> listOf(5, 4, 3, 2)
             9 -> listOf(5, 4, 3, 2, 1)
-            else -> listOf() // Bu durum asla oluşmayacak ama Kotlin'in when ifadesi için gerekli
+            else -> listOf()
         }
 
         // İkinci sayıyı olası değerler arasından rastgele seç
@@ -334,6 +334,35 @@ object MathOperationGenerator {
 
         // Birler basamağını al
         val onesDigit = firstNumber % 10
+
+        // İkinci sayı için olası değerleri belirle
+        val possibleSecondNumbers = when (onesDigit) {
+            1 -> listOf(9)
+            2 -> listOf(8, 9)
+            3 -> listOf(7, 8, 9)
+            4 -> listOf(6, 7, 8)
+            5 -> listOf(5)
+            6 -> listOf(9)
+            7 -> listOf(8, 9)
+            8 -> listOf(7, 8, 9)
+            9 -> listOf(6, 7, 8, 9)
+            else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9) // Bu durum artık oluşmayacak
+        }
+
+        // Olası değerlerden random bir sayı seç
+        val secondNumber = possibleSecondNumbers.random()
+
+        // MathOperation formatında döndür
+        return MathOperation(firstNumber, "+", secondNumber)
+    }
+    fun generateMathOperation4(): MathOperation {
+        var tensDigit = listOf(4, 9).random()
+        tensDigit *= 10
+
+        val onesDigit = (1..9).random()
+
+        val firstNumber = tensDigit + onesDigit
+
 
         // İkinci sayı için olası değerleri belirle
         val possibleSecondNumbers = when (onesDigit) {

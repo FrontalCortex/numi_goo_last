@@ -167,7 +167,8 @@ object GlobalLessonData {
                     isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
-                    tutorialIsFinish = true,
+                    //tutorialIsFinish = true,
+                    tutorialNumber = 9999,
                     startStepNumber = 1013,
                     mapFragmentIndex = 9,
                     finishStepNumber = 1015,
@@ -210,9 +211,8 @@ object GlobalLessonData {
                     startStepNumber = 8,
                     mapFragmentIndex = 12,
                     finishStepNumber = 11,
-                    lessonHint = "5 gelir kardeş gider."
-
-
+                    lessonHint = "5 gelir. Kardeş gider.",
+                    abacusGuideNumber = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -274,7 +274,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 20,
-                    mapFragmentIndex = 10,
+                    mapFragmentIndex = 17,
                     finishStepNumber = 23,
                     tutorialNumber = 5
 
@@ -287,7 +287,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 24,
-                    mapFragmentIndex = 11,
+                    mapFragmentIndex = 18,
                     finishStepNumber = 27,
                     tutorialNumber = 6
 
@@ -300,7 +300,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 28,
-                    mapFragmentIndex = 12,
+                    mapFragmentIndex = 19,
                     finishStepNumber = 31,
                     tutorialIsFinish = true
                 ),LessonItem(
@@ -311,7 +311,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 32,
-                    mapFragmentIndex = 13,
+                    mapFragmentIndex = 20,
                     finishStepNumber = 35,
                     tutorialIsFinish = true
                 ),LessonItem(
@@ -322,7 +322,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 14,
+                    mapFragmentIndex = 21,
                     startStepNumber = 36,
                     finishStepNumber = 36,
                     cupTime1 = "2:00",
@@ -346,7 +346,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 37,
-                    mapFragmentIndex = 16,
+                    mapFragmentIndex = 23,
                     finishStepNumber = 40,
                     tutorialNumber = 7
 
@@ -359,9 +359,9 @@ object GlobalLessonData {
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 41,
-                    mapFragmentIndex = 17,
+                    mapFragmentIndex = 24,
                     finishStepNumber = 43,
-                    tutorialIsFinish = true,
+                    tutorialNumber = 105,
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
 
                 ),
@@ -373,7 +373,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 44,
-                    mapFragmentIndex = 18,
+                    mapFragmentIndex = 25,
                     finishStepNumber = 47,
                     tutorialIsFinish = true,
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
@@ -387,7 +387,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 48,
-                    mapFragmentIndex = 19,
+                    mapFragmentIndex = 26,
                     finishStepNumber = 51,
                     tutorialIsFinish = true,
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."

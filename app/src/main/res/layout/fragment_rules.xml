@@ -132,6 +132,19 @@
                         android:textAlignment="center"/>
                 </TableRow>
             </TableLayout>
+            
+            <TextView
+                android:id="@+id/fiveRuleDescriptionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="5 gelir. Kardeş gider"
+                android:textColor="#fff"
+                android:textAlignment="center"
+                android:textSize="14sp"
+                android:padding="6dp"
+                android:layout_marginTop="10dp"
+                android:background="#222"
+                android:layout_gravity="center"/>
 
         </LinearLayout>
         <LinearLayout
@@ -253,6 +266,18 @@
                         android:textAlignment="center"/>
                 </TableRow>
             </TableLayout>
+            <TextView
+                android:id="@+id/tenRuleFiveDescriptionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="10 gelir. Kardeş gider."
+                android:textColor="#fff"
+                android:textAlignment="center"
+                android:textSize="14sp"
+                android:padding="6dp"
+                android:layout_marginTop="10dp"
+                android:background="#222"
+                android:layout_gravity="center"/>
 
         </LinearLayout>
         <LinearLayout
@@ -359,6 +384,18 @@
                         android:textAlignment="center"/>
                 </TableRow>
             </TableLayout>
+            <TextView
+                android:id="@+id/tenRuleDescriptionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="10 gelir. Kardeş gider."
+                android:textColor="#fff"
+                android:textAlignment="center"
+                android:textSize="14sp"
+                android:padding="6dp"
+                android:layout_marginTop="10dp"
+                android:background="#222"
+                android:layout_gravity="center"/>
 
         </LinearLayout>
         <LinearLayout
