@@ -3,17 +3,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    // Kullanıcılar: giriş yapmış kullanıcı sadece kendi dokümanını okuyup yazabilir
+    // Email kontrolü için: unauthenticated kullanıcılar users collection'ında where query yapabilir (list izni)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Email kontrolü için: unauthenticated kullanıcılar where query yapabilir
+      allow read: if request.auth == null;
+    }
+
+    // Öğretmen davet kodları: giriş yapmış kullanıcı okuyabilir; kayıt sırasında update (used) için yazma
+    match /teacherInvites/{code} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Öğrenci doğrulama kodları: unauthenticated kullanıcılar OTP doğrulama için okuyup update edebilir
+    match /studentVerificationCodes/{code} {
+      allow read, write: if true; // OTP doğrulama için herkes okuyup yazabilir
+    }
+
+    // Bekleyen kayıtlar (e-posta doğrulama): unauthenticated kullanıcılar kayıt için okuyup yazabilir
+    match /pendingRegistrations/{docId} {
+      allow read, write: if true; // Kayıt akışı için herkes okuyup yazabilir
+    }
+
+    // OTP rate limit ve yanlış deneme sayacı: sadece Cloud Functions (Admin SDK) yazar, istemci erişemez
+    match /otpRateLimits/{docId} {
+      allow read, write: if false;
+    }
+    match /otpWrongAttempts/{docId} {
+      allow read, write: if false;
+    }
+
+    // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)
     match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 1, 19);
+      allow read, write: if false;
     }
   }
 }

@@ -36,7 +36,7 @@
                     android:layout_height="100dp"
                     android:layout_marginBottom="16dp"
                     android:scaleType="centerCrop"
-                    android:background="@drawable/ic_launcher_foreground"
+                    android:background="@drawable/non_user"
                     android:contentDescription="Profil Fotoğrafı" />
 
                 <!-- Kullanıcı Adı -->
@@ -44,7 +44,7 @@
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="KreyzMen"
+                    android:text="Kayıt Yapılmadı"
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_completed"
@@ -55,7 +55,7 @@
                     android:id="@+id/tvUserEmail"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="basartumturk2003@gmail.com"
+                    android:text=""
                     android:textSize="14sp"
                     android:textColor="@color/gray"
                     android:layout_marginBottom="8dp" />

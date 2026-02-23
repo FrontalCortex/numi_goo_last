@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,11 +20,17 @@ class SplashActivity : AppCompatActivity() {
     }
     
     private fun checkLoginStatus() {
-        // İlk açılış kontrolü MainActivity'de yapılacak
-        // Bu yüzden her zaman MainActivity'ye yönlendir (MainActivity'de ilk açılışsa TutorialFragment gösterilecek)
-        // Kayıt olsun olmasın, ilk açılışta TutorialFragment gösterilecek
-        android.util.Log.d("SplashActivity", "MainActivity'ye yönlendiriliyor (ilk açılış kontrolü MainActivity'de yapılacak)")
-        startActivity(Intent(this, MainActivity::class.java))
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
+        val hasExistingLogin = FirebaseAuth.getInstance().currentUser != null
+        if (loginStartEverShown && !hasExistingLogin) {
+
+            Log.d("kesl",loginStartEverShown.toString())
+            Log.d("kesl",hasExistingLogin.toString())
+            startActivity(Intent(this, LoginStartActivity::class.java))
+        } else {
+            startActivity(Intent(this, MainActivity::class.java))
+        }
         finish()
     }
 }

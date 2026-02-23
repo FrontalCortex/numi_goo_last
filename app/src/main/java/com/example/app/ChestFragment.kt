@@ -5,14 +5,18 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.example.app.databinding.FragmentChestBinding
 import com.example.app.GlobalLessonData.globalPartId
+import com.example.app.GlobalValues
 import com.example.app.GlobalValues.mapFragmentStepIndex
 
 class ChestFragment : Fragment() {
@@ -23,6 +27,23 @@ class ChestFragment : Fragment() {
     private var successRate: Float = 0F
     private var goldAmount: Int = 0
     private var goldUpdateListener: GoldUpdateListener? = null
+
+    private lateinit var loginLauncher: ActivityResultLauncher<Intent>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+            updateMapProgress()
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_left
+                )
+                .remove(this@ChestFragment)
+                .commit()
+            goldUpdateListener?.onGoldUpdated(goldAmount)
+        }
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -42,7 +63,6 @@ class ChestFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        Log.d("Pepsi", "onViewCreated başladı")
 
         arguments?.let { bundle ->
             successRate = bundle.getFloat("successRate", 0F)
@@ -75,9 +95,20 @@ class ChestFragment : Fragment() {
 
     private fun setupClaimRewardButton() {
         binding.claimRewardButton.setOnClickListener {
+            // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
+            if (GlobalValues.currentTutorialNumber == 1 && !GlobalValues.tutorial1LoginShownThisSession) {
+                GlobalValues.tutorial1LoginShownThisSession = true
+                GlobalValues.currentTutorialNumber = 0
+                loginLauncher.launch(
+                    Intent(requireContext(), LoginStartActivity::class.java)
+                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
+                )
+                return@setOnClickListener
+            }
+
             // Önce map progress'i güncelle
             updateMapProgress()
-            
+
             // Abacus container'daki fragment'ı kaldır
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -86,7 +117,7 @@ class ChestFragment : Fragment() {
                 )
                 .remove(this@ChestFragment)
                 .commit()
-                
+
             // Gold miktarını güncelle
             goldUpdateListener?.onGoldUpdated(goldAmount)
         }

@@ -166,8 +166,8 @@ class ProfileFragment : Fragment() {
             binding.imgProfilePhoto.setImageResource(android.R.drawable.ic_menu_gallery)
         }
         
-        // Kullanıcı adı ve e-posta
-        binding.tvUserName.text = currentUser.displayName ?: "Kullanıcı"
+        // Kullanıcı adı ve e-posta (isim boşsa varsayılan "Kullanıcı")
+        binding.tvUserName.text = currentUser.displayName.takeIf { !it.isNullOrBlank() } ?: "Kullanıcı"
         binding.tvUserEmail.text = currentUser.email ?: ""
         
         // Firestore'dan kullanıcı bilgilerini yükle
@@ -175,6 +175,14 @@ class ProfileFragment : Fragment() {
             .get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
+                    // Kullanıcı ID'sini göster
+                    val userId = doc.getString("userId") ?: ""
+                    if (userId.isNotEmpty()) {
+                        // userId'yi email'in altında göster (eğer layout'ta bir TextView varsa)
+                        // Şimdilik log'a yazıyoruz, layout'a ekleyebiliriz
+                        android.util.Log.d("ProfileFragment", "User ID: $userId")
+                    }
+                    
                     // E-posta doğrulama durumu - Firebase Auth ve Firestore'u senkronize et
                     val firestoreVerified = doc.getBoolean("verified") ?: false
                     val firebaseAuthVerified = currentUser.isEmailVerified
@@ -442,9 +450,9 @@ class ProfileFragment : Fragment() {
         val currentUser = auth.currentUser
         if (currentUser == null) return
         
-        val profileUpdates = com.google.firebase.auth.ktx.userProfileChangeRequest {
-            displayName = newName
-        }
+        val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+            .setDisplayName(newName)
+            .build()
         
         currentUser.updateProfile(profileUpdates)
             .addOnSuccessListener {

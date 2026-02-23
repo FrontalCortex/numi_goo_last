@@ -9,5 +9,23 @@
     <string name="lesson_hint_step2">İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla.</string>
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>
     <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
-    <string name="lesson_hint_step5">10 gelir adımını uygularken 5\'lik kuralı kullanman gerekebilir.</string>
+    <string name="lesson_hint_step5">10 gelir adımını uygularken 5 lik kuralı kullanman gerekebilir.</string>
+    <string name="login_start_student_title">Hesabın mı var?</string>
+    <string name="login_start_student_subtitle">Numigo\ya ilk defa mı giriyorsun?</string>
+    <string name="login_start_teacher_title">Öğretmen hesabın mı var?</string>
+    <string name="login_start_teacher_subtitle">Öğretmen kaydı oluştur</string>
+    <string name="login_start_primary_button">GİRİŞ YAP</string>
+    <string name="login_start_secondary_button">BAŞLA</string>
+    <string name="login_start_teacher_mode_button">Öğretmen girişi</string>
+    <string name="login_start_student_mode_button">Öğrenci girişi</string>
+    <!-- OTP doğrulama -->
+    <string name="otp_resend_button">Kodu tekrar gönder</string>
+    <string name="otp_resend_cooldown">%1$d sn</string>
+    <string name="otp_resend_limit_reached">Tekrar gönder limiti doldu</string>
+    <string name="otp_too_many_wrong">Çok fazla yanlış deneme. 15 dakika sonra tekrar deneyebilirsiniz.</string>
+    <string name="otp_wrong_cooldown">%1$d dk %2$d sn sonra tekrar deneyebilirsiniz</string>
+    <string name="otp_wrong_cooldown_btn">%1$d dk %2$d sn sonra tekrar</string>
+    <string name="otp_can_retry">Tekrar deneyebilirsiniz.</string>
+    <string name="otp_wrong_cooldown_try_later">Çok fazla yanlış deneme. %1$d dakika sonra tekrar deneyin.</string>
+    <string name="otp_resend_cooldown_try_again">%1$d sn sonra tekrar</string>
 </resources>

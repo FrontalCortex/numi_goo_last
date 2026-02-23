@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NumiGoo - Redirecting...</title>
+    <script>
+        // Android App Links için redirect
+        (function() {
+            if (window.location.href.includes('/__/auth/links')) {
+                // Link parametresini extract et
+                const urlParams = new URLSearchParams(window.location.search);
+                const link = urlParams.get('link');
+                
+                if (link) {
+                    // Android App Links otomatik olarak uygulamayı açacak
+                    // Eğer açılmazsa, link'i göster
+                    setTimeout(function() {
+                        window.location.href = link;
+                    }, 100);
+                } else {
+                    document.body.innerHTML = '<p>Invalid link</p>';
+                }
+            } else {
+                document.body.innerHTML = '<p>NumiGoo</p>';
+            }
+        })();
+    </script>
+</head>
+<body>
+    <p>Redirecting to app...</p>
+</body>
+</html>

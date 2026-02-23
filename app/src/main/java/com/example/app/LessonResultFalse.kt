@@ -1,12 +1,16 @@
 package com.example.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentLessonResultFalseBinding
+import com.example.app.GlobalValues
 
 class LessonResultFalse : Fragment() {
     private lateinit var binding: FragmentLessonResultFalseBinding
@@ -30,8 +34,16 @@ class LessonResultFalse : Fragment() {
     private var succsessRate: Float = 0F
     private var lessonStep: Int = 0
 
+    private lateinit var loginLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerID, MapFragment())
+                .remove(this@LessonResultFalse)
+                .commit()
+        }
     }
 
     override fun onCreateView(
@@ -61,6 +73,16 @@ class LessonResultFalse : Fragment() {
             updateUI()
         }
         binding.claimButton.setOnClickListener {
+            // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
+            if (GlobalValues.currentTutorialNumber == 1 && !GlobalValues.tutorial1LoginShownThisSession) {
+                GlobalValues.tutorial1LoginShownThisSession = true
+                GlobalValues.currentTutorialNumber = 0
+                loginLauncher.launch(
+                    Intent(requireContext(), LoginStartActivity::class.java)
+                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
+                )
+                return@setOnClickListener
+            }
 
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerID, MapFragment())

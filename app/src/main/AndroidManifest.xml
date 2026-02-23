@@ -42,6 +42,12 @@
             android:screenOrientation="portrait" />
             
         <activity
+            android:name=".LoginStartActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NumiGoo"
+            android:screenOrientation="portrait" />
+            
+        <activity
             android:name=".LoginActivity"
             android:exported="false"
             android:theme="@style/Theme.NumiGoo"

@@ -23,6 +23,10 @@ class TeacherLoginActivity : AppCompatActivity() {
     }
     
     private fun setupUI() {
+        binding.btnBack.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+
         // Öğretmen girişi
         binding.btnLogin.setOnClickListener {
             loginTeacher()
@@ -50,7 +54,8 @@ class TeacherLoginActivity : AppCompatActivity() {
         
         authManager.loginTeacher(email, password) { success, error ->
             if (success) {
-                startActivity(Intent(this, MainActivity::class.java))
+                setResult(RESULT_OK)
+                startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                 finish()
             } else {
                 showError(error ?: "Giriş başarısız")

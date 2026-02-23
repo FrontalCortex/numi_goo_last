@@ -8,6 +8,10 @@ object GlobalValues {
     var stepIndex=0
     var tutorialIsWorked = false
     var scrollPosition = 0  // Scroll pozisyonunu global olarak tutacak değişken
+    /** Tutorial 1 akışındayken 1; login gösterildikten veya başka tutorial'a geçildikten sonra 0. */
+    var currentTutorialNumber: Int = 0
+    /** Bu açılışta (session) tutorial 1 claim'de login zaten gösterildi mi? Process yeniden başlayınca false olur. */
+    var tutorial1LoginShownThisSession: Boolean = false
     fun randomNumberChangeToString(digitCount: Int): String{
 
         // Minimum ve maksimum değerleri hesapla

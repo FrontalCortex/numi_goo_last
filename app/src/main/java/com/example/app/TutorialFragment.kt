@@ -21,6 +21,7 @@ import android.view.animation.BounceInterpolator
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import com.example.app.GlobalValues.lessonStep
@@ -187,6 +188,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() { /* geri tuşu ile hiçbir şey olmasın */ }
+        })
         findIDs()
         focusView = binding.focusView
         controlButton = binding.kontrolButton
@@ -241,6 +245,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
         if(tutorialNumber == 1){
             binding.quitButton.visibility = View.INVISIBLE
+            GlobalValues.currentTutorialNumber = 1  // ChestFragment / LessonResultFalse'ta tek sefer login için
         }
     }
 

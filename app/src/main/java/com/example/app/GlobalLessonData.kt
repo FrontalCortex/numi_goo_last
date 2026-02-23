@@ -3,6 +3,7 @@ package com.example.app
 import android.content.Context
 import android.util.Log
 import com.example.app.model.LessonItem
+import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -2500,20 +2501,26 @@ object GlobalLessonData {
         }
     }
 
-    // SharedPreferences işlemleri
-    private const val PREFS_NAME = "LessonPrefs"
+    // SharedPreferences işlemleri - her kullanıcıya özel (uid ile ayrı dosya)
+    private const val PREFS_PREFIX = "LessonPrefs_"
     private const val KEY_LESSON_ITEMS = "lesson_items"
     private fun getKey(partId: Int) = "lesson_items_part_$partId"
 
+    /** Giriş yapmış kullanıcı için LessonPrefs_uid, giriş yoksa LessonPrefs_guest */
+    private fun getLessonPrefs(context: Context): android.content.SharedPreferences {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
+        return context.getSharedPreferences("$PREFS_PREFIX$uid", Context.MODE_PRIVATE)
+    }
+
     fun saveToPreferences(context: Context) {
-        val prefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
+        val prefs = getLessonPrefs(context)
         val gson = Gson()
         val json = gson.toJson(_lessonItems)
         prefs.edit().putString(getKey(globalPartId), json).apply()
     }
 
     fun loadFromPreferences(context: Context): Boolean {
-        val prefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
+        val prefs = getLessonPrefs(context)
         val json = prefs.getString(getKey(globalPartId), null)
         return if (json != null) {
             val gson = Gson()
@@ -2525,4 +2532,8 @@ object GlobalLessonData {
         }
     }
 
+    /** Sadece şu anki kullanıcının ders verisini temizler (test / sıfırlama için) */
+    fun clearCurrentUserLessonData(context: Context) {
+        getLessonPrefs(context).edit().clear().apply()
+    }
 }

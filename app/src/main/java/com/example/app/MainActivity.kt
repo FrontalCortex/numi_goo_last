@@ -11,6 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -21,6 +23,11 @@ import com.example.app.databinding.ActivityMainBinding
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
+
+    companion object {
+        const val EXTRA_FROM_LOGIN = "from_login"
+    }
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var coin:TextView
     private lateinit var energyManager: EnergyManager
@@ -43,9 +50,21 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        // AdMob'u başlat - geçici olarak kaldırıldı
-        //MobileAds.initialize(this) {}
-        deleteAllLessonItems(this)
+        // Giriş/kayıt sonrası gelindiyse oturumu temizleme (ProfileFragment vb. güncel kullanıcıyı gösterebilsin)
+        val fromLogin = intent?.getBooleanExtra(EXTRA_FROM_LOGIN, false) == true
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
+        val hasExistingLogin = auth.currentUser != null
+        if (loginStartEverShown && !hasExistingLogin) {
+            Log.d("kesl",loginStartEverShown.toString())
+            Log.d("kesl",hasExistingLogin.toString())
+            startActivity(Intent(this, LoginStartActivity::class.java))
+            finish()
+            return
+        }
+        if (!fromLogin) {
+            deleteAllLessonItems(this)
+        }
         coin = binding.currencyText
         coin.text = getCurrency(this).toString()
         
@@ -65,22 +84,20 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
         
-        // İlk açılış kontrolü - TutorialFragment gösterilecek mi?
-        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        // İlk açılış kontrolü - TutorialFragment gösterilecek mi? (fromLogin yukarıda set edildi)
         val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
         
-        if (!firstTutorialShown) {
-            // İlk açılış - TutorialFragment göster
-            showFirstTutorial()
-            // Flag'i kaydet (TutorialFragment gösterildikten sonra bir daha gösterilmesin)
-            prefs.edit().putBoolean("first_tutorial_shown", true).apply()
-        } else {
-            // Normal akış - MapFragment göster
+        if (fromLogin || firstTutorialShown) {
+            // Giriş/kayıt sonrası veya tutorial zaten gösterildiyse - MapFragment (ana ekran)
             supportFragmentManager.beginTransaction().apply {
                 replace(R.id.fragmentContainerID, MapFragment())
                 addToBackStack(null)
                 commit()
             }
+        } else {
+            // İlk açılış - TutorialFragment göster
+            showFirstTutorial()
+            prefs.edit().putBoolean("first_tutorial_shown", true).apply()
         }
         window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
         binding.bottomNavigationID.itemIconTintList = null
@@ -88,7 +105,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Listener'ları set et
         setupClickListeners()
     }
-    
+
     /**
      * İlk açılışta TutorialFragment'ı gösterir
      */
@@ -183,17 +200,31 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
     fun deleteAllLessonItems(context: Context) {
-        // Lesson verilerini temizle
-        val lessonPrefs = context.getSharedPreferences("LessonPrefs", Context.MODE_PRIVATE)
-        lessonPrefs.edit().clear().apply()
-        
+        // Test: Her uygulama açılışında hiçbir kullanıcı kayıtlı değilmiş gibi başlat (oturumu kapat)
+        FirebaseAuth.getInstance().signOut()
+        val webClientId = context.getString(com.example.app.R.string.default_web_client_id)
+        if (webClientId.isNotEmpty() && webClientId != "YOUR_WEB_CLIENT_ID_HERE") {
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(webClientId)
+                .requestEmail()
+                .build()
+            GoogleSignIn.getClient(context, gso).signOut()
+        }
+        context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
+
+        // Sadece şu anki kullanıcının ders verisini temizle (her kullanıcıya özel)
+        GlobalLessonData.clearCurrentUserLessonData(context)
+
         // GuidePanel animasyon flag'lerini temizle (test için)
         val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
         guidePanelPrefs.edit().clear().apply()
         
         // İlk tutorial flag'ini de temizle (test için)
         val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        appPrefs.edit().putBoolean("first_tutorial_shown", false).apply()
+        appPrefs.edit()
+            .putBoolean("first_tutorial_shown", false)
+            .putBoolean("tutorial1_login_shown", false)  // Test: claimButton'da login tekrar gösterilsin
+            .apply()
     }
     private fun showAbacusFragment() {
         val fragmentContainer = binding.abacusFragmentContainer
@@ -285,6 +316,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     
     override fun onResume() {
         super.onResume()
+        val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
+        val hasExistingLogin = auth.currentUser != null
+        if (loginStartEverShown && !hasExistingLogin) {
+            Log.d("kesl",loginStartEverShown.toString())
+            Log.d("kesl",hasExistingLogin.toString())
+            startActivity(Intent(this, LoginStartActivity::class.java))
+            finish()
+            return
+        }
+
         // Uygulama aktifken süre takibini başlat
         TimeTracker.startTracking()
         // Abonelik durumunu kontrol et (plan değişmiş olabilir)
@@ -301,7 +343,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         super.onDestroy()
         // Uygulama kapanırken süre takibini durdur
         TimeTracker.stopTracking()
-        energyManager.destroy()
+        if (::energyManager.isInitialized) {
+            energyManager.destroy()
+        }
     }
     
     fun showEnergyRefillDialog() {

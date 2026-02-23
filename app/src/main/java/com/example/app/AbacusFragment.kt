@@ -3244,7 +3244,7 @@ class AbacusFragment : Fragment() {
         lessonResultFalse.arguments = argsFalse
 
         // Yeni fragment'ı abacus container'a ekle
-        if(successRate < 0) {
+        if(successRate < 10) {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     R.anim.slide_in_left,
