@@ -289,24 +289,142 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
 
   // Auth kullanıcısında e-posta ve isim olsun (Console'da identifier "-" olmasın)
   const displayName = 'Kullanıcı';
+  let tokenUid = uid;
   try {
     await admin.auth().getUser(uid);
     await admin.auth().updateUser(uid, { email: docEmail, displayName });
   } catch (err) {
     if (err.code === 'auth/user-not-found') {
-      await admin.auth().createUser({
-        uid,
-        email: docEmail,
-        displayName,
-        emailVerified: true
-      });
+      try {
+        await admin.auth().createUser({
+          uid,
+          email: docEmail,
+          displayName,
+          emailVerified: true
+        });
+      } catch (createErr) {
+        const code = createErr.code || (createErr.errorInfo && createErr.errorInfo.code);
+        if (code === 'auth/email-already-exists' || code === 'auth/email-already-in-use') {
+          // E-posta zaten başka bir hesapta (örn. Google) - o hesaba giriş yap
+          const existingUser = await admin.auth().getUserByEmail(docEmail);
+          tokenUid = existingUser.uid;
+        } else {
+          throw createErr;
+        }
+      }
     } else {
       throw err;
     }
   }
 
-  const token = await admin.auth().createCustomToken(uid);
+  // Öğrenci girişi için: sadece STUDENT rolüne token ver (öğretmen öğrenci ekranından giriş yapamaz)
+  const userDoc = await db.collection('users').doc(tokenUid).get();
+  if (userDoc.exists) {
+    const role = userDoc.data().role || '';
+    if (role !== 'STUDENT') {
+      await recordWrongAttempt(email);
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Bu hesap öğretmen hesabı. Öğrenci giriş ekranından giriş yapılamaz.'
+      );
+    }
+  }
+
+  const token = await admin.auth().createCustomToken(tokenUid);
   return { token };
+});
+
+// Öğretmen şifre sıfırlama: kodu sadece doğrula, used işaretleme (sonra resetTeacherPassword kullanılacak)
+exports.verifyTeacherPasswordResetCode = functions.https.onCall(async (data, context) => {
+  const email = (data && data.email) ? String(data.email).trim().toLowerCase() : '';
+  const code = (data && data.code) || '';
+
+  if (!email || !code) {
+    throw new functions.https.HttpsError('invalid-argument', 'email and code required');
+  }
+
+  await checkWrongAttemptCooldown(email);
+
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  const codeDoc = await codeRef.get();
+
+  if (!codeDoc.exists) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kod');
+  }
+
+  const d = codeDoc.data();
+  const used = d.used === true;
+  const expiresAt = d.expiresAt && d.expiresAt.toMillis ? d.expiresAt.toMillis() : 0;
+  const docEmail = (d.email || '').trim().toLowerCase();
+
+  if (used || expiresAt < Date.now() || docEmail !== email) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+  }
+
+  return { valid: true };
+});
+
+// Öğretmen şifre sıfırlama: kodu doğrula, used işaretle, şifreyi güncelle
+exports.resetTeacherPassword = functions.https.onCall(async (data, context) => {
+  const email = (data && data.email) ? String(data.email).trim().toLowerCase() : '';
+  const code = (data && data.code) || '';
+  const newPassword = (data && data.newPassword) || '';
+
+  if (!email || !code || !newPassword) {
+    throw new functions.https.HttpsError('invalid-argument', 'email, code and newPassword required');
+  }
+
+  if (newPassword.length < 6) {
+    throw new functions.https.HttpsError('invalid-argument', 'Şifre en az 6 karakter olmalıdır');
+  }
+
+  await checkWrongAttemptCooldown(email);
+
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  const codeDoc = await codeRef.get();
+
+  if (!codeDoc.exists) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kod');
+  }
+
+  const d = codeDoc.data();
+  const used = d.used === true;
+  const expiresAt = d.expiresAt && d.expiresAt.toMillis ? d.expiresAt.toMillis() : 0;
+  const docEmail = (d.email || '').trim().toLowerCase();
+
+  if (used || expiresAt < Date.now() || docEmail !== email) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+  }
+
+  // İsteğe bağlı: Firestore'da bu e-postanın TEACHER olduğunu doğrula (Admin SDK'da where('field','==',value) kullanılır)
+  const usersSnap = await db.collection('users').where('email', '==', email).where('role', '==', 'TEACHER').limit(1).get();
+  if (usersSnap.empty) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('permission-denied', 'Bu e-posta öğretmen olarak kayıtlı değil');
+  }
+
+  await codeRef.update({
+    used: true,
+    verifiedAt: admin.firestore.Timestamp.now()
+  });
+
+  let authUid;
+  try {
+    const authUser = await admin.auth().getUserByEmail(email);
+    authUid = authUser.uid;
+  } catch (err) {
+    if (err.code === 'auth/user-not-found') {
+      throw new functions.https.HttpsError('not-found', 'Hesap bulunamadı');
+    }
+    throw err;
+  }
+
+  await admin.auth().updateUser(authUid, { password: newPassword });
+  return { success: true };
 });
 
 
