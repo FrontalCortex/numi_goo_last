@@ -18,6 +18,7 @@ import com.example.app.databinding.FragmentChestBinding
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues
 import com.example.app.GlobalValues.mapFragmentStepIndex
+import com.google.firebase.auth.FirebaseAuth
 
 class ChestFragment : Fragment() {
     private var isOpened = false
@@ -96,8 +97,15 @@ class ChestFragment : Fragment() {
     private fun setupClaimRewardButton() {
         binding.claimRewardButton.setOnClickListener {
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
-            if (GlobalValues.currentTutorialNumber == 1 && !GlobalValues.tutorial1LoginShownThisSession) {
-                GlobalValues.tutorial1LoginShownThisSession = true
+            val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+
+            if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
+                // Bir sonraki açılacak hesapta Tutorial 1 başlangıç dersini güncellemek için bayrak yaz
+                val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("tutorial1_login_flow_pending", true).apply()
+                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+
+
                 GlobalValues.currentTutorialNumber = 0
                 loginLauncher.launch(
                     Intent(requireContext(), LoginStartActivity::class.java)

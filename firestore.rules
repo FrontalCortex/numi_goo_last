@@ -9,6 +9,10 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       // Email kontrolü için: unauthenticated kullanıcılar where query yapabilir
       allow read: if request.auth == null;
+      // Ders ilerlemesi (mail/hesap bazlı): kullanıcı sadece kendi lessonProgress'ini okuyup yazabilir
+      match /lessonProgress/{partId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Öğretmen davet kodları: giriş yapmış kullanıcı okuyabilir; kayıt sırasında update (used) için yazma

@@ -1,9 +1,12 @@
 package com.example.app
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -12,21 +15,114 @@ object GlobalLessonData {
     private var _lessonItems: MutableList<LessonItem> = mutableListOf()
     val lessonItems: List<LessonItem> get() = _lessonItems
 
-    fun initialize(context: Context, partId: Int) {
-        // Önce kaydedilmiş verileri yüklemeyi dene
-        if (!loadFromPreferences(context)) {
-            // Eğer kayıt yoksa, ilk defa açılıyorsa default verileri yükle
-            _lessonItems = createLessonItems(partId).toMutableList()
-            saveToPreferences(context)
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private const val FIRESTORE_LESSON_PROGRESS = "lessonProgress"
+    private const val AUTH_WAIT_TIMEOUT_MS = 1500L
+
+    private enum class FirestoreLoadStatus {
+        LOADED,
+        NOT_FOUND,
+        ERROR
+    }
+
+    private const val LOG_TAG = "LessonProgress"
+
+    fun initialize(context: Context, partId: Int, onReady: (() -> Unit)? = null) {
+        globalPartId = partId
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        Log.d(LOG_TAG, "initialize partId=$partId uid=${uid?.take(8) ?: "null"} onReady=${onReady != null}")
+
+        // Önce lokaldeki veriyi dene
+        if (loadFromPreferences(context)) {
+            Log.d(LOG_TAG, "initialize: loaded from LOCAL prefs, items=${_lessonItems.size}")
+            onReady?.invoke()
+            return
         }
+
+        // Callback yoksa (senkron kullanım), sadece default (Firestore async beklenemez)
+        if (onReady == null) {
+            Log.d(LOG_TAG, "initialize: no callback -> applyDefaultLessonItems (sync path)")
+            applyDefaultLessonItems(context, partId)
+            return
+        }
+
+        // Callback var: lokal yoksa Firestore'u mutlaka dene (auth geç açılıyorsa kısa süre bekle)
+        val auth = FirebaseAuth.getInstance()
+        val immediateUid = auth.currentUser?.uid
+        if (immediateUid != null) {
+            Log.d(LOG_TAG, "initialize: uid present -> loadFromFirestore partId=$partId")
+            loadFromFirestore(context, partId, immediateUid) { status ->
+                Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
+                when (status) {
+                    FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize: using CLOUD data, items=${_lessonItems.size}")
+                    FirestoreLoadStatus.NOT_FOUND -> {
+                        Log.d(LOG_TAG, "initialize: NOT_FOUND -> applyDefaultLessonItems (first time or no cloud data)")
+                        applyDefaultLessonItems(context, partId)
+                    }
+                    FirestoreLoadStatus.ERROR -> {
+                        Log.w(LOG_TAG, "initialize: ERROR -> applyDefaultLessonItems(saveRemote=false) to avoid overwriting cloud")
+                        applyDefaultLessonItems(context, partId, saveRemote = false)
+                    }
+                }
+                onReady.invoke()
+            }
+            return
+        }
+
+        Log.d(LOG_TAG, "initialize: uid null -> waitForAuth (timeout ${AUTH_WAIT_TIMEOUT_MS}ms)")
+        waitForAuthUid(auth, AUTH_WAIT_TIMEOUT_MS) { waitedUid ->
+            if (waitedUid == null) {
+                Log.d(LOG_TAG, "initialize: after wait still no uid -> applyDefaultLessonItems (guest)")
+                applyDefaultLessonItems(context, partId)
+                onReady.invoke()
+                return@waitForAuthUid
+            }
+            Log.d(LOG_TAG, "initialize: after wait uid present -> loadFromFirestore partId=$partId")
+            loadFromFirestore(context, partId, waitedUid) { status ->
+                Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
+                when (status) {
+                    FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize: using CLOUD data, items=${_lessonItems.size}")
+                    FirestoreLoadStatus.NOT_FOUND -> {
+                        Log.d(LOG_TAG, "initialize: NOT_FOUND -> applyDefaultLessonItems")
+                        applyDefaultLessonItems(context, partId)
+                    }
+                    FirestoreLoadStatus.ERROR -> {
+                        Log.w(LOG_TAG, "initialize: ERROR -> applyDefaultLessonItems(saveRemote=false)")
+                        applyDefaultLessonItems(context, partId, saveRemote = false)
+                    }
+                }
+                onReady.invoke()
+            }
+        }
+    }
+
+    /** Varsayılan ders listesini oluşturur (tutorial1 bayrağı varsa 1. dersi günceller) ve kaydeder. */
+    private fun applyDefaultLessonItems(context: Context, partId: Int, saveRemote: Boolean = true) {
+        Log.d(LOG_TAG, "applyDefaultLessonItems partId=$partId saveRemote=$saveRemote (overwrites current _lessonItems with defaults)")
+        val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val tutorial1Pending = prefs.getBoolean("tutorial1_login_flow_pending", false)
+        val items = createLessonItems(partId).toMutableList()
+
+        if (partId == 1 && tutorial1Pending && items.size > 1) {
+            val original = items[1]
+            val updated = original.copy(
+                tutorialIsFinish = true,
+                currentStep = 2,
+                startStepNumber = 2,
+                stepCompletionStatus = listOf(true, false, false)
+            )
+            items[1] = updated
+        }
+
+        _lessonItems = items
+        saveToPreferences(context, saveRemote = saveRemote)
     }
 
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem
+            Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
             saveToPreferences(context)
-            Log.d("sussus",newItem.raceBusyLevel.toString())
-            Log.d("sussus",newItem.title)
         }
     }
 
@@ -58,7 +154,7 @@ object GlobalLessonData {
                     isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
-                    lessonOperationsMap = 1,
+                    lessonOperationsMap = 2,
                     finishStepNumber = 3,
                     tutorialNumber = 1,
                     startStepNumber = 1,
@@ -401,7 +497,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 20,
+                    mapFragmentIndex = 27,
                     startStepNumber = 52,
                     finishStepNumber = 52,
                     cupTime1 = "3:00",
@@ -489,7 +585,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 27,
+                    mapFragmentIndex = 34,
                     racePartId = 7,
                     backRaceId = 1
                     ),
@@ -2311,7 +2407,9 @@ object GlobalLessonData {
                     finishStepNumber = 85,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Başlangıç Ustası",
@@ -2323,8 +2421,10 @@ object GlobalLessonData {
                     mapFragmentIndex = 1,
                     finishStepNumber = 85,
                     tutorialIsFinish = true,
-                    timePeriod = 3000,
-                ),
+                    timePeriod = 1000,
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgi Avcısı",
@@ -2337,7 +2437,9 @@ object GlobalLessonData {
                     finishStepNumber = 86,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Öğrenme Ustası",
@@ -2350,7 +2452,9 @@ object GlobalLessonData {
                     finishStepNumber = 86,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zihin Kaşifi",
@@ -2363,7 +2467,9 @@ object GlobalLessonData {
                     finishStepNumber = 87,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgelik Ustası",
@@ -2376,7 +2482,9 @@ object GlobalLessonData {
                     finishStepNumber = 87,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Kaşifi",
@@ -2389,7 +2497,9 @@ object GlobalLessonData {
                     finishStepNumber = 88,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Beyin Mühendisi",
@@ -2402,7 +2512,9 @@ object GlobalLessonData {
                     finishStepNumber = 88,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Mantık Üstadı",
@@ -2415,7 +2527,9 @@ object GlobalLessonData {
                     finishStepNumber = 89,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Deha",
@@ -2428,7 +2542,9 @@ object GlobalLessonData {
                     finishStepNumber = 89,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Üst Zihin",
@@ -2441,7 +2557,9 @@ object GlobalLessonData {
                     finishStepNumber = 90,
                     tutorialIsFinish = true,
                     timePeriod = 8000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilge Şampiyon",
@@ -2454,7 +2572,9 @@ object GlobalLessonData {
                     finishStepNumber = 90,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Mimarı",
@@ -2467,7 +2587,9 @@ object GlobalLessonData {
                     finishStepNumber = 90,
                     tutorialIsFinish = true,
                     timePeriod = 4000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Ustalık Efendisi",
@@ -2480,7 +2602,9 @@ object GlobalLessonData {
                     finishStepNumber = 91,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                ),
+                    raceBusyLevel = 1,
+
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Efsanevi Bilge",
@@ -2493,7 +2617,9 @@ object GlobalLessonData {
                     finishStepNumber = 91,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                )
+                    raceBusyLevel = 1,
+
+                    )
             )
 
 
@@ -2512,24 +2638,119 @@ object GlobalLessonData {
         return context.getSharedPreferences("$PREFS_PREFIX$uid", Context.MODE_PRIVATE)
     }
 
-    fun saveToPreferences(context: Context) {
-        val prefs = getLessonPrefs(context)
+    fun saveToPreferences(context: Context, saveRemote: Boolean = true) {
         val gson = Gson()
         val json = gson.toJson(_lessonItems)
-        prefs.edit().putString(getKey(globalPartId), json).apply()
+        val prefs = getLessonPrefs(context)
+        val key = getKey(globalPartId)
+        prefs.edit().putString(key, json).apply()
+        Log.d(LOG_TAG, "saveToPreferences partId=$globalPartId key=$key local OK (items=${_lessonItems.size})")
+
+        // Giriş yapmış kullanıcı için Firestore'a da kaydet (uygulama silinse bile geri yüklensin)
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (saveRemote && uid != null) {
+            Log.d(LOG_TAG, "saveToPreferences -> Firestore users/${uid.take(8)}.../lessonProgress/$globalPartId")
+            firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+                .document(globalPartId.toString())
+                .set(mapOf("items" to json))
+                .addOnSuccessListener { Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS") }
+                .addOnFailureListener { e -> Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e) }
+        } else {
+            if (!saveRemote) Log.d(LOG_TAG, "saveToPreferences skip Firestore (saveRemote=false)")
+            else if (uid == null) Log.d(LOG_TAG, "saveToPreferences skip Firestore (uid=null)")
+        }
     }
 
     fun loadFromPreferences(context: Context): Boolean {
+        val key = getKey(globalPartId)
         val prefs = getLessonPrefs(context)
-        val json = prefs.getString(getKey(globalPartId), null)
+        val json = prefs.getString(key, null)
         return if (json != null) {
             val gson = Gson()
             val type = object : TypeToken<List<LessonItem>>() {}.type
             _lessonItems = gson.fromJson(json, type)
+            Log.d(LOG_TAG, "loadFromPreferences key=$key -> loaded ${_lessonItems.size} items from LOCAL")
             true
         } else {
+            Log.d(LOG_TAG, "loadFromPreferences key=$key -> no local data")
             false
         }
+    }
+
+    /**
+     * Firestore'dan ilgili part'ın ders verisini yükler (kullanıcı giriş yapmışsa).
+     * LOADED: _lessonItems set edilir ve lokala yazılır.
+     * NOT_FOUND: doc/field yok.
+     * ERROR: ağ/izin/diğer hata.
+     */
+    private fun loadFromFirestore(
+        context: Context,
+        partId: Int,
+        uid: String,
+        callback: (FirestoreLoadStatus) -> Unit
+    ) {
+        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .get()
+            .addOnSuccessListener { doc ->
+                val json = doc.getString("items")
+                Log.d(LOG_TAG, "loadFromFirestore partId=$partId doc.exists=${doc.exists()} itemsFieldNull=${json == null} itemsBlank=${json.isNullOrBlank()}")
+                if (!json.isNullOrBlank()) {
+                    try {
+                        val gson = Gson()
+                        val type = object : TypeToken<List<LessonItem>>() {}.type
+                        _lessonItems = gson.fromJson(json, type)
+                        getLessonPrefs(context).edit().putString(getKey(partId), json).apply()
+                        Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD and wrote to local")
+                        callback(FirestoreLoadStatus.LOADED)
+                    } catch (e: Exception) {
+                        Log.e(LOG_TAG, "loadFromFirestore parse error", e)
+                        callback(FirestoreLoadStatus.ERROR)
+                    }
+                } else {
+                    Log.d(LOG_TAG, "loadFromFirestore NOT_FOUND (no items field or empty)")
+                    callback(FirestoreLoadStatus.NOT_FOUND)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "loadFromFirestore FAILED", e)
+                callback(FirestoreLoadStatus.ERROR)
+            }
+    }
+
+    private fun waitForAuthUid(auth: FirebaseAuth, timeoutMs: Long, callback: (String?) -> Unit) {
+        val handler = Handler(Looper.getMainLooper())
+        var completed = false
+
+        fun finish(uid: String?) {
+            if (completed) return
+            completed = true
+            callback(uid)
+        }
+
+        val existing = auth.currentUser?.uid
+        if (existing != null) {
+            finish(existing)
+            return
+        }
+
+        lateinit var authListener: FirebaseAuth.AuthStateListener
+        val timeoutRunnable = Runnable {
+            auth.removeAuthStateListener(authListener)
+            finish(auth.currentUser?.uid)
+        }
+
+        authListener = FirebaseAuth.AuthStateListener { a ->
+            val uid = a.currentUser?.uid
+            if (uid != null) {
+                auth.removeAuthStateListener(authListener)
+                handler.removeCallbacks(timeoutRunnable)
+                finish(uid)
+            }
+        }
+
+        auth.addAuthStateListener(authListener)
+        handler.postDelayed(timeoutRunnable, timeoutMs)
     }
 
     /** Sadece şu anki kullanıcının ders verisini temizler (test / sıfırlama için) */

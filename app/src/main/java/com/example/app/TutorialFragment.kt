@@ -173,7 +173,31 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        // Bazı açılış senaryolarında (özellikle login sonrası) GlobalLessonData henüz dolmamış olabiliyor.
+        // Burada güvenli bir fallback ile crash'i engelleyip doğru item'ı bulmaya çalışıyoruz.
+        LessonManager.ensureInitialized(requireContext(), GlobalLessonData.globalPartId)
+
+        val byPosition = LessonManager.getLessonItem(mapFragmentStepIndex)
+        val byTutorialNumber = GlobalLessonData.lessonItems.firstOrNull {
+            it.type == LessonItem.TYPE_LESSON && it.tutorialNumber == tutorialNumber
+        }
+        val firstLesson = GlobalLessonData.lessonItems.firstOrNull { it.type == LessonItem.TYPE_LESSON }
+
+        lessonItem = byPosition ?: byTutorialNumber ?: firstLesson ?: LessonItem(
+            type = LessonItem.TYPE_LESSON,
+            title = "Tutorial",
+            offset = 0,
+            isCompleted = false,
+            stepCount = 1,
+            currentStep = 1
+        )
+
+        if (byPosition == null) {
+            Log.w(
+                "TutorialFragment",
+                "lessonItem not found by mapFragmentStepIndex=$mapFragmentStepIndex, fallback used (tutorialNumber=$tutorialNumber)"
+            )
+        }
 
     }
 

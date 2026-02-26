@@ -14,6 +14,17 @@ import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentOtpVerificationBinding
 
+/** Öğretmen şifre sıfırlama akışında OTP doğrulandığında activity'ye bildirim. */
+interface OnTeacherOtpVerifiedForResetListener {
+    fun onOtpVerifiedForReset(email: String, code: String)
+}
+
+/** OTP doğrula butonuna basıldığında / doğrulama bittiğinde activity'nin geri ve Google butonlarını kilitlemesi için. */
+interface OnOtpVerifyProgressListener {
+    fun onOtpVerifyStarted()
+    fun onOtpVerifyFinished()
+}
+
 class OtpVerificationFragment : Fragment() {
 
     private var _binding: FragmentOtpVerificationBinding? = null
@@ -23,11 +34,13 @@ class OtpVerificationFragment : Fragment() {
 
     private val email: String by lazy { requireArguments().getString(ARG_EMAIL).orEmpty() }
     private val isRegistration: Boolean by lazy { requireArguments().getBoolean(ARG_IS_REGISTRATION, false) }
+    private val forPasswordReset: Boolean by lazy { requireArguments().getBoolean(ARG_FOR_PASSWORD_RESET, false) }
 
     companion object {
         private const val ARG_EMAIL = "arg_email"
         private const val ARG_IS_REGISTRATION = "arg_is_registration"
-        private const val RESEND_COOLDOWN_MS = 1_000L   // 45 saniye
+        private const val ARG_FOR_PASSWORD_RESET = "arg_for_password_reset"
+        private const val RESEND_COOLDOWN_MS = 45_000L   // 45 saniye
         private const val MAX_WRONG_ATTEMPTS = 5
         private const val WRONG_ATTEMPT_COOLDOWN_MS = 15 * 60 * 1000L // 15 dk
 
@@ -68,11 +81,12 @@ class OtpVerificationFragment : Fragment() {
             return remainingMin
         }
 
-        fun newInstance(email: String, isRegistration: Boolean): OtpVerificationFragment {
+        fun newInstance(email: String, isRegistration: Boolean, forPasswordReset: Boolean = false): OtpVerificationFragment {
             return OtpVerificationFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_EMAIL, email)
                     putBoolean(ARG_IS_REGISTRATION, isRegistration)
+                    putBoolean(ARG_FOR_PASSWORD_RESET, forPasswordReset)
                 }
             }
         }
@@ -97,7 +111,11 @@ class OtpVerificationFragment : Fragment() {
             override fun handleOnBackPressed() { /* geri tuşu işlevsiz */ }
         })
         authManager = AuthManager().also { it.initialize(requireContext()) }
-        binding.tvTitle.text = if (isRegistration) "Hesap oluştur" else "E-postanı doğrula"
+        binding.tvTitle.text = when {
+            forPasswordReset -> "Şifre sıfırlama"
+            isRegistration -> "Hesap oluştur"
+            else -> "E-postanı doğrula"
+        }
         binding.tvEmail.text = email
         binding.btnVerify.setOnClickListener { verify() }
         binding.btnResend.setOnClickListener { resend() }
@@ -175,7 +193,7 @@ class OtpVerificationFragment : Fragment() {
     private fun resend() {
         if (wrongAttemptCooldownTimer != null) return
         binding.btnResend.isEnabled = false
-        authManager.resendStudentVerificationCode(email) { success, error ->
+        val sendCode: (Boolean, String?) -> Unit = { success, error ->
             if (success) {
                 Toast.makeText(requireContext(), "Kod tekrar gönderildi", Toast.LENGTH_SHORT).show()
                 startResendCooldown()
@@ -183,6 +201,11 @@ class OtpVerificationFragment : Fragment() {
                 updateResendButtonState()
                 Toast.makeText(requireContext(), error ?: "Kod gönderilemedi", Toast.LENGTH_LONG).show()
             }
+        }
+        if (forPasswordReset) {
+            authManager.sendTeacherPasswordResetCode(email, sendCode)
+        } else {
+            authManager.resendStudentVerificationCode(email, sendCode)
         }
     }
 
@@ -201,8 +224,20 @@ class OtpVerificationFragment : Fragment() {
 
         binding.btnVerify.isEnabled = false
         binding.btnVerify.text = "Doğrulanıyor..."
+        // Sadece öğretmen şifre sıfırlama akışında (forPasswordReset) geri ve resend kilitlensin
+        if (forPasswordReset) {
+            binding.btnResend.isEnabled = false
+            (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
+        }
 
         val onVerifyFailed: (String?) -> Unit = { error ->
+            if (forPasswordReset) {
+                (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+                // 15 dk yanlış deneme kilidi yoksa resend butonunu tekrar uygun hale getir
+                if (wrongAttemptCooldownTimer == null) {
+                    updateResendButtonState()
+                }
+            }
             wrongAttempts++
             binding.btnVerify.text = "Doğrula"
             binding.btnVerify.isEnabled = wrongAttempts < MAX_WRONG_ATTEMPTS
@@ -219,24 +254,37 @@ class OtpVerificationFragment : Fragment() {
             }
         }
 
-        if (isRegistration) {
-            authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
-                if (success) {
-                    requireActivity().setResult(Activity.RESULT_OK)
-                    startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
-                    requireActivity().finish()
-                } else {
-                    onVerifyFailed(error)
+        when {
+            forPasswordReset -> {
+                authManager.verifyTeacherPasswordResetCode(email, code) { success, error ->
+                    if (success) {
+                        (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+                        (requireActivity() as? OnTeacherOtpVerifiedForResetListener)?.onOtpVerifiedForReset(email, code)
+                    } else {
+                        onVerifyFailed(error)
+                    }
                 }
             }
-        } else {
-            authManager.verifyLoginWithOTP(email, code) { success, error ->
-                if (success) {
-                    requireActivity().setResult(Activity.RESULT_OK)
-                    startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
-                    requireActivity().finish()
-                } else {
-                    onVerifyFailed(error)
+            isRegistration -> {
+                authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
+                    if (success) {
+                        requireActivity().setResult(Activity.RESULT_OK)
+                        startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
+                        requireActivity().finish()
+                    } else {
+                        onVerifyFailed(error)
+                    }
+                }
+            }
+            else -> {
+                authManager.verifyLoginWithOTP(email, code) { success, error ->
+                    if (success) {
+                        requireActivity().setResult(Activity.RESULT_OK)
+                        startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
+                        requireActivity().finish()
+                    } else {
+                        onVerifyFailed(error)
+                    }
                 }
             }
         }

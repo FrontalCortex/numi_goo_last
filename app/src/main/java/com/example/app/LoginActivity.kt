@@ -12,7 +12,8 @@ import com.example.app.databinding.ActivityLoginBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
+
     private lateinit var binding: ActivityLoginBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
@@ -84,6 +85,16 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+    override fun onOtpVerifyStarted() {
+        binding.btnBack.isEnabled = false
+        binding.btnGoogleSignIn.isEnabled = false
+    }
+
+    override fun onOtpVerifyFinished() {
+        binding.btnBack.isEnabled = true
+        binding.btnGoogleSignIn.isEnabled = true
+    }
+
     private fun showEmailStep() {
         binding.emailStepContainer.visibility = android.view.View.VISIBLE
         binding.fragmentContainer.visibility = android.view.View.GONE
@@ -143,10 +154,14 @@ class LoginActivity : AppCompatActivity() {
 
         binding.btnContinue.isEnabled = false
         binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnBack.isEnabled = false
+        binding.btnGoogleSignIn.isEnabled = false
 
         authManager.sendLoginCodeOnly(email) { success, error ->
             binding.btnContinue.isEnabled = true
             binding.btnContinue.text = "Devam Et"
+            binding.btnBack.isEnabled = true
+            binding.btnGoogleSignIn.isEnabled = true
 
             if (success) {
                 hideKeyboard()

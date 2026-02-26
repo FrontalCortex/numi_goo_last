@@ -21,6 +21,7 @@ class SplashActivity : AppCompatActivity() {
     
     private fun checkLoginStatus() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+      //prefs.edit().putBoolean("login_start_ever_shown", false).apply()
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = FirebaseAuth.getInstance().currentUser != null
         if (loginStartEverShown && !hasExistingLogin) {

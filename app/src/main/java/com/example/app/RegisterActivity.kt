@@ -13,7 +13,8 @@ import com.example.app.databinding.ActivityRegisterBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
-class RegisterActivity : AppCompatActivity() {
+class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
+
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
@@ -24,6 +25,8 @@ class RegisterActivity : AppCompatActivity() {
         const val EXTRA_FORCE_STUDENT = "extra_force_student"
     }
 
+    private var currentForcedRole: ForcedRole = ForcedRole.STUDENT
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
@@ -32,7 +35,7 @@ class RegisterActivity : AppCompatActivity() {
         authManager = AuthManager()
         authManager.initialize(this)
 
-        val forcedRole = when {
+        currentForcedRole = when {
             intent.getBooleanExtra(EXTRA_FORCE_TEACHER, false) -> ForcedRole.TEACHER
             intent.getBooleanExtra(EXTRA_FORCE_STUDENT, false) -> ForcedRole.STUDENT
             else -> ForcedRole.STUDENT // Varsayılan öğrenci
@@ -54,7 +57,7 @@ class RegisterActivity : AppCompatActivity() {
         }
         
         setupUI()
-        updateUIForRole(forcedRole)
+        updateUIForRole(currentForcedRole)
     }
 
     override fun onResume() {
@@ -78,7 +81,13 @@ class RegisterActivity : AppCompatActivity() {
                         if (supportFragmentManager.backStackEntryCount == 0) {
                             supportFragmentManager.removeOnBackStackChangedListener(this)
                             // Pop exit animasyonu (slide_out_right, 300ms) bitene kadar bekle
-                            binding.root.postDelayed({ showEmailStep() }, 350)
+                            binding.root.postDelayed({
+                                if (currentForcedRole == ForcedRole.TEACHER) {
+                                    showTeacherStep()
+                                } else {
+                                    showEmailStep()
+                                }
+                            }, 350)
                         }
                     }
                 }
@@ -105,31 +114,27 @@ class RegisterActivity : AppCompatActivity() {
             sendOtpAndShowCodeStep(email)
         }
 
-        // Öğretmen kaydı: Şifre + Onay kodu akışı
+        // Öğretmen kaydı: Kullanıcı adı + e-posta + şifre + OTP akışı
         binding.btnRegister.setOnClickListener {
-            registerTeacher()
+            registerTeacherWithOtp()
         }
 
-        // Öğretmen kodu iste
-        binding.btnRequestCode.setOnClickListener {
-            val candidateEmail = binding.etEmail.text.toString()
-            if (candidateEmail.isEmpty()) {
-                showError("Önce e-posta adresinizi girin")
-                return@setOnClickListener
-            }
-            authManager.requestTeacherInviteCode(candidateEmail) { success, error ->
-                if (success) {
-                    showSuccess("Onay kodu e-posta ile gönderildi")
-                } else {
-                    showError(error ?: "Kod gönderilemedi")
-                }
+        // Google Sign-In yalnızca öğrenci kaydında kullanılır; öğretmen kaydında hiçbir zaman kullanılmaz
+        if (currentForcedRole != ForcedRole.TEACHER) {
+            binding.btnGoogleSignIn.setOnClickListener {
+                signInWithGoogle()
             }
         }
-        
-        // Google Sign-In
-        binding.btnGoogleSignIn.setOnClickListener {
-            signInWithGoogle()
-        }
+    }
+
+    override fun onOtpVerifyStarted() {
+        binding.btnBack.isEnabled = false
+        binding.btnGoogleSignIn.isEnabled = false
+    }
+
+    override fun onOtpVerifyFinished() {
+        binding.btnBack.isEnabled = true
+        binding.btnGoogleSignIn.isEnabled = true
     }
 
     private enum class ForcedRole { STUDENT, TEACHER }
@@ -140,11 +145,14 @@ class RegisterActivity : AppCompatActivity() {
                 // Öğrenci kaydı: OTP akışı
                 binding.emailStepContainer.visibility = android.view.View.VISIBLE
                 binding.cardTeacherForm.visibility = android.view.View.GONE
+                binding.btnGoogleSignIn.visibility = android.view.View.VISIBLE
             }
             ForcedRole.TEACHER -> {
-                // Öğretmen kaydı: Şifre + Onay kodu akışı
+                // Öğretmen kaydı: Kullanıcı adı + email + şifre + OTP akışı
                 binding.emailStepContainer.visibility = android.view.View.GONE
                 binding.cardTeacherForm.visibility = android.view.View.VISIBLE
+                // Öğretmen kaydında Google ile kayıt butonu görünmesin
+                binding.btnGoogleSignIn.visibility = android.view.View.GONE
             }
         }
     }
@@ -156,6 +164,15 @@ class RegisterActivity : AppCompatActivity() {
         binding.tvTitle.visibility = android.view.View.VISIBLE
         binding.tvSubtitle.visibility = android.view.View.VISIBLE
         updateContinueButtonForResendCooldown()
+    }
+
+    private fun showTeacherStep() {
+        binding.emailStepContainer.visibility = android.view.View.GONE
+        binding.cardTeacherForm.visibility = android.view.View.VISIBLE
+        binding.fragmentContainer.visibility = android.view.View.GONE
+        binding.ivLogo.visibility = android.view.View.VISIBLE
+        binding.tvTitle.visibility = android.view.View.VISIBLE
+        binding.tvSubtitle.visibility = android.view.View.VISIBLE
     }
 
     private fun updateContinueButtonForResendCooldown() {
@@ -184,7 +201,9 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun showCodeStep() {
+        // Sadece OTP fragment'i göster, diğer tüm kayıt formlarını gizle
         binding.emailStepContainer.visibility = android.view.View.GONE
+        binding.cardTeacherForm.visibility = android.view.View.GONE
         binding.fragmentContainer.visibility = android.view.View.VISIBLE
         binding.ivLogo.visibility = android.view.View.GONE
         binding.tvTitle.visibility = android.view.View.GONE
@@ -214,13 +233,25 @@ class RegisterActivity : AppCompatActivity() {
 
         binding.btnContinue.isEnabled = false
         binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnBack.isEnabled = false
+        binding.btnGoogleSignIn.isEnabled = false
 
-        authManager.isEmailRegistered(email) { alreadyRegistered, uid ->
+        authManager.isEmailRegistered(email) { alreadyRegistered, uid, role ->
+            fun reenableBackAndContinue() {
+                binding.btnContinue.isEnabled = true
+                binding.btnContinue.text = "Devam Et"
+                binding.btnBack.isEnabled = true
+                binding.btnGoogleSignIn.isEnabled = true
+            }
             if (alreadyRegistered && !uid.isNullOrEmpty()) {
-                // Zaten kayıtlı: giriş için kod gönder (uid Cloud Function'dan geldi, Firestore okumaya gerek yok)
+                if (role == AuthManager.ROLE_TEACHER) {
+                    reenableBackAndContinue()
+                    showError("Bu e-posta ile öğrenci hesabı açılamaz.")
+                    return@isEmailRegistered
+                }
+                // Zaten kayıtlı (öğrenci): giriş için kod gönder
                 authManager.sendLoginCode(email.trim().lowercase(), uid) { success, error ->
-                    binding.btnContinue.isEnabled = true
-                    binding.btnContinue.text = "Devam Et"
+                    reenableBackAndContinue()
                     if (success) {
                         OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
                         hideKeyboard()
@@ -235,21 +266,18 @@ class RegisterActivity : AppCompatActivity() {
                     }
                 }
             } else if (alreadyRegistered) {
-                binding.btnContinue.isEnabled = true
-                binding.btnContinue.text = "Devam Et"
+                reenableBackAndContinue()
                 showError("Kod gönderilemedi")
             } else {
                 // Yeni kayıt: pending oluştur, kod gönder, isRegistration = true
                 authManager.createPendingRegistrationForOTP(email) { createSuccess, createError ->
                     if (!createSuccess) {
-                        binding.btnContinue.isEnabled = true
-                        binding.btnContinue.text = "Devam Et"
+                        reenableBackAndContinue()
                         showError(createError ?: "İşlem başarısız")
                         return@createPendingRegistrationForOTP
                     }
                     authManager.resendStudentVerificationCode(email) { success, error ->
-                        binding.btnContinue.isEnabled = true
-                        binding.btnContinue.text = "Devam Et"
+                        reenableBackAndContinue()
                         if (success) {
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
                             hideKeyboard()
@@ -323,29 +351,65 @@ class RegisterActivity : AppCompatActivity() {
     }
     
     
-    private fun registerTeacher() {
-        val email = binding.etEmail.text.toString()
-        val name = binding.etName.text.toString()
+    private fun registerTeacherWithOtp() {
+        val name = binding.etName.text.toString().trim()
+        val email = binding.etTeacherEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
-        val approvalCode = binding.etApprovalCode.text.toString()
-        
-        if (email.isEmpty() || name.isEmpty() || password.isEmpty() || approvalCode.isEmpty()) {
+        val passwordConfirm = binding.etApprovalCode.text.toString()
+
+        if (email.isEmpty() || name.isEmpty() || password.isEmpty() || passwordConfirm.isEmpty()) {
             showError("Lütfen tüm alanları doldurun")
             return
         }
-        
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            showError("Geçerli bir e-posta adresi giriniz.")
+            return
+        }
         if (password.length < 6) {
             showError("Şifre en az 6 karakter olmalı")
             return
         }
-        
-        authManager.registerTeacher(email, name, password, approvalCode) { success, error ->
-            if (success) {
-                showSuccess("Öğretmen hesabı oluşturuldu")
-                startActivity(Intent(this, TeacherLoginActivity::class.java))
-                finish()
-            } else {
-                showError(error ?: "Geçersiz onay kodu veya kayıt başarısız")
+        if (password != passwordConfirm) {
+            showError("Şifreler eşleşmiyor")
+            return
+        }
+
+        // Önce bu e-posta ile zaten bir öğretmen hesabı var mı kontrol et
+        authManager.isEmailRegistered(email) { alreadyRegistered, _, role ->
+            if (alreadyRegistered) {
+                if (role == AuthManager.ROLE_TEACHER) {
+                    showError("Bu e-posta zaten bir öğretmen hesabı ile kayıtlı. Lütfen öğretmen giriş ekranını kullanın.")
+                } else {
+                    showError("Bu e-posta başka bir hesapta kullanılıyor.")
+                }
+                return@isEmailRegistered
+            }
+
+            binding.btnBack.isEnabled = false
+            binding.btnRegister.isEnabled = false
+
+            authManager.createPendingTeacherRegistrationForOTP(email, name, password) { success, error ->
+                if (!success) {
+                    binding.btnBack.isEnabled = true
+                    binding.btnRegister.isEnabled = true
+                    showError(error ?: "İşlem başarısız")
+                    return@createPendingTeacherRegistrationForOTP
+                }
+                authManager.resendStudentVerificationCode(email) { codeSuccess, codeError ->
+                    binding.btnBack.isEnabled = true
+                    binding.btnRegister.isEnabled = true
+                    if (codeSuccess) {
+                        hideKeyboard()
+                        showCodeStep()
+                        supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true))
+                            .addToBackStack("otp")
+                            .commit()
+                    } else {
+                        showError(codeError ?: "Kod gönderilemedi")
+                    }
+                }
             }
         }
     }

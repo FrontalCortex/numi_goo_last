@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +36,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var adManager: AdManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+
+    private var lastBackPressTime = 0L
+    private val backPressToExitMillis = 2000L
     
     private val subscriptionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -87,7 +92,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // İlk açılış kontrolü - TutorialFragment gösterilecek mi? (fromLogin yukarıda set edildi)
         val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
         
-        if (fromLogin || firstTutorialShown) {
+        if (firstTutorialShown) {
             // Giriş/kayıt sonrası veya tutorial zaten gösterildiyse - MapFragment (ana ekran)
             supportFragmentManager.beginTransaction().apply {
                 replace(R.id.fragmentContainerID, MapFragment())
@@ -97,10 +102,34 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         } else {
             // İlk açılış - TutorialFragment göster
             showFirstTutorial()
-            prefs.edit().putBoolean("first_tutorial_shown", true).apply()
         }
         window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
         binding.bottomNavigationID.itemIconTintList = null
+
+        // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
+        val backCallback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+                val atRoot = supportFragmentManager.backStackEntryCount <= 1 && current is MapFragment
+                if (!atRoot) {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    return
+                }
+                val now = System.currentTimeMillis()
+                if (now - lastBackPressTime < backPressToExitMillis) {
+                    finish()
+                } else {
+                    lastBackPressTime = now
+                    Toast.makeText(this@MainActivity, "Çıkmak için tekrar bas", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, backCallback)
+        supportFragmentManager.addOnBackStackChangedListener {
+            val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+            backCallback.isEnabled = current is MapFragment && supportFragmentManager.backStackEntryCount <= 1
+        }
 
         // Listener'ları set et
         setupClickListeners()
@@ -143,11 +172,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     fun setupClickListeners() {
         binding.bottomNavigationID.setOnItemSelectedListener {
             closeBottomSheet()
+            val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
             when (it.itemId) {
-                R.id.map -> changeFragment(MapFragment())
-                R.id.tasks -> changeFragment(TasksFragment())
-                R.id.profile -> changeFragment(ProfileFragment())
-                R.id.notification -> changeFragment(NotificationFragment())
+                R.id.map -> if (currentFragment is MapFragment) return@setOnItemSelectedListener true else changeFragment(MapFragment())
+                R.id.tasks -> if (currentFragment is TasksFragment) return@setOnItemSelectedListener true else changeFragment(TasksFragment())
+                R.id.profile -> if (currentFragment is ProfileFragment) return@setOnItemSelectedListener true else changeFragment(ProfileFragment())
+                R.id.notification -> if (currentFragment is NotificationFragment) return@setOnItemSelectedListener true else changeFragment(NotificationFragment())
             }
             true
         }
@@ -201,9 +231,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
     fun deleteAllLessonItems(context: Context) {
         // Test: Her uygulama açılışında hiçbir kullanıcı kayıtlı değilmiş gibi başlat (oturumu kapat)
-        FirebaseAuth.getInstance().signOut()
-        val webClientId = context.getString(com.example.app.R.string.default_web_client_id)
-        if (webClientId.isNotEmpty() && webClientId != "YOUR_WEB_CLIENT_ID_HERE") {
+        //FirebaseAuth.getInstance().signOut()
+        //val webClientId = context.getString(com.example.app.R.string.default_web_client_id)
+        /*if (webClientId.isNotEmpty() && webClientId != "YOUR_WEB_CLIENT_ID_HERE") {
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(webClientId)
                 .requestEmail()
@@ -211,19 +241,19 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             GoogleSignIn.getClient(context, gso).signOut()
         }
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
-
+        */
         // Sadece şu anki kullanıcının ders verisini temizle (her kullanıcıya özel)
-        GlobalLessonData.clearCurrentUserLessonData(context)
+        //GlobalLessonData.clearCurrentUserLessonData(context)
 
-        // GuidePanel animasyon flag'lerini temizle (test için)
-        val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
-        guidePanelPrefs.edit().clear().apply()
+        // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
+        //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
+        //guidePanelPrefs.edit().clear().apply()
         
         // İlk tutorial flag'ini de temizle (test için)
         val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         appPrefs.edit()
-            .putBoolean("first_tutorial_shown", false)
-            .putBoolean("tutorial1_login_shown", false)  // Test: claimButton'da login tekrar gösterilsin
+            //f.putBoolean("first_tutorial_shown", false)
+            //.putBoolean("tutorial1_login_shown", false)  // Test: claimButton'da login tekrar gösterilsin
             .apply()
     }
     private fun showAbacusFragment() {

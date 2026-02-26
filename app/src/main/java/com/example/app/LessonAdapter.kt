@@ -434,124 +434,93 @@ class LessonAdapter(
         // Başlığı ayarla
         raceTitle.text = item.title
 
-        // Race verilerini al (item'ın racePartId'sinden)
-        val racePartId = item.racePartId  // Varsayılan olarak 7 kullan
-        val baseRaceItems = GlobalLessonData.createLessonItems(racePartId!!)
-        // Güncellenmiş verilerle değiştir
-        val raceItems = baseRaceItems.map { baseItem ->
-            val updatedItem = GlobalLessonData.lessonItems.find { it.title == baseItem.title }
-            updatedItem ?: baseItem
-        }
-        globalPartId = racePartId
-        onPartChange(globalPartId)
-        Log.d("hendek", globalPartId.toString())
-
-        // RecyclerView'ı ayarla
+        val racePartId = item.racePartId!!
+        // Part verisi asenkron yüklendiği için önce yükleyip sonra paneli kuruyoruz (ilk tıklamada ders listesi yerine race listesi gösterilir)
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
-        Log.d("ukucc",raceItems[2].title)
-        Log.d("ukucc",raceItems[2].raceBusyLevel.toString())
-        raceAdapter = RaceAdapter(
-            context,
-            raceItems = GlobalLessonData.lessonItems.toMutableList(),
-            { raceItem, clickedIndex ->
-                onRaceStartClicked(raceItem, clickedIndex)
-            },
-            onPartChange = { newPartId ->
-                globalPartId = newPartId
-                GlobalLessonData.initialize(context, newPartId)
+        GlobalLessonData.initialize(context, racePartId) {
+            (context as? Activity)?.runOnUiThread {
+                globalPartId = racePartId
+                onPartChange(racePartId)
 
-                // ✅ Güncel veriyi doğrudan al
-                val updatedRaceItems = GlobalLessonData.lessonItems.filter {
-                    it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
-                }
-                raceAdapter.raceUpdateItems(updatedRaceItems)
-            }
-        )
-        LessonManager.setRaceAdapter(raceAdapter)
+                raceAdapter = RaceAdapter(
+                    context,
+                    raceItems = GlobalLessonData.lessonItems.toMutableList(),
+                    { raceItem, clickedIndex ->
+                        onRaceStartClicked(raceItem, clickedIndex)
+                    },
+                    onPartChange = { newPartId ->
+                        globalPartId = newPartId
+                        GlobalLessonData.initialize(context, newPartId) {
+                            val updatedRaceItems = GlobalLessonData.lessonItems.filter {
+                                it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
+                            }
+                            raceAdapter.raceUpdateItems(updatedRaceItems)
+                        }
+                    }
+                )
+                LessonManager.setRaceAdapter(raceAdapter)
+                raceRecyclerView.adapter = raceAdapter
 
-        raceRecyclerView.adapter = raceAdapter
-        
-        // RaceAdapter'ı da LessonManager'a bağla (güncellemeler için)
-        val updatedLessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
-        Log.d("RaceAdapter", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
-        Log.d("RaceAdapter", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
+                coordinatorLayout.addView(racePanelView)
 
+                val behavior = BottomSheetBehavior.from(raceContentLayout)
+                scrimView.visibility = View.VISIBLE
+                scrimView.animate()
+                    .alpha(0.5f)
+                    .setDuration(300)
+                    .start()
 
-        // Race panel'i CoordinatorLayout'a ekle
-        coordinatorLayout.addView(racePanelView)
-
-        // BottomSheetBehavior oluştur
-        val behavior = BottomSheetBehavior.from(raceContentLayout)
-
-        // Scrim view'ı göster ve tıklama listener'ı ekle
-        scrimView.visibility = View.VISIBLE
-        scrimView.animate()
-            .alpha(0.5f)
-            .setDuration(300)
-            .start()
-
-        // Scrim'e tıklandığında race panel'i kapat
-        scrimView.setOnClickListener {
-            globalPartId = item.backRaceId!!
-            onPartChange(globalPartId)
-            behavior.isHideable = true
-            behavior.state = BottomSheetBehavior.STATE_HIDDEN
-        }
-
-        // Close button'a tıklandığında race panel'i kapat
-        closeButton.setOnClickListener {
-            globalPartId = item.backRaceId!!
-            onPartChange(globalPartId)
-            behavior.isHideable = true
-            behavior.state = BottomSheetBehavior.STATE_HIDDEN
-        }
-
-        // Bottom sheet callback'i ekle
-        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    // Race panel tamamen kapandığında view'ı kaldır
-
+                scrimView.setOnClickListener {
                     globalPartId = item.backRaceId!!
                     onPartChange(globalPartId)
-                    coordinatorLayout.removeView(racePanelView)
+                    behavior.isHideable = true
+                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                }
 
-                    // Scrim'i animate ederek kapat
-                    scrimView.animate()
-                        .alpha(0f)
-                        .setDuration(100)
-                        .withEndAction {
-                            scrimView.visibility = View.GONE
+                closeButton.setOnClickListener {
+                    globalPartId = item.backRaceId!!
+                    onPartChange(globalPartId)
+                    behavior.isHideable = true
+                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                }
+
+                behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                    override fun onStateChanged(bottomSheet: View, newState: Int) {
+                        if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                            globalPartId = item.backRaceId!!
+                            onPartChange(globalPartId)
+                            coordinatorLayout.removeView(racePanelView)
+                            scrimView.animate()
+                                .alpha(0f)
+                                .setDuration(100)
+                                .withEndAction {
+                                    scrimView.visibility = View.GONE
+                                }
+                                .start()
                         }
-                        .start()
+                    }
+
+                    override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                        val alpha = 0.5f * (slideOffset + 1)
+                        scrimView.alpha = alpha
+                    }
+                })
+
+                val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
+                    .layoutManager?.findViewByPosition(position)
+                lessonView?.let {
+                    val location = IntArray(2)
+                    it.getLocationInWindow(location)
+                    val lessonY = location[1]
+                    behavior.peekHeight = lessonY + it.height
+                }
+
+                behavior.isHideable = true
+                behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                racePanelView.post {
+                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 }
             }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                // Kaydırma sırasında arka plan transparanlığını ayarla
-                val alpha = 0.5f * (slideOffset + 1) // 0f ile 0.5f arası
-                scrimView.alpha = alpha
-            }
-        })
-
-        // Race panel'in pozisyonunu ayarla
-        val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
-            .layoutManager?.findViewByPosition(position)
-
-        lessonView?.let {
-            val location = IntArray(2)
-            it.getLocationInWindow(location)
-            val lessonY = location[1]
-
-            // Race panel'in peekHeight'ını lesson kartının altına ayarla
-            behavior.peekHeight = lessonY + it.height
-        }
-
-        // Race panel'i göster
-        behavior.isHideable = true
-        behavior.state = BottomSheetBehavior.STATE_HIDDEN  // Önce gizli duruma getir
-        racePanelView.post {  // Bir sonraki frame'de göster
-            behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }
 

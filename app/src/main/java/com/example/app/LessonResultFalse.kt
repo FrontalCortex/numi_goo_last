@@ -2,6 +2,7 @@ package com.example.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentLessonResultFalseBinding
 import com.example.app.GlobalValues
+import com.google.firebase.auth.FirebaseAuth
 
 class LessonResultFalse : Fragment() {
     private lateinit var binding: FragmentLessonResultFalseBinding
@@ -72,10 +74,14 @@ class LessonResultFalse : Fragment() {
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
         }
+
+        val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+
         binding.claimButton.setOnClickListener {
+
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
-            if (GlobalValues.currentTutorialNumber == 1 && !GlobalValues.tutorial1LoginShownThisSession) {
-                GlobalValues.tutorial1LoginShownThisSession = true
+            if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
+                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
                 GlobalValues.currentTutorialNumber = 0
                 loginLauncher.launch(
                     Intent(requireContext(), LoginStartActivity::class.java)

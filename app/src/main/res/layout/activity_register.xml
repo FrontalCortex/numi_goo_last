@@ -131,7 +131,7 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- İsim -->
+            <!-- Kullanıcı Adı -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -144,8 +144,26 @@
                     android:id="@+id/etName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Ad Soyad"
+                    android:hint="Kullanıcı adı"
                     android:inputType="textPersonName"
+                    android:textColor="@color/dark_text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- E-posta -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:boxBackgroundColor="@color/dark_surface"
+                app:hintTextColor="@color/dark_text_secondary"
+                app:startIconTint="@color/dark_primary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTeacherEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="E-posta"
+                    android:inputType="textEmailAddress"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -167,16 +185,7 @@
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Onay Kodu -->
-            <TextView
-                android:id="@+id/tvApprovalCode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Onay Kodu"
-                android:textColor="@color/dark_text"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+            <!-- Şifre Tekrar -->
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilApprovalCode"
@@ -191,27 +200,17 @@
                     android:id="@+id/etApprovalCode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Onay kodu girin"
-                    android:inputType="text"
+                    android:hint="Şifreyi tekrar girin"
+                    android:inputType="textPassword"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Öğretmen Onay Kodu İste Butonu -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRequestCode"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="16dp"
-                android:text="Kod iste"
-                app:backgroundTint="@color/dark_primary"
-                app:cornerRadius="24dp" />
-
-            <!-- Kayıt Ol Butonu -->
+            <!-- Devam Et Butonu -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Kayıt Ol"
+                android:text="Devam Et"
                 android:textSize="16sp"
                 app:backgroundTint="@color/dark_primary"
                 app:cornerRadius="28dp" />

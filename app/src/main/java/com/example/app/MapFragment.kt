@@ -2875,12 +2875,6 @@ class MapFragment : Fragment() {
                 )
                 85 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
-                    MathOperationGenerator.generateSequenceExtractionRace(4),
                 )
                 86 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
@@ -2949,14 +2943,13 @@ class MapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Kayıtlı verileri yükle
-        GlobalLessonData.loadFromPreferences(requireContext())
-
-        // Eğer veri yoksa veya farklı bir part'a geçiliyorsa initialize et
-        GlobalLessonData.initialize(requireContext(),globalPartId)
-
-        setupRecyclerView()
-        changeAdapterList()
+        // Veriyi yükle (lokal → yoksa Firestore → yoksa varsayılan); hazır olunca listeyi kur
+        GlobalLessonData.initialize(requireContext(), globalPartId) {
+            activity?.runOnUiThread {
+                setupRecyclerView()
+                changeAdapterList()
+            }
+        }
         setupGuidePanel()
         
         // View hazır olduğunda scroll listener'ı tetikle
@@ -3230,9 +3223,12 @@ class MapFragment : Fragment() {
             context = requireContext(),
             items = GlobalLessonData.lessonItems.toMutableList(),
             onPartChange = { newPartId ->
-                globalPartId = newPartId  // currentPartId yerine globalPartId kullanıyoruz
-                GlobalLessonData.initialize(requireContext(),newPartId)
-                lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+                globalPartId = newPartId
+                GlobalLessonData.initialize(requireContext(), newPartId) {
+                    activity?.runOnUiThread {
+                        lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+                    }
+                }
             }
         )
 
@@ -3273,7 +3269,7 @@ class MapFragment : Fragment() {
     }
 
     private fun changeAdapterList(){
-        GlobalLessonData.initialize(requireContext(),globalPartId)
+        //GlobalLessonData.initialize(requireContext(),globalPartId)
         lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
 
     }
@@ -3289,9 +3285,9 @@ class MapFragment : Fragment() {
         stickySectionUnit: TextView,
         stickyHeaderTitle: TextView
     ) {
-        val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val adapter = recyclerView.adapter as? LessonAdapter ?: return
         val firstVisible = layoutManager.findFirstVisibleItemPosition()
-        val adapter = recyclerView.adapter as LessonAdapter
 
         android.util.Log.d("MapFragment", "Updating sticky header for position: $firstVisible")
 
