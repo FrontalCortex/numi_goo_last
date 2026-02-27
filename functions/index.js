@@ -35,7 +35,7 @@ function getClientIp(context) {
   const forwarded = context.rawRequest.headers['x-forwarded-for'];
   if (forwarded) return forwarded.split(',')[0].trim();
   return context.rawRequest.connection?.remoteAddress || null;
-}
+  }
 
 function getWindowStart(nowMs, windowMs) {
   return Math.floor(nowMs / windowMs) * windowMs;
@@ -153,31 +153,31 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass }
-    });
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass }
+  });
 
-    const mailOptions = {
-      from: `NumiGoo <${user}>`,
-      to: email,
-      subject: 'NumiGoo - E-posta Doğrulama Kodu',
-      html: `
-        <h2>NumiGoo E-posta Doğrulama</h2>
-        <p>Merhaba,</p>
-        <p>NumiGoo hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
-        <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
+  const mailOptions = {
+    from: `NumiGoo <${user}>`,
+    to: email,
+    subject: 'NumiGoo - E-posta Doğrulama Kodu',
+    html: `
+      <h2>NumiGoo E-posta Doğrulama</h2>
+      <p>Merhaba,</p>
+      <p>NumiGoo hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
+      <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
         <p>Bu kod 5 dakika içinde geçerlidir.</p>
-        <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
-        <p>İyi çalışmalar,<br>NumiGoo Ekibi</p>
-      `,
+      <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+      <p>İyi çalışmalar,<br>NumiGoo Ekibi</p>
+    `,
       text: `NumiGoo E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 5 dakika içinde geçerlidir.`
-    };
+  };
 
     console.log('Attempting to send email to:', email);
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', { messageId: info.messageId, response: info.response });
-    return { code, emailed: true };
+  return { code, emailed: true };
   } catch (error) {
     console.error('Error sending email:', error);
     console.error('Error details:', { 

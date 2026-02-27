@@ -17,19 +17,19 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
-
+    
     companion object {
         private const val RC_GOOGLE_SIGN_IN = 9001
     }
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        
         authManager = AuthManager()
         authManager.initialize(this)
-
+        
         setupUI()
     }
 
@@ -45,7 +45,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         resendCooldownTimer?.cancel()
         resendCooldownTimer = null
     }
-
+    
     private fun setupUI() {
         binding.btnBack.setOnClickListener {
             if (supportFragmentManager.backStackEntryCount > 0) {
@@ -183,7 +183,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
     }
-
+    
     private fun signInWithGoogle() {
         GoogleSignIn.getClient(this, GoogleSignInOptions.DEFAULT_SIGN_IN).signOut()
             .addOnCompleteListener {
@@ -199,10 +199,10 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 }
             }
     }
-
+    
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
+        
         if (requestCode == RC_GOOGLE_SIGN_IN && resultCode == RESULT_OK && data != null) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             authManager.handleGoogleSignInResult(task) { success, error ->
@@ -224,13 +224,13 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         startActivity(intent)
                         finish()
                     } else if (error != "Kullanıcı girişi iptal edildi") {
-                        showError(error ?: "Google girişi başarısız")
+                            showError(error ?: "Google girişi başarısız")
                     }
                 }
             }
         }
     }
-
+    
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }

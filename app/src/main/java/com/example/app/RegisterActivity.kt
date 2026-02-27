@@ -18,7 +18,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
-
+    
     companion object {
         private const val RC_GOOGLE_SIGN_IN = 9001
         const val EXTRA_FORCE_TEACHER = "extra_force_teacher"
@@ -26,15 +26,15 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     }
 
     private var currentForcedRole: ForcedRole = ForcedRole.STUDENT
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        
         authManager = AuthManager()
         authManager.initialize(this)
-
+        
         currentForcedRole = when {
             intent.getBooleanExtra(EXTRA_FORCE_TEACHER, false) -> ForcedRole.TEACHER
             intent.getBooleanExtra(EXTRA_FORCE_STUDENT, false) -> ForcedRole.STUDENT
@@ -97,7 +97,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 onBackPressedDispatcher.onBackPressed()
             }
         }
-
+        
         // Öğrenci kaydı: OTP akışı
         binding.btnContinue.setOnClickListener {
             val email = binding.etEmail.text?.toString()?.trim() ?: ""
@@ -113,7 +113,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
             sendOtpAndShowCodeStep(email)
         }
-
+        
         // Öğretmen kaydı: Kullanıcı adı + e-posta + şifre + OTP akışı
         binding.btnRegister.setOnClickListener {
             registerTeacherWithOtp()
@@ -278,7 +278,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     }
                     authManager.resendStudentVerificationCode(email) { success, error ->
                         reenableBackAndContinue()
-                        if (success) {
+                if (success) {
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
                             hideKeyboard()
                             showCodeStep()
@@ -287,8 +287,8 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                                 .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true))
                                 .addToBackStack("otp")
                                 .commit()
-                        } else {
-                            showError(error ?: "Kod gönderilemedi")
+                } else {
+                    showError(error ?: "Kod gönderilemedi")
                         }
                     }
                 }
@@ -356,7 +356,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         val email = binding.etTeacherEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
         val passwordConfirm = binding.etApprovalCode.text.toString()
-
+        
         if (email.isEmpty() || name.isEmpty() || password.isEmpty() || passwordConfirm.isEmpty()) {
             showError("Lütfen tüm alanları doldurun")
             return
@@ -373,7 +373,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             showError("Şifreler eşleşmiyor")
             return
         }
-
+        
         // Önce bu e-posta ile zaten bir öğretmen hesabı var mı kontrol et
         authManager.isEmailRegistered(email) { alreadyRegistered, _, role ->
             if (alreadyRegistered) {
@@ -383,11 +383,11 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     showError("Bu e-posta başka bir hesapta kullanılıyor.")
                 }
                 return@isEmailRegistered
-            }
+        }
 
             binding.btnBack.isEnabled = false
             binding.btnRegister.isEnabled = false
-
+        
             authManager.createPendingTeacherRegistrationForOTP(email, name, password) { success, error ->
                 if (!success) {
                     binding.btnBack.isEnabled = true
@@ -406,7 +406,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                             .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true))
                             .addToBackStack("otp")
                             .commit()
-                    } else {
+            } else {
                         showError(codeError ?: "Kod gönderilemedi")
                     }
                 }

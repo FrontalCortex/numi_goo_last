@@ -439,86 +439,86 @@ class LessonAdapter(
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
         GlobalLessonData.initialize(context, racePartId) {
             (context as? Activity)?.runOnUiThread {
-                globalPartId = racePartId
+        globalPartId = racePartId
                 onPartChange(racePartId)
 
-                raceAdapter = RaceAdapter(
-                    context,
-                    raceItems = GlobalLessonData.lessonItems.toMutableList(),
-                    { raceItem, clickedIndex ->
-                        onRaceStartClicked(raceItem, clickedIndex)
-                    },
-                    onPartChange = { newPartId ->
-                        globalPartId = newPartId
+        raceAdapter = RaceAdapter(
+            context,
+            raceItems = GlobalLessonData.lessonItems.toMutableList(),
+            { raceItem, clickedIndex ->
+                onRaceStartClicked(raceItem, clickedIndex)
+            },
+            onPartChange = { newPartId ->
+                globalPartId = newPartId
                         GlobalLessonData.initialize(context, newPartId) {
-                            val updatedRaceItems = GlobalLessonData.lessonItems.filter {
-                                it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
-                            }
-                            raceAdapter.raceUpdateItems(updatedRaceItems)
+                val updatedRaceItems = GlobalLessonData.lessonItems.filter {
+                    it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
+                }
+                raceAdapter.raceUpdateItems(updatedRaceItems)
                         }
-                    }
-                )
-                LessonManager.setRaceAdapter(raceAdapter)
-                raceRecyclerView.adapter = raceAdapter
+            }
+        )
+        LessonManager.setRaceAdapter(raceAdapter)
+        raceRecyclerView.adapter = raceAdapter
+        
+        coordinatorLayout.addView(racePanelView)
 
-                coordinatorLayout.addView(racePanelView)
+        val behavior = BottomSheetBehavior.from(raceContentLayout)
+        scrimView.visibility = View.VISIBLE
+        scrimView.animate()
+            .alpha(0.5f)
+            .setDuration(300)
+            .start()
 
-                val behavior = BottomSheetBehavior.from(raceContentLayout)
-                scrimView.visibility = View.VISIBLE
-                scrimView.animate()
-                    .alpha(0.5f)
-                    .setDuration(300)
-                    .start()
+        scrimView.setOnClickListener {
+            globalPartId = item.backRaceId!!
+            onPartChange(globalPartId)
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        }
 
-                scrimView.setOnClickListener {
+        closeButton.setOnClickListener {
+            globalPartId = item.backRaceId!!
+            onPartChange(globalPartId)
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        }
+
+        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
                     globalPartId = item.backRaceId!!
                     onPartChange(globalPartId)
-                    behavior.isHideable = true
-                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
-                }
-
-                closeButton.setOnClickListener {
-                    globalPartId = item.backRaceId!!
-                    onPartChange(globalPartId)
-                    behavior.isHideable = true
-                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
-                }
-
-                behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                    override fun onStateChanged(bottomSheet: View, newState: Int) {
-                        if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                            globalPartId = item.backRaceId!!
-                            onPartChange(globalPartId)
-                            coordinatorLayout.removeView(racePanelView)
-                            scrimView.animate()
-                                .alpha(0f)
-                                .setDuration(100)
-                                .withEndAction {
-                                    scrimView.visibility = View.GONE
-                                }
-                                .start()
+                    coordinatorLayout.removeView(racePanelView)
+                    scrimView.animate()
+                        .alpha(0f)
+                        .setDuration(100)
+                        .withEndAction {
+                            scrimView.visibility = View.GONE
                         }
-                    }
+                        .start()
+                }
+            }
 
-                    override fun onSlide(bottomSheet: View, slideOffset: Float) {
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
                         val alpha = 0.5f * (slideOffset + 1)
-                        scrimView.alpha = alpha
-                    }
-                })
+                scrimView.alpha = alpha
+            }
+        })
 
-                val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
-                    .layoutManager?.findViewByPosition(position)
-                lessonView?.let {
-                    val location = IntArray(2)
-                    it.getLocationInWindow(location)
-                    val lessonY = location[1]
-                    behavior.peekHeight = lessonY + it.height
-                }
+        val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
+            .layoutManager?.findViewByPosition(position)
+        lessonView?.let {
+            val location = IntArray(2)
+            it.getLocationInWindow(location)
+            val lessonY = location[1]
+            behavior.peekHeight = lessonY + it.height
+        }
 
-                behavior.isHideable = true
+        behavior.isHideable = true
                 behavior.state = BottomSheetBehavior.STATE_HIDDEN
                 racePanelView.post {
-                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 }
             }
         }

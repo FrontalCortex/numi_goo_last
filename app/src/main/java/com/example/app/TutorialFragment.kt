@@ -24,6 +24,8 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentTutorialBinding
@@ -42,6 +44,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var isAnimating2 = false
     private var isWritingAnswerNumber = false // writeAnswerNumber() çalışıyor mu kontrolü için
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
+
+    // Seçenek paneli
+    private lateinit var optionsPanel: View
+    private lateinit var optionsRecyclerView: RecyclerView
+    private lateinit var optionsTitleText: TextView
+    private lateinit var optionsCheckButton: View
+    private var optionsAdapter: TutorialOptionsAdapter? = null
+    // Paneli gecikmeli göstermek için kullanılan runnable referansı
+    private var optionsPanelShowRunnable: Runnable? = null
+    // Panel açıkken back ve "eğitimi atla" butonlarını kilitlemek için
+    private var optionsInteractionLocked: Boolean = false
     
     // Ses çalma için MediaPlayer
     private var mediaPlayer: MediaPlayer? = null
@@ -221,6 +234,18 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         correctPanel = binding.correctPanel
         incorrectPanel = binding.incorrectPanel
         questionText = binding.questionText
+
+        // Seçenek paneli kurulumu
+        optionsPanel = binding.optionsPanel
+        optionsRecyclerView = binding.optionsRecyclerView
+        optionsTitleText = binding.optionsTitleText
+        optionsCheckButton = binding.optionsCheckButton
+        optionsAdapter = TutorialOptionsAdapter()
+        optionsRecyclerView.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        optionsRecyclerView.adapter = optionsAdapter
+        optionsCheckButton.setOnClickListener { checkOptionsAnswer() }
+        optionsPanel.visibility = View.GONE
         createTutorialSteps()
         currentTutorialSteps = when (tutorialNumber) {
             1 -> tutorialSteps
@@ -299,6 +324,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
                 return@setOnClickListener
             }
+
+            // Eğer bu adımda seçenekler varsa, ilerleme sadece doğru seçenekten sonra \"Devam et\" butonu ile olacak
+            if (!getCurrentStep().options.isNullOrEmpty()) {
+                return@setOnClickListener
+            }
             //ekrana tıkladıktan sonra sıradaki index'in nextStepAvailable değeri false ise index artışı kontol ile
             //gerçekleşecek
 
@@ -375,6 +405,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             105 ->binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             else -> View.GONE
         }
+
+        // Seçenek paneli yönetimi tamamen updateOptionsPanelForStep içinde yapılır
+        updateOptionsPanelForStep(step)
         answerNumber=step.answerNumber
         setupBeads()
         if(getCurrentStep().abacusClickable){
@@ -675,6 +708,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     private fun setupBackButton() {
         binding.backButton.setOnClickListener {
+            // Seçenek paneli açık ve kilitliyken geri butonu çalışmasın
+            if (optionsInteractionLocked && optionsPanel.visibility == View.VISIBLE) {
+                return@setOnClickListener
+            }
             // Herhangi bir animasyon devam ediyorsa geri gitmeyi engelle
             if (isAnyAnimationRunning()) {
                 return@setOnClickListener
@@ -6423,13 +6460,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L
 
             ),TutorialStep(
-                "Bu kuralları uygulayamadığımız zamanlar da, boncuk kuralını uygularız.",
+                "Bu kuralları uygulayamadığımız zamanlarda boncuk kuralını uygularız.",
                 rulesPanelVisibility = View.GONE,
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_bottom1", 2)),
                 soundResource = R.raw.tutorial8_11,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                options = listOf("kuralsız toplama","onluk kural","beşlik kural"),
+                correctOptionIndex = listOf(0,1),
+                multipleChoice = true,
+                optionText = "Boncuk kuralını hangi kuralları uygulayamadığımız zaman kullanırız ?"
 
             ),TutorialStep(
                 "Örneğin bu işlemde 6’yı doğrudan ekleyemiyoruz.",
@@ -12754,7 +12795,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val backAnimationOff: Boolean? = null,
         val resetAndWaith: Boolean? = null, //Eğer mevcut adımda abaküse tıklanılabiliyor ve bir önceki adımda beadAnimation varsa önce abaküsü sıfırla ve 0.8 saniye bekle sonra beadAnimation'ları yükle
         val backAnswerNumber: Int? = null, //Mevcut adımda geriye tıklandığında yazdırılacak sayı.
-        val widgetVisibilityMap: Map<Int, Int>? = null //Widget ID'lerine göre görünürlük değişikliği yapar. Key: R.id.widgetId, Value: View.VISIBLE/INVISIBLE/GONE
+        val widgetVisibilityMap: Map<Int, Int>? = null, //Widget ID'lerine göre görünürlük değişikliği yapar. Key: R.id.widgetId, Value: View.VISIBLE/INVISIBLE/GONE
+        val options: List<String>? = null,
+        val correctOptionIndex: List<Int>? = null, // Bir veya birden fazla doğru index
+        val multipleChoice: Boolean = false, // true ise birden fazla seçenek seçilebilir
+        val optionText: String? = null // Seçenek panelinin üstünde gösterilecek açıklama metni
 
     )
     private fun stepAnswerAlgorithm(): Boolean {
@@ -12769,11 +12814,124 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
 
+    // Options panelindeki seçimleri değerlendir
+    private fun checkOptionsAnswer() {
+        val step = getCurrentStep()
+        val opts = step.options
+        val correctIndices = step.correctOptionIndex
+        if (opts.isNullOrEmpty() || correctIndices.isNullOrEmpty()) return
+        if (isAnyAnimationRunning()) return
+
+        val selected = optionsAdapter?.getSelectedPositions() ?: emptySet()
+        if (selected.isEmpty()) return
+
+        val isCorrect =
+            selected.size == correctIndices.size &&
+                    selected.containsAll(correctIndices)
+
+        // Kontrol yapıldıktan sonra geri ve "eğitimi atla" tekrar aktif olsun
+        optionsInteractionLocked = false
+        showResultPanelForOptions(isCorrect = isCorrect)
+    }
+
+    private fun updateOptionsPanelForStep(step: TutorialStep) {
+        val stepOptions = step.options
+        val correctIndices = step.correctOptionIndex
+
+        val hasValidOptions = stepOptions != null &&
+                stepOptions.isNotEmpty() &&
+                correctIndices != null &&
+                correctIndices.isNotEmpty() &&
+                correctIndices.all { it in stepOptions.indices }
+
+        // Her yeni adımda daha önce planlanmış panel gösterimlerini iptal et
+        optionsPanelShowRunnable?.let { runnable ->
+            optionsPanel.removeCallbacks(runnable)
+        }
+        optionsPanelShowRunnable = null
+
+        if (!hasValidOptions) {
+            // Her ihtimale karşı kilidi kaldır
+            optionsInteractionLocked = false
+            optionsTitleText.visibility = View.GONE
+            optionsTitleText.text = ""
+            optionsCheckButton.visibility = View.GONE
+            // Seçenek yoksa paneli aşağıya kaydırarak gizle
+            if (optionsPanel.visibility == View.VISIBLE) {
+                optionsPanel.animate()
+                    .translationY(optionsPanel.height.toFloat())
+                    .alpha(0f)
+                    .setDuration(200)
+                    .setInterpolator(AccelerateInterpolator())
+                    .withEndAction {
+                        optionsPanel.visibility = View.GONE
+                        optionsPanel.translationY = 0f
+                        optionsPanel.alpha = 1f
+                        optionsAdapter?.submitOptions(emptyList(), false)
+                    }
+                    .start()
+            } else {
+                optionsPanel.visibility = View.GONE
+                optionsAdapter?.submitOptions(emptyList(), false)
+            }
+            return
+        }
+
+        // Geçerli seçenekler varsa paneli 1 sn sonra aşağıdan kayarak göster.
+        // Bu 1 saniyelik beklemede panel tamamen gizli ve dokunulamaz olacak.
+        optionsPanel.visibility = View.GONE
+        optionsPanel.alpha = 0f
+        optionsPanel.translationY = 0f
+        // Eski seçenekleri hemen temizle ki panel görünmeden önce tıklanamasın
+        optionsAdapter?.submitOptions(emptyList(), step.multipleChoice)
+        optionsPanel.clearAnimation()
+
+        val runnable = Runnable {
+            // Başlık metnini güncelle
+            val optionText = step.optionText
+            if (!optionText.isNullOrBlank()) {
+                optionsTitleText.visibility = View.VISIBLE
+                optionsTitleText.text = optionText
+            } else {
+                optionsTitleText.visibility = View.GONE
+                optionsTitleText.text = ""
+            }
+
+            optionsCheckButton.visibility = View.VISIBLE
+            // Panel göründüğü andan itibaren geri ve "eğitimi atla" kilitlensin
+            optionsInteractionLocked = true
+
+            val parentView = optionsPanel.parent as? View
+            val startY = parentView?.height?.toFloat()
+                ?: optionsPanel.height.toFloat().takeIf { it > 0 } ?: 300f
+
+            // Artık yeni seçenekleri yükle ve paneli göster
+            optionsAdapter?.submitOptions(stepOptions!!, step.multipleChoice)
+            optionsPanel.visibility = View.VISIBLE
+            optionsPanel.translationY = startY
+            optionsPanel.alpha = 0f
+
+            optionsPanel.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setDuration(300)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .start()
+        }
+        optionsPanelShowRunnable = runnable
+        optionsPanel.postDelayed(runnable, 1000L)
+    }
+
     private fun showResultPanel() {
-
-
-
         if (stepAnswerAlgorithm()) {
+            showResultPanelForOptions(isCorrect = true)
+        } else {
+            showResultPanelForOptions(isCorrect = false)
+        }
+    }
+
+    private fun showResultPanelForOptions(isCorrect: Boolean) {
+        if (isCorrect) {
             // Doğru cevap durumu
 
             playCorretSound(R.raw.correct_answer_sound)
@@ -12944,6 +13102,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     private fun tutorialSkipSetup(){
         binding.skipTutorialButton.setOnClickListener {
+            // Seçenek paneli açık ve kilitliyken "Eğitimi atla" çalışmasın
+            if (optionsInteractionLocked && optionsPanel.visibility == View.VISIBLE) {
+                return@setOnClickListener
+            }
             val abacusFragment = AbacusFragment()
             val blindingLessonFragment = BlindingLessonFragment()
             val bundle = Bundle()

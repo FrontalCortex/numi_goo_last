@@ -14,19 +14,19 @@ class TeacherLoginActivity : AppCompatActivity(),
 
     private lateinit var binding: ActivityTeacherLoginBinding
     private lateinit var authManager: AuthManager
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTeacherLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        
         authManager = AuthManager()
         authManager.initialize(this)
-
+        
         setupUI()
         binding.tvForgotPassword.paintFlags = binding.tvForgotPassword.paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
     }
-
+    
     private fun setupUI() {
         binding.btnBack.setOnClickListener {
             if (binding.fragmentContainer.visibility == View.VISIBLE) {
@@ -43,7 +43,7 @@ class TeacherLoginActivity : AppCompatActivity(),
         binding.btnLogin.setOnClickListener {
             loginTeacher()
         }
-
+        
         binding.tvForgotPassword.setOnClickListener {
             showForgotPasswordFlow()
         }
@@ -71,7 +71,7 @@ class TeacherLoginActivity : AppCompatActivity(),
                     .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = false, forPasswordReset = true))
                     .addToBackStack("forgot_otp")
                     .commit()
-            }
+        }
         }
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
@@ -95,11 +95,11 @@ class TeacherLoginActivity : AppCompatActivity(),
     override fun onOtpVerifyFinished() {
         binding.btnBack.isEnabled = true
     }
-
+    
     private fun loginTeacher() {
         val email = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
-
+        
         if (email.isEmpty() || password.isEmpty()) {
             showError("Lütfen tüm alanları doldurun")
             return
@@ -107,7 +107,7 @@ class TeacherLoginActivity : AppCompatActivity(),
         binding.btnBack.isEnabled = false
         binding.btnLogin.isEnabled = false
         binding.tvForgotPassword.isEnabled = false
-
+        
         authManager.loginTeacher(email, password) { success, error ->
             binding.btnBack.isEnabled = true
             binding.btnLogin.isEnabled = true
@@ -121,7 +121,7 @@ class TeacherLoginActivity : AppCompatActivity(),
             }
         }
     }
-
+    
     private fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
