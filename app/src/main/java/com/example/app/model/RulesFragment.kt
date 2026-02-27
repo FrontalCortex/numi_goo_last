@@ -10,6 +10,11 @@ import com.example.app.R
 import com.example.app.databinding.FragmentRulesBinding
 
 class RulesFragment : Fragment() {
+    companion object {
+        // Rules paneli tekrar açıldığında son scroll konumunu korumak için
+        var lastScrollY: Int = 0
+    }
+
     private var _binding: FragmentRulesBinding? = null
     private val binding get() = _binding!!
 
@@ -24,15 +29,26 @@ class RulesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupQuitButton()
+
+        // Panel tekrar açıldığında son kaydırma konumuna dön
+        binding.rulesScrollView.post {
+            binding.rulesScrollView.scrollTo(0, lastScrollY)
+        }
     }
 
     private fun setupQuitButton() {
         binding.quitButton.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(0, R.anim.slide_up)
-                .remove(this@RulesFragment)
-                .commit()
+            closeWithAnimation()
         }
+    }
+
+    fun closeWithAnimation() {
+        // Mevcut scroll konumunu sakla
+        lastScrollY = binding.rulesScrollView.scrollY
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(0, R.anim.slide_up)
+            .remove(this@RulesFragment)
+            .commit()
     }
 
     interface RulesVisibilityListener {

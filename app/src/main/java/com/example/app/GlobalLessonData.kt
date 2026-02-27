@@ -215,11 +215,6 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
 
                 ),
-                //İlk adım 1 basamaklı tutorial + 2 test
-                //2. adım 2 basamaklı  tutorial + 3 test
-                //3. adım 3 basamaklı tutorial + 3 test
-                //4. adım 4 basamaklı tutorial + 3 test
-                //5. adım 5 basamaklı tutorial + 3 test
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama - 1 basamaklı",
@@ -521,10 +516,9 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 53,
-                    mapFragmentIndex = 22,
+                    mapFragmentIndex = 29,
                     finishStepNumber = 56,
                     tutorialNumber = 8,
-
                     ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -534,7 +528,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 57,
-                    mapFragmentIndex = 23,
+                    mapFragmentIndex = 30,
                     finishStepNumber = 60,
                     tutorialNumber = 9,
                     lessonHint = "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir."
@@ -548,7 +542,7 @@ object GlobalLessonData {
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 61,
-                    mapFragmentIndex = 24,
+                    mapFragmentIndex = 31,
                     finishStepNumber = 64,
                     tutorialIsFinish = true,
                     lessonHint = "10 gelir adımını uygularken 5\\'lik kuralı kullanman gerekebilir."
@@ -562,7 +556,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 25,
+                    mapFragmentIndex = 32,
                     startStepNumber = 65,
                     finishStepNumber = 65,
                     cupTime1 = "3:00",
@@ -598,9 +592,9 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    mapFragmentIndex = 27,
-                    sectionTitle = "2. Kısım Çıkartma",
-                    sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz. "
+                    mapFragmentIndex = 35,
+                    sectionTitle = "2. Kısım Çıkarma",
+                    sectionDescription = "Abaküste çıkarmaya dair her şeyi öğreneceğiz. "
 
                 )
             )
@@ -623,8 +617,8 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     backPart = true,
-                    sectionTitle = "2. Kısım Çıkartma",
-                    sectionDescription = "Abaküste çıkartmaya dair her şeyi öğreneceğiz."
+                    sectionTitle = "2. Kısım Çıkarma",
+                    sectionDescription = "Abaküste çıkarmaya dair her şeyi öğreneceğiz."
 
                 ),
                 LessonItem(
