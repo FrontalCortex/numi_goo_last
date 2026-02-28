@@ -210,6 +210,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
 
+    /** Race paneli açıkken alt bar butonlarına tıklanmasın (overlay ile engelle) */
+    fun setBottomPanelEnabled(enabled: Boolean) {
+        if (enabled) {
+            binding.bottomPanelOverlay.visibility = View.GONE
+        } else {
+            binding.bottomPanelOverlay.visibility = View.VISIBLE
+            binding.bottomPanelOverlay.bringToFront()
+        }
+    }
+
     private fun closeBottomSheet() {
         // Scrim'i kapat
         findViewById<View>(R.id.scrimView)?.let { scrimView ->

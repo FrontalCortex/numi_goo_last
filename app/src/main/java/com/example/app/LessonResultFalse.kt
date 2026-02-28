@@ -79,9 +79,12 @@ class LessonResultFalse : Fragment() {
 
         binding.claimButton.setOnClickListener {
 
+            if(GlobalValues.currentTutorialNumber == 1){
+                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+            }
+
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
-                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
                 GlobalValues.currentTutorialNumber = 0
                 loginLauncher.launch(
                     Intent(requireContext(), LoginStartActivity::class.java)

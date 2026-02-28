@@ -519,7 +519,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 29,
                     finishStepNumber = 56,
                     tutorialNumber = 8,
-                    ),
+                    lessonHint = "Kuralsız ve 10'luk kural ile ekleyemediğinde boncuk kuralını kullan"
+
+                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Zor Boncuk Kuralı",

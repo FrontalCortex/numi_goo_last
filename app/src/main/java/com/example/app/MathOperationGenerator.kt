@@ -493,9 +493,9 @@ object MathOperationGenerator {
             val currentDigit = firstNumberStr[i].toString().toInt()
             val possibleDigits = when (currentDigit) {
                 5 -> listOf(6, 7, 8, 9)
-                6 -> listOf(6, 7, 8)
-                7 -> listOf(6, 7)
-                8 -> listOf(6)
+                6 -> listOf(6, 7, 8, 9)
+                7 -> listOf(6, 7 ,8, 9)
+                8 -> listOf(6, 7, 8, 9)
                 else -> listOf(6, 7, 8, 9) // Bu duruma hiç girmeyecek ama yine de yazdım
             }
 

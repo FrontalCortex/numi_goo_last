@@ -98,13 +98,12 @@ class ChestFragment : Fragment() {
         binding.claimRewardButton.setOnClickListener {
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-
+            if(GlobalValues.currentTutorialNumber == 1){
+                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+            }
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 // Bir sonraki açılacak hesapta Tutorial 1 başlangıç dersini güncellemek için bayrak yaz
-                val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
                 prefs.edit().putBoolean("tutorial1_login_flow_pending", true).apply()
-                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
-
 
                 GlobalValues.currentTutorialNumber = 0
                 loginLauncher.launch(

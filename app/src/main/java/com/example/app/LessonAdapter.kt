@@ -411,6 +411,9 @@ class LessonAdapter(
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
         val scrimView = activity.findViewById<View>(R.id.scrimView)
 
+        // Alt barı hemen kilitle (panel açılmadan tıklanmasın)
+        (activity as? MainActivity)?.setBottomPanelEnabled(false)
+
         scrimView.visibility = View.VISIBLE
         scrimView.alpha = 0f
 
@@ -487,6 +490,7 @@ class LessonAdapter(
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    (context as? MainActivity)?.setBottomPanelEnabled(true)
                     globalPartId = item.backRaceId!!
                     onPartChange(globalPartId)
                     coordinatorLayout.removeView(racePanelView)

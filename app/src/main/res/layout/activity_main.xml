@@ -128,5 +128,21 @@
         android:background="@color/background_color"
         app:labelVisibilityMode="labeled"/>
 
+    <!-- Race panel açıkken alt bar tıklanmasın; bu overlay tıklamaları yer -->
+    <View
+        android:id="@+id/bottomPanelOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:background="@android:color/transparent"
+        android:elevation="16dp"
+        app:layout_constraintTop_toTopOf="@id/bottomNavigationID"
+        app:layout_constraintBottom_toBottomOf="@id/bottomNavigationID"
+        app:layout_constraintStart_toStartOf="@id/bottomNavigationID"
+        app:layout_constraintEnd_toEndOf="@id/bottomNavigationID"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

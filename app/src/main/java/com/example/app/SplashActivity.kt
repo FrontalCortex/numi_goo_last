@@ -26,8 +26,6 @@ class SplashActivity : AppCompatActivity() {
         val hasExistingLogin = FirebaseAuth.getInstance().currentUser != null
         if (loginStartEverShown && !hasExistingLogin) {
 
-            Log.d("kesl",loginStartEverShown.toString())
-            Log.d("kesl",hasExistingLogin.toString())
             startActivity(Intent(this, LoginStartActivity::class.java))
         } else {
             startActivity(Intent(this, MainActivity::class.java))
