@@ -46,7 +46,16 @@ class LessonAdapter(
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
     }
-    
+
+    /** Media3 vb. kütüphaneler kaynak ID'lerini kaydırdığında eski stepCupIcon bir dimen'e denk gelebilir; sadece drawable ise kullan. */
+    private fun safeDrawableResId(resId: Int): Int {
+        return try {
+            if (context.resources.getResourceTypeName(resId) == "drawable") resId else R.drawable.cup_ic
+        } catch (_: Exception) {
+            R.drawable.cup_ic
+        }
+    }
+
     private fun getCurrentPlan(callback: (String) -> Unit) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -442,7 +451,7 @@ class LessonAdapter(
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
         GlobalLessonData.initialize(context, racePartId) {
             (context as? Activity)?.runOnUiThread {
-        globalPartId = racePartId
+                globalPartId = racePartId
                 onPartChange(racePartId)
 
         raceAdapter = RaceAdapter(
@@ -716,11 +725,12 @@ class LessonAdapter(
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
+                    val cupIconResId = safeDrawableResId(item.stepCupIcon)
                     if(item.stepIsFinish){
                         updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
-                        lessonIcon.setImageResource(item.stepCupIcon)
+                        lessonIcon.setImageResource(cupIconResId)
                     }else{
-                        lessonIcon.setImageResource(item.stepCupIcon)
+                        lessonIcon.setImageResource(cupIconResId)
                     }
                     val completedSteps = item.stepCompletionStatus.count { it }
                     when (completedSteps) {

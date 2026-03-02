@@ -3279,6 +3279,20 @@ class MapFragment : Fragment() {
         lessonsAdapter.refreshRacePanelIfOpen()
     }
 
+    /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
+    private fun safeColorRes(colorResId: Int): Int {
+        val ctx = requireContext()
+        return try {
+            if (ctx.resources.getResourceTypeName(colorResId) == "color") {
+                ContextCompat.getColor(ctx, colorResId)
+            } else {
+                ContextCompat.getColor(ctx, android.R.color.darker_gray)
+            }
+        } catch (_: Exception) {
+            ContextCompat.getColor(ctx, android.R.color.darker_gray)
+        }
+    }
+
     private fun updateStickyHeader(
         recyclerView: RecyclerView,
         stickyHeader: LinearLayout,
@@ -3301,7 +3315,7 @@ class MapFragment : Fragment() {
 
                 val colorRes = item.color
                 if (colorRes != null) {
-                    val color = ContextCompat.getColor(requireContext(), colorRes)
+                    val color = safeColorRes(colorRes)
                     android.util.Log.d("MapFragment", "Setting color for header: $headerTitle, colorRes: $colorRes")
                     stickyHeader.backgroundTintList = ColorStateList.valueOf(color)
                 }

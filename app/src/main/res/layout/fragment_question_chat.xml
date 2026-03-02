@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/back_button"
+        android:contentDescription="Geri"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/lesson_completed" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/messagesRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        app:layout_constraintTop_toBottomOf="@id/backButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/resolveButton" />
+
+    <LinearLayout
+        android:id="@+id/inputBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center_vertical"
+        android:background="#1E1E1E"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/textInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="44dp"
+            android:inputType="textMultiLine|textCapSentences"
+            android:hint="Bir mesaj yazın"
+            android:padding="12dp"
+            android:background="@drawable/hint_background"
+            android:textColor="@android:color/white"
+            android:textColorHint="#80FFFFFF"
+            android:maxLines="4" />
+
+        <ImageButton
+            android:id="@+id/sendTextButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_send"
+            android:contentDescription="Gönder"
+            app:tint="@color/lesson_completed" />
+
+        <ImageButton
+            android:id="@+id/recordAudioButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Ses kaydet"
+            app:srcCompat="@android:drawable/ic_btn_speak_now"
+            app:tint="@color/lesson_completed" />
+
+        <ImageButton
+            android:id="@+id/galleryButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Galeri"
+            android:src="@android:drawable/ic_menu_gallery"
+            app:tint="@color/lesson_completed" />
+
+        <ImageButton
+            android:id="@+id/cameraButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Kamera"
+            android:src="@android:drawable/ic_menu_camera"
+            app:tint="@color/lesson_completed" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/resolveButton"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:text="Çözüldü olarak işaretle"
+        android:visibility="gone"
+        android:backgroundTint="@color/lesson_completed"
+        android:textColor="@android:color/black"
+        app:layout_constraintBottom_toTopOf="@id/audioBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="8dp" />
+
+    <LinearLayout
+        android:id="@+id/audioBar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="#2C2C2C"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        <ImageButton
+            android:id="@+id/audioBarPlayPause"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Oynat / Duraklat"
+            android:src="@android:drawable/ic_media_play"
+            app:tint="@android:color/white" />
+        <TextView
+            android:id="@+id/audioBarCurrentTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:minWidth="32dp"
+            android:gravity="end"
+            android:text="0:00"
+            android:textColor="#AAAAAA"
+            android:textSize="12sp" />
+        <com.example.app.AudioWaveformView
+            android:id="@+id/audioBarWaveform"
+            android:layout_width="0dp"
+            android:layout_height="28dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp" />
+        <TextView
+            android:id="@+id/audioBarTotalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="32dp"
+            android:gravity="start"
+            android:text="0:00"
+            android:textColor="#AAAAAA"
+            android:textSize="12sp" />
+        <ImageButton
+            android:id="@+id/audioBarStop"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Durdur"
+            android:src="@android:drawable/ic_delete"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/captionBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#1E1E1E"
+        android:visibility="gone"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:id="@+id/captionBarThumbContainer"
+            android:layout_width="48dp"
+            android:layout_height="48dp">
+            <ImageView
+                android:id="@+id/captionBarThumb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="@drawable/hint_background"
+                android:contentDescription="Seçili medya" />
+            <ImageView
+                android:id="@+id/captionBarThumbClose"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="top|end"
+                android:padding="2dp"
+                android:src="@drawable/ic_close_black"
+                android:background="#33FFFFFF"
+                android:contentDescription="Seçimi kaldır" />
+        </FrameLayout>
+
+        <EditText
+            android:id="@+id/captionInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:minHeight="44dp"
+            android:inputType="textMultiLine|textCapSentences"
+            android:hint="Mesaj yazın..."
+            android:padding="12dp"
+            android:background="@drawable/hint_background"
+            android:textColor="@android:color/white"
+            android:textColorHint="#80FFFFFF"
+            android:maxLines="4" />
+
+        <ImageButton
+            android:id="@+id/captionSendButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_send"
+            android:contentDescription="Gönder"
+            app:tint="@color/lesson_completed" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+

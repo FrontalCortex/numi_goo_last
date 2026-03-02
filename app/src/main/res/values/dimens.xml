@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="max_lesson_offset">100dp</dimen>
+    <dimen name="chat_media_max_width">220dp</dimen>
 </resources>

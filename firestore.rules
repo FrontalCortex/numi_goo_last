@@ -34,7 +34,27 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)
+    // Öğrenci soruları: öğrenci kendi sorularını okur; öğretmen pending veya kendi sahiplendiğini okur
+    match /questions/{questionId} {
+      allow read: if request.auth != null && (
+        resource.data.studentUid == request.auth.uid ||
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'TEACHER' && (resource.data.status == 'pending' || resource.data.claimedByTeacherUid == request.auth.uid))
+      );
+      allow create: if request.auth != null && request.resource.data.studentUid == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.studentUid == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'TEACHER'
+      );
+      allow delete: if false;
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && (
+          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid ||
+          get(/databases/$(database)/documents/questions/$(questionId)).data.claimedByTeacherUid == request.auth.uid
+        );
+      }
+    }
+
+    // Yukarıdakilerin dışındaki tüm path'ler reddedilir
     match /{document=**} {
       allow read, write: if false;
     }

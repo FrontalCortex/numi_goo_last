@@ -28,4 +28,21 @@
     <string name="otp_can_retry">Tekrar deneyebilirsiniz.</string>
     <string name="otp_wrong_cooldown_try_later">Çok fazla yanlış deneme. %1$d dakika sonra tekrar deneyin.</string>
     <string name="otp_resend_cooldown_try_again">%1$d sn sonra tekrar</string>
+    <!-- Soru medya yükleme bildirimi -->
+    <string name="notification_channel_upload">Yükleme</string>
+    <string name="notification_channel_upload_desc">Soru sohbetine gönderilen resim, video ve mesajlar</string>
+    <string name="notification_uploading_generic">Gönderiliyor…</string>
+    <string name="notification_uploading">%1$s gönderiliyor…</string>
+    <string name="notification_uploading_with_queue">%1$s gönderiliyor… (%2$d bekliyor)</string>
+    <string name="notification_upload_type_text">Mesaj</string>
+    <string name="notification_upload_type_image">Resim</string>
+    <string name="notification_upload_type_video">Video</string>
+    <string name="notification_upload_type_audio">Ses</string>
+    <string name="notification_progress">%1$s / %2$s</string>
+    <string name="notification_eta_sec">~%1$d sn kaldı</string>
+    <string name="notification_eta_min">~%1$d dk kaldı</string>
+    <string name="notification_eta_min_sec">~%1$d dk %2$d sn kaldı</string>
+    <string name="notification_eta_hour">~%1$d sa kaldı</string>
+
+    <string name="chat_retry_upload">Tekrar dene</string>
 </resources>

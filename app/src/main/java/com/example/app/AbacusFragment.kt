@@ -4,6 +4,8 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
@@ -31,9 +33,12 @@ import com.airbnb.lottie.LottieAnimationView
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
+import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAbacusBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
+import java.io.File
+import java.io.FileOutputStream
 
 
 class AbacusFragment : Fragment() {
@@ -232,6 +237,31 @@ class AbacusFragment : Fragment() {
         
         // Guide panel'i kur (eğer varsa)
         setupGuidePanel()
+
+        // Sorunu gönder butonu: sadece öğrenci hesabında göster
+        val authManager = AuthManager().also { it.initialize(requireContext()) }
+        binding.askQuestionButton.visibility = if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) View.GONE else View.VISIBLE
+        binding.askQuestionButton.setOnClickListener { captureAndOpenCreateQuestion() }
+    }
+
+    private fun captureAndOpenCreateQuestion() {
+        val view = view ?: return
+        if (view.width == 0 || view.height == 0) {
+            view.post { captureAndOpenCreateQuestion() }
+            return
+        }
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+        val cacheDir = requireContext().cacheDir
+        val file = File(cacheDir, "question_screenshot_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+        bitmap.recycle()
+        val path = file.absolutePath
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.abacusFragmentContainer, CreateQuestionFragment.newInstance(path))
+            .addToBackStack(null)
+            .commit()
     }
     
     /**

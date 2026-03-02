@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Soru ekran görüntüleri: giriş yapmış kullanıcı kendi yüklediği path'e yazabilir
+    match /question_screenshots/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    // Soru mesaj medyası (ses/video): soru sahibi veya sahiplenen öğretmen yazabilir (istemci path'te questionId kullanır)
+    match /question_media/{questionId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+
+

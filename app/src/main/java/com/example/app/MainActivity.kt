@@ -199,6 +199,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             showEnergyRefillDialog()
         }
     }
+
+    fun setBottomPanelEnabled(enabled: Boolean) {
+        binding.bottomPanelOverlay.visibility = if (enabled) View.GONE else View.VISIBLE
+        binding.bottomNavigationID.isEnabled = enabled
+        binding.bottomNavigationID.alpha = if (enabled) 1f else 0.6f
+        val menu = binding.bottomNavigationID.menu
+        for (i in 0 until menu.size()) {
+            menu.getItem(i).isEnabled = enabled
+        }
+    }
+
     private fun changeFragment(fragment: Fragment) {
         val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         // Eğer mevcut fragment ile yeni fragment aynı tipteyse, işlem yapma
@@ -207,16 +218,6 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             replace(R.id.fragmentContainerID, fragment)
             addToBackStack(null)
             commit()
-        }
-    }
-
-    /** Race paneli açıkken alt bar butonlarına tıklanmasın (overlay ile engelle) */
-    fun setBottomPanelEnabled(enabled: Boolean) {
-        if (enabled) {
-            binding.bottomPanelOverlay.visibility = View.GONE
-        } else {
-            binding.bottomPanelOverlay.visibility = View.VISIBLE
-            binding.bottomPanelOverlay.bringToFront()
         }
     }
 
