@@ -46,16 +46,7 @@ class LessonAdapter(
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
     }
-
-    /** Media3 vb. kütüphaneler kaynak ID'lerini kaydırdığında eski stepCupIcon bir dimen'e denk gelebilir; sadece drawable ise kullan. */
-    private fun safeDrawableResId(resId: Int): Int {
-        return try {
-            if (context.resources.getResourceTypeName(resId) == "drawable") resId else R.drawable.cup_ic
-        } catch (_: Exception) {
-            R.drawable.cup_ic
-        }
-    }
-
+    
     private fun getCurrentPlan(callback: (String) -> Unit) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -420,9 +411,6 @@ class LessonAdapter(
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
         val scrimView = activity.findViewById<View>(R.id.scrimView)
 
-        // Alt barı hemen kilitle (panel açılmadan tıklanmasın)
-        (activity as? MainActivity)?.setBottomPanelEnabled(false)
-
         scrimView.visibility = View.VISIBLE
         scrimView.alpha = 0f
 
@@ -499,7 +487,6 @@ class LessonAdapter(
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    (context as? MainActivity)?.setBottomPanelEnabled(true)
                     globalPartId = item.backRaceId!!
                     onPartChange(globalPartId)
                     coordinatorLayout.removeView(racePanelView)
@@ -713,6 +700,17 @@ class LessonAdapter(
             progressBar.setProgressColor(color)
         }
         fun bind(item: LessonItem) {
+            fun applyCupIcon() {
+                val resId = item.stepCupIcon
+                try {
+                    lessonIcon.setImageResource(resId)
+                } catch (_: android.content.res.Resources.NotFoundException) {
+                    // Veritabanında eski/var olmayan bir icon id'si varsa, default kupa ikonuna düş.
+                    lessonIcon.setImageResource(R.drawable.cup_ic)
+                    item.stepCupIcon = R.drawable.cup_ic
+                }
+            }
+
             when (item.type) {
                 LessonItem.TYPE_CHEST -> {
                     val backgroundColor = if (item.isCompleted) {
@@ -725,12 +723,11 @@ class LessonAdapter(
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
-                    val cupIconResId = safeDrawableResId(item.stepCupIcon)
-                    if(item.stepIsFinish){
+                    if (item.stepIsFinish) {
                         updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
-                        lessonIcon.setImageResource(cupIconResId)
-                    }else{
-                        lessonIcon.setImageResource(cupIconResId)
+                        applyCupIcon()
+                    } else {
+                        applyCupIcon()
                     }
                     val completedSteps = item.stepCompletionStatus.count { it }
                     when (completedSteps) {

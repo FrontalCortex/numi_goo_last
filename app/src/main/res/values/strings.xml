@@ -44,5 +44,8 @@
     <string name="notification_eta_min_sec">~%1$d dk %2$d sn kaldı</string>
     <string name="notification_eta_hour">~%1$d sa kaldı</string>
 
+    <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
+    <string name="notification_download_cancel">İptal et</string>
+
     <string name="chat_retry_upload">Tekrar dene</string>
 </resources>

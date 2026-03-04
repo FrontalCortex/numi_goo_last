@@ -33,6 +33,7 @@ class QuestionListAdapter(
         private val thumbnail: ImageView = itemView.findViewById(R.id.questionThumbnail)
         private val preview: TextView = itemView.findViewById(R.id.questionPreview)
         private val timeAgo: TextView = itemView.findViewById(R.id.questionTimeAgo)
+        private val statusIcon: ImageView = itemView.findViewById(R.id.questionStatusIcon)
         private val status: TextView = itemView.findViewById(R.id.questionStatus)
 
         fun bind(q: StudentQuestion) {
@@ -47,7 +48,23 @@ class QuestionListAdapter(
                 StudentQuestion.STATUS_RESOLVED -> "Çözüldü"
                 else -> ""
             }
-            status.visibility = if (status.text.isEmpty()) View.GONE else View.VISIBLE
+            val hasStatus = status.text.isNotEmpty()
+            status.visibility = if (hasStatus) View.VISIBLE else View.GONE
+            if (hasStatus) {
+                when (q.status) {
+                    StudentQuestion.STATUS_RESOLVED -> {
+                        statusIcon.visibility = View.VISIBLE
+                        statusIcon.setImageResource(R.drawable.solved)
+                    }
+                    StudentQuestion.STATUS_CLAIMED -> {
+                        statusIcon.visibility = View.VISIBLE
+                        statusIcon.setImageResource(R.drawable.clock_ic)
+                    }
+                    else -> statusIcon.visibility = View.GONE
+                }
+            } else {
+                statusIcon.visibility = View.GONE
+            }
             itemView.setOnClickListener { onItemClick(q) }
         }
 

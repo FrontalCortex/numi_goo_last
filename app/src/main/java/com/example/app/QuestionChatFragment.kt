@@ -22,14 +22,15 @@ import android.provider.MediaStore
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
-import androidx.appcompat.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.ProgressBar
+import android.annotation.SuppressLint
+import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -58,6 +59,7 @@ class QuestionChatFragment : Fragment() {
     private val firestore = FirebaseFirestore.getInstance()
     private val authManager by lazy { AuthManager().also { it.initialize(requireContext()) } }
     private var questionId: String = ""
+    private var questionStatus: String = ""
     private var isTeacher = false
     private var listener: ListenerRegistration? = null
     private var mediaRecorder: MediaRecorder? = null
@@ -66,11 +68,40 @@ class QuestionChatFragment : Fragment() {
     private var videoDialog: Dialog? = null
     private var videoExoPlayer: ExoPlayer? = null
 
+    // Ses kaydı (gönderilecek mesaj) için durum
+    private var isRecordingAudio: Boolean = false
+    private var isRecordingPaused: Boolean = false
+    private var recordingStartMs: Long = 0L
+    private var recordedMsBeforePause: Long = 0L
+    private val recordingHandler = Handler(Looper.getMainLooper())
+    private val recordingRunnable = object : Runnable {
+        override fun run() {
+            if (!isRecordingAudio || isRecordingPaused) return
+            val now = System.currentTimeMillis()
+            val elapsed = (now - recordingStartMs) + recordedMsBeforePause
+            val clamped = elapsed.coerceAtLeast(0L).coerceAtMost(maxAudioDurationMs)
+
+            binding.audioBarCurrentTime.text = formatAudioTime(clamped.toInt())
+            binding.audioBarTotalTime.text = formatAudioTime(maxAudioDurationMs.toInt())
+            binding.audioBarWaveform.progress = clamped.toFloat() / maxAudioDurationMs.toFloat()
+
+            if (clamped >= maxAudioDurationMs) {
+                // Süre doldu, kaydı otomatik durdur; kullanıcı isterse gönderebilir.
+                pauseAudioRecordingInternal()
+                return
+            }
+            recordingHandler.postDelayed(this, 200)
+        }
+    }
+
     private var serverMessageList = listOf<QuestionMessage>()
     private val pendingMessages = mutableListOf<QuestionMessage>()
     private val revealedMediaMessageIds = mutableSetOf<String>()
     private val canceledUploadIds = mutableSetOf<String>()
     private val activeUploadIds = mutableSetOf<String>()
+    private val activeDownloadIds = mutableSetOf<String>()
+    private val uploadProgress = mutableMapOf<String, Int>()
+    private val downloadProgress = mutableMapOf<String, Int>()
     private val locallyCanceledClientIds = mutableSetOf<String>()
     private var chatAdapter: ChatMessageAdapter? = null
     private var uploadStartedReceiverRegistered = false
@@ -114,8 +145,49 @@ class QuestionChatFragment : Fragment() {
                     activeUploadIds.remove(clientId)
                     canceledUploadIds.add(clientId)
                     GlobalValues.canceledUploadIdsByQuestion[questionId] = canceledUploadIds.toMutableSet()
-                     GlobalValues.activeUploadIdsByQuestion[questionId] = activeUploadIds.toMutableSet()
+                    GlobalValues.activeUploadIdsByQuestion[questionId] = activeUploadIds.toMutableSet()
                     submitMergedList()
+                }
+                QuestionUploadForegroundService.ACTION_UPLOAD_PROGRESS -> {
+                    val qId = intent.getStringExtra(QuestionUploadForegroundService.KEY_QUESTION_ID) ?: return
+                    if (qId != questionId) return
+                    val clientId = intent.getStringExtra(QuestionUploadForegroundService.KEY_CLIENT_ID) ?: return
+                    val progress = intent.getIntExtra(QuestionUploadForegroundService.KEY_UPLOAD_PROGRESS, 0)
+                    uploadProgress[clientId] = progress.coerceIn(0, 100)
+                    notifyMessageChanged(clientId)
+                }
+                QuestionDownloadForegroundService.ACTION_DOWNLOAD_PROGRESS -> {
+                    val qId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_QUESTION_ID) ?: return
+                    if (qId != questionId) return
+                    val messageId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_MESSAGE_ID) ?: return
+                    val progress = intent.getIntExtra(QuestionDownloadForegroundService.EXTRA_PROGRESS, 0)
+                    downloadProgress[messageId] = progress.coerceIn(0, 100)
+                    notifyMessageChanged(messageId)
+                }
+                QuestionDownloadForegroundService.ACTION_DOWNLOAD_STARTED -> {
+                    val qId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_QUESTION_ID) ?: return
+                    if (qId != questionId) return
+                    val messageId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_MESSAGE_ID) ?: return
+                    if (!activeDownloadIds.contains(messageId)) {
+                        activeDownloadIds.add(messageId)
+                        GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
+                        notifyMessageChanged(messageId)
+                    }
+                }
+                QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED,
+                QuestionDownloadForegroundService.ACTION_DOWNLOAD_FAILED,
+                QuestionDownloadForegroundService.ACTION_DOWNLOAD_CANCELED -> {
+                    val qId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_QUESTION_ID) ?: return
+                    if (qId != questionId) return
+                    val messageId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_MESSAGE_ID) ?: return
+                    activeDownloadIds.remove(messageId)
+                    GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
+                    if (intent.action == QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED) {
+                        revealedMediaMessageIds.add(messageId)
+                        GlobalValues.revealedMediaIdsByQuestion[questionId] =
+                            revealedMediaMessageIds.toMutableSet()
+                    }
+                    notifyMessageChanged(messageId)
                 }
             }
         }
@@ -126,6 +198,16 @@ class QuestionChatFragment : Fragment() {
         val merged = (serverMessageList + pendingMessages).sortedBy { it.createdAt?.toDate()?.time ?: 0L }
         chatAdapter?.submitList(merged)
         GlobalValues.pendingQuestionMessages[questionId] = pendingMessages.toMutableList()
+    }
+
+    /** Sadece belirli bir mesajın UI durumunu değiştirmek gerektiğinde kullanılır (liste yapısı aynı kalır). */
+    private fun notifyMessageChanged(messageId: String) {
+        if (_binding == null || !isAdded) return
+        val merged = (serverMessageList + pendingMessages).sortedBy { it.createdAt?.toDate()?.time ?: 0L }
+        val index = merged.indexOfFirst { it.id == messageId }
+        if (index != -1) {
+            chatAdapter?.notifyItemChanged(index)
+        }
     }
 
     private fun addPendingMessage(msg: QuestionMessage) {
@@ -156,6 +238,45 @@ class QuestionChatFragment : Fragment() {
         }
 
         removePendingByClientId(clientId)
+    }
+
+    private fun startDownloadForMessage(message: QuestionMessage) {
+        if (!isAdded) return
+        // Eğer bu mesaj için daha önce indirilmiş bir dosya varsa, tekrar Firebase'den indirme.
+        val existingPath = GlobalValues.downloadedMediaByMessageId[message.id]
+        if (!existingPath.isNullOrBlank() && java.io.File(existingPath).exists()) {
+            // Bu mesajı "revealed" kabul et ve sadece UI'ı güncelle.
+            revealedMediaMessageIds.add(message.id)
+            GlobalValues.revealedMediaIdsByQuestion[questionId] =
+                revealedMediaMessageIds.toMutableSet()
+            notifyMessageChanged(message.id)
+            return
+        }
+
+        if (message.mediaStoragePath == null) return
+        if (activeDownloadIds.contains(message.id)) return
+        activeDownloadIds.add(message.id)
+        GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
+        QuestionDownloadForegroundService.startDownload(
+            requireContext(),
+            questionId = questionId,
+            messageId = message.id,
+            mediaStoragePath = message.mediaStoragePath
+        )
+        notifyMessageChanged(message.id)
+    }
+
+    private fun cancelDownloadForMessage(message: QuestionMessage) {
+        if (!isAdded) return
+        if (!activeDownloadIds.contains(message.id)) return
+        activeDownloadIds.remove(message.id)
+        GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
+        QuestionDownloadForegroundService.cancelDownload(
+            requireContext(),
+            questionId = questionId,
+            messageId = message.id
+        )
+        notifyMessageChanged(message.id)
     }
 
     /** Arka plan gönderimi için dosyayı kalıcı dizine kopyalar (Service okuyabilsin). */
@@ -213,40 +334,11 @@ class QuestionChatFragment : Fragment() {
     }
 
     private val maxAudioDurationMs = 5 * 60 * 1000L // 5 dakika
-    private val maxVideoDurationSeconds = 300 // 5 dakika
-
-    private var pendingVideoFile: File? = null
-    private var pendingImageFile: File? = null
-    private val videoCaptureLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode != android.app.Activity.RESULT_OK) {
-            pendingVideoFile = null
-            return@registerForActivityResult
-        }
-        val file = pendingVideoFile
-        pendingVideoFile = null
-        if (file != null && file.exists()) {
-            uploadVideoFileAndSend(file)
-        } else {
-            result.data?.data?.let { uri -> uploadVideoAndSend(uri) }
-        }
-    }
 
     private val pickVideoLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { uploadVideoAndSend(it) }
-    }
-
-    private val takePictureLauncher = registerForActivityResult(
-        ActivityResultContracts.TakePicture()
-    ) { success ->
-        val file = pendingImageFile
-        pendingImageFile = null
-        if (success && file != null && file.exists()) {
-            uploadImageFileAndSend(file)
-        }
     }
 
     private val pickImageLauncher = registerForActivityResult(
@@ -260,15 +352,6 @@ class QuestionChatFragment : Fragment() {
     ) { grants ->
         if (grants[Manifest.permission.RECORD_AUDIO] == true) startAudioRecording()
         else Toast.makeText(requireContext(), "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
-    }
-
-    private var onCameraGranted: (() -> Unit)? = null
-    private val cameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        if (grants[Manifest.permission.CAMERA] == true) onCameraGranted?.invoke()
-        else Toast.makeText(requireContext(), "Kamera izni gerekli.", Toast.LENGTH_SHORT).show()
-        onCameraGranted = null
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -306,10 +389,38 @@ class QuestionChatFragment : Fragment() {
             activeUploadIds.clear()
             activeUploadIds.addAll(set)
         }
+        GlobalValues.activeDownloadIdsByQuestion[questionId]?.let { set ->
+            activeDownloadIds.clear()
+            activeDownloadIds.addAll(set)
+        }
+
+        // Öğrenciler sadece metin ve ses gönderebilsin; galeri butonunu gizle.
+        if (isTeacher) {
+            binding.galleryButton.visibility = View.VISIBLE
+        } else {
+            binding.galleryButton.visibility = View.GONE
+        }
 
         binding.backButton.setOnClickListener { requireActivity().supportFragmentManager.popBackStack() }
+        binding.questionScreenshotButton.visibility = View.VISIBLE
+        binding.questionScreenshotButton.setOnClickListener {
+            val fragment = QuestionDetailFragment.newInstance(
+                questionId = questionId,
+                studentView = !isTeacher
+            )
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerID, fragment)
+                .addToBackStack(null)
+                .commit()
+        }
         binding.resolveButton.visibility = if (isTeacher) View.VISIBLE else View.GONE
         binding.recordAudioButton.visibility = View.VISIBLE
+
+        firestore.collection("questions").document(questionId).get()
+            .addOnSuccessListener { doc ->
+                questionStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
+                if (isTeacher) applyResolveButtonIcon(questionStatus)
+            }
 
         val currentUid = auth.currentUser?.uid ?: ""
         chatAdapter = ChatMessageAdapter(
@@ -317,12 +428,17 @@ class QuestionChatFragment : Fragment() {
             revealedMessageIds = revealedMediaMessageIds,
             canceledUploadIds = canceledUploadIds,
             activeUploadIds = activeUploadIds,
+            activeDownloadIds = activeDownloadIds,
+            uploadProgress = uploadProgress,
+            downloadProgress = downloadProgress,
             onRevealMedia = { msg ->
                 revealedMediaMessageIds.add(msg.id)
                 GlobalValues.revealedMediaIdsByQuestion[questionId] =
                     revealedMediaMessageIds.toMutableSet()
                 submitMergedList()
             },
+            onStartDownload = { msg -> startDownloadForMessage(msg) },
+            onCancelDownload = { msg -> cancelDownloadForMessage(msg) },
             onCancelUpload = { msg ->
                 canceledUploadIds.add(msg.id)
                 GlobalValues.canceledUploadIdsByQuestion[questionId] =
@@ -385,26 +501,59 @@ class QuestionChatFragment : Fragment() {
                 serverMessageList = list
                 pendingMessages.removeAll { pending -> list.any { it.clientId == pending.id } }
                 submitMergedList()
-                binding.messagesRecyclerView.post { binding.messagesRecyclerView.smoothScrollToPosition((serverMessageList + pendingMessages).size) }
+
+                // Sadece zaten alta yakınsak otomatik en alta kaydır.
+                val lm = binding.messagesRecyclerView.layoutManager as? LinearLayoutManager
+                if (lm != null) {
+                    val lastVisible = lm.findLastVisibleItemPosition()
+                    val totalCount = (serverMessageList + pendingMessages).size
+                    // Kullanıcı son 3 mesaj içinde ise alta kaydır, yoksa pozisyonu koru.
+                    if (lastVisible >= totalCount - 4) {
+                        binding.messagesRecyclerView.post {
+                            binding.messagesRecyclerView.smoothScrollToPosition(totalCount)
+                        }
+                    }
+                }
             }
 
         binding.sendTextButton.setOnClickListener { sendTextMessage() }
         binding.recordAudioButton.setOnClickListener { toggleAudioRecording() }
         binding.galleryButton.setOnClickListener { openGalleryBottomSheet() }
-        binding.cameraButton.setOnClickListener { showCameraSourceDialog() }
-        binding.resolveButton.setOnClickListener { markResolved() }
+        binding.resolveButton.setOnClickListener {
+            if (questionStatus == StudentQuestion.STATUS_RESOLVED) showUnresolveConfirmationDialog()
+            else showResolveConfirmationDialog()
+        }
 
         binding.audioBarPlayPause.setOnClickListener {
-            if (audioMediaPlayer?.isPlaying == true) {
-                audioMediaPlayer?.pause()
-                binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_play)
+            if (isRecordingAudio) {
+                // Kayıt modunda: duraklat / devam et
+                if (isRecordingPaused) resumeAudioRecordingInternal() else pauseAudioRecordingInternal()
             } else {
-                audioMediaPlayer?.start()
-                binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
-                audioProgressHandler.post(audioProgressRunnable)
+                // Oynatma modunda: play / pause
+                if (audioMediaPlayer?.isPlaying == true) {
+                    audioMediaPlayer?.pause()
+                    binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                } else {
+                    audioMediaPlayer?.start()
+                    binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                    audioProgressHandler.post(audioProgressRunnable)
+                }
             }
         }
-        binding.audioBarStop.setOnClickListener { releaseAudioAndHideBar() }
+        binding.audioBarStop.setOnClickListener {
+            if (isRecordingAudio) {
+                // Kaydı sil ve paneli kapat
+                finishAudioRecording(send = false)
+            } else {
+                releaseAudioAndHideBar()
+            }
+        }
+        binding.audioBarClose.setOnClickListener { releaseAudioAndHideBar() }
+        binding.audioBarSend.setOnClickListener {
+            if (isRecordingAudio) {
+                finishAudioRecording(send = true)
+            }
+        }
 
         binding.captionBarThumbContainer.setOnClickListener { clearSelectedMediaAndHideCaptionBar() }
         binding.captionSendButton.setOnClickListener { sendSelectedMediaWithCaption() }
@@ -416,14 +565,27 @@ class QuestionChatFragment : Fragment() {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
         if (!uploadStartedReceiverRegistered) {
             val filter = IntentFilter().apply {
                 addAction(QuestionUploadForegroundService.ACTION_UPLOAD_STARTED)
                 addAction(QuestionUploadForegroundService.ACTION_UPLOAD_CANCELED)
+                addAction(QuestionDownloadForegroundService.ACTION_DOWNLOAD_STARTED)
+                addAction(QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED)
+                addAction(QuestionDownloadForegroundService.ACTION_DOWNLOAD_FAILED)
+                addAction(QuestionDownloadForegroundService.ACTION_DOWNLOAD_CANCELED)
             }
-            requireContext().registerReceiver(uploadReceiver, filter)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requireContext().registerReceiver(
+                    uploadReceiver,
+                    filter,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
+            } else {
+                requireContext().registerReceiver(uploadReceiver, filter)
+            }
             uploadStartedReceiverRegistered = true
         }
     }
@@ -608,11 +770,20 @@ class QuestionChatFragment : Fragment() {
             releaseAudioAndHideBar()
         }
         playingAudioUrl = url
+        isRecordingAudio = false
+        isRecordingPaused = false
+        recordingHandler.removeCallbacks(recordingRunnable)
+
         binding.audioBar.visibility = View.VISIBLE
+        // Oynatma panelinde inputBar görünür kalsın (sadece kayıtta gizlenir)
         binding.audioBarCurrentTime.text = "0:00"
         binding.audioBarTotalTime.text = "0:00"
         binding.audioBarWaveform.progress = 0f
         binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+        // Oynatma panelinde X (kapat) butonu görünsün, stop görünmesin
+        binding.audioBarStop.visibility = View.GONE
+        binding.audioBarClose.visibility = View.VISIBLE
+        binding.audioBarSend.visibility = View.GONE
         audioMediaPlayer = MediaPlayer().apply {
             setDataSource(requireContext(), Uri.parse(url))
             isLooping = false
@@ -663,6 +834,9 @@ class QuestionChatFragment : Fragment() {
         audioMediaPlayer = null
         playingAudioUrl = null
         binding.audioBar.visibility = View.GONE
+        binding.audioBarSend.visibility = View.GONE
+        binding.audioBarClose.visibility = View.GONE
+        binding.inputBar.visibility = View.VISIBLE
     }
 
     private fun sendTextMessage() {
@@ -689,10 +863,8 @@ class QuestionChatFragment : Fragment() {
     }
 
     private fun toggleAudioRecording() {
-        if (mediaRecorder != null) {
-            stopAudioRecording()
-            return
-        }
+        // Kayıt paneli varken kontrol panelden yapılır; mic'e tekrar basmayı yok say.
+        if (isRecordingAudio) return
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             permissionLauncher.launch(arrayOf(Manifest.permission.RECORD_AUDIO))
             return
@@ -717,18 +889,71 @@ class QuestionChatFragment : Fragment() {
             prepare()
             start()
         }
-        binding.recordAudioButton.setImageResource(android.R.drawable.ic_media_pause)
-        Toast.makeText(requireContext(), "Kayıt başladı (max 5 dk). Durdurmak için tekrar tıklayın.", Toast.LENGTH_SHORT).show()
+        isRecordingAudio = true
+        isRecordingPaused = false
+        recordedMsBeforePause = 0L
+        recordingStartMs = System.currentTimeMillis()
+
+        // Kayıt panelini göster
+        binding.audioBar.visibility = View.VISIBLE
+        binding.inputBar.visibility = View.GONE
+        binding.audioBarCurrentTime.text = "0:00"
+        binding.audioBarTotalTime.text = formatAudioTime(maxAudioDurationMs.toInt())
+        binding.audioBarWaveform.progress = 0f
+        binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+        // Kayıt panelinde stop butonu görünsün, X (kapat) görünmesin
+        binding.audioBarStop.visibility = View.VISIBLE
+        binding.audioBarClose.visibility = View.GONE
+        binding.audioBarSend.visibility = View.VISIBLE
+
+        recordingHandler.post(recordingRunnable)
     }
 
-    private fun stopAudioRecording() {
+    private fun pauseAudioRecordingInternal() {
+        if (!isRecordingAudio || isRecordingPaused) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mediaRecorder?.pause()
+            }
+        } catch (_: Exception) { }
+        recordedMsBeforePause += System.currentTimeMillis() - recordingStartMs
+        isRecordingPaused = true
+        binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_play)
+    }
+
+    private fun resumeAudioRecordingInternal() {
+        if (!isRecordingAudio || !isRecordingPaused) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mediaRecorder?.resume()
+            }
+        } catch (_: Exception) { }
+        recordingStartMs = System.currentTimeMillis()
+        isRecordingPaused = false
+        binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+        recordingHandler.post(recordingRunnable)
+    }
+
+    private fun finishAudioRecording(send: Boolean) {
+        recordingHandler.removeCallbacks(recordingRunnable)
         try {
             mediaRecorder?.stop()
-        } catch (_: Exception) {}
+        } catch (_: Exception) { }
         mediaRecorder?.release()
         mediaRecorder = null
-        binding.recordAudioButton.setImageResource(android.R.drawable.ic_btn_speak_now)
-        audioFile?.let { uploadAudioAndSend(it) }
+
+        isRecordingAudio = false
+        isRecordingPaused = false
+        binding.audioBarSend.visibility = View.GONE
+        binding.audioBarClose.visibility = View.GONE
+        binding.audioBar.visibility = View.GONE
+        binding.inputBar.visibility = View.VISIBLE
+
+        if (send) {
+            audioFile?.let { uploadAudioAndSend(it) }
+        } else {
+            audioFile?.let { runCatching { it.delete() } }
+        }
         audioFile = null
     }
 
@@ -751,67 +976,6 @@ class QuestionChatFragment : Fragment() {
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_AUDIO, filePath = dest.absolutePath)
-    }
-
-    private fun showCameraSourceDialog() {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Kamera")
-            .setItems(arrayOf("Video çek", "Fotoğraf çek")) { _, which ->
-                when (which) {
-                    0 -> launchVideoCapture()
-                    1 -> launchTakePicture()
-                }
-            }
-            .show()
-    }
-
-    private fun launchVideoCapture() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            onCameraGranted = { launchVideoCapture() }
-            cameraPermissionLauncher.launch(arrayOf(Manifest.permission.CAMERA))
-            return
-        }
-        val file = File(requireContext().cacheDir, "video_${System.currentTimeMillis()}.mp4")
-        pendingVideoFile = file
-        val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.fileprovider", file)
-        val intent = Intent(MediaStore.ACTION_VIDEO_CAPTURE).apply {
-            putExtra(MediaStore.EXTRA_DURATION_LIMIT, maxVideoDurationSeconds)
-            putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 0)
-            putExtra(MediaStore.EXTRA_OUTPUT, uri)
-        }
-        videoCaptureLauncher.launch(intent)
-    }
-
-    private fun launchTakePicture() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            onCameraGranted = { launchTakePicture() }
-            cameraPermissionLauncher.launch(arrayOf(Manifest.permission.CAMERA))
-            return
-        }
-        val file = File(requireContext().cacheDir, "img_${System.currentTimeMillis()}.jpg")
-        pendingImageFile = file
-        val uri = FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.fileprovider", file)
-        takePictureLauncher.launch(uri)
-    }
-
-    private fun uploadVideoFileAndSend(file: File) {
-        val uid = auth.currentUser?.uid ?: return
-        val role = authManager.getCurrentUserType()
-        val clientId = "pending_${System.currentTimeMillis()}"
-        val pending = QuestionMessage(
-            id = clientId,
-            senderUid = uid,
-            senderRole = role,
-            type = QuestionMessage.TYPE_VIDEO,
-            createdAt = Timestamp.now()
-        )
-        addPendingMessage(pending)
-        val dest = copyToUploadsDir(file, null, "video", "mp4") ?: run {
-            removePendingByClientId(clientId)
-            Toast.makeText(requireContext(), "Video kopyalanamadı.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        startUploadService(clientId, QuestionMessage.TYPE_VIDEO, filePath = dest.absolutePath)
     }
 
     private fun uploadVideoAndSend(uri: Uri) {
@@ -838,28 +1002,6 @@ class QuestionChatFragment : Fragment() {
         }
         startUploadService(clientId, QuestionMessage.TYPE_VIDEO, filePath = dest.absolutePath, caption = caption.takeIf { it.isNotEmpty() })
         onSuccess?.invoke()
-    }
-
-    private fun uploadImageFileAndSend(file: File) {
-        if (!file.exists()) return
-        val uid = auth.currentUser?.uid ?: return
-        val role = authManager.getCurrentUserType()
-        val clientId = "pending_${System.currentTimeMillis()}"
-        val pending = QuestionMessage(
-            id = clientId,
-            senderUid = uid,
-            senderRole = role,
-            type = QuestionMessage.TYPE_IMAGE,
-            mediaUrl = Uri.fromFile(file).toString(),
-            createdAt = Timestamp.now()
-        )
-        addPendingMessage(pending)
-        val dest = copyToUploadsDir(file, null, "img", "jpg") ?: run {
-            removePendingByClientId(clientId)
-            Toast.makeText(requireContext(), "Resim kopyalanamadı.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        startUploadService(clientId, QuestionMessage.TYPE_IMAGE, filePath = dest.absolutePath)
     }
 
     private fun uploadImageUriAndSend(uri: Uri) {
@@ -893,16 +1035,59 @@ class QuestionChatFragment : Fragment() {
         uploadVideoUriAndSend(uri, caption, onSuccess)
     }
 
+    private fun applyResolveButtonIcon(status: String) {
+        binding.resolveButton.setImageResource(
+            if (status == StudentQuestion.STATUS_RESOLVED) R.drawable.lock_ic
+            else R.drawable.unlock_ic
+        )
+    }
+
+    private fun showResolveConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setMessage("Bu soruyu çözüldü olarak işaretlemek istiyor musun? Eğer işaretlersen öğrenci mesaj gönderemeyecek.")
+            .setNegativeButton("İşaretle") { dialog, _ ->
+                dialog.dismiss()
+                markResolved()
+            }
+            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun showUnresolveConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setMessage("Bu soru çözüldü olarak işaretli. Tekrar aktifleştirmek istiyor musunuz?")
+            .setNegativeButton("Aktifleştir") { dialog, _ ->
+                dialog.dismiss()
+                markUnresolved()
+            }
+            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
     private fun markResolved() {
         firestore.collection("questions").document(questionId).update("status", StudentQuestion.STATUS_RESOLVED)
             .addOnSuccessListener {
+                questionStatus = StudentQuestion.STATUS_RESOLVED
+                applyResolveButtonIcon(questionStatus)
                 Toast.makeText(requireContext(), "Soru çözüldü olarak işaretlendi.", Toast.LENGTH_SHORT).show()
                 requireActivity().supportFragmentManager.popBackStack()
             }
     }
 
+    private fun markUnresolved() {
+        firestore.collection("questions").document(questionId).update("status", StudentQuestion.STATUS_CLAIMED)
+            .addOnSuccessListener {
+                questionStatus = StudentQuestion.STATUS_CLAIMED
+                applyResolveButtonIcon(questionStatus)
+                Toast.makeText(requireContext(), "Soru tekrar aktifleştirildi.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     override fun onDestroyView() {
-        if (mediaRecorder != null) stopAudioRecording()
+        if (isRecordingAudio) {
+            // Görünür fragment kapatılırken aktif kaydı sessizce iptal et
+            finishAudioRecording(send = false)
+        }
         releaseAudioAndHideBar()
         videoDialog?.dismiss()
         videoDialog = null
@@ -937,13 +1122,18 @@ private class ChatMessageAdapter(
     private val revealedMessageIds: Set<String>,
     private val canceledUploadIds: Set<String>,
     private val activeUploadIds: Set<String>,
+    private val activeDownloadIds: Set<String>,
+    private val uploadProgress: Map<String, Int>,
+    private val downloadProgress: Map<String, Int>,
     private val onRevealMedia: (QuestionMessage) -> Unit,
     private val onCancelUpload: (QuestionMessage) -> Unit,
     private val onRetryUpload: (QuestionMessage) -> Unit,
     private val onPlayVideo: (String) -> Unit,
     private val onPlayAudio: (String) -> Unit,
     private val onImageClick: (String) -> Unit,
-    private val onMessageLongClick: (QuestionMessage) -> Unit
+    private val onMessageLongClick: (QuestionMessage) -> Unit,
+    private val onStartDownload: (QuestionMessage) -> Unit,
+    private val onCancelDownload: (QuestionMessage) -> Unit
 ) : RecyclerView.Adapter<ChatMessageAdapter.VH>() {
     private var items = listOf<QuestionMessage>()
 
@@ -963,13 +1153,18 @@ private class ChatMessageAdapter(
         revealedMessageIds,
         canceledUploadIds,
         activeUploadIds,
+        activeDownloadIds,
+        uploadProgress,
+        downloadProgress,
         onRevealMedia,
         onCancelUpload,
         onRetryUpload,
         onPlayVideo,
         onPlayAudio,
         onImageClick,
-        onMessageLongClick
+        onMessageLongClick,
+        onStartDownload,
+        onCancelDownload
     )
     override fun getItemCount() = items.size
 
@@ -989,6 +1184,7 @@ private class ChatMessageAdapter(
         private val videoDownloadIcon = itemView.findViewById<ImageView>(R.id.videoDownloadIcon)
         private val videoSizeText = itemView.findViewById<TextView>(R.id.videoSizeText)
         private val videoCornerActionContainer = itemView.findViewById<View>(R.id.videoCornerActionContainer)
+        private val videoCornerProgress = itemView.findViewById<ProgressBar>(R.id.videoCornerProgress)
         private val videoCornerActionIcon = itemView.findViewById<ImageView>(R.id.videoCornerActionIcon)
         private val videoCornerActionText = itemView.findViewById<TextView>(R.id.videoCornerActionText)
         private val imageContainer = itemView.findViewById<View>(R.id.imageContainer)
@@ -1001,6 +1197,7 @@ private class ChatMessageAdapter(
         private val imageDownloadIcon = itemView.findViewById<ImageView>(R.id.imageDownloadIcon)
         private val imageSizeText = itemView.findViewById<TextView>(R.id.imageSizeText)
         private val imageCornerActionContainer = itemView.findViewById<View>(R.id.imageCornerActionContainer)
+        private val imageCornerProgress = itemView.findViewById<ProgressBar>(R.id.imageCornerProgress)
         private val imageCornerActionIcon = itemView.findViewById<ImageView>(R.id.imageCornerActionIcon)
         private val imageCornerActionText = itemView.findViewById<TextView>(R.id.imageCornerActionText)
         private val timeView = itemView.findViewById<TextView>(R.id.timeView)
@@ -1015,13 +1212,18 @@ private class ChatMessageAdapter(
             revealedMessageIds: Set<String>,
             canceledUploadIds: Set<String>,
             activeUploadIds: Set<String>,
+            activeDownloadIds: Set<String>,
+            uploadProgress: Map<String, Int>,
+            downloadProgress: Map<String, Int>,
             onRevealMedia: (QuestionMessage) -> Unit,
             onCancelUpload: (QuestionMessage) -> Unit,
             onRetryUpload: (QuestionMessage) -> Unit,
             onPlayVideo: (String) -> Unit,
             onPlayAudio: (String) -> Unit,
             onImageClick: (String) -> Unit,
-            onMessageLongClick: (QuestionMessage) -> Unit
+            onMessageLongClick: (QuestionMessage) -> Unit,
+            onStartDownload: (QuestionMessage) -> Unit,
+            onCancelDownload: (QuestionMessage) -> Unit
         ) {
             bubbleContainer.setOnLongClickListener { onMessageLongClick(m); true }
             val isFromMe = m.senderUid == currentUserUid
@@ -1044,7 +1246,13 @@ private class ChatMessageAdapter(
 
             val isPending = m.isPending()
             val isCanceled = m.id in canceledUploadIds
-            val hasStarted = isFromMe && isPending && m.id in activeUploadIds
+            val isDownloading = !isFromMe && m.id in activeDownloadIds
+            val currentUploadProgress = uploadProgress[m.id] ?: 0
+            val downloadedLocalPath = GlobalValues.downloadedMediaByMessageId[m.id]?.takeIf { path ->
+                !path.isNullOrBlank() && java.io.File(path).exists()
+            }
+            val isDownloaded = !isFromMe && downloadedLocalPath != null
+            val currentDownloadProgress = downloadProgress[m.id] ?: 0
 
             if (isFromMe) {
                 tickView.visibility = View.VISIBLE
@@ -1124,6 +1332,7 @@ private class ChatMessageAdapter(
                     audioRow.setOnClickListener {
                         m.mediaUrl?.let { url -> onPlayAudio(url) }
                     }
+                    audioRow.setOnLongClickListener { onMessageLongClick(m); true }
                 }
                 QuestionMessage.TYPE_VIDEO -> {
                     messageText.visibility = View.GONE
@@ -1134,22 +1343,29 @@ private class ChatMessageAdapter(
                     imageMetaContainer.visibility = View.GONE
                     timeView.visibility = View.GONE
                     tickView.visibility = View.GONE
-                    val isRevealed = m.id in revealedMessageIds
+                    val isRevealed = m.id in revealedMessageIds || isDownloaded
                     val isCanceledUpload = isFromMe && m.isPending() && m.id in canceledUploadIds
-                    val isPendingUpload = isFromMe && m.isPending() && !isCanceledUpload && hasStarted
-                    val showBlurOverlay = (!isFromMe && !isRevealed) || isPendingUpload || isCanceledUpload
+                    // Gönderen için: pending olduğu sürece (iptal edilmedikçe) upload devam ediyor kabul et
+                    val isPendingUpload = isFromMe && m.isPending() && !isCanceledUpload
+                    val showBlurOverlay =
+                        (!isFromMe && !isRevealed && !isDownloaded) || isPendingUpload || isCanceledUpload || isDownloading
                     videoBlurOverlay.visibility = if (showBlurOverlay) View.VISIBLE else View.GONE
                     videoSizeText.text = formatFileSize(m.mediaSizeBytes)
 
                     // Gösterilecek kapak görselini seç (önce local dosya, sonra thumbnailUrl/mediaUrl).
                     val localMeta = GlobalValues.uploadMetaByClientId[m.id]
                     val localFilePath = localMeta?.filePath
-                    val remoteThumbUrl = m.thumbnailUrl ?: m.mediaUrl
+                    val remoteThumbUrl = downloadedLocalPath ?: (m.thumbnailUrl ?: m.mediaUrl)
+
+                    // Önce önceki bind'dan kalan click listener'ları temizle
+                    videoRow.setOnClickListener(null)
+                    videoCornerActionContainer.setOnClickListener(null)
 
                     if (showBlurOverlay) {
                         videoCenterActionContainer.visibility = View.GONE
                         videoCornerActionContainer.visibility = View.GONE
                         videoCornerActionText.visibility = View.GONE
+                        videoCornerProgress.visibility = View.GONE
 
                         // Blur varken de kapak göster:
                         when {
@@ -1172,11 +1388,31 @@ private class ChatMessageAdapter(
                             }
                         }
 
-                        if (isPendingUpload) {
-                            // Gönderen için: yükleme devam ediyorsa X ikonu, tıklayınca iptal
+                        if (!isFromMe && isDownloading) {
+                            // Karşı taraf indiriyor: sol altta X, etrafında progress bar
                             videoCornerActionContainer.visibility = View.VISIBLE
                             videoCornerActionIcon.setImageResource(R.drawable.ic_close_black)
+                            videoCornerProgress.visibility = View.VISIBLE
+                            videoCornerProgress.isIndeterminate = false
+                            videoCornerProgress.max = 100
+                            videoCornerProgress.progress = currentDownloadProgress
+                            videoBlurOverlay.setOnClickListener { onCancelDownload(m) }
+                            videoCornerActionContainer.setOnClickListener { onCancelDownload(m) }
+                        } else if (!isFromMe && !isRevealed) {
+                            // Karşıdan gelen medya: sadece ortadaki download ikonu, köşe aksiyon yok
+                            videoCenterActionContainer.visibility = View.VISIBLE
+                            videoDownloadIcon.setImageResource(R.drawable.ic_download)
+                            videoBlurOverlay.setOnClickListener { onStartDownload(m) }
+                        } else if (isPendingUpload) {
+                            // Gönderen için: yükleme devam ediyorsa X ikonu + etrafında progress bar
+                            videoCornerActionContainer.visibility = View.VISIBLE
+                            videoCornerActionIcon.setImageResource(R.drawable.ic_close_black)
+                            videoCornerProgress.visibility = View.VISIBLE
+                            videoCornerProgress.isIndeterminate = false
+                            videoCornerProgress.max = 100
+                            videoCornerProgress.progress = currentUploadProgress
                             videoBlurOverlay.setOnClickListener { onCancelUpload(m) }
+                            videoCornerActionContainer.setOnClickListener { onCancelUpload(m) }
                         } else if (isCanceledUpload) {
                             // Gönderen için: iptal edilmiş gönderi, export ikonu, tıklayınca tekrar gönder
                             videoCornerActionContainer.visibility = View.VISIBLE
@@ -1184,11 +1420,7 @@ private class ChatMessageAdapter(
                             videoCornerActionText.text = itemView.context.getString(R.string.chat_retry_upload)
                             videoCornerActionText.visibility = View.VISIBLE
                             videoBlurOverlay.setOnClickListener { onRetryUpload(m) }
-                        } else {
-                            // Karşıdan gelen medya: indirme ikonu, tıklayınca reveal
-                            videoCenterActionContainer.visibility = View.VISIBLE
-                            videoDownloadIcon.setImageResource(R.drawable.ic_download)
-                            videoBlurOverlay.setOnClickListener { onRevealMedia(m) }
+                            videoCornerActionContainer.setOnClickListener { onRetryUpload(m) }
                         }
                         videoBlurOverlay.setOnLongClickListener { onMessageLongClick(m); true }
                     } else {
@@ -1207,10 +1439,22 @@ private class ChatMessageAdapter(
                             videoThumb.setImageDrawable(null)
                         }
                         videoRow.setOnClickListener {
-                            m.mediaUrl?.let { url -> onPlayVideo(url) }
+                            val playSource = downloadedLocalPath ?: m.mediaUrl
+                            playSource?.let { urlOrPath ->
+                                val finalUrl = if (downloadedLocalPath != null) {
+                                    android.net.Uri.fromFile(java.io.File(urlOrPath)).toString()
+                                } else {
+                                    urlOrPath
+                                }
+                                onPlayVideo(finalUrl)
+                            }
                         }
                         videoBlurOverlay.setOnClickListener(null)
                         videoBlurOverlay.setOnLongClickListener(null)
+                        videoCornerActionContainer.setOnClickListener(null)
+                        // Blur kalktığında X / export alanını da tamamen gizle
+                        videoCornerActionContainer.visibility = View.GONE
+                        videoCornerProgress.visibility = View.GONE
                     }
                     videoRow.setOnLongClickListener { onMessageLongClick(m); true }
                     val hasCaption = !m.textContent.isNullOrEmpty()
@@ -1226,19 +1470,25 @@ private class ChatMessageAdapter(
                     imageMetaContainer.visibility = View.VISIBLE
                     timeView.visibility = View.GONE
                     tickView.visibility = View.GONE
-                    val isRevealed = m.id in revealedMessageIds
+                    val isRevealed = m.id in revealedMessageIds || isDownloaded
                     val isCanceledUpload = isFromMe && m.isPending() && m.id in canceledUploadIds
-                    val isPendingUpload = isFromMe && m.isPending() && !isCanceledUpload && hasStarted
-                    val showBlurOverlay = (!isFromMe && !isRevealed) || isPendingUpload || isCanceledUpload
+                    val isPendingUpload = isFromMe && m.isPending() && !isCanceledUpload
+                    val showBlurOverlay =
+                        (!isFromMe && !isRevealed && !isDownloaded) || isPendingUpload || isCanceledUpload || isDownloading
                     imageBlurOverlay.visibility = if (showBlurOverlay) View.VISIBLE else View.GONE
                     imageSizeText.text = formatFileSize(m.mediaSizeBytes)
 
                     val localMeta = GlobalValues.uploadMetaByClientId[m.id]
                     val localImagePath = localMeta?.filePath
+                    // Eski tıklama davranışlarını temizle
+                    imageThumb.setOnClickListener(null)
+                    imageCornerActionContainer.setOnClickListener(null)
+
                     if (showBlurOverlay) {
                         imageCenterActionContainer.visibility = View.GONE
                         imageCornerActionContainer.visibility = View.GONE
                         imageCornerActionText.visibility = View.GONE
+                        imageCornerProgress.visibility = View.GONE
 
                         // Blur varken kapak göster:
                         when {
@@ -1250,7 +1500,7 @@ private class ChatMessageAdapter(
                                     .into(imageThumb)
                             }
                             // Karşıdan gelen ve henüz reveal edilmemiş resim
-                            !isFromMe && !isRevealed && !m.mediaUrl.isNullOrBlank() -> {
+                            !isFromMe && !isRevealed && !isDownloaded && !m.mediaUrl.isNullOrBlank() -> {
                                 Glide.with(itemView.context)
                                     .load(m.mediaUrl)
                                     .centerCrop()
@@ -1261,10 +1511,31 @@ private class ChatMessageAdapter(
                             }
                         }
                         when {
+                            !isFromMe && isDownloading -> {
+                                imageCornerActionContainer.visibility = View.VISIBLE
+                                imageCornerActionIcon.setImageResource(R.drawable.ic_close_black)
+                                imageCornerProgress.visibility = View.VISIBLE
+                                imageCornerProgress.isIndeterminate = false
+                                imageCornerProgress.max = 100
+                                imageCornerProgress.progress = currentDownloadProgress
+                                imageBlurOverlay.setOnClickListener { onCancelDownload(m) }
+                                imageCornerActionContainer.setOnClickListener { onCancelDownload(m) }
+                            }
+                            !isFromMe && !isRevealed && !isDownloaded -> {
+                                // Karşıdan gelen medya: sadece ortadaki download ikonu
+                                imageCenterActionContainer.visibility = View.VISIBLE
+                                imageDownloadIcon.setImageResource(R.drawable.ic_download)
+                                imageBlurOverlay.setOnClickListener { onStartDownload(m) }
+                            }
                             isPendingUpload -> {
                                 imageCornerActionContainer.visibility = View.VISIBLE
                                 imageCornerActionIcon.setImageResource(R.drawable.ic_close_black)
+                                imageCornerProgress.visibility = View.VISIBLE
+                                imageCornerProgress.isIndeterminate = false
+                                imageCornerProgress.max = 100
+                                imageCornerProgress.progress = currentUploadProgress
                                 imageBlurOverlay.setOnClickListener { onCancelUpload(m) }
+                                imageCornerActionContainer.setOnClickListener { onCancelUpload(m) }
                             }
                             isCanceledUpload -> {
                                 imageCornerActionContainer.visibility = View.VISIBLE
@@ -1272,18 +1543,19 @@ private class ChatMessageAdapter(
                                 imageCornerActionText.text = itemView.context.getString(R.string.chat_retry_upload)
                                 imageCornerActionText.visibility = View.VISIBLE
                                 imageBlurOverlay.setOnClickListener { onRetryUpload(m) }
+                                imageCornerActionContainer.setOnClickListener { onRetryUpload(m) }
                             }
                             else -> {
                                 imageCenterActionContainer.visibility = View.VISIBLE
                                 imageDownloadIcon.setImageResource(R.drawable.ic_download)
-                                imageBlurOverlay.setOnClickListener { onRevealMedia(m) }
+                                imageBlurOverlay.setOnClickListener { onStartDownload(m) }
                             }
                         }
                         imageBlurOverlay.setOnLongClickListener { onMessageLongClick(m); true }
                         imageThumb.setOnClickListener(null)
                         imageThumb.setOnLongClickListener(null)
                     } else {
-                        val source = localImagePath ?: m.mediaUrl
+                        val source = localImagePath ?: downloadedLocalPath ?: m.mediaUrl
                         source?.let { urlOrPath ->
                             val request = Glide.with(itemView.context)
                             if (localImagePath != null && urlOrPath == localImagePath) {
@@ -1291,9 +1563,15 @@ private class ChatMessageAdapter(
                             } else {
                                 request.load(urlOrPath).centerCrop().into(imageThumb)
                             }
-                            if (m.mediaUrl != null) {
-                                imageThumb.setOnClickListener { onImageClick(m.mediaUrl!!) }
-                            } else {
+                            val clickSource = downloadedLocalPath ?: m.mediaUrl
+                            clickSource?.let { urlOrPath ->
+                                val finalUrl = if (downloadedLocalPath != null) {
+                                    android.net.Uri.fromFile(java.io.File(urlOrPath)).toString()
+                                } else {
+                                    urlOrPath
+                                }
+                                imageThumb.setOnClickListener { onImageClick(finalUrl) }
+                            } ?: run {
                                 imageThumb.setOnClickListener(null)
                             }
                         } ?: run {
@@ -1303,6 +1581,8 @@ private class ChatMessageAdapter(
                         imageThumb.setOnLongClickListener { onMessageLongClick(m); true }
                         imageBlurOverlay.setOnClickListener(null)
                         imageBlurOverlay.setOnLongClickListener(null)
+                        imageCornerActionContainer.visibility = View.GONE
+                        imageCornerProgress.visibility = View.GONE
                     }
                     val hasCaption = !m.textContent.isNullOrEmpty()
                     captionText.visibility = if (hasCaption) View.VISIBLE else View.GONE

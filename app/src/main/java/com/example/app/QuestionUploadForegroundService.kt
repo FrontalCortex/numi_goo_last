@@ -184,6 +184,17 @@ class QuestionUploadForegroundService : Service() {
             val remainingMs =
                 if (speed > 0 && total > transferred) ((total - transferred) / speed).toLong() else -1L
             updateNotificationProgress(typeLabel, transferred, total, remainingMs, clientId)
+
+            // Yükleme ilerlemesini sohbete bildir (yüzde)
+            if (total > 0) {
+                val percent = (100 * transferred / total).toInt().coerceIn(0, 100)
+                val progressIntent = Intent(ACTION_UPLOAD_PROGRESS).apply {
+                    putExtra(KEY_QUESTION_ID, item.questionId)
+                    putExtra(KEY_CLIENT_ID, clientId)
+                    putExtra(KEY_UPLOAD_PROGRESS, percent)
+                }
+                sendBroadcast(progressIntent)
+            }
         }.addOnCompleteListener {
             activeTasks.remove(clientId)
             if (currentUploadClientId == clientId) {
@@ -458,6 +469,9 @@ class QuestionUploadForegroundService : Service() {
         const val ACTION_CANCEL_UPLOAD = "com.example.app.action.CANCEL_UPLOAD"
         const val ACTION_UPLOAD_STARTED = "com.example.app.action.UPLOAD_STARTED"
         const val ACTION_UPLOAD_CANCELED = "com.example.app.action.UPLOAD_CANCELED"
+        const val ACTION_UPLOAD_PROGRESS = "com.example.app.action.UPLOAD_PROGRESS"
+
+        const val KEY_UPLOAD_PROGRESS = "upload_progress"
 
         fun start(context: android.content.Context, intent: Intent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

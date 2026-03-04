@@ -1,7 +1,11 @@
 package com.example.app
 
+import android.content.Context
 import com.example.app.model.QuestionMessage
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlin.math.pow
+import java.io.File
 
 object GlobalValues {
     var lessonStep: Int = 1
@@ -52,6 +56,48 @@ object GlobalValues {
 
     /** Hangi questionId altında hangi pending clientId'lerin upload'ı gerçekten başladı. */
     val activeUploadIdsByQuestion: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
+    /** Hangi questionId altında hangi mesajların indirilmesi devam ediyor (alıcı taraf). */
+    val activeDownloadIdsByQuestion: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
+    /**
+     * Karşıdan gelen mesajlar için, medya dosyasının cihazda nereye indirildiğini tutar.
+     * key: messageId, value: absolute local file path.
+     */
+    val downloadedMediaByMessageId: MutableMap<String, String> = mutableMapOf()
+
+    private const val PREFS_NAME = "GlobalValuesPrefs"
+    private const val KEY_DOWNLOADED_MEDIA = "downloaded_media_by_message"
+
+    fun loadDownloadedMediaCache(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val json = prefs.getString(KEY_DOWNLOADED_MEDIA, null) ?: return
+        val type = object : TypeToken<Map<String, String>>() {}.type
+        val rawMap: Map<String, String> = try {
+            Gson().fromJson<Map<String, String>>(json, type) ?: emptyMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+
+        downloadedMediaByMessageId.clear()
+        for ((messageId, path) in rawMap) {
+            if (path.isNullOrBlank()) continue
+            val file = File(path)
+            if (file.exists()) {
+                downloadedMediaByMessageId[messageId] = file.absolutePath
+            }
+        }
+    }
+
+    fun persistDownloadedMediaCache(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        // Sadece gerçekten var olan dosyaları yaz.
+        val filtered = downloadedMediaByMessageId.filterValues { path ->
+            !path.isNullOrBlank() && File(path).exists()
+        }
+        val json = Gson().toJson(filtered)
+        prefs.edit().putString(KEY_DOWNLOADED_MEDIA, json).apply()
+    }
 }
 
 data class PendingUploadMeta(

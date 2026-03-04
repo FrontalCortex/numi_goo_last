@@ -111,6 +111,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         tools:listitem="@layout/item_question" />
 
+    <!-- Sohbet açılmadan önce mesajlar preload edilirken gösterilen loading -->
+    <ProgressBar
+        android:id="@+id/chatLoading"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <TextView
         android:id="@+id/emptyText"
         android:layout_width="wrap_content"

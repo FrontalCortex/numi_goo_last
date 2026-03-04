@@ -12,7 +12,10 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
-        
+
+        // Daha önce indirilmiş medya dosyalarının cache'ini belleğe yükle
+        GlobalValues.loadDownloadedMediaCache(applicationContext)
+
         // 2 saniye bekle
         Handler(Looper.getMainLooper()).postDelayed({
             checkLoginStatus()

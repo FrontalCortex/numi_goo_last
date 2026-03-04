@@ -228,6 +228,34 @@ class NotificationFragment : Fragment() {
         }
     }
 
+    private fun openChatAfterPreload(questionId: String) {
+        // Loading göster, list tıklamalarını geçici olarak kapat
+        binding.chatLoading.visibility = View.VISIBLE
+        binding.questionsRecyclerView.isEnabled = false
+
+        firestore.collection("questions")
+            .document(questionId)
+            .collection("messages")
+            .orderBy("createdAt", Query.Direction.ASCENDING)
+            .limit(1)
+            .get()
+            .addOnSuccessListener {
+                binding.chatLoading.visibility = View.GONE
+                binding.questionsRecyclerView.isEnabled = true
+
+                val fragment = QuestionChatFragment.newInstance(questionId)
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerID, fragment)
+                    .addToBackStack(null)
+                    .commit()
+            }
+            .addOnFailureListener {
+                binding.chatLoading.visibility = View.GONE
+                binding.questionsRecyclerView.isEnabled = true
+                // Hata durumda şimdilik sadece boş bırakıyoruz; istersen Toast ekleyebilirsin.
+            }
+    }
+
     private fun onQuestionClick(question: StudentQuestion) {
         if (isTeacher) {
             if (teacherTab == TeacherTab.POOL) {
@@ -236,10 +264,7 @@ class NotificationFragment : Fragment() {
                     .addToBackStack(null)
                     .commit()
             } else {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(question.id))
-                    .addToBackStack(null)
-                    .commit()
+                openChatAfterPreload(question.id)
             }
         } else {
             if (question.status == StudentQuestion.STATUS_PENDING) {
@@ -248,10 +273,7 @@ class NotificationFragment : Fragment() {
                     .addToBackStack(null)
                     .commit()
             } else {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(question.id))
-                    .addToBackStack(null)
-                    .commit()
+                openChatAfterPreload(question.id)
             }
         }
     }

@@ -189,13 +189,29 @@
                         android:visibility="gone"
                         tools:visibility="visible">
 
-                        <ImageView
-                            android:id="@+id/videoCornerActionIcon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/export_ic"
-                            android:tint="@android:color/white"
-                            android:contentDescription="@null" />
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content">
+
+                            <ProgressBar
+                                android:id="@+id/videoCornerProgress"
+                                style="?android:attr/progressBarStyleSmall"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:indeterminate="false"
+                                android:max="100"
+                                android:progress="0"
+                                android:visibility="gone" />
+
+                            <ImageView
+                                android:id="@+id/videoCornerActionIcon"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/export_ic"
+                                android:tint="@android:color/white"
+                                android:contentDescription="@null" />
+                        </FrameLayout>
 
                         <TextView
                             android:id="@+id/videoCornerActionText"
@@ -316,13 +332,29 @@
                         android:visibility="gone"
                         tools:visibility="visible">
 
-                        <ImageView
-                            android:id="@+id/imageCornerActionIcon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
-                            android:src="@drawable/export_ic"
-                            android:tint="@android:color/white"
-                            android:contentDescription="@null" />
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content">
+
+                            <ProgressBar
+                                android:id="@+id/imageCornerProgress"
+                                style="?android:attr/progressBarStyleSmall"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:indeterminate="false"
+                                android:max="100"
+                                android:progress="0"
+                                android:visibility="gone" />
+
+                            <ImageView
+                                android:id="@+id/imageCornerActionIcon"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/export_ic"
+                                android:tint="@android:color/white"
+                                android:contentDescription="@null" />
+                        </FrameLayout>
 
                         <TextView
                             android:id="@+id/imageCornerActionText"
