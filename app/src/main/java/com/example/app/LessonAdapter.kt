@@ -702,10 +702,18 @@ class LessonAdapter(
         fun bind(item: LessonItem) {
             fun applyCupIcon() {
                 val resId = item.stepCupIcon
+
+                // 0 gelirse setImageResource(0) icon'ı siler, exception atmaz → default kupa'ya düş.
+                if (resId == 0) {
+                    lessonIcon.setImageResource(R.drawable.cup_ic)
+                    item.stepCupIcon = R.drawable.cup_ic
+                    return
+                }
+
                 try {
                     lessonIcon.setImageResource(resId)
                 } catch (_: android.content.res.Resources.NotFoundException) {
-                    // Veritabanında eski/var olmayan bir icon id'si varsa, default kupa ikonuna düş.
+                    // Eski/geçersiz id geldiyse default kupa
                     lessonIcon.setImageResource(R.drawable.cup_ic)
                     item.stepCupIcon = R.drawable.cup_ic
                 }
@@ -723,11 +731,16 @@ class LessonAdapter(
                     lessonCard.setOnClickListener {
                         showLessonBottomSheet(item, adapterPosition)
                     }
+
+                    // TYPE_CHEST için default davranış:
+                    // - Ders bitmemişse: her zaman cup_ic göster
+                    // - Ders bitmişse: CupFragment'tan gelen stepCupIcon'ı (cup_ic / cup_ic2 / cup_ic3) göster
                     if (item.stepIsFinish) {
                         updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
                         applyCupIcon()
                     } else {
-                        applyCupIcon()
+                        lessonIcon.setImageResource(R.drawable.cup_ic)
+                        item.stepCupIcon = R.drawable.cup_ic
                     }
                     val completedSteps = item.stepCompletionStatus.count { it }
                     when (completedSteps) {

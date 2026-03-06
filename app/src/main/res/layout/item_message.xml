@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="6dp"
-    android:paddingEnd="6dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
     android:paddingTop="4dp"
     android:paddingBottom="4dp">
 
@@ -23,10 +23,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="end"
-            android:paddingStart="12dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:background="@drawable/hint_background"
             tools:background="@drawable/chat_bubble_me">
 
@@ -80,7 +80,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    android:background="#40000000"
                     tools:visibility="visible">
                     <ImageView
                         android:id="@+id/videoThumb"
@@ -89,7 +88,8 @@
                         android:adjustViewBounds="true"
                         android:maxWidth="@dimen/chat_media_max_width"
                         android:scaleType="centerCrop"
-                        android:background="#40000000"
+                        android:clipToOutline="true"
+                        android:background="@drawable/chat_media_video_bg"
                         android:contentDescription="@null" />
                     <ImageView
                         android:id="@+id/videoPlayIcon"
@@ -239,7 +239,8 @@
                         android:adjustViewBounds="true"
                         android:maxWidth="@dimen/chat_media_max_width"
                         android:scaleType="centerCrop"
-                        android:background="#20000000"
+                        android:clipToOutline="true"
+                        android:background="@drawable/chat_media_image_bg"
                         tools:src="@android:drawable/ic_menu_gallery" />
 
                     <LinearLayout

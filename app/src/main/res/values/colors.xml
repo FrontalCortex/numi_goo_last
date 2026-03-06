@@ -24,6 +24,13 @@
     <color name="button_text_enabled">#000000</color>
     <color name="button_text_disabled">#666666</color>
     <color name="panel_background">#2A2A2A</color>
+    <color name="message_buttons">#CCE2E2FF</color>
+    <color name="message_topbar">#111416</color>
+    <color name="message_background">#2A2A2A</color>
+    <color name="message_sender">#1E6655</color>
+    <color name="message_getter">#292E2C</color>
+
+
 
     <!-- Modern Koyu Tema Renkleri -->
     <color name="dark_background">#0D1117</color>

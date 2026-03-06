@@ -516,6 +516,16 @@ class QuestionChatFragment : Fragment() {
                 }
             }
 
+        // Başlangıç durumu: sadece mikrofon görünür
+        binding.recordAudioButton.visibility = View.VISIBLE
+        binding.recordAudioButton.scaleX = 1f
+        binding.recordAudioButton.scaleY = 1f
+        binding.recordAudioButton.alpha = 1f
+        binding.sendTextButton.visibility = View.GONE
+        binding.sendTextButton.scaleX = 0f
+        binding.sendTextButton.scaleY = 0f
+        binding.sendTextButton.alpha = 0f
+
         binding.sendTextButton.setOnClickListener { sendTextMessage() }
         binding.recordAudioButton.setOnClickListener { toggleAudioRecording() }
         binding.galleryButton.setOnClickListener { openGalleryBottomSheet() }
@@ -558,6 +568,58 @@ class QuestionChatFragment : Fragment() {
         binding.captionBarThumbContainer.setOnClickListener { clearSelectedMediaAndHideCaptionBar() }
         binding.captionSendButton.setOnClickListener { sendSelectedMediaWithCaption() }
 
+        // Metin duruma göre mic / send animasyonlu geçiş
+        binding.textInput.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val hasText = !s.isNullOrEmpty()
+                if (hasText && binding.sendTextButton.visibility != View.VISIBLE) {
+                    // Mic -> Send
+                    binding.recordAudioButton.animate().cancel()
+                    binding.sendTextButton.animate().cancel()
+
+                    binding.recordAudioButton.animate()
+                        .scaleX(0f).scaleY(0f).alpha(0f)
+                        .setDuration(250)
+                        .withEndAction {
+                            binding.recordAudioButton.visibility = View.GONE
+                        }
+                        .start()
+
+                    binding.sendTextButton.visibility = View.VISIBLE
+                    binding.sendTextButton.scaleX = 0f
+                    binding.sendTextButton.scaleY = 0f
+                    binding.sendTextButton.alpha = 0f
+                    binding.sendTextButton.animate()
+                        .scaleX(1f).scaleY(1f).alpha(1f)
+                        .setDuration(250)
+                        .start()
+                } else if (!hasText && binding.recordAudioButton.visibility != View.VISIBLE) {
+                    // Send -> Mic
+                    binding.recordAudioButton.animate().cancel()
+                    binding.sendTextButton.animate().cancel()
+
+                    binding.sendTextButton.animate()
+                        .scaleX(0f).scaleY(0f).alpha(0f)
+                        .setDuration(250)
+                        .withEndAction {
+                            binding.sendTextButton.visibility = View.GONE
+                        }
+                        .start()
+
+                    binding.recordAudioButton.visibility = View.VISIBLE
+                    binding.recordAudioButton.scaleX = 0f
+                    binding.recordAudioButton.scaleY = 0f
+                    binding.recordAudioButton.alpha = 0f
+                    binding.recordAudioButton.animate()
+                        .scaleX(1f).scaleY(1f).alpha(1f)
+                        .setDuration(250)
+                        .start()
+                }
+            }
+        })
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -568,6 +630,8 @@ class QuestionChatFragment : Fragment() {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
         super.onStart()
+        // Chat ekranındayken üstteki currency paneli gizle
+        activity?.findViewById<View>(R.id.currencyPanel)?.visibility = View.GONE
         if (!uploadStartedReceiverRegistered) {
             val filter = IntentFilter().apply {
                 addAction(QuestionUploadForegroundService.ACTION_UPLOAD_STARTED)
@@ -595,6 +659,8 @@ class QuestionChatFragment : Fragment() {
             requireContext().unregisterReceiver(uploadReceiver)
             uploadStartedReceiverRegistered = false
         }
+        // Chat'ten çıkınca currency panelini geri göster
+        activity?.findViewById<View>(R.id.currencyPanel)?.visibility = View.VISIBLE
         super.onStop()
     }
 

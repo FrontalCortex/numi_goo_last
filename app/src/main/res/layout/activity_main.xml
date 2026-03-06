@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="#222"
+        android:background="@color/message_topbar"
         android:padding="12dp"
         android:gravity="center_vertical"
         android:elevation="4dp"
@@ -122,10 +122,10 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/coordinator_layout"
         app:menu="@menu/bottom_menu"
-        app:itemIconSize="40dp"
+        app:itemIconSize="32dp"
         app:itemIconTint="@null"
         app:itemTextColor="@null"
-        android:background="@color/background_color"
+        android:background="@color/message_topbar"
         app:labelVisibilityMode="labeled"/>
 
     <!-- Race panel açıkken alt bar tıklanmasın; bu overlay tıklamaları yer -->

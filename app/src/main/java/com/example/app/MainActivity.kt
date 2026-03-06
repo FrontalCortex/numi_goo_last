@@ -13,6 +13,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
@@ -54,6 +56,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Klavye açıldığında sadece bottomNavigationID'yi gizle, diğer görünümler normal IME insets alsın
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigationID) { view, insets ->
+            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            view.visibility = if (imeVisible) View.GONE else View.VISIBLE
+            insets
+        }
         
         // Giriş/kayıt sonrası gelindiyse oturumu temizleme (ProfileFragment vb. güncel kullanıcıyı gösterebilsin)
         val fromLogin = intent?.getBooleanExtra(EXTRA_FROM_LOGIN, false) == true
@@ -103,7 +112,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             // İlk açılış - TutorialFragment göster
             showFirstTutorial()
         }
-        window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
+        // Sistem çubuğu renklerini message_topbar ile eşitle
+        window.statusBarColor = ContextCompat.getColor(this, R.color.message_topbar)
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.message_topbar)
         binding.bottomNavigationID.itemIconTintList = null
 
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön

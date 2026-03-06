@@ -4,27 +4,27 @@
 
     <item
         android:id="@+id/map"
-        android:icon="@mipmap/map"
+        android:icon="@drawable/home_ic"
         app:showAsAction="always"
         >
 
     </item>
     <item
         android:id="@+id/profile"
-        android:icon="@mipmap/user"
+        android:icon="@drawable/profile_ic2"
         app:showAsAction="always">
 
     </item>
     <item
         android:id="@+id/notification"
-        android:icon="@mipmap/notification"
+        android:icon="@drawable/chat_ic"
         app:showAsAction="always">
 
     </item>
 
     <item
         android:id="@+id/tasks"
-        android:icon="@mipmap/tasks"
+        android:icon="@drawable/notification_ic"
         app:showAsAction="always">
 
     </item>

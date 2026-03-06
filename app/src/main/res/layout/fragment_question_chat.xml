@@ -3,7 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#111416"
+    >
 
     <!-- Üst panel: solda geri butonu, sağda soru ekran görüntüsü butonu -->
     <LinearLayout
@@ -13,6 +15,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingStart="4dp"
+        android:background="@color/message_topbar"
         android:paddingEnd="4dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -25,7 +28,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_back_arrow"
             android:contentDescription="Geri"
-            app:tint="@color/lesson_completed" />
+            app:tint="@color/message_buttons" />
 
         <View
             android:layout_width="0dp"
@@ -40,7 +43,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/unlock_ic"
             android:visibility="visible"
-            app:tint="@android:color/darker_gray" />
+            app:tint="@color/message_buttons" />
 
         <ImageButton
             android:id="@+id/questionScreenshotButton"
@@ -50,16 +53,26 @@
             android:src="@drawable/ic_question_picture"
             android:contentDescription="Sorunun ekran görüntüsü"
             android:visibility="visible"
-            app:tint="@android:color/darker_gray" />
+            app:tint="@color/message_buttons" />
 
     </LinearLayout>
+
+    <!-- Top bar'ın altında ince ayırıcı çizgi -->
+    <View
+        android:id="@+id/topBarDivider"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="#33FFFFFF"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/messagesRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="8dp"
-        app:layout_constraintTop_toBottomOf="@id/topBar"
+        android:paddingHorizontal="8dp"
+        app:layout_constraintTop_toBottomOf="@id/topBarDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/inputBar" />
@@ -71,56 +84,73 @@
         android:orientation="horizontal"
         android:padding="8dp"
         android:gravity="center_vertical"
-        android:background="#1E1E1E"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <EditText
-            android:id="@+id/textInput"
+        <!-- Metin alanı + içinde sağda galeri ikonu -->
+        <FrameLayout
+            android:id="@+id/textInputContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:inputType="textMultiLine|textCapSentences"
-            android:hint="Bir mesaj yazın"
-            android:padding="12dp"
-            android:background="@drawable/hint_background"
-            android:textColor="@android:color/white"
-            android:textColorHint="#80FFFFFF"
-            android:maxLines="4" />
+            android:layout_weight="1">
 
-        <ImageButton
-            android:id="@+id/recordAudioButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Ses kaydet"
-            app:srcCompat="@android:drawable/ic_btn_speak_now"
-            app:tint="@color/lesson_completed" />
+            <EditText
+                android:id="@+id/textInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:inputType="textMultiLine|textCapSentences"
+                android:hint="Bir mesaj yazın"
+                android:paddingStart="12dp"
+                android:paddingEnd="40dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:background="@drawable/text_background"
+                android:textColor="@android:color/white"
+                android:textColorHint="#80FFFFFF"
+                android:maxLines="4" />
 
-        <ImageButton
-            android:id="@+id/galleryButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Galeri"
-            android:src="@android:drawable/ic_menu_gallery"
-            app:tint="@color/lesson_completed" />
+            <ImageButton
+                android:id="@+id/galleryButton"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Galeri"
+                android:src="@drawable/gallery_ic"
+                app:tint="@color/message_buttons" />
+        </FrameLayout>
 
-        
-
-        <ImageButton
-            android:id="@+id/sendTextButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+        <!-- Sağ taraftaki dairesel kapsülde mic / send (tek seferde biri görünür) -->
+        <FrameLayout
+            android:id="@+id/sendAudioContainer"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_send"
-            android:contentDescription="Gönder"
-            app:tint="@color/lesson_completed" />
+            android:background="@drawable/text_background"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+            <ImageButton
+                android:id="@+id/recordAudioButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                android:contentDescription="Ses kaydet"
+                android:src="@drawable/microphone_ic"
+                app:tint="@color/message_buttons" />
+
+            <ImageButton
+                android:id="@+id/sendTextButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                android:contentDescription="Gönder"
+                android:src="@drawable/send_ic"
+                android:visibility="gone"
+                app:tint="@color/button_disabled" />
+        </FrameLayout>
     </LinearLayout>
 
     <LinearLayout
