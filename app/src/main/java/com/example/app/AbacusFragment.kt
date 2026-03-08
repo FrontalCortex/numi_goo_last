@@ -35,6 +35,9 @@ import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAbacusBinding
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
 import java.io.File
@@ -238,10 +241,29 @@ class AbacusFragment : Fragment() {
         // Guide panel'i kur (eğer varsa)
         setupGuidePanel()
 
-        // Sorunu gönder butonu: sadece öğrenci hesabında göster
+        // Sorunu gönder butonu: sadece öğrenci hesabında göster; ban/restrictedUntil varsa gösterme
         val authManager = AuthManager().also { it.initialize(requireContext()) }
-        binding.askQuestionButton.visibility = if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) View.GONE else View.VISIBLE
+        val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
         binding.askQuestionButton.setOnClickListener { captureAndOpenCreateQuestion() }
+        if (isTeacher) {
+            binding.askQuestionButton.visibility = View.GONE
+        } else {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (uid == null) {
+                binding.askQuestionButton.visibility = View.GONE
+            } else {
+                binding.askQuestionButton.visibility = View.GONE
+                FirebaseFirestore.getInstance().collection("users").document(uid).get()
+                    .addOnSuccessListener { userDoc ->
+                        val banned = userDoc.getBoolean("banned") == true
+                        val restrictedUntil = userDoc.getTimestamp("restrictedUntil")
+                        val now = Timestamp.now()
+                        val isRestricted = banned || (restrictedUntil != null && restrictedUntil.compareTo(now) > 0)
+                        binding.askQuestionButton.visibility = if (isRestricted) View.GONE else View.VISIBLE
+                    }
+                    .addOnFailureListener { binding.askQuestionButton.visibility = View.VISIBLE }
+            }
+        }
     }
 
     private fun captureAndOpenCreateQuestion() {

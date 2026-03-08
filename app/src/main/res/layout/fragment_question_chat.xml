@@ -75,18 +75,34 @@
         app:layout_constraintTop_toBottomOf="@id/topBarDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/inputBar" />
+        app:layout_constraintBottom_toTopOf="@id/bottomArea" />
 
-    <LinearLayout
-        android:id="@+id/inputBar"
+    <FrameLayout
+        android:id="@+id/bottomArea"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/restrictionMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:text="Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
+            android:textColor="@android:color/white"
+            android:gravity="center"
+            android:background="#2C2C2C" />
+
+        <LinearLayout
+            android:id="@+id/inputBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
 
         <!-- Metin alanı + içinde sağda galeri ikonu -->
         <FrameLayout
@@ -152,6 +168,7 @@
                 app:tint="@color/button_disabled" />
         </FrameLayout>
     </LinearLayout>
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/audioBar"
@@ -163,7 +180,7 @@
         android:paddingEnd="12dp"
         android:background="#2C2C2C"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomArea"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
         <ImageButton

@@ -427,4 +427,97 @@ exports.resetTeacherPassword = functions.https.onCall(async (data, context) => {
   return { success: true };
 });
 
+// Recursive delete of a collection (batch 500)
+async function deleteCollection(path) {
+  const col = db.collection(path);
+  const BATCH_SIZE = 500;
+  let snapshot = await col.limit(BATCH_SIZE).get();
+  while (!snapshot.empty) {
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    snapshot = await col.limit(BATCH_SIZE).get();
+  }
+}
+
+// Yeni mesaj eklendiğinde alıcıya FCM bildirimi gönder (uygulama ikonu + gönderen adı + mesaj önizlemesi)
+const MESSAGE_PREVIEW_MAX_LEN = 120;
+exports.onMessageCreated = functions.firestore
+  .document('questions/{questionId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const message = snap.data();
+    const questionId = context.params.questionId;
+    const senderUid = message.senderUid || '';
+    const type = message.type || 'text';
+    const textContent = (message.textContent || '').trim();
+
+    const questionSnap = await db.collection('questions').doc(questionId).get();
+    if (!questionSnap.exists) return null;
+    const question = questionSnap.data();
+    const studentUid = question.studentUid || '';
+    const claimedByTeacherUid = question.claimedByTeacherUid || null;
+
+    let recipientUid = null;
+    if (senderUid === studentUid) {
+      recipientUid = claimedByTeacherUid;
+    } else {
+      recipientUid = studentUid;
+    }
+    if (!recipientUid || recipientUid === senderUid) return null;
+
+    const recipientSnap = await db.collection('users').doc(recipientUid).get();
+    const fcmToken = recipientSnap.exists ? (recipientSnap.data().fcmToken || null) : null;
+    if (!fcmToken) return null;
+
+    let senderName = 'Kullanıcı';
+    try {
+      const userSnap = await db.collection('users').doc(senderUid).get();
+      if (userSnap.exists && userSnap.data().name) senderName = userSnap.data().name;
+      else {
+        const userRecord = await admin.auth().getUser(senderUid);
+        if (userRecord.displayName) senderName = userRecord.displayName;
+      }
+    } catch (e) {
+      // keep default senderName
+    }
+
+    let body = '';
+    if (type === 'text' && textContent) {
+      body = textContent.length > MESSAGE_PREVIEW_MAX_LEN
+        ? textContent.slice(0, MESSAGE_PREVIEW_MAX_LEN) + '…'
+        : textContent;
+    } else if (type === 'audio') body = 'Ses mesajı';
+    else if (type === 'video') body = 'Video';
+    else if (type === 'image') body = 'Görsel';
+    else body = 'Yeni mesaj';
+
+    const payload = {
+      notification: { title: senderName, body },
+      data: { questionId: String(questionId), title: senderName, body },
+      token: fcmToken,
+    };
+    await admin.messaging().send(payload);
+    return null;
+  });
+
+// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları kalıcı sil
+exports.onQuestionUpdated = functions.firestore
+  .document('questions/{questionId}')
+  .onUpdate(async (change, context) => {
+    const after = change.after.data();
+    const questionId = context.params.questionId;
+    const deletedForUids = Array.isArray(after.deletedForUids) ? after.deletedForUids : [];
+    const studentUid = after.studentUid || '';
+    const claimedByTeacherUid = after.claimedByTeacherUid || '';
+
+    if (!studentUid || !claimedByTeacherUid) return null;
+    const bothDeleted =
+      deletedForUids.includes(studentUid) && deletedForUids.includes(claimedByTeacherUid);
+    if (!bothDeleted) return null;
+
+    await deleteCollection(`questions/${questionId}/messages`);
+    await change.after.ref.delete();
+    return null;
+  });
+
 

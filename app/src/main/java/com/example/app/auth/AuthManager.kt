@@ -27,13 +27,13 @@ class AuthManager {
         const val ROLE_TEACHER = "TEACHER"
         private const val PREFS_NAME = "auth_prefs"
     }
-
+    
     fun initialize(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
+        
         // Google Sign-In yapılandırması
         val webClientId = context.getString(com.example.app.R.string.default_web_client_id)
-
+        
         // Web Client ID kontrolü
         if (webClientId.isEmpty() || webClientId == "YOUR_WEB_CLIENT_ID_HERE") {
             android.util.Log.e(
@@ -41,19 +41,19 @@ class AuthManager {
                 "Web Client ID ayarlanmamış! Firebase Console'dan Web Client ID'yi alıp strings.xml'e ekleyin."
             )
         }
-
+        
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(webClientId)
             .requestEmail()
             .build()
-
+        
         googleSignInClient = GoogleSignIn.getClient(context, gso)
     }
-
+    
     fun getGoogleSignInIntent(): Intent {
         return googleSignInClient.signInIntent
     }
-
+    
     /** Öğretmen şifre sıfırlama: Firebase Auth ile e-posta gönderir. */
     fun sendPasswordResetEmail(email: String, callback: (Boolean, String?) -> Unit) {
         val trimmed = email.trim()
@@ -418,40 +418,40 @@ class AuthManager {
             callback(false, "Google hesap bilgisi alınamadı. Lütfen tekrar deneyin.")
             return
         }
-
+        
         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-
+        
         android.util.Log.d("AuthManager", "Firebase Auth ile Google credential kullanılıyor")
-
+        
         auth.signInWithCredential(credential)
             .addOnCompleteListener { task ->
                 if (!task.isSuccessful) {
                     val exception = task.exception
-
+                    
                     // Detaylı log
                     val errorCode =
                         (exception as? com.google.firebase.auth.FirebaseAuthException)?.errorCode
                     val errorMessageFull = exception?.message ?: ""
                     val errorClass = exception?.javaClass?.simpleName ?: "Unknown"
-
+                    
                     android.util.Log.e("AuthManager", "=== Firebase Auth Error ===")
                     android.util.Log.e("AuthManager", "Error Code: $errorCode")
                     android.util.Log.e("AuthManager", "Error Message: $errorMessageFull")
                     android.util.Log.e("AuthManager", "Error Class: $errorClass")
                     android.util.Log.e("AuthManager", "Full Exception:", exception)
-
+                    
                     val errorMessage = when {
-                        errorCode == "ERROR_NETWORK_REQUEST_FAILED" ||
-                                errorMessageFull.contains("network", ignoreCase = true) ->
+                        errorCode == "ERROR_NETWORK_REQUEST_FAILED" || 
+                        errorMessageFull.contains("network", ignoreCase = true) -> 
                             "Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin."
-
-                        errorCode == "ERROR_INVALID_CREDENTIAL" ||
-                                errorMessageFull.contains("invalid", ignoreCase = true) ->
+                        
+                        errorCode == "ERROR_INVALID_CREDENTIAL" || 
+                        errorMessageFull.contains("invalid", ignoreCase = true) -> 
                             "Geçersiz kimlik bilgisi. Web Client ID doğru mu kontrol edin."
-
-                        errorCode == "ERROR_OPERATION_NOT_ALLOWED" ||
-                                errorMessageFull.contains("permission", ignoreCase = true) ||
-                                errorMessageFull.contains("PERMISSION_DENIED", ignoreCase = true) ||
+                        
+                        errorCode == "ERROR_OPERATION_NOT_ALLOWED" || 
+                        errorMessageFull.contains("permission", ignoreCase = true) || 
+                        errorMessageFull.contains("PERMISSION_DENIED", ignoreCase = true) ||
                                 errorMessageFull.contains(
                                     "OPERATION_NOT_ALLOWED",
                                     ignoreCase = true
@@ -470,26 +470,26 @@ class AuthManager {
                             """.trimIndent()
                             detailedError
                         }
-
+                        
                         errorCode == "ERROR_DEVELOPER_ERROR" ||
-                                errorMessageFull.contains("DEVELOPER_ERROR", ignoreCase = true) ->
+                        errorMessageFull.contains("DEVELOPER_ERROR", ignoreCase = true) ->
                             "Yapılandırma hatası:\n\n1. Web Client ID doğru mu? (strings.xml)\n2. SHA-1 fingerprint Firebase Console'a eklendi mi?\n3. Google Sign-In Firebase Console'da etkin mi?\n\nHata: $errorMessageFull"
-
+                        
                         else -> {
                             "Giriş başarısız (Code: $errorCode)\n\n$errorMessageFull\n\nLogcat'te detaylı bilgi için 'AuthManager' tag'ini kontrol edin."
                         }
                     }
-
+                    
                     callback(false, errorMessage)
                     return@addOnCompleteListener
                 }
-
+                
                 val user = auth.currentUser
                 if (user == null) {
                     callback(false, "Kullanıcı bulunamadı")
                     return@addOnCompleteListener
                 }
-
+                
                 // Kullanıcının daha önce kayıt olup olmadığını kontrol et
                 firestore.collection("users").document(user.uid)
                     .get()
@@ -497,7 +497,7 @@ class AuthManager {
                         if (doc.exists()) {
                             // Mevcut kullanıcı - rol kontrolü yap
                             val role = doc.getString("role") ?: ROLE_STUDENT
-
+                            
                             // Öğretmen hesabı ise Google ile giriş yapılmasına izin verme
                             if (role == ROLE_TEACHER) {
                                 auth.signOut()
@@ -517,8 +517,8 @@ class AuthManager {
                                             firestore.collection("users").document(user.uid)
                                                 .update("verified", true)
                                                 .addOnSuccessListener {
-                                                    cacheBasicUser(
-                                                        user.email ?: "",
+                                cacheBasicUser(
+                                    user.email ?: "",
                                                         ROLE_STUDENT,
                                                         user.displayName ?: "",
                                                         userId
@@ -532,7 +532,7 @@ class AuthManager {
                                                         userId
                                                     )
                                                 }
-                                            callback(true, null)
+                                callback(true, null)
                                         }
                                         .addOnFailureListener {
                                             cacheBasicUser(
@@ -547,17 +547,17 @@ class AuthManager {
                                 return@addOnSuccessListener
                             }
 
-                            // Öğrenci girişi - verified kontrolü
-                            val verified = doc.getBoolean("verified") ?: false
-                            if (!verified) {
-                                // E-posta doğrulaması gerekli değil Google Sign-In için
-                                // Ama yine de verified olarak işaretle
-                                firestore.collection("users").document(user.uid)
-                                    .update("verified", true)
-                                    .addOnSuccessListener {
-                                        cacheBasicUser(
-                                            user.email ?: "",
-                                            ROLE_STUDENT,
+                                // Öğrenci girişi - verified kontrolü
+                                val verified = doc.getBoolean("verified") ?: false
+                                if (!verified) {
+                                    // E-posta doğrulaması gerekli değil Google Sign-In için
+                                    // Ama yine de verified olarak işaretle
+                                    firestore.collection("users").document(user.uid)
+                                        .update("verified", true)
+                                        .addOnSuccessListener {
+                                            cacheBasicUser(
+                                                user.email ?: "",
+                                                ROLE_STUDENT,
                                             user.displayName ?: "",
                                             userId
                                         )
@@ -569,17 +569,17 @@ class AuthManager {
                                             ROLE_STUDENT,
                                             user.displayName ?: "",
                                             userId
-                                        )
-                                        callback(true, null)
-                                    }
-                            } else {
-                                cacheBasicUser(
-                                    user.email ?: "",
-                                    ROLE_STUDENT,
+                                            )
+                                            callback(true, null)
+                                        }
+                                } else {
+                                    cacheBasicUser(
+                                        user.email ?: "",
+                                        ROLE_STUDENT,
                                     user.displayName ?: "",
                                     userId
-                                )
-                                callback(true, null)
+                                    )
+                                    callback(true, null)
                             }
                         } else {
                             // Firestore'da kullanıcı yok
@@ -590,41 +590,41 @@ class AuthManager {
                                     "Kayıt ekranından çağrıldı, otomatik kayıt yapılıyor"
                                 )
                                 generateUniqueUserId(ROLE_STUDENT) { userId ->
-                                    val userData = mapOf(
-                                        "uid" to user.uid,
+                                val userData = mapOf(
+                                    "uid" to user.uid,
                                         "userId" to userId,
-                                        "email" to (user.email ?: ""),
-                                        "name" to (user.displayName ?: ""),
-                                        "role" to ROLE_STUDENT,
-                                        "verified" to true, // Google Sign-In ile gelen kullanıcılar otomatik verified
-                                        "createdAt" to com.google.firebase.Timestamp.now()
-                                    )
-
-                                    firestore.collection("users").document(user.uid)
-                                        .set(userData)
-                                        .addOnSuccessListener {
-                                            cacheBasicUser(
-                                                user.email ?: "",
-                                                ROLE_STUDENT,
+                                    "email" to (user.email ?: ""),
+                                    "name" to (user.displayName ?: ""),
+                                    "role" to ROLE_STUDENT,
+                                    "verified" to true, // Google Sign-In ile gelen kullanıcılar otomatik verified
+                                    "createdAt" to com.google.firebase.Timestamp.now()
+                                )
+                                
+                                firestore.collection("users").document(user.uid)
+                                    .set(userData)
+                                    .addOnSuccessListener {
+                                        cacheBasicUser(
+                                            user.email ?: "",
+                                            ROLE_STUDENT,
                                                 user.displayName ?: "",
                                                 userId
-                                            )
-                                            callback(true, null)
+                                        )
+                                        callback(true, null)
+                                    }
+                                    .addOnFailureListener { e ->
+                                        callback(false, e.localizedMessage)
                                         }
-                                        .addOnFailureListener { e ->
-                                            callback(false, e.localizedMessage)
-                                        }
-                                }
+                                    }
                             } else {
                                 // Giriş ekranından çağrıldıysa kayıt ekranına yönlendir
                                 android.util.Log.w(
                                     "AuthManager",
                                     "Firestore'da kullanıcı bulunamadı ama Firebase Auth'da var. Kullanıcı çıkış yaptırılıyor."
                                 )
-
+                                
                                 // Firebase Auth'dan çıkış yap
                                 auth.signOut()
-
+                                
                                 // Özel bir hata kodu döndür ki UI'da kayıt ekranına yönlendirilebilsin
                                 callback(false, "ACCOUNT_NOT_REGISTERED")
                             }
@@ -635,7 +635,7 @@ class AuthManager {
                     }
             }
     }
-
+    
     fun handleGoogleSignInResult(
         task: Task<GoogleSignInAccount>,
         autoRegister: Boolean = false,
@@ -659,25 +659,25 @@ class AuthManager {
                 "Google sign in failed - Status: ${e.statusCode}, Message: ${e.message}",
                 e
             )
-
+            
             // Kullanıcı iptal ettiyse (12501) sessizce dön
             if (e.statusCode == 12501) {
                 android.util.Log.d("AuthManager", "Kullanıcı Google Sign-In'i iptal etti")
                 callback(false, "Kullanıcı girişi iptal edildi")
                 return
             }
-
+            
             val errorMessage = when (e.statusCode) {
                 10 -> "Yapılandırma hatası: Web Client ID eksik veya yanlış. Firebase Console'dan Web Client ID'yi alıp strings.xml'e ekleyin."
                 7 -> "Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin."
                 8 -> "İstek limiti aşıldı. Lütfen daha sonra tekrar deneyin."
                 else -> "Google girişi başarısız (Hata: ${e.statusCode}): ${e.localizedMessage ?: e.message}"
             }
-
+            
             callback(false, errorMessage)
         }
     }
-
+    
     fun isLoggedIn(): Boolean {
         return auth.currentUser != null
     }
@@ -701,7 +701,7 @@ class AuthManager {
                         callback(false, "Bu hesap öğrenci değil")
                         return@fetchUserRole
                     }
-
+                    
                     // Firestore'dan verified kontrolü yap
                     firestore.collection("users").document(user.uid)
                         .get()
@@ -713,7 +713,7 @@ class AuthManager {
                                     false,
                                     "E-posta doğrulaması gerekli. Lütfen e-postanızı doğrulayın."
                                 )
-                            } else {
+        } else {
                                 cacheBasicUser(email, ROLE_STUDENT, user.displayName ?: "", userId)
                                 callback(true, null)
                             }
@@ -742,13 +742,13 @@ class AuthManager {
                     .addOnSuccessListener { doc ->
                         val role = doc.getString("role") ?: ""
                         val userId = doc.getString("userId") ?: ""
-                        if (role == ROLE_TEACHER) {
+                    if (role == ROLE_TEACHER) {
                             cacheBasicUser(email, role, user.displayName ?: "", userId)
-                            callback(true, null)
-                        } else {
-                            callback(false, "Bu hesap öğretmen değil")
-                        }
+                        callback(true, null)
+        } else {
+                        callback(false, "Bu hesap öğretmen değil")
                     }
+                }
                     .addOnFailureListener {
                         callback(false, "Şifre veya e-posta hatalı")
                     }
@@ -762,7 +762,7 @@ class AuthManager {
         callback: (Boolean, String?) -> Unit
     ) {
         android.util.Log.d("AuthManager", "registerStudent çağrıldı - email: $email, name: $name")
-
+        
         // Direkt Firebase Auth'da hesap oluştur
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -775,10 +775,10 @@ class AuthManager {
                         ) == true ->
                             "Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın."
 
-                        exception?.message?.contains("weak password", ignoreCase = true) == true ->
+                        exception?.message?.contains("weak password", ignoreCase = true) == true -> 
                             "Şifre çok zayıf. Daha güçlü bir şifre seçin."
 
-                        exception?.message?.contains("invalid email", ignoreCase = true) == true ->
+                        exception?.message?.contains("invalid email", ignoreCase = true) == true -> 
                             "Geçersiz e-posta adresi."
 
                         else -> exception?.localizedMessage
@@ -788,50 +788,50 @@ class AuthManager {
                     callback(false, errorMessage)
                     return@addOnCompleteListener
                 }
-
+                
                 val user = auth.currentUser
                 if (user == null) {
                     android.util.Log.e("AuthManager", "Kullanıcı oluşturulamadı")
                     callback(false, "Kullanıcı oluşturulamadı")
                     return@addOnCompleteListener
                 }
-
+                
                 // Display name ayarla
                 val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(name).build()
                 user.updateProfile(profileUpdates)
-
+                
                 // Firestore'a kullanıcı dokümanı yaz (verified: false - e-posta doğrulanmamış)
                 generateUniqueUserId(ROLE_STUDENT) { userId ->
-                    val userData = mapOf(
-                        "uid" to user.uid,
+                val userData = mapOf(
+                    "uid" to user.uid,
                         "userId" to userId,
-                        "email" to email,
-                        "name" to name,
-                        "role" to ROLE_STUDENT,
-                        "verified" to false, // E-posta doğrulanmamış - profil ekranında doğrulanacak
-                        "createdAt" to com.google.firebase.Timestamp.now()
-                    )
-
-                    firestore.collection("users").document(user.uid)
-                        .set(userData)
-                        .addOnSuccessListener {
+                    "email" to email,
+                    "name" to name,
+                    "role" to ROLE_STUDENT,
+                    "verified" to false, // E-posta doğrulanmamış - profil ekranında doğrulanacak
+                    "createdAt" to com.google.firebase.Timestamp.now()
+                )
+                
+                firestore.collection("users").document(user.uid)
+                    .set(userData)
+                    .addOnSuccessListener {
                             android.util.Log.d(
                                 "AuthManager",
                                 "Kullanıcı başarıyla kaydedildi - verified: false"
                             )
                             cacheBasicUser(email, ROLE_STUDENT, name, userId)
-                            callback(true, null)
-                        }
-                        .addOnFailureListener { e ->
+                        callback(true, null)
+                    }
+                    .addOnFailureListener { e ->
                             android.util.Log.e(
                                 "AuthManager",
                                 "Firestore'a kayıt hatası: ${e.message}",
                                 e
                             )
-                            // Firebase Auth'da hesap oluşturuldu ama Firestore'a yazılamadı
-                            // Kullanıcıyı sil
-                            user.delete()
-                            callback(false, "Kayıt başarısız: ${e.localizedMessage}")
+                        // Firebase Auth'da hesap oluşturuldu ama Firestore'a yazılamadı
+                        // Kullanıcıyı sil
+                        user.delete()
+                        callback(false, "Kayıt başarısız: ${e.localizedMessage}")
                         }
                 }
             }
@@ -875,35 +875,35 @@ class AuthManager {
                         user.updateProfile(profileUpdates)
 
                         generateUniqueUserId(ROLE_TEACHER) { userId ->
-                            val data = mapOf(
-                                "uid" to user.uid,
+                        val data = mapOf(
+                            "uid" to user.uid,
                                 "userId" to userId,
-                                "email" to email,
-                                "name" to name,
-                                "role" to ROLE_TEACHER,
-                                "createdAt" to com.google.firebase.Timestamp.now()
-                            )
-                            firestore.collection("users").document(user.uid)
-                                .set(data)
-                                .addOnSuccessListener {
-                                    // Kodu kullanıldı işaretle
-                                    firestore.collection("teacherInvites").document(approvalCode)
+                            "email" to email,
+                            "name" to name,
+                            "role" to ROLE_TEACHER,
+                            "createdAt" to com.google.firebase.Timestamp.now()
+                        )
+                        firestore.collection("users").document(user.uid)
+                            .set(data)
+                            .addOnSuccessListener {
+                                // Kodu kullanıldı işaretle
+                                firestore.collection("teacherInvites").document(approvalCode)
                                         .update(
                                             mapOf(
-                                                "used" to true,
-                                                "usedByUid" to user.uid,
-                                                "usedAt" to com.google.firebase.Timestamp.now()
+                                        "used" to true,
+                                        "usedByUid" to user.uid,
+                                        "usedAt" to com.google.firebase.Timestamp.now()
                                             )
                                         )
                                     cacheBasicUser(email, ROLE_TEACHER, name, userId)
-                                    callback(true, null)
-                                }
-                                .addOnFailureListener { e ->
-                                    callback(false, e.localizedMessage)
-                                }
-                        }
+                                callback(true, null)
+                            }
+                            .addOnFailureListener { e ->
+                                callback(false, e.localizedMessage)
+                            }
                     }
-                    .addOnFailureListener { e -> callback(false, e.localizedMessage) }
+            }
+            .addOnFailureListener { e -> callback(false, e.localizedMessage) }
             }
     }
 
@@ -924,7 +924,7 @@ class AuthManager {
             "recipient" to "basartumturk2@gmail.com",
             "candidateEmail" to (candidateEmail ?: "")
         )
-
+        
         FirebaseFunctions.getInstance()
             .getHttpsCallable("createTeacherInvite")
             .call(payload)
@@ -941,12 +941,12 @@ class AuthManager {
             "email" to email,
             "uid" to uid
         )
-
+        
         android.util.Log.d(
             "AuthManager",
             "sendStudentVerificationCode çağrıldı - email: $email, uid: $uid"
         )
-
+        
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sendStudentVerificationCode")
             .call(payload)
@@ -1044,7 +1044,7 @@ class AuthManager {
         android.util.Log.d("AuthManager", "verifyStudentCode çağrıldı - email: $email, code: $code, autoLogin: $autoLogin")
         // Firestore'da kod kontrolü
         firestore.collection("studentVerificationCodes").document(code)
-            .get()
+                .get()
             .addOnSuccessListener { doc ->
                 android.util.Log.d("AuthManager", "verifyStudentCode - kod dokümanı okundu, exists: ${doc.exists()}")
                 if (!doc.exists()) {
@@ -1052,7 +1052,7 @@ class AuthManager {
                     callback(false, "Geçersiz kod")
                     return@addOnSuccessListener
                 }
-
+                
                 val docEmail = doc.getString("email") ?: ""
                 val docUid = doc.getString("uid") ?: ""
                 val used = doc.getBoolean("used") ?: false
@@ -1060,13 +1060,13 @@ class AuthManager {
                 val now = com.google.firebase.Timestamp.now()
 
                 android.util.Log.d("AuthManager", "verifyStudentCode - kod bilgileri: email=$docEmail, uid=$docUid, used=$used, expiresAt=$expiresAt")
-
+                
                 if (used || (expiresAt != null && expiresAt < now) || docEmail != email) {
                     android.util.Log.e("AuthManager", "verifyStudentCode - kod geçersiz veya süresi dolmuş")
                     callback(false, "Geçersiz veya süresi dolmuş kod")
                     return@addOnSuccessListener
                 }
-
+                
                 // Kodu kullanıldı işaretle
                 android.util.Log.d("AuthManager", "verifyStudentCode - kodu kullanıldı işaretleniyor")
                 firestore.collection("studentVerificationCodes").document(code)
@@ -1086,7 +1086,7 @@ class AuthManager {
                                         callback(false, "Kayıt bilgileri bulunamadı")
                                         return@addOnSuccessListener
                                     }
-
+                                    
                                     val name = pendingDoc.getString("name") ?: ""
                                     val password = pendingDoc.getString("password") ?: ""
                                     val roleFromPending = pendingDoc.getString("role") ?: ROLE_STUDENT
@@ -1157,30 +1157,30 @@ class AuthManager {
                                                         callback(false, "Bu e-posta başka bir hesapta kullanılıyor. Giriş ekranından giriş yapın.")
                                                         return@addOnCompleteListener
                                                     }
-                                                    val user = auth.currentUser
-                                                    if (user == null) {
+                                            val user = auth.currentUser
+                                            if (user == null) {
                                                         android.util.Log.e("AuthManager", "verifyStudentCode - giriş sonrası currentUser null")
                                                         callback(false, "Kullanıcı bulunamadı")
-                                                        return@addOnCompleteListener
-                                                    }
+                                                return@addOnCompleteListener
+                                            }
                                                     // Firestore'da kullanıcı var mı kontrol et; yoksa oluştur
                                                     firestore.collection("users").document(user.uid).get()
                                                         .addOnSuccessListener { userDoc ->
                                                             if (userDoc.exists()) {
                                                                 android.util.Log.d("AuthManager", "verifyStudentCode - kullanıcı zaten Firestore'da var")
-                                                                firestore.collection("pendingRegistrations").document(email).delete()
+                                                    firestore.collection("pendingRegistrations").document(email).delete()
                                                                 if (!autoLogin) auth.signOut()
                                                                 else {
                                                                     val uid = userDoc.getString("userId") ?: user.uid
                                                                     cacheBasicUser(email, ROLE_STUDENT, userDoc.getString("name") ?: "", uid)
                                                                 }
-                                                                callback(true, null)
+                                                    callback(true, null)
                                                             } else {
                                                                 android.util.Log.d("AuthManager", "verifyStudentCode - kullanıcı Firestore'da yok, oluşturuluyor")
                                                                 completeRegistration(user, roleFromPending)
                                                             }
-                                                        }
-                                                        .addOnFailureListener { e ->
+                                                }
+                                                .addOnFailureListener { e ->
                                                             android.util.Log.e("AuthManager", "verifyStudentCode - Firestore kullanıcı kontrolü hatası: ${e.message}", e)
                                                             callback(false, e.localizedMessage ?: "Kullanıcı kontrolü başarısız: ${e.message}")
                                                         }
@@ -1190,8 +1190,8 @@ class AuthManager {
                                 .addOnFailureListener { e ->
                                     android.util.Log.e("AuthManager", "verifyStudentCode - pending registration okuma hatası: ${e.message}", e)
                                     callback(false, e.localizedMessage ?: "Kayıt bilgileri alınamadı: ${e.message}")
-                                }
-                        } else {
+                }
+        } else {
                             // Mevcut kullanıcı için sadece verified durumunu güncelle
                             android.util.Log.d("AuthManager", "verifyStudentCode - mevcut kullanıcı için verified güncelleniyor, uid: $docUid")
                             firestore.collection("users").document(docUid)
@@ -1216,7 +1216,7 @@ class AuthManager {
                 callback(false, e.localizedMessage ?: "Kod okunamadı: ${e.message}")
             }
     }
-
+    
     fun logout() {
         auth.signOut()
         prefs.edit().clear().apply()
@@ -1225,15 +1225,15 @@ class AuthManager {
     fun getCurrentUserId(): String {
         return prefs.getString("user_id", "") ?: ""
     }
-
+    
     fun getCurrentUserType(): String {
         return prefs.getString("user_type", "") ?: ""
     }
-
+    
     fun getCurrentUserEmail(): String {
         return prefs.getString("user_email", "") ?: ""
     }
-
+    
     fun getCurrentUserName(): String {
         return prefs.getString("user_name", "") ?: ""
     }

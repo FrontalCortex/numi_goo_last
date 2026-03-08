@@ -96,6 +96,7 @@ dependencies {
     implementation("com.google.firebase:firebase-functions")
     implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Video oynatma (ağ / galeri formatları için) — aynı sürüm kullanılmalı

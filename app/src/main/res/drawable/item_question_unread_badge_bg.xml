@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#20000000" />
-    <corners android:radius="8dp" />
+    <solid android:color="@color/lesson_header_green" />
+    <corners android:radius="10dp" />
 </shape>
-
-
-
-
-
-
 
 
 

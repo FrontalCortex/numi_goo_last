@@ -62,6 +62,7 @@ class QuestionChatFragment : Fragment() {
     private var questionStatus: String = ""
     private var isTeacher = false
     private var listener: ListenerRegistration? = null
+    private var isUserRestrictedOrBanned = false
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
     private var audioMediaPlayer: MediaPlayer? = null
@@ -180,14 +181,30 @@ class QuestionChatFragment : Fragment() {
                     val qId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_QUESTION_ID) ?: return
                     if (qId != questionId) return
                     val messageId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_MESSAGE_ID) ?: return
-                    activeDownloadIds.remove(messageId)
-                    GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
-                    if (intent.action == QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED) {
-                        revealedMediaMessageIds.add(messageId)
-                        GlobalValues.revealedMediaIdsByQuestion[questionId] =
-                            revealedMediaMessageIds.toMutableSet()
+                    val wasCompleted = intent.action == QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED
+                    Handler(Looper.getMainLooper()).post {
+                        if (_binding == null || !isAdded) return@post
+                        activeDownloadIds.remove(messageId)
+                        downloadProgress.remove(messageId)
+                        GlobalValues.activeDownloadIdsByQuestion[questionId] = activeDownloadIds.toMutableSet()
+                        if (wasCompleted) {
+                            revealedMediaMessageIds.add(messageId)
+                            GlobalValues.revealedMediaIdsByQuestion[questionId] =
+                                revealedMediaMessageIds.toMutableSet()
+                        }
+                        submitMergedList()
+                        notifyMessageChanged(messageId)
+                        binding.messagesRecyclerView.post {
+                            submitMergedList()
+                            notifyMessageChanged(messageId)
+                        }
+                        binding.messagesRecyclerView.postDelayed({
+                            if (_binding != null && isAdded) {
+                                submitMergedList()
+                                notifyMessageChanged(messageId)
+                            }
+                        }, 80)
                     }
-                    notifyMessageChanged(messageId)
                 }
             }
         }
@@ -416,6 +433,21 @@ class QuestionChatFragment : Fragment() {
         binding.resolveButton.visibility = if (isTeacher) View.VISIBLE else View.GONE
         binding.recordAudioButton.visibility = View.VISIBLE
 
+        val currentUidForRestriction = auth.currentUser?.uid
+        if (currentUidForRestriction != null) {
+            firestore.collection("users").document(currentUidForRestriction).get()
+                .addOnSuccessListener { userDoc ->
+                    val banned = userDoc.getBoolean("banned") == true
+                    val restrictedUntil = userDoc.getTimestamp("restrictedUntil")
+                    val now = Timestamp.now()
+                    if (banned || (restrictedUntil != null && restrictedUntil.compareTo(now) > 0)) {
+                        this@QuestionChatFragment.isUserRestrictedOrBanned = true
+                        binding.inputBar.visibility = View.GONE
+                        binding.restrictionMessage.visibility = View.VISIBLE
+                    }
+                }
+        }
+
         firestore.collection("questions").document(questionId).get()
             .addOnSuccessListener { doc ->
                 questionStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
@@ -526,9 +558,9 @@ class QuestionChatFragment : Fragment() {
         binding.sendTextButton.scaleY = 0f
         binding.sendTextButton.alpha = 0f
 
-        binding.sendTextButton.setOnClickListener { sendTextMessage() }
-        binding.recordAudioButton.setOnClickListener { toggleAudioRecording() }
-        binding.galleryButton.setOnClickListener { openGalleryBottomSheet() }
+        binding.sendTextButton.setOnClickListener { handleResolvedBlockOrRun { sendTextMessage() } }
+        binding.recordAudioButton.setOnClickListener { handleResolvedBlockOrRun { toggleAudioRecording() } }
+        binding.galleryButton.setOnClickListener { handleResolvedBlockOrRun { openGalleryBottomSheet() } }
         binding.resolveButton.setOnClickListener {
             if (questionStatus == StudentQuestion.STATUS_RESOLVED) showUnresolveConfirmationDialog()
             else showResolveConfirmationDialog()
@@ -566,7 +598,7 @@ class QuestionChatFragment : Fragment() {
         }
 
         binding.captionBarThumbContainer.setOnClickListener { clearSelectedMediaAndHideCaptionBar() }
-        binding.captionSendButton.setOnClickListener { sendSelectedMediaWithCaption() }
+        binding.captionSendButton.setOnClickListener { handleResolvedBlockOrRun { sendSelectedMediaWithCaption() } }
 
         // Metin duruma göre mic / send animasyonlu geçiş
         binding.textInput.addTextChangedListener(object : android.text.TextWatcher {
@@ -670,9 +702,11 @@ class QuestionChatFragment : Fragment() {
             .setView(view)
             .create()
         val deleteForEveryoneBtn = view.findViewById<View>(R.id.deleteForEveryone)
+        val reportMessageBtn = view.findViewById<View>(R.id.reportMessage)
         val currentUid = auth.currentUser?.uid
         val isMyMessage = currentUid != null && message.senderUid == currentUid
         deleteForEveryoneBtn.visibility = if (isMyMessage) View.VISIBLE else View.GONE
+        reportMessageBtn.visibility = if (isMyMessage) View.GONE else View.VISIBLE
         deleteForEveryoneBtn.setOnClickListener {
             dialog.dismiss()
             deleteMessageForEveryone(message.id)
@@ -680,6 +714,11 @@ class QuestionChatFragment : Fragment() {
         view.findViewById<View>(R.id.deleteForMe).setOnClickListener {
             dialog.dismiss()
             deleteMessageForMe(message.id)
+        }
+        reportMessageBtn.setOnClickListener {
+            dialog.dismiss()
+            reportMessageToFirestore(message)
+            Toast.makeText(requireContext(), "Bildiriminiz alındı.", Toast.LENGTH_SHORT).show()
         }
         view.findViewById<View>(R.id.deleteCancel).setOnClickListener { dialog.dismiss() }
         dialog.show()
@@ -711,10 +750,35 @@ class QuestionChatFragment : Fragment() {
             .addOnFailureListener { e -> Toast.makeText(requireContext(), "Silinemedi: ${e.message}", Toast.LENGTH_SHORT).show() }
     }
 
+    private fun reportMessageToFirestore(message: QuestionMessage) {
+        val reportedByUid = auth.currentUser?.uid ?: return
+        val messagePreview = when (message.type) {
+            QuestionMessage.TYPE_TEXT -> (message.textContent?.take(100) ?: "").ifEmpty { "-" }
+            QuestionMessage.TYPE_IMAGE -> "Fotoğraf"
+            QuestionMessage.TYPE_VIDEO -> "Video"
+            QuestionMessage.TYPE_AUDIO -> "Ses"
+            else -> message.textContent?.take(100) ?: message.type
+        }
+        val report = hashMapOf(
+            "questionId" to questionId,
+            "messageId" to message.id,
+            "reportedByUid" to reportedByUid,
+            "reportedUserUid" to message.senderUid,
+            "messagePreview" to messagePreview,
+            "reportedAt" to Timestamp.now(),
+            "status" to "pending"
+        )
+        firestore.collection("messageReports").add(report)
+    }
+
     private var pendingMediaUri: Uri? = null
     private var pendingMediaType: String? = null
 
     private fun openGalleryBottomSheet() {
+        if (isUserRestrictedOrBanned) {
+            Toast.makeText(requireContext(), "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
@@ -929,6 +993,10 @@ class QuestionChatFragment : Fragment() {
     }
 
     private fun toggleAudioRecording() {
+        if (isUserRestrictedOrBanned) {
+            Toast.makeText(requireContext(), "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.", Toast.LENGTH_SHORT).show()
+            return
+        }
         // Kayıt paneli varken kontrol panelden yapılır; mic'e tekrar basmayı yok say.
         if (isRecordingAudio) return
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -1130,8 +1198,22 @@ class QuestionChatFragment : Fragment() {
             .show()
     }
 
+    /** Çözülmüş soruda mesaj/gönder butonlarına basıldığında: mesaj göster, öğretmense tekrar aktifleştir paneli aç. */
+    private fun handleResolvedBlockOrRun(action: () -> Unit) {
+        if (questionStatus != StudentQuestion.STATUS_RESOLVED) {
+            action()
+            return
+        }
+        Toast.makeText(requireContext(), "Çözülen sorulara mesaj gönderemezsin.", Toast.LENGTH_SHORT).show()
+        if (isTeacher) showUnresolveConfirmationDialog()
+    }
+
     private fun markResolved() {
-        firestore.collection("questions").document(questionId).update("status", StudentQuestion.STATUS_RESOLVED)
+        val updates = hashMapOf<String, Any>(
+            "status" to StudentQuestion.STATUS_RESOLVED,
+            "resolvedAt" to Timestamp.now()
+        )
+        firestore.collection("questions").document(questionId).update(updates)
             .addOnSuccessListener {
                 questionStatus = StudentQuestion.STATUS_RESOLVED
                 applyResolveButtonIcon(questionStatus)
@@ -1163,6 +1245,9 @@ class QuestionChatFragment : Fragment() {
         _binding = null
         super.onDestroyView()
     }
+
+    /** Used by FCM service to skip notification when user is already on this chat. */
+    fun getQuestionIdOrNull(): String? = questionId.takeIf { it.isNotEmpty() }
 
     companion object {
         private const val ARG_QUESTION_ID = "question_id"
@@ -1244,7 +1329,7 @@ private class ChatMessageAdapter(
         private val videoThumb = itemView.findViewById<ImageView>(R.id.videoThumb)
         private val videoMetaContainer = itemView.findViewById<View>(R.id.videoMetaContainer)
         private val videoTimeView = itemView.findViewById<TextView>(R.id.videoTimeView)
-        private val videoTickView = itemView.findViewById<TextView>(R.id.videoTickView)
+        private val videoTickView = itemView.findViewById<ImageView>(R.id.videoTickView)
         private val videoBlurOverlay = itemView.findViewById<View>(R.id.videoBlurOverlay)
         private val videoCenterActionContainer = itemView.findViewById<View>(R.id.videoCenterActionContainer)
         private val videoDownloadIcon = itemView.findViewById<ImageView>(R.id.videoDownloadIcon)
@@ -1257,7 +1342,7 @@ private class ChatMessageAdapter(
         private val imageThumb = itemView.findViewById<android.widget.ImageView>(R.id.imageThumb)
         private val imageMetaContainer = itemView.findViewById<View>(R.id.imageMetaContainer)
         private val imageTimeView = itemView.findViewById<TextView>(R.id.imageTimeView)
-        private val imageTickView = itemView.findViewById<TextView>(R.id.imageTickView)
+        private val imageTickView = itemView.findViewById<ImageView>(R.id.imageTickView)
         private val imageBlurOverlay = itemView.findViewById<View>(R.id.imageBlurOverlay)
         private val imageCenterActionContainer = itemView.findViewById<View>(R.id.imageCenterActionContainer)
         private val imageDownloadIcon = itemView.findViewById<ImageView>(R.id.imageDownloadIcon)
@@ -1267,7 +1352,7 @@ private class ChatMessageAdapter(
         private val imageCornerActionIcon = itemView.findViewById<ImageView>(R.id.imageCornerActionIcon)
         private val imageCornerActionText = itemView.findViewById<TextView>(R.id.imageCornerActionText)
         private val timeView = itemView.findViewById<TextView>(R.id.timeView)
-        private val tickView = itemView.findViewById<TextView>(R.id.tickView)
+        private val tickView = itemView.findViewById<ImageView>(R.id.tickView)
         private val captionText = itemView.findViewById<TextView>(R.id.captionText)
 
         private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -1293,9 +1378,13 @@ private class ChatMessageAdapter(
         ) {
             bubbleContainer.setOnLongClickListener { onMessageLongClick(m); true }
             val isFromMe = m.senderUid == currentUserUid
+            val maxWidthPx = itemView.resources.getDimensionPixelSize(R.dimen.chat_bubble_max_width)
             val params = messageContainer.layoutParams as? android.widget.FrameLayout.LayoutParams
-            params?.gravity = if (isFromMe) android.view.Gravity.END else android.view.Gravity.START
-            messageContainer.layoutParams = params
+            if (params != null) {
+                params.width = maxWidthPx
+                params.gravity = if (isFromMe) android.view.Gravity.END else android.view.Gravity.START
+                messageContainer.layoutParams = params
+            }
 
             val bubbleBg = if (isFromMe) R.drawable.chat_bubble_me else R.drawable.hint_background
             val textColor = if (isFromMe) android.graphics.Color.BLACK else android.graphics.Color.WHITE
@@ -1322,49 +1411,31 @@ private class ChatMessageAdapter(
 
             if (isFromMe) {
                 tickView.visibility = View.VISIBLE
-                tickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                 videoTickView.visibility = View.VISIBLE
                 imageTickView.visibility = View.VISIBLE
-                videoTickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
-                imageTickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                 if (isPending && !isCanceled) {
-                    tickView.text = ""
-                    tickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_schedule_clock, 0)
-                    tickView.setTextColor(0xFF888888.toInt())
-                    videoTickView.text = ""
-                    imageTickView.text = ""
-                    videoTickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_schedule_clock, 0)
-                    imageTickView.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_schedule_clock, 0)
-                    videoTickView.setTextColor(0xFF888888.toInt())
-                    imageTickView.setTextColor(0xFF888888.toInt())
+                    tickView.setImageResource(R.drawable.ic_schedule_clock)
+                    videoTickView.setImageResource(R.drawable.ic_schedule_clock)
+                    imageTickView.setImageResource(R.drawable.ic_schedule_clock)
                 } else if (isPending && isCanceled) {
                     tickView.visibility = View.GONE
                     videoTickView.visibility = View.GONE
                     imageTickView.visibility = View.GONE
                 } else when {
                     m.readAt != null -> {
-                        tickView.text = "✓✓"
-                        tickView.setTextColor(0xFF34B7F1.toInt())
-                        videoTickView.text = "✓✓"
-                        imageTickView.text = "✓✓"
-                        videoTickView.setTextColor(0xFF34B7F1.toInt())
-                        imageTickView.setTextColor(0xFF34B7F1.toInt())
+                        tickView.setImageResource(R.drawable.message_read_status_read)
+                        videoTickView.setImageResource(R.drawable.message_read_status_read)
+                        imageTickView.setImageResource(R.drawable.message_read_status_read)
                     }
                     m.deliveredAt != null -> {
-                        tickView.text = "✓✓"
-                        tickView.setTextColor(0xFF888888.toInt())
-                        videoTickView.text = "✓✓"
-                        imageTickView.text = "✓✓"
-                        videoTickView.setTextColor(0xFF888888.toInt())
-                        imageTickView.setTextColor(0xFF888888.toInt())
+                        tickView.setImageResource(R.drawable.message_read_status_delivered)
+                        videoTickView.setImageResource(R.drawable.message_read_status_delivered)
+                        imageTickView.setImageResource(R.drawable.message_read_status_delivered)
                     }
                     else -> {
-                        tickView.text = "✓"
-                        tickView.setTextColor(0xFF888888.toInt())
-                        videoTickView.text = "✓"
-                        imageTickView.text = "✓"
-                        videoTickView.setTextColor(0xFF888888.toInt())
-                        imageTickView.setTextColor(0xFF888888.toInt())
+                        tickView.setImageResource(R.drawable.message_read_status_sent)
+                        videoTickView.setImageResource(R.drawable.message_read_status_sent)
+                        imageTickView.setImageResource(R.drawable.message_read_status_sent)
                     }
                 }
             } else {
@@ -1409,6 +1480,8 @@ private class ChatMessageAdapter(
                     imageMetaContainer.visibility = View.GONE
                     timeView.visibility = View.GONE
                     tickView.visibility = View.GONE
+                    videoCornerActionContainer.visibility = View.GONE
+                    videoCornerProgress.visibility = View.GONE
                     val isRevealed = m.id in revealedMessageIds || isDownloaded
                     val isCanceledUpload = isFromMe && m.isPending() && m.id in canceledUploadIds
                     // Gönderen için: pending olduğu sürece (iptal edilmedikçe) upload devam ediyor kabul et
@@ -1495,11 +1568,20 @@ private class ChatMessageAdapter(
                             else -> remoteThumbUrl
                         }
                         if (!thumbSource.isNullOrBlank()) {
-                            val request = Glide.with(itemView.context)
                             if (!localFilePath.isNullOrBlank() && thumbSource == localFilePath) {
-                                request.load(java.io.File(thumbSource)).centerCrop().into(videoThumb)
+                                Glide.with(itemView.context)
+                                    .load(java.io.File(thumbSource))
+                                    .centerCrop()
+                                    .transition(DrawableTransitionOptions.withCrossFade(150))
+                                    .into(videoThumb)
                             } else {
-                                request.load(thumbSource).centerCrop().into(videoThumb)
+                                Glide.with(itemView.context)
+                                    .load(thumbSource)
+                                    .centerCrop()
+                                    .transition(DrawableTransitionOptions.withCrossFade(150))
+                                    .placeholder(android.R.drawable.ic_media_play)
+                                    .error(android.R.drawable.ic_menu_gallery)
+                                    .into(videoThumb)
                             }
                         } else {
                             videoThumb.setImageDrawable(null)
@@ -1536,6 +1618,8 @@ private class ChatMessageAdapter(
                     imageMetaContainer.visibility = View.VISIBLE
                     timeView.visibility = View.GONE
                     tickView.visibility = View.GONE
+                    imageCornerActionContainer.visibility = View.GONE
+                    imageCornerProgress.visibility = View.GONE
                     val isRevealed = m.id in revealedMessageIds || isDownloaded
                     val isCanceledUpload = isFromMe && m.isPending() && m.id in canceledUploadIds
                     val isPendingUpload = isFromMe && m.isPending() && !isCanceledUpload
@@ -1623,11 +1707,20 @@ private class ChatMessageAdapter(
                     } else {
                         val source = localImagePath ?: downloadedLocalPath ?: m.mediaUrl
                         source?.let { urlOrPath ->
-                            val request = Glide.with(itemView.context)
                             if (localImagePath != null && urlOrPath == localImagePath) {
-                                request.load(java.io.File(urlOrPath)).centerCrop().into(imageThumb)
+                                Glide.with(itemView.context)
+                                    .load(java.io.File(urlOrPath))
+                                    .centerCrop()
+                                    .transition(DrawableTransitionOptions.withCrossFade(150))
+                                    .into(imageThumb)
                             } else {
-                                request.load(urlOrPath).centerCrop().into(imageThumb)
+                                Glide.with(itemView.context)
+                                    .load(urlOrPath)
+                                    .centerCrop()
+                                    .transition(DrawableTransitionOptions.withCrossFade(150))
+                                    .placeholder(android.R.drawable.ic_menu_gallery)
+                                    .error(android.R.drawable.ic_menu_gallery)
+                                    .into(imageThumb)
                             }
                             val clickSource = downloadedLocalPath ?: m.mediaUrl
                             clickSource?.let { urlOrPath ->

@@ -13,15 +13,23 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="12dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <ImageView
-            android:id="@+id/questionThumbnail"
+        <FrameLayout
             android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:scaleType="centerCrop"
-            android:background="#22000000"
-            android:contentDescription="Önizleme" />
+            android:layout_height="64dp">
+
+            <ImageView
+                android:id="@+id/questionThumbnail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="#22000000"
+                android:contentDescription="Önizleme" />
+
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -34,9 +42,10 @@
                 android:id="@+id/questionPreview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="14dp"
                 android:textSize="14sp"
                 android:textColor="@android:color/black"
-                android:maxLines="2"
+                android:maxLines="1"
                 android:ellipsize="end" />
 
             <TextView
@@ -67,6 +76,22 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
+        <TextView
+            android:id="@+id/questionUnreadBadge"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="end|center"
+            android:gravity="center"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:includeFontPadding="false"
+            android:background="@drawable/item_question_unread_badge_bg"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
 

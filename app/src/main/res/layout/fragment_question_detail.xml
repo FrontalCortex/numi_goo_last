@@ -6,10 +6,21 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+    <ProgressBar
+        android:id="@+id/contentLoadingProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <ImageButton
         android:id="@+id/backButton"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:visibility="gone"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_back_arrow"
         android:contentDescription="Geri"
@@ -18,8 +29,10 @@
         app:tint="@color/lesson_completed" />
 
     <ScrollView
+        android:id="@+id/contentScrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/backButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

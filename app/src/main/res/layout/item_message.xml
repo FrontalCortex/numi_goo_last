@@ -14,7 +14,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:maxWidth="280dp"
+        android:maxWidth="@dimen/chat_bubble_max_width"
         android:gravity="start">
 
         <LinearLayout
@@ -38,7 +38,8 @@
 
             <FrameLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:maxWidth="@dimen/chat_bubble_max_width">
 
                 <TextView
                     android:id="@+id/messageText"
@@ -83,9 +84,10 @@
                     tools:visibility="visible">
                     <ImageView
                         android:id="@+id/videoThumb"
-                        android:layout_width="wrap_content"
+                        android:layout_width="@dimen/chat_media_max_width"
                         android:layout_height="wrap_content"
                         android:adjustViewBounds="true"
+                        android:minHeight="@dimen/chat_media_min_height"
                         android:maxWidth="@dimen/chat_media_max_width"
                         android:scaleType="centerCrop"
                         android:clipToOutline="true"
@@ -124,14 +126,14 @@
                             android:textColor="#CCFFFFFF"
                             tools:text="14:20" />
 
-                        <TextView
+                        <ImageView
                             android:id="@+id/videoTickView"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_marginStart="4dp"
-                            android:textSize="12sp"
+                            android:scaleType="fitCenter"
                             android:visibility="gone"
-                            tools:text="✓✓"
+                            android:contentDescription="@null"
                             tools:visibility="visible" />
                     </LinearLayout>
                     <FrameLayout
@@ -234,9 +236,10 @@
                     tools:visibility="visible">
                     <ImageView
                         android:id="@+id/imageThumb"
-                        android:layout_width="wrap_content"
+                        android:layout_width="@dimen/chat_media_max_width"
                         android:layout_height="wrap_content"
                         android:adjustViewBounds="true"
+                        android:minHeight="@dimen/chat_media_min_height"
                         android:maxWidth="@dimen/chat_media_max_width"
                         android:scaleType="centerCrop"
                         android:clipToOutline="true"
@@ -268,14 +271,14 @@
                             android:textColor="#CCFFFFFF"
                             tools:text="14:20" />
 
-                        <TextView
+                        <ImageView
                             android:id="@+id/imageTickView"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:layout_marginStart="4dp"
-                            android:textSize="12sp"
+                            android:scaleType="fitCenter"
                             android:visibility="gone"
-                            tools:text="✓✓"
+                            android:contentDescription="@null"
                             tools:visibility="visible" />
                     </LinearLayout>
                     <FrameLayout
@@ -380,20 +383,20 @@
                 android:textColor="#CCFFFFFF"
                 tools:text="3:11 pm" />
 
-            <TextView
+            <ImageView
                 android:id="@+id/tickView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_marginStart="2dp"
-                android:textSize="12sp"
+                android:scaleType="fitCenter"
                 android:visibility="gone"
-                tools:text="✓✓"
+                android:contentDescription="@null"
                 tools:visibility="visible" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/captionText"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:textSize="14sp"

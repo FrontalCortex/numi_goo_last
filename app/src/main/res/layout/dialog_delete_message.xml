@@ -41,6 +41,19 @@
         android:background="?attr/selectableItemBackground" />
 
     <TextView
+        android:id="@+id/reportMessage"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Bildir"
+        android:textSize="15sp"
+        android:textColor="@color/lesson_header_green"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/deleteCancel"
         android:layout_width="match_parent"
         android:layout_height="48dp"

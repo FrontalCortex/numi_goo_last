@@ -14,29 +14,39 @@ import com.google.firebase.Timestamp
 import java.util.concurrent.TimeUnit
 
 class QuestionListAdapter(
-    private val onItemClick: (StudentQuestion) -> Unit
+    private val onItemClick: (StudentQuestion) -> Unit,
+    private val onLongClick: ((StudentQuestion) -> Unit)? = null
 ) : ListAdapter<StudentQuestion, QuestionListAdapter.ViewHolder>(DiffCallback()) {
+
+    private var unreadCountByQuestionId: Map<String, Int> = emptyMap()
+
+    fun setUnreadCounts(map: Map<String, Int>) {
+        unreadCountByQuestionId = map
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_question, parent, false)
-        return ViewHolder(view, onItemClick)
+        return ViewHolder(view, onItemClick, onLongClick)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position), unreadCountByQuestionId)
     }
 
     class ViewHolder(
         itemView: View,
-        private val onItemClick: (StudentQuestion) -> Unit
+        private val onItemClick: (StudentQuestion) -> Unit,
+        private val onLongClick: ((StudentQuestion) -> Unit)?
     ) : RecyclerView.ViewHolder(itemView) {
         private val thumbnail: ImageView = itemView.findViewById(R.id.questionThumbnail)
         private val preview: TextView = itemView.findViewById(R.id.questionPreview)
         private val timeAgo: TextView = itemView.findViewById(R.id.questionTimeAgo)
         private val statusIcon: ImageView = itemView.findViewById(R.id.questionStatusIcon)
         private val status: TextView = itemView.findViewById(R.id.questionStatus)
+        private val unreadBadge: TextView = itemView.findViewById(R.id.questionUnreadBadge)
 
-        fun bind(q: StudentQuestion) {
+        fun bind(q: StudentQuestion, unreadCountByQuestionId: Map<String, Int>) {
             if (q.screenshotUrl.isNotEmpty()) {
                 Glide.with(itemView).load(q.screenshotUrl).centerCrop().into(thumbnail)
             }
@@ -65,7 +75,19 @@ class QuestionListAdapter(
             } else {
                 statusIcon.visibility = View.GONE
             }
+            val unreadCount = unreadCountByQuestionId[q.id] ?: 0
+            if (unreadCount > 0) {
+                unreadBadge.visibility = View.VISIBLE
+                unreadBadge.text = if (unreadCount >= 100) "99+" else unreadCount.toString()
+            } else {
+                unreadBadge.visibility = View.GONE
+            }
             itemView.setOnClickListener { onItemClick(q) }
+            if (q.status == StudentQuestion.STATUS_RESOLVED) {
+                itemView.setOnLongClickListener { onLongClick?.invoke(q); true }
+            } else {
+                itemView.setOnLongClickListener(null)
+            }
         }
 
         private fun formatTimeAgo(ts: Timestamp?): String {

@@ -44,6 +44,10 @@
     <string name="notification_eta_min_sec">~%1$d dk %2$d sn kaldı</string>
     <string name="notification_eta_hour">~%1$d sa kaldı</string>
 
+    <!-- FCM mesaj bildirimi -->
+    <string name="notification_channel_messages_name">Sohbet mesajları</string>
+    <string name="notification_channel_messages_desc">Yeni sohbet mesajı bildirimleri</string>
+
     <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
     <string name="notification_download_cancel">İptal et</string>
 

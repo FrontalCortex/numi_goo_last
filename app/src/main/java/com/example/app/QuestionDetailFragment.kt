@@ -41,13 +41,20 @@ class QuestionDetailFragment : Fragment() {
         firestore.collection("questions").document(questionId).get()
             .addOnSuccessListener { doc ->
                 val q = doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id) ?: return@addOnSuccessListener
-                Glide.with(this).load(q.screenshotUrl).into(binding.screenshotImage)
                 binding.messageText.text = q.message
+                binding.contentLoadingProgress.visibility = View.GONE
+                binding.backButton.visibility = View.VISIBLE
+                binding.contentScrollView.visibility = View.VISIBLE
                 if (!studentView) {
+                    binding.claimButton.visibility = View.VISIBLE
                     binding.claimButton.setOnClickListener { claimQuestion(questionId) }
+                }
+                if (!q.screenshotUrl.isNullOrEmpty()) {
+                    Glide.with(this).load(q.screenshotUrl).into(binding.screenshotImage)
                 }
             }
             .addOnFailureListener {
+                binding.contentLoadingProgress.visibility = View.GONE
                 Toast.makeText(requireContext(), "Soru yüklenemedi.", Toast.LENGTH_SHORT).show()
                 requireActivity().supportFragmentManager.popBackStack()
             }
@@ -63,7 +70,9 @@ class QuestionDetailFragment : Fragment() {
         firestore.collection("questions").document(questionId).update(updates)
             .addOnSuccessListener {
                 Toast.makeText(requireContext(), "Soruyu sahiplendiniz.", Toast.LENGTH_SHORT).show()
-                requireActivity().supportFragmentManager.beginTransaction()
+                val fm = requireActivity().supportFragmentManager
+                fm.popBackStackImmediate()
+                fm.beginTransaction()
                     .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(questionId))
                     .addToBackStack(null)
                     .commit()

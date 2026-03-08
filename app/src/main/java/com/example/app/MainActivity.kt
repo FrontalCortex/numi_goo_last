@@ -2,7 +2,10 @@ package com.example.app
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
 import android.util.Log
 import android.view.View
 import android.widget.TextView
@@ -30,6 +33,11 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     companion object {
         const val EXTRA_FROM_LOGIN = "from_login"
+        /** Set by FCM notification tap; open this question chat when activity is ready. */
+        const val EXTRA_OPEN_QUESTION_ID = "open_question_id"
+
+        @Volatile
+        var currentActivity: MainActivity? = null
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -50,6 +58,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             checkSubscriptionAndUpdateEnergy()
         }
     }
+
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> /* FCM bildirimleri için izin sonucu */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,6 +124,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             // İlk açılış - TutorialFragment göster
             showFirstTutorial()
         }
+        binding.fragmentContainerID.post { handleOpenQuestionIdFromIntent() }
         // Sistem çubuğu renklerini message_topbar ile eşitle
         window.statusBarColor = ContextCompat.getColor(this, R.color.message_topbar)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.message_topbar)
@@ -378,6 +391,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             finish()
             return
         }
+        if (hasExistingLogin) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            MyFirebaseMessagingService.saveCurrentTokenToFirestore()
+        }
 
         // Uygulama aktifken süre takibini başlat
         TimeTracker.startTracking()
@@ -387,8 +407,27 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     
     override fun onPause() {
         super.onPause()
+        currentActivity = null
         // Uygulama background'a geçtiğinde süre takibini durdur
         TimeTracker.stopTracking()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleOpenQuestionIdFromIntent()
+    }
+
+    /** Opens QuestionChatFragment when launched from FCM notification (EXTRA_OPEN_QUESTION_ID). */
+    private fun handleOpenQuestionIdFromIntent() {
+        val questionId = intent?.getStringExtra(EXTRA_OPEN_QUESTION_ID) ?: return
+        if (questionId.isEmpty()) return
+        intent?.removeExtra(EXTRA_OPEN_QUESTION_ID)
+        val fragment = QuestionChatFragment.newInstance(questionId)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainerID, fragment)
+            .addToBackStack(null)
+            .commit()
     }
     
     override fun onDestroy() {

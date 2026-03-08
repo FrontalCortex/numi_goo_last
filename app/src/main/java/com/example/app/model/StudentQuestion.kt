@@ -15,7 +15,9 @@ data class StudentQuestion(
     @ServerTimestamp val createdAt: Timestamp? = null,
     val status: String = STATUS_PENDING,
     val claimedByTeacherUid: String? = null,
-    val claimedAt: Timestamp? = null
+    val claimedAt: Timestamp? = null,
+    val resolvedAt: Timestamp? = null,
+    val deletedForUids: List<String>? = null
 ) {
     companion object {
         const val STATUS_PENDING = "pending"
