@@ -53,11 +53,16 @@ class CreateQuestionFragment : Fragment() {
             }
             binding.screenshotImage.visibility = View.GONE
             binding.videoPreview.visibility = View.VISIBLE
+            binding.videoFullscreenButton.visibility = View.VISIBLE
             exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
                 binding.videoPreview.player = player
                 player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
                 player.prepare()
                 player.playWhenReady = false
+            }
+            binding.videoFullscreenButton.setOnClickListener {
+                VideoFullscreenDialogFragment.newInstance(Uri.fromFile(file).toString())
+                    .show(parentFragmentManager, "VideoFullscreen")
             }
             binding.backButton.setOnClickListener { parentFragmentManager.popBackStack() }
             binding.sendButton.setOnClickListener {
@@ -103,7 +108,7 @@ class CreateQuestionFragment : Fragment() {
             Toast.makeText(requireContext(), "Oturum açık değil.", Toast.LENGTH_SHORT).show()
             return
         }
-        binding.sendButton.isEnabled = false
+        setSendingUi(true)
 
         val fileName = "question_screenshots/${uid}_${System.currentTimeMillis()}.jpg"
         val ref = storage.child(fileName)
@@ -132,13 +137,13 @@ class CreateQuestionFragment : Fragment() {
                             parentFragmentManager.popBackStack()
                         }
                         .addOnFailureListener { e ->
-                            binding.sendButton.isEnabled = true
+                            setSendingUi(false)
                             Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                 }
             }
             .addOnFailureListener { e ->
-                binding.sendButton.isEnabled = true
+                setSendingUi(false)
                 Toast.makeText(requireContext(), "Yükleme hatası: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
@@ -153,7 +158,7 @@ class CreateQuestionFragment : Fragment() {
             Toast.makeText(requireContext(), "Oturum açık değil.", Toast.LENGTH_SHORT).show()
             return
         }
-        binding.sendButton.isEnabled = false
+        setSendingUi(true)
         val durationSec = exoPlayer?.duration?.let { if (it > 0) (it / 1000).toInt() else null } ?: 0
         val fileName = "question_videos/${uid}_${System.currentTimeMillis()}.mp4"
         val ref = storage.child(fileName)
@@ -184,15 +189,20 @@ class CreateQuestionFragment : Fragment() {
                             parentFragmentManager.popBackStack()
                         }
                         .addOnFailureListener { e ->
-                            binding.sendButton.isEnabled = true
+                            setSendingUi(false)
                             Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                 }
             }
             .addOnFailureListener { e ->
-                binding.sendButton.isEnabled = true
+                setSendingUi(false)
                 Toast.makeText(requireContext(), "Video yükleme hatası: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun setSendingUi(sending: Boolean) {
+        binding.sendButton.isEnabled = !sending
+        binding.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {

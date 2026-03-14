@@ -83,8 +83,8 @@ class QuestionListAdapter(
                 unreadBadge.visibility = View.GONE
             }
             itemView.setOnClickListener { onItemClick(q) }
-            if (q.status == StudentQuestion.STATUS_RESOLVED) {
-                itemView.setOnLongClickListener { onLongClick?.invoke(q); true }
+            if (onLongClick != null) {
+                itemView.setOnLongClickListener { onLongClick!!.invoke(q); true }
             } else {
                 itemView.setOnLongClickListener(null)
             }

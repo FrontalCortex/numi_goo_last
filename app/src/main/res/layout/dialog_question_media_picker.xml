@@ -29,11 +29,13 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Resim ile sor"
                 android:src="@drawable/question_camera_ic"
-                android:tint="@null" />
+                app:tint="#46525A" />
 
             <View
-                android:layout_width="18dp"
-                android:layout_height="0dp" />
+                android:layout_width="2dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center_vertical"
+                android:background="#46525A" />
 
             <ImageButton
                 android:id="@+id/btnVideo"
@@ -42,7 +44,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Video ile sor"
                 android:src="@drawable/question_video_ic"
-                android:tint="@null" />
+                app:tint="#46525A" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

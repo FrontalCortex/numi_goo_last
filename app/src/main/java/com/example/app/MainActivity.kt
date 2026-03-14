@@ -430,6 +430,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
         setQuitButtonEnabled(false)
+        setAskQuestionButtonEnabled(false)
     }
 
     private fun updateRecordingTimerText(elapsedSec: Int) {
@@ -449,6 +450,15 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         recordingReceiver = null
         binding.recordingOverlayContainer.visibility = View.GONE
         setQuitButtonEnabled(true)
+        setAskQuestionButtonEnabled(true)
+    }
+
+    private fun setAskQuestionButtonEnabled(enabled: Boolean) {
+        binding.abacusFragmentContainer.findViewById<View>(R.id.askQuestionButton)?.apply {
+            isEnabled = enabled
+            isClickable = enabled
+            alpha = if (enabled) 1f else 0.5f
+        }
     }
 
     private fun setQuitButtonEnabled(enabled: Boolean) {
@@ -692,6 +702,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         TimeTracker.stopTracking()
     }
 
+    override fun onStop() {
+        super.onStop()
+        if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
+            startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
+            hideRecordingOverlay()
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -738,6 +756,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
     
     override fun onDestroy() {
+        if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
+            startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
+        }
         hideRecordingOverlay()
         super.onDestroy()
         // Uygulama kapanırken süre takibini durdur

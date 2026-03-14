@@ -34,10 +34,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Sorular: giriş yapmış kullanıcı okuyup yazabilir (deletedForUids arrayUnion dahil); silme öğretmen veya Console
+    // Sorular: giriş yapmış kullanıcı okuyup yazabilir (deletedForUids arrayUnion dahil). Kalıcı silme sadece soru sahibi (öğrenci).
     match /questions/{questionId} {
       allow read, create, update: if request.auth != null;
-      allow delete: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'TEACHER';
+      allow delete: if request.auth != null && resource.data.studentUid == request.auth.uid;
     }
     match /questions/{questionId}/messages/{messageId} {
       allow read, create, update, delete: if request.auth != null;

@@ -456,23 +456,46 @@ class NotificationFragment : Fragment() {
     }
 
     private fun onQuestionLongClick(question: StudentQuestion) {
-        if (question.status != StudentQuestion.STATUS_RESOLVED) return
         val uid = auth.currentUser?.uid ?: return
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
-            .setMessage("Bu soruyu listeden silmek istiyor musunuz?")
-            .setPositiveButton("Sil") { dialog, _ ->
-                dialog.dismiss()
-                firestore.collection("questions").document(question.id)
-                    .update("deletedForUids", FieldValue.arrayUnion(uid))
-                    .addOnSuccessListener {
-                        Toast.makeText(requireContext(), "Listeden kaldırıldı.", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(requireContext(), "Kaldırılamadı.", Toast.LENGTH_SHORT).show()
-                    }
+        if (isTeacher) {
+            if (question.status != StudentQuestion.STATUS_RESOLVED) {
+                Toast.makeText(requireContext(), "Sadece çözüldü olarak işaretlenen soruları listenizden kaldırabilirsiniz.", Toast.LENGTH_SHORT).show()
+                return
             }
-            .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
-            .show()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Soruyu listenizden kaldır")
+                .setMessage("Bu soru yalnızca sizin listenizden kaldırılacak. Veritabanından silinmeyecek.")
+                .setPositiveButton("Kaldır") { dialog, _ ->
+                    dialog.dismiss()
+                    firestore.collection("questions").document(question.id)
+                        .update("deletedForUids", FieldValue.arrayUnion(uid))
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "Listeden kaldırıldı.", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(requireContext(), "Kaldırılamadı.", Toast.LENGTH_SHORT).show()
+                        }
+                }
+                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .show()
+        } else {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Soruyu silmek istediğine emin misin?")
+                .setMessage("Bu işlem geri alınamaz. Soruyu sildiğinde ona bir daha erişemezsin.")
+                .setPositiveButton("Sil") { dialog, _ ->
+                    dialog.dismiss()
+                    firestore.collection("questions").document(question.id)
+                        .delete()
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "Soru silindi.", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener {
+                            Toast.makeText(requireContext(), "Silinemedi.", Toast.LENGTH_SHORT).show()
+                        }
+                }
+                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
     }
 
     private fun onQuestionClick(question: StudentQuestion) {
