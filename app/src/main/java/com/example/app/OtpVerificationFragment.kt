@@ -224,19 +224,13 @@ class OtpVerificationFragment : Fragment() {
 
         binding.btnVerify.isEnabled = false
         binding.btnVerify.text = "Doğrulanıyor..."
-        // Sadece öğretmen şifre sıfırlama akışında (forPasswordReset) geri ve resend kilitlensin
-        if (forPasswordReset) {
-            binding.btnResend.isEnabled = false
-            (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
-        }
+        if (forPasswordReset) binding.btnResend.isEnabled = false
+        (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
 
         val onVerifyFailed: (String?) -> Unit = { error ->
-            if (forPasswordReset) {
-                (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
-                // 15 dk yanlış deneme kilidi yoksa resend butonunu tekrar uygun hale getir
-                if (wrongAttemptCooldownTimer == null) {
-                    updateResendButtonState()
-                }
+            (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+            if (forPasswordReset && wrongAttemptCooldownTimer == null) {
+                updateResendButtonState()
             }
             wrongAttempts++
             binding.btnVerify.text = "Doğrula"

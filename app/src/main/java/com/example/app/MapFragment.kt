@@ -3207,9 +3207,16 @@ class MapFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        // Scroll pozisyonunu GlobalValues'a kaydet
-        GlobalValues.scrollPosition = (binding.lessonsRecyclerView.layoutManager as LinearLayoutManager)
-            .findFirstVisibleItemPosition()
+        // Scroll pozisyonunu GlobalValues'a kaydet (view/layoutManager henüz hazır olmayabilir)
+        if (!isAdded) return
+        try {
+            val lm = binding.lessonsRecyclerView?.layoutManager as? LinearLayoutManager
+            if (lm != null) {
+                GlobalValues.scrollPosition = lm.findFirstVisibleItemPosition()
+            }
+        } catch (_: Exception) {
+            // binding veya RecyclerView erişilemezse atla
+        }
     }
 
     override fun onDestroyView() {
@@ -3337,10 +3344,14 @@ class MapFragment : Fragment() {
         super.onResume()
         // Fragment yeniden görünür olduğunda sticky header'ı güncelle
         binding.lessonsRecyclerView.post {
-            val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
-            val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
-            val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-            updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
+            if (!isAdded) return@post
+            val activity = activity ?: return@post
+            val stickyHeader = activity.findViewById<LinearLayout>(R.id.stickyHeader)
+            val stickySectionUnit = activity.findViewById<TextView>(R.id.stickySectionUnit)
+            val stickyHeaderTitle = activity.findViewById<TextView>(R.id.stickyHeaderTitle)
+            if (stickyHeader != null && stickySectionUnit != null && stickyHeaderTitle != null) {
+                updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
+            }
         }
     }
 }

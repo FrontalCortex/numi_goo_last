@@ -1,11 +1,15 @@
 package com.example.app
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import com.example.app.databinding.FragmentQuestionDetailBinding
 import com.example.app.model.StudentQuestion
@@ -20,6 +24,8 @@ class QuestionDetailFragment : Fragment() {
 
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+
+    private var detailExoPlayer: ExoPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,7 +55,13 @@ class QuestionDetailFragment : Fragment() {
                     binding.claimButton.visibility = View.VISIBLE
                     binding.claimButton.setOnClickListener { claimQuestion(questionId) }
                 }
-                if (!q.screenshotUrl.isNullOrEmpty()) {
+                if (q.mediaType == StudentQuestion.MEDIA_TYPE_VIDEO && !q.videoUrl.isNullOrEmpty()) {
+                    binding.screenshotImage.visibility = View.GONE
+                    binding.videoContainer.visibility = View.VISIBLE
+                    setupVideoPlayer(q.videoUrl)
+                } else if (!q.screenshotUrl.isNullOrEmpty()) {
+                    binding.screenshotImage.visibility = View.VISIBLE
+                    binding.videoContainer.visibility = View.GONE
                     Glide.with(this).load(q.screenshotUrl).into(binding.screenshotImage)
                 }
             }
@@ -60,12 +72,39 @@ class QuestionDetailFragment : Fragment() {
             }
     }
 
+    private fun setupVideoPlayer(videoUrl: String) {
+        detailExoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+            binding.questionDetailVideoPlayer.player = player
+            player.setMediaItem(MediaItem.fromUri(Uri.parse(videoUrl)))
+            player.prepare()
+            player.playWhenReady = false
+            player.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        binding.videoPlayOverlay.visibility = View.VISIBLE
+                    }
+                }
+            })
+        }
+        binding.videoPlayOverlay.visibility = View.VISIBLE
+        binding.videoPlayOverlay.setOnClickListener {
+            binding.videoPlayOverlay.visibility = View.GONE
+            detailExoPlayer?.play()
+        }
+        binding.videoFullscreenButton.setOnClickListener {
+            VideoFullscreenDialogFragment.newInstance(videoUrl)
+                .show(parentFragmentManager, "VideoFullscreen")
+        }
+    }
+
     private fun claimQuestion(questionId: String) {
         val uid = auth.currentUser?.uid ?: return
+        val now = Timestamp.now()
         val updates = hashMapOf<String, Any>(
             "status" to StudentQuestion.STATUS_CLAIMED,
             "claimedByTeacherUid" to uid,
-            "claimedAt" to Timestamp.now()
+            "claimedAt" to now,
+            "lastMessageAt" to now
         )
         firestore.collection("questions").document(questionId).update(updates)
             .addOnSuccessListener {
@@ -83,6 +122,9 @@ class QuestionDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        detailExoPlayer?.release()
+        detailExoPlayer = null
+        binding.questionDetailVideoPlayer.player = null
         _binding = null
         super.onDestroyView()
     }

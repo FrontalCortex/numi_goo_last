@@ -45,9 +45,24 @@ class NotificationFragment : Fragment() {
     private var currentQuestionList: List<StudentQuestion> = emptyList()
     private val messageListeners = mutableMapOf<String, ListenerRegistration>()
 
-    private companion object {
+    companion object {
         private const val KEY_TEACHER_TAB = "teacher_tab"
         private const val KEY_STUDENT_TAB = "student_tab"
+        private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
+        private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
+
+        /**
+         * Sohbet ekranından geri dönerken hangi tab'ın seçili olacağını zorlamak için yardımcı.
+         * Öğretmen için CHATS, öğrenci için BEKLEYEN seçili olsun istiyoruz.
+         */
+        fun newWithReturnDefaults(fromTeacher: Boolean): NotificationFragment {
+            return NotificationFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean(ARG_FORCE_TEACHER_CHATS, fromTeacher)
+                    putBoolean(ARG_FORCE_STUDENT_BEKLEYEN, !fromTeacher)
+                }
+            }
+        }
     }
 
     override fun onCreateView(
@@ -70,6 +85,9 @@ class NotificationFragment : Fragment() {
         binding.questionsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.questionsRecyclerView.adapter = adapter
 
+        val forceTeacherChats = arguments?.getBoolean(ARG_FORCE_TEACHER_CHATS) == true
+        val forceStudentBekleyen = arguments?.getBoolean(ARG_FORCE_STUDENT_BEKLEYEN) == true
+
         if (savedInstanceState != null) {
             savedInstanceState.getString(KEY_TEACHER_TAB)?.let { name ->
                 kotlin.runCatching { teacherTab = TeacherTab.valueOf(name) }
@@ -77,6 +95,10 @@ class NotificationFragment : Fragment() {
             savedInstanceState.getString(KEY_STUDENT_TAB)?.let { name ->
                 kotlin.runCatching { studentTab = StudentTab.valueOf(name) }
             }
+        } else {
+            // Yeni açılan fragment'ta sohbetten dönme isteğine göre başlangıç tab'ını ayarla.
+            if (forceTeacherChats) teacherTab = TeacherTab.CHATS
+            if (forceStudentBekleyen) studentTab = StudentTab.BEKLEYEN
         }
 
         isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
@@ -300,11 +322,16 @@ class NotificationFragment : Fragment() {
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
-            val list = raw.filter { it.deletedForUids?.contains(uid) != true }
-            currentQuestionList = list
-            adapter.submitList(list)
-            refreshUnreadCounts(list, uid)
-            binding.emptyText.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
+            val sorted = visible.sortedByDescending {
+                val last = it.lastMessageAt?.toDate()?.time
+                val created = it.createdAt?.toDate()?.time
+                last ?: created ?: 0L
+            }
+            currentQuestionList = sorted
+            adapter.submitList(sorted)
+            refreshUnreadCounts(sorted, uid)
+            binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -323,11 +350,16 @@ class NotificationFragment : Fragment() {
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
-            val list = raw.filter { it.deletedForUids?.contains(uid) != true }
-            currentQuestionList = list
-            adapter.submitList(list)
-            refreshUnreadCounts(list, uid)
-            binding.emptyText.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
+            val sorted = visible.sortedByDescending {
+                val last = it.lastMessageAt?.toDate()?.time
+                val created = it.createdAt?.toDate()?.time
+                last ?: created ?: 0L
+            }
+            currentQuestionList = sorted
+            adapter.submitList(sorted)
+            refreshUnreadCounts(sorted, uid)
+            binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -347,11 +379,16 @@ class NotificationFragment : Fragment() {
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
-            val list = raw.filter { it.deletedForUids?.contains(uid) != true }
-            currentQuestionList = list
-            adapter.submitList(list)
-            refreshUnreadCounts(list, uid)
-            binding.emptyText.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
+            val sorted = visible.sortedByDescending {
+                val last = it.lastMessageAt?.toDate()?.time
+                val created = it.createdAt?.toDate()?.time
+                last ?: created ?: 0L
+            }
+            currentQuestionList = sorted
+            adapter.submitList(sorted)
+            refreshUnreadCounts(sorted, uid)
+            binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -371,11 +408,16 @@ class NotificationFragment : Fragment() {
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
-            val list = raw.filter { it.deletedForUids?.contains(uid) != true }
-            currentQuestionList = list
-            adapter.submitList(list)
-            refreshUnreadCounts(list, uid)
-            binding.emptyText.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
+            val sorted = visible.sortedByDescending {
+                val last = it.lastMessageAt?.toDate()?.time
+                val created = it.createdAt?.toDate()?.time
+                last ?: created ?: 0L
+            }
+            currentQuestionList = sorted
+            adapter.submitList(sorted)
+            refreshUnreadCounts(sorted, uid)
+            binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -434,23 +476,25 @@ class NotificationFragment : Fragment() {
     }
 
     private fun onQuestionClick(question: StudentQuestion) {
-        if (isTeacher) {
-            if (teacherTab == TeacherTab.POOL) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id))
-                    .addToBackStack(null)
-                    .commit()
+        requireOnlineAndLoggedInOrLogin {
+            if (isTeacher) {
+                if (teacherTab == TeacherTab.POOL) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id))
+                        .addToBackStack(null)
+                        .commit()
+                } else {
+                    openChatAfterPreload(question.id)
+                }
             } else {
-                openChatAfterPreload(question.id)
-            }
-        } else {
-            if (question.status == StudentQuestion.STATUS_PENDING) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id, studentView = true))
-                    .addToBackStack(null)
-                    .commit()
-            } else {
-                openChatAfterPreload(question.id)
+                if (question.status == StudentQuestion.STATUS_PENDING) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id, studentView = true))
+                        .addToBackStack(null)
+                        .commit()
+                } else {
+                    openChatAfterPreload(question.id)
+                }
             }
         }
     }

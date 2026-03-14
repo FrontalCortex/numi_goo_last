@@ -174,6 +174,7 @@ class ProfileFragment : Fragment() {
         firestore.collection("users").document(currentUser.uid)
             .get()
             .addOnSuccessListener { doc ->
+                if (!isAdded) return@addOnSuccessListener
                 if (doc.exists()) {
                     // Kullanıcı ID'sini göster
                     val userId = doc.getString("userId") ?: ""
@@ -192,6 +193,7 @@ class ProfileFragment : Fragment() {
                         firestore.collection("users").document(currentUser.uid)
                             .update("verified", true)
                             .addOnSuccessListener {
+                                if (!isAdded) return@addOnSuccessListener
                                 binding.cardEmailVerification.visibility = View.GONE
                             }
                     } else if (!firebaseAuthVerified && !firestoreVerified) {
@@ -283,6 +285,7 @@ class ProfileFragment : Fragment() {
                 }
             }
             .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
                 Log.e("ProfileFragment", "Firestore'dan kullanıcı bilgileri yüklenemedi", e)
                 // Hata durumunda da widget'ları göster (varsayılan değerlerle)
                 hideLoadingState()
@@ -342,7 +345,9 @@ class ProfileFragment : Fragment() {
         
         // Çıkış Yap
         binding.btnLogout.setOnClickListener {
-            showLogoutConfirmation()
+            requireOnlineAndLoggedInOrLogin {
+                showLogoutConfirmation()
+            }
         }
         
         // Hesabı Sil
@@ -528,6 +533,8 @@ class ProfileFragment : Fragment() {
     }
     
     private fun logout() {
+        // Önce bu cihazdaki FCM token'ını temizle
+        MyFirebaseMessagingService.clearCurrentTokenFromFirestore()
         authManager.logout()
         // Çıkış yapıldıktan sonra LoginStartActivity'den (öğrenci/öğretmen seçim ekranı) başlat
         val intent = Intent(requireContext(), LoginStartActivity::class.java).apply {

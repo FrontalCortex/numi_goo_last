@@ -57,6 +57,45 @@
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
                     android:contentDescription="Ekran görüntüsü" />
+
+                <FrameLayout
+                    android:id="@+id/videoContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="200dp"
+                    android:visibility="gone"
+                    android:background="#22000000">
+
+                    <androidx.media3.ui.PlayerView
+                        android:id="@+id/questionDetailVideoPlayer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="200dp"
+                        app:show_buffering="when_playing"
+                        app:use_controller="true" />
+
+                    <ImageView
+                        android:id="@+id/videoPlayOverlay"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_media_play"
+                        android:background="@drawable/screenshot_border_bg"
+                        android:padding="12dp"
+                        android:contentDescription="Oynat"
+                        app:tint="@android:color/white" />
+
+                    <ImageButton
+                        android:id="@+id/videoFullscreenButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_fullscreen"
+                        android:contentDescription="Tam ekran"
+                        app:tint="@android:color/white" />
+                </FrameLayout>
             </FrameLayout>
 
             <TextView

@@ -28,6 +28,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.app.GlobalLessonData.globalPartId
@@ -54,6 +55,7 @@ class AbacusFragment : Fragment() {
     private var correctAnswer = 0
     private var totalQuestions = 0
     private var lastClickTime = 0L
+    private var isResultPanelAnimating = false
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
@@ -244,7 +246,16 @@ class AbacusFragment : Fragment() {
         // Sorunu gönder butonu: sadece öğrenci hesabında göster; ban/restrictedUntil varsa gösterme
         val authManager = AuthManager().also { it.initialize(requireContext()) }
         val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
-        binding.askQuestionButton.setOnClickListener { captureAndOpenCreateQuestion() }
+        childFragmentManager.setFragmentResultListener(
+            QuestionMediaPickerDialogFragment.REQUEST_KEY,
+            viewLifecycleOwner
+        ) { _, result ->
+            when (result.getString(QuestionMediaPickerDialogFragment.RESULT_PICK)) {
+                QuestionMediaPickerDialogFragment.PICK_CAMERA -> captureAndOpenCreateQuestion()
+                QuestionMediaPickerDialogFragment.PICK_VIDEO -> startVideoQuestionFlow()
+            }
+        }
+        binding.askQuestionButton.setOnClickListener { openQuestionMediaPicker() }
         if (isTeacher) {
             binding.askQuestionButton.visibility = View.GONE
         } else {
@@ -284,6 +295,17 @@ class AbacusFragment : Fragment() {
             .replace(R.id.abacusFragmentContainer, CreateQuestionFragment.newInstance(path))
             .addToBackStack(null)
             .commit()
+    }
+
+    private fun openQuestionMediaPicker() {
+        if (childFragmentManager.findFragmentByTag(QuestionMediaPickerDialogFragment.TAG) != null) return
+        QuestionMediaPickerDialogFragment()
+            .show(childFragmentManager, QuestionMediaPickerDialogFragment.TAG)
+    }
+
+    private fun startVideoQuestionFlow() {
+        (activity as? MainActivity)?.requestQuestionScreenRecording()
+            ?: android.widget.Toast.makeText(requireContext(), "Video kayıt başlatılamadı.", android.widget.Toast.LENGTH_SHORT).show()
     }
     
     /**
@@ -1965,17 +1987,19 @@ class AbacusFragment : Fragment() {
                     if (currentTime - lastClickTime >= 500) {
                         lastClickTime = currentTime
 
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
+                        (activity as? MainActivity)?.requireOnlineOrShowOffline {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(400)
+                                .setInterpolator(BounceInterpolator())
+                                .start()
 
-                        // Tıklama işlemini gerçekleştir
-                        updateProgressBar()
-                        showResultPanel()
-                        controlNumber = 0
+                            // Tıklama işlemini gerçekleştir
+                            updateProgressBar()
+                            showResultPanel()
+                            controlNumber = 0
+                        }
                     }
                     true
                 }
@@ -3205,16 +3229,23 @@ class AbacusFragment : Fragment() {
             controlButton.isFocusable = false
             controlButton.setOnTouchListener(null)
 
+            val continueBtn = correctPanel.findViewById<Button>(R.id.continueButton)
+            isResultPanelAnimating = true
+
             correctPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    isResultPanelAnimating = false
+                }
                 .start()
 
             // Geri tuşu dinleyicisi
             correctPanel.findViewById<Button>(R.id.continueButton)
                 .setOnTouchListener { v, event ->
+                    if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             v.animate()
@@ -3228,6 +3259,8 @@ class AbacusFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            if (isResultPanelAnimating) return@setOnTouchListener true
+                            isResultPanelAnimating = true
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -3237,12 +3270,16 @@ class AbacusFragment : Fragment() {
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             
-                            // Control button'u tekrar aktif hale getir
-                            controlButton.isClickable = true
-                            controlButton.isFocusable = true
-                            controlButtonListener?.let { listener ->
-                                controlButton.setOnTouchListener(listener)
-                            }
+                            // Kontrol butonunu 0.7 saniye sonra tekrar aktif et
+                            binding.root.postDelayed({
+                                if (isAdded) {
+                                    controlButton.isClickable = true
+                                    controlButton.isFocusable = true
+                                    controlButtonListener?.let { listener ->
+                                        controlButton.setOnTouchListener(listener)
+                                    }
+                                }
+                            }, 400)
                             
                             correctPanel.animate()
                                 .translationY(correctPanel.height.toFloat())
@@ -3250,6 +3287,7 @@ class AbacusFragment : Fragment() {
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
                                     correctPanel.visibility = View.GONE
+                                    isResultPanelAnimating = false
                                 }
                                 .start()
                             if (currentIndex <= operations.size - 1) {
@@ -3281,6 +3319,8 @@ class AbacusFragment : Fragment() {
             controlButton.isClickable = false
             controlButton.isFocusable = false
             controlButton.setOnTouchListener(null)
+
+            isResultPanelAnimating = true
             
             //correctAnswerText.text = incorrectText()
             incorrectPanel.animate()
@@ -3288,10 +3328,14 @@ class AbacusFragment : Fragment() {
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    isResultPanelAnimating = false
+                }
                 .start()
 
             incorrectPanel.findViewById<Button>(R.id.okayButton)
                 .setOnTouchListener { v, event ->
+                    if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             v.animate()
@@ -3305,6 +3349,8 @@ class AbacusFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            if (isResultPanelAnimating) return@setOnTouchListener true
+                            isResultPanelAnimating = true
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -3314,12 +3360,16 @@ class AbacusFragment : Fragment() {
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             
-                            // Control button'u tekrar aktif hale getir
-                            controlButton.isClickable = true
-                            controlButton.isFocusable = true
-                            controlButtonListener?.let { listener ->
-                                controlButton.setOnTouchListener(listener)
-                            }
+                            // Kontrol butonunu 0.7 saniye sonra tekrar aktif et
+                            binding.root.postDelayed({
+                                if (isAdded) {
+                                    controlButton.isClickable = true
+                                    controlButton.isFocusable = true
+                                    controlButtonListener?.let { listener ->
+                                        controlButton.setOnTouchListener(listener)
+                                    }
+                                }
+                            }, 700)
                             
                             incorrectPanel.animate()
                                 .translationY(incorrectPanel.height.toFloat())
@@ -3327,6 +3377,7 @@ class AbacusFragment : Fragment() {
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
                                     incorrectPanel.visibility = View.GONE
+                                    isResultPanelAnimating = false
                                 }
                                 .start()
                             if (currentIndex <= operations.size - 1) {

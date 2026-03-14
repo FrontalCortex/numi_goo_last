@@ -45,6 +45,7 @@
                     android:id="@+id/messageText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:maxWidth="@dimen/chat_bubble_max_width"
                     android:textSize="15sp"
                     android:textColor="@android:color/white"
                     tools:text="Örnek mesaj" />
@@ -399,6 +400,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:maxWidth="@dimen/chat_bubble_max_width"
                 android:textSize="14sp"
                 android:textColor="@android:color/white"
                 android:visibility="gone"

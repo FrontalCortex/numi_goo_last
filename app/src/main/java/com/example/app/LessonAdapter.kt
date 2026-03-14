@@ -71,8 +71,14 @@ class LessonAdapter(
 
     @SuppressLint("MissingInflatedId")
     fun showLessonBottomSheet(item: LessonItem, position: Int) {
-        // Activity'deki view'ları bul
+        // Önce internet bağlantısını kontrol et
         val activity = context as Activity
+        if (!activity.isOnline()) {
+            (activity as? MainActivity)?.showOfflineFragment()
+            return
+        }
+
+        // Activity'deki view'ları bul
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
         val scrimView = activity.findViewById<View>(R.id.scrimView)
         
@@ -650,13 +656,15 @@ class LessonAdapter(
         private val fastForwardButton: Button = itemView.findViewById(R.id.fastForwardButton)
         fun bind(item: LessonItem) {
             fastForwardButton.setOnClickListener {
-                // Butona tıklandığında item'in partId'sini onPartChange callback'ine gönder
-                globalPartId = item.partId!!
-                item.partId?.let { partId ->
-                    onPartChange(partId)
+                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                    // Butona tıklandığında item'in partId'sini onPartChange callback'ine gönder
+                    globalPartId = item.partId!!
+                    item.partId?.let { partId ->
+                        onPartChange(partId)
+                    }
+                    sectionTitle.text = item.sectionTitle
+                    sectionDescription.text = item.sectionDescription
                 }
-                sectionTitle.text=item.sectionTitle
-                sectionDescription.text=item.sectionDescription
             }
         }
     }
@@ -665,11 +673,13 @@ class LessonAdapter(
         private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
         fun bind(item: LessonItem) {
             fastForwardButton.setOnClickListener {
-                globalPartId = item.partId!!
-                onPartChange(item.partId!!)
+                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                    globalPartId = item.partId!!
+                    onPartChange(item.partId!!)
+                }
             }
 
-            sectionTitle.text=item.sectionTitle
+            sectionTitle.text = item.sectionTitle
         }
     }
 
@@ -809,7 +819,9 @@ class LessonAdapter(
 
             // Race item'a tıklandığında race panel'i göster
             lessonCard.setOnClickListener {
-                showRacePanel(item, adapterPosition)
+                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                    showRacePanel(item, adapterPosition)
+                }
             }
 
             // Progress bar'ı ayarla

@@ -248,7 +248,7 @@
             android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Gönder"
-            android:src="@android:drawable/ic_media_play"
+            android:src="@drawable/send_ic"
             app:tint="@color/lesson_completed"
             android:visibility="gone" />
     </LinearLayout>

@@ -1,7 +1,7 @@
 package com.example.app
 
-import android.app.Dialog
 import android.Manifest
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
@@ -25,9 +25,11 @@ import android.content.IntentFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.ProgressBar
 import android.annotation.SuppressLint
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -62,6 +64,7 @@ class QuestionChatFragment : Fragment() {
     private var questionStatus: String = ""
     private var isTeacher = false
     private var listener: ListenerRegistration? = null
+    private var questionDocListener: ListenerRegistration? = null
     private var isUserRestrictedOrBanned = false
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
@@ -418,7 +421,31 @@ class QuestionChatFragment : Fragment() {
             binding.galleryButton.visibility = View.GONE
         }
 
-        binding.backButton.setOnClickListener { requireActivity().supportFragmentManager.popBackStack() }
+        val backToNotification: () -> Unit = {
+            // Her zaman bildirim/sohbet listesine dön.
+            val fragment = NotificationFragment.newWithReturnDefaults(fromTeacher = isTeacher)
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainerID, fragment)
+                .commit()
+        }
+
+        binding.backButton.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                backToNotification()
+            }
+        }
+
+        // Cihazın geri tuşu da aynı davranışı göstersin.
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    requireOnlineAndLoggedInOrLogin {
+                        backToNotification()
+                    }
+                }
+            }
+        )
         binding.questionScreenshotButton.visibility = View.VISIBLE
         binding.questionScreenshotButton.setOnClickListener {
             val fragment = QuestionDetailFragment.newInstance(
@@ -448,10 +475,20 @@ class QuestionChatFragment : Fragment() {
                 }
         }
 
-        firestore.collection("questions").document(questionId).get()
-            .addOnSuccessListener { doc ->
-                questionStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
-                if (isTeacher) applyResolveButtonIcon(questionStatus)
+        questionDocListener = firestore.collection("questions").document(questionId)
+            .addSnapshotListener { doc, e ->
+                if (e != null) {
+                    return@addSnapshotListener
+                }
+                if (doc == null || !doc.exists()) return@addSnapshotListener
+                val newStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
+                if (newStatus == questionStatus) return@addSnapshotListener
+                questionStatus = newStatus
+                if (isTeacher) {
+                    applyResolveButtonIcon(questionStatus)
+                }
+                // Öğrenci çözülmüş bir sorudayken ekranda kalıyorsa, sadece gönderme girişinde engel çalışsın.
+                // (handleResolvedBlockOrRun zaten questionStatus'i kullanıyor.)
             }
 
         val currentUid = auth.currentUser?.uid ?: ""
@@ -518,14 +555,14 @@ class QuestionChatFragment : Fragment() {
                     rawList.filter { m -> m.deletedForUids?.contains(uid) != true }
                 } else rawList
                 if (uid != null) {
+                    // Sohbet açıkken, sadece "okundu" bilgisini güncelle.
+                    // "Telefona ulaştı" (deliveredAt) işaretlemesi Cloud Function (onMessageCreated) tarafından yapılır.
                     for (m in rawList) {
                         if (m.senderUid != uid && m.id.isNotEmpty() && !m.id.startsWith("pending_") && m.deletedForUids?.contains(uid) != true) {
-                            val updates = mutableMapOf<String, Any>()
-                            if (m.deliveredAt == null) updates["deliveredAt"] = Timestamp.now()
-                            if (m.readAt == null) updates["readAt"] = Timestamp.now()
-                            if (updates.isNotEmpty()) {
+                            if (m.readAt == null) {
                                 firestore.collection("questions").document(questionId)
-                                    .collection("messages").document(m.id).update(updates)
+                                    .collection("messages").document(m.id)
+                                    .update("readAt", Timestamp.now())
                             }
                         }
                     }
@@ -558,47 +595,77 @@ class QuestionChatFragment : Fragment() {
         binding.sendTextButton.scaleY = 0f
         binding.sendTextButton.alpha = 0f
 
-        binding.sendTextButton.setOnClickListener { handleResolvedBlockOrRun { sendTextMessage() } }
-        binding.recordAudioButton.setOnClickListener { handleResolvedBlockOrRun { toggleAudioRecording() } }
-        binding.galleryButton.setOnClickListener { handleResolvedBlockOrRun { openGalleryBottomSheet() } }
+        binding.sendTextButton.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                handleResolvedBlockOrRun { sendTextMessage() }
+            }
+        }
+        binding.recordAudioButton.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                handleResolvedBlockOrRun { toggleAudioRecording() }
+            }
+        }
+        binding.galleryButton.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                handleResolvedBlockOrRun { openGalleryBottomSheet() }
+            }
+        }
         binding.resolveButton.setOnClickListener {
             if (questionStatus == StudentQuestion.STATUS_RESOLVED) showUnresolveConfirmationDialog()
             else showResolveConfirmationDialog()
         }
 
         binding.audioBarPlayPause.setOnClickListener {
-            if (isRecordingAudio) {
-                // Kayıt modunda: duraklat / devam et
-                if (isRecordingPaused) resumeAudioRecordingInternal() else pauseAudioRecordingInternal()
-            } else {
-                // Oynatma modunda: play / pause
-                if (audioMediaPlayer?.isPlaying == true) {
-                    audioMediaPlayer?.pause()
-                    binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_play)
+            requireOnlineAndLoggedInOrLogin {
+                if (isRecordingAudio) {
+                    // Kayıt modunda: duraklat / devam et
+                    if (isRecordingPaused) resumeAudioRecordingInternal() else pauseAudioRecordingInternal()
                 } else {
-                    audioMediaPlayer?.start()
-                    binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
-                    audioProgressHandler.post(audioProgressRunnable)
+                    // Oynatma modunda: play / pause
+                    if (audioMediaPlayer?.isPlaying == true) {
+                        audioMediaPlayer?.pause()
+                        binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_play)
+                    } else {
+                        audioMediaPlayer?.start()
+                        binding.audioBarPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+                        audioProgressHandler.post(audioProgressRunnable)
+                    }
                 }
             }
         }
         binding.audioBarStop.setOnClickListener {
-            if (isRecordingAudio) {
-                // Kaydı sil ve paneli kapat
-                finishAudioRecording(send = false)
-            } else {
+            requireOnlineAndLoggedInOrLogin {
+                if (isRecordingAudio) {
+                    // Kaydı sil ve paneli kapat
+                    finishAudioRecording(send = false)
+                } else {
+                    releaseAudioAndHideBar()
+                }
+            }
+        }
+        binding.audioBarClose.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
                 releaseAudioAndHideBar()
             }
         }
-        binding.audioBarClose.setOnClickListener { releaseAudioAndHideBar() }
         binding.audioBarSend.setOnClickListener {
-            if (isRecordingAudio) {
-                finishAudioRecording(send = true)
+            requireOnlineAndLoggedInOrLogin {
+                if (isRecordingAudio) {
+                    finishAudioRecording(send = true)
+                }
             }
         }
 
-        binding.captionBarThumbContainer.setOnClickListener { clearSelectedMediaAndHideCaptionBar() }
-        binding.captionSendButton.setOnClickListener { handleResolvedBlockOrRun { sendSelectedMediaWithCaption() } }
+        binding.captionBarThumbContainer.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                clearSelectedMediaAndHideCaptionBar()
+            }
+        }
+        binding.captionSendButton.setOnClickListener {
+            requireOnlineAndLoggedInOrLogin {
+                handleResolvedBlockOrRun { sendSelectedMediaWithCaption() }
+            }
+        }
 
         // Metin duruma göre mic / send animasyonlu geçiş
         binding.textInput.addTextChangedListener(object : android.text.TextWatcher {
@@ -990,6 +1057,7 @@ class QuestionChatFragment : Fragment() {
             if (last >= 0) binding.messagesRecyclerView.smoothScrollToPosition(last)
         }
         startUploadService(clientId, QuestionMessage.TYPE_TEXT, textContent = text)
+        bumpLastMessageAt()
     }
 
     private fun toggleAudioRecording() {
@@ -1110,6 +1178,7 @@ class QuestionChatFragment : Fragment() {
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_AUDIO, filePath = dest.absolutePath)
+        bumpLastMessageAt()
     }
 
     private fun uploadVideoAndSend(uri: Uri) {
@@ -1135,6 +1204,7 @@ class QuestionChatFragment : Fragment() {
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_VIDEO, filePath = dest.absolutePath, caption = caption.takeIf { it.isNotEmpty() })
+        bumpLastMessageAt()
         onSuccess?.invoke()
     }
 
@@ -1162,11 +1232,18 @@ class QuestionChatFragment : Fragment() {
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_IMAGE, filePath = dest.absolutePath, caption = caption.takeIf { it.isNotEmpty() })
+        bumpLastMessageAt()
         onSuccess?.invoke()
     }
 
     private fun uploadVideoAndSendWithCaption(uri: Uri, caption: String, onSuccess: (() -> Unit)? = null) {
         uploadVideoUriAndSend(uri, caption, onSuccess)
+    }
+
+    private fun bumpLastMessageAt() {
+        if (questionId.isEmpty()) return
+        firestore.collection("questions").document(questionId)
+            .update("lastMessageAt", Timestamp.now())
     }
 
     private fun applyResolveButtonIcon(status: String) {
@@ -1241,6 +1318,7 @@ class QuestionChatFragment : Fragment() {
         videoDialog = null
         releaseVideoPlayer()
         listener?.remove()
+        questionDocListener?.remove()
         chatAdapter = null
         _binding = null
         super.onDestroyView()
@@ -1320,7 +1398,7 @@ private class ChatMessageAdapter(
     override fun getItemCount() = items.size
 
     class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val messageContainer = itemView.findViewById<View>(R.id.messageContainer)
+        private val messageContainer = itemView.findViewById<LinearLayout>(R.id.messageContainer)
         private val bubbleContainer = itemView.findViewById<View>(R.id.bubbleContainer)
         private val messageText = itemView.findViewById<TextView>(R.id.messageText)
         private val audioRow = itemView.findViewById<View>(R.id.audioRow)
@@ -1378,13 +1456,14 @@ private class ChatMessageAdapter(
         ) {
             bubbleContainer.setOnLongClickListener { onMessageLongClick(m); true }
             val isFromMe = m.senderUid == currentUserUid
-            val maxWidthPx = itemView.resources.getDimensionPixelSize(R.dimen.chat_bubble_max_width)
             val params = messageContainer.layoutParams as? android.widget.FrameLayout.LayoutParams
             if (params != null) {
-                params.width = maxWidthPx
+                params.width = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
                 params.gravity = if (isFromMe) android.view.Gravity.END else android.view.Gravity.START
                 messageContainer.layoutParams = params
             }
+            // İçerik (balon) konumu: gönderilen mesajlar sağa, gelen mesajlar sola
+            messageContainer.gravity = if (isFromMe) android.view.Gravity.END else android.view.Gravity.START
 
             val bubbleBg = if (isFromMe) R.drawable.chat_bubble_me else R.drawable.hint_background
             val textColor = if (isFromMe) android.graphics.Color.BLACK else android.graphics.Color.WHITE

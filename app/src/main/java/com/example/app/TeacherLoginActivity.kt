@@ -41,11 +41,15 @@ class TeacherLoginActivity : AppCompatActivity(),
         }
 
         binding.btnLogin.setOnClickListener {
-            loginTeacher()
+            requireOnlineOrShowOffline {
+                loginTeacher()
+            }
         }
         
         binding.tvForgotPassword.setOnClickListener {
-            showForgotPasswordFlow()
+            requireOnlineOrShowOffline {
+                showForgotPasswordFlow()
+            }
         }
 
         supportFragmentManager.addOnBackStackChangedListener {
@@ -89,11 +93,11 @@ class TeacherLoginActivity : AppCompatActivity(),
     }
 
     override fun onOtpVerifyStarted() {
-        binding.btnBack.isEnabled = false
+        binding.root.isEnabled = false
     }
 
     override fun onOtpVerifyFinished() {
-        binding.btnBack.isEnabled = true
+        binding.root.isEnabled = true
     }
     
     private fun loginTeacher() {

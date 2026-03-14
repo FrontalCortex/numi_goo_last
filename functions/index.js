@@ -447,6 +447,7 @@ exports.onMessageCreated = functions.firestore
   .onCreate(async (snap, context) => {
     const message = snap.data();
     const questionId = context.params.questionId;
+    const messageId = context.params.messageId;
     const senderUid = message.senderUid || '';
     const type = message.type || 'text';
     const textContent = (message.textContent || '').trim();
@@ -466,8 +467,27 @@ exports.onMessageCreated = functions.firestore
     if (!recipientUid || recipientUid === senderUid) return null;
 
     const recipientSnap = await db.collection('users').doc(recipientUid).get();
-    const fcmToken = recipientSnap.exists ? (recipientSnap.data().fcmToken || null) : null;
-    if (!fcmToken) return null;
+    if (!recipientSnap.exists) return null;
+    const recipientData = recipientSnap.data() || {};
+    let tokens = [];
+
+    // Yeni yapı: fcmDevices (her eleman { deviceId, token, updatedAt })
+    if (Array.isArray(recipientData.fcmDevices)) {
+      tokens = recipientData.fcmDevices
+        .map((d) => d && typeof d.token === 'string' ? d.token.trim() : '')
+        .filter((t) => t.length > 0);
+    } else if (Array.isArray(recipientData.fcmTokens)) {
+      // Geriye dönük uyumluluk: eski dizi alanı
+      tokens = recipientData.fcmTokens.filter((t) => typeof t === 'string' && t.trim().length > 0);
+    } else if (recipientData.fcmToken) {
+      // Tekil alan (en son token)
+      tokens = [recipientData.fcmToken];
+    }
+    if (!tokens.length) return null;
+    // Güvenlik için: her hesap en fazla 2 cihaz - sadece son 2 token'a gönder.
+    if (tokens.length > 2) {
+      tokens = tokens.slice(-2);
+    }
 
     let senderName = 'Kullanıcı';
     try {
@@ -491,12 +511,46 @@ exports.onMessageCreated = functions.firestore
     else if (type === 'image') body = 'Görsel';
     else body = 'Yeni mesaj';
 
-    const payload = {
-      notification: { title: senderName, body },
-      data: { questionId: String(questionId), title: senderName, body },
-      token: fcmToken,
+    // Data-only FCM mesajı gönderiyoruz. Böylece Android tarafında
+    // MyFirebaseMessagingService.onMessageReceived HER zaman çağrılır
+    // (uygulama arka planda / kapalı olsa bile) ve kendi PendingIntent'imizle
+    // doğru sohbete yönlendirebiliriz.
+    const baseData = {
+      questionId: String(questionId),
+      messageId: String(messageId),
+      recipientUid: String(recipientUid),
+      title: senderName,
+      body,
     };
-    await admin.messaging().send(payload);
+
+    // Her token için ayrı bir data-only FCM gönder.
+    const sendPromises = tokens.map((token) =>
+      admin.messaging().send({
+        data: baseData,
+        token,
+      })
+    );
+    await Promise.all(sendPromises);
+
+    // Mesaj sunucuya ulaştıktan sonra, bildirimi FCM'e başarıyla verdiysek deliveredAt alanını işaretle.
+    // Böylece gönderici tarafta "çift tik gri" durumu (telefona gönderildi ama okunmadı) gösterilebilir.
+    try {
+      await snap.ref.update({
+        deliveredAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Failed to set deliveredAt for message', context.params, err);
+    }
+
+    // İlgili soru dokümanında son mesaj zamanını güncelle (NotificationFragment sıralaması için).
+    try {
+      await db.collection('questions').doc(questionId).update({
+        lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Failed to update lastMessageAt on question', questionId, err);
+    }
+
     return null;
   });
 

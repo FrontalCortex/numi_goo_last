@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -12,12 +13,16 @@ import com.example.app.auth.AuthManager
 import com.example.app.databinding.ActivityRegisterBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Log
 
 class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
+    private var isGoogleFlowInProgress: Boolean = false
     
     companion object {
         private const val RC_GOOGLE_SIGN_IN = 9001
@@ -72,6 +77,33 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         resendCooldownTimer?.cancel()
         resendCooldownTimer = null
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Eğer bu activity kapatılırken FirebaseAuth'ta bir kullanıcı varsa
+        // ve Firestore'da buna ait tam bir profil yoksa, bu yarım oluşmuş hesabı sil.
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser ?: return
+        val uid = currentUser.uid
+
+        val usersRef = FirebaseFirestore.getInstance().collection("users").document(uid)
+        usersRef.get()
+            .addOnSuccessListener { snap ->
+                val data = snap.data
+                val email = data?.get("email") as? String
+                val role = data?.get("role") as? String
+                if (data == null || email.isNullOrBlank() || role.isNullOrBlank()) {
+                    Log.d("RegisterActivity", "onDestroy: deleting incomplete FirebaseAuth user uid=$uid")
+                    currentUser.delete()
+                        .addOnCompleteListener {
+                            auth.signOut()
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.w("RegisterActivity", "onDestroy: failed to read user doc for cleanup", e)
+            }
+    }
     
     private fun setupUI() {
         binding.btnBack.setOnClickListener {
@@ -100,41 +132,50 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         
         // Öğrenci kaydı: OTP akışı
         binding.btnContinue.setOnClickListener {
-            val email = binding.etEmail.text?.toString()?.trim() ?: ""
+            requireOnlineOrShowOffline {
+                if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline
+                val email = binding.etEmail.text?.toString()?.trim() ?: ""
 
-            if (email.isEmpty()) {
-                showError("Lütfen e-posta girin")
-                return@setOnClickListener
-            }
-            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                showError("Geçerli bir e-posta adresi giriniz.")
-                return@setOnClickListener
-            }
+                if (email.isEmpty()) {
+                    showError("Lütfen e-posta girin")
+                    return@requireOnlineOrShowOffline
+                }
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    showError("Geçerli bir e-posta adresi giriniz.")
+                    return@requireOnlineOrShowOffline
+                }
 
-            sendOtpAndShowCodeStep(email)
+                sendOtpAndShowCodeStep(email)
+            }
         }
         
         // Öğretmen kaydı: Kullanıcı adı + e-posta + şifre + OTP akışı
         binding.btnRegister.setOnClickListener {
-            registerTeacherWithOtp()
+            requireOnlineOrShowOffline {
+                if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline
+                registerTeacherWithOtp()
+            }
         }
-
+        
         // Google Sign-In yalnızca öğrenci kaydında kullanılır; öğretmen kaydında hiçbir zaman kullanılmaz
         if (currentForcedRole != ForcedRole.TEACHER) {
             binding.btnGoogleSignIn.setOnClickListener {
-                signInWithGoogle()
+                requireOnlineOrShowOffline {
+                    if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline
+                    setScreenEnabled(false)
+                    isGoogleFlowInProgress = true
+                    signInWithGoogle()
+                }
             }
         }
     }
 
     override fun onOtpVerifyStarted() {
-        binding.btnBack.isEnabled = false
-        binding.btnGoogleSignIn.isEnabled = false
+        setScreenEnabled(false)
     }
 
     override fun onOtpVerifyFinished() {
-        binding.btnBack.isEnabled = true
-        binding.btnGoogleSignIn.isEnabled = true
+        setScreenEnabled(true)
     }
 
     private enum class ForcedRole { STUDENT, TEACHER }
@@ -312,10 +353,14 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         android.util.Log.d("RegisterActivity", "Google Sign-In activity başlatıldı")
                     } else {
                         android.util.Log.e("RegisterActivity", "Google Sign-In Intent null!")
+                        setScreenEnabled(true)
+                        isGoogleFlowInProgress = false
                         showError("Google kaydı başlatılamadı")
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("RegisterActivity", "Google Sign-In başlatılırken hata oluştu", e)
+                    setScreenEnabled(true)
+                    isGoogleFlowInProgress = false
                     showError("Google kaydı başlatılamadı: ${e.localizedMessage}")
                 }
             }
@@ -325,15 +370,21 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         super.onActivityResult(requestCode, resultCode, data)
         
         if (requestCode == RC_GOOGLE_SIGN_IN) {
-            // Kullanıcı iptal ettiyse hiçbir şey yapma
+            // Kullanıcı hesap seçim ekranından geri döndüyse ve iptal ettiyse:
             if (resultCode != RESULT_OK) {
                 android.util.Log.d("RegisterActivity", "Google Sign-In iptal edildi veya başarısız")
+                setScreenEnabled(true)
+                isGoogleFlowInProgress = false
                 return
             }
-            
+
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             // autoRegister = true parametresi ile çağır (kayıt ekranından çağrıldığı için)
             authManager.handleGoogleSignInResult(task, autoRegister = true) { success, error ->
+                // Google akışı bu callback'te tamamlanıyor: burada kilidi kaldır.
+                setScreenEnabled(true)
+                isGoogleFlowInProgress = false
+
                 if (success) {
                     // Google Sign-In ile gelen kullanıcılar otomatik öğrenci olarak kaydedilir
                     android.util.Log.d("RegisterActivity", "Google ile kayıt başarılı, MainActivity'ye yönlendiriliyor")
@@ -420,5 +471,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     
     private fun showSuccess(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setScreenEnabled(enabled: Boolean) {
+        binding.touchBlockOverlay.visibility = if (enabled) View.GONE else View.VISIBLE
     }
 }

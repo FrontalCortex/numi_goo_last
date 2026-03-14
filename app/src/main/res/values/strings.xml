@@ -52,4 +52,9 @@
     <string name="notification_download_cancel">İptal et</string>
 
     <string name="chat_retry_upload">Tekrar dene</string>
+
+    <!-- Offline ekranı -->
+    <string name="offline_title">Offline</string>
+    <string name="offline_message">İnternet bağlantınız yok. Lütfen Wi‑Fi veya mobil veriyi açın.</string>
+    <string name="offline_retry">Tekrar dene</string>
 </resources>

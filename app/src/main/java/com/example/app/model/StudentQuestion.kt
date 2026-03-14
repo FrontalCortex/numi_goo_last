@@ -10,8 +10,13 @@ data class StudentQuestion(
     val studentEmail: String? = null,
     val screenshotStoragePath: String = "",
     val screenshotUrl: String = "",
+    val mediaType: String = MEDIA_TYPE_IMAGE,
+    val videoStoragePath: String? = null,
+    val videoUrl: String? = null,
+    val videoDurationSec: Int? = null,
     val message: String = "",
     val previewText: String = "",
+    val lastMessageAt: Timestamp? = null,   // ← BU SATIR EKLİ OLMALI
     @ServerTimestamp val createdAt: Timestamp? = null,
     val status: String = STATUS_PENDING,
     val claimedByTeacherUid: String? = null,
@@ -23,6 +28,8 @@ data class StudentQuestion(
         const val STATUS_PENDING = "pending"
         const val STATUS_CLAIMED = "claimed"
         const val STATUS_RESOLVED = "resolved"
+        const val MEDIA_TYPE_IMAGE = "image"
+        const val MEDIA_TYPE_VIDEO = "video"
     }
 }
 
