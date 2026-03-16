@@ -55,6 +55,20 @@
 
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/askQuestionButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginEnd="6dp"
+        android:textAllCaps="false"
+        android:padding="8dp"
+        android:elevation="1dp"
+        android:background="@drawable/fab_background"
+        android:textColor="@android:color/black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:src="@drawable/teacher_ask_ic"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/lessonsRecyclerView"

@@ -3,6 +3,8 @@ package com.example.app
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.content.IntentFilter
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -34,7 +36,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 //import com.google.android.gms.ads.MobileAds
 
 import androidx.fragment.app.Fragment
+import com.example.app.auth.AuthManager
 import com.example.app.databinding.ActivityMainBinding
+import com.example.app.model.QuestionMessage
+import com.example.app.model.StudentQuestion
+import java.io.File
+import java.io.FileOutputStream
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
@@ -55,6 +62,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var adManager: AdManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+    private val authManager by lazy { AuthManager().also { it.initialize(this) } }
 
     private var lastBackPressTime = 0L
     private val backPressToExitMillis = 2000L
@@ -76,19 +84,27 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private val recordAudioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (granted) launchMediaProjectionForQuestion() else Toast.makeText(this, "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
+        if (granted) launchMediaProjectionForQuestion() else {
+            isQuestionRecordingInProgress = false
+            setAskQuestionButtonEnabled(true)
+            Toast.makeText(this, "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode != RESULT_OK || result.data == null) {
+            isQuestionRecordingInProgress = false
+            setAskQuestionButtonEnabled(true)
             Toast.makeText(this, "Ekran kaydı başlatılamadı.", Toast.LENGTH_SHORT).show()
             return@registerForActivityResult
         }
+        maxRecordingSecForSession = if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) 180 else 60
         val serviceIntent = Intent(this, ScreenRecordingService::class.java).apply {
             putExtra(ScreenRecordingService.EXTRA_RESULT_CODE, result.resultCode)
             putExtra(ScreenRecordingService.EXTRA_RESULT_DATA, result.data)
+            putExtra(ScreenRecordingService.EXTRA_MAX_DURATION_MS, maxRecordingSecForSession * 1000L)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
@@ -99,9 +115,18 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private var recordingOverlayView: View? = null
+    private var drawingOverlayView: DrawingOverlayView? = null
+    private var drawingControlsView: View? = null
+    private var isDrawingPanelOpen: Boolean = false
     private var recordingTimerRunnable: Runnable? = null
     private var recordingReceiver: BroadcastReceiver? = null
     private val recordingHandler = Handler(Looper.getMainLooper())
+    // Öğretmen soru medyasını mevcut sahiplendiği soruya göndermek için geçici state
+    private var teacherPendingMediaType: String? = null
+    private var teacherPendingMediaPath: String? = null
+    private var teacherPendingDescription: String? = null
+    private var teacherSelectedQuestionId: String? = null
+    private var teacherSelectedQuestionTitle: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,12 +134,22 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
+                binding.createQuestionOverlayContainer.visibility = View.GONE
+            }
+        }
+
         Log.d("MainActivity", "onCreate intent extras = ${intent?.extras}")
 
-        // Klavye açıldığında sadece bottomNavigationID'yi gizle, diğer görünümler normal IME insets alsın
+        // Klavye açıldığında bottomNavigationID gizlensin; soru seçilirken (öğretmen medya gönder) de gizli kalsın
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigationID) { view, insets ->
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-            view.visibility = if (imeVisible) View.GONE else View.VISIBLE
+            view.visibility = when {
+                imeVisible -> View.GONE
+                teacherPendingMediaPath != null -> View.GONE
+                else -> View.VISIBLE
+            }
             insets
         }
         
@@ -143,6 +178,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         coin = binding.currencyText
         coin.text = getCurrency(this).toString()
+
+        // Öğretmen hesabında currencyPanel içindeki diamond/coin ve enerji ikonlarını gizle
+        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) {
+            binding.diamondID.visibility = View.GONE
+            binding.currencyText.visibility = View.GONE
+            binding.energyIcon.visibility = View.GONE
+            binding.energyText.visibility = View.GONE
+        }
         
         // Enerji sistemini başlat
         energyManager = EnergyManager(this)
@@ -192,6 +235,34 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // 1) CreateQuestion akışındayken geri tuşu:
+                //    - Eğer öğretmen seçim akışından dönülmüş CreateQuestion ise:
+                //      onTeacherCreateQuestionDismissedByBack() + fragment'i gerçekten kapat.
+                //    - Diğer CreateQuestion durumlarında sadece fragment'i kapat (backButton ile aynı).
+                val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+                val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+                if (createQuestionOverlay != null || createQuestionAbacus != null) {
+                    val fragment = createQuestionOverlay ?: createQuestionAbacus
+                    val fromTeacherSelectionBack =
+                        fragment?.arguments?.getBoolean(CreateQuestionFragment.ARG_FROM_TEACHER_SELECTION_BACK, false) == true
+                    if (fromTeacherSelectionBack) {
+                        // Öğretmen seçim akışından dönüyorsa özel temizliği yap
+                        onTeacherCreateQuestionDismissedByBack()
+                    }
+                    // Her iki durumda da CreateQuestion fragment'ini kapat (overlay veya abacus)
+                    supportFragmentManager.popBackStack()
+                    return
+                }
+
+                // 2) Öğretmen CreateQuestion'dan gelip soru seçme modundaysa (NotificationFragment + pending medya),
+                //    sistem geri tuşu bottom bar'daki teacherSendBackButton ile aynı davranışı göstersin.
+                val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+                if (teacherPendingMediaPath != null && currentFragment is NotificationFragment) {
+                    onTeacherSelectionBackFromNotification()
+                    return
+                }
+
+                // 3) Kökte değilsek normal backstack davranışı
                 val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 val atRoot = supportFragmentManager.backStackEntryCount <= 1 && current is MapFragment
                 if (!atRoot) {
@@ -211,7 +282,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         onBackPressedDispatcher.addCallback(this, backCallback)
         supportFragmentManager.addOnBackStackChangedListener {
             val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-            backCallback.isEnabled = current is MapFragment && supportFragmentManager.backStackEntryCount <= 1
+            val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+            val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+            val createQuestionVisible = createQuestionOverlay != null || createQuestionAbacus != null
+            val teacherSelectingQuestion = teacherPendingMediaPath != null && current is NotificationFragment
+            backCallback.isEnabled =
+                (current is MapFragment && supportFragmentManager.backStackEntryCount <= 1) ||
+                createQuestionVisible ||
+                teacherSelectingQuestion
         }
 
         // Listener'ları set et
@@ -267,9 +345,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                     R.id.profile ->
                         if (currentFragment is ProfileFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(ProfileFragment())
-                    R.id.notification ->
+                    R.id.notification -> {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(NotificationFragment())
+                        // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma
+                        if (teacherPendingMediaPath != null) return@requireOnlineAndLoggedInOrLogin
+                        changeFragment(NotificationFragment())
+                    }
                 }
             }
             true
@@ -303,8 +384,227 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
 
-    /** AbacusFragment'tan video soru akışı için çağrılır: izinler + MediaProjection + 60sn kayıt + overlay. */
-    fun requestQuestionScreenRecording() {
+    /**
+     * Soru sorma akışını başlatır (Abacus, Tutorial, Map gibi her yerden kullanılır).
+     * @param containerId CreateQuestionFragment'ın açılacağı container (R.id.abacusFragmentContainer veya R.id.fragmentContainerID)
+     * @param viewToCapture Ekran görüntüsü alınacak view (fragment root); kamera seçilince bu view capture edilir
+     */
+    /** Video kaydı (soru için) başlatıldığında true; overlay kapanınca false. Butonlar bu sürede tıklanmaz. */
+    private var isQuestionRecordingInProgress = false
+
+    fun isQuestionRecordingInProgress(): Boolean = isQuestionRecordingInProgress
+
+    fun startQuestionFlow(containerId: Int, viewToCapture: () -> View?) {
+        if (isQuestionRecordingInProgress) return
+        if (supportFragmentManager.findFragmentByTag(QuestionMediaPickerDialogFragment.TAG) != null) return
+        supportFragmentManager.setFragmentResultListener(
+            QuestionMediaPickerDialogFragment.REQUEST_KEY,
+            this
+        ) { _, result ->
+            when (result.getString(QuestionMediaPickerDialogFragment.RESULT_PICK)) {
+                QuestionMediaPickerDialogFragment.PICK_CAMERA -> {
+                    val view = viewToCapture()
+                    if (view != null) {
+                        view.post { captureViewAndOpenCreateQuestion(view, containerId) }
+                    } else {
+                        Toast.makeText(this, "Görüntü alınamadı.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                QuestionMediaPickerDialogFragment.PICK_VIDEO -> requestQuestionScreenRecording(containerId)
+            }
+        }
+        QuestionMediaPickerDialogFragment()
+            .show(supportFragmentManager, QuestionMediaPickerDialogFragment.TAG)
+    }
+
+    private fun captureViewAndOpenCreateQuestion(view: View, containerId: Int) {
+        if (view.width == 0 || view.height == 0) {
+            view.post { captureViewAndOpenCreateQuestion(view, containerId) }
+            return
+        }
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+        val file = File(cacheDir, "question_screenshot_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+        bitmap.recycle()
+        openCreateQuestionInOverlay(file.absolutePath, forVideo = false)
+    }
+
+    /** CreateQuestionFragment'ı overlay'de açar. fromTeacherSelectionBack=true ise fragment back ile kapanınca nav/tab eski haline döner. */
+    private fun openCreateQuestionInOverlay(path: String, forVideo: Boolean, description: String? = null, fromTeacherSelectionBack: Boolean = false) {
+        binding.createQuestionOverlayContainer.visibility = View.VISIBLE
+        val fragment = if (forVideo) CreateQuestionFragment.newInstanceForVideo(path) else CreateQuestionFragment.newInstance(path)
+        val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
+        fragment.arguments = (fragment.arguments ?: Bundle()).apply {
+            putBoolean(CreateQuestionFragment.ARG_IS_TEACHER, isTeacher)
+            description?.let { putString(CreateQuestionFragment.ARG_DESCRIPTION, it) }
+            putBoolean(CreateQuestionFragment.ARG_FROM_TEACHER_SELECTION_BACK, fromTeacherSelectionBack)
+        }
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.createQuestionOverlayContainer, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
+    /**
+     * Öğretmen CreateQuestionFragment'ta Gönder'e bastığında çağrılır.
+     * Yeni soru oluşturmak yerine, NotificationFragment'in öğretmen sohbetler sekmesinde seçim modu başlatılır.
+     */
+    fun onTeacherSubmitQuestionMedia(mediaType: String, mediaPath: String, description: String?) {
+        // 1) Pending medya bilgisini sakla
+        teacherPendingMediaType = mediaType
+        teacherPendingMediaPath = mediaPath
+        teacherPendingDescription = description
+        teacherSelectedQuestionId = null
+        teacherSelectedQuestionTitle = null
+
+        // 2) Alt panel + geri butonu; soru seçilirken alt navigasyon gizlensin
+        binding.teacherSendToQuestionBar.visibility = View.VISIBLE
+        binding.teacherSendBackButton.visibility = View.VISIBLE
+        binding.bottomNavigationID.visibility = View.GONE
+        binding.teacherSendQuestionTitle.text = ""
+        binding.teacherSendButton.isEnabled = false
+        binding.teacherSendButton.alpha = 0.5f
+        binding.teacherSendButton.setOnClickListener {
+            handleTeacherSendToSelectedQuestion()
+        }
+        binding.teacherSendBackButton.setOnClickListener {
+            onTeacherSelectionBackFromNotification()
+        }
+
+        // 3) CreateQuestion overlay'ini kapat (varsa)
+        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+            supportFragmentManager.popBackStackImmediate()
+        }
+        binding.createQuestionOverlayContainer.visibility = View.GONE
+
+        // 4) NotificationFragment'i öğretmen sohbetler sekmesinde, selection mode açık olacak şekilde aç
+        val fragment = NotificationFragment.newWithTeacherSelection(
+            mediaType = mediaType,
+            mediaPath = mediaPath,
+            description = description
+        )
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainerID, fragment)
+            .addToBackStack(null)
+            .commit()
+        // Transaction uygulansın ki bottom nav listener tetiklendiğinde container'da zaten bu fragment olsun
+        supportFragmentManager.executePendingTransactions()
+        binding.bottomNavigationID.selectedItemId = R.id.notification
+    }
+
+    /**
+     * NotificationFragment'te bir sohbet seçildiğinde çağrılır.
+     * Seçilen soru alt panelde gösterilir ve send butonu aktifleşir.
+     */
+    fun onTeacherChatSelectedFromNotification(questionId: String, title: String) {
+        teacherSelectedQuestionId = questionId
+        teacherSelectedQuestionTitle = title
+        binding.teacherSendQuestionTitle.text = title
+        binding.teacherSendButton.isEnabled = true
+        binding.teacherSendButton.alpha = 1f
+    }
+
+    /**
+     * Alt paneldeki back (ic_back_arrow) tıklandığında çağrılır.
+     * CreateQuestionFragment'a dönülür; açıklama vs. düzenlenip tekrar gönderilebilir.
+     */
+    fun onTeacherSelectionBackFromNotification() {
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? NotificationFragment)
+            ?.exitTeacherSelectionMode()
+
+        binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendBackButton.visibility = View.GONE
+        binding.bottomNavigationID.visibility = View.VISIBLE
+        teacherSelectedQuestionId = null
+        teacherSelectedQuestionTitle = null
+
+        // CreateQuestion'a geri dön (medya ve açıklama korunur, düzenlenebilir)
+        val mediaPath = teacherPendingMediaPath
+        val mediaType = teacherPendingMediaType
+        val description = teacherPendingDescription
+        if (!mediaPath.isNullOrEmpty() && !mediaType.isNullOrEmpty()) {
+            val forVideo = mediaType == StudentQuestion.MEDIA_TYPE_VIDEO
+            openCreateQuestionInOverlay(mediaPath, forVideo, description, fromTeacherSelectionBack = true)
+        }
+    }
+
+    /** CreateQuestionFragment (öğretmen geri dönüşünden açılmış) back ile kapatıldığında: state temizle, nav ve tab eski haline getir. */
+    fun onTeacherCreateQuestionDismissedByBack() {
+        teacherPendingMediaPath?.let { path -> runCatching { File(path).takeIf { it.exists() }?.delete() } }
+        teacherPendingMediaType = null
+        teacherPendingMediaPath = null
+        teacherPendingDescription = null
+        teacherSelectedQuestionId = null
+        teacherSelectedQuestionTitle = null
+        binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendBackButton.visibility = View.GONE
+        binding.bottomNavigationID.visibility = View.VISIBLE
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? NotificationFragment)?.exitTeacherSelectionMode()
+    }
+
+    private fun handleTeacherSendToSelectedQuestion() {
+        val questionId = teacherSelectedQuestionId
+        val mediaType = teacherPendingMediaType
+        val mediaPath = teacherPendingMediaPath
+        val description = teacherPendingDescription
+        if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty()) {
+            Toast.makeText(this, "Lütfen bir soru seçin.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrEmpty()) {
+            Toast.makeText(this, "Oturum açık değil.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val role = authManager.getCurrentUserType()
+
+        // 1) Medya mesajını (varsa açıklama ile tek mesaj olarak) kuyruğa al
+        val mediaClientId = "pending_${System.currentTimeMillis()}"
+        Intent(this, QuestionUploadForegroundService::class.java).apply {
+            putExtra(QuestionUploadForegroundService.KEY_QUESTION_ID, questionId)
+            putExtra(QuestionUploadForegroundService.KEY_TYPE, if (mediaType == StudentQuestion.MEDIA_TYPE_VIDEO) QuestionMessage.TYPE_VIDEO else QuestionMessage.TYPE_IMAGE)
+            putExtra(QuestionUploadForegroundService.KEY_CLIENT_ID, mediaClientId)
+            putExtra(QuestionUploadForegroundService.KEY_SENDER_UID, uid)
+            putExtra(QuestionUploadForegroundService.KEY_SENDER_ROLE, role)
+            putExtra(QuestionUploadForegroundService.KEY_FILE_PATH, mediaPath)
+            if (!description.isNullOrBlank()) {
+                putExtra(QuestionUploadForegroundService.KEY_CAPTION, description)
+            }
+        }.also {
+            QuestionUploadForegroundService.start(applicationContext, it)
+        }
+
+        // Temizlik: overlay, bar, geri butonu, alt nav tekrar göster, geçici state (dosyayı servis silecek)
+        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+            supportFragmentManager.popBackStack()
+        }
+        binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendBackButton.visibility = View.GONE
+        binding.bottomNavigationID.visibility = View.VISIBLE
+        teacherPendingMediaType = null
+        teacherPendingMediaPath = null
+        teacherPendingDescription = null
+        teacherSelectedQuestionId = null
+        teacherSelectedQuestionTitle = null
+
+        Toast.makeText(this, "Sohbete gönderildi.", Toast.LENGTH_SHORT).show()
+
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(questionId))
+            .addToBackStack(null)
+            .commit()
+    }
+
+    /** Video kaydı bitince CreateQuestionFragment'ın açılacağı container (soru akışı video seçilince set edilir). */
+    private var questionFlowContainerIdForRecording: Int = R.id.abacusFragmentContainer
+
+    /** Video soru akışı: izinler + MediaProjection + 60sn kayıt + overlay. */
+    fun requestQuestionScreenRecording(containerId: Int) {
+        questionFlowContainerIdForRecording = containerId
+        isQuestionRecordingInProgress = true
+        setAskQuestionButtonEnabled(false)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             return
@@ -321,43 +621,220 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var recordingPausedAtMs: Long = 0L
     private var totalPausedDurationMs: Long = 0L
     private var isRecordingPaused = false
-    private val maxRecordingSec = 60
+    private var maxRecordingSecForSession = 60
 
     private fun showRecordingOverlay() {
         recordingStartTimeMs = System.currentTimeMillis()
         totalPausedDurationMs = 0L
         isRecordingPaused = false
         if (recordingOverlayView == null) {
-            recordingOverlayView = LayoutInflater.from(this).inflate(R.layout.view_recording_overlay, binding.recordingOverlayContainer, false)
+            // Önce çizim overlay'ini (tüm ekranı kaplayan şeffaf view) ekle
+            drawingOverlayView = DrawingOverlayView(this).apply {
+                visibility = View.GONE
+                setDrawingEnabled(false)
+            }
+            val drawingParams = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            binding.recordingOverlayContainer.addView(drawingOverlayView, drawingParams)
+
+            // Sonra kayıt barını (üst panel) ekle - ekranın üstünde
+            recordingOverlayView = LayoutInflater.from(this)
+                .inflate(R.layout.view_recording_overlay, binding.recordingOverlayContainer, false)
             val params = android.widget.FrameLayout.LayoutParams(
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
                 android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
             ).apply { gravity = Gravity.TOP }
             binding.recordingOverlayContainer.addView(recordingOverlayView, params)
+
+            // Sol kenara çizim kontrol panelini (çekmece) ekle
+            drawingControlsView = LayoutInflater.from(this)
+                .inflate(R.layout.view_drawing_controls_overlay, binding.recordingOverlayContainer, false)
+            val controlsParams = android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }
+            binding.recordingOverlayContainer.addView(drawingControlsView, controlsParams)
+
             binding.recordingOverlayContainer.isClickable = false
             binding.recordingOverlayContainer.setOnTouchListener { _, _ -> false }
-            val btnPauseResume = recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
+
+            val btnPauseResume =
+                recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
             btnPauseResume.contentDescription = "Durdur"
             btnPauseResume.setOnClickListener {
                 if (isRecordingPaused) {
-                    startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_RESUME))
+                    startService(
+                        Intent(
+                            this,
+                            ScreenRecordingService::class.java
+                        ).setAction(ScreenRecordingService.ACTION_RESUME)
+                    )
                 } else {
-                    startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_PAUSE))
+                    startService(
+                        Intent(
+                            this,
+                            ScreenRecordingService::class.java
+                        ).setAction(ScreenRecordingService.ACTION_PAUSE)
+                    )
                 }
             }
-            recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnSave).setOnClickListener {
-                startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_SAVE))
+            recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnSave)
+                .setOnClickListener {
+                    startService(
+                        Intent(
+                            this,
+                            ScreenRecordingService::class.java
+                        ).setAction(ScreenRecordingService.ACTION_STOP_AND_SAVE)
+                    )
+                }
+            recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnCancel)
+                .setOnClickListener {
+                    startService(
+                        Intent(
+                            this,
+                            ScreenRecordingService::class.java
+                        ).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD)
+                    )
+                    hideRecordingOverlay()
+                }
+
+            // Çizim kontrollerini bağla (ekranın solunda çekmece olarak)
+            val drawerRoot =
+                drawingControlsView!!.findViewById<View>(R.id.drawingControlsRoot)
+            val drawerButton =
+                drawingControlsView!!.findViewById<ImageButton>(R.id.drawerButton)
+            val pencilButton =
+                drawingControlsView!!.findViewById<ImageButton>(R.id.pencilButton)
+            val colorStrip =
+                drawingControlsView!!.findViewById<DrawingColorStripView>(R.id.colorStrip)
+            val undoButton =
+                drawingControlsView!!.findViewById<ImageButton>(R.id.undoButton)
+            val strokeWidthSeekBar =
+                drawingControlsView!!.findViewById<android.widget.SeekBar>(R.id.strokeWidthSeekBar)
+            val strokePreview =
+                drawingControlsView!!.findViewById<StrokePreviewView>(R.id.strokePreview)
+
+            // Panel başlangıçta kapalı olsun: tüm kartı (handle + panel) sola it,
+            // drawerButton ekran kenarında, panel ise dışında kalsın.
+            val panel =
+                drawingControlsView!!.findViewById<View>(R.id.drawingControlsContainer)
+            drawerRoot.post {
+                isDrawingPanelOpen = false
+                drawerRoot.translationX = -panel.width.toFloat()
+                drawerButton.rotationY = -180f
             }
-            recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnCancel).setOnClickListener {
-                startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
-                hideRecordingOverlay()
+
+            drawerButton.setOnClickListener {
+                val targetOpen = !isDrawingPanelOpen
+                isDrawingPanelOpen = targetOpen
+                drawerButton.rotationY = if (targetOpen) 0f else -180f
+                drawerRoot.animate()
+                    .translationX(if (targetOpen) 0f else -panel.width.toFloat())
+                    .setDuration(200)
+                    .start()
+            }
+
+            // Renk seçici: hem kalemin rengini hem de buton görünümünü güncelle
+            colorStrip.listener = object : DrawingColorStripView.OnColorSelectedListener {
+                override fun onColorSelected(color: Int) {
+                    drawingOverlayView?.setStrokeColor(color)
+                    // Kullanıcıya seçili rengi göstermek için ikon tint'ini anlık değiştir
+                    pencilButton.imageTintList =
+                        android.content.res.ColorStateList.valueOf(color)
+                    strokePreview.setColor(color)
+                }
+            }
+
+            // Kalınlık slider'ı: min–max aralığını DrawingOverlayView sabitlerine göre ölçekle
+            strokeWidthSeekBar.max = 100
+            // Varsayılan strok kalınlığını ortalara koy (örnek: 40)
+            strokeWidthSeekBar.progress = 40
+            strokeWidthSeekBar.setOnSeekBarChangeListener(object :
+                android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                    val fraction = progress / 100f
+                    val width = DrawingOverlayView.MIN_STROKE_WIDTH +
+                            fraction * (DrawingOverlayView.MAX_STROKE_WIDTH - DrawingOverlayView.MIN_STROKE_WIDTH)
+                    drawingOverlayView?.setStrokeWidth(width)
+                    strokePreview.setStrokeWidth(width)
+                }
+
+                override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {
+                    // Dokunulurken: kalem gizli, önizleme noktası görünür
+                    pencilButton.visibility = View.INVISIBLE
+                    strokePreview.visibility = View.VISIBLE
+                }
+
+                override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {
+                    // Dokunma bittiğinde: kalem tekrar görünür, önizleme gizlenir
+                    pencilButton.visibility = View.VISIBLE
+                    strokePreview.visibility = View.GONE
+                }
+            })
+
+            // Kalem toggle
+            pencilButton.setOnClickListener {
+                val enabled = !(pencilButton.isSelected)
+                pencilButton.isSelected = enabled
+                // Seçili durumda gri yuvarlak arka plan; seçili değilse şeffaf yuvarlak
+                if (enabled) {
+                    pencilButton.setBackgroundResource(R.drawable.bg_pencil_circle_selected)
+                } else {
+                    pencilButton.setBackgroundResource(R.drawable.bg_pencil_circle)
+                }
+                if (enabled) {
+                    // Çizim modunu aç: hem mevcut çizimler hem de yeni dokunuşlar aktif olsun
+                    drawingOverlayView?.visibility = View.VISIBLE
+                    drawingOverlayView?.setDrawingEnabled(true)
+                } else {
+                    // Çizim modunu kapat: yeni dokunuşları alttaki UI'ya geçir ama
+                    // ekrandaki mevcut çizimleri göstermeye devam et.
+                    drawingOverlayView?.setDrawingEnabled(false)
+                }
+            }
+
+            // Undo: tek tıklama son stroke'u siler, uzun basma tümünü temizler
+            undoButton.setOnClickListener {
+                drawingOverlayView?.undoLastStroke()
+            }
+            undoButton.setOnLongClickListener {
+                drawingOverlayView?.clearAllStrokes()
+                true
             }
         } else {
-            val btnPauseResume = recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
+            val btnPauseResume =
+                recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
             btnPauseResume.contentDescription = "Durdur"
             isRecordingPaused = false
+
+            // Her yeni kayıtta kalem pasif ve arka plan şeffaf yuvarlak başlasın
+            drawingOverlayView?.apply {
+                setDrawingEnabled(false)
+                visibility = View.GONE
+            }
+            // Çizim panelini de kapalı konuma ve ikon rotasyonuna sıfırla
+            drawingControlsView?.let { rootView ->
+                val drawerRoot = rootView.findViewById<View>(R.id.drawingControlsRoot)
+                val panel = rootView.findViewById<View>(R.id.drawingControlsContainer)
+                val drawerButton = rootView.findViewById<ImageButton>(R.id.drawerButton)
+                isDrawingPanelOpen = false
+                drawerRoot.post {
+                    drawerRoot.translationX = -panel.width.toFloat()
+                    drawerButton.rotationY = -180f
+                }
+            }
+            drawingControlsView?.findViewById<ImageButton>(R.id.pencilButton)?.apply {
+                isSelected = false
+                visibility = View.VISIBLE
+                setBackgroundResource(R.drawable.bg_pencil_circle)
+            }
+            drawingControlsView?.findViewById<StrokePreviewView>(R.id.strokePreview)?.apply {
+                visibility = View.GONE
+            }
         }
         binding.recordingOverlayContainer.visibility = View.VISIBLE
         updateRecordingTimerText(0)
@@ -368,11 +845,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         val path = intent.getStringExtra(ScreenRecordingService.EXTRA_OUTPUT_PATH)
                         hideRecordingOverlay()
                         if (!path.isNullOrEmpty()) {
-                            binding.abacusFragmentContainer.visibility = View.VISIBLE
-                            supportFragmentManager.beginTransaction()
-                                .replace(R.id.abacusFragmentContainer, CreateQuestionFragment.newInstanceForVideo(path))
-                                .addToBackStack(null)
-                                .commit()
+                            openCreateQuestionInOverlay(path, forVideo = true)
                         }
                     }
                     ScreenRecordingService.ACTION_RECORDING_FAILED -> {
@@ -398,12 +871,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         }
                         recordingTimerRunnable = object : Runnable {
                             override fun run() {
-                                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSec)
+                                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
                                 updateRecordingTimerText(elapsedSec)
-                                if (elapsedSec < maxRecordingSec) recordingHandler.postDelayed(this, 1000L)
+                                if (elapsedSec < maxRecordingSecForSession) recordingHandler.postDelayed(this, 1000L)
                             }
                         }
-                        val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSec)
+                        val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
                         updateRecordingTimerText(elapsedSec)
                         recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
                     }
@@ -416,16 +889,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             addAction(ScreenRecordingService.ACTION_RECORDING_PAUSED)
             addAction(ScreenRecordingService.ACTION_RECORDING_RESUMED)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(recordingReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(recordingReceiver, filter)
-        }
+        ContextCompat.registerReceiver(this, recordingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         recordingTimerRunnable = object : Runnable {
             override fun run() {
-                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSec)
+                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
                 updateRecordingTimerText(elapsedSec)
-                if (elapsedSec < maxRecordingSec && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
+                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
             }
         }
         recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
@@ -434,8 +903,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun updateRecordingTimerText(elapsedSec: Int) {
+        val maxM = maxRecordingSecForSession / 60
+        val maxS = maxRecordingSecForSession % 60
         recordingOverlayView?.findViewById<TextView>(R.id.recordingTimerText)?.text =
-            "${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / 1:00"
+            "${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / $maxM:${String.format("%02d", maxS)}"
     }
 
     private fun hideRecordingOverlay() {
@@ -449,15 +920,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         recordingReceiver = null
         binding.recordingOverlayContainer.visibility = View.GONE
+        // Çizim overlay state'ini de sıfırla
+        drawingOverlayView?.apply {
+            clearAllStrokes()
+            setDrawingEnabled(false)
+            visibility = View.GONE
+        }
+        isQuestionRecordingInProgress = false
         setQuitButtonEnabled(true)
         setAskQuestionButtonEnabled(true)
     }
 
     private fun setAskQuestionButtonEnabled(enabled: Boolean) {
-        binding.abacusFragmentContainer.findViewById<View>(R.id.askQuestionButton)?.apply {
-            isEnabled = enabled
-            isClickable = enabled
-            alpha = if (enabled) 1f else 0.5f
+        listOf(binding.abacusFragmentContainer, binding.fragmentContainerID).forEach { container ->
+            container.findViewById<View>(R.id.askQuestionButton)?.apply {
+                isEnabled = enabled
+                isClickable = enabled
+                alpha = if (enabled) 1f else 0.5f
+            }
         }
     }
 
@@ -747,6 +1227,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .replace(R.id.fragmentContainerID, fragment)
             .addToBackStack(null)
             .commit()
+
         clearNotificationExtras()
     }
 

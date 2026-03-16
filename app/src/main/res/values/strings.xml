@@ -53,6 +53,8 @@
 
     <string name="chat_retry_upload">Tekrar dene</string>
 
+    <string name="send">Gönder</string>
+
     <!-- Offline ekranı -->
     <string name="offline_title">Offline</string>
     <string name="offline_message">İnternet bağlantınız yok. Lütfen Wi‑Fi veya mobil veriyi açın.</string>

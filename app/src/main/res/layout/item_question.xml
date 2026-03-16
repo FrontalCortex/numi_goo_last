@@ -76,6 +76,16 @@
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
+
+        <RadioButton
+            android:id="@+id/questionSelectionRadio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:visibility="gone"
+            android:clickable="false"
+            android:focusable="false" />
+
         <TextView
             android:id="@+id/questionUnreadBadge"
             android:layout_width="20dp"

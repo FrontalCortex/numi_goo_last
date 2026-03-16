@@ -45,11 +45,18 @@ class NotificationFragment : Fragment() {
     private var currentQuestionList: List<StudentQuestion> = emptyList()
     private val messageListeners = mutableMapOf<String, ListenerRegistration>()
 
+    // Öğretmen için: CreateQuestion'dan gelen medya için seçim modu
+    private var teacherSelectionMode: Boolean = false
+
     companion object {
         private const val KEY_TEACHER_TAB = "teacher_tab"
         private const val KEY_STUDENT_TAB = "student_tab"
         private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
         private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
+        private const val ARG_TEACHER_SELECTION_MODE = "teacher_selection_mode"
+        private const val ARG_MEDIA_TYPE = "teacher_media_type"
+        private const val ARG_MEDIA_PATH = "teacher_media_path"
+        private const val ARG_MEDIA_DESCRIPTION = "teacher_media_description"
 
         /**
          * Sohbet ekranından geri dönerken hangi tab'ın seçili olacağını zorlamak için yardımcı.
@@ -60,6 +67,25 @@ class NotificationFragment : Fragment() {
                 arguments = Bundle().apply {
                     putBoolean(ARG_FORCE_TEACHER_CHATS, fromTeacher)
                     putBoolean(ARG_FORCE_STUDENT_BEKLEYEN, !fromTeacher)
+                }
+            }
+        }
+
+        /**
+         * Öğretmen CreateQuestion'dan geldiğinde, CHATS sekmesinde seçim modunu açmak için factory.
+         */
+        fun newWithTeacherSelection(
+            mediaType: String,
+            mediaPath: String,
+            description: String?
+        ): NotificationFragment {
+            return NotificationFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean(ARG_FORCE_TEACHER_CHATS, true)
+                    putBoolean(ARG_TEACHER_SELECTION_MODE, true)
+                    putString(ARG_MEDIA_TYPE, mediaType)
+                    putString(ARG_MEDIA_PATH, mediaPath)
+                    putString(ARG_MEDIA_DESCRIPTION, description)
                 }
             }
         }
@@ -87,8 +113,13 @@ class NotificationFragment : Fragment() {
 
         val forceTeacherChats = arguments?.getBoolean(ARG_FORCE_TEACHER_CHATS) == true
         val forceStudentBekleyen = arguments?.getBoolean(ARG_FORCE_STUDENT_BEKLEYEN) == true
+        val fromTeacherSelection = arguments?.getBoolean(ARG_TEACHER_SELECTION_MODE) == true
 
-        if (savedInstanceState != null) {
+        // CreateQuestion'dan seçim modunda geldiyse her zaman CHATS ve seçim modu (saved state'e bakma)
+        if (fromTeacherSelection) {
+            teacherSelectionMode = true
+            teacherTab = TeacherTab.CHATS
+        } else if (savedInstanceState != null) {
             savedInstanceState.getString(KEY_TEACHER_TAB)?.let { name ->
                 kotlin.runCatching { teacherTab = TeacherTab.valueOf(name) }
             }
@@ -96,7 +127,6 @@ class NotificationFragment : Fragment() {
                 kotlin.runCatching { studentTab = StudentTab.valueOf(name) }
             }
         } else {
-            // Yeni açılan fragment'ta sohbetten dönme isteğine göre başlangıç tab'ını ayarla.
             if (forceTeacherChats) teacherTab = TeacherTab.CHATS
             if (forceStudentBekleyen) studentTab = StudentTab.BEKLEYEN
         }
@@ -124,6 +154,13 @@ class NotificationFragment : Fragment() {
                         binding.teacherApprovalPendingContainer.visibility = View.GONE
                         binding.notificationTitle.visibility = View.GONE
                         binding.teacherTabContainer.visibility = View.VISIBLE
+                        teacherSelectionMode = fromTeacherSelection
+                        if (teacherSelectionMode) {
+                            binding.tabPool.visibility = View.GONE
+                            adapter.setTeacherSelectionMode(true, null)
+                        } else {
+                            binding.tabPool.visibility = View.VISIBLE
+                        }
                         updateTeacherTabUi()
                         binding.tabPool.setOnClickListener { switchToTeacherTab(TeacherTab.POOL) }
                         binding.tabChats.setOnClickListener { switchToTeacherTab(TeacherTab.CHATS) }
@@ -307,6 +344,16 @@ class NotificationFragment : Fragment() {
         messageListeners.clear()
     }
 
+    /**
+     * MainActivity seçim modundan çıkmak istediğinde çağrılır.
+     * TeacherSelectionMode'u kapatır, tıklamaları normal moda döndürür.
+     */
+    fun exitTeacherSelectionMode() {
+        teacherSelectionMode = false
+        adapter.setTeacherSelectionMode(false, null)
+        if (_binding != null) binding.tabPool.visibility = View.VISIBLE
+    }
+
     private fun subscribeToPool() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
@@ -316,6 +363,8 @@ class NotificationFragment : Fragment() {
         binding.emptyText.text = "Henüz soru yok"
         val query = firestore.collection("questions")
             .whereEqualTo("status", StudentQuestion.STATUS_PENDING)
+            // Soru havuzu: yalnızca oluşturulma zamanına göre sırala.
+            // Mevcut Firestore indeksini bozmayalım; DESC alıp client tarafında ASC'ye çeviriyoruz.
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
             if (e != null) return@addSnapshotListener
@@ -323,14 +372,24 @@ class NotificationFragment : Fragment() {
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
             val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
-            val sorted = visible.sortedByDescending {
-                val last = it.lastMessageAt?.toDate()?.time
-                val created = it.createdAt?.toDate()?.time
-                last ?: created ?: 0L
-            }
+            // Firestore'dan createdAt DESC gelse de, havuzda yalnızca oluşturulma zamanına göre
+            // eski → yeni sıralama istiyoruz. Ekstra mesajlar lastMessageAt'i değiştirse bile
+            // bu sıralamayı etkilemeyecek.
+            val sorted = visible.sortedBy { it.createdAt?.toDate()?.time ?: 0L }
             currentQuestionList = sorted
             adapter.submitList(sorted)
-            refreshUnreadCounts(sorted, uid)
+            // En eski sorular üstte, en yeni sorular altta.
+            // Öğretmene, en yeni soruları göstermek için listeyi en alta kaydır.
+            binding.questionsRecyclerView.post {
+                if (sorted.isNotEmpty()) {
+                    binding.questionsRecyclerView.scrollToPosition(sorted.size - 1)
+                }
+            }
+            // Soru havuzundaki (henüz hiçbir öğretmen tarafından sahiplenilmemiş) sorular için
+            // öğretmenlere unread badge göstermiyoruz.
+            unreadCountByQuestionId.clear()
+            adapter.setUnreadCounts(emptyMap())
+            removeAllMessageListeners()
             binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
@@ -359,6 +418,12 @@ class NotificationFragment : Fragment() {
             currentQuestionList = sorted
             adapter.submitList(sorted)
             refreshUnreadCounts(sorted, uid)
+            // Yeni mesajlarda, en güncel soru en üstte olduğu için listeyi otomatik olarak üste kaydır.
+            binding.questionsRecyclerView.post {
+                if (sorted.isNotEmpty()) {
+                    binding.questionsRecyclerView.scrollToPosition(0)
+                }
+            }
             binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
@@ -380,6 +445,7 @@ class NotificationFragment : Fragment() {
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
             val visible = raw.filter { it.deletedForUids?.contains(uid) != true }
+            val previousSize = currentQuestionList.size
             val sorted = visible.sortedByDescending {
                 val last = it.lastMessageAt?.toDate()?.time
                 val created = it.createdAt?.toDate()?.time
@@ -388,6 +454,13 @@ class NotificationFragment : Fragment() {
             currentQuestionList = sorted
             adapter.submitList(sorted)
             refreshUnreadCounts(sorted, uid)
+            // Öğrenci bekleyen listesinde: yalnızca yeni soru eklendiğinde veya kapsam genişlediğinde
+            // (boyut azalmamışsa) listeyi en üste kaydır. Böylece soru silindiğinde scroll yapılmaz.
+            binding.questionsRecyclerView.post {
+                if (sorted.isNotEmpty() && sorted.size >= previousSize) {
+                    binding.questionsRecyclerView.scrollToPosition(0)
+                }
+            }
             binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
         }
     }
@@ -459,12 +532,12 @@ class NotificationFragment : Fragment() {
         val uid = auth.currentUser?.uid ?: return
         if (isTeacher) {
             if (question.status != StudentQuestion.STATUS_RESOLVED) {
-                Toast.makeText(requireContext(), "Sadece çözüldü olarak işaretlenen soruları listenizden kaldırabilirsiniz.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Çözüldü olarak işaretlenen soruları silebilirsin.", Toast.LENGTH_LONG).show()
                 return
             }
             AlertDialog.Builder(requireContext())
-                .setTitle("Soruyu listenizden kaldır")
-                .setMessage("Bu soru yalnızca sizin listenizden kaldırılacak. Veritabanından silinmeyecek.")
+                .setTitle("Soruyu silmek istediğine emin misin")
+                .setMessage("Bu işlem geri alınamaz.")
                 .setPositiveButton("Kaldır") { dialog, _ ->
                     dialog.dismiss()
                     firestore.collection("questions").document(question.id)
@@ -501,23 +574,15 @@ class NotificationFragment : Fragment() {
     private fun onQuestionClick(question: StudentQuestion) {
         requireOnlineAndLoggedInOrLogin {
             if (isTeacher) {
-                if (teacherTab == TeacherTab.POOL) {
-                    requireActivity().supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id))
-                        .addToBackStack(null)
-                        .commit()
+                if (teacherSelectionMode && teacherTab == TeacherTab.CHATS) {
+                    val title = if (question.previewText.isNotEmpty()) question.previewText else question.message
+                    adapter.setTeacherSelectionMode(true, question.id)
+                    (activity as? MainActivity)?.onTeacherChatSelectedFromNotification(question.id, title)
                 } else {
                     openChatAfterPreload(question.id)
                 }
             } else {
-                if (question.status == StudentQuestion.STATUS_PENDING) {
-                    requireActivity().supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainerID, QuestionDetailFragment.newInstance(question.id, studentView = true))
-                        .addToBackStack(null)
-                        .commit()
-                } else {
-                    openChatAfterPreload(question.id)
-                }
+                openChatAfterPreload(question.id)
             }
         }
     }

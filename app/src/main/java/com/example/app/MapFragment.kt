@@ -1,6 +1,8 @@
 package com.example.app
 
+import android.animation.ObjectAnimator
 import android.content.Context
+import android.widget.Toast
 import android.content.res.ColorStateList
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -22,7 +24,8 @@ import com.example.app.model.LessonItem
 class MapFragment : Fragment() {
     private lateinit var binding: FragmentMapBinding
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
-    
+    private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
+
     companion object {
         const val ARG_SHOW_GUIDE = "show_guide"
         
@@ -2951,6 +2954,7 @@ class MapFragment : Fragment() {
             }
         }
         setupGuidePanel()
+        setupAskQuestionButton()
         
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
@@ -3043,6 +3047,98 @@ class MapFragment : Fragment() {
             }
         }
     }
+
+    private fun setupAskQuestionButton() {
+        val authManager = com.example.app.auth.AuthManager().also { it.initialize(requireContext()) }
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        val isTeacher = authManager.getCurrentUserType() == com.example.app.auth.AuthManager.ROLE_TEACHER
+
+        // 1) Kullanıcı yoksa butonu tamamen gizle
+        if (currentUser == null) {
+            binding.askQuestionButton.visibility = View.GONE
+            return
+        }
+
+        // 2) Öğretmen ise teacherApproved durumunu kontrol et
+        if (isTeacher) {
+            val uid = currentUser.uid
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (!isAdded) return@addOnSuccessListener
+                    val teacherApproved = doc.getBoolean("teacherApproved") == true
+                    if (!teacherApproved) {
+                        // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
+                        binding.askQuestionButton.visibility = View.VISIBLE
+                        binding.askQuestionButton.setOnClickListener {
+                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                            val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                            if (current == null) {
+                                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
+                                startActivity(intent)
+                                return@setOnClickListener
+                            }
+                            // Onaysız öğretmen uyarısı
+                            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                                .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
+                                .setPositiveButton("Tamam", null)
+                                .show()
+
+                        }
+                    }
+                    else {
+                        // Onaylı öğretmen: normal soru oluşturma akışına izin ver
+                        binding.askQuestionButton.visibility = View.VISIBLE
+                        binding.askQuestionButton.setOnClickListener {
+                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                            val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                            if (current == null) {
+                                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
+                                startActivity(intent)
+                                return@setOnClickListener
+                            }
+                            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
+                            (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
+                        }
+                        startAskQuestionBounceAnimation()
+                    }
+                }
+                .addOnFailureListener {
+                    // Hata durumunda, güvenli tarafta kalmak için butonu gizle
+                    if (isAdded) {
+                        binding.askQuestionButton.visibility = View.GONE
+                    }
+                }
+        } else {
+            // Öğrenci (veya öğretmen olmayan) hesaplar için mevcut davranış
+            binding.askQuestionButton.visibility = View.VISIBLE
+            binding.askQuestionButton.setOnClickListener {
+                // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                if (current == null) {
+                    val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
+                    startActivity(intent)
+                    return@setOnClickListener
+                }
+                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
+                (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
+            }
+            startAskQuestionBounceAnimation()
+        }
+    }
+
+    private fun startAskQuestionBounceAnimation() {
+        val btn = binding.askQuestionButton
+        // Denizde süzülür gibi hafif aşağı-yukarı hareket (sabit boyut)
+        val translateY = ObjectAnimator.ofFloat(btn, "translationY", 0f, -20f, 0f).apply {
+            duration = 1800
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+        askQuestionBounceAnimators = listOf(translateY)
+    }
     
     private fun showGuidePanel() {
         // Guide panel verilerini oluştur
@@ -3059,10 +3155,10 @@ class MapFragment : Fragment() {
         )
         
         binding.guidePanel.setGuideData(guideData)
-        
+
         // MainActivity'deki view'lar zaten disableMainActivityViews() ile devre dışı bırakıldı
         // (gecikme süresinde tıklamalar engellenmesi için onViewCreated'da çağrılıyor)
-        
+
         // Panel'i göster
         binding.guidePanel.show()
         
@@ -3220,6 +3316,8 @@ class MapFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        askQuestionBounceAnimators?.forEach { it.cancel() }
+        askQuestionBounceAnimators = null
         super.onDestroyView()
         // Verileri kaydet
         GlobalLessonData.saveToPreferences(requireContext())

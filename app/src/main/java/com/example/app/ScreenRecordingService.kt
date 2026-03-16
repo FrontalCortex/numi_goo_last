@@ -22,8 +22,8 @@ import java.io.File
 import java.io.IOException
 
 /**
- * Foreground service that records the screen for up to 60 seconds (480p, with mic).
- * Caller must pass resultCode and data from MediaProjection permission result.
+ * Foreground service that records the screen (480p, with mic).
+ * Max duration: pass EXTRA_MAX_DURATION_MS (e.g. 180_000 for teachers, 60_000 for students).
  * When done, broadcasts ACTION_RECORDING_FINISHED with extra OUTPUT_PATH, or ACTION_RECORDING_FAILED.
  */
 class ScreenRecordingService : Service() {
@@ -39,6 +39,7 @@ class ScreenRecordingService : Service() {
     private var recordingStartTimeMs: Long = 0
     private var totalPausedDurationMs: Long = 0
     private var pauseStartTimeMs: Long = 0
+    private var maxDurationMs: Long = MAX_DURATION_MS
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -75,6 +76,7 @@ class ScreenRecordingService : Service() {
             return START_NOT_STICKY
         }
         startForeground(NOTIFICATION_ID, createNotification())
+        maxDurationMs = intent.getLongExtra(EXTRA_MAX_DURATION_MS, MAX_DURATION_MS)
         val outDir = File(cacheDir, "question_videos").apply { mkdirs() }
         val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anon"
         val file = File(outDir, "${uid}_${System.currentTimeMillis()}.mp4")
@@ -97,7 +99,7 @@ class ScreenRecordingService : Service() {
             stopRunnable = Runnable {
                 stopRecordingInternal()
             }
-            handler.postDelayed(stopRunnable!!, MAX_DURATION_MS)
+            handler.postDelayed(stopRunnable!!, maxDurationMs)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recording", e)
             sendBroadcast(Intent(ACTION_RECORDING_FAILED))
@@ -203,7 +205,7 @@ class ScreenRecordingService : Service() {
         totalPausedDurationMs += System.currentTimeMillis() - pauseStartTimeMs
         isPaused = false
         val elapsedMs = System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs
-        val remainingMs = (MAX_DURATION_MS - elapsedMs).coerceAtLeast(0L)
+        val remainingMs = (maxDurationMs - elapsedMs).coerceAtLeast(0L)
         stopRunnable = Runnable { stopRecordingInternal() }
         handler.postDelayed(stopRunnable!!, remainingMs)
         sendBroadcast(Intent(ACTION_RECORDING_RESUMED))
@@ -273,6 +275,7 @@ class ScreenRecordingService : Service() {
         const val EXTRA_OUTPUT_PATH = "output_path"
         const val EXTRA_RESULT_CODE = "result_code"
         const val EXTRA_RESULT_DATA = "result_data"
+        const val EXTRA_MAX_DURATION_MS = "extra_max_duration_ms"
         const val MAX_DURATION_MS = 60_000L
         private const val NOTIFICATION_ID = 9002
     }

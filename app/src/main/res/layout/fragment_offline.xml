@@ -11,6 +11,7 @@
         android:id="@+id/offlineIcon"
         android:layout_width="72dp"
         android:layout_height="72dp"
+        android:tint="@color/message_buttons"
         android:src="@drawable/no_wifi_ic"
         android:contentDescription="@string/offline_title" />
 
@@ -36,6 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:backgroundTint="@color/lesson_header_green"
         android:text="@string/offline_retry" />
 
 </LinearLayout>

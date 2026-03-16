@@ -511,6 +511,11 @@ exports.onMessageCreated = functions.firestore
     else if (type === 'image') body = 'Görsel';
     else body = 'Yeni mesaj';
 
+    // Bildirim başlığı artık öğrenci adı yerine soru başlığı olsun.
+    // HeaderInput CreateQuestion'da StudentQuestion.message / previewText'e yazılıyor.
+    const questionTitle =
+      (question && (question.previewText || question.message)) || 'Yeni soru';
+
     // Data-only FCM mesajı gönderiyoruz. Böylece Android tarafında
     // MyFirebaseMessagingService.onMessageReceived HER zaman çağrılır
     // (uygulama arka planda / kapalı olsa bile) ve kendi PendingIntent'imizle
@@ -519,8 +524,11 @@ exports.onMessageCreated = functions.firestore
       questionId: String(questionId),
       messageId: String(messageId),
       recipientUid: String(recipientUid),
-      title: senderName,
+      // Bildirim kanalları soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
+      title: String(questionTitle),
       body,
+      // İstersen istemci tarafında kullanabilmek için göndericinin adını da ayrıca data'ya ekleyelim.
+      senderName,
     };
 
     // Her token için ayrı bir data-only FCM gönder.

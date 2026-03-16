@@ -5,12 +5,23 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 
 class OfflineFragment : Fragment(R.layout.fragment_offline) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Bu fragment açıktayken cihazın geri tuşunu tamamen devre dışı bırak.
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    // Hiçbir şey yapma; kullanıcı sadece Retry ile devam edebilir.
+                }
+            }
+        )
 
         val retryButton = view.findViewById<Button>(R.id.offlineRetryButton)
         val messageText = view.findViewById<TextView>(R.id.offlineMessageText)

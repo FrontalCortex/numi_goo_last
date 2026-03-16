@@ -70,6 +70,72 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         saveFcmTokenToFirestore(token)
     }
 
+    /**
+     * Soru başlığı (questionId) altında gelen bildirimleri kalıcı olarak saklamak için kullanılan SharedPreferences.
+     * Her questionId için:
+     * {
+     *   "title": "...",
+     *   "messages": ["...", "...", ...]
+     * }
+     */
+    private fun appendMessageToThread(
+        questionId: String,
+        incomingTitle: String,
+        body: String
+    ): Pair<String, List<String>> {
+        val prefs = getSharedPreferences(PREFS_NAME_THREADS, Context.MODE_PRIVATE)
+        val existing = prefs.getString(questionId, null)
+
+        var title = incomingTitle
+        val messages = mutableListOf<String>()
+
+        if (existing != null) {
+            try {
+                val obj = org.json.JSONObject(existing)
+                val storedTitle = obj.optString("title")
+                if (!storedTitle.isNullOrBlank()) {
+                    title = storedTitle
+                }
+                val arr = obj.optJSONArray("messages")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val msg = arr.optString(i)
+                        if (!msg.isNullOrBlank()) {
+                            messages.add(msg)
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // Eski / bozuk veri okunamazsa, sessizce sıfırdan başla.
+            }
+        }
+
+        if (body.isNotBlank()) {
+            messages.add(body)
+        }
+
+        // Sadece son N mesajı tut.
+        val maxLines = MAX_INBOX_LINES
+        val trimmed = if (messages.size > maxLines) {
+            messages.takeLast(maxLines)
+        } else {
+            messages
+        }
+
+        try {
+            val obj = org.json.JSONObject()
+            obj.put("title", title)
+            val arr = org.json.JSONArray()
+            trimmed.forEach { arr.put(it) }
+            obj.put("messages", arr)
+            prefs.edit().putString(questionId, obj.toString()).apply()
+        } catch (_: Exception) {
+            // Yazarken hata olursa, bildirim yine de gösterilecek; sadece kalıcılık kaybolur.
+        }
+
+        return title to trimmed
+    }
+
     private fun shouldSkipNotification(questionId: String): Boolean {
         val activity = com.example.app.MainActivity.currentActivity ?: return false
         val frag = activity.supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
@@ -90,9 +156,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val channelId = CHANNEL_ID_MESSAGES
         createChannelIfNeeded(channelId)
 
-        // Her mesaj için benzersiz bir notificationId üret (messageId varsa onu kullan).
-        val rawId = messageId ?: "$questionId-${System.currentTimeMillis()}"
+        // Aynı soru (questionId) için tek bir bildirim ID'si kullan:
+        // Böylece aynı başlık altındaki tüm mesajlar tek bildirimde toplanır.
+        val rawId = questionId
         val notificationId = rawId.hashCode() and 0x7FFFFFFF
+
+        // Başlık altındaki mesajları kalıcı olarak sakla (maximum N satır).
+        val (finalTitle, lines) = appendMessageToThread(questionId, title, body)
+        val latestBody = lines.lastOrNull() ?: body
 
         // Bildirimden her zaman doğrudan MainActivity'e git ve questionId'yi ilet.
         // MainActivity, EXTRA_OPEN_QUESTION_ID ile gelen durumlarda ilgili sohbet fragment'ını açıyor.
@@ -109,18 +180,37 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, channelId)
+        // Birden fazla okunmamış mesaj varsa, başlıkta sayıyı da göster.
+        val displayTitle = if (lines.size > 1) {
+            "$finalTitle (${lines.size} yeni mesaj)"
+        } else {
+            finalTitle
+        }
+
+        val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentTitle(displayTitle)
+            .setContentText(latestBody)
             .setWhen(System.currentTimeMillis())
             .setShowWhen(true)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .build()
+
+        // Sadece bir mesaj varsa normal tek satırlı bildirim göster
+        // Birden fazla mesaj varsa InboxStyle ile satır satır göster
+        if (lines.size > 1) {
+
+            val inboxStyle = NotificationCompat.InboxStyle()
+                .setBigContentTitle(displayTitle)
+            lines.forEach { line ->
+                inboxStyle.addLine(line)
+            }
+            builder.setStyle(inboxStyle)
+        }
+
+        val notification = builder.build()
 
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(notificationId, notification)
@@ -189,6 +279,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
         private const val TAG = "FCMService"
         const val CHANNEL_ID_MESSAGES = "messages"
+        private const val PREFS_NAME_THREADS = "notification_threads"
+        private const val MAX_INBOX_LINES = 7
 
         /**
          * Call from app to persist current FCM token (e.g. after login or app start).
@@ -300,6 +392,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
             return id
         }
+
+        /**
+         * Bir soruya ait birikmiş notification satırlarını temizler.
+         * Kullanıcı ilgili sohbeti açtığında çağrılırsa, yeni bildirimler sadece o andan SONRA gelen mesajları gösterir.
+         */
+        @JvmStatic
+        fun clearNotificationThread(context: Context, questionId: String) {
+            val prefs = context.getSharedPreferences(PREFS_NAME_THREADS, Context.MODE_PRIVATE)
+            prefs.edit().remove(questionId).apply()
+        }
     }
 }
+
 

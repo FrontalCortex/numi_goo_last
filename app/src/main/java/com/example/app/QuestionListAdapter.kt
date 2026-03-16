@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RadioButton
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -19,9 +20,17 @@ class QuestionListAdapter(
 ) : ListAdapter<StudentQuestion, QuestionListAdapter.ViewHolder>(DiffCallback()) {
 
     private var unreadCountByQuestionId: Map<String, Int> = emptyMap()
+    private var teacherSelectionMode = false
+    private var teacherSelectedQuestionId: String? = null
 
     fun setUnreadCounts(map: Map<String, Int>) {
         unreadCountByQuestionId = map
+        notifyDataSetChanged()
+    }
+
+    fun setTeacherSelectionMode(selectionMode: Boolean, selectedQuestionId: String?) {
+        teacherSelectionMode = selectionMode
+        teacherSelectedQuestionId = selectedQuestionId
         notifyDataSetChanged()
     }
 
@@ -31,7 +40,12 @@ class QuestionListAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position), unreadCountByQuestionId)
+        holder.bind(
+            getItem(position),
+            unreadCountByQuestionId,
+            teacherSelectionMode,
+            teacherSelectedQuestionId
+        )
     }
 
     class ViewHolder(
@@ -45,8 +59,14 @@ class QuestionListAdapter(
         private val statusIcon: ImageView = itemView.findViewById(R.id.questionStatusIcon)
         private val status: TextView = itemView.findViewById(R.id.questionStatus)
         private val unreadBadge: TextView = itemView.findViewById(R.id.questionUnreadBadge)
+        private val selectionRadio: RadioButton = itemView.findViewById(R.id.questionSelectionRadio)
 
-        fun bind(q: StudentQuestion, unreadCountByQuestionId: Map<String, Int>) {
+        fun bind(
+            q: StudentQuestion,
+            unreadCountByQuestionId: Map<String, Int>,
+            selectionMode: Boolean = false,
+            selectedQuestionId: String? = null
+        ) {
             if (q.screenshotUrl.isNotEmpty()) {
                 Glide.with(itemView).load(q.screenshotUrl).centerCrop().into(thumbnail)
             }
@@ -81,6 +101,12 @@ class QuestionListAdapter(
                 unreadBadge.text = if (unreadCount >= 100) "99+" else unreadCount.toString()
             } else {
                 unreadBadge.visibility = View.GONE
+            }
+            if (selectionMode) {
+                selectionRadio.visibility = View.VISIBLE
+                selectionRadio.isChecked = (q.id == selectedQuestionId)
+            } else {
+                selectionRadio.visibility = View.GONE
             }
             itemView.setOnClickListener { onItemClick(q) }
             if (onLongClick != null) {

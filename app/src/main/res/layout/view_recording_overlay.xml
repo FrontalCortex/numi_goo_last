@@ -20,7 +20,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/pause_video_ic"
         android:contentDescription="Durdur"
-        app:tint="@color/message_buttons"        />
+        app:tint="@color/message_buttons" />
 
     <TextView
         android:id="@+id/recordingTimerText"
@@ -41,7 +41,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_delete"
         android:contentDescription="İptal"
-        app:tint="@color/message_buttons"/>
+        app:tint="@color/message_buttons" />
 
     <ImageButton
         android:id="@+id/recordingBtnSave"

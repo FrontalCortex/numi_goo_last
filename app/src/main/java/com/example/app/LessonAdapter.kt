@@ -71,10 +71,18 @@ class LessonAdapter(
 
     @SuppressLint("MissingInflatedId")
     fun showLessonBottomSheet(item: LessonItem, position: Int) {
-        // Önce internet bağlantısını kontrol et
+        // Önce internet ve login durumunu kontrol et
         val activity = context as Activity
         if (!activity.isOnline()) {
             (activity as? MainActivity)?.showOfflineFragment()
+            return
+        }
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser == null) {
+            val intent = Intent(activity, LoginStartActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            activity.startActivity(intent)
             return
         }
 
@@ -739,7 +747,10 @@ class LessonAdapter(
                     lessonCard.setCardBackgroundColor(backgroundColor)
 
                     lessonCard.setOnClickListener {
-                        showLessonBottomSheet(item, adapterPosition)
+                        // TYPE_CHEST kartına tıklandığında da internet + login kontrolü yap
+                        (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                            showLessonBottomSheet(item, adapterPosition)
+                        }
                     }
 
                     // TYPE_CHEST için default davranış:
@@ -774,7 +785,10 @@ class LessonAdapter(
                     }
                     lessonCard.setCardBackgroundColor(backgroundColor)
                     lessonCard.setOnClickListener {
-                        showLessonBottomSheet(item, adapterPosition)
+                        // TYPE_LESSON kartına tıklandığında da internet + login kontrolü yap
+                        (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                            showLessonBottomSheet(item, adapterPosition)
+                        }
                     }
 
                     // stepCompletionStatus kontrolü

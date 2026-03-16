@@ -22,10 +22,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <ImageButton
+            android:id="@+id/teacherSendBackButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back_arrow"
+            android:contentDescription="@string/notification_download_cancel"
+            android:tint="@android:color/white"
+            android:visibility="gone" />
+
         <ImageView
+            android:id="@+id/diamondID"
             android:src="@drawable/diamond"
             android:layout_width="40dp"
             android:layout_height="24dp"
+            android:layout_marginStart="8dp"
             android:contentDescription="Coin" />
 
         <TextView
@@ -59,6 +71,8 @@
             android:textStyle="bold"
             android:textSize="20sp"
             android:layout_marginStart="8dp"/>
+
+
     </LinearLayout>
 
     <!-- Abacus Fragment Container -->
@@ -113,7 +127,48 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/circleBackground_color"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigationID"/>
+        app:layout_constraintBottom_toTopOf="@id/teacherSendToQuestionBar"/>
+
+    <!-- Öğretmen için: seçilen soruya gönder barı -->
+    <LinearLayout
+        android:id="@+id/teacherSendToQuestionBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="@color/message_topbar"
+        android:elevation="22dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationID">
+
+        <TextView
+            android:id="@+id/teacherSendQuestionTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="" />
+
+        <ImageButton
+            android:id="@+id/teacherSendButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/send_ic"
+            android:contentDescription="@string/send"
+            android:tint="@android:color/white" />
+
+    </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationID"
@@ -156,5 +211,17 @@
         app:layout_constraintStart_toStartOf="@id/bottomNavigationID"
         app:layout_constraintEnd_toEndOf="@id/bottomNavigationID"/>
 
+    <!-- CreateQuestionFragment her zaman en üstte; soru ekranı/video bu container'da açılır -->
+    <FrameLayout
+        android:id="@+id/createQuestionOverlayContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:elevation="25dp"
+        android:background="#00FFFFFF"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

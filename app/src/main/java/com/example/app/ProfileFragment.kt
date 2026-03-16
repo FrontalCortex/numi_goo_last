@@ -136,7 +136,8 @@ class ProfileFragment : Fragment() {
             // Firebase Auth'da kullanıcı bilgilerini yeniden yükle
             currentUser.reload()
                 .addOnSuccessListener {
-                    // Reload başarılı - kullanıcı bilgilerini tekrar yükle
+                    // Fragment hala ekliyse reload başarılı - kullanıcı bilgilerini tekrar yükle
+                    if (!isAdded || view == null) return@addOnSuccessListener
                     loadUserData()
                 }
                 .addOnFailureListener { e ->
@@ -151,11 +152,14 @@ class ProfileFragment : Fragment() {
             // Kullanıcı giriş yapmamış
             return
         }
+
+         // Fragment veya view artık bağlı değilse Glide ile yükleme yapma
+        if (!isAdded || view == null) return
         
         // Profil fotoğrafı yükle (Google hesabı avatarı)
         val photoUrl = currentUser.photoUrl
         if (photoUrl != null) {
-            Glide.with(this)
+            Glide.with(requireContext())
                 .load(photoUrl)
                 .circleCrop()
                 .placeholder(android.R.drawable.ic_menu_gallery)

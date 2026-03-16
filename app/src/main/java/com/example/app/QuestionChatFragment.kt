@@ -22,6 +22,7 @@ import android.provider.MediaStore
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -62,6 +63,7 @@ class QuestionChatFragment : Fragment() {
     private val authManager by lazy { AuthManager().also { it.initialize(requireContext()) } }
     private var questionId: String = ""
     private var questionStatus: String = ""
+    private var claimedByTeacherUid: String? = null
     private var isTeacher = false
     private var listener: ListenerRegistration? = null
     private var questionDocListener: ListenerRegistration? = null
@@ -390,6 +392,9 @@ class QuestionChatFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         questionId = arguments?.getString(ARG_QUESTION_ID) ?: return
+        // Bu sohbet açıldığında, bildirimin tuttuğu önceki mesaj satırlarını temizle.
+        // Böylece yeni gelen bildirimler yalnızca bu açılıştan sonra okunmamış olan mesajları içerir.
+        MyFirebaseMessagingService.clearNotificationThread(requireContext(), questionId)
         isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
 
         // Global buffer'lardan pending ve durum set'lerini geri yükle
@@ -417,13 +422,24 @@ class QuestionChatFragment : Fragment() {
         // Öğrenciler sadece metin ve ses gönderebilsin; galeri butonunu gizle.
         if (isTeacher) {
             binding.galleryButton.visibility = View.VISIBLE
+            // Öğretmen için başlangıçta input bar'ı gizle; claim durumuna göre göstereceğiz.
+            binding.inputBar.visibility = View.GONE
+            binding.teacherClaimButton.visibility = View.GONE
         } else {
             binding.galleryButton.visibility = View.GONE
+            binding.inputBar.visibility = View.VISIBLE
+            binding.teacherClaimButton.visibility = View.GONE
         }
 
         val backToNotification: () -> Unit = {
             // Her zaman bildirim/sohbet listesine dön.
-            val fragment = NotificationFragment.newWithReturnDefaults(fromTeacher = isTeacher)
+            // Öğretmen: mevcut tab korunarak NotificationFragment açılır.
+            // Öğrenci: Bekleyen tab varsayılan olsun.
+            val fragment = if (isTeacher) {
+                NotificationFragment()
+            } else {
+                NotificationFragment.newWithReturnDefaults(fromTeacher = false)
+            }
             requireActivity().supportFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerID, fragment)
                 .commit()
@@ -446,18 +462,8 @@ class QuestionChatFragment : Fragment() {
                 }
             }
         )
-        binding.questionScreenshotButton.visibility = View.VISIBLE
-        binding.questionScreenshotButton.setOnClickListener {
-            val fragment = QuestionDetailFragment.newInstance(
-                questionId = questionId,
-                studentView = !isTeacher
-            )
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, fragment)
-                .addToBackStack(null)
-                .commit()
-        }
-        binding.resolveButton.visibility = if (isTeacher) View.VISIBLE else View.GONE
+        // Çözülme butonu sadece claim ve status durumuna göre gösterilecek.
+        binding.resolveButton.visibility = View.GONE
         binding.recordAudioButton.visibility = View.VISIBLE
 
         val currentUidForRestriction = auth.currentUser?.uid
@@ -482,10 +488,13 @@ class QuestionChatFragment : Fragment() {
                 }
                 if (doc == null || !doc.exists()) return@addSnapshotListener
                 val newStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
-                if (newStatus == questionStatus) return@addSnapshotListener
+                val newClaimedBy = doc.getString("claimedByTeacherUid")
+                if (newStatus == questionStatus && newClaimedBy == claimedByTeacherUid) return@addSnapshotListener
                 questionStatus = newStatus
+                claimedByTeacherUid = newClaimedBy
                 if (isTeacher) {
                     applyResolveButtonIcon(questionStatus)
+                    updateTeacherClaimUi()
                 }
                 // Öğrenci çözülmüş bir sorudayken ekranda kalıyorsa, sadece gönderme girişinde engel çalışsın.
                 // (handleResolvedBlockOrRun zaten questionStatus'i kullanıyor.)
@@ -543,6 +552,10 @@ class QuestionChatFragment : Fragment() {
         )
         binding.messagesRecyclerView.layoutManager = LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
         binding.messagesRecyclerView.adapter = chatAdapter
+
+        // Metin mesajları için 700, medya açıklaması için 500 karakter sınırı
+        binding.textInput.filters = arrayOf(InputFilter.LengthFilter(700))
+        binding.captionInput.filters = arrayOf(InputFilter.LengthFilter(500))
 
         listener = firestore.collection("questions").document(questionId).collection("messages")
             .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.ASCENDING)
@@ -1326,6 +1339,78 @@ class QuestionChatFragment : Fragment() {
 
     /** Used by FCM service to skip notification when user is already on this chat. */
     fun getQuestionIdOrNull(): String? = questionId.takeIf { it.isNotEmpty() }
+
+    /** Öğretmen için: claim durumuna göre alt bar / butonları günceller. */
+    private fun updateTeacherClaimUi() {
+        if (!isTeacher) return
+        if (isUserRestrictedOrBanned) return
+        val myUid = auth.currentUser?.uid
+        val isClaimedByMe = !claimedByTeacherUid.isNullOrEmpty() && claimedByTeacherUid == myUid
+        val isClaimedByOther = !claimedByTeacherUid.isNullOrEmpty() && claimedByTeacherUid != myUid
+
+        when {
+            questionStatus == StudentQuestion.STATUS_PENDING && !isClaimedByOther -> {
+                // Henüz kimse sahiplenmemiş: claim butonu göster, input bar gizle, resolve gizle
+                binding.teacherClaimButton.visibility = View.VISIBLE
+                binding.inputBar.visibility = View.GONE
+                binding.restrictionMessage.visibility = View.GONE
+                binding.resolveButton.visibility = View.GONE
+            }
+            questionStatus == StudentQuestion.STATUS_CLAIMED && isClaimedByMe -> {
+                // Ben sahiplendim: normal sohbet + resolve butonu
+                binding.teacherClaimButton.visibility = View.GONE
+                binding.restrictionMessage.visibility = View.GONE
+                binding.inputBar.visibility = View.VISIBLE
+                binding.resolveButton.visibility = View.VISIBLE
+            }
+            questionStatus == StudentQuestion.STATUS_CLAIMED && isClaimedByOther -> {
+                // Başka bir öğretmen sahiplendi: sadece okunur, resolve gizli
+                binding.teacherClaimButton.visibility = View.GONE
+                binding.inputBar.visibility = View.GONE
+                binding.restrictionMessage.visibility = View.VISIBLE
+                binding.restrictionMessage.text = "Bu soru başka bir öğretmen tarafından sahiplenildi."
+                binding.resolveButton.visibility = View.GONE
+            }
+            questionStatus == StudentQuestion.STATUS_RESOLVED && isClaimedByMe -> {
+                // Çözüldü ve sahibi benim: resolve (geri alma) butonu açık, input bar mevcut resolved mantığına göre bloklanıyor
+                binding.teacherClaimButton.visibility = View.GONE
+                binding.inputBar.visibility = View.VISIBLE
+                binding.restrictionMessage.visibility = View.GONE
+                binding.resolveButton.visibility = View.VISIBLE
+            }
+            else -> {
+                // Diğer tüm durumlar: butonları güvenli şekilde gizle
+                binding.teacherClaimButton.visibility = View.GONE
+                binding.resolveButton.visibility = View.GONE
+            }
+        }
+
+        binding.teacherClaimButton.setOnClickListener {
+            claimQuestionFromChat()
+        }
+    }
+
+    private fun claimQuestionFromChat() {
+        val uid = auth.currentUser?.uid ?: return
+        val now = Timestamp.now()
+        val updates = hashMapOf<String, Any>(
+            "status" to StudentQuestion.STATUS_CLAIMED,
+            "claimedByTeacherUid" to uid,
+            "claimedAt" to now,
+            "lastMessageAt" to now
+        )
+        firestore.collection("questions").document(questionId).update(updates)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Soruyu sahiplendiniz.", Toast.LENGTH_SHORT).show()
+                questionStatus = StudentQuestion.STATUS_CLAIMED
+                claimedByTeacherUid = uid
+                applyResolveButtonIcon(questionStatus)
+                updateTeacherClaimUi()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
 
     companion object {
         private const val ARG_QUESTION_ID = "question_id"

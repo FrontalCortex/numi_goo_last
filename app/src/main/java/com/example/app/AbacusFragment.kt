@@ -4,8 +4,6 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
@@ -28,7 +26,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.app.GlobalLessonData.globalPartId
@@ -41,9 +38,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
-import java.io.File
-import java.io.FileOutputStream
-
 
 class AbacusFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
@@ -246,16 +240,17 @@ class AbacusFragment : Fragment() {
         // Sorunu gönder butonu: sadece öğrenci hesabında göster; ban/restrictedUntil varsa gösterme
         val authManager = AuthManager().also { it.initialize(requireContext()) }
         val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
-        childFragmentManager.setFragmentResultListener(
-            QuestionMediaPickerDialogFragment.REQUEST_KEY,
-            viewLifecycleOwner
-        ) { _, result ->
-            when (result.getString(QuestionMediaPickerDialogFragment.RESULT_PICK)) {
-                QuestionMediaPickerDialogFragment.PICK_CAMERA -> captureAndOpenCreateQuestion()
-                QuestionMediaPickerDialogFragment.PICK_VIDEO -> startVideoQuestionFlow()
+        binding.askQuestionButton.setOnClickListener {
+            // Eğer giriş yapmış bir hesap yoksa, soru akışı yerine LoginStartActivity'e yönlendir.
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser == null) {
+                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
+                startActivity(intent)
+                return@setOnClickListener
             }
+            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
+            (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
         }
-        binding.askQuestionButton.setOnClickListener { openQuestionMediaPicker() }
         if (isTeacher) {
             binding.askQuestionButton.visibility = View.GONE
         } else {
@@ -277,37 +272,6 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    private fun captureAndOpenCreateQuestion() {
-        val view = view ?: return
-        if (view.width == 0 || view.height == 0) {
-            view.post { captureAndOpenCreateQuestion() }
-            return
-        }
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-        val cacheDir = requireContext().cacheDir
-        val file = File(cacheDir, "question_screenshot_${System.currentTimeMillis()}.jpg")
-        FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
-        bitmap.recycle()
-        val path = file.absolutePath
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.abacusFragmentContainer, CreateQuestionFragment.newInstance(path))
-            .addToBackStack(null)
-            .commit()
-    }
-
-    private fun openQuestionMediaPicker() {
-        if (childFragmentManager.findFragmentByTag(QuestionMediaPickerDialogFragment.TAG) != null) return
-        QuestionMediaPickerDialogFragment()
-            .show(childFragmentManager, QuestionMediaPickerDialogFragment.TAG)
-    }
-
-    private fun startVideoQuestionFlow() {
-        (activity as? MainActivity)?.requestQuestionScreenRecording()
-            ?: android.widget.Toast.makeText(requireContext(), "Video kayıt başlatılamadı.", android.widget.Toast.LENGTH_SHORT).show()
-    }
-    
     /**
      * Rehber paneli sistemini kurar
      */
@@ -3279,7 +3243,7 @@ class AbacusFragment : Fragment() {
                                         controlButton.setOnTouchListener(listener)
                                     }
                                 }
-                            }, 400)
+                            }, 200)
                             
                             correctPanel.animate()
                                 .translationY(correctPanel.height.toFloat())

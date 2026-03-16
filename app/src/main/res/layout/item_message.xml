@@ -375,36 +375,45 @@
                 </FrameLayout>
             </FrameLayout>
 
-            <TextView
-                android:id="@+id/timeView"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:textSize="11sp"
-                android:textColor="#CCFFFFFF"
-                tools:text="3:11 pm" />
-
-            <ImageView
-                android:id="@+id/tickView"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:orientation="horizontal"
                 android:layout_marginStart="2dp"
-                android:scaleType="fitCenter"
-                android:visibility="gone"
-                android:contentDescription="@null"
-                tools:visibility="visible" />
-            </LinearLayout>
+                android:gravity="end"
+                android:layout_gravity="bottom"
+                android:layout_marginTop="2dp">
 
+                <TextView
+                    android:id="@+id/timeView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    tools:text="3:11 pm" />
+
+                <ImageView
+                    android:id="@+id/tickView"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginStart="2dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"
+                    android:contentDescription="@null"
+                    tools:visibility="visible" />
+            </LinearLayout>
+            </LinearLayout>
             <TextView
                 android:id="@+id/captionText"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:layout_marginStart="3dp"
                 android:maxWidth="@dimen/chat_bubble_max_width"
+                android:gravity="start"
                 android:textSize="14sp"
                 android:textColor="@android:color/white"
                 android:visibility="gone"
-                android:maxLines="6"
                 tools:text="Mesaj altyazısı"
                 tools:visibility="visible" />
         </LinearLayout>

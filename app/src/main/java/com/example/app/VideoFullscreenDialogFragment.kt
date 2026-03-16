@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -40,6 +41,13 @@ class VideoFullscreenDialogFragment : DialogFragment() {
         view.findViewById<ImageButton>(R.id.fullscreenCloseButton).setOnClickListener { dismiss() }
     }
 
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        arguments?.getString(ARG_RESULT_REQUEST_KEY)?.let { key ->
+            parentFragmentManager.setFragmentResult(key, Bundle())
+        }
+    }
+
     override fun onStart() {
         super.onStart()
         dialog?.window?.apply {
@@ -62,9 +70,18 @@ class VideoFullscreenDialogFragment : DialogFragment() {
 
     companion object {
         private const val ARG_VIDEO_URL = "video_url"
-        fun newInstance(videoUrl: String): VideoFullscreenDialogFragment {
+        private const val ARG_RESULT_REQUEST_KEY = "result_request_key"
+
+        /**
+         * @param videoUrl Video URI (file or http).
+         * @param resultRequestKey Optional: when dialog is dismissed, setFragmentResult(key, Bundle()) is called so caller can resume its player.
+         */
+        fun newInstance(videoUrl: String, resultRequestKey: String? = null): VideoFullscreenDialogFragment {
             return VideoFullscreenDialogFragment().apply {
-                arguments = Bundle().apply { putString(ARG_VIDEO_URL, videoUrl) }
+                arguments = Bundle().apply {
+                    putString(ARG_VIDEO_URL, videoUrl)
+                    resultRequestKey?.let { putString(ARG_RESULT_REQUEST_KEY, it) }
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.graphics.Color
+import androidx.appcompat.app.AlertDialog
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -31,6 +32,9 @@ import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentTutorialBinding
 import com.example.app.model.BeadAnimation
 import com.example.app.model.LessonItem
+import com.example.app.auth.AuthManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var currentTutorialSteps: List<TutorialStep>
@@ -58,9 +62,16 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     
     // Ses çalma için MediaPlayer
     private var mediaPlayer: MediaPlayer? = null
-    
+    /** Arka plana geçince pause() ile durdurulduysa true; onResume'da kaldığı yerden devam etmek için. */
+    private var wasPausedByLifecycle = false
+
     // Typewriter effect için
     private var typewriterRunnable: Runnable? = null
+    /** Arka plana geçince duraklatıldıysa true; onResume'da kaldığı yerden devam etmek için. */
+    private var typewriterPausedByLifecycle = false
+    private var typewriterText: String? = null
+    private var typewriterCurrentIndex: Int = 0
+    private var typewriterSpeed: Long = 40L
 
 
     private var oneIsUp = false
@@ -286,6 +297,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         setupTutorial()
         setupBackButton()
         setupQuitButton()
+        setupAskQuestionButton()
         setupInfoRequest()
         tutorialSkipSetup()
         // Tutorial 24 için özel kontrol
@@ -550,6 +562,92 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun setupQuitButton(){
         binding.quitButton.setOnClickListener{
             closeFragment()
+        }
+    }
+
+    private fun setupAskQuestionButton() {
+        val authManager = AuthManager().also { it.initialize(requireContext()) }
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
+
+        // 1) Uygulamada giriş yapmış bir hesap yoksa butonu tamamen gizle
+        if (currentUser == null) {
+            binding.askQuestionButton.visibility = View.GONE
+            return
+        }
+
+        // 2) Öğretmen hesabıysa, teacherApproved durumuna göre davran
+        if (isTeacher) {
+            val uid = currentUser.uid
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener { doc ->
+                    if (!isAdded) return@addOnSuccessListener
+                    val teacherApproved = doc.getBoolean("teacherApproved") == true
+                    if (!teacherApproved) {
+                        // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
+                        binding.askQuestionButton.visibility = View.VISIBLE
+                        binding.askQuestionButton.setOnClickListener {
+                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                            val current = FirebaseAuth.getInstance().currentUser
+                            if (current == null) {
+                                val intent = android.content.Intent(
+                                    requireContext(),
+                                    com.example.app.LoginStartActivity::class.java
+                                )
+                                startActivity(intent)
+                                return@setOnClickListener
+                            }
+                            // Mesajın tamamı görünen ve kullanıcı kapatana kadar ekranda kalan diyalog
+                            AlertDialog.Builder(requireContext())
+                                .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
+                                .setPositiveButton("Tamam", null)
+                                .show()
+                        }
+                    } else {
+                        // Onaylı öğretmen: normal soru oluşturma akışına izin ver
+                        binding.askQuestionButton.visibility = View.VISIBLE
+                        binding.askQuestionButton.setOnClickListener {
+                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                            val current = FirebaseAuth.getInstance().currentUser
+                            if (current == null) {
+                                val intent = android.content.Intent(
+                                    requireContext(),
+                                    com.example.app.LoginStartActivity::class.java
+                                )
+                                startActivity(intent)
+                                return@setOnClickListener
+                            }
+                            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
+                            (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    // Firestore okunamazsa butonu gizle (güvenli varsayım)
+                    if (isAdded) {
+                        binding.askQuestionButton.visibility = View.GONE
+                    }
+                }
+        } else {
+            // 3) Öğrenci hesabı: mevcut davranış (normal soru oluşturma akışı)
+            binding.askQuestionButton.visibility = View.VISIBLE
+            binding.askQuestionButton.setOnClickListener {
+                // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
+                val current = FirebaseAuth.getInstance().currentUser
+                if (current == null) {
+                    val intent = android.content.Intent(
+                        requireContext(),
+                        com.example.app.LoginStartActivity::class.java
+                    )
+                    startActivity(intent)
+                    return@setOnClickListener
+                }
+                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
+                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
+            }
         }
     }
     
@@ -14391,12 +14489,48 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         }
     }
+    override fun onPause() {
+        super.onPause()
+        // Uygulama arka plana geçince sesi duraklat (geri dönünce kaldığı yerden devam edebilsin)
+        try {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.pause()
+                wasPausedByLifecycle = true
+            }
+        } catch (_: Exception) { }
+        // Typewriter'ı duraklat (geri dönünce kaldığı yerden devam edebilsin)
+        if (typewriterRunnable != null) {
+            binding.tutorialText.removeCallbacks(typewriterRunnable!!)
+            typewriterRunnable = null
+            typewriterPausedByLifecycle = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Geri dönünce ses kaldığı yerden devam etsin
+        if (wasPausedByLifecycle && mediaPlayer != null) {
+            try {
+                mediaPlayer?.start()
+            } catch (_: Exception) { }
+            wasPausedByLifecycle = false
+        }
+        // Geri dönünce typewriter kaldığı yerden devam etsin
+        if (typewriterPausedByLifecycle && typewriterText != null) {
+            resumeTypewriter()
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+        typewriterRunnable = null
+        typewriterText = null
+        typewriterPausedByLifecycle = false
     }
     private fun playCorretSound(soundResId: Int) {
         mediaPlayer?.release() // Önceki sesi serbest bırak
@@ -14424,48 +14558,63 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
 
-    // Typewriter effect fonksiyonu
+    // Typewriter effect fonksiyonu (durum sınıf değişkenlerinde tutulur; arka plana geçince duraklatılıp geri dönünce devam edebilir)
     private fun showTextWithTypewriter(text: String, textView: TextView, speed: Long) {
-        // Önceki typewriter işlemini durdur
-        typewriterRunnable?.let { 
-            textView.removeCallbacks(it)
-        }
-        
-        // Önce tam metni set et ki TextView boyutu sabitlensin
+        typewriterRunnable?.let { textView.removeCallbacks(it) }
+        typewriterText = text
+        typewriterCurrentIndex = 0
+        typewriterSpeed = speed
+        typewriterPausedByLifecycle = false
+
         textView.visibility = View.INVISIBLE
         textView.text = text
-        // TextView'in boyutunu hesaplaması için bir frame bekleyelim
         textView.post {
-            // İlk harfi ortaya yerleştir ve sonraki harfleri sağa doğru ekle
             textView.text = ""
-            var currentIndex = 0
-
             typewriterRunnable = object : Runnable {
                 override fun run() {
-                    if (currentIndex < text.length) {
-                        // Mevcut metni al ve yeni harfi ekle
+                    if (typewriterCurrentIndex < (typewriterText?.length ?: 0)) {
                         textView.visibility = View.VISIBLE
-                        val currentText = if (currentIndex == 0) {
-                            // İlk harf için boş string + harf
-                            text[currentIndex].toString()
-
+                        val currentText = if (typewriterCurrentIndex == 0) {
+                            typewriterText!![0].toString()
                         } else {
-                            // Sonraki harfler için mevcut metin + yeni harf
-                            textView.text.toString() + text[currentIndex]
+                            textView.text.toString() + typewriterText!![typewriterCurrentIndex]
                         }
-
                         textView.text = currentText
-                        currentIndex++
-                        textView.postDelayed(this, speed)
+                        typewriterCurrentIndex++
+                        textView.postDelayed(this, typewriterSpeed)
                     } else {
-                        // Typewriter effect tamamlandı
                         typewriterRunnable = null
                     }
                 }
             }
-            
             textView.post(typewriterRunnable!!)
         }
+    }
+
+    private fun resumeTypewriter() {
+        val text = typewriterText ?: return
+        val tv = binding.tutorialText
+        if (typewriterCurrentIndex >= text.length) {
+            typewriterPausedByLifecycle = false
+            typewriterRunnable = null
+            return
+        }
+        tv.visibility = View.VISIBLE
+        tv.text = text.substring(0, typewriterCurrentIndex)
+        typewriterRunnable = object : Runnable {
+            override fun run() {
+                if (typewriterCurrentIndex < (typewriterText?.length ?: 0)) {
+                    val currentText = tv.text.toString() + typewriterText!![typewriterCurrentIndex]
+                    tv.text = currentText
+                    typewriterCurrentIndex++
+                    tv.postDelayed(this, typewriterSpeed)
+                } else {
+                    typewriterRunnable = null
+                }
+            }
+        }
+        tv.post(typewriterRunnable!!)
+        typewriterPausedByLifecycle = false
     }
     
     // Fragment destroy olduğunda MediaPlayer'ı temizle
