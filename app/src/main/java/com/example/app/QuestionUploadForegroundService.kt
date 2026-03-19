@@ -248,72 +248,84 @@ class QuestionUploadForegroundService : Service() {
     private suspend fun sendImage(item: UploadItem) {
         val file = item.filePath?.let { File(it) }
         if (file == null || !file.exists()) return
-        val ref = storage.child("question_media/${item.questionId}/img_${System.currentTimeMillis()}.jpg")
-        uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_image)).await()
-        val downloadUri = ref.downloadUrl.await()
-        val msg = hashMapOf(
-            "senderUid" to item.senderUid,
-            "senderRole" to item.senderRole,
-            "type" to QuestionMessage.TYPE_IMAGE,
-            "mediaUrl" to downloadUri.toString(),
-            "mediaStoragePath" to ref.path,
-            "createdAt" to Timestamp.now(),
-            "clientId" to item.clientId,
-            "mediaSizeBytes" to file.length()
-        )
-        if (!item.caption.isNullOrBlank()) msg["textContent"] = item.caption
-        firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
-        file.delete()
+        try {
+            val ref = storage.child("question_media/${item.questionId}/img_${System.currentTimeMillis()}.jpg")
+            uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_image)).await()
+            val downloadUri = ref.downloadUrl.await()
+            val msg = hashMapOf(
+                "senderUid" to item.senderUid,
+                "senderRole" to item.senderRole,
+                "type" to QuestionMessage.TYPE_IMAGE,
+                "mediaUrl" to downloadUri.toString(),
+                "mediaStoragePath" to ref.path,
+                "createdAt" to Timestamp.now(),
+                "clientId" to item.clientId,
+                "mediaSizeBytes" to file.length()
+            )
+            if (!item.caption.isNullOrBlank()) msg["textContent"] = item.caption
+            firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
+        } finally {
+            // Offline yok: başarısız da olsa yerel dosya birikmesin.
+            runCatching { file.delete() }
+        }
     }
 
     private suspend fun sendVideo(item: UploadItem) {
         val file = item.filePath?.let { File(it) }
         if (file == null || !file.exists()) return
-        var thumbnailUrl: String? = null
-        getVideoThumbnail(file)?.let { bitmap ->
-            val baos = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
-            val thumbRef = storage.child("question_media/${item.questionId}/thumb_${System.currentTimeMillis()}.jpg")
-            thumbRef.putBytes(baos.toByteArray()).await()
-            thumbnailUrl = thumbRef.downloadUrl.await().toString()
+        try {
+            var thumbnailUrl: String? = null
+            getVideoThumbnail(file)?.let { bitmap ->
+                val baos = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+                val thumbRef = storage.child("question_media/${item.questionId}/thumb_${System.currentTimeMillis()}.jpg")
+                thumbRef.putBytes(baos.toByteArray()).await()
+                thumbnailUrl = thumbRef.downloadUrl.await().toString()
+            }
+            val ref = storage.child("question_media/${item.questionId}/video_${System.currentTimeMillis()}.mp4")
+            uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_video)).await()
+            val downloadUri = ref.downloadUrl.await()
+            val msg = hashMapOf(
+                "senderUid" to item.senderUid,
+                "senderRole" to item.senderRole,
+                "type" to QuestionMessage.TYPE_VIDEO,
+                "mediaUrl" to downloadUri.toString(),
+                "mediaStoragePath" to ref.path,
+                "createdAt" to Timestamp.now(),
+                "clientId" to item.clientId,
+                "mediaSizeBytes" to file.length()
+            )
+            val thumb = thumbnailUrl
+            if (thumb != null) msg["thumbnailUrl"] = thumb
+            if (!item.caption.isNullOrBlank()) msg["textContent"] = item.caption
+            firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
+        } finally {
+            // Offline yok: başarısız da olsa yerel dosya birikmesin.
+            runCatching { file.delete() }
         }
-        val ref = storage.child("question_media/${item.questionId}/video_${System.currentTimeMillis()}.mp4")
-        uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_video)).await()
-        val downloadUri = ref.downloadUrl.await()
-        val msg = hashMapOf(
-            "senderUid" to item.senderUid,
-            "senderRole" to item.senderRole,
-            "type" to QuestionMessage.TYPE_VIDEO,
-            "mediaUrl" to downloadUri.toString(),
-            "mediaStoragePath" to ref.path,
-            "createdAt" to Timestamp.now(),
-            "clientId" to item.clientId,
-            "mediaSizeBytes" to file.length()
-        )
-        val thumb = thumbnailUrl
-        if (thumb != null) msg["thumbnailUrl"] = thumb
-        if (!item.caption.isNullOrBlank()) msg["textContent"] = item.caption
-        firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
-        file.delete()
     }
 
     private suspend fun sendAudio(item: UploadItem) {
         val file = item.filePath?.let { File(it) }
         if (file == null || !file.exists()) return
-        val ref = storage.child("question_media/${item.questionId}/${file.name}")
-        uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_audio)).await()
-        val downloadUri = ref.downloadUrl.await()
-        val msg = hashMapOf(
-            "senderUid" to item.senderUid,
-            "senderRole" to item.senderRole,
-            "type" to QuestionMessage.TYPE_AUDIO,
-            "mediaUrl" to downloadUri.toString(),
-            "mediaStoragePath" to ref.path,
-            "createdAt" to Timestamp.now(),
-            "clientId" to item.clientId
-        )
-        firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
-        file.delete()
+        try {
+            val ref = storage.child("question_media/${item.questionId}/${file.name}")
+            uploadFileWithProgress(ref, file, item, getString(R.string.notification_upload_type_audio)).await()
+            val downloadUri = ref.downloadUrl.await()
+            val msg = hashMapOf(
+                "senderUid" to item.senderUid,
+                "senderRole" to item.senderRole,
+                "type" to QuestionMessage.TYPE_AUDIO,
+                "mediaUrl" to downloadUri.toString(),
+                "mediaStoragePath" to ref.path,
+                "createdAt" to Timestamp.now(),
+                "clientId" to item.clientId
+            )
+            firestore.collection("questions").document(item.questionId).collection("messages").add(msg).await()
+        } finally {
+            // Offline yok: başarısız da olsa yerel dosya birikmesin.
+            runCatching { file.delete() }
+        }
     }
 
     private fun getVideoThumbnail(file: File): Bitmap? {

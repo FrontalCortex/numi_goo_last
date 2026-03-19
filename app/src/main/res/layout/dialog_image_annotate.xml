@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/annotateRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Kaydedilecek içerik: sadece resim + çizimler -->
+    <FrameLayout
+        android:id="@+id/annotateContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/annotateImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:contentDescription="Resim" />
+
+        <com.example.app.DrawingOverlayView
+            android:id="@+id/annotateDrawingOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible" />
+
+    </FrameLayout>
+
+    <!-- Soldan gelen çizim kontrolleri (mevcut overlay + çekmece) -->
+    <include
+        layout="@layout/view_drawing_controls_overlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|center_vertical" />
+
+    <!-- Sağ üst: X (kaydet + çık) -->
+    <ImageButton
+        android:id="@+id/annotateDoneButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_close_black"
+        android:contentDescription="Kaydet ve kapat"
+        app:tint="@android:color/white" />
+
+</FrameLayout>
+

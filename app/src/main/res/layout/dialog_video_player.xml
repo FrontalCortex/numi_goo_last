@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#E0000000">
+    android:background="#000000">
 
     <androidx.media3.ui.PlayerView
         android:id="@+id/dialogPlayerView"
@@ -12,17 +12,18 @@
         android:layout_height="match_parent"
         app:show_buffering="when_playing"
         app:use_controller="true"
-        app:resize_mode="fit" />
+        app:resize_mode="zoom" />
 
     <ImageButton
         android:id="@+id/dialogVideoClose"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="top|end"
-        android:layout_margin="8dp"
+        android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Kapat"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:padding="8dp" />
+        android:src="@drawable/ic_close_black"
+        android:padding="8dp"
+        app:tint="@android:color/white" />
 </FrameLayout>
 

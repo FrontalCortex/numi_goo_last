@@ -12,9 +12,8 @@
         android:id="@+id/drawingControlsContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_drawing_panel_right_rounded"
         android:orientation="vertical"
-        android:background="@color/message_topbar"
-        android:elevation="8dp"
         android:padding="8dp">
 
         <!-- Satır 1: Kalem + preview -->
@@ -28,34 +27,36 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_pencil_circle"
-                android:src="@drawable/question_pencil_ic"
                 android:contentDescription="Kalem"
+                android:src="@drawable/question_pencil_ic"
                 app:tint="@color/message_buttons" />
 
             <com.example.app.StrokePreviewView
                 android:id="@+id/strokePreview"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:visibility="gone" />
+                android:visibility="gone"
+                />
 
         </FrameLayout>
 
         <!-- Satır 2: Renk şeridi (dikey) -->
         <com.example.app.DrawingColorStripView
             android:id="@+id/colorStrip"
-            android:layout_width="24dp"
+            android:layout_width="20dp"
             android:layout_height="120dp"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:layout_gravity="center"/>
 
         <!-- Satır 3: Kalınlık slider'ı (dikey) -->
-        <SeekBar
+        <com.example.app.VerticalSliderView
             android:id="@+id/strokeWidthSeekBar"
             android:layout_width="24dp"
             android:layout_height="120dp"
             android:layout_marginTop="8dp"
-            android:max="100"
-            android:progress="40"
-            android:rotation="90" />
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:layout_gravity="center"/>
 
         <!-- Satır 4: Undo butonu -->
         <ImageButton
@@ -64,23 +65,33 @@
             android:layout_height="40dp"
             android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/undo_drawing_ic"
             android:contentDescription="Geri al"
+            android:src="@drawable/undo_drawing_ic"
             app:tint="@color/message_buttons" />
 
     </LinearLayout>
 
     <!-- Çekmece butonu: her zaman ekranın kenarında görünen handle -->
-    <ImageButton
+    <FrameLayout
         android:id="@+id/drawerButton"
         android:layout_width="40dp"
         android:layout_height="56dp"
-        android:layout_gravity="center"
-        android:background="@color/message_topbar"
+        android:layout_gravity="top"
+        android:background="@drawable/bg_drawer_button_right_rounded"
+        android:clickable="true"
         android:contentDescription="Çizim panelini aç/kapat"
-        android:rotationY="-180"
-        android:src="@drawable/pen_panel_drawer_ic"
-        app:tint="@color/message_buttons" />
+        android:focusable="true">
+
+        <ImageView
+            android:id="@+id/drawerButtonIcon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingHorizontal="5dp"
+            android:rotationY="-180"
+            android:src="@drawable/pen_panel_drawer_ic"
+            app:tint="@color/message_buttons" />
+
+    </FrameLayout>
 
 </LinearLayout>
 

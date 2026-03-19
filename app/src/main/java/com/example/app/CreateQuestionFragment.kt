@@ -11,8 +11,10 @@ import androidx.fragment.app.Fragment
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.signature.ObjectKey
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentCreateQuestionBinding
 import com.example.app.model.QuestionMessage
@@ -113,15 +115,43 @@ class CreateQuestionFragment : Fragment() {
             parentFragmentManager.popBackStack()
             return
         }
+        parentFragmentManager.setFragmentResultListener(
+            ImageAnnotateDialogFragment.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, _ ->
+            // Aynı dosya üzerine yazıyoruz; yeniden yükle.
+            Glide.with(this)
+                .load(file)
+                .apply(
+                    RequestOptions()
+                        .override(com.bumptech.glide.request.target.Target.SIZE_ORIGINAL)
+                        .dontTransform()
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .skipMemoryCache(true)
+                        .signature(ObjectKey(file.lastModified()))
+                )
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .into(binding.screenshotImage)
+        }
         Glide.with(this)
             .load(file)
             .apply(
                 RequestOptions()
                     .override(com.bumptech.glide.request.target.Target.SIZE_ORIGINAL)
                     .dontTransform()
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .signature(ObjectKey(file.lastModified()))
             )
             .transition(DrawableTransitionOptions.withCrossFade())
             .into(binding.screenshotImage)
+
+        // Screenshot ise sağ üstte çizim butonu göster
+        binding.screenshotAnnotateButton.visibility = View.VISIBLE
+        binding.screenshotAnnotateButton.setOnClickListener {
+            ImageAnnotateDialogFragment.newInstance(file.absolutePath)
+                .show(parentFragmentManager, "ImageAnnotate")
+        }
 
         binding.descriptionInput.filters = arrayOf(InputFilter.LengthFilter(700))
         arguments?.getString(ARG_DESCRIPTION)?.let { binding.descriptionInput.setText(it) }
@@ -286,6 +316,14 @@ class CreateQuestionFragment : Fragment() {
                             firestore.collection("questions").document(questionId)
                                 .collection("messages")
                                 .add(msg)
+                                .addOnSuccessListener {
+                                    // Offline yok: upload + kayıt başarılıysa yerel cache videosunu temizle.
+                                    runCatching { File(videoPath).delete() }
+                                }
+                                .addOnFailureListener {
+                                    // Mesaj yazılamadıysa da yerel videoyu tutmaya gerek yok (offline yok).
+                                    runCatching { File(videoPath).delete() }
+                                }
 
                             Toast.makeText(requireContext(), "Soru gönderildi.", Toast.LENGTH_SHORT).show()
                             // CreateQuestionFragment'ı kapat; öğrenci eski ekrana döner.
@@ -293,12 +331,22 @@ class CreateQuestionFragment : Fragment() {
                         }
                         .addOnFailureListener { e ->
                             setSendingUi(false)
+                            // Soru dokümanı oluşturulamadıysa videoyu cache'te tutmayalım (offline yok).
+                            runCatching { File(videoPath).delete() }
                             Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
+                }
+                .addOnFailureListener {
+                    setSendingUi(false)
+                    // Download URL alınamadıysa da videoyu temizle (offline yok).
+                    runCatching { File(videoPath).delete() }
+                    Toast.makeText(requireContext(), "Video yükleme hatası.", Toast.LENGTH_SHORT).show()
                 }
             }
             .addOnFailureListener { e ->
                 setSendingUi(false)
+                // Upload başarısızsa videoyu cache'te tutmayalım (offline yok).
+                runCatching { File(videoPath).delete() }
                 Toast.makeText(requireContext(), "Video yükleme hatası: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }

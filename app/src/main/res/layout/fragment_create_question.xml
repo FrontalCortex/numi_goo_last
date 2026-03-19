@@ -86,6 +86,18 @@
                     android:src="@drawable/ic_fullscreen"
                     android:contentDescription="Tam ekran"
                     app:tint="@android:color/white" />
+
+                <ImageButton
+                    android:id="@+id/screenshotAnnotateButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="8dp"
+                    android:visibility="gone"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/question_pencil_ic"
+                    android:contentDescription="Çizim yap"
+                    app:tint="@android:color/white" />
             </FrameLayout>
 
             <TextView

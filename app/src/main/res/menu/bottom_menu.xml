@@ -23,8 +23,8 @@
     </item>
 
     <item
-        android:id="@+id/tasks"
-        android:icon="@drawable/notification_ic"
+        android:id="@+id/explore"
+        android:icon="@drawable/explore_ic"
         app:showAsAction="always">
 
     </item>

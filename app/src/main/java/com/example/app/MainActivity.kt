@@ -145,12 +145,19 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Klavye açıldığında bottomNavigationID gizlensin; soru seçilirken (öğretmen medya gönder) de gizli kalsın
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigationID) { view, insets ->
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
             view.visibility = when {
+                current is AbacusPracticeFragment -> View.GONE
                 imeVisible -> View.GONE
                 teacherPendingMediaPath != null -> View.GONE
                 else -> View.VISIBLE
             }
             insets
+        }
+
+        supportFragmentManager.addOnBackStackChangedListener {
+            // Re-evaluate bottom nav visibility with current fragment state.
+            binding.bottomNavigationID.requestApplyInsets()
         }
         
         // Bildirimde gelen soru ID'si var mı? (sohbete deep-link)
@@ -339,7 +346,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                     R.id.map ->
                         if (currentFragment is MapFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(MapFragment())
-                    R.id.tasks ->
+                    R.id.explore ->
                         if (currentFragment is TasksFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(TasksFragment())
                     R.id.profile ->
@@ -705,7 +712,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             val drawerRoot =
                 drawingControlsView!!.findViewById<View>(R.id.drawingControlsRoot)
             val drawerButton =
-                drawingControlsView!!.findViewById<ImageButton>(R.id.drawerButton)
+                drawingControlsView!!.findViewById<View>(R.id.drawerButton)
+            val drawerButtonIcon =
+                drawingControlsView!!.findViewById<android.widget.ImageView>(R.id.drawerButtonIcon)
             val pencilButton =
                 drawingControlsView!!.findViewById<ImageButton>(R.id.pencilButton)
             val colorStrip =
@@ -713,7 +722,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             val undoButton =
                 drawingControlsView!!.findViewById<ImageButton>(R.id.undoButton)
             val strokeWidthSeekBar =
-                drawingControlsView!!.findViewById<android.widget.SeekBar>(R.id.strokeWidthSeekBar)
+                drawingControlsView!!.findViewById<VerticalSliderView>(R.id.strokeWidthSeekBar)
             val strokePreview =
                 drawingControlsView!!.findViewById<StrokePreviewView>(R.id.strokePreview)
 
@@ -721,16 +730,25 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             // drawerButton ekran kenarında, panel ise dışında kalsın.
             val panel =
                 drawingControlsView!!.findViewById<View>(R.id.drawingControlsContainer)
+            // İlk frame'de "açık görünüp sonra kapanma" flash'ını engelle: ölçüm bitene kadar gizle.
+            drawerRoot.visibility = View.INVISIBLE
             drawerRoot.post {
                 isDrawingPanelOpen = false
                 drawerRoot.translationX = -panel.width.toFloat()
-                drawerButton.rotationY = -180f
+                drawerButtonIcon.rotationY = -180f
+                drawerRoot.visibility = View.VISIBLE
             }
+
+            // rotationY 3D dönüşünün belirgin görünmesi için cameraDistance ayarla (px).
+            drawerButtonIcon.cameraDistance = 8000f * resources.displayMetrics.density
 
             drawerButton.setOnClickListener {
                 val targetOpen = !isDrawingPanelOpen
                 isDrawingPanelOpen = targetOpen
-                drawerButton.rotationY = if (targetOpen) 0f else -180f
+                drawerButtonIcon.animate()
+                    .rotationY(if (targetOpen) 0f else -180f)
+                    .setDuration(200)
+                    .start()
                 drawerRoot.animate()
                     .translationX(if (targetOpen) 0f else -panel.width.toFloat())
                     .setDuration(200)
@@ -749,31 +767,30 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             }
 
             // Kalınlık slider'ı: min–max aralığını DrawingOverlayView sabitlerine göre ölçekle
-            strokeWidthSeekBar.max = 100
+            strokeWidthSeekBar.max = 1000
             // Varsayılan strok kalınlığını ortalara koy (örnek: 40)
-            strokeWidthSeekBar.progress = 40
-            strokeWidthSeekBar.setOnSeekBarChangeListener(object :
-                android.widget.SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                    val fraction = progress / 100f
+            strokeWidthSeekBar.progress = 500
+            strokeWidthSeekBar.listener = object : VerticalSliderView.Listener {
+                override fun onProgressChanged(progress: Int, fromUser: Boolean) {
+                    val fraction = progress / strokeWidthSeekBar.max.toFloat()
                     val width = DrawingOverlayView.MIN_STROKE_WIDTH +
                             fraction * (DrawingOverlayView.MAX_STROKE_WIDTH - DrawingOverlayView.MIN_STROKE_WIDTH)
                     drawingOverlayView?.setStrokeWidth(width)
                     strokePreview.setStrokeWidth(width)
                 }
 
-                override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {
+                override fun onStartTrackingTouch() {
                     // Dokunulurken: kalem gizli, önizleme noktası görünür
                     pencilButton.visibility = View.INVISIBLE
                     strokePreview.visibility = View.VISIBLE
                 }
 
-                override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {
+                override fun onStopTrackingTouch() {
                     // Dokunma bittiğinde: kalem tekrar görünür, önizleme gizlenir
                     pencilButton.visibility = View.VISIBLE
                     strokePreview.visibility = View.GONE
                 }
-            })
+            }
 
             // Kalem toggle
             pencilButton.setOnClickListener {
@@ -820,11 +837,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             drawingControlsView?.let { rootView ->
                 val drawerRoot = rootView.findViewById<View>(R.id.drawingControlsRoot)
                 val panel = rootView.findViewById<View>(R.id.drawingControlsContainer)
-                val drawerButton = rootView.findViewById<ImageButton>(R.id.drawerButton)
+                val drawerButtonIcon = rootView.findViewById<android.widget.ImageView>(R.id.drawerButtonIcon)
                 isDrawingPanelOpen = false
+                // Önceki kayıtta açık kalsa bile ilk frame'de flash olmasın.
+                drawerRoot.visibility = View.INVISIBLE
                 drawerRoot.post {
                     drawerRoot.translationX = -panel.width.toFloat()
-                    drawerButton.rotationY = -180f
+                    drawerButtonIcon.rotationY = -180f
+                    drawerRoot.visibility = View.VISIBLE
                 }
             }
             drawingControlsView?.findViewById<ImageButton>(R.id.pencilButton)?.apply {

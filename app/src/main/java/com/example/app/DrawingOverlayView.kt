@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 
 /**
  * Ekran kaydı sırasında çizim yapmak için kullanılan şeffaf overlay view.
@@ -24,6 +25,10 @@ class DrawingOverlayView @JvmOverloads constructor(
     private var currentPaint: Paint = createPaint(DEFAULT_COLOR, DEFAULT_STROKE_WIDTH)
 
     private var isDrawingEnabled: Boolean = false
+    private val touchSlop: Float = ViewConfiguration.get(context).scaledTouchSlop.toFloat()
+    private var downX: Float = 0f
+    private var downY: Float = 0f
+    private var didMove: Boolean = false
 
     fun setDrawingEnabled(enabled: Boolean) {
         isDrawingEnabled = enabled
@@ -86,6 +91,9 @@ class DrawingOverlayView @JvmOverloads constructor(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                downX = x
+                downY = y
+                didMove = false
                 currentPath = Path().apply {
                     moveTo(x, y)
                 }
@@ -93,12 +101,24 @@ class DrawingOverlayView @JvmOverloads constructor(
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
+                if (!didMove) {
+                    val dx = x - downX
+                    val dy = y - downY
+                    if ((dx * dx + dy * dy) >= (touchSlop * touchSlop)) {
+                        didMove = true
+                    }
+                }
                 currentPath?.lineTo(x, y)
                 invalidate()
                 return true
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 currentPath?.let { path ->
+                    // Sadece "tap" yapıldıysa (hiç sürükleme yoksa), Path tek nokta kalır ve çoğu zaman çizilmez.
+                    // Çok küçük bir segment ekleyerek yuvarlak cap ile nokta gibi görünmesini sağlarız.
+                    if (!didMove) {
+                        path.lineTo(downX + 0.01f, downY + 0.01f)
+                    }
                     // Her kaldırmada ayrı bir stroke kaydet
                     strokes.add(Stroke(Path(path), Paint(currentPaint)))
                 }
@@ -114,7 +134,7 @@ class DrawingOverlayView @JvmOverloads constructor(
         private const val DEFAULT_COLOR = 0xFFFF0000.toInt() // Kırmızı
         private const val DEFAULT_STROKE_WIDTH = 8f
         const val MIN_STROKE_WIDTH = 2f
-        const val MAX_STROKE_WIDTH = 20f
+        const val MAX_STROKE_WIDTH = 60f
     }
 }
 

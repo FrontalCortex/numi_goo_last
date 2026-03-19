@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentTutorialBinding
+import com.example.app.abacus.AbacusBeadController
 import com.example.app.model.BeadAnimation
 import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
@@ -45,6 +46,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var questionText:View
     private var controlNumber=0
     private var answerNumber: Int?= null
+    private var abacusController: AbacusBeadController? = null
     private var isAnimating2 = false
     private var isWritingAnswerNumber = false // writeAnswerNumber() çalışıyor mu kontrolü için
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
@@ -12998,8 +13000,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     )
     private fun stepAnswerAlgorithm(): Boolean {
+        // Tutorial'da abaküs state'i artık ortak controller'da tutuluyor.
+        val controller = abacusController ?: return false
+        controlNumber = controller.getCurrentValue()
 
-        abacusNumberReturn()
         return if (controlNumber == answerNumber) {
             controlNumber = 0
             true
@@ -13007,6 +13011,72 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             controlNumber = 0
             false
         }
+    }
+
+    private fun syncTutorialBooleansFromController() {
+        val value = abacusController?.getCurrentValue() ?: 0
+
+        val tenThousands = value / 10000
+        val thousands = (value / 1000) % 10
+        val hundreds = (value / 100) % 10
+        val tens = (value / 10) % 10
+        val ones = value % 10
+
+        val applyRod: (digit: Int, setOne: (Boolean) -> Unit, setTwo: (Boolean) -> Unit, setThree: (Boolean) -> Unit, setFour: (Boolean) -> Unit, setTopDown: (Boolean) -> Unit) -> Unit =
+            { digit, setOne, setTwo, setThree, setFour, setTopDown ->
+                val bottom = digit % 5
+                val topDown = digit >= 5
+                setOne(bottom >= 1)
+                setTwo(bottom >= 2)
+                setThree(bottom >= 3)
+                setFour(bottom >= 4)
+                setTopDown(topDown)
+            }
+
+        applyRod(
+            tenThousands,
+            { oneIsUp = it },
+            { twoIsUp = it },
+            { threeIsUp = it },
+            { fourIsUp = it },
+            { topIsDown = it }
+        )
+
+        applyRod(
+            thousands,
+            { rod1OneIsUp = it },
+            { rod1TwoIsUp = it },
+            { rod1ThreeIsUp = it },
+            { rod1FourIsUp = it },
+            { rod1TopIsDown = it }
+        )
+
+        applyRod(
+            hundreds,
+            { rod2OneIsUp = it },
+            { rod2TwoIsUp = it },
+            { rod2ThreeIsUp = it },
+            { rod2FourIsUp = it },
+            { rod2TopIsDown = it }
+        )
+
+        applyRod(
+            tens,
+            { rod3OneIsUp = it },
+            { rod3TwoIsUp = it },
+            { rod3ThreeIsUp = it },
+            { rod3FourIsUp = it },
+            { rod3TopIsDown = it }
+        )
+
+        applyRod(
+            ones,
+            { rod4OneIsUp = it },
+            { rod4TwoIsUp = it },
+            { rod4ThreeIsUp = it },
+            { rod4FourIsUp = it },
+            { rod4TopIsDown = it }
+        )
     }
 
     // Options panelindeki seçimleri değerlendir
@@ -13487,22 +13557,36 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     private fun setupBeads() {
-        if (!getCurrentStep().abacusClickable) {
-            Log.d("üşüdüm","ses")
-            // Tüm alt view'lerin tıklanabilirliğini engelle
+        val step = getCurrentStep()
+
+        if (!step.abacusClickable) {
             disableAllClickable(binding.abacusLinear)
-            // Kontrol butonunu gizle
+            abacusController?.setEnabled(false)
             controlButton.visibility = View.INVISIBLE
             return
         }
 
-        // Tüm alt view'lerin tıklanabilirliğini etkinleştir
         enableAllClickable(binding.abacusLinear)
         controlButton.visibility = View.VISIBLE
         binding.abacusLinear.isClickable = true
         binding.abacusLinear.isFocusable = true
 
-        // Boncuklara tıklama işlemleri
+        // Tap/drag etkileşimi artık ortak controller'da.
+        val controller = abacusController ?: AbacusBeadController(
+            requireContext(),
+            binding.root,
+            animationDurationMs = 300L
+        ).also { abacusController = it }
+
+        controller.setEnabled(true)
+        controller.setup()
+        controller.syncStateFromUi()
+        syncTutorialBooleansFromController()
+
+        // Legacy click-listener block'u artık kullanılmıyor.
+        return
+
+        /* Boncuklara tıklama işlemleri (legacy)
         rod0BottomBead4.setOnClickListener {
             if (!isAnimating2) {
                 if (!fourIsUp) {
@@ -14133,6 +14217,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 }
             }
         }
+        */
     }
 
     private fun animateBeadsUp(vararg beads: ImageView) {
@@ -14345,129 +14430,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
         binding.overlay.isClickable = true
         binding.overlay.isFocusable = true
-        
+
         // 0.4 saniye sonra overlay'i kapat
         Handler(Looper.getMainLooper()).postDelayed({
             binding.overlay.visibility = View.GONE
             binding.overlay.isClickable = false
             binding.overlay.isFocusable = false
         }, 400)
-        
-        // 1. sütun için
-        if (fourIsUp) {
-            animateBeadsDown(rod0BottomBead4)
-            fourIsUp = false
-        }
-        if (threeIsUp) {
-            animateBeadsDown(rod0BottomBead3)
-            threeIsUp = false
-        }
-        if (twoIsUp) {
-            animateBeadsDown(rod0BottomBead2)
-            twoIsUp = false
-        }
-        if (oneIsUp) {
-            animateBeadsDown(rod0BottomBead1)
-            oneIsUp = false
-        }
-        if (topIsDown) {
-            animateBeadUp(rod0TopBead)
-            topIsDown = false
-        }
-        updateRod0BeadsAppearance()
 
-        // 2. sütun için
-        if (rod1FourIsUp) {
-            animateBeadsDown(rod1BottomBead4)
-            rod1FourIsUp = false
-        }
-        if (rod1ThreeIsUp) {
-            animateBeadsDown(rod1BottomBead3)
-            rod1ThreeIsUp = false
-        }
-        if (rod1TwoIsUp) {
-            animateBeadsDown(rod1BottomBead2)
-            rod1TwoIsUp = false
-        }
-        if (rod1OneIsUp) {
-            animateBeadsDown(rod1BottomBead1)
-            rod1OneIsUp = false
-        }
-        if (rod1TopIsDown) {
-            animateBeadUp(rod1TopBead)
-            rod1TopIsDown = false
-        }
-        updateRod1BeadsAppearance()
-
-        // 3. sütun için
-        if (rod2FourIsUp) {
-            animateBeadsDown(rod2BottomBead4)
-            rod2FourIsUp = false
-        }
-        if (rod2ThreeIsUp) {
-            animateBeadsDown(rod2BottomBead3)
-            rod2ThreeIsUp = false
-        }
-        if (rod2TwoIsUp) {
-            animateBeadsDown(rod2BottomBead2)
-            rod2TwoIsUp = false
-        }
-        if (rod2OneIsUp) {
-            animateBeadsDown(rod2BottomBead1)
-            rod2OneIsUp = false
-        }
-        if (rod2TopIsDown) {
-            animateBeadUp(rod2TopBead)
-            rod2TopIsDown = false
-        }
-        updateRod2BeadsAppearance()
-
-        // 4. sütun için
-        if (rod3FourIsUp) {
-            animateBeadsDown(rod3BottomBead4)
-            rod3FourIsUp = false
-        }
-        if (rod3ThreeIsUp) {
-            animateBeadsDown(rod3BottomBead3)
-            rod3ThreeIsUp = false
-        }
-        if (rod3TwoIsUp) {
-            animateBeadsDown(rod3BottomBead2)
-            rod3TwoIsUp = false
-        }
-        if (rod3OneIsUp) {
-            animateBeadsDown(rod3BottomBead1)
-            rod3OneIsUp = false
-        }
-        if (rod3TopIsDown) {
-            animateBeadUp(rod3TopBead)
-            rod3TopIsDown = false
-        }
-        updateRod3BeadsAppearance()
-
-        // 5. sütun için
-        if (rod4FourIsUp) {
-            animateBeadsDown(rod4BottomBead4)
-            rod4FourIsUp = false
-        }
-        if (rod4ThreeIsUp) {
-            animateBeadsDown(rod4BottomBead3)
-            rod4ThreeIsUp = false
-        }
-        if (rod4TwoIsUp) {
-            animateBeadsDown(rod4BottomBead2)
-            rod4TwoIsUp = false
-        }
-        if (rod4OneIsUp) {
-            animateBeadsDown(rod4BottomBead1)
-            rod4OneIsUp = false
-        }
-        if (rod4TopIsDown) {
-            animateBeadUp(rod4TopBead)
-            rod4TopIsDown = false
-        }
-        updateRod4BeadsAppearance()
-        updateTopBeadsAppearance()
+        // Controller üzerinden abaküsü sıfırla (animasyonlu)
+        abacusController?.reset(animate = true)
+        syncTutorialBooleansFromController()
     }
 
     private fun disableAllClickable(view: View) {

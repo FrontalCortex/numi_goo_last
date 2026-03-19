@@ -926,6 +926,26 @@ class QuestionChatFragment : Fragment() {
             setContentView(R.layout.dialog_video_player)
             window?.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         }
+        // Tam ekran oynatma: navigation bar'ı da gizle (immersive).
+        dialog.window?.let { w ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                w.setDecorFitsSystemWindows(false)
+                w.insetsController?.let { controller ->
+                    controller.hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                    controller.systemBarsBehavior =
+                        android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                w.decorView.systemUiVisibility =
+                    (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            or View.SYSTEM_UI_FLAG_FULLSCREEN
+                            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+            }
+        }
         val playerView = dialog.findViewById<PlayerView>(R.id.dialogPlayerView)
         val player = ExoPlayer.Builder(requireContext()).build().also {
             videoExoPlayer = it
@@ -1190,6 +1210,8 @@ class QuestionChatFragment : Fragment() {
             Toast.makeText(requireContext(), "Ses kopyalanamadı.", Toast.LENGTH_SHORT).show()
             return
         }
+        // Offline yok: cache/audio altındaki ham kaydı artık tutmaya gerek yok.
+        runCatching { file.delete() }
         startUploadService(clientId, QuestionMessage.TYPE_AUDIO, filePath = dest.absolutePath)
         bumpLastMessageAt()
     }

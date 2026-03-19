@@ -26,9 +26,10 @@ class StrokePreviewView @JvmOverloads constructor(
     }
 
     fun setStrokeWidth(widthPx: Float) {
-        // Çap yaklaşık strok kalınlığına yakın olsun; min/maks ile sınırla
-        val r = (widthPx / 2f).coerceIn(2f, 24f)
-        radiusPx = r
+        // Önizleme noktası, çizimde kullanılan strokeWidth ile birebir uyumlu olsun:
+        // strokeWidth bir "çap" gibi düşünülür => radius = width/2.
+        // Sadece view sınırlarına sığması için maksimumu mevcut boyuta göre clamp edeceğiz.
+        radiusPx = (widthPx / 2f).coerceAtLeast(1f)
         invalidate()
     }
 
@@ -36,7 +37,8 @@ class StrokePreviewView @JvmOverloads constructor(
         super.onDraw(canvas)
         val cx = width / 2f
         val cy = height / 2f
-        canvas.drawCircle(cx, cy, radiusPx, paint)
+        val maxR = (minOf(width, height) / 2f).coerceAtLeast(1f)
+        canvas.drawCircle(cx, cy, radiusPx.coerceAtMost(maxR), paint)
     }
 }
 
