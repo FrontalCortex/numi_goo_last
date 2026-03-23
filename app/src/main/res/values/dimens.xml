@@ -1,7 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="max_lesson_offset">100dp</dimen>
+    <!-- Soroban: alt boncuk bir kademe (24dp layout adımının 2×; cihazda yeterli hareket için) -->
+    <dimen name="abacus_bead_step_bottom">48dp</dimen>
+    <!-- Üst boncuk dikey hareket (alt adımla oran korunur: 2/3) -->
+    <dimen name="abacus_bead_step_top">32dp</dimen>
+
+    <!-- Zigzag hedef kaydırma; dar ekranda DynamicOffsetDecoration ekran genişliği ile kısar -->
+    <dimen name="max_lesson_offset">72dp</dimen>
+    <dimen name="map_lesson_offset_edge_margin">6dp</dimen>
     <dimen name="chat_bubble_max_width">240dp</dimen>
     <dimen name="chat_media_max_width">220dp</dimen>
     <dimen name="chat_media_min_height">160dp</dimen>
+
+    <!-- Yükseklik &lt; 700dp (örn. 720×1280 @ 2x → 640dp). Sticky TYPE_HEADER paneli + harita ölçekleri -->
+    <dimen name="map_sticky_padding_horizontal">12dp</dimen>
+    <dimen name="map_sticky_section_unit_padding_top">4dp</dimen>
+    <dimen name="map_sticky_title_padding_bottom">5dp</dimen>
+    <dimen name="map_sticky_text_horizontal_inset">4dp</dimen>
+    <dimen name="map_sticky_unit_text_size">11sp</dimen>
+    <dimen name="map_sticky_title_text_size">16sp</dimen>
+    <dimen name="map_sticky_recycler_padding_top">8dp</dimen>
+    <dimen name="map_fab_size">40dp</dimen>
+    <dimen name="map_lesson_item_padding">9dp</dimen>
+    <dimen name="map_lesson_card_size">50dp</dimen>
+    <dimen name="map_lesson_card_corner_radius">31dp</dimen>
+    <dimen name="map_lesson_card_inner_padding">7dp</dimen>
+    <dimen name="map_lesson_icon_size">22dp</dimen>
+    <dimen name="map_lesson_progress_thickness">3dp</dimen>
+    <dimen name="map_race_icon_size">43dp</dimen>
+    <dimen name="map_header_text_size">12sp</dimen>
+    <dimen name="map_item_header_padding">8dp</dimen>
+    <dimen name="map_header_title_margin_h">8dp</dimen>
+    <dimen name="map_header_divider_height">1.5dp</dimen>
+    <dimen name="map_part_padding">10dp</dimen>
+    <dimen name="map_part_section_title_size">15sp</dimen>
+    <dimen name="map_part_description_size">9sp</dimen>
+    <dimen name="map_part_button_height">36dp</dimen>
+    <dimen name="lesson_sheet_title_size">12sp</dimen>
+    <dimen name="lesson_sheet_body_size">10sp</dimen>
+    <dimen name="lesson_sheet_record_size">10sp</dimen>
+    <dimen name="lesson_sheet_again_size">9sp</dimen>
+    <dimen name="lesson_sheet_lottie_size">28dp</dimen>
+    <dimen name="lesson_sheet_container_padding">7dp</dimen>
+    <dimen name="lesson_sheet_top_row_height">28dp</dimen>
+    <dimen name="lesson_sheet_title_margin_bottom">2dp</dimen>
+    <dimen name="lesson_sheet_title_padding_top">2dp</dimen>
+    <dimen name="lesson_sheet_lottie_margin_end">0dp</dimen>
+    <dimen name="lesson_sheet_lottie_padding_bottom">2dp</dimen>
+    <dimen name="lesson_sheet_record_end_padding">4dp</dimen>
+    <dimen name="lesson_sheet_middle_row_margin_bottom">7dp</dimen>
+    <dimen name="lesson_sheet_again_padding_h">6dp</dimen>
+    <dimen name="lesson_sheet_again_padding_v">4dp</dimen>
+    <dimen name="lesson_sheet_button_padding">6dp</dimen>
+    <dimen name="lesson_sheet_button_text_size">10sp</dimen>
+    <dimen name="lesson_sheet_content_start_margin">6dp</dimen>
+    <dimen name="lesson_sheet_content_end_margin">6dp</dimen>
+    <dimen name="lesson_sheet_title_record_gap">4dp</dimen>
+    <dimen name="race_sheet_title_size">14sp</dimen>
+    <dimen name="race_sheet_header_padding">12dp</dimen>
+    <dimen name="race_sheet_rv_padding">12dp</dimen>
+
+    <!-- Kısım kartı (part / backPart) ek öğeler -->
+    <dimen name="map_part_divider_thin">0.5dp</dimen>
+    <dimen name="map_part_divider_height">1dp</dimen>
+    <dimen name="map_part_lock_icon_size">14dp</dimen>
+    <dimen name="map_part_button_corner_radius">9dp</dimen>
+    <dimen name="map_part_button_stroke_width">1dp</dimen>
+    <dimen name="map_part_button_text_size">10sp</dimen>
+    <dimen name="map_part_desc_margin_bottom">6dp</dimen>
+    <dimen name="map_part_button_margin_top">4dp</dimen>
+    <dimen name="map_part_button_margin_bottom">2dp</dimen>
+
+    <!-- TutorialFragment ölçekleri (küçük ekran) -->
+    <dimen name="tutorial_quit_button_size">25dp</dimen>
+    <dimen name="tutorial_text_size">16sp</dimen>
+    <dimen name="tutorial_question_width">140dp</dimen>
+    <dimen name="tutorial_question_margin_bottom">4dp</dimen>
+    <dimen name="tutorial_focus_width">44dp</dimen>
+    <dimen name="tutorial_focus_height">220dp</dimen>
+    <dimen name="tutorial_blinding_width">220dp</dimen>
+    <dimen name="tutorial_blinding_height">470dp</dimen>
+    <dimen name="tutorial_rules_book_width">215dp</dimen>
+    <dimen name="tutorial_rules_book_height">430dp</dimen>
+    <dimen name="tutorial_abacus_rod_height">176dp</dimen>
+    <dimen name="tutorial_abacus_rod_spacing_start">4dp</dimen>
+    <dimen name="tutorial_abacus_rod_spacing_end">2dp</dimen>
+    <dimen name="tutorial_abacus_line_width">2dp</dimen>
+    <dimen name="tutorial_abacus_bead_size">26dp</dimen>
+    <dimen name="tutorial_abacus_bottom_bead_margin_4">4dp</dimen>
+    <dimen name="tutorial_abacus_bottom_bead_margin_3">22dp</dimen>
+    <dimen name="tutorial_abacus_bottom_bead_margin_2">40dp</dimen>
+    <dimen name="tutorial_abacus_bottom_bead_margin_1">58dp</dimen>
+    <dimen name="tutorial_abacus_barrier_height">3dp</dimen>
+    <dimen name="tutorial_abacus_barrier_margin_bottom">34dp</dimen>
+    <dimen name="tutorial_options_text_size">15sp</dimen>
+    <dimen name="tutorial_back_button_size">40dp</dimen>
+    <dimen name="tutorial_back_button_icon_padding">0dp</dimen>
+    <dimen name="tutorial_bottom_panel_margin_bottom">4dp</dimen>
+    <dimen name="tutorial_skip_button_height">30dp</dimen>
+    <dimen name="tutorial_skip_button_text_size">11sp</dimen>
+    <dimen name="tutorial_skip_button_text_margin_h">8dp</dimen>
+    <dimen name="tutorial_ask_button_size">44dp</dimen>
+    <dimen name="tutorial_ask_button_padding">6dp</dimen>
+    <dimen name="tutorial_control_button_text_size">13sp</dimen>
+    <dimen name="tutorial_control_button_side_margin">12dp</dimen>
+    <dimen name="tutorial_control_button_corner_radius">8dp</dimen>
+
+    <!-- activity_main üst/alt bar — 720×1280 @2x (~640dp) bu bucket; biraz daha kompakt -->
+    <dimen name="main_currency_panel_padding_v">2dp</dimen>
+    <dimen name="main_currency_panel_padding_h">5dp</dimen>
+    <dimen name="main_toolbar_icon_back">22dp</dimen>
+    <dimen name="main_diamond_width">25dp</dimen>
+    <dimen name="main_diamond_height">15dp</dimen>
+    <dimen name="main_currency_text_size">12sp</dimen>
+    <dimen name="main_currency_margin_start">3dp</dimen>
+    <dimen name="main_energy_icon_size">20dp</dimen>
+    <dimen name="main_energy_text_size">12sp</dimen>
+    <dimen name="main_teacher_bar_title_size">11sp</dimen>
+    <dimen name="main_teacher_send_btn_size">28dp</dimen>
+    <dimen name="main_teacher_bar_padding_v">3dp</dimen>
+    <dimen name="main_teacher_bar_padding_h">5dp</dimen>
+    <dimen name="main_bottom_nav_icon_size">20dp</dimen>
+    <dimen name="main_bottom_nav_text_size">8sp</dimen>
+    <!-- İkon+etiket hâlâ kenara yapışmasın; toplam bar alçalsın diye biraz sıkı -->
+    <dimen name="main_bottom_nav_item_padding_top">6dp</dimen>
+    <dimen name="main_bottom_nav_item_padding_bottom">5dp</dimen>
+    <dimen name="main_bottom_nav_min_height">52dp</dimen>
 </resources>

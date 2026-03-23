@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="@dimen/race_sheet_header_padding"
         android:gravity="center_vertical"
         android:background="@color/lesson_header_green">
 
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Ustalık Yolu"
-            android:textSize="20sp"
+            android:textSize="@dimen/race_sheet_title_size"
             android:textStyle="bold"
             android:textColor="@color/white"
             android:gravity="center" />
@@ -52,7 +52,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:padding="16dp"
+            android:padding="@dimen/race_sheet_rv_padding"
             android:clipToPadding="false" />
 
     </LinearLayout>

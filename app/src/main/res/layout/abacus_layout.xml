@@ -64,6 +64,7 @@
 
             <!-- Bariyer -->
             <View
+                android:id="@+id/rod0_barrier"
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
@@ -127,6 +128,7 @@
 
             <!-- Bariyer -->
             <View
+                android:id="@+id/rod1_barrier"
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
@@ -190,6 +192,7 @@
 
             <!-- Bariyer -->
             <View
+                android:id="@+id/rod2_barrier"
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
@@ -253,6 +256,7 @@
 
             <!-- Bariyer -->
             <View
+                android:id="@+id/rod3_barrier"
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"
@@ -316,6 +320,7 @@
 
             <!-- Bariyer -->
             <View
+                android:id="@+id/rod4_barrier"
                 android:layout_width="32dp"
                 android:layout_height="4dp"
                 android:layout_gravity="center"

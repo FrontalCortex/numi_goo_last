@@ -10,8 +10,12 @@
 
     <ImageButton
         android:id="@+id/quitButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="@dimen/tutorial_quit_button_size"
+        android:layout_height="@dimen/tutorial_quit_button_size"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="0dp"
+        android:scaleType="centerInside"
         android:layout_marginLeft="15dp"
         android:layout_marginTop="10dp"
         android:background="@color/background_color"
@@ -780,30 +784,30 @@
         android:text="Deneme"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="30sp"
+        android:textSize="@dimen/tutorial_text_size"
         app:layout_constraintBottom_toTopOf="@id/questionText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/questionText"
-        android:layout_width="200dp"
+        android:layout_width="@dimen/tutorial_question_width"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
         android:background="@drawable/rectangle_border"
         android:lineSpacingExtra="8dp"
         android:text="Deneme"
         android:textAlignment="center"
         android:textColor="@color/white"
-        android:textSize="30sp"
+        android:textSize="@dimen/tutorial_text_size"
         app:layout_constraintBottom_toTopOf="@id/abacusLinear"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <View
         android:id="@+id/focusView"
-        android:layout_width="60dp"
-        android:layout_height="280dp"
+        android:layout_width="@dimen/tutorial_focus_width"
+        android:layout_height="@dimen/tutorial_focus_height"
         android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
         android:background="@drawable/rectangle_border"
@@ -824,9 +828,9 @@
 
     <ImageView
         android:id="@+id/blinding_tutorial2"
-        android:layout_width="270dp"
-        android:layout_height="579dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="@dimen/tutorial_blinding_width"
+        android:layout_height="@dimen/tutorial_blinding_height"
+        android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
         android:background="@drawable/blinding_tutorial1"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -835,9 +839,9 @@
 
     <ImageView
         android:id="@+id/rulesBookTutorial"
-        android:layout_width="263dp"
-        android:layout_height="533dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="@dimen/tutorial_rules_book_width"
+        android:layout_height="@dimen/tutorial_rules_book_height"
+        android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
         android:background="@drawable/rules_book_image"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -846,9 +850,9 @@
 
     <ImageView
         android:id="@+id/blinding_tutorial1"
-        android:layout_width="270dp"
-        android:layout_height="579dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="@dimen/tutorial_blinding_width"
+        android:layout_height="@dimen/tutorial_blinding_height"
+        android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
         android:background="@drawable/blinding_tutorial2"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -859,9 +863,9 @@
 
     <ImageView
         android:id="@+id/blinding_tutorial3"
-        android:layout_width="270dp"
-        android:layout_height="579dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="@dimen/tutorial_blinding_width"
+        android:layout_height="@dimen/tutorial_blinding_height"
+        android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
         android:background="@drawable/blinding_tutorial3"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -885,15 +889,15 @@
         <FrameLayout
             android:id="@+id/rod0"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="5dp">
+            android:layout_height="@dimen/tutorial_abacus_rod_height"
+            android:layout_marginStart="@dimen/tutorial_abacus_rod_spacing_start"
+            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
 
             <!-- Dikey çizgi -->
 
 
             <View
-                android:layout_width="5dp"
+                android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888" />
@@ -901,51 +905,52 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod0_bead_bottom4"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom3"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="34dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom2"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="58dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod0_bead_bottom1"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="82dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
 
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:id="@+id/rod0_barrier"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
 
                 android:layout_gravity="center"
-                android:layout_marginBottom="50dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
                 android:background="#888" />
 
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod0_bead_top"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
@@ -954,12 +959,12 @@
         <FrameLayout
             android:id="@+id/rod1"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_height="@dimen/tutorial_abacus_rod_height"
+            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="5dp"
+                android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888" />
@@ -967,49 +972,50 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod1_bead_bottom4"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom3"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="34dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom2"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="58dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod1_bead_bottom1"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="82dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:id="@+id/rod1_barrier"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
                 android:layout_gravity="center"
-                android:layout_marginBottom="50dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
                 android:background="#888" />
 
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod1_bead_top"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
@@ -1018,12 +1024,12 @@
         <FrameLayout
             android:id="@+id/rod2"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_height="@dimen/tutorial_abacus_rod_height"
+            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="5dp"
+                android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888" />
@@ -1031,49 +1037,50 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod2_bead_bottom4"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom3"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="34dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom2"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="58dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod2_bead_bottom1"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="82dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:id="@+id/rod2_barrier"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
                 android:layout_gravity="center"
-                android:layout_marginBottom="50dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
                 android:background="#888" />
 
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod2_bead_top"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
@@ -1082,12 +1089,12 @@
         <FrameLayout
             android:id="@+id/rod3"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_height="@dimen/tutorial_abacus_rod_height"
+            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="5dp"
+                android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888" />
@@ -1095,49 +1102,50 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod3_bead_bottom4"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom3"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="34dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom2"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="58dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod3_bead_bottom1"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="82dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:id="@+id/rod3_barrier"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
                 android:layout_gravity="center"
-                android:layout_marginBottom="50dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
                 android:background="#888" />
 
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod3_bead_top"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
@@ -1146,12 +1154,12 @@
         <FrameLayout
             android:id="@+id/rod4"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="10dp">
+            android:layout_height="@dimen/tutorial_abacus_rod_height"
+            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_start">
 
             <!-- Dikey çizgi -->
             <View
-                android:layout_width="6dp"
+                android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
                 android:background="#888" />
@@ -1159,49 +1167,50 @@
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
                 android:id="@+id/rod4_bead_bottom4"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom3"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="34dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom2"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="58dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
                 android:src="@drawable/soroban_bead" />
 
             <ImageView
                 android:id="@+id/rod4_bead_bottom1"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="82dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:id="@+id/rod4_barrier"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
                 android:layout_gravity="center"
-                android:layout_marginBottom="50dp"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
                 android:background="#888" />
 
             <!-- Üst boncuk -->
             <ImageView
                 android:id="@+id/rod4_bead_top"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
                 android:layout_gravity="top|center_horizontal"
                 android:src="@drawable/soroban_bead" />
 
@@ -1214,7 +1223,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="5dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="@dimen/tutorial_bottom_panel_margin_bottom"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -1222,22 +1231,27 @@
 
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="58dp"
-            android:layout_height="58dp"
+            android:layout_width="@dimen/tutorial_back_button_size"
+            android:layout_height="@dimen/tutorial_back_button_size"
             android:layout_gravity="center"
             android:layout_marginLeft="10dp"
             android:background="@color/background_color"
+            android:padding="@dimen/tutorial_back_button_icon_padding"
+            android:scaleType="centerInside"
             android:src="@drawable/back_button"
+            android:tint="@color/lesson_completed"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:tint="@color/lesson_completed" />
+            app:layout_constraintStart_toStartOf="parent" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/kontrolButton"
             android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
+            android:layout_height="@dimen/tutorial_back_button_size"
+            android:minHeight="@dimen/tutorial_back_button_size"
+            android:maxHeight="@dimen/tutorial_back_button_size"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/tutorial_control_button_side_margin"
+            android:layout_marginEnd="@dimen/tutorial_control_button_side_margin"
             android:layout_weight="1"
             android:backgroundTint="@color/lesson_completed"
             android:elevation="0dp"
@@ -1245,16 +1259,19 @@
             android:text="Kontrol Et"
             android:textAllCaps="false"
             android:textColor="#000000"
-            android:textSize="18sp"
+            android:textSize="@dimen/tutorial_control_button_text_size"
             android:textStyle="bold"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:minWidth="0dp"
             android:visibility="visible"
-            app:cornerRadius="15dp" />
+            app:cornerRadius="@dimen/tutorial_control_button_corner_radius" />
 
 
         <LinearLayout
             android:id="@+id/skipTutorialButton"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/tutorial_skip_button_height"
             android:visibility="visible"
             android:layout_gravity="center"
             android:background="@drawable/skip_tutorial">
@@ -1262,12 +1279,12 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_marginHorizontal="10dp"
+                android:layout_marginHorizontal="@dimen/tutorial_skip_button_text_margin_h"
                 android:gravity="center"
                 android:text="Eğitimi atla"
                 android:textAlignment="center"
                 android:textColor="@color/white"
-                android:textSize="15sp">
+                android:textSize="@dimen/tutorial_skip_button_text_size">
 
             </TextView>
 
@@ -1358,7 +1375,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.54" />
+        app:layout_constraintGuide_percent="0.5403557" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline2"
@@ -1530,16 +1547,14 @@
 
     <ImageView
         android:id="@+id/askQuestionButton"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_marginTop="4dp"
+        android:layout_width="@dimen/tutorial_ask_button_size"
+        android:layout_height="@dimen/tutorial_ask_button_size"
         android:textAllCaps="false"
-        android:padding="8dp"
+        android:padding="@dimen/tutorial_ask_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/abacusLinear"
+        app:layout_constraintTop_toTopOf="@id/guideline"
         android:src="@drawable/teacher_ask_ic"/>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout> 

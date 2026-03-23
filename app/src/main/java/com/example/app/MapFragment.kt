@@ -3343,15 +3343,24 @@ class MapFragment : Fragment() {
         // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
+            val stickyLinear = binding.root.findViewById<LinearLayout>(R.id.StickyLinear)
             val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
             val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
             val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
             
-            // Maksimum offset değerini al
-            val maxOffset = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
+            val maxOffsetPx = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
+            val cardPx = resources.getDimensionPixelSize(R.dimen.map_lesson_card_size)
+            val itemPadPx = resources.getDimensionPixelSize(R.dimen.map_lesson_item_padding)
+            val safetyPx = resources.getDimensionPixelSize(R.dimen.map_lesson_offset_edge_margin)
 
-            // ItemDecoration'ı ekle
-            addItemDecoration(DynamicOffsetDecoration(maxOffset))
+            addItemDecoration(
+                DynamicOffsetDecoration(
+                    maxOffsetPx = maxOffsetPx,
+                    lessonCardSizePx = cardPx,
+                    lessonItemHorizontalPaddingTotalPx = itemPadPx * 2,
+                    edgeSafetyMarginPx = safetyPx,
+                )
+            )
 
             // Adapter'ı bağla
             adapter = lessonsAdapter
@@ -3365,10 +3374,37 @@ class MapFragment : Fragment() {
                 }
             })
 
-            // İlk yüklemede sticky header'ı güncelle
+            // Recycler sınırı artık tüm fragment: sticky yüksekliği kadar üst inset ver.
+            // Böylece item'ler sticky alana kayarken kesilmez, sticky'nin altında akıyormuş gibi görünür.
+            val extraTopGap = resources.getDimensionPixelSize(R.dimen.map_sticky_recycler_padding_top)
+            val applyTopInset = {
+                val stickyHeight = stickyLinear?.height ?: 0
+                setPadding(paddingLeft, stickyHeight + extraTopGap, paddingRight, paddingBottom)
+            }
+            stickyLinear?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                applyTopInset()
+            }
+            post { applyTopInset() }
+
+            // Genişlik ilk kez >0 olduğunda decoration’ları yeniden ölç (post bazen erken kalabiliyor)
+            addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
+                private var applied = false
+                override fun onLayoutChange(
+                    v: View, l: Int, t: Int, r: Int, b: Int,
+                    oldL: Int, oldT: Int, oldR: Int, oldB: Int
+                ) {
+                    if (applied || v.width <= 0 || v.height <= 0) return
+                    applied = true
+                    removeOnLayoutChangeListener(this)
+                    invalidateItemDecorations()
+                }
+            })
+
+            // İlk yüklemede sticky header + decoration yenileme
             post {
                 android.util.Log.d("MapFragment", "Initial update of sticky header")
                 updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
+                invalidateItemDecorations()
             }
         }
     }

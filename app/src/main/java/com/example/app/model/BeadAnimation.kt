@@ -6,12 +6,19 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import com.example.app.R
+import com.example.app.abacus.AbacusBeadMetrics
+import java.util.WeakHashMap
+import kotlin.math.roundToInt
 
 class BeadAnimation(
     private val fragment: Fragment,
     private val beadId: String,
     private val animationType: Int
 ) {
+    companion object {
+        private val cachedDistancesByRoot = WeakHashMap<android.view.View, AbacusBeadMetrics.MoveDistancesPx>()
+    }
+
     private var isAnimating = false
 
     fun getAnimationType(): Int = animationType
@@ -34,18 +41,30 @@ class BeadAnimation(
         }
 
         isAnimating = true
+        val moveDistances = resolveMoveDistances(rootView)
         when (animationType) {
-            1 -> animateBeadsUp(bead)
-            2 -> animateBeadsDown(bead)
+            1 -> animateBeadsUp(bead, moveDistances.bottomPx.roundToInt())
+            2 -> animateBeadsDown(bead, moveDistances.bottomPx.roundToInt())
             4 -> animateBeadUp(bead)
-            3 -> animateBeadDown(bead)
+            3 -> animateBeadDown(bead, moveDistances.topPx.roundToInt())
         }
+    }
+
+    private fun resolveMoveDistances(rootView: android.view.View): AbacusBeadMetrics.MoveDistancesPx {
+        val cached = cachedDistancesByRoot[rootView]
+        if (cached != null) return cached
+        val computed = AbacusBeadMetrics.fromBarrierDistances(rootView, ratio = 1.0f)
+            ?: AbacusBeadMetrics.MoveDistancesPx(
+                bottomPx = AbacusBeadMetrics.bottomStepPx(fragment.requireContext()),
+                topPx = AbacusBeadMetrics.topStepPx(fragment.requireContext())
+            )
+        cachedDistancesByRoot[rootView] = computed
+        return computed
     }
 
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 90
         bead.setImageResource(R.drawable.soroban_bead)
 
         bead.animate()
@@ -58,10 +77,9 @@ class BeadAnimation(
             .start()
     }
 
-    private fun animateBeadDown(bead: ImageView) {
+    private fun animateBeadDown(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 90
 
         bead.setImageResource(R.drawable.soroban_bead_selected)
         bead.animate()
@@ -74,10 +92,9 @@ class BeadAnimation(
             .start()
     }
 
-    private fun animateBeadsUp(bead: ImageView) {
+    private fun animateBeadsUp(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 135
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
@@ -96,10 +113,9 @@ class BeadAnimation(
             .start()
     }
 
-    private fun animateBeadsDown(bead: ImageView) {
+    private fun animateBeadsDown(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
-        val moveDistance = 135
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin

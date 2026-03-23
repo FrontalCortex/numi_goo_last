@@ -88,8 +88,8 @@ class TasksFragment : Fragment() {
             listOf(
                 BulletinCard(
                     id = "daily_card",
-                    title = "Günlük soru",
-                    subtitle = "Bugünün sorusunu çöz ve serini koru."
+                    title = "Abaküs",
+                    subtitle = "Abaküste pratik yaparak kendini geliştir."
                 )
             )
         )

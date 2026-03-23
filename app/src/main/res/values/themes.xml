@@ -28,6 +28,7 @@
         <!-- Default text appearances -->
         <item name="android:textViewStyle">@style/Widget.NumiGoo.TextView</item>
         <item name="buttonStyle">@style/Widget.NumiGoo.Button</item>
+        <!-- Material3 BottomNavigation + Theme.MaterialComponents → M3 overlay attr çözülemez (inflate crash). Varsayılan kullan. -->
     </style>
 
     <!-- TextView için özel stil -->
@@ -35,6 +36,11 @@
         <item name="android:fontFamily">@font/font_regular</item>
         <item name="fontFamily">@font/font_regular</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- BottomNavigationView etiket (h700 / varsayılan dimen ile ölçeklenir) -->
+    <style name="TextAppearance.NumiGoo.BottomNav" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/main_bottom_nav_text_size</item>
     </style>
 
     <!-- Button için özel stil -->

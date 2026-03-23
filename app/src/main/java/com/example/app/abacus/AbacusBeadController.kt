@@ -37,8 +37,8 @@ class AbacusBeadController(
     }
 
     private val touchSlopPx: Int = ViewConfiguration.get(context).scaledTouchSlop
-    private val bottomMoveDistancePx = 135f
-    private val topMoveDistancePx = 90f
+    private var bottomMoveDistancePx: Float = AbacusBeadMetrics.bottomStepPx(context)
+    private var topMoveDistancePx: Float = AbacusBeadMetrics.topStepPx(context)
 
     private var initialPositionsCaptured = false
     private val initialBottomMargins: Array<IntArray> = Array(5) { IntArray(4) }
@@ -116,6 +116,29 @@ class AbacusBeadController(
     }
 
     /**
+     * Calculates runtime movement distances from barrier spacing and applies %100 ratio.
+     * Returns true if dynamic measurement succeeded, false if fallback values remain in use.
+     */
+    fun computeMovementDistancesFromLayout(
+        ratio: Float = 1.0f,
+        force: Boolean = true,
+    ): Boolean {
+        if (!force && bottomMoveDistancePx > 0f && topMoveDistancePx > 0f) return true
+        val dynamic = AbacusBeadMetrics.fromBarrierDistances(root, ratio)
+        if (dynamic != null) {
+            bottomMoveDistancePx = dynamic.bottomPx
+            topMoveDistancePx = dynamic.topPx
+            d("Dynamic distances applied bottom=$bottomMoveDistancePx top=$topMoveDistancePx")
+            return true
+        }
+        // Keep dimen fallback if measurement fails.
+        bottomMoveDistancePx = AbacusBeadMetrics.bottomStepPx(context)
+        topMoveDistancePx = AbacusBeadMetrics.topStepPx(context)
+        d("Dynamic distances unavailable; using fallback bottom=$bottomMoveDistancePx top=$topMoveDistancePx")
+        return false
+    }
+
+    /**
      * Sync controller internal state from current UI.
      * This is needed because tutorial/guide animations (e.g., BeadAnimation) can move beads
      * without going through this controller's click/drag handlers.
@@ -126,15 +149,26 @@ class AbacusBeadController(
         // selected/default desync. So we ignore sync while reset is in progress.
         if (resetInProgress) return
 
-        val selectedConst = context.getDrawable(R.drawable.soroban_bead_selected)?.constantState
+        captureInitialPositionsIfNeeded()
+
+        val raisedThreshold = bottomMoveDistancePx / 2f
 
         for (rod in 0..4) {
-            // Bottom bead state from drawable (selected / non-selected).
+            // Bottom count from *visual* position (margin + any in-flight translation).
+            // Tutorial BeadAnimation / widget margin animasyonları boncukları oynatır ama drawable
+            // (soroban_bead_selected) güncellemez; sadece drawable okumak bottomCount'u 0 yapıp
+            // her showStep/setupBeads'te tutorial boolean'larını yanlış sıfırlıyordu.
             var count = 0
             for (i in 0..3) {
                 val bead = bottomBeads[rod][i]
-                val isSelected = selectedConst != null && bead.drawable?.constantState == selectedConst
-                if (isSelected) count = i + 1 else break
+                val params = bead.layoutParams as ViewGroup.MarginLayoutParams
+                val delta =
+                    params.bottomMargin - initialBottomMargins[rod][i] + bead.translationY
+                if (delta >= raisedThreshold) {
+                    count = i + 1
+                } else {
+                    break
+                }
             }
             bottomCount[rod] = count
 
@@ -627,7 +661,7 @@ class AbacusBeadController(
     }
 
     private fun animateBeadsUp(vararg beads: ImageView) {
-        val moveDistance = 135
+        val moveDistance = bottomMoveDistancePx.roundToInt()
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -648,7 +682,7 @@ class AbacusBeadController(
     }
 
     private fun animateBeadsDown(vararg beads: ImageView) {
-        val moveDistance = 135
+        val moveDistance = bottomMoveDistancePx.roundToInt()
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -669,7 +703,7 @@ class AbacusBeadController(
     }
 
     private fun animateTopBeadDown(bead: ImageView) {
-        val moveDistance = 90
+        val moveDistance = topMoveDistancePx.roundToInt()
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDurationMs)

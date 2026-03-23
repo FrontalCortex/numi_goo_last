@@ -3,13 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="16dp"
+    android:paddingStart="@dimen/map_sticky_padding_horizontal"
+    android:paddingEnd="@dimen/map_sticky_padding_horizontal"
+    android:paddingTop="@dimen/map_item_header_padding"
+    android:paddingBottom="@dimen/map_item_header_padding"
     android:gravity="center">
 
     <!-- Sol çizgi -->
     <View
         android:layout_width="0dp"
-        android:layout_height="2dp"
+        android:layout_height="@dimen/map_header_divider_height"
         android:layout_weight="1"
         android:background="#44A89C9C"/>
 
@@ -18,16 +21,16 @@
         android:id="@+id/headerText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
+        android:layout_marginHorizontal="@dimen/map_header_title_margin_h"
         android:text="5'lik toplama giriş"
         android:textColor="#44A89C9C"
         android:textStyle="bold"
-        android:textSize="16sp"/>
+        android:textSize="@dimen/map_header_text_size"/>
 
     <!-- Sağ çizgi -->
     <View
         android:layout_width="0dp"
-        android:layout_height="2dp"
+        android:layout_height="@dimen/map_header_divider_height"
         android:layout_weight="1"
         android:background="#44A89C9C"/>
 

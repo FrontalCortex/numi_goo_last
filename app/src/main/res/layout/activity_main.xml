@@ -14,8 +14,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/message_topbar"
-        android:padding="12dp"
+        android:background="@color/background_color"
+        android:paddingVertical="@dimen/main_currency_panel_padding_v"
+        android:paddingHorizontal="@dimen/main_currency_panel_padding_h"
         android:gravity="center_vertical"
         android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -24,8 +25,8 @@
 
         <ImageButton
             android:id="@+id/teacherSendBackButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="@dimen/main_toolbar_icon_back"
+            android:layout_height="@dimen/main_toolbar_icon_back"
             android:background="@android:color/transparent"
             android:src="@drawable/ic_back_arrow"
             android:contentDescription="@string/notification_download_cancel"
@@ -35,9 +36,9 @@
         <ImageView
             android:id="@+id/diamondID"
             android:src="@drawable/diamond"
-            android:layout_width="40dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="@dimen/main_diamond_width"
+            android:layout_height="@dimen/main_diamond_height"
+            android:layout_marginStart="@dimen/main_currency_margin_start"
             android:contentDescription="Coin" />
 
         <TextView
@@ -47,8 +48,8 @@
             android:text="0"
             android:textColor="#FFD600"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:layout_marginStart="8dp"/>
+            android:textSize="@dimen/main_currency_text_size"
+            android:layout_marginStart="@dimen/main_currency_margin_start"/>
 
         <View
             android:layout_width="0dp"
@@ -58,8 +59,8 @@
         <ImageView
             android:id="@+id/energyIcon"
             android:src="@drawable/energy_ic"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
+            android:layout_width="@dimen/main_energy_icon_size"
+            android:layout_height="@dimen/main_energy_icon_size"
             android:contentDescription="Energy" />
 
         <TextView
@@ -69,8 +70,7 @@
             android:text="5/5"
             android:textColor="#FFD600"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:layout_marginStart="8dp"/>
+            android:textSize="@dimen/main_energy_text_size"/>
 
 
     </LinearLayout>
@@ -136,10 +136,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:paddingStart="@dimen/main_teacher_bar_padding_h"
+        android:paddingEnd="@dimen/main_teacher_bar_padding_h"
+        android:paddingTop="@dimen/main_teacher_bar_padding_v"
+        android:paddingBottom="@dimen/main_teacher_bar_padding_v"
         android:background="@color/message_topbar"
         android:elevation="22dp"
         android:visibility="gone"
@@ -154,15 +154,15 @@
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="@dimen/main_teacher_bar_title_size"
             android:maxLines="1"
             android:ellipsize="end"
             android:text="" />
 
         <ImageButton
             android:id="@+id/teacherSendButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/main_teacher_send_btn_size"
+            android:layout_height="@dimen/main_teacher_send_btn_size"
             android:background="@android:color/transparent"
             android:src="@drawable/send_ic"
             android:contentDescription="@string/send"
@@ -174,13 +174,20 @@
         android:id="@+id/bottomNavigationID"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="@dimen/main_bottom_nav_min_height"
+        android:elevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/coordinator_layout"
         app:menu="@menu/bottom_menu"
-        app:itemIconSize="32dp"
+        app:itemIconSize="@dimen/main_bottom_nav_icon_size"
+        app:itemPaddingTop="@dimen/main_bottom_nav_item_padding_top"
+        app:itemPaddingBottom="@dimen/main_bottom_nav_item_padding_bottom"
         app:itemIconTint="@null"
         app:itemTextColor="@null"
-        android:background="@color/message_topbar"
+        app:itemTextAppearanceActive="@style/TextAppearance.NumiGoo.BottomNav"
+        app:itemTextAppearanceInactive="@style/TextAppearance.NumiGoo.BottomNav"
+        android:background="@color/background_color"
+        android:backgroundTint="@color/background_color"
         app:labelVisibilityMode="labeled"/>
 
     <!-- Ekran kaydı sırasında süre göstergesi -->

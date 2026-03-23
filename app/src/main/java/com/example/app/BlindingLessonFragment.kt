@@ -31,6 +31,7 @@ import com.airbnb.lottie.LottieAnimationView
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.MapFragment.Companion.getLessonOperationsBlinding
+import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
@@ -1447,7 +1448,7 @@ class BlindingLessonFragment : Fragment() {
     private fun animateBeadsUp(vararg beads: ImageView) {
         isAnimating = true
         val animationDuration = 100L // milisaniye cinsinden
-        val moveDistance = 135 // piksel cinsinden
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -1479,7 +1480,7 @@ class BlindingLessonFragment : Fragment() {
     private fun animateBeadDown(bead: ImageView) {
         isAnimating = true
         val animationDuration = 100L
-        val moveDistance = 90
+        val moveDistance = AbacusBeadMetrics.topStepPxInt(requireContext())
 
         bead.animate()
             .setDuration(animationDuration)
@@ -1498,7 +1499,6 @@ class BlindingLessonFragment : Fragment() {
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 200L
-        val moveDistance = 90
 
         bead.animate()
             .setDuration(animationDuration)
@@ -1517,7 +1517,7 @@ class BlindingLessonFragment : Fragment() {
     private fun animateBeadsDown(vararg beads: ImageView) {
         isAnimating = true
         val animationDuration = 200L
-        val moveDistance = 135
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams

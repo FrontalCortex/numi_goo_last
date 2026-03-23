@@ -13,15 +13,16 @@
         android:orientation="vertical"
         android:background="@drawable/bottom_sheet_background"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
-        android:padding="16dp"
+        android:padding="@dimen/lesson_sheet_container_padding"
         android:clipChildren="false"
         android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/lesson_sheet_top_row_height"
             android:layout_gravity="center"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:clipChildren="false"
             android:clipToPadding="false">
 
@@ -31,16 +32,19 @@
                 android:layout_width="wrap_content"
                 android:maxLines="1"
                 android:layout_height="wrap_content"
-                android:textSize="20sp"
+                android:layout_marginStart="@dimen/lesson_sheet_content_start_margin"
+                android:textSize="@dimen/lesson_sheet_title_size"
                 android:textStyle="bold"
                 android:textColor="@color/lesson_completed"
-                android:layout_marginBottom="8dp"/>
+                android:paddingTop="@dimen/lesson_sheet_title_padding_top"
+                android:layout_marginBottom="@dimen/lesson_sheet_title_margin_bottom"/>
 
             <!-- SAĞ YARI -->
             <FrameLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:layout_marginStart="@dimen/lesson_sheet_title_record_gap"
                 android:elevation="20dp"
                 android:clipChildren="true"
                 android:clipToPadding="true">
@@ -50,29 +54,31 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:layout_gravity="end|center_vertical"
+                    android:layout_marginEnd="@dimen/lesson_sheet_content_end_margin"
                     android:gravity="center_vertical"
                     android:clipChildren="false"
                     android:clipToPadding="false">
 
                 <com.airbnb.lottie.LottieAnimationView
                     android:id="@+id/fireAnimID"
-                    android:layout_width="50dp"
-                    android:layout_height="50dp"
-                    android:layout_marginEnd="6dp"
+                    android:layout_width="@dimen/lesson_sheet_lottie_size"
+                    android:layout_height="@dimen/lesson_sheet_lottie_size"
+                    android:layout_marginEnd="@dimen/lesson_sheet_lottie_margin_end"
                     android:visibility="gone"
                     tools:visibility="gone"
                     app:lottie_fileName="fire_anim.json"
                     app:lottie_autoPlay="true"
                     app:lottie_loop="true"
-                    android:paddingBottom="8dp"/>
+                    android:paddingBottom="@dimen/lesson_sheet_lottie_padding_bottom"/>
 
                 <TextView
                     android:id="@+id/recordText"
                     android:layout_width="wrap_content"
+                    android:maxLines="1"
                     android:layout_height="wrap_content"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/lesson_sheet_record_size"
                     android:textColor="@color/background_color"
-                    android:paddingEnd="25dp"
+                    android:paddingEnd="@dimen/lesson_sheet_record_end_padding"
                     android:gravity="center_vertical"/>
 
                 </LinearLayout>
@@ -85,30 +91,32 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="@dimen/lesson_sheet_middle_row_margin_bottom">
             
             <TextView
                 android:id="@+id/lessonDescription"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textSize="16sp"
+                android:layout_marginStart="@dimen/lesson_sheet_content_start_margin"
+                android:textSize="@dimen/lesson_sheet_body_size"
                 android:textColor="@color/lesson_completed"/>
             
             <TextView
                 android:id="@+id/againTutorial"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/lesson_sheet_content_end_margin"
                 android:gravity="center"
                 android:visibility="invisible"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="8dp"
+                android:paddingHorizontal="@dimen/lesson_sheet_again_padding_h"
+                android:paddingVertical="@dimen/lesson_sheet_again_padding_v"
                 android:text="Eğitimi tekrarla"
                 android:background="@drawable/skip_tutorial"
                 android:backgroundTint="@color/lesson_completed"
                 android:textAlignment="center"
                 android:textColor="@color/background_color"
-                android:textSize="15sp"/>
+                android:textSize="@dimen/lesson_sheet_again_size"/>
         </LinearLayout>
 
 
@@ -121,25 +129,30 @@
                 android:id="@+id/actionButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="12dp"
+                android:layout_marginStart="@dimen/lesson_sheet_content_start_margin"
+                android:layout_marginEnd="@dimen/lesson_sheet_content_end_margin"
+                android:padding="@dimen/lesson_sheet_button_padding"
                 android:layout_weight="1"
                 android:backgroundTint="@color/lesson_completed"
                 android:textAllCaps="true"
                 android:text="Gözden geçir"
                 android:textColor="@color/background_color"
                 android:textAlignment="center"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:textSize="@dimen/lesson_sheet_button_text_size"/>
             <Button
                 android:id="@+id/tutorialActionButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="12dp"
+                android:layout_marginEnd="@dimen/lesson_sheet_content_end_margin"
+                android:padding="@dimen/lesson_sheet_button_padding"
                 android:backgroundTint="@color/white"
                 android:textAllCaps="true"
                 android:text="Öğretici"
                 android:visibility="gone"
                 android:textAlignment="center"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:textSize="@dimen/lesson_sheet_button_text_size"/>
         </LinearLayout>
 
 

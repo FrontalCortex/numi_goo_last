@@ -39,6 +39,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusBeadMetrics
 
 class AbacusFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
@@ -172,6 +173,7 @@ class AbacusFragment : Fragment() {
     private lateinit var binding: FragmentAbacusBinding
     private var resultDialog: Dialog? = null
     private lateinit var abacusController: AbacusBeadController
+    private var abacusMetricsInitialized = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
@@ -191,6 +193,7 @@ class AbacusFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        abacusMetricsInitialized = false
         findIDs()
         //global lessonItem alınıyor
         rulesBookButton = binding.rulesBookButton
@@ -218,6 +221,7 @@ class AbacusFragment : Fragment() {
             animationDurationMs = if (lessonItem.type == 2) 50L else 300L
         )
         abacusController.setup()
+        ensureAbacusMetricsIfVisible()
 
         // Donanım geri tuşu: önce kurallar kitabı paneli (RulesFragment) açıksa,
         // paneldeki çarpı butonuna basılmış gibi kayarak kapat (ve scroll konumunu koru)
@@ -2292,7 +2296,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsUp(vararg beads: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L // milisaniye cinsinden
-        val moveDistance = 135 // piksel cinsinden
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -2318,7 +2322,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadDown(bead: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L
-        val moveDistance = 90
+        val moveDistance = AbacusBeadMetrics.topStepPxInt(requireContext())
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDuration)
@@ -2335,7 +2339,6 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadUp(bead: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L
-        val moveDistance = 90
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDuration)
@@ -2352,7 +2355,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsDown(vararg beads: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L
-        val moveDistance = 135
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -2469,6 +2472,21 @@ class AbacusFragment : Fragment() {
             updateBeadAppearance(rod3TopBead, rod3TopIsDown)
             updateBeadAppearance(rod4TopBead, rod4TopIsDown)
 
+    }
+
+    private fun ensureAbacusMetricsIfVisible() {
+        if (abacusMetricsInitialized) return
+        if (binding.abacusLinear.visibility != View.VISIBLE) return
+        binding.abacusLinear.post {
+            if (!isAdded || view == null) return@post
+            if (abacusMetricsInitialized) return@post
+            if (binding.abacusLinear.visibility != View.VISIBLE) return@post
+            val ok = abacusController.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)
+            if (ok) {
+                abacusMetricsInitialized = true
+                abacusController.syncStateFromUi()
+            }
+        }
     }
 
     private fun resetAbacus() {

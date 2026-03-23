@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:padding="@dimen/map_lesson_item_padding">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/lessonCard"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="@dimen/map_lesson_card_size"
+        android:layout_height="@dimen/map_lesson_card_size"
         android:layout_gravity="center"
-        app:cardCornerRadius="50dp"
+        app:cardCornerRadius="@dimen/map_lesson_card_corner_radius"
         android:foreground="?attr/selectableItemBackground"
         android:stateListAnimator="@animator/lesson_state_animator"
         >
@@ -28,12 +28,12 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="12dp">
+            android:padding="@dimen/map_lesson_card_inner_padding">
 
             <ImageView
                 android:id="@+id/lessonIcon"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
+                android:layout_width="@dimen/map_race_icon_size"
+                android:layout_height="@dimen/map_race_icon_size"
                 android:layout_centerInParent="true"
                 android:src="@drawable/flag_ic"
                 />

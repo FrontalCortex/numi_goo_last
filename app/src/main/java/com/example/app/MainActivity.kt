@@ -237,7 +237,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Sistem çubuğu renklerini message_topbar ile eşitle
         window.statusBarColor = ContextCompat.getColor(this, R.color.message_topbar)
         window.navigationBarColor = ContextCompat.getColor(this, R.color.message_topbar)
-        binding.bottomNavigationID.itemIconTintList = null
+        binding.bottomNavigationID.apply {
+            itemIconTintList = null
+            elevation = 0f
+            // Material style overlay/tint kaynaklı açılmayı engelle
+            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.background_color))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(this@MainActivity, R.color.background_color)
+            )
+            itemRippleColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+        }
 
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {

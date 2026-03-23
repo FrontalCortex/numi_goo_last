@@ -31,6 +31,7 @@ import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentTutorialBinding
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.model.BeadAnimation
 import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
@@ -186,6 +187,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps25: List<TutorialStep> = emptyList()
     private var tutorialSteps26: List<TutorialStep> = emptyList()
     private var sizeHistory = mutableListOf<Pair<Int, Int>>()
+    private var tutorialAbacusMetricsInitialized = false
 
     // Tutorial için gerekli state'ler
     private var tutorialControlNumber: Int = 0
@@ -236,8 +238,61 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         return binding.root
     }
 
+    /**
+     * Tutorial layout'ında çok sayıda hardcoded dp/sp var; küçük ekranlarda devasa görünümü
+     * hızlı ve güvenli biçimde azaltmak için ana grupları ölçekler.
+     * Metin boyutlarını burada değiştirmeyiz.
+     */
+    private fun applyTutorialViewScaling() {
+        val hDp = resources.configuration.screenHeightDp
+        val isShort = hDp in 1..699
+
+        val bottomPanelScale = if (isShort) 0.86f else 1f
+        val mediaScale = if (isShort) 0.82f else 0.9f
+        val rulesTableScale = if (isShort) 0.88f else 0.94f
+
+        if (isShort) {
+            val guideParams = binding.guideline3.layoutParams as ConstraintLayout.LayoutParams
+            guideParams.guidePercent = 0.34f
+            binding.guideline3.layoutParams = guideParams
+        }
+
+        binding.bottomPanelID.apply {
+            scaleX = bottomPanelScale
+            scaleY = bottomPanelScale
+        }
+
+        listOf(
+            R.id.blinding_tutorial1,
+            R.id.blinding_tutorial2,
+            R.id.blinding_tutorial3,
+            R.id.rulesBookTutorial,
+        ).forEach { id ->
+            binding.root.findViewById<View>(id)?.apply {
+                scaleX = mediaScale
+                scaleY = mediaScale
+            }
+        }
+
+        listOf(
+            R.id.fiveRuleTable,
+            R.id.tenRuleTable,
+            R.id.tenRuleTableLinearLayout,
+            R.id.BeadRuleTable,
+            R.id.extractionFiveRuleTable,
+            R.id.tenRuleExtractionTableLayout,
+        ).forEach { id ->
+            binding.root.findViewById<View>(id)?.apply {
+                scaleX = rulesTableScale
+                scaleY = rulesTableScale
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        tutorialAbacusMetricsInitialized = false
+        applyTutorialViewScaling()
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { /* geri tuşu ile hiçbir şey olmasın */ }
         })
@@ -466,6 +521,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 binding.root.findViewById<View>(widgetId)?.visibility = visibility
             }
         }
+        ensureTutorialAbacusMetricsIfVisible()
         //tutorialStep bittiyse lessonStep değerine sahip Abacus'ü yükler
         if (position == currentTutorialSteps.size - 1) {
             val operations = MapFragment.getLessonOperations(lessonStep)
@@ -834,6 +890,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 disableAllClickable(binding.abacusLinear)
                 currentStep--
                 backOrFront = false
+                // writeAnswerNumber ile mutlak durum kurulduktan sonra showStep'in geri dalında
+                // (position+1).animation tersine çevrilirse boncuklar tekrar oynar ve hedef bozulur.
+                val skipReverseBeadAnims = getCurrentStep().backAnswerNumber != null
 
                 if(binding.abacusLinear.visibility == View.GONE && tutorialNumber<24){
                     Log.d("libya1","work")
@@ -861,7 +920,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     binding.overlay.isFocusable = true
                     // Animasyonların tamamlanması için 0.8 saniye bekle
                     Handler(Looper.getMainLooper()).postDelayed({
-                        showStep(currentStep)
+                        showStep(currentStep, skipAnimations = skipReverseBeadAnims)
                         hideDevamButtonIfVisible()
                         // Overlay'i kapat
                         binding.overlay.visibility = View.GONE
@@ -870,7 +929,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     }, 800)
                 } else {
                     Log.d("currentValue2",currentStep.toString())
-                    showStep(currentStep)
+                    showStep(currentStep, skipAnimations = skipReverseBeadAnims)
                 }
                 hideDevamButtonIfVisible()
 
@@ -928,7 +987,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun writeAnswerNumber(number:Int){
         // writeAnswerNumber() başladığında flag'i true yap
         isWritingAnswerNumber = true
-        
+        // Animasyon bitene kadar controller eski bottomCount ile kalır; dokunuş yanlış hedef üretir.
+        abacusController?.setEnabled(false)
+
+        // Önemli: Kullanıcı abaküsü controller (sürükle/tap) ile değiştirdiyse rod4OneIsUp vb.
+        // güncellenmeyebilir. writeAnswerNumber mevcut durumu bu boolean'lardan okuyor; eski kalınca
+        // updateBeadForDigit yanlış "fark" hesaplar (ör. 12 görünürken sadece top 8'e çekilir).
+        abacusController?.syncStateFromUi()
+        syncTutorialBooleansFromController()
+
         val numberStr = number.toString().padStart(5, '0')
 
         var tenThousands = numberStr[0].toString().toInt()    // On binler basamağı
@@ -1028,8 +1095,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         rod1TwoIsUp = rod1BeadStates[1]
         rod1ThreeIsUp = rod1BeadStates[2]
         rod1FourIsUp = rod1BeadStates[3]
-        // On binler basamağı kontrolleri
-        if(ones < 5 && topIsDown){
+        // On binler basamağı kontrolleri (üst boncuk hepsi için tenThousands ile kontrol edilmeli)
+        if (tenThousands < 5 && topIsDown) {
             animateBeadUp(rod0TopBead)
             topIsDown = false
             updateBeadAppearance(rod0TopBead, false)
@@ -1051,9 +1118,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         threeIsUp = rod0BeadStates[2]
         fourIsUp = rod0BeadStates[3]
         
-        // Animasyonların bitmesi için yeterli süre bekle (her animasyon 300ms, maksimum 5 basamak için ~2000ms)
+        // Margin animasyonları 300ms; bitince controller + tutorial boolean'larını UI ile hizala.
         Handler(Looper.getMainLooper()).postDelayed({
             isWritingAnswerNumber = false
+            abacusController?.syncStateFromUi()
+            syncTutorialBooleansFromController()
+            if (getCurrentStep().abacusClickable) {
+                abacusController?.setEnabled(true)
+            }
         }, 400)
     }
     private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
@@ -13346,7 +13418,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                             controlButtonListener?.let { listener ->
                                 controlButton.setOnTouchListener(listener)
                             }
-                            
+
                             incorrectButtonClick()
                             incorrectPanel.animate()
                                 .translationY(incorrectPanel.height.toFloat())
@@ -13438,17 +13510,35 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     private fun incorrectButtonClick(){
         if (currentStep > 0) {
-            var notBackNumber = false
+            val step = getCurrentStep()
+            val backNum = step.backAnswerNumber
+            val needsReset = step.abacusReset == true
 
-            if(getCurrentStep().abacusReset == true){
+            if (needsReset) {
                 resetAbacus()
             }
-            if(getCurrentStep().backAnswerNumber != null){
-                writeAnswerNumber(getCurrentStep().backAnswerNumber!!)
-                Log.d("libya2",getCurrentStep().backAnswerNumber!!.toString())
+
+            fun finishIncorrectStepUi() {
+                showStep(currentStep, skipAnimations = true)
+                binding.devamButton.visibility = View.GONE
             }
-            showStep(currentStep, skipAnimations = true)
-            binding.devamButton.visibility = View.GONE
+
+            // reset() animasyonu sürerken writeAnswerNumber margin/translation ile çakışır;
+            // önce sıfırlama bitsin, sonra hedef sayıyı yaz.
+            if (needsReset && backNum != null) {
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (!isAdded) return@postDelayed
+                    writeAnswerNumber(backNum)
+                    Log.d("libya2", backNum.toString())
+                    finishIncorrectStepUi()
+                }, 350L)
+            } else {
+                if (backNum != null) {
+                    writeAnswerNumber(backNum)
+                    Log.d("libya2", backNum.toString())
+                }
+                finishIncorrectStepUi()
+            }
 
         } else {
             closeFragment()
@@ -13556,6 +13646,25 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     }
 
+    private fun ensureTutorialAbacusMetricsIfVisible() {
+        if (tutorialAbacusMetricsInitialized) return
+        if (binding.abacusLinear.visibility != View.VISIBLE) return
+        val controller = abacusController ?: return
+        binding.abacusLinear.post {
+            if (!isAdded || view == null) return@post
+            if (tutorialAbacusMetricsInitialized) return@post
+            if (binding.abacusLinear.visibility != View.VISIBLE) return@post
+            val ok = controller.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)
+            if (ok) {
+                tutorialAbacusMetricsInitialized = true
+                if (!isWritingAnswerNumber) {
+                    controller.syncStateFromUi()
+                    syncTutorialBooleansFromController()
+                }
+            }
+        }
+    }
+
     private fun setupBeads() {
         val step = getCurrentStep()
 
@@ -13578,10 +13687,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             animationDurationMs = 300L
         ).also { abacusController = it }
 
-        controller.setEnabled(true)
+        controller.setEnabled(step.abacusClickable && !isWritingAnswerNumber)
         controller.setup()
-        controller.syncStateFromUi()
-        syncTutorialBooleansFromController()
+        ensureTutorialAbacusMetricsIfVisible()
+        // writeAnswerNumber() (geri / backAnswerNumber) margin animasyonları sürerken
+        // syncStateFromUi henüz güncellenmemiş margin + translationY ile yanlış sayar;
+        // syncTutorialBooleansFromController() da fragment boolean'larını bu yanlış değerle ezer.
+        // Sonraki writeAnswerNumber yanlış "mevcut durumdan" hareket eder → giderek bozulur.
+        if (!isWritingAnswerNumber) {
+            controller.syncStateFromUi()
+            syncTutorialBooleansFromController()
+        }
 
         // Legacy click-listener block'u artık kullanılmıyor.
         return
@@ -14223,7 +14339,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadsUp(vararg beads: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L // milisaniye cinsinden
-        val moveDistance = 135 // piksel cinsinden
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -14255,7 +14371,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadDown(bead: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L
-        val moveDistance = 90
+        val moveDistance = AbacusBeadMetrics.topStepPxInt(requireContext())
 
         bead.animate()
             .setDuration(animationDuration)
@@ -14274,7 +14390,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadUp(bead: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L
-        val moveDistance = 90
 
         bead.animate()
             .setDuration(animationDuration)
@@ -14293,7 +14408,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadsDown(vararg beads: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L
-        val moveDistance = 135
+        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
