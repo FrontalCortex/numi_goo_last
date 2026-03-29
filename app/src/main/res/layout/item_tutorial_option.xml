@@ -1,27 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Tüm satır tıklaması optionRowContainer üzerinden (TutorialOptionsAdapter) -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:padding="8dp">
+    android:layout_marginBottom="@dimen/tutorial_options_item_row_margin_bottom"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <CheckBox
-        android:id="@+id/optionCheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:id="@+id/optionText"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:id="@+id/optionRowContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_weight="1"
-        android:textColor="@android:color/white"
-        android:textSize="@dimen/tutorial_options_text_size"
-        android:fontFamily="@font/font_regular" />
+        android:orientation="horizontal"
+        android:background="@drawable/tutorial_option_row_selector"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/tutorial_options_item_row_padding_h"
+        android:paddingVertical="@dimen/tutorial_options_item_row_padding_v">
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/optionText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/tutorial_options_item_text_gap_end"
+            android:layout_weight="1"
+            android:clickable="false"
+            android:focusable="false"
+            android:textColor="@color/dark_text"
+            android:textSize="@dimen/tutorial_options_text_size"
+            android:fontFamily="@font/font_regular" />
 
+        <androidx.appcompat.widget.AppCompatCheckBox
+            android:id="@+id/optionCheckBox"
+            android:layout_width="@dimen/tutorial_options_checkbox_size"
+            android:layout_height="@dimen/tutorial_options_checkbox_size"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="0dp"
+            android:background="@android:color/transparent"
+            android:button="@drawable/tutorial_option_checkbox_btn"
+            android:clickable="false"
+            android:focusable="false"
+            android:gravity="center"
+            android:importantForAccessibility="no" />
 
+    </LinearLayout>
 
+</FrameLayout>

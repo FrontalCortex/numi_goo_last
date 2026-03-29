@@ -2958,7 +2958,9 @@ class MapFragment : Fragment() {
         
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
-            if (GlobalValues.scrollPosition > 0) {
+            // İlk açılışta liste her zaman en üstten başlasın.
+            // Sadece state restore senaryosunda eski pozisyonu uygula.
+            if (savedInstanceState != null && GlobalValues.scrollPosition > 0) {
                 binding.lessonsRecyclerView.scrollToPosition(GlobalValues.scrollPosition)
             }
             
@@ -3405,6 +3407,14 @@ class MapFragment : Fragment() {
                 android.util.Log.d("MapFragment", "Initial update of sticky header")
                 updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
                 invalidateItemDecorations()
+
+                // İlk açılışta (restore yoksa) ilk item'ı sticky'nin altında başlat.
+                if (GlobalValues.scrollPosition <= 0) {
+                    val stickyHeight = stickyLinear?.height ?: 0
+                    val initialOffset = stickyHeight + extraTopGap
+                    (layoutManager as? LinearLayoutManager)
+                        ?.scrollToPositionWithOffset(0, initialOffset)
+                }
             }
         }
     }

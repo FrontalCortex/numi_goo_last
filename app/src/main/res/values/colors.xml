@@ -43,4 +43,11 @@
     <color name="dark_success">#3FB950</color>
     <color name="dark_warning">#D29922</color>
     <color name="dark_error">#F85149</color>
+
+    <!-- Tutorial seçenek satırı (koyu tema — kart + sağ gösterge) -->
+    <color name="tutorial_option_row_normal_bg">#161B22</color>
+    <color name="tutorial_option_row_normal_stroke">#30363D</color>
+    <color name="tutorial_option_row_selected_bg">#332D4A</color>
+    <color name="tutorial_option_row_selected_stroke">#7C3AED</color>
+    <color name="tutorial_option_indicator_ring">#8B949E</color>
 </resources>

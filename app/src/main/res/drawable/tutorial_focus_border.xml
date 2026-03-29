@@ -5,6 +5,6 @@
         android:width="@dimen/tutorial_question_border_width"
         android:color="#FFFFFF" />
     <corners
-        android:radius="10dp" />
+        android:radius="@dimen/tutorial_focus_corner_radius" />
     <solid android:color="@android:color/transparent" />
 </shape>

@@ -28,7 +28,7 @@
         android:id="@+id/fiveRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_margin="1dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
@@ -135,7 +135,7 @@
         android:id="@+id/extractionFiveRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_margin="1dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
@@ -242,7 +242,7 @@
         android:id="@+id/tenRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_margin="1dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
@@ -366,7 +366,7 @@
         android:id="@+id/tenRuleTableLinearLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
+        android:layout_margin="1dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
@@ -473,47 +473,40 @@
         android:id="@+id/BeadRuleTable"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
         android:orientation="vertical"
         android:visibility="gone"
-        android:layout_marginTop="-16dp"
+        android:layout_marginEnd="1dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/quitButton">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Boncuk kuralı"
-            android:textAlignment="center"
-            android:textColor="@color/lesson_header_green"
-            android:textSize="16sp">
-
-        </TextView>
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="50dp"
             android:background="#222"
             android:padding="2dp"
-            android:stretchColumns="*">
+            android:shrinkColumns="1">
 
             <TableRow>
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="Eklenecek sayı"
                     android:textAlignment="center"
                     android:textColor="#fff"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
-                    android:text="İşlem"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"                    android:text="İşlem"
                     android:textAlignment="center"
                     android:textColor="#fff"
                     android:textStyle="bold" />
@@ -522,15 +515,21 @@
             <TableRow>
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="6"
                     android:textAlignment="center"
                     android:textColor="#fff" />
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="1 gelir - 5 gider - 10 gelir"
                     android:textAlignment="center"
                     android:textColor="#fff" />
@@ -539,15 +538,21 @@
             <TableRow>
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="7"
                     android:textAlignment="center"
                     android:textColor="#fff" />
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="2 gelir - 5 gider - 10 gelir"
                     android:textAlignment="center"
                     android:textColor="#fff" />
@@ -556,15 +561,21 @@
             <TableRow>
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="8"
                     android:textAlignment="center"
                     android:textColor="#fff" />
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="3 gelir - 5 gider - 10 gelir"
                     android:textAlignment="center"
                     android:textColor="#fff" />
@@ -573,15 +584,21 @@
             <TableRow>
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="9"
                     android:textAlignment="center"
                     android:textColor="#fff" />
 
                 <TextView
+                    android:layout_height="wrap_content"
                     android:background="@drawable/table_cell_border"
-                    android:padding="2dp"
+                    android:gravity="center"
+                    android:paddingVertical="2dp"
+                    android:paddingHorizontal="4dp"
                     android:text="4 gelir - 5 gider - 10 gelir"
                     android:textAlignment="center"
                     android:textColor="#fff" />
@@ -595,7 +612,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginEnd="10dp"
+        android:layout_marginEnd="1dp"
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
@@ -767,14 +784,6 @@
 
     </LinearLayout>
 
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.2" />
-
     <TextView
         android:id="@+id/tutorialText"
         android:layout_width="match_parent"
@@ -810,7 +819,7 @@
         android:layout_height="@dimen/tutorial_focus_height"
         android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
-        android:background="@drawable/rectangle_border"
+        android:background="@drawable/tutorial_focus_border"
         android:translationZ="5dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
@@ -818,13 +827,6 @@
         app:layout_constraintTop_toTopOf="@id/abacusLinear">
 
     </View>
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.4" />
 
     <ImageView
         android:id="@+id/blinding_tutorial2"
@@ -880,10 +882,10 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginBottom="@dimen/tutorial_abacus_linear_margin_bottom"
+        app:layout_constraintBottom_toTopOf="@id/bottomPanelID"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/guideline3">
+        app:layout_constraintStart_toStartOf="parent">
 
 
         <FrameLayout
@@ -1218,6 +1220,21 @@
 
     </LinearLayout>
 
+    <!-- abacusClickable=false iken boncukları kaplar; tıklanınca ekran tıklaması gibi sonraki adım. -->
+    <View
+        android:id="@+id/abacusTapBlocker"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:elevation="12dp"
+        app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
+        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
+        app:layout_constraintStart_toStartOf="@id/abacusLinear"
+        app:layout_constraintTop_toTopOf="@id/abacusLinear" />
+
     <LinearLayout
         android:id="@+id/bottomPanelID"
         android:layout_width="match_parent"
@@ -1296,13 +1313,14 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/optionsPanel"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
-        android:padding="8dp"
+        android:elevation="16dp"
+        android:padding="@dimen/tutorial_options_panel_padding"
         android:visibility="gone"
+        app:layout_constraintTop_toTopOf="@id/guideline"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -1311,11 +1329,14 @@
             android:id="@+id/optionsTitleText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginVertical="6dp"
-            android:layout_marginHorizontal="4dp"
+            android:layout_marginVertical="@dimen/tutorial_options_title_margin_vertical"
+            android:layout_marginHorizontal="@dimen/tutorial_options_title_margin_horizontal"
             android:textColor="@android:color/white"
-            android:textSize="16sp"
+            android:textSize="@dimen/tutorial_options_title_text_size"
             android:fontFamily="@font/font_regular"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="1.0"
+            android:lineSpacingExtra="@dimen/tutorial_options_title_line_spacing_extra"
             android:visibility="gone"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -1324,65 +1345,89 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/optionsRecyclerView"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:overScrollMode="never"
+            android:layout_marginTop="@dimen/tutorial_options_question_top_margin"
             app:layout_constraintTop_toBottomOf="@id/optionsTitleText"
+            app:layout_constraintBottom_toTopOf="@id/optionsCheckButton"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/optionsCheckButton"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:paddingHorizontal="16dp"
+            android:layout_height="@dimen/tutorial_options_check_button_height"
+            android:minWidth="0dp"
+            android:minHeight="@dimen/tutorial_options_check_button_height"
+            android:maxHeight="@dimen/tutorial_options_check_button_height"
+            android:layout_marginTop="@dimen/tutorial_options_check_button_margin_top"
+            android:layout_marginEnd="@dimen/tutorial_options_check_button_margin_end"
+            android:paddingHorizontal="@dimen/tutorial_options_check_button_padding_horizontal"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
             android:text="Kontrol Et"
             android:textAllCaps="false"
-            android:textSize="14sp"
+            android:textSize="@dimen/tutorial_options_check_button_text_size"
             android:backgroundTint="@color/lesson_completed"
             android:textColor="@android:color/black"
             android:fontFamily="@font/font_regular"
+            android:elevation="0dp"
+            app:cornerRadius="@dimen/tutorial_control_button_corner_radius"
             app:layout_constraintTop_toBottomOf="@id/optionsRecyclerView"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/devamButton"
         android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:layout_marginStart="80dp"
-        android:layout_marginEnd="54dp"
-        android:layout_marginBottom="20dp"
+        android:layout_height="@dimen/tutorial_back_button_size"
+        android:minHeight="@dimen/tutorial_back_button_size"
+        android:maxHeight="@dimen/tutorial_back_button_size"
+        android:layout_marginHorizontal="5dp"
+        android:layout_marginBottom="@dimen/tutorial_bottom_panel_margin_bottom"
         android:backgroundTint="@color/lesson_completed"
-        android:elevation="16dp"
+        android:elevation="0dp"
         android:fontFamily="@font/font_regular"
+        android:minWidth="0dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
         android:text="Devam Et"
         android:textAllCaps="false"
         android:textColor="#000000"
-        android:textSize="18sp"
+        android:textSize="@dimen/tutorial_control_button_text_size"
         android:textStyle="bold"
         android:visibility="gone"
-        app:cornerRadius="15dp"
+        app:cornerRadius="@dimen/tutorial_control_button_corner_radius"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toEndOf="@id/backButton" />
 
-    <androidx.constraintlayout.widget.Guideline
+    <View
         android:id="@+id/guideline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.5403557" />
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginBottom="10dp"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
+        app:layout_constraintStart_toStartOf="@id/abacusLinear"
+        app:layout_constraintTop_toTopOf="@id/abacusLinear" />
 
-    <androidx.constraintlayout.widget.Guideline
+    <View
         android:id="@+id/guideline2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.655" />
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
+        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
+        app:layout_constraintStart_toStartOf="@id/abacusLinear"
+        app:layout_constraintTop_toTopOf="@id/abacusLinear"
+        app:layout_constraintVertical_bias="0.4" />
 
     <View
         android:id="@+id/overlay"
@@ -1405,7 +1450,8 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
+        android:elevation="20dp"
+        android:padding="3dp"
         android:fitsSystemWindows="true"
         android:focusable="false"
         android:importantForAccessibility="no"
@@ -1417,9 +1463,9 @@
 
         <ImageView
             android:id="@+id/incorrectIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="10dp"
+            android:layout_width="@dimen/tutorial_result_icon_size"
+            android:layout_height="@dimen/tutorial_result_icon_size"
+            android:layout_margin="@dimen/tutorial_result_item_margin"
             android:src="@android:drawable/ic_delete"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -1429,20 +1475,20 @@
             android:id="@+id/incorrectText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_marginStart="8dp"
+            android:layout_margin="@dimen/tutorial_result_item_margin"
+            android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
             android:text="Yanlış"
             android:textColor="#FF4B4B"
-            android:textSize="18sp"
+            android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/incorrectIcon"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/infoRequest"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_margin="10dp"
+            android:layout_width="@dimen/tutorial_result_info_icon_size"
+            android:layout_height="@dimen/tutorial_result_info_icon_size"
+            android:layout_margin="@dimen/tutorial_result_item_margin"
             android:src="@drawable/request"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -1452,11 +1498,11 @@
             android:id="@+id/correctAnswerLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:layout_marginTop="16dp"
+            android:layout_margin="@dimen/tutorial_result_item_margin"
+            android:layout_marginTop="@dimen/tutorial_result_label_top_margin"
             android:text="Talimata uygun işlemi yap"
             android:textColor="#FF4B4B"
-            android:textSize="16sp"
+            android:textSize="@dimen/tutorial_result_body_text_size"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/incorrectText" />
 
@@ -1466,23 +1512,23 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="@dimen/tutorial_result_body_text_size"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerLabel" />
 
         <Button
             android:id="@+id/okayButton"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="16dp"
+            android:layout_height="@dimen/tutorial_result_button_height"
+            android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
             android:backgroundTint="#FF4B4B"
             android:text="Tekrar Dene"
-            android:layout_marginHorizontal="10dp"
+            android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
             android:textAllCaps="false"
             android:textColor="#000000"
-            android:textSize="18sp"
+            android:textSize="@dimen/tutorial_result_button_text_size"
             android:textStyle="bold"
-            app:cornerRadius="15dp"
+            app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
 
@@ -1495,8 +1541,8 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
-        android:padding="16dp"
+        android:elevation="20dp"
+        android:padding="@dimen/tutorial_result_panel_padding"
         android:clipToPadding="false"
         android:focusable="false"
         android:importantForAccessibility="no"
@@ -1508,8 +1554,8 @@
 
         <ImageView
             android:id="@+id/correctIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="@dimen/tutorial_result_icon_size"
+            android:layout_height="@dimen/tutorial_result_icon_size"
             android:src="@drawable/circle_correct"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -1518,10 +1564,10 @@
             android:id="@+id/correctText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
             android:text="Aferin!"
             android:textColor="#8CC63F"
-            android:textSize="18sp"
+            android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/correctIcon"
             app:layout_constraintTop_toTopOf="parent" />
@@ -1529,15 +1575,15 @@
         <Button
             android:id="@+id/continueButton"
             android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_marginTop="16dp"
+            android:layout_height="@dimen/tutorial_result_button_height"
+            android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
             android:backgroundTint="#8CC63F"
             android:text="Devam et"
             android:textAllCaps="false"
             android:textColor="#000000"
-            android:textSize="18sp"
+            android:textSize="@dimen/tutorial_result_button_text_size"
             android:textStyle="bold"
-            app:cornerRadius="15dp"
+            app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctText"
             app:layout_constraintStart_toStartOf="parent"

@@ -138,6 +138,12 @@ class AbacusBeadController(
         return false
     }
 
+    /** Alt boncuk adım mesafesi (px); dokunma/sürükleme ile aynı değer. */
+    fun getBottomMoveDistancePx(): Float = bottomMoveDistancePx
+
+    /** Üst boncuk adım mesafesi (px). */
+    fun getTopMoveDistancePx(): Float = topMoveDistancePx
+
     /**
      * Sync controller internal state from current UI.
      * This is needed because tutorial/guide animations (e.g., BeadAnimation) can move beads

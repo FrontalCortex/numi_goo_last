@@ -3,6 +3,7 @@ package com.example.app
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.content.Context
 import android.graphics.Color
 import androidx.appcompat.app.AlertDialog
 import android.media.MediaPlayer
@@ -12,6 +13,7 @@ import android.os.Looper
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -22,6 +24,8 @@ import android.view.animation.BounceInterpolator
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.DimenRes
 import androidx.activity.OnBackPressedCallback
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
@@ -37,6 +41,7 @@ import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.math.roundToInt
 
 class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var currentTutorialSteps: List<TutorialStep>
@@ -62,6 +67,27 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var optionsPanelShowRunnable: Runnable? = null
     // Panel açıkken back ve "eğitimi atla" butonlarını kilitlemek için
     private var optionsInteractionLocked: Boolean = false
+    private var optionsContentTextSyncRetries: Int = 0
+
+    /** okay / continue / kontrol için çift basım koruması (ms, uptime). */
+    private val tutorialResultButtonsCooldownMs = 500L
+    private var tutorialResultButtonsCooldownEndUptime = 0L
+    private var tutorialResultButtonsCooldownClearRunnable: Runnable? = null
+
+    private fun isTutorialResultButtonsCooldownActive(): Boolean =
+        android.os.SystemClock.uptimeMillis() < tutorialResultButtonsCooldownEndUptime
+
+    private fun startTutorialResultButtonsCooldown() {
+        tutorialResultButtonsCooldownEndUptime =
+            android.os.SystemClock.uptimeMillis() + tutorialResultButtonsCooldownMs
+        tutorialResultButtonsCooldownClearRunnable?.let { view?.removeCallbacks(it) }
+        val r = Runnable {
+            tutorialResultButtonsCooldownEndUptime = 0L
+            tutorialResultButtonsCooldownClearRunnable = null
+        }
+        tutorialResultButtonsCooldownClearRunnable = r
+        view?.postDelayed(r, tutorialResultButtonsCooldownMs)
+    }
     
     // Ses çalma için MediaPlayer
     private var mediaPlayer: MediaPlayer? = null
@@ -249,13 +275,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
         val bottomPanelScale = if (isShort) 0.86f else 1f
         val mediaScale = if (isShort) 0.82f else 0.9f
-        val rulesTableScale = if (isShort) 0.88f else 0.94f
-
-        if (isShort) {
-            val guideParams = binding.guideline3.layoutParams as ConstraintLayout.LayoutParams
-            guideParams.guidePercent = 0.34f
-            binding.guideline3.layoutParams = guideParams
-        }
+        val rulesTableScale = if (isShort) 0.58f else 0.94f
 
         binding.bottomPanelID.apply {
             scaleX = bottomPanelScale
@@ -283,8 +303,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             R.id.tenRuleExtractionTableLayout,
         ).forEach { id ->
             binding.root.findViewById<View>(id)?.apply {
-                scaleX = rulesTableScale
-                scaleY = rulesTableScale
+                post {
+                    // Sağ-üst köşe sabit kalsın; scale merkezden değil top-right'tan uygulansın.
+                    pivotX = width.toFloat()
+                    pivotY = 0f
+                    scaleX = rulesTableScale
+                    scaleY = rulesTableScale
+                }
             }
         }
     }
@@ -362,7 +387,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             binding.abacusLinear.visibility = View.INVISIBLE
         }
         if(tutorialNumber == 1){
-            binding.quitButton.visibility = View.INVISIBLE
+            val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+            if (!firstTutorialShown) {
+                binding.quitButton.visibility = View.INVISIBLE
+            }
             GlobalValues.currentTutorialNumber = 1  // ChestFragment / LessonResultFalse'ta tek sefer login için
         }
     }
@@ -375,50 +404,41 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         showStep(currentStep)
 
         // Ekrana tıklama ile ilerleme
-        binding.root.setOnClickListener {
-            //tıklandıktan sonra index'lerin devam etmemesi için buraya || currentStep == tutorialStep.size
-            if (isAnyAnimationRunning()) {
-                return@setOnClickListener
-            }
-            if (typewriterRunnable != null) {
-                // Animasyonu durdur ve metni tamamen göster
-                typewriterRunnable?.let {
-                    binding.tutorialText.removeCallbacks(it)
-                }
-                typewriterRunnable = null
+        binding.root.setOnClickListener { handleTutorialTapToAdvance() }
 
-                // Metni tamamen göster
-                val currentStep = getCurrentStep()
-                binding.tutorialText.text = currentStep.text
-                binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
-                return@setOnClickListener
-            }
+        binding.abacusTapBlocker.setOnClickListener { handleTutorialTapToAdvance() }
+    }
 
-            // Eğer bu adımda seçenekler varsa, ilerleme sadece doğru seçenekten sonra \"Devam et\" butonu ile olacak
-            if (!getCurrentStep().options.isNullOrEmpty()) {
-                return@setOnClickListener
-            }
-            //ekrana tıkladıktan sonra sıradaki index'in nextStepAvailable değeri false ise index artışı kontol ile
-            //gerçekleşecek
-
-
-            if (currentStep < currentTutorialSteps.size - 1 && getCurrentStep().nextStepAvailable) {
-                currentStep++
-                getCurrentStep().onStepComplete?.invoke()
-                backOrFront = true
-                showStep(currentStep)
-                if(getPlusIndexCurrentStep(-1).nextStepAbacusReset == true){
-                    resetAbacus()
-
-
-
-                }
-            }
-            else{
-                backOrFront = true
-                //showStep(currentStep) her tıkladığımızda aynı adımı tekrar gösteriyordu. Gösterme bra dedim
+    /** Root veya abacusTapBlocker: typewriter / seçenekler / sonraki adım (setupTutorial ile aynı kurallar). */
+    private fun handleTutorialTapToAdvance() {
+        if (isAnyAnimationRunning()) return
+        if (typewriterRunnable != null) {
+            typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+            typewriterRunnable = null
+            val step = getCurrentStep()
+            binding.tutorialText.text = step.text
+            binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
+            return
         }
+        if (!getCurrentStep().options.isNullOrEmpty()) return
+
+        if (currentStep < currentTutorialSteps.size - 1 && getCurrentStep().nextStepAvailable) {
+            currentStep++
+            getCurrentStep().onStepComplete?.invoke()
+            backOrFront = true
+            showStep(currentStep)
+            if (getPlusIndexCurrentStep(-1).nextStepAbacusReset == true) {
+                resetAbacus()
+            }
+        } else {
+            backOrFront = true
         }
+    }
+
+    private fun updateAbacusTapBlockerVisibility(step: TutorialStep) {
+        val abacusVisible = binding.abacusLinear.visibility == View.VISIBLE
+        binding.abacusTapBlocker.visibility =
+            if (!step.abacusClickable && abacusVisible) View.VISIBLE else View.GONE
     }
     //mevcut adımdaki TutorialStep'i verir
     private fun getCurrentStep(): TutorialStep {
@@ -484,6 +504,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             controlButtonListener = View.OnTouchListener { v, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
+                        if (isTutorialResultButtonsCooldownActive()) return@OnTouchListener true
                         v.animate()
                             .scaleX(0.85f)
                             .scaleY(0.85f)
@@ -494,6 +515,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     }
 
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (isTutorialResultButtonsCooldownActive()) return@OnTouchListener true
                         v.animate()
                             .scaleX(1f)
                             .scaleY(1f)
@@ -522,6 +544,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         }
         ensureTutorialAbacusMetricsIfVisible()
+        updateAbacusTapBlockerVisibility(step)
         //tutorialStep bittiyse lessonStep değerine sahip Abacus'ü yükler
         if (position == currentTutorialSteps.size - 1) {
             val operations = MapFragment.getLessonOperations(lessonStep)
@@ -829,38 +852,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     
     private fun restoreOriginalRootClickListener() {
-        // setupTutorial'daki root click listener'ı geri yükle
-        binding.root.setOnClickListener {
-            //tıklandıktan sonra index'lerin devam etmemesi için buraya || currentStep == tutorialStep.size
-            if (isAnyAnimationRunning()) {
-                return@setOnClickListener
-            }
-            if (typewriterRunnable != null) {
-                // Animasyonu durdur ve metni tamamen göster
-                typewriterRunnable?.let {
-                    binding.tutorialText.removeCallbacks(it)
-                }
-                typewriterRunnable = null
-
-                // Metni tamamen göster
-                val currentStep = getCurrentStep()
-                binding.tutorialText.text = currentStep.text
-                binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
-                return@setOnClickListener
-            }
-            //ekrana tıkladıktan sonra sıradaki index'in nextStepAvailable değeri false ise index artışı kontol ile
-            //gerçekleşecek
-
-            if (currentStep < currentTutorialSteps.size - 1 && getCurrentStep().nextStepAvailable) {
-                currentStep++
-                getCurrentStep().onStepComplete?.invoke()
-                backOrFront = true
-                showStep(currentStep)
-            }
-            else{
-                backOrFront = true
-            }
-        }
+        binding.root.setOnClickListener { handleTutorialTapToAdvance() }
+        binding.abacusTapBlocker.setOnClickListener { handleTutorialTapToAdvance() }
     }
     private fun setupBackButton() {
         binding.backButton.setOnClickListener {
@@ -894,11 +887,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 // (position+1).animation tersine çevrilirse boncuklar tekrar oynar ve hedef bozulur.
                 val skipReverseBeadAnims = getCurrentStep().backAnswerNumber != null
 
-                if(binding.abacusLinear.visibility == View.GONE && tutorialNumber<24){
+                if(binding.abacusLinear.visibility == View.INVISIBLE && tutorialNumber<24){
                     Log.d("libya1","work")
                     binding.abacusLinear.visibility = View.VISIBLE
                 }
-                if(binding.abacusLinear.visibility == View.GONE && tutorialNumber>99){
+                if(binding.abacusLinear.visibility == View.INVISIBLE && tutorialNumber>99){
                     Log.d("libya2","work")
                     binding.abacusLinear.visibility = View.VISIBLE
                 }
@@ -1140,7 +1133,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     private fun devametFragment(fragment: Fragment) {
         // Devam butonunu ekranın altından kayarak göster
-        binding.abacusLinear.visibility = View.GONE
+        binding.abacusLinear.visibility = View.INVISIBLE
         val screenHeight = resources.displayMetrics.heightPixels
         binding.devamButton.translationY = screenHeight.toFloat()
         binding.devamButton.visibility = View.VISIBLE
@@ -1202,6 +1195,26 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
+
+    /** Bir basamak (sütun) için sağ margin adımı (px). Onlar=1, Yüzler=2, Binler=3, Onbinler=4. */
+    private fun focusMarginRightPx(steps: Int): Int =
+        resources.getDimensionPixelSize(R.dimen.tutorial_focus_margin_right_step) * steps
+
+    private fun focusDimenPx(resId: Int): Int = resources.getDimensionPixelSize(resId)
+
+    /** writeAnswerNumber / animateBeads* için: controller ile aynı ölçülmüş adım (yoksa dimen). */
+    private fun tutorialBottomMoveDistancePx(): Float {
+        abacusController?.computeMovementDistancesFromLayout(ratio = 1f, force = true)
+        return abacusController?.getBottomMoveDistancePx()
+            ?: AbacusBeadMetrics.bottomStepPx(requireContext())
+    }
+
+    private fun tutorialTopMoveDistancePx(): Float {
+        abacusController?.computeMovementDistancesFromLayout(ratio = 1f, force = true)
+        return abacusController?.getTopMoveDistancePx()
+            ?: AbacusBeadMetrics.topStepPx(requireContext())
+    }
+
     private fun createTutorialSteps(){
         createTutorialSteps1()
         createTutorialSteps100()
@@ -1312,7 +1325,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = dpToPx(45),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -1328,7 +1341,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = dpToPx(90),
+                        toMarginRight = focusMarginRightPx(2),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -1344,7 +1357,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = dpToPx(135),
+                        toMarginRight = focusMarginRightPx(3),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -1360,7 +1373,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = dpToPx(180),
+                        toMarginRight = focusMarginRightPx(4),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -1385,9 +1398,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(245),
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(280),
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_column_highlight_height),
                             duration = 400
                         )
                     }
@@ -1416,9 +1429,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(245),
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(60),
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_top_bead_band_height),
                             duration = 400
                         )
                     }
@@ -1454,9 +1467,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(245),
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(180),
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_bottom_bead_band_height),
                             duration = 400
                         )
                     }
@@ -2039,6 +2052,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 answerNumber = 600,
                 abacusReset = true,
+                requestText = "Bir adet birlik ve bir adet beşlik boncuk kullan."
             ),TutorialStep(
                 "Sonrasında onlar basamağını 2. sütuna yazalım.",
                 soundResource = R.raw.tutorial4_108,
@@ -4427,8 +4441,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                             view = focusView,
-                            fromMarginRight = dpToPx(45),
-                            toMarginRight = dpToPx(45),
+                            fromMarginRight = focusMarginRightPx(1),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 200
@@ -4721,8 +4735,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                         view = focusView,
-                        fromMarginRight = dpToPx(45),
-                        toMarginRight = dpToPx(45),
+                        fromMarginRight = focusMarginRightPx(1),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -5008,8 +5022,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                         view = focusView,
-                        fromMarginRight = dpToPx(45),
-                        toMarginRight = dpToPx(45),
+                        fromMarginRight = focusMarginRightPx(1),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -5302,8 +5316,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                         view = focusView,
-                        fromMarginRight = dpToPx(45),
-                        toMarginRight = dpToPx(45),
+                        fromMarginRight = focusMarginRightPx(1),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -5535,7 +5549,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         tutorialSteps7 = listOf(
             TutorialStep(
                 "Bu derste 10’luk kuralın devamını göreceğiz.",
-                rulesPanelVisibility = View.GONE,
+                rulesPanelVisibility = View.INVISIBLE,
                 soundResource = R.raw.tutorial7_1,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
@@ -5943,8 +5957,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                         view = focusView,
-                        fromMarginRight = dpToPx(45),
-                        toMarginRight = dpToPx(45),
+                        fromMarginRight = focusMarginRightPx(1),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -6250,8 +6264,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {WidgetOperation.ChangeVisibility(focusView, View.VISIBLE)},
                     {WidgetOperation.AnimateMargin(
                         view = focusView,
-                        fromMarginRight = dpToPx(45),
-                        toMarginRight = dpToPx(45),
+                        fromMarginRight = focusMarginRightPx(1),
+                        toMarginRight = focusMarginRightPx(1),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -6522,7 +6536,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         tutorialSteps8 = listOf(
             TutorialStep(
                 "Bu derste abaküste toplamanın son kuralı olan boncuk kuralını göreceğiz.",
-                rulesPanelVisibility = View.GONE,
+                rulesPanelVisibility = View.INVISIBLE,
                 soundResource = R.raw.tutorial8_1,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
@@ -6639,7 +6653,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 soundResource = R.raw.tutorial8_11,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                options = listOf("kuralsız toplama","10'luk kural","beşlik kural"),
+                options = listOf("Kuralsız toplama","10'luk kural","5'lik kural"),
                 correctOptionIndex = listOf(0,1),
                 multipleChoice = true,
                 optionText = "Boncuk kuralını hangi kuralları uygulayamadığımız zaman kullanırız ?",
@@ -6984,7 +6998,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),TutorialStep(
                 "Kural şu şekildedir.",
-                rulesPanelVisibility = View.GONE,
+                rulesPanelVisibility = View.INVISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial8_24
@@ -8698,7 +8712,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -8993,7 +9007,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -9262,7 +9276,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -9682,7 +9696,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -9734,7 +9748,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(90),
+                            toMarginRight = focusMarginRightPx(2),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -10701,7 +10715,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -10953,7 +10967,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(45),
+                            toMarginRight = focusMarginRightPx(1),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 0
@@ -13157,10 +13171,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val opts = step.options
         val correctIndices = step.correctOptionIndex
         if (opts.isNullOrEmpty() || correctIndices.isNullOrEmpty()) return
-        if (isAnyAnimationRunning()) return
 
         val selected = optionsAdapter?.getSelectedPositions() ?: emptySet()
-        if (selected.isEmpty()) return
+        if (selected.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.tutorial_options_pick_first, Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
 
         val isCorrect =
             selected.size == correctIndices.size &&
@@ -13204,11 +13221,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         optionsPanel.visibility = View.GONE
                         optionsPanel.translationY = 0f
                         optionsPanel.alpha = 1f
+                        resetOptionsSharedTextSizeToDimens()
                         optionsAdapter?.submitOptions(emptyList(), false)
                     }
                     .start()
             } else {
                 optionsPanel.visibility = View.GONE
+                resetOptionsSharedTextSizeToDimens()
                 optionsAdapter?.submitOptions(emptyList(), false)
             }
             return
@@ -13224,6 +13243,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         optionsPanel.clearAnimation()
 
         val runnable = Runnable {
+            resetOptionsSharedTextSizeToDimens()
             // Başlık metnini güncelle
             val optionText = step.optionText
             if (!optionText.isNullOrBlank()) {
@@ -13242,18 +13262,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             val startY = parentView?.height?.toFloat()
                 ?: optionsPanel.height.toFloat().takeIf { it > 0 } ?: 300f
 
-            // Artık yeni seçenekleri yükle ve paneli göster
+            // Artık yeni seçenekleri yükle — önce görünmez + yerinde ölç (metin boyutu animasyonla eş zamanlı)
             optionsAdapter?.submitOptions(stepOptions!!, step.multipleChoice!!)
             optionsPanel.visibility = View.VISIBLE
-            optionsPanel.translationY = startY
+            optionsPanel.translationY = 0f
             optionsPanel.alpha = 0f
 
-            optionsPanel.animate()
-                .translationY(0f)
-                .alpha(1f)
-                .setDuration(300)
-                .setInterpolator(AccelerateDecelerateInterpolator())
-                .start()
+            optionsPanel.post {
+                if (!isAdded) return@post
+                scheduleOptionsContentTextSizeSync {
+                    optionsPanel.translationY = startY
+                    optionsPanel.animate()
+                        .translationY(0f)
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setInterpolator(AccelerateDecelerateInterpolator())
+                        .start()
+                }
+            }
         }
         optionsPanelShowRunnable = runnable
         optionsPanel.postDelayed(runnable, 1000L)
@@ -13267,7 +13293,125 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
 
+    private fun resetOptionsSharedTextSizeToDimens() {
+        optionsTitleText.setTextSize(
+            TypedValue.COMPLEX_UNIT_PX,
+            resources.getDimension(R.dimen.tutorial_options_title_text_size)
+        )
+        optionsAdapter?.setSharedOptionTextSp(null)
+    }
+
+    private fun spFromDimen(@DimenRes resId: Int): Float =
+        resources.getDimension(resId) / resources.displayMetrics.scaledDensity
+
+    /** Başlık + seçenek metinleri aynı sp; liste alanına sığmazsa küçülür, fazla boşlukta dimen tabanına kadar büyür. */
+    private fun scheduleOptionsContentTextSizeSync(onComplete: (() -> Unit)? = null) {
+        if (!isAdded) return
+        optionsContentTextSyncRetries = 0
+        syncOptionsContentTextSizeStep(onComplete)
+    }
+
+    private fun syncOptionsContentTextSizeStep(onComplete: (() -> Unit)? = null) {
+        if (!isAdded) return
+        if (optionsPanel.visibility != View.VISIBLE) return
+        val adapter = optionsAdapter ?: return
+        if (adapter.itemCount == 0) {
+            onComplete?.invoke()
+            return
+        }
+
+        val rv = optionsRecyclerView
+        if (rv.width <= 0 || rv.height <= 0) {
+            if (optionsContentTextSyncRetries++ < 32) {
+                rv.post { syncOptionsContentTextSizeStep(onComplete) }
+            } else {
+                onComplete?.invoke()
+            }
+            return
+        }
+
+        val minSp = spFromDimen(R.dimen.tutorial_options_auto_text_min_sp)
+        val baseSp = maxOf(
+            spFromDimen(R.dimen.tutorial_options_title_text_size),
+            spFromDimen(R.dimen.tutorial_options_text_size)
+        )
+
+        fun applySp(sp: Float) {
+            optionsTitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+            adapter.setSharedOptionTextSp(sp)
+            adapter.notifyDataSetChanged()
+        }
+
+        fun listOverflows(): Boolean =
+            rv.computeVerticalScrollRange() > rv.height + 2
+
+        fun growLoop(curFit: Float, onDone: () -> Unit) {
+            var s = curFit
+            if (s >= baseSp - 0.01f) {
+                onDone()
+                return
+            }
+            fun tryGrowStep() {
+                if (s >= baseSp - 0.01f) {
+                    onDone()
+                    return
+                }
+                val next = (s + 0.5f).coerceAtMost(baseSp)
+                applySp(next)
+                rv.post {
+                    if (!isAdded) return@post
+                    if (listOverflows()) {
+                        applySp(s)
+                        adapter.notifyDataSetChanged()
+                        onDone()
+                    } else {
+                        s = next
+                        if (s >= baseSp - 0.01f) {
+                            onDone()
+                        } else {
+                            tryGrowStep()
+                        }
+                    }
+                }
+            }
+            tryGrowStep()
+        }
+
+        fun shrinkLoop(cur: Float, onDone: () -> Unit) {
+            applySp(cur)
+            rv.post {
+                if (!isAdded) return@post
+                when {
+                    !listOverflows() -> growLoop(cur.coerceAtMost(baseSp), onDone)
+                    cur <= minSp -> onDone()
+                    else -> shrinkLoop((cur - 0.5f).coerceAtLeast(minSp), onDone)
+                }
+            }
+        }
+
+        shrinkLoop(baseSp) {
+            val cb = onComplete
+            if (cb != null) cb.invoke()
+        }
+    }
+
+    /** Seçenek sheet'i elevation ile sonuç panellerinin üstünde kalıyordu; sonuç görünmeden önce kapat. */
+    private fun dismissOptionsPanelBeforeResult() {
+        optionsPanelShowRunnable?.let { optionsPanel.removeCallbacks(it) }
+        optionsPanelShowRunnable = null
+        optionsPanel.clearAnimation()
+        optionsPanel.visibility = View.GONE
+        optionsPanel.alpha = 1f
+        optionsPanel.translationY = 0f
+        optionsTitleText.visibility = View.GONE
+        optionsCheckButton.visibility = View.GONE
+        resetOptionsSharedTextSizeToDimens()
+        optionsAdapter?.submitOptions(emptyList(), false)
+    }
+
     private fun showResultPanelForOptions(isCorrect: Boolean) {
+        dismissOptionsPanelBeforeResult()
+
         if (isCorrect) {
             // Doğru cevap durumu
 
@@ -13296,6 +13440,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 .setOnTouchListener { v, event ->
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
+                            if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
                             v.animate()
                                 .scaleX(0.85f)
                                 .scaleY(0.85f)
@@ -13317,6 +13462,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 }else{
                                     devametFragment(abacusFragment)
                                 }
+                                startTutorialResultButtonsCooldown()
                                 return@setOnTouchListener true
                             }
 
@@ -13330,6 +13476,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                             controlButton.visibility= View.INVISIBLE
                             backOrFront = true // İleri gidiyoruz
                             showStep(currentStep)
+                            startTutorialResultButtonsCooldown()
                             true
                         }
 
@@ -13388,6 +13535,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 .setOnTouchListener { v, event ->
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
+                            if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
                             v.animate()
                                 .scaleX(0.85f)
                                 .scaleY(0.85f)
@@ -13398,6 +13546,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -13429,6 +13578,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 }
                                 .start()
 
+                            startTutorialResultButtonsCooldown()
                             true
                         }
 
@@ -14339,7 +14489,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadsUp(vararg beads: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L // milisaniye cinsinden
-        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
+        val moveDistance = tutorialBottomMoveDistancePx().roundToInt()
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -14371,7 +14521,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadDown(bead: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L
-        val moveDistance = AbacusBeadMetrics.topStepPxInt(requireContext())
+        val moveDistance = tutorialTopMoveDistancePx().roundToInt()
 
         bead.animate()
             .setDuration(animationDuration)
@@ -14408,7 +14558,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun animateBeadsDown(vararg beads: ImageView) {
         isAnimating2 = true
         val animationDuration = 300L
-        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
+        val moveDistance = tutorialBottomMoveDistancePx().roundToInt()
 
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams

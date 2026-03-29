@@ -283,7 +283,7 @@ class AbacusFragment : Fragment() {
             }
         }
     }
-
+    
     /**
      * Rehber paneli sistemini kurar
      */
@@ -1208,12 +1208,16 @@ class AbacusFragment : Fragment() {
     }
     @SuppressLint("SuspiciousIndentation")
     private fun timeStarter(){
-        if(lessonItem.type == 2)
+        if(lessonItem.type == 2){
         timerTextView.visibility = View.VISIBLE
             if (!isTimerStarted) {
                 startTimer()
                 isTimerStarted = true
 
+            }
+        }
+        else{
+            timerTextView.visibility = View.INVISIBLE
         }
     }
     private fun startTimer() {
@@ -1396,17 +1400,17 @@ class AbacusFragment : Fragment() {
                         lastClickTime = currentTime
 
                         (activity as? MainActivity)?.requireOnlineOrShowOffline {
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                        v.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(400)
+                            .setInterpolator(BounceInterpolator())
+                            .start()
 
-                            // Tıklama işlemini gerçekleştir
-                            updateProgressBar()
-                            showResultPanel()
-                            controlNumber = 0
+                        // Tıklama işlemini gerçekleştir
+                        updateProgressBar()
+                        showResultPanel()
+                        controlNumber = 0
                         }
                     }
                     true
@@ -1600,62 +1604,62 @@ class AbacusFragment : Fragment() {
             // Sadece bu boncuğun ve hareket edecek boncukların animasyon durumuna bak
             if (rod0BottomBead4 in animatingBeads) return@setOnClickListener
 
-            if (!fourIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!fourIsUp) beadsToAnimate.add(rod0BottomBead4)
-                if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
-                if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
-                if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                if (!fourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
 
                 // Hedef boncuklardan biri animasyondaysa işlem yapma
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    fourIsUp = true
-                    threeIsUp = true
-                    twoIsUp = true
-                    oneIsUp = true
-                    updateRod0BeadsAppearance()
-                }
-            } else {
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        fourIsUp = true
+                        threeIsUp = true
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
                 if (rod0BottomBead4 in animatingBeads) return@setOnClickListener
-                animateBeadsDown(rod0BottomBead4)
-                fourIsUp = false
-                updateRod0BeadsAppearance()
+                    animateBeadsDown(rod0BottomBead4)
+                    fourIsUp = false
+                    updateRod0BeadsAppearance()
             }
         }
 
         rod0BottomBead3.setOnClickListener {
             if (rod0BottomBead3 in animatingBeads) return@setOnClickListener
 
-            if (!threeIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
-                if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
-                if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                if (!threeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    threeIsUp = true
-                    twoIsUp = true
-                    oneIsUp = true
-                    updateRod0BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
-                if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        threeIsUp = true
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (fourIsUp) fourIsUp = false
-                    threeIsUp = false
-                    updateRod0BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (fourIsUp) fourIsUp = false
+                        threeIsUp = false
+                        updateRod0BeadsAppearance()
                 }
             }
         }
@@ -1663,33 +1667,33 @@ class AbacusFragment : Fragment() {
         rod0BottomBead2.setOnClickListener {
             if (rod0BottomBead2 in animatingBeads) return@setOnClickListener
 
-            if (!twoIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
-                if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                if (!twoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (!oneIsUp) beadsToAnimate.add(rod0BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    twoIsUp = true
-                    oneIsUp = true
-                    updateRod0BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
-                if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
-                if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        twoIsUp = true
+                        oneIsUp = true
+                        updateRod0BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (fourIsUp) fourIsUp = false
-                    if (threeIsUp) threeIsUp = false
-                    twoIsUp = false
-                    updateRod0BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (fourIsUp) fourIsUp = false
+                        if (threeIsUp) threeIsUp = false
+                        twoIsUp = false
+                        updateRod0BeadsAppearance()
                 }
             }
         }
@@ -1697,27 +1701,27 @@ class AbacusFragment : Fragment() {
         rod0BottomBead1.setOnClickListener {
             if (rod0BottomBead1 in animatingBeads) return@setOnClickListener
 
-            if (!oneIsUp) {
+                if (!oneIsUp) {
                 if (rod0BottomBead1 in animatingBeads) return@setOnClickListener
-                animateBeadsUp(rod0BottomBead1)
-                oneIsUp = true
-                updateRod0BeadsAppearance()
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
-                if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
-                if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
-                if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
+                    animateBeadsUp(rod0BottomBead1)
+                    oneIsUp = true
+                    updateRod0BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (fourIsUp) beadsToAnimate.add(rod0BottomBead4)
+                    if (threeIsUp) beadsToAnimate.add(rod0BottomBead3)
+                    if (twoIsUp) beadsToAnimate.add(rod0BottomBead2)
+                    if (oneIsUp) beadsToAnimate.add(rod0BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (fourIsUp) fourIsUp = false
-                    if (threeIsUp) threeIsUp = false
-                    if (twoIsUp) twoIsUp = false
-                    oneIsUp = false
-                    updateRod0BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (fourIsUp) fourIsUp = false
+                        if (threeIsUp) threeIsUp = false
+                        if (twoIsUp) twoIsUp = false
+                        oneIsUp = false
+                        updateRod0BeadsAppearance()
                 }
             }
         }
@@ -1741,61 +1745,61 @@ class AbacusFragment : Fragment() {
         rod1BottomBead4.setOnClickListener {
             if (rod1BottomBead4 in animatingBeads) return@setOnClickListener
 
-            if (!rod1FourIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
-                if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
-                if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
-                if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                if (!rod1FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod1FourIsUp = true
-                    rod1ThreeIsUp = true
-                    rod1TwoIsUp = true
-                    rod1OneIsUp = true
-                    updateRod1BeadsAppearance()
-                }
-            } else {
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1FourIsUp = true
+                        rod1ThreeIsUp = true
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
                 if (rod1BottomBead4 in animatingBeads) return@setOnClickListener
-                animateBeadsDown(rod1BottomBead4)
-                rod1FourIsUp = false
-                updateRod1BeadsAppearance()
+                    animateBeadsDown(rod1BottomBead4)
+                    rod1FourIsUp = false
+                    updateRod1BeadsAppearance()
             }
         }
 
         rod1BottomBead3.setOnClickListener {
             if (rod1BottomBead3 in animatingBeads) return@setOnClickListener
 
-            if (!rod1ThreeIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
-                if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
-                if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                if (!rod1ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod1ThreeIsUp = true
-                    rod1TwoIsUp = true
-                    rod1OneIsUp = true
-                    updateRod1BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
-                if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1ThreeIsUp = true
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod1FourIsUp) rod1FourIsUp = false
-                    rod1ThreeIsUp = false
-                    updateRod1BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod1FourIsUp) rod1FourIsUp = false
+                        rod1ThreeIsUp = false
+                        updateRod1BeadsAppearance()
                 }
             }
         }
@@ -1803,33 +1807,33 @@ class AbacusFragment : Fragment() {
         rod1BottomBead2.setOnClickListener {
             if (rod1BottomBead2 in animatingBeads) return@setOnClickListener
 
-            if (!rod1TwoIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
-                if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                if (!rod1TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (!rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod1TwoIsUp = true
-                    rod1OneIsUp = true
-                    updateRod1BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
-                if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
-                if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod1TwoIsUp = true
+                        rod1OneIsUp = true
+                        updateRod1BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod1FourIsUp) rod1FourIsUp = false
-                    if (rod1ThreeIsUp) rod1ThreeIsUp = false
-                    rod1TwoIsUp = false
-                    updateRod1BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod1FourIsUp) rod1FourIsUp = false
+                        if (rod1ThreeIsUp) rod1ThreeIsUp = false
+                        rod1TwoIsUp = false
+                        updateRod1BeadsAppearance()
                 }
             }
         }
@@ -1837,26 +1841,26 @@ class AbacusFragment : Fragment() {
         rod1BottomBead1.setOnClickListener {
             if (rod1BottomBead1 in animatingBeads) return@setOnClickListener
 
-            if (!rod1OneIsUp) {
-                animateBeadsUp(rod1BottomBead1)
-                rod1OneIsUp = true
-                updateRod1BeadsAppearance()
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
-                if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
-                if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
-                if (rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
+                if (!rod1OneIsUp) {
+                    animateBeadsUp(rod1BottomBead1)
+                    rod1OneIsUp = true
+                    updateRod1BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod1FourIsUp) beadsToAnimate.add(rod1BottomBead4)
+                    if (rod1ThreeIsUp) beadsToAnimate.add(rod1BottomBead3)
+                    if (rod1TwoIsUp) beadsToAnimate.add(rod1BottomBead2)
+                    if (rod1OneIsUp) beadsToAnimate.add(rod1BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod1FourIsUp) rod1FourIsUp = false
-                    if (rod1ThreeIsUp) rod1ThreeIsUp = false
-                    if (rod1TwoIsUp) rod1TwoIsUp = false
-                    rod1OneIsUp = false
-                    updateRod1BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod1FourIsUp) rod1FourIsUp = false
+                        if (rod1ThreeIsUp) rod1ThreeIsUp = false
+                        if (rod1TwoIsUp) rod1TwoIsUp = false
+                        rod1OneIsUp = false
+                        updateRod1BeadsAppearance()
                 }
             }
         }
@@ -1880,61 +1884,61 @@ class AbacusFragment : Fragment() {
         rod2BottomBead4.setOnClickListener {
             if (rod2BottomBead4 in animatingBeads) return@setOnClickListener
 
-            if (!rod2FourIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
-                if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
-                if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
-                if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                if (!rod2FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod2FourIsUp = true
-                    rod2ThreeIsUp = true
-                    rod2TwoIsUp = true
-                    rod2OneIsUp = true
-                    updateRod2BeadsAppearance()
-                }
-            } else {
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2FourIsUp = true
+                        rod2ThreeIsUp = true
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
                 if (rod2BottomBead4 in animatingBeads) return@setOnClickListener
-                animateBeadsDown(rod2BottomBead4)
-                rod2FourIsUp = false
-                updateRod2BeadsAppearance()
+                    animateBeadsDown(rod2BottomBead4)
+                    rod2FourIsUp = false
+                    updateRod2BeadsAppearance()
             }
         }
 
         rod2BottomBead3.setOnClickListener {
             if (rod2BottomBead3 in animatingBeads) return@setOnClickListener
 
-            if (!rod2ThreeIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
-                if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
-                if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                if (!rod2ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod2ThreeIsUp = true
-                    rod2TwoIsUp = true
-                    rod2OneIsUp = true
-                    updateRod2BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
-                if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2ThreeIsUp = true
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod2FourIsUp) rod2FourIsUp = false
-                    rod2ThreeIsUp = false
-                    updateRod2BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod2FourIsUp) rod2FourIsUp = false
+                        rod2ThreeIsUp = false
+                        updateRod2BeadsAppearance()
                 }
             }
         }
@@ -1942,33 +1946,33 @@ class AbacusFragment : Fragment() {
         rod2BottomBead2.setOnClickListener {
             if (rod2BottomBead2 in animatingBeads) return@setOnClickListener
 
-            if (!rod2TwoIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
-                if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                if (!rod2TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (!rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod2TwoIsUp = true
-                    rod2OneIsUp = true
-                    updateRod2BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
-                if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
-                if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod2TwoIsUp = true
+                        rod2OneIsUp = true
+                        updateRod2BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod2FourIsUp) rod2FourIsUp = false
-                    if (rod2ThreeIsUp) rod2ThreeIsUp = false
-                    rod2TwoIsUp = false
-                    updateRod2BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod2FourIsUp) rod2FourIsUp = false
+                        if (rod2ThreeIsUp) rod2ThreeIsUp = false
+                        rod2TwoIsUp = false
+                        updateRod2BeadsAppearance()
                 }
             }
         }
@@ -1976,26 +1980,26 @@ class AbacusFragment : Fragment() {
         rod2BottomBead1.setOnClickListener {
             if (rod2BottomBead1 in animatingBeads) return@setOnClickListener
 
-            if (!rod2OneIsUp) {
-                animateBeadsUp(rod2BottomBead1)
-                rod2OneIsUp = true
-                updateRod2BeadsAppearance()
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
-                if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
-                if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
-                if (rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
+                if (!rod2OneIsUp) {
+                    animateBeadsUp(rod2BottomBead1)
+                    rod2OneIsUp = true
+                    updateRod2BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod2FourIsUp) beadsToAnimate.add(rod2BottomBead4)
+                    if (rod2ThreeIsUp) beadsToAnimate.add(rod2BottomBead3)
+                    if (rod2TwoIsUp) beadsToAnimate.add(rod2BottomBead2)
+                    if (rod2OneIsUp) beadsToAnimate.add(rod2BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod2FourIsUp) rod2FourIsUp = false
-                    if (rod2ThreeIsUp) rod2ThreeIsUp = false
-                    if (rod2TwoIsUp) rod2TwoIsUp = false
-                    rod2OneIsUp = false
-                    updateRod2BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod2FourIsUp) rod2FourIsUp = false
+                        if (rod2ThreeIsUp) rod2ThreeIsUp = false
+                        if (rod2TwoIsUp) rod2TwoIsUp = false
+                        rod2OneIsUp = false
+                        updateRod2BeadsAppearance()
                 }
             }
         }
@@ -2019,61 +2023,61 @@ class AbacusFragment : Fragment() {
         rod3BottomBead4.setOnClickListener {
             if (rod3BottomBead4 in animatingBeads) return@setOnClickListener
 
-            if (!rod3FourIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
-                if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
-                if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
-                if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                if (!rod3FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod3FourIsUp = true
-                    rod3ThreeIsUp = true
-                    rod3TwoIsUp = true
-                    rod3OneIsUp = true
-                    updateRod3BeadsAppearance()
-                }
-            } else {
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3FourIsUp = true
+                        rod3ThreeIsUp = true
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
                 if (rod3BottomBead4 in animatingBeads) return@setOnClickListener
-                animateBeadsDown(rod3BottomBead4)
-                rod3FourIsUp = false
-                updateRod3BeadsAppearance()
+                    animateBeadsDown(rod3BottomBead4)
+                    rod3FourIsUp = false
+                    updateRod3BeadsAppearance()
             }
         }
 
         rod3BottomBead3.setOnClickListener {
             if (rod3BottomBead3 in animatingBeads) return@setOnClickListener
 
-            if (!rod3ThreeIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
-                if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
-                if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                if (!rod3ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod3ThreeIsUp = true
-                    rod3TwoIsUp = true
-                    rod3OneIsUp = true
-                    updateRod3BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
-                if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3ThreeIsUp = true
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod3FourIsUp) rod3FourIsUp = false
-                    rod3ThreeIsUp = false
-                    updateRod3BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod3FourIsUp) rod3FourIsUp = false
+                        rod3ThreeIsUp = false
+                        updateRod3BeadsAppearance()
                 }
             }
         }
@@ -2081,33 +2085,33 @@ class AbacusFragment : Fragment() {
         rod3BottomBead2.setOnClickListener {
             if (rod3BottomBead2 in animatingBeads) return@setOnClickListener
 
-            if (!rod3TwoIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
-                if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                if (!rod3TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (!rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod3TwoIsUp = true
-                    rod3OneIsUp = true
-                    updateRod3BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
-                if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
-                if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod3TwoIsUp = true
+                        rod3OneIsUp = true
+                        updateRod3BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod3FourIsUp) rod3FourIsUp = false
-                    if (rod3ThreeIsUp) rod3ThreeIsUp = false
-                    rod3TwoIsUp = false
-                    updateRod3BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod3FourIsUp) rod3FourIsUp = false
+                        if (rod3ThreeIsUp) rod3ThreeIsUp = false
+                        rod3TwoIsUp = false
+                        updateRod3BeadsAppearance()
                 }
             }
         }
@@ -2115,26 +2119,26 @@ class AbacusFragment : Fragment() {
         rod3BottomBead1.setOnClickListener {
             if (rod3BottomBead1 in animatingBeads) return@setOnClickListener
 
-            if (!rod3OneIsUp) {
-                animateBeadsUp(rod3BottomBead1)
-                rod3OneIsUp = true
-                updateRod3BeadsAppearance()
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
-                if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
-                if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
-                if (rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
+                if (!rod3OneIsUp) {
+                    animateBeadsUp(rod3BottomBead1)
+                    rod3OneIsUp = true
+                    updateRod3BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod3FourIsUp) beadsToAnimate.add(rod3BottomBead4)
+                    if (rod3ThreeIsUp) beadsToAnimate.add(rod3BottomBead3)
+                    if (rod3TwoIsUp) beadsToAnimate.add(rod3BottomBead2)
+                    if (rod3OneIsUp) beadsToAnimate.add(rod3BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod3FourIsUp) rod3FourIsUp = false
-                    if (rod3ThreeIsUp) rod3ThreeIsUp = false
-                    if (rod3TwoIsUp) rod3TwoIsUp = false
-                    rod3OneIsUp = false
-                    updateRod3BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod3FourIsUp) rod3FourIsUp = false
+                        if (rod3ThreeIsUp) rod3ThreeIsUp = false
+                        if (rod3TwoIsUp) rod3TwoIsUp = false
+                        rod3OneIsUp = false
+                        updateRod3BeadsAppearance()
                 }
             }
         }
@@ -2158,61 +2162,61 @@ class AbacusFragment : Fragment() {
         rod4BottomBead4.setOnClickListener {
             if (rod4BottomBead4 in animatingBeads) return@setOnClickListener
 
-            if (!rod4FourIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
-                if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
-                if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
-                if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                if (!rod4FourIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod4FourIsUp = true
-                    rod4ThreeIsUp = true
-                    rod4TwoIsUp = true
-                    rod4OneIsUp = true
-                    updateRod4BeadsAppearance()
-                }
-            } else {
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4FourIsUp = true
+                        rod4ThreeIsUp = true
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
                 if (rod4BottomBead4 in animatingBeads) return@setOnClickListener
-                animateBeadsDown(rod4BottomBead4)
-                rod4FourIsUp = false
-                updateRod4BeadsAppearance()
+                    animateBeadsDown(rod4BottomBead4)
+                    rod4FourIsUp = false
+                    updateRod4BeadsAppearance()
             }
         }
 
         rod4BottomBead3.setOnClickListener {
             if (rod4BottomBead3 in animatingBeads) return@setOnClickListener
 
-            if (!rod4ThreeIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
-                if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
-                if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                if (!rod4ThreeIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod4ThreeIsUp = true
-                    rod4TwoIsUp = true
-                    rod4OneIsUp = true
-                    updateRod4BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
-                if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4ThreeIsUp = true
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod4FourIsUp) rod4FourIsUp = false
-                    rod4ThreeIsUp = false
-                    updateRod4BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod4FourIsUp) rod4FourIsUp = false
+                        rod4ThreeIsUp = false
+                        updateRod4BeadsAppearance()
                 }
             }
         }
@@ -2220,33 +2224,33 @@ class AbacusFragment : Fragment() {
         rod4BottomBead2.setOnClickListener {
             if (rod4BottomBead2 in animatingBeads) return@setOnClickListener
 
-            if (!rod4TwoIsUp) {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
-                if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                if (!rod4TwoIsUp) {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (!rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (!rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsUp(*beadsToAnimate.toTypedArray())
-                    rod4TwoIsUp = true
-                    rod4OneIsUp = true
-                    updateRod4BeadsAppearance()
-                }
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
-                if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
-                if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsUp(*beadsToAnimate.toTypedArray())
+                        rod4TwoIsUp = true
+                        rod4OneIsUp = true
+                        updateRod4BeadsAppearance()
+                    }
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod4FourIsUp) rod4FourIsUp = false
-                    if (rod4ThreeIsUp) rod4ThreeIsUp = false
-                    rod4TwoIsUp = false
-                    updateRod4BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod4FourIsUp) rod4FourIsUp = false
+                        if (rod4ThreeIsUp) rod4ThreeIsUp = false
+                        rod4TwoIsUp = false
+                        updateRod4BeadsAppearance()
                 }
             }
         }
@@ -2254,26 +2258,26 @@ class AbacusFragment : Fragment() {
         rod4BottomBead1.setOnClickListener {
             if (rod4BottomBead1 in animatingBeads) return@setOnClickListener
 
-            if (!rod4OneIsUp) {
-                animateBeadsUp(rod4BottomBead1)
-                rod4OneIsUp = true
-                updateRod4BeadsAppearance()
-            } else {
-                val beadsToAnimate = mutableListOf<ImageView>()
-                if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
-                if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
-                if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
-                if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
+                if (!rod4OneIsUp) {
+                    animateBeadsUp(rod4BottomBead1)
+                    rod4OneIsUp = true
+                    updateRod4BeadsAppearance()
+                } else {
+                    val beadsToAnimate = mutableListOf<ImageView>()
+                    if (rod4FourIsUp) beadsToAnimate.add(rod4BottomBead4)
+                    if (rod4ThreeIsUp) beadsToAnimate.add(rod4BottomBead3)
+                    if (rod4TwoIsUp) beadsToAnimate.add(rod4BottomBead2)
+                    if (rod4OneIsUp) beadsToAnimate.add(rod4BottomBead1)
 
                 if (beadsToAnimate.any { it in animatingBeads }) return@setOnClickListener
 
-                if (beadsToAnimate.isNotEmpty()) {
-                    animateBeadsDown(*beadsToAnimate.toTypedArray())
-                    if (rod4FourIsUp) rod4FourIsUp = false
-                    if (rod4ThreeIsUp) rod4ThreeIsUp = false
-                    if (rod4TwoIsUp) rod4TwoIsUp = false
-                    rod4OneIsUp = false
-                    updateRod4BeadsAppearance()
+                    if (beadsToAnimate.isNotEmpty()) {
+                        animateBeadsDown(*beadsToAnimate.toTypedArray())
+                        if (rod4FourIsUp) rod4FourIsUp = false
+                        if (rod4ThreeIsUp) rod4ThreeIsUp = false
+                        if (rod4TwoIsUp) rod4TwoIsUp = false
+                        rod4OneIsUp = false
+                        updateRod4BeadsAppearance()
                 }
             }
         }
@@ -2581,11 +2585,11 @@ class AbacusFragment : Fragment() {
                             // Kontrol butonunu 0.2 saniye sonra tekrar aktif et
                             binding.root.postDelayed({
                                 if (isAdded) {
-                                    controlButton.isClickable = true
-                                    controlButton.isFocusable = true
-                                    controlButtonListener?.let { listener ->
-                                        controlButton.setOnTouchListener(listener)
-                                    }
+                            controlButton.isClickable = true
+                            controlButton.isFocusable = true
+                            controlButtonListener?.let { listener ->
+                                controlButton.setOnTouchListener(listener)
+                            }
                                 }
                             }, 200)
                             
@@ -2671,11 +2675,11 @@ class AbacusFragment : Fragment() {
                             // Kontrol butonunu 0.7 saniye sonra tekrar aktif et
                             binding.root.postDelayed({
                                 if (isAdded) {
-                                    controlButton.isClickable = true
-                                    controlButton.isFocusable = true
-                                    controlButtonListener?.let { listener ->
-                                        controlButton.setOnTouchListener(listener)
-                                    }
+                            controlButton.isClickable = true
+                            controlButton.isFocusable = true
+                            controlButtonListener?.let { listener ->
+                                controlButton.setOnTouchListener(listener)
+                            }
                                 }
                             }, 700)
                             

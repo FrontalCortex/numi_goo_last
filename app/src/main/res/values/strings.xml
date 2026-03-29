@@ -59,4 +59,6 @@
     <string name="offline_title">Offline</string>
     <string name="offline_message">İnternet bağlantınız yok. Lütfen Wi‑Fi veya mobil veriyi açın.</string>
     <string name="offline_retry">Tekrar dene</string>
+
+    <string name="tutorial_options_pick_first">Önce bir seçenek seçin.</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,12 @@ class TutorialOptionsAdapter : RecyclerView.Adapter<TutorialOptionsAdapter.Optio
     private val items: MutableList<String> = mutableListOf()
     private val selectedPositions: MutableSet<Int> = mutableSetOf()
     private var multipleChoice: Boolean = false
+    /** null: layout @dimen/tutorial_options_text_size */
+    private var sharedOptionTextSp: Float? = null
+
+    fun setSharedOptionTextSp(sp: Float?) {
+        sharedOptionTextSp = sp
+    }
 
     fun submitOptions(options: List<String>, multipleChoice: Boolean) {
         this.multipleChoice = multipleChoice
@@ -38,15 +45,26 @@ class TutorialOptionsAdapter : RecyclerView.Adapter<TutorialOptionsAdapter.Optio
     override fun getItemCount(): Int = items.size
 
     inner class OptionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val rowContainer: View = itemView.findViewById(R.id.optionRowContainer)
         private val checkBox: CheckBox = itemView.findViewById(R.id.optionCheckBox)
         private val textView: TextView = itemView.findViewById(R.id.optionText)
 
         fun bind(text: String, position: Int, isSelected: Boolean) {
             textView.text = text
+            val sp = sharedOptionTextSp
+            if (sp != null) {
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
+            } else {
+                val px = itemView.resources.getDimension(R.dimen.tutorial_options_text_size)
+                textView.setTextSize(TypedValue.COMPLEX_UNIT_PX, px)
+            }
             checkBox.isChecked = isSelected
+            rowContainer.isSelected = isSelected
+
+            rowContainer.contentDescription = text
 
             val clickListener = View.OnClickListener {
-                val pos = adapterPosition
+                val pos = bindingAdapterPosition
                 if (pos == RecyclerView.NO_POSITION) return@OnClickListener
 
                 if (multipleChoice) {
@@ -62,11 +80,7 @@ class TutorialOptionsAdapter : RecyclerView.Adapter<TutorialOptionsAdapter.Optio
                 notifyDataSetChanged()
             }
 
-            itemView.setOnClickListener(clickListener)
-            checkBox.setOnClickListener(clickListener)
+            rowContainer.setOnClickListener(clickListener)
         }
     }
 }
-
-
-
