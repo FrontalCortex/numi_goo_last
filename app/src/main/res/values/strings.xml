@@ -61,4 +61,22 @@
     <string name="offline_retry">Tekrar dene</string>
 
     <string name="tutorial_options_pick_first">Önce bir seçenek seçin.</string>
+
+    <string name="record_leaderboard_title">Liderlik tablosu</string>
+    <string name="record_leaderboard_subtitle">En iyi süreler</string>
+    <string name="record_leaderboard_empty">Henüz kayıt yok. İlk sen ol.</string>
+    <string name="record_leaderboard_rank_list">Sıralama</string>
+    <string name="record_leaderboard_load_error">Liste yüklenemedi.</string>
+
+    <string name="missions_daily_title">GÜNLÜK GÖREVLER</string>
+    <string name="missions_weekly_title">HAFTALIK GÖREVLER</string>
+    <string name="missions_hours_short">%d SA.</string>
+    <string name="missions_days_short">%d GÜN</string>
+    <string name="mission_finish_one_lesson">1 dersi bitir</string>
+    <string name="mission_finish_two_lessons">2 dersi bitir</string>
+    <string name="mission_progress_format">%1$d / %2$d</string>
+    <string name="mission_completed_label">Ödülü al!</string>
+    <string name="mission_chest_toast">sandık açıldı</string>
+    <string name="mission_chest_reward_title">Görev ilerlemesi</string>
+    <string name="mission_continue">Devam et</string>
 </resources>

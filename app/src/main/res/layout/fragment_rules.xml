@@ -10,12 +10,19 @@
     >
     <ImageButton
         android:id="@+id/quitButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:layout_width="@dimen/rules_fragment_quit_size"
+        android:layout_height="@dimen/rules_fragment_quit_size"
+        android:layout_margin="10dp"
+        android:elevation="20dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="-5dp"
-        android:elevation="16dp"
+        android:padding="0dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/cross"
+        android:tint="@android:color/white"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 <ScrollView
@@ -36,7 +43,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_gravity="center"
-            android:layout_marginTop="20dp">
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -44,15 +51,15 @@
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
-                android:textSize="16sp">
+                android:textSize="@dimen/rules_fragment_header_text_size">
 
             </TextView>
             <TableLayout
-                android:layout_width="200dp"
+                android:layout_width="@dimen/rules_fragment_table_width"
                 android:layout_height="wrap_content"
                 android:stretchColumns="*"
                 android:background="#222"
-                android:padding="2dp">
+                android:padding="@dimen/rules_fragment_cell_padding">
 
                 <TableRow>
                     <TextView
@@ -60,14 +67,16 @@
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="Kardeşi"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -76,14 +85,16 @@
                     <TextView
                         android:text="1"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
 
                     <TextView
                         android:text="4"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -92,13 +103,15 @@
                     <TextView
                         android:text="2"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="3"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -107,13 +120,15 @@
                     <TextView
                         android:text="3"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="2"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -122,13 +137,15 @@
                     <TextView
                         android:text="4"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="1"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -141,9 +158,9 @@
                 android:text="5 gelir. Kardeş gider"
                 android:textColor="#fff"
                 android:textAlignment="center"
-                android:textSize="14sp"
-                android:padding="6dp"
-                android:layout_marginTop="10dp"
+                android:textSize="@dimen/rules_fragment_description_text_size"
+                android:padding="@dimen/rules_fragment_description_padding"
+                android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
                 android:background="#222"
                 android:layout_gravity="center"/>
 
@@ -155,7 +172,7 @@
             android:orientation="vertical"
             android:layout_gravity="center"
 
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
             >
             <TextView
                 android:layout_width="wrap_content"
@@ -164,15 +181,15 @@
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
-                android:textSize="16sp">
+                android:textSize="@dimen/rules_fragment_header_text_size">
 
             </TextView>
             <TableLayout
-                android:layout_width="200dp"
+                android:layout_width="@dimen/rules_fragment_table_width"
                 android:layout_height="wrap_content"
                 android:stretchColumns="*"
                 android:background="#222"
-                android:padding="2dp">
+                android:padding="@dimen/rules_fragment_cell_padding">
 
                 <TableRow>
                     <TextView
@@ -180,14 +197,16 @@
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="Büyük Kardeşi"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -196,14 +215,16 @@
                     <TextView
                         android:text="1"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
 
                     <TextView
                         android:text="9"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -212,13 +233,15 @@
                     <TextView
                         android:text="2"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="8"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -227,13 +250,15 @@
                     <TextView
                         android:text="3"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="7"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -242,13 +267,15 @@
                     <TextView
                         android:text="4"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="6"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -256,13 +283,15 @@
                     <TextView
                         android:text="5"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="5"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -274,9 +303,9 @@
                 android:text="10 gelir. Kardeş gider."
                 android:textColor="#fff"
                 android:textAlignment="center"
-                android:textSize="14sp"
-                android:padding="6dp"
-                android:layout_marginTop="10dp"
+                android:textSize="@dimen/rules_fragment_description_text_size"
+                android:padding="@dimen/rules_fragment_description_padding"
+                android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
                 android:background="#222"
                 android:layout_gravity="center"/>
 
@@ -286,7 +315,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
             android:layout_gravity="center"
             >
             <TextView
@@ -296,15 +325,15 @@
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
-                android:textSize="16sp">
+                android:textSize="@dimen/rules_fragment_header_text_size">
 
             </TextView>
             <TableLayout
-                android:layout_width="200dp"
+                android:layout_width="@dimen/rules_fragment_table_width"
                 android:layout_height="wrap_content"
                 android:stretchColumns="*"
                 android:background="#222"
-                android:padding="2dp">
+                android:padding="@dimen/rules_fragment_cell_padding">
 
                 <TableRow>
                     <TextView
@@ -312,14 +341,16 @@
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="Kardeşi"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -328,14 +359,16 @@
                     <TextView
                         android:text="6"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
 
                     <TextView
                         android:text="4"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -344,13 +377,15 @@
                     <TextView
                         android:text="7"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="3"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -359,13 +394,15 @@
                     <TextView
                         android:text="8"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="2"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -374,13 +411,15 @@
                     <TextView
                         android:text="9"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
                         android:text="1"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
@@ -392,21 +431,24 @@
                 android:text="10 gelir. Kardeş gider."
                 android:textColor="#fff"
                 android:textAlignment="center"
-                android:textSize="14sp"
-                android:padding="6dp"
-                android:layout_marginTop="10dp"
+                android:textSize="@dimen/rules_fragment_description_text_size"
+                android:padding="@dimen/rules_fragment_description_padding"
+                android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
                 android:background="#222"
                 android:layout_gravity="center"/>
 
         </LinearLayout>
         <LinearLayout
             android:id="@+id/BeadRuleTable"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="20dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_marginBottom="10dp"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
             android:layout_gravity="center"
-            >
+            android:paddingStart="@dimen/rules_fragment_panel_padding_h"
+            android:paddingEnd="@dimen/rules_fragment_panel_padding_h">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -414,92 +456,122 @@
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
-                android:textSize="16sp">
+                android:textSize="@dimen/rules_fragment_header_text_size">
 
             </TextView>
             <TableLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:stretchColumns="*"
-                android:layout_marginHorizontal="50dp"
+                android:stretchColumns="1"
+                android:shrinkColumns="1"
                 android:background="#222"
-                android:padding="2dp">
+                android:padding="@dimen/rules_fragment_cell_padding">
 
                 <TableRow>
                     <TextView
                         android:id="@+id/beadText"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:text="Eklenecek sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
                         android:text="İşlem"
                         android:textStyle="bold"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
 
                 <TableRow>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:text="6"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
 
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
                         android:text="1 gelir - 5 gider - 10 gelir"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
 
                 <TableRow>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:text="7"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
                         android:text="2 gelir - 5 gider - 10 gelir"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
 
                 <TableRow>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:text="8"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
                         android:text="3 gelir - 5 gider - 10 gelir"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>
 
                 <TableRow>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:text="9"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                     <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
                         android:text="4 gelir - 5 gider - 10 gelir"
                         android:textColor="#fff"
-                        android:padding="2dp"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border"
                         android:textAlignment="center"/>
                 </TableRow>

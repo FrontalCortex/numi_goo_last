@@ -11,10 +11,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import android.widget.TextView
+import android.graphics.Color
 
 
 class TasksFragment : Fragment() {
     private lateinit var binding: FragmentTasksBinding
+    companion object {
+        private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+    }
 
     private data class BulletinCard(
         val id: String,
@@ -68,7 +72,23 @@ class TasksFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val adapter = BulletinAdapter { _ ->
-            // Şimdilik boş ekran
+            // Geçiş animasyonu boyunca ekrandaki tüm dokunuşları engelle.
+            val content = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+            content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
+            val blocker = View(requireContext()).apply {
+                tag = PRACTICE_TOUCH_BLOCKER_TAG
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                setBackgroundColor(Color.TRANSPARENT)
+                isClickable = true
+                isFocusable = true
+                setOnTouchListener { _, _ -> true }
+                elevation = 1000f
+            }
+            content.addView(blocker)
+
             requireActivity().supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     R.anim.slide_in_right,   // enter
@@ -76,7 +96,8 @@ class TasksFragment : Fragment() {
                     R.anim.slide_in_left,    // popEnter
                     R.anim.slide_out_right   // popExit
                 )
-                .replace(R.id.fragmentContainerID, AbacusPracticeFragment())
+                .replace(R.id.abacusFragmentContainer, AbacusPracticeFragment())
+                .hide(this@TasksFragment)
                 .addToBackStack(null)
                 .commit()
         }

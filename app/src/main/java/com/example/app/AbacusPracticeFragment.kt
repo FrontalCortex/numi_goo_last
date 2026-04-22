@@ -25,6 +25,10 @@ class AbacusPracticeFragment : Fragment() {
     private lateinit var abacusController: AbacusBeadController
     private var selectedOperator: String = "+"
     private var previousSoftInputMode: Int? = null
+    private var abacusMetricsInitialized: Boolean = false
+    companion object {
+        private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -70,6 +74,7 @@ class AbacusPracticeFragment : Fragment() {
             animationDurationMs = 300L
         )
         abacusController.setup()
+        ensureAbacusMetricsIfVisible()
 
         binding.correctPanel.visibility = View.GONE
         binding.incorrectPanel.visibility = View.GONE
@@ -94,7 +99,7 @@ class AbacusPracticeFragment : Fragment() {
         binding.kontrolButton.setOnClickListener { onKontrolClicked() }
 
         binding.okayButton.setOnClickListener { hidePanelsAndReset(animated = true) }
-        binding.nextButton.setOnClickListener { hidePanelsAndReset(animated = true) }
+        binding.continueButton.setOnClickListener { hidePanelsAndReset(animated = true) }
         binding.overlay.setOnClickListener { /* eat clicks while panel visible */ }
     }
 
@@ -119,7 +124,13 @@ class AbacusPracticeFragment : Fragment() {
         val abacusValue = abacusController.getCurrentValue().toLong()
         val isCorrect = expected == abacusValue
 
-        if (isCorrect) showResultPanel(binding.correctPanel) else showResultPanel(binding.incorrectPanel)
+        if (isCorrect) {
+            showResultPanel(binding.correctPanel)
+        } else {
+            binding.correctAnswerLabel.text = "Doğru cevap: $expected"
+            binding.correctAnswerText.text = "Senin cevabın: $abacusValue"
+            showResultPanel(binding.incorrectPanel)
+        }
     }
 
     private fun showResultPanel(panel: View) {
@@ -180,9 +191,10 @@ class AbacusPracticeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        releaseLaunchTouchBlocker()
         parentFragmentManager.clearFragmentResultListener(OperatorPickerBottomSheetFragment.REQUEST_KEY)
         _binding = null
+        super.onDestroyView()
     }
 
     // Bottom navigation visibility is controlled centrally by MainActivity (WindowInsets listener),
@@ -196,11 +208,35 @@ class AbacusPracticeFragment : Fragment() {
         }
         // Keep abacus + control button fixed; let keyboard overlay without moving content.
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+        // Enter animasyonu bitene kadar tüm dokunmaları bloklu tut.
+        binding.root.postDelayed({ releaseLaunchTouchBlocker() }, 320)
     }
 
     override fun onPause() {
         previousSoftInputMode?.let { requireActivity().window.setSoftInputMode(it) }
         super.onPause()
+    }
+
+    private fun ensureAbacusMetricsIfVisible() {
+        if (abacusMetricsInitialized) return
+        if (binding.abacusLinear.visibility != View.VISIBLE) return
+        binding.abacusLinear.post {
+            if (!isAdded || view == null) return@post
+            if (abacusMetricsInitialized) return@post
+            if (binding.abacusLinear.visibility != View.VISIBLE) return@post
+            val ok = abacusController.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)
+            if (ok) {
+                abacusMetricsInitialized = true
+                abacusController.syncStateFromUi()
+            }
+        }
+    }
+
+    private fun releaseLaunchTouchBlocker() {
+        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
+        content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { blocker ->
+            content.removeView(blocker)
+        }
     }
 }
 

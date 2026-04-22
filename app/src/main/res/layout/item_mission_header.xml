@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingTop="20dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/missionSectionTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAllCaps="true"
+        android:textColor="@color/missions_header_muted"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        tools:text="GÜNLÜK GÖREVLER" />
+
+    <ImageView
+        android:id="@+id/missionSectionClockIcon"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginEnd="4dp"
+        android:contentDescription="@null"
+        android:src="@android:drawable/ic_menu_recent_history"
+        android:tint="@color/missions_header_muted" />
+
+    <TextView
+        android:id="@+id/missionSectionCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/missions_header_muted"
+        android:textSize="13sp"
+        tools:text="4 SA." />
+</LinearLayout>

@@ -42,31 +42,6 @@
         android:gravity="center"
         android:layout_marginBottom="32dp">
 
-        <!-- Toplam Puan -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="@drawable/result_box_yellow"
-            android:gravity="center"
-            android:layout_marginEnd="8dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TOPLAM PUAN"
-                android:textColor="#FFD600"
-                android:textStyle="bold"
-                android:textSize="14sp"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/totalScore"
-                android:text="25"
-                android:textColor="#FFD600"
-                android:textSize="22sp"
-                android:textStyle="bold"/>
-        </LinearLayout>
         <!-- Süre -->
         <LinearLayout
             android:layout_width="0dp"
@@ -75,7 +50,8 @@
             android:orientation="vertical"
             android:background="@drawable/result_box_yellow"
             android:gravity="center"
-            android:layout_marginEnd="8dp">
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="0dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -100,8 +76,7 @@
             android:orientation="vertical"
             android:background="@drawable/result_box_green"
             android:gravity="center"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp">
+            android:layout_marginStart="8dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -120,6 +95,23 @@
         </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/totalScoreLargeText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:text="0"
+        android:textColor="#FFD600"
+        android:textSize="44sp"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <!-- Puanı Al Butonu -->
     <Button
         android:id="@+id/claimButton"
@@ -127,6 +119,7 @@
         android:layout_height="56dp"
         android:fontFamily="@font/font_regular"
         android:text="Devam et"
+        android:layout_marginBottom="20dp"
         android:textStyle="bold"
         android:textColor="#101820"
         android:backgroundTint="#29B6F6"

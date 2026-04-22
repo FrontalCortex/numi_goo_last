@@ -144,6 +144,164 @@
     <dimen name="tutorial_control_button_side_margin">16dp</dimen>
     <dimen name="tutorial_control_button_corner_radius">10dp</dimen>
 
+    <!-- QuestionMediaPickerDialogFragment (h700dp: daha büyük/okunaklı kart) -->
+    <dimen name="question_media_picker_dialog_padding">16dp</dimen>
+    <dimen name="question_media_picker_card_corner_radius">12dp</dimen>
+    <dimen name="question_media_picker_row_padding">10dp</dimen>
+    <dimen name="question_media_picker_icon_size">42dp</dimen>
+    <dimen name="question_media_picker_divider_width">2dp</dimen>
+    <dimen name="question_media_picker_divider_height">42dp</dimen>
+
+    <!-- RulesFragment — h700dp bucket (daha uzun ekranlarda okunaklı) -->
+    <dimen name="rules_fragment_section_margin_top">20dp</dimen>
+    <dimen name="rules_fragment_header_text_size">16sp</dimen>
+    <dimen name="rules_fragment_table_width">200dp</dimen>
+    <dimen name="rules_fragment_table_margin_horizontal">50dp</dimen>
+    <dimen name="rules_fragment_cell_padding">2dp</dimen>
+    <dimen name="rules_fragment_description_text_size">14sp</dimen>
+    <dimen name="rules_fragment_description_padding">6dp</dimen>
+    <dimen name="rules_fragment_description_margin_top">10dp</dimen>
+    <dimen name="rules_fragment_quit_size">40dp</dimen>
+    <dimen name="rules_fragment_panel_padding_h">16dp</dimen>
+    <dimen name="rules_fragment_cell_text_size">14sp</dimen>
+
+    <!-- CreateQuestionFragment — h700dp (daha büyük/okunaklı) -->
+    <dimen name="create_question_screen_padding">16dp</dimen>
+    <dimen name="create_question_min_height">200dp</dimen>
+    <dimen name="create_question_nav_icon_size">48dp</dimen>
+    <dimen name="create_question_nav_margin_top">3dp</dimen>
+    <dimen name="create_question_title_text_size">20sp</dimen>
+    <dimen name="create_question_title_margin_top">12dp</dimen>
+    <dimen name="create_question_section_margin_top">16dp</dimen>
+    <dimen name="create_question_media_min_height">120dp</dimen>
+    <dimen name="create_question_video_min_height">180dp</dimen>
+    <dimen name="create_question_media_action_size">40dp</dimen>
+    <dimen name="create_question_media_action_margin">8dp</dimen>
+    <dimen name="create_question_label_text_size">14sp</dimen>
+    <dimen name="create_question_input_text_size">18sp</dimen>
+    <dimen name="create_question_input_padding">12dp</dimen>
+    <dimen name="create_question_field_spacing">8dp</dimen>
+    <dimen name="create_question_send_button_height">56dp</dimen>
+    <dimen name="create_question_send_button_margin_v">24dp</dimen>
+    <dimen name="create_question_send_text_size">16sp</dimen>
+    <dimen name="create_question_overlay_elevation">10dp</dimen>
+
+    <!-- NotificationFragment — h700dp -->
+    <dimen name="notification_header_padding_h">16dp</dimen>
+    <dimen name="notification_header_padding_top">16dp</dimen>
+    <dimen name="notification_header_padding_bottom">8dp</dimen>
+    <dimen name="notification_title_text_size">22sp</dimen>
+    <dimen name="notification_tab_height">40dp</dimen>
+    <dimen name="notification_tab_padding_h">16dp</dimen>
+    <dimen name="notification_tab_text_size">16sp</dimen>
+    <dimen name="notification_tab_spacing">8dp</dimen>
+    <dimen name="notification_student_tabs_margin_top">8dp</dimen>
+    <dimen name="notification_list_padding">8dp</dimen>
+    <dimen name="notification_loading_size">48dp</dimen>
+    <dimen name="notification_empty_text_size">16sp</dimen>
+    <dimen name="notification_pending_container_padding">24dp</dimen>
+    <dimen name="notification_pending_message_text_size">16sp</dimen>
+    <dimen name="notification_pending_line_spacing_extra">4dp</dimen>
+    <dimen name="notification_pending_button_margin_top">24dp</dimen>
+    <dimen name="notification_pending_button_text_size">16sp</dimen>
+    <dimen name="chat_bubble_max_width">240dp</dimen>
+    <dimen name="chat_media_max_width">220dp</dimen>
+
+    <!-- item_question — h700dp -->
+    <dimen name="item_question_card_margin">8dp</dimen>
+    <dimen name="item_question_card_corner_radius">8dp</dimen>
+    <dimen name="item_question_card_elevation">4dp</dimen>
+    <dimen name="item_question_row_padding">12dp</dimen>
+    <dimen name="item_question_thumb_size">64dp</dimen>
+    <dimen name="item_question_content_margin_start">12dp</dimen>
+    <dimen name="item_question_preview_margin_end">14dp</dimen>
+    <dimen name="item_question_preview_text_size">14sp</dimen>
+    <dimen name="item_question_time_text_size">12sp</dimen>
+    <dimen name="item_question_time_margin_top">4dp</dimen>
+    <dimen name="item_question_status_row_margin_top">2dp</dimen>
+    <dimen name="item_question_status_icon_size">16dp</dimen>
+    <dimen name="item_question_status_text_margin_start">4dp</dimen>
+    <dimen name="item_question_status_text_size">12sp</dimen>
+    <dimen name="item_question_badge_size">20dp</dimen>
+    <dimen name="item_question_badge_padding_h">6dp</dimen>
+    <dimen name="item_question_badge_text_size">14sp</dimen>
+
+    <!-- item_message — h700dp -->
+    <dimen name="item_message_outer_padding">4dp</dimen>
+    <dimen name="item_message_bubble_padding">4dp</dimen>
+    <dimen name="item_message_text_size">15sp</dimen>
+    <dimen name="item_message_secondary_text_size">14sp</dimen>
+    <dimen name="item_message_audio_row_min_width">120dp</dimen>
+    <dimen name="item_message_audio_row_padding_v">4dp</dimen>
+    <dimen name="item_message_audio_row_padding_end">4dp</dimen>
+    <dimen name="item_message_audio_play_size">32dp</dimen>
+    <dimen name="item_message_inline_gap">8dp</dimen>
+    <dimen name="item_message_play_overlay_size">48dp</dimen>
+    <dimen name="item_message_meta_margin">6dp</dimen>
+    <dimen name="item_message_meta_padding_h">8dp</dimen>
+    <dimen name="item_message_meta_padding_v">4dp</dimen>
+    <dimen name="item_message_image_meta_margin">6dp</dimen>
+    <dimen name="item_message_image_meta_padding_h">8dp</dimen>
+    <dimen name="item_message_image_meta_padding_v">4dp</dimen>
+    <dimen name="item_message_meta_text_size">11sp</dimen>
+    <dimen name="item_message_tick_size">16dp</dimen>
+    <dimen name="item_message_tick_gap">4dp</dimen>
+    <dimen name="item_message_action_padding_h">16dp</dimen>
+    <dimen name="item_message_action_padding_v">10dp</dimen>
+    <dimen name="item_message_action_icon_size">22dp</dimen>
+    <dimen name="item_message_corner_margin">8dp</dimen>
+    <dimen name="item_message_corner_padding_h">12dp</dimen>
+    <dimen name="item_message_corner_padding_v">8dp</dimen>
+    <dimen name="item_message_progress_size">32dp</dimen>
+    <dimen name="item_message_time_row_margin_start">2dp</dimen>
+    <dimen name="item_message_time_row_margin_top">2dp</dimen>
+    <dimen name="item_message_time_tick_gap">2dp</dimen>
+    <dimen name="item_message_caption_margin_top">4dp</dimen>
+    <dimen name="item_message_caption_margin_start">3dp</dimen>
+
+    <!-- QuestionChatFragment — h700dp -->
+    <dimen name="question_chat_topbar_height">48dp</dimen>
+    <dimen name="question_chat_topbar_padding_h">4dp</dimen>
+    <dimen name="question_chat_topbar_icon_size">48dp</dimen>
+    <dimen name="question_chat_resolve_icon_size">40dp</dimen>
+    <dimen name="question_chat_list_padding_h">8dp</dimen>
+    <dimen name="question_chat_restriction_padding">16dp</dimen>
+    <dimen name="question_chat_claim_margin">8dp</dimen>
+    <dimen name="question_chat_claim_text_size">16sp</dimen>
+    <dimen name="question_chat_inputbar_padding">8dp</dimen>
+    <dimen name="question_chat_input_min_height">44dp</dimen>
+    <dimen name="question_chat_input_padding_start">12dp</dimen>
+    <dimen name="question_chat_input_padding_end">40dp</dimen>
+    <dimen name="question_chat_input_padding_v">12dp</dimen>
+    <dimen name="question_chat_input_text_size">14sp</dimen>
+    <dimen name="question_chat_gallery_icon_size">24dp</dimen>
+    <dimen name="question_chat_gallery_margin_end">12dp</dimen>
+    <dimen name="question_chat_send_audio_size">52dp</dimen>
+    <dimen name="question_chat_send_audio_margin_start">8dp</dimen>
+    <dimen name="question_chat_send_audio_icon_padding">12dp</dimen>
+    <dimen name="chat_mic_send_icon_size">24dp</dimen>
+    <dimen name="question_chat_audio_bar_height">56dp</dimen>
+    <dimen name="question_chat_audio_bar_padding_h">12dp</dimen>
+    <dimen name="question_chat_audio_button_size">40dp</dimen>
+    <dimen name="question_chat_audio_time_margin_start">8dp</dimen>
+    <dimen name="question_chat_audio_time_min_width">32dp</dimen>
+    <dimen name="question_chat_audio_time_text_size">12sp</dimen>
+    <dimen name="question_chat_audio_wave_height">28dp</dimen>
+    <dimen name="question_chat_audio_wave_margin_end">8dp</dimen>
+    <dimen name="question_chat_audio_total_margin_end">40dp</dimen>
+    <dimen name="question_chat_audio_inline_icon_size">24dp</dimen>
+    <dimen name="question_chat_audio_inline_icon_margin_start">4dp</dimen>
+    <dimen name="question_chat_audio_inline_icon_margin_end">20dp</dimen>
+    <dimen name="question_chat_audio_send_margin_start">4dp</dimen>
+    <dimen name="question_chat_caption_bar_padding">8dp</dimen>
+    <dimen name="question_chat_caption_bar_elevation">8dp</dimen>
+    <dimen name="question_chat_caption_thumb_size">48dp</dimen>
+    <dimen name="question_chat_caption_thumb_close_size">20dp</dimen>
+    <dimen name="question_chat_caption_thumb_close_padding">2dp</dimen>
+    <dimen name="question_chat_caption_input_margin_start">8dp</dimen>
+    <dimen name="question_chat_caption_send_size">48dp</dimen>
+    <dimen name="question_chat_caption_send_margin_start">8dp</dimen>
+
     <!-- AbacusFragment — yüksek ekran (önceki sabit dp’lere yakın) -->
     <dimen name="abacus_fragment_root_padding">10dp</dimen>
     <dimen name="abacus_fragment_rules_book_size">56dp</dimen>

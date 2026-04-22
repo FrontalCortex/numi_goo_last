@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/crystalVideoRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:clickable="true"
+    android:focusable="true">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/crystalPlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        app:resize_mode="zoom"
+        app:show_buffering="never"
+        app:use_controller="false" />
+
+    <TextView
+        android:id="@+id/crystalRarityText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="28dp"
+        android:alpha="0"
+        android:shadowColor="#99000000"
+        android:shadowDx="0"
+        android:shadowDy="2"
+        android:shadowRadius="3"
+        android:text="SIRADAN"
+        android:textAllCaps="true"
+        android:textColor="#8AD7FF"
+        android:textSize="34sp"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/crystalTapWaveCircle"
+        android:layout_width="78dp"
+        android:layout_height="78dp"
+        android:alpha="0"
+        android:background="@drawable/bg_tap_wave_circle"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <View
+        android:id="@+id/crystalTapWaveGlow"
+        android:layout_width="132dp"
+        android:layout_height="132dp"
+        android:alpha="0"
+        android:background="@drawable/bg_tap_wave_glow"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <View
+        android:id="@+id/crystalTapWaveYellowCircle"
+        android:layout_width="86dp"
+        android:layout_height="86dp"
+        android:alpha="0"
+        android:background="@drawable/bg_tap_wave_yellow_circle"
+        android:clickable="false"
+        android:focusable="false" />
+
+    <View
+        android:id="@+id/crystalTapWaveYellowGlow"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:alpha="0"
+        android:background="@drawable/bg_tap_wave_yellow_glow"
+        android:clickable="false"
+        android:focusable="false" />
+
+</FrameLayout>

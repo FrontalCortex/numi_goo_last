@@ -4,22 +4,22 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:layout_margin="@dimen/item_question_card_margin"
+    app:cardCornerRadius="@dimen/item_question_card_corner_radius"
+    app:cardElevation="@dimen/item_question_card_elevation">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="@dimen/item_question_row_padding"
         android:gravity="center_vertical"
         android:clipChildren="false"
         android:clipToPadding="false">
 
         <FrameLayout
-            android:layout_width="64dp"
-            android:layout_height="64dp">
+            android:layout_width="@dimen/item_question_thumb_size"
+            android:layout_height="@dimen/item_question_thumb_size">
 
             <ImageView
                 android:id="@+id/questionThumbnail"
@@ -36,14 +36,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="12dp">
+            android:layout_marginStart="@dimen/item_question_content_margin_start">
 
             <TextView
                 android:id="@+id/questionPreview"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="14dp"
-                android:textSize="14sp"
+                android:layout_marginEnd="@dimen/item_question_preview_margin_end"
+                android:textSize="@dimen/item_question_preview_text_size"
                 android:textColor="@android:color/black"
                 android:maxLines="1"
                 android:ellipsize="end" />
@@ -52,27 +52,27 @@
                 android:id="@+id/questionTimeAgo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="12sp"
+                android:textSize="@dimen/item_question_time_text_size"
                 android:textColor="#666666"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="@dimen/item_question_time_margin_top" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="2dp">
+                android:layout_marginTop="@dimen/item_question_status_row_margin_top">
                 <ImageView
                     android:id="@+id/questionStatusIcon"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="@dimen/item_question_status_icon_size"
+                    android:layout_height="@dimen/item_question_status_icon_size"
                     android:contentDescription="Durum ikonu"
                     android:visibility="gone" />
                 <TextView
                     android:id="@+id/questionStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:textSize="12sp"
+                    android:layout_marginStart="@dimen/item_question_status_text_margin_start"
+                    android:textSize="@dimen/item_question_status_text_size"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -88,18 +88,18 @@
 
         <TextView
             android:id="@+id/questionUnreadBadge"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/item_question_badge_size"
+            android:layout_height="@dimen/item_question_badge_size"
             android:layout_gravity="end|center"
             android:gravity="center"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
+            android:paddingStart="@dimen/item_question_badge_padding_h"
+            android:paddingEnd="@dimen/item_question_badge_padding_h"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
             android:includeFontPadding="false"
             android:background="@drawable/item_question_unread_badge_bg"
             android:textColor="@android:color/black"
-            android:textSize="14sp"
+            android:textSize="@dimen/item_question_badge_text_size"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>

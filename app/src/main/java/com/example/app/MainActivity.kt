@@ -134,6 +134,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        //Bütün görevleri her açılışta sıfırlar
+        MissionsProgressStore.resetAllProgress(this)
+
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
                 binding.createQuestionOverlayContainer.visibility = View.GONE
@@ -158,6 +161,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         supportFragmentManager.addOnBackStackChangedListener {
             // Re-evaluate bottom nav visibility with current fragment state.
             binding.bottomNavigationID.requestApplyInsets()
+
+            // Overlay (abacus/tutorial/practice) kapanınca alttaki ana fragment gizliyse tekrar göster.
+            val topOverlay = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+            if (topOverlay == null) {
+                val baseFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+                if (baseFragment != null && baseFragment.isHidden) {
+                    supportFragmentManager.beginTransaction()
+                        .show(baseFragment)
+                        .commitAllowingStateLoss()
+                }
+            }
         }
         
         // Bildirimde gelen soru ID'si var mı? (sohbete deep-link)
@@ -355,6 +369,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                     R.id.map ->
                         if (currentFragment is MapFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(MapFragment())
+                    R.id.tasks ->
+                        if (currentFragment is MissionsFragment) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(MissionsFragment())
                     R.id.explore ->
                         if (currentFragment is TasksFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(TasksFragment())

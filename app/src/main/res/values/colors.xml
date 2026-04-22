@@ -30,6 +30,15 @@
     <color name="message_sender">#1E6655</color>
     <color name="message_getter">#292E2C</color>
 
+    <color name="missions_header_muted">#99EEEEEE</color>
+    <color name="missions_track">#3D4A50</color>
+    <color name="missions_progress_blue">#2196F3</color>
+    <color name="missions_progress_blue_shine">#B3E5FC</color>
+    <color name="missions_progress_complete">#FFD600</color>
+    <color name="missions_progress_gold_shine">#FFF9C4</color>
+    <color name="missions_quest_title_normal">#FFFFFFFF</color>
+    <color name="missions_progress_text_muted">#AAFFFFFF</color>
+
 
 
     <!-- Modern Koyu Tema Renkleri -->

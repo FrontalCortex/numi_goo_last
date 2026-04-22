@@ -28,6 +28,8 @@ class ChestFragment : Fragment() {
     private var successRate: Float = 0F
     private var goldAmount: Int = 0
     private var goldUpdateListener: GoldUpdateListener? = null
+    /** Aynı anda yalnızca bir ödül akışı (çift tıklama engeli) */
+    private var claimRewardInProgress = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
@@ -98,35 +100,66 @@ class ChestFragment : Fragment() {
         binding.claimRewardButton.setOnClickListener {
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-            if(GlobalValues.currentTutorialNumber == 1){
+            if (GlobalValues.currentTutorialNumber == 1) {
                 prefs.edit().putBoolean("first_tutorial_shown", true).apply()
             }
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
-                // Bir sonraki açılacak hesapta Tutorial 1 başlangıç dersini güncellemek için bayrak yaz
+                if (claimRewardInProgress) return@setOnClickListener
+                claimRewardInProgress = true
+                binding.claimRewardButton.isEnabled = false
                 prefs.edit().putBoolean("tutorial1_login_flow_pending", true).apply()
-
                 GlobalValues.currentTutorialNumber = 0
                 loginLauncher.launch(
                     Intent(requireContext(), LoginStartActivity::class.java)
-                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
+                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
                 )
                 return@setOnClickListener
             }
 
-            // Önce map progress'i güncelle
-            updateMapProgress()
+            if (claimRewardInProgress) return@setOnClickListener
+            claimRewardInProgress = true
+            binding.claimRewardButton.isEnabled = false
 
-            // Abacus container'daki fragment'ı kaldır
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_left,  // Giriş animasyonu
-                    R.anim.slide_out_left // Çıkış animasyonu
-                )
-                .remove(this@ChestFragment)
-                .commit()
+            try {
+                val beforeSnap = MissionsProgressStore.getSnapshot(requireContext())
+                updateMapProgress()
+                val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
 
-            // Gold miktarını güncelle
-            goldUpdateListener?.onGoldUpdated(goldAmount)
+                val fm = parentFragmentManager
+                // ChestFragment bazen resultFragmentContainer'da (LessonResult), bazen abacusFragmentContainer'da (BlindingLesson).
+                // Görev ekranı yanlış container'a konursa altta kalır; her zaman sandık ile aynı host'ta replace et.
+                val hostContainerId = (requireView().parent as View).id
+                if (hostContainerId == View.NO_ID) {
+                    throw IllegalStateException("ChestFragment host container id yok")
+                }
+                if (MissionsProgressStore.hasVisibleMissionProgress(beforeSnap, afterSnap)) {
+                    fm.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_left,
+                        )
+                        .replace(
+                            hostContainerId,
+                            MissionChestRewardFragment.newInstance(beforeSnap, afterSnap),
+                        )
+                        .commitNowAllowingStateLoss()
+                } else {
+                    fm.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_left,
+                        )
+                        .remove(this@ChestFragment)
+                        .commitNowAllowingStateLoss()
+                }
+                goldUpdateListener?.onGoldUpdated(goldAmount)
+            } catch (e: IllegalStateException) {
+                Log.e("ChestFragment", "Ödül fragment işlemi başarısız", e)
+                claimRewardInProgress = false
+                if (isAdded && _binding != null) {
+                    binding.claimRewardButton.isEnabled = true
+                }
+            }
         }
     }
 
@@ -246,6 +279,10 @@ class ChestFragment : Fragment() {
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                 }
             }
+        }
+
+        if (lessonItem != null) {
+            MissionsProgressStore.recordChestClaim(requireContext())
         }
     }
     

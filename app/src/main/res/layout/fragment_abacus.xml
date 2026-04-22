@@ -177,8 +177,7 @@
         android:id="@+id/quitButton"
         android:layout_width="@dimen/abacus_fragment_quit_size"
         android:layout_height="@dimen/abacus_fragment_quit_size"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:background="@drawable/cross"
         android:padding="-5dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>

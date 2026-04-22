@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
+    android:padding="@dimen/question_media_picker_dialog_padding"
     android:clickable="true"
     android:focusable="true">
 
@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        app:cardCornerRadius="18dp"
+        app:cardCornerRadius="@dimen/question_media_picker_card_corner_radius"
         app:cardUseCompatPadding="true"
         app:cardBackgroundColor="@color/dark_surface">
 
@@ -20,28 +20,42 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="18dp">
+            android:padding="@dimen/question_media_picker_row_padding">
 
-            <ImageButton
+            <ImageView
                 android:id="@+id/btnCamera"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="@dimen/question_media_picker_icon_size"
+                android:layout_height="@dimen/question_media_picker_icon_size"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:layout_margin="10dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="centerInside"
                 android:contentDescription="Resim ile sor"
                 android:src="@drawable/question_camera_ic"
                 app:tint="#46525A" />
 
             <View
-                android:layout_width="2dp"
-                android:layout_height="60dp"
+                android:layout_width="@dimen/question_media_picker_divider_width"
+                android:layout_height="@dimen/question_media_picker_divider_height"
                 android:layout_gravity="center_vertical"
                 android:background="#46525A" />
 
-            <ImageButton
+            <ImageView
                 android:id="@+id/btnVideo"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="@dimen/question_media_picker_icon_size"
+                android:layout_height="@dimen/question_media_picker_icon_size"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:padding="0dp"
+                android:layout_margin="10dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="centerInside"
                 android:contentDescription="Video ile sor"
                 android:src="@drawable/question_video_ic"
                 app:tint="#46525A" />

@@ -367,7 +367,7 @@ class NotificationFragment : Fragment() {
             // Mevcut Firestore indeksini bozmayalım; DESC alıp client tarafında ASC'ye çeviriyoruz.
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
-            if (e != null) return@addSnapshotListener
+            if (e != null || _binding == null || !isAdded) return@addSnapshotListener
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
@@ -380,9 +380,10 @@ class NotificationFragment : Fragment() {
             adapter.submitList(sorted)
             // En eski sorular üstte, en yeni sorular altta.
             // Öğretmene, en yeni soruları göstermek için listeyi en alta kaydır.
-            binding.questionsRecyclerView.post {
+            _binding?.questionsRecyclerView?.post {
+                val b = _binding ?: return@post
                 if (sorted.isNotEmpty()) {
-                    binding.questionsRecyclerView.scrollToPosition(sorted.size - 1)
+                    b.questionsRecyclerView.scrollToPosition(sorted.size - 1)
                 }
             }
             // Soru havuzundaki (henüz hiçbir öğretmen tarafından sahiplenilmemiş) sorular için
@@ -405,7 +406,7 @@ class NotificationFragment : Fragment() {
             .whereEqualTo("claimedByTeacherUid", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
-            if (e != null) return@addSnapshotListener
+            if (e != null || _binding == null || !isAdded) return@addSnapshotListener
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
@@ -419,9 +420,10 @@ class NotificationFragment : Fragment() {
             adapter.submitList(sorted)
             refreshUnreadCounts(sorted, uid)
             // Yeni mesajlarda, en güncel soru en üstte olduğu için listeyi otomatik olarak üste kaydır.
-            binding.questionsRecyclerView.post {
+            _binding?.questionsRecyclerView?.post {
+                val b = _binding ?: return@post
                 if (sorted.isNotEmpty()) {
-                    binding.questionsRecyclerView.scrollToPosition(0)
+                    b.questionsRecyclerView.scrollToPosition(0)
                 }
             }
             binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
@@ -440,7 +442,7 @@ class NotificationFragment : Fragment() {
             .whereIn("status", listOf(StudentQuestion.STATUS_PENDING, StudentQuestion.STATUS_CLAIMED))
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
-            if (e != null) return@addSnapshotListener
+            if (e != null || _binding == null || !isAdded) return@addSnapshotListener
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
@@ -456,9 +458,10 @@ class NotificationFragment : Fragment() {
             refreshUnreadCounts(sorted, uid)
             // Öğrenci bekleyen listesinde: yalnızca yeni soru eklendiğinde veya kapsam genişlediğinde
             // (boyut azalmamışsa) listeyi en üste kaydır. Böylece soru silindiğinde scroll yapılmaz.
-            binding.questionsRecyclerView.post {
+            _binding?.questionsRecyclerView?.post {
+                val b = _binding ?: return@post
                 if (sorted.isNotEmpty() && sorted.size >= previousSize) {
-                    binding.questionsRecyclerView.scrollToPosition(0)
+                    b.questionsRecyclerView.scrollToPosition(0)
                 }
             }
             binding.emptyText.visibility = if (sorted.isEmpty()) View.VISIBLE else View.GONE
@@ -477,7 +480,7 @@ class NotificationFragment : Fragment() {
             .whereEqualTo("status", StudentQuestion.STATUS_RESOLVED)
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
-            if (e != null) return@addSnapshotListener
+            if (e != null || _binding == null || !isAdded) return@addSnapshotListener
             val raw = snap?.documents?.mapNotNull { doc ->
                 doc.toObject(StudentQuestion::class.java)?.copy(id = doc.id)
             } ?: emptyList()
@@ -512,8 +515,9 @@ class NotificationFragment : Fragment() {
             .limit(1)
             .get()
             .addOnSuccessListener {
-                binding.chatLoading.visibility = View.GONE
-                binding.questionsRecyclerView.isEnabled = true
+                val b = _binding ?: return@addOnSuccessListener
+                b.chatLoading.visibility = View.GONE
+                b.questionsRecyclerView.isEnabled = true
 
                 val fragment = QuestionChatFragment.newInstance(questionId)
                 requireActivity().supportFragmentManager.beginTransaction()
@@ -522,8 +526,9 @@ class NotificationFragment : Fragment() {
                     .commit()
             }
             .addOnFailureListener {
-                binding.chatLoading.visibility = View.GONE
-                binding.questionsRecyclerView.isEnabled = true
+                val b = _binding ?: return@addOnFailureListener
+                b.chatLoading.visibility = View.GONE
+                b.questionsRecyclerView.isEnabled = true
                 // Hata durumda şimdilik sadece boş bırakıyoruz; istersen Toast ekleyebilirsin.
             }
     }

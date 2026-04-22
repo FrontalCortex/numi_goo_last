@@ -417,7 +417,7 @@ class BlindingLessonFragment : Fragment() {
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTime >= 500) {
+                    if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
                         v.animate()
@@ -427,9 +427,10 @@ class BlindingLessonFragment : Fragment() {
                             .setInterpolator(BounceInterpolator())
                             .start()
 
-                        // Tıklama işlemini gerçekleştir
-                        updateProgressBar()
-                        showResultPanel()
+                        // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
+                        val isCorrect = stepAnswerAlgorithm()
+                        updateProgressBar(isCorrect)
+                        showResultPanel(isCorrect)
                         controlNumber = 0
                         binding.numberInput.setText("")
                     }
@@ -519,14 +520,14 @@ class BlindingLessonFragment : Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
-    private fun showResultPanel() {
+    private fun showResultPanel(isCorrect: Boolean) {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
         if (resultDialog?.isShowing == true) {
             return
         }
 
 
-        if (stepAnswerAlgorithm()) {
+        if (isCorrect) {
             // Doğru cevap durumu
 
             correctAnswer++
@@ -561,11 +562,11 @@ class BlindingLessonFragment : Fragment() {
                                 .setDuration(100)
                                 .setInterpolator(AccelerateDecelerateInterpolator())
                                 .start()
-                            currentIndex++
                             true
                         }
 
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP -> {
+                            currentIndex++
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -597,6 +598,16 @@ class BlindingLessonFragment : Fragment() {
                             true
                         }
 
+                        MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(120)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
+                            true
+                        }
+
                         else -> false
                     }
                 }
@@ -625,11 +636,11 @@ class BlindingLessonFragment : Fragment() {
                                 .setDuration(100)
                                 .setInterpolator(AccelerateDecelerateInterpolator())
                                 .start()
-                            currentIndex++
                             true
                         }
 
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP -> {
+                            currentIndex++
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -661,13 +672,23 @@ class BlindingLessonFragment : Fragment() {
                             true
                         }
 
+                        MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(120)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
+                            true
+                        }
+
                         else -> false
                     }
                 }
         }
     }
 
-    private fun updateProgressBar() {
+    private fun updateProgressBar(isCorrect: Boolean) {
         val fill = requireView().findViewById<View>(R.id.progressBarFill)
         val empty = requireView().findViewById<View>(R.id.progressBarEmpty)
 
@@ -679,7 +700,7 @@ class BlindingLessonFragment : Fragment() {
         val colorYellow = Color.parseColor("#FFFF99")    // Açık sarı
         val colorDarkRed = Color.parseColor("#990000")
 
-        if (stepAnswerAlgorithm()) {
+        if (isCorrect) {
 
             val animator = ValueAnimator.ofFloat(startWeight, endWeight)
             animator.duration = 700

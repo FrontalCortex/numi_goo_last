@@ -618,6 +618,9 @@ class AbacusFragment : Fragment() {
         // Diğer butonları da tıklanamaz yap
         binding.quitButton.isClickable = false
         binding.rulesBookButton.isClickable = false
+        binding.askQuestionButton.isClickable = false
+        binding.askQuestionButton.isFocusable = false
+        binding.askQuestionButton.isEnabled = false
     }
     
     /**
@@ -659,6 +662,9 @@ class AbacusFragment : Fragment() {
         // Diğer butonları da tekrar tıklanabilir yap
         binding.quitButton.isClickable = true
         binding.rulesBookButton.isClickable = true
+        binding.askQuestionButton.isClickable = true
+        binding.askQuestionButton.isFocusable = true
+        binding.askQuestionButton.isEnabled = true
     }
     
     /**
@@ -1300,7 +1306,7 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    private fun updateProgressBar() {
+    private fun updateProgressBar(isCorrect: Boolean) {
         val fill = requireView().findViewById<View>(R.id.progressBarFill)
         val empty = requireView().findViewById<View>(R.id.progressBarEmpty)
 
@@ -1312,7 +1318,7 @@ class AbacusFragment : Fragment() {
         val colorYellow = Color.parseColor("#FFFF99")    // Açık sarı
         val colorDarkRed = Color.parseColor("#990000")
 
-        if (stepAnswerAlgorithm()) {
+        if (isCorrect) {
 
             val animator = ValueAnimator.ofFloat(startWeight, endWeight)
             animator.duration = 700
@@ -1396,7 +1402,7 @@ class AbacusFragment : Fragment() {
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTime >= 500) {
+                    if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
                         (activity as? MainActivity)?.requireOnlineOrShowOffline {
@@ -1408,8 +1414,9 @@ class AbacusFragment : Fragment() {
                             .start()
 
                         // Tıklama işlemini gerçekleştir
-                        updateProgressBar()
-                        showResultPanel()
+                        val isCorrect = stepAnswerAlgorithm()
+                        updateProgressBar(isCorrect)
+                        showResultPanel(isCorrect)
                         controlNumber = 0
                         }
                     }
@@ -2512,14 +2519,14 @@ class AbacusFragment : Fragment() {
     }
 
     @SuppressLint("ClickableViewAccessibility", "MissingInflatedId")
-    private fun showResultPanel() {
+    private fun showResultPanel(isCorrect: Boolean) {
         // Eğer dialog zaten gösteriliyorsa, yeni dialog oluşturma
         if (resultDialog?.isShowing == true) {
             return
         }
 
 
-        if (stepAnswerAlgorithm()) {
+        if (isCorrect) {
             // Doğru cevap durumu
             playSound(R.raw.correct_answer_sound)
 
@@ -2566,13 +2573,13 @@ class AbacusFragment : Fragment() {
                                 .setDuration(100)
                                 .setInterpolator(AccelerateDecelerateInterpolator())
                                 .start()
-                            currentIndex++
                             true
                         }
 
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP -> {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
+                            currentIndex++
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -2612,6 +2619,16 @@ class AbacusFragment : Fragment() {
                                     showLessonResult()
                                 }
                             }
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(120)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
                             true
                         }
 
@@ -2656,13 +2673,13 @@ class AbacusFragment : Fragment() {
                                 .setDuration(100)
                                 .setInterpolator(AccelerateDecelerateInterpolator())
                                 .start()
-                            currentIndex++
                             true
                         }
 
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        MotionEvent.ACTION_UP -> {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
+                            currentIndex++
                             v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
@@ -2702,6 +2719,16 @@ class AbacusFragment : Fragment() {
                                     showLessonResult()
                                 }
                             }
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(120)
+                                .setInterpolator(AccelerateDecelerateInterpolator())
+                                .start()
                             true
                         }
 

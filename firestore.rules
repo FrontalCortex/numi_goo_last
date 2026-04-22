@@ -53,6 +53,25 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Ders liderlik tablosu: giriş yapmış herkes okur; her kullanıcı yalnızca kendi entry dokümanını yazar
+    match /lessonLeaderboards/{leaderboardId}/entries/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.recordSeconds is int
+        && request.resource.data.recordSeconds >= 0
+        && request.resource.data.recordSeconds < 360000
+        && request.resource.data.recordLabel is string
+        && request.resource.data.recordLabel.size() < 32
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() < 128
+        && request.resource.data.updatedAt is timestamp
+        && (!('photoUrl' in request.resource.data)
+            || (request.resource.data.photoUrl is string
+                && request.resource.data.photoUrl.size() < 512));
+      allow delete: if false;
+    }
+
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)
     match /{document=**} {
       allow read, write: if false;

@@ -11,20 +11,20 @@
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
-        android:layout_height="48dp"
+        android:layout_height="@dimen/question_chat_topbar_height"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="4dp"
+        android:paddingStart="@dimen/question_chat_topbar_padding_h"
         android:background="@color/message_topbar"
-        android:paddingEnd="4dp"
+        android:paddingEnd="@dimen/question_chat_topbar_padding_h"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/question_chat_topbar_icon_size"
+            android:layout_height="@dimen/question_chat_topbar_icon_size"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_back_arrow"
             android:contentDescription="Geri"
@@ -37,8 +37,8 @@
 
         <ImageButton
             android:id="@+id/resolveButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/question_chat_resolve_icon_size"
+            android:layout_height="@dimen/question_chat_resolve_icon_size"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/unlock_ic"
             android:visibility="visible"
@@ -60,7 +60,7 @@
         android:id="@+id/messagesRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:paddingHorizontal="8dp"
+        android:paddingHorizontal="@dimen/question_chat_list_padding_h"
         app:layout_constraintTop_toBottomOf="@id/topBarDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -78,7 +78,7 @@
             android:id="@+id/restrictionMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="16dp"
+            android:padding="@dimen/question_chat_restriction_padding"
             android:visibility="gone"
             android:text="Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
             android:textColor="@android:color/white"
@@ -89,7 +89,8 @@
             android:id="@+id/teacherClaimButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
+            android:layout_margin="@dimen/question_chat_claim_margin"
+            android:textSize="@dimen/question_chat_claim_text_size"
             android:text="Soruyu Sahiplen"
             android:textAllCaps="false"
             android:visibility="gone"
@@ -101,7 +102,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="8dp"
+            android:padding="@dimen/question_chat_inputbar_padding"
             android:gravity="center_vertical">
 
         <!-- Metin alanı + içinde sağda galeri ikonu -->
@@ -115,25 +116,26 @@
                 android:id="@+id/textInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="44dp"
+                android:minHeight="@dimen/question_chat_input_min_height"
                 android:inputType="textMultiLine|textCapSentences"
                 android:hint="Bir mesaj yazın"
-                android:paddingStart="12dp"
-                android:paddingEnd="40dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
+                android:paddingStart="@dimen/question_chat_input_padding_start"
+                android:paddingEnd="@dimen/question_chat_input_padding_end"
+                android:paddingTop="@dimen/question_chat_input_padding_v"
+                android:paddingBottom="@dimen/question_chat_input_padding_v"
                 android:background="@drawable/text_background"
                 android:textColor="@android:color/white"
                 android:textColorHint="#80FFFFFF"
+                android:textSize="@dimen/question_chat_input_text_size"
                 android:maxLines="4" />
 
             <ImageButton
                 android:id="@+id/galleryButton"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="@dimen/chat_mic_send_icon_size"
+                android:layout_height="@dimen/chat_mic_send_icon_size"
                 android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_marginEnd="@dimen/question_chat_gallery_margin_end"
+                android:background="@null"
                 android:contentDescription="Galeri"
                 android:src="@drawable/gallery_ic"
                 app:tint="@color/message_buttons" />
@@ -142,9 +144,9 @@
         <!-- Sağ taraftaki dairesel kapsülde mic / send (tek seferde biri görünür) -->
         <FrameLayout
             android:id="@+id/sendAudioContainer"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="@dimen/question_chat_send_audio_size"
+            android:layout_height="@dimen/question_chat_send_audio_size"
+            android:layout_marginStart="@dimen/question_chat_send_audio_margin_start"
             android:background="@drawable/text_background"
             android:foreground="?attr/selectableItemBackgroundBorderless">
 
@@ -153,6 +155,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/transparent"
+                android:scaleType="center"
+                android:padding="0dp"
                 android:contentDescription="Ses kaydet"
                 android:src="@drawable/microphone_ic"
                 app:tint="@color/message_buttons" />
@@ -162,6 +166,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/transparent"
+                android:scaleType="center"
+                android:padding="0dp"
                 android:contentDescription="Gönder"
                 android:src="@drawable/send_ic"
                 android:visibility="gone"
@@ -173,11 +179,11 @@
     <LinearLayout
         android:id="@+id/audioBar"
         android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:layout_height="@dimen/question_chat_audio_bar_height"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+        android:paddingStart="@dimen/question_chat_audio_bar_padding_h"
+        android:paddingEnd="@dimen/question_chat_audio_bar_padding_h"
         android:background="#2C2C2C"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/bottomArea"
@@ -185,8 +191,8 @@
         app:layout_constraintEnd_toEndOf="parent">
         <ImageButton
             android:id="@+id/audioBarPlayPause"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/question_chat_audio_button_size"
+            android:layout_height="@dimen/question_chat_audio_button_size"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Oynat / Duraklat"
             android:src="@android:drawable/ic_media_play"
@@ -195,45 +201,45 @@
             android:id="@+id/audioBarCurrentTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:minWidth="32dp"
+            android:layout_marginStart="@dimen/question_chat_audio_time_margin_start"
+            android:minWidth="@dimen/question_chat_audio_time_min_width"
             android:gravity="end"
             android:text="0:00"
             android:textColor="#AAAAAA"
-            android:textSize="12sp" />
+            android:textSize="@dimen/question_chat_audio_time_text_size" />
         <com.example.app.AudioWaveformView
             android:id="@+id/audioBarWaveform"
             android:layout_width="0dp"
-            android:layout_height="28dp"
+            android:layout_height="@dimen/question_chat_audio_wave_height"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="@dimen/question_chat_audio_wave_margin_end" />
         <TextView
             android:id="@+id/audioBarTotalTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="32dp"
+            android:minWidth="@dimen/question_chat_audio_time_min_width"
             android:gravity="start"
             android:text="0:00"
-            android:layout_marginEnd="40dp"
+            android:layout_marginEnd="@dimen/question_chat_audio_total_margin_end"
             android:textColor="#AAAAAA"
-            android:textSize="12sp" />
+            android:textSize="@dimen/question_chat_audio_time_text_size" />
         <FrameLayout
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="20dp">
+            android:layout_width="@dimen/question_chat_audio_inline_icon_size"
+            android:layout_height="@dimen/question_chat_audio_inline_icon_size"
+            android:layout_marginStart="@dimen/question_chat_audio_inline_icon_margin_start"
+            android:layout_marginEnd="@dimen/question_chat_audio_inline_icon_margin_end">
             <ImageButton
                 android:id="@+id/audioBarStop"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="@dimen/question_chat_audio_inline_icon_size"
+                android:layout_height="@dimen/question_chat_audio_inline_icon_size"
                 android:src="@drawable/ic_delete"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Durdur"
                 app:tint="@android:color/darker_gray" />
             <ImageButton
                 android:id="@+id/audioBarClose"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="@dimen/question_chat_audio_inline_icon_size"
+                android:layout_height="@dimen/question_chat_audio_inline_icon_size"
                 android:visibility="gone"
                 android:src="@drawable/ic_close_black"
                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -243,9 +249,9 @@
 
         <ImageButton
             android:id="@+id/audioBarSend"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="4dp"
+            android:layout_width="@dimen/question_chat_audio_button_size"
+            android:layout_height="@dimen/question_chat_audio_button_size"
+            android:layout_marginStart="@dimen/question_chat_audio_send_margin_start"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Gönder"
             android:src="@drawable/send_ic"
@@ -259,18 +265,18 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="8dp"
+        android:padding="@dimen/question_chat_caption_bar_padding"
         android:background="#1E1E1E"
         android:visibility="gone"
-        android:elevation="8dp"
+        android:elevation="@dimen/question_chat_caption_bar_elevation"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <FrameLayout
             android:id="@+id/captionBarThumbContainer"
-            android:layout_width="48dp"
-            android:layout_height="48dp">
+            android:layout_width="@dimen/question_chat_caption_thumb_size"
+            android:layout_height="@dimen/question_chat_caption_thumb_size">
             <ImageView
                 android:id="@+id/captionBarThumb"
                 android:layout_width="match_parent"
@@ -280,10 +286,10 @@
                 android:contentDescription="Seçili medya" />
             <ImageView
                 android:id="@+id/captionBarThumbClose"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="@dimen/question_chat_caption_thumb_close_size"
+                android:layout_height="@dimen/question_chat_caption_thumb_close_size"
                 android:layout_gravity="top|end"
-                android:padding="2dp"
+                android:padding="@dimen/question_chat_caption_thumb_close_padding"
                 android:src="@drawable/ic_close_black"
                 android:background="#33FFFFFF"
                 android:contentDescription="Seçimi kaldır" />
@@ -294,21 +300,22 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:minHeight="44dp"
+            android:layout_marginStart="@dimen/question_chat_caption_input_margin_start"
+            android:minHeight="@dimen/question_chat_input_min_height"
             android:inputType="textMultiLine|textCapSentences"
             android:hint="Mesaj yazın..."
-            android:padding="12dp"
+            android:padding="@dimen/question_chat_input_padding_v"
             android:background="@drawable/hint_background"
             android:textColor="@android:color/white"
             android:textColorHint="#80FFFFFF"
+            android:textSize="@dimen/question_chat_input_text_size"
             android:maxLines="4" />
 
         <ImageButton
             android:id="@+id/captionSendButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="@dimen/question_chat_caption_send_size"
+            android:layout_height="@dimen/question_chat_caption_send_size"
+            android:layout_marginStart="@dimen/question_chat_caption_send_margin_start"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_send"
             android:contentDescription="Gönder"

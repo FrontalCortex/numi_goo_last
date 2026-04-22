@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
-        android:padding="16dp"
+        android:padding="@dimen/create_question_screen_padding"
         android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,66 +21,65 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="200dp">
+            android:minHeight="@dimen/create_question_min_height">
 
             <ImageButton
                 android:id="@+id/backButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="@dimen/create_question_nav_icon_size"
+                android:layout_height="@dimen/create_question_nav_icon_size"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_back_arrow"
                 app:tint="@color/message_buttons"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                android:layout_marginTop="3dp" />
+                android:layout_marginTop="@dimen/create_question_nav_margin_top" />
 
             <TextView
                 android:id="@+id/titleText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sorunu gönder"
-                android:textSize="20sp"
+                android:textSize="@dimen/create_question_title_text_size"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                android:layout_marginTop="12dp" />
+                android:layout_marginTop="@dimen/create_question_title_margin_top" />
 
             <FrameLayout
                 android:id="@+id/mediaContainer"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:minHeight="120dp"
+                android:minHeight="@dimen/create_question_media_min_height"
                 android:background="@drawable/screenshot_border_bg"
                 app:layout_constraintTop_toBottomOf="@id/titleText"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="@dimen/create_question_section_margin_top">
 
                 <ImageView
                     android:id="@+id/screenshotImage"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
-                    android:scaleType="fitCenter"
-                    android:contentDescription="Ekran görüntüsü"
-                    android:minHeight="120dp" />
+                    android:scaleType="centerInside"
+                    android:contentDescription="Ekran görüntüsü" />
 
                 <androidx.media3.ui.PlayerView
                     android:id="@+id/videoPreview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="180dp"
+                    android:minHeight="@dimen/create_question_video_min_height"
                     android:visibility="gone"
                     app:show_buffering="when_playing" />
 
                 <ImageButton
                     android:id="@+id/videoFullscreenButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/create_question_media_action_size"
+                    android:layout_height="@dimen/create_question_media_action_size"
                     android:layout_gravity="top|end"
-                    android:layout_margin="8dp"
+                    android:layout_margin="@dimen/create_question_media_action_margin"
                     android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_fullscreen"
@@ -89,10 +88,10 @@
 
                 <ImageButton
                     android:id="@+id/screenshotAnnotateButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/create_question_media_action_size"
+                    android:layout_height="@dimen/create_question_media_action_size"
                     android:layout_gravity="top|end"
-                    android:layout_margin="8dp"
+                    android:layout_margin="@dimen/create_question_media_action_margin"
                     android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/question_pencil_ic"
@@ -105,9 +104,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sorunuza başlık giriniz"
-                android:textSize="14sp"
+                android:textSize="@dimen/create_question_label_text_size"
                 android:textColor="@android:color/white"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/create_question_section_margin_top"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/mediaContainer" />
             <EditText
@@ -118,11 +117,12 @@
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
                 android:hint="5'lik kural mantığı"
-                android:padding="12dp"
+                android:textSize="@dimen/create_question_input_text_size"
+                android:padding="@dimen/create_question_input_padding"
                 android:background="@drawable/hint_background"
                 android:textColor="@android:color/white"
                 android:textColorHint="#80FFFFFF"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/create_question_field_spacing"
                 app:layout_constraintTop_toBottomOf="@id/headerLabel"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -131,9 +131,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sorunuzu kısaca açıklayın"
-                android:textSize="14sp"
+                android:textSize="@dimen/create_question_label_text_size"
                 android:textColor="@android:color/white"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/create_question_section_margin_top"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/headerInput" />
 
@@ -145,11 +145,12 @@
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
                 android:hint="Örnek: Bu sayfadaki şu soruyu anlamadım..."
-                android:padding="12dp"
+                android:textSize="@dimen/create_question_input_text_size"
+                android:padding="@dimen/create_question_input_padding"
                 android:background="@drawable/hint_background"
                 android:textColor="@android:color/white"
                 android:textColorHint="#80FFFFFF"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/create_question_field_spacing"
                 app:layout_constraintTop_toBottomOf="@id/descriptionLabel"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
@@ -157,9 +158,9 @@
             <FrameLayout
                 android:id="@+id/sendButtonContainer"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="24dp"
+                android:layout_height="@dimen/create_question_send_button_height"
+                android:layout_marginTop="@dimen/create_question_send_button_margin_v"
+                android:layout_marginBottom="@dimen/create_question_send_button_margin_v"
                 app:layout_constraintTop_toBottomOf="@id/descriptionInput"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -171,7 +172,7 @@
                     android:layout_height="match_parent"
                     android:text="Gönder"
                     android:textAllCaps="false"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/create_question_send_text_size"
                     android:backgroundTint="@color/lesson_completed"
                     android:textColor="@android:color/black" />
 
@@ -188,7 +189,7 @@
         android:clickable="true"
         android:focusable="true"
         android:visibility="gone"
-        android:elevation="10dp"
+        android:elevation="@dimen/create_question_overlay_elevation"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -34,6 +34,9 @@ class LessonAdapter(
     private val items: MutableList<LessonItem>,
     private val onPartChange: (Int) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    companion object {
+        private const val LESSON_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
+    }
 
     interface OnProgressUpdateListener {
         fun updateProgress(position: Int, progress: Int)
@@ -203,6 +206,35 @@ class LessonAdapter(
             disableBottomSheetInteractions(bottomSheetView, bottomSheetLayout, actionButton, againTutorial, behavior)
         }
 
+        // Rekor alanı: GuidePanel kapalıyken liderlik tablosu (RecordFragment).
+        // Guide açıkken tıklanabilir kalmalı (son adım hedefi); listener sadece guide kapalıyken.
+        recordLayout.setOnClickListener(null)
+        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && !item.record.isNullOrBlank()) {
+            recordLayout.isClickable = true
+            if (!isGuidePanelVisible) {
+                recordLayout.setOnClickListener {
+                    blockAllTouchesForActionTransition()
+                    behavior.isHideable = true
+                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                    val act = context as FragmentActivity
+                    act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
+                    act.supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(
+                            android.R.anim.slide_in_left,
+                            android.R.anim.slide_out_right,
+                        )
+                        .replace(
+                            R.id.abacusFragmentContainer,
+                            RecordFragment.newInstance(globalPartId, position, item.title),
+                        )
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+        } else {
+            recordLayout.isClickable = false
+        }
+
         // Scrim view'ı göster ve tıklama listener'ı ekle (sadece GuidePanel açık değilse)
         if (!isGuidePanelVisible) {
             scrimView.visibility = View.VISIBLE
@@ -287,6 +319,8 @@ class LessonAdapter(
         }
         // Button tıklama
         actionButton.setOnClickListener {
+            // Tıklamanın ilk anından itibaren 0.4 sn tüm ekranı kilitle.
+            blockAllTouchesForActionTransition()
             if (item.isCompleted) {
                 getCurrentPlan { plan ->
                     // Eğer type == 2 ve Free plan ise, abonelik sayfasına yönlendir
@@ -400,6 +434,29 @@ class LessonAdapter(
                     .commit()
             }
         }
+    }
+
+    private fun blockAllTouchesForActionTransition() {
+        val activity = context as? Activity ?: return
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+        content.findViewWithTag<View>(LESSON_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
+
+        val blocker = View(activity).apply {
+            tag = LESSON_TOUCH_BLOCKER_TAG
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener { _, _ -> true }
+            elevation = 1000f
+        }
+        content.addView(blocker)
+        blocker.postDelayed({
+            content.findViewWithTag<View>(LESSON_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
+        }, 400)
     }
 
     // Click listener interface

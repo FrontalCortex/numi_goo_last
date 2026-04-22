@@ -120,9 +120,20 @@ object GlobalLessonData {
 
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
         if (position in _lessonItems.indices) {
+            val previous = _lessonItems[position]
             _lessonItems[position] = newItem
             Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
             saveToPreferences(context)
+            // Kupa dersi tamamlandığında liderlik senkronu: CupFragment lessonItem.record'u
+            // GlobalLessonData içindeki nesneye yerinde yazar; previous.record ile newItem.record
+            // aynı kalır ve "değişti" kontrolü yanlışlıkla yazmayı engeller. Bu yüzden
+            // yalnızca tamamlanmış (stepIsFinish) kupa satırında, rekor doluysa gönderiyoruz.
+            if (newItem.type == LessonItem.TYPE_CHEST && newItem.stepIsFinish) {
+                val newRecord = newItem.record?.trim().orEmpty()
+                if (newRecord.isNotEmpty()) {
+                    LessonLeaderboardRepository.submitBestIfNeeded(globalPartId, position, newRecord)
+                }
+            }
         }
     }
 
@@ -202,8 +213,18 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupTime1 = "1:00",
-                    cupTime2 = "2:00"
+                    cupTime2 = "2:00",
 
+                    //başarı oranı çarpan olarak eklenmeyecek sadece süre.
+                    //Bütün soruları doğru cevaplarsa toplam puanı her zaman 500 olsun.
+                    //500 puan 1 yıldız sınırı o zaman
+                    //1.30 dk = 2.85x = 1425 2 yıldız
+                    //45 sn= 1700 = 3 yıldız
+                    //Bunları düz progressBar'da ilk ikisi yıldız sonuncusu rozet olacak şekilde göster.
+                    //45 saniye full doğru 3 yıldızı hak eder.
+                    //1.30 dakika full doğru 2 yıldızı hak eder
+                    //4. dakika artık kolsuz kesin 1 yıldızda kalmalı
+                    //0'da her zaman 4x verecek. cupTime1-2 kaldırılacak onun yerine puan aralığı eklenecek
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,

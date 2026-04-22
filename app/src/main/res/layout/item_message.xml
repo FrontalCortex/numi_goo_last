@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="4dp"
-    android:paddingEnd="4dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:paddingStart="@dimen/item_message_outer_padding"
+    android:paddingEnd="@dimen/item_message_outer_padding"
+    android:paddingTop="@dimen/item_message_outer_padding"
+    android:paddingBottom="@dimen/item_message_outer_padding">
 
     <LinearLayout
         android:id="@+id/messageContainer"
@@ -23,10 +23,10 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="end"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
+            android:paddingStart="@dimen/item_message_bubble_padding"
+            android:paddingEnd="@dimen/item_message_bubble_padding"
+            android:paddingTop="@dimen/item_message_bubble_padding"
+            android:paddingBottom="@dimen/item_message_bubble_padding"
             android:background="@drawable/hint_background"
             tools:background="@drawable/chat_bubble_me">
 
@@ -46,7 +46,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:maxWidth="@dimen/chat_bubble_max_width"
-                    android:textSize="15sp"
+                    android:textSize="@dimen/item_message_text_size"
                     android:textColor="@android:color/white"
                     tools:text="Örnek mesaj" />
 
@@ -57,22 +57,22 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:visibility="gone"
-                    android:minWidth="120dp"
-                    android:paddingVertical="4dp"
-                    android:paddingEnd="4dp"
+                    android:minWidth="@dimen/item_message_audio_row_min_width"
+                    android:paddingVertical="@dimen/item_message_audio_row_padding_v"
+                    android:paddingEnd="@dimen/item_message_audio_row_padding_end"
                     tools:visibility="visible">
                     <ImageView
                         android:id="@+id/audioPlayIcon"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="@dimen/item_message_audio_play_size"
+                        android:layout_height="@dimen/item_message_audio_play_size"
                         android:src="@drawable/ic_play_circle"
                         android:contentDescription="@null" />
                     <TextView
                         android:id="@+id/audioLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:textSize="14sp"
+                        android:layout_marginStart="@dimen/item_message_inline_gap"
+                        android:textSize="@dimen/item_message_secondary_text_size"
                         android:textColor="@android:color/white"
                         android:text="Ses kaydı" />
                 </LinearLayout>
@@ -96,8 +96,8 @@
                         android:contentDescription="@null" />
                     <ImageView
                         android:id="@+id/videoPlayIcon"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="@dimen/item_message_play_overlay_size"
+                        android:layout_height="@dimen/item_message_play_overlay_size"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_play_circle"
                         android:contentDescription="@null" />
@@ -107,14 +107,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|end"
-                        android:layout_marginEnd="6dp"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginEnd="@dimen/item_message_meta_margin"
+                        android:layout_marginBottom="@dimen/item_message_meta_margin"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
+                        android:paddingStart="@dimen/item_message_meta_padding_h"
+                        android:paddingEnd="@dimen/item_message_meta_padding_h"
+                        android:paddingTop="@dimen/item_message_meta_padding_v"
+                        android:paddingBottom="@dimen/item_message_meta_padding_v"
                         android:background="#80000000"
                         android:visibility="gone"
                         tools:visibility="visible">
@@ -123,15 +123,15 @@
                             android:id="@+id/videoTimeView"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="11sp"
+                            android:textSize="@dimen/item_message_meta_text_size"
                             android:textColor="#CCFFFFFF"
                             tools:text="14:20" />
 
                         <ImageView
                             android:id="@+id/videoTickView"
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_marginStart="4dp"
+                            android:layout_width="@dimen/item_message_tick_size"
+                            android:layout_height="@dimen/item_message_tick_size"
+                            android:layout_marginStart="@dimen/item_message_tick_gap"
                             android:scaleType="fitCenter"
                             android:visibility="gone"
                             android:contentDescription="@null"
@@ -152,23 +152,23 @@
                             android:layout_gravity="center"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="10dp"
+                            android:paddingStart="@dimen/item_message_action_padding_h"
+                            android:paddingEnd="@dimen/item_message_action_padding_h"
+                            android:paddingTop="@dimen/item_message_action_padding_v"
+                            android:paddingBottom="@dimen/item_message_action_padding_v"
                             android:background="#80000000">
                             <ImageView
                                 android:id="@+id/videoDownloadIcon"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
+                                android:layout_width="@dimen/item_message_action_icon_size"
+                                android:layout_height="@dimen/item_message_action_icon_size"
                                 android:src="@drawable/ic_download"
                                 android:contentDescription="@null" />
                             <TextView
                                 android:id="@+id/videoSizeText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:textSize="14sp"
+                                android:layout_marginStart="@dimen/item_message_inline_gap"
+                                android:textSize="@dimen/item_message_secondary_text_size"
                                 android:textColor="@android:color/white"
                                 android:text="0 KB" />
                         </LinearLayout>
@@ -180,14 +180,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|start"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginStart="@dimen/item_message_corner_margin"
+                        android:layout_marginBottom="@dimen/item_message_corner_margin"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp"
+                        android:paddingStart="@dimen/item_message_corner_padding_h"
+                        android:paddingEnd="@dimen/item_message_corner_padding_h"
+                        android:paddingTop="@dimen/item_message_corner_padding_v"
+                        android:paddingBottom="@dimen/item_message_corner_padding_v"
                         android:background="#80000000"
                         android:visibility="gone"
                         tools:visibility="visible">
@@ -199,8 +199,8 @@
                             <ProgressBar
                                 android:id="@+id/videoCornerProgress"
                                 style="?android:attr/progressBarStyleSmall"
-                                android:layout_width="32dp"
-                                android:layout_height="32dp"
+                                android:layout_width="@dimen/item_message_progress_size"
+                                android:layout_height="@dimen/item_message_progress_size"
                                 android:indeterminate="false"
                                 android:max="100"
                                 android:progress="0"
@@ -208,8 +208,8 @@
 
                             <ImageView
                                 android:id="@+id/videoCornerActionIcon"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
+                                android:layout_width="@dimen/item_message_action_icon_size"
+                                android:layout_height="@dimen/item_message_action_icon_size"
                                 android:layout_gravity="center"
                                 android:src="@drawable/export_ic"
                                 android:tint="@android:color/white"
@@ -220,8 +220,8 @@
                             android:id="@+id/videoCornerActionText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:textSize="14sp"
+                            android:layout_marginStart="@dimen/item_message_inline_gap"
+                            android:textSize="@dimen/item_message_secondary_text_size"
                             android:textColor="@android:color/white"
                             android:visibility="gone"
                             tools:text="Tekrar dene"
@@ -252,15 +252,15 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|end"
-                        android:layout_marginEnd="6dp"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginEnd="@dimen/item_message_image_meta_margin"
+                        android:layout_marginBottom="@dimen/item_message_image_meta_margin"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
-                        android:background="#80000000"
+                        android:paddingStart="@dimen/item_message_image_meta_padding_h"
+                        android:paddingEnd="@dimen/item_message_image_meta_padding_h"
+                        android:paddingTop="@dimen/item_message_image_meta_padding_v"
+                        android:paddingBottom="@dimen/item_message_image_meta_padding_v"
+                        android:background="@null"
                         android:visibility="gone"
                         tools:visibility="visible">
 
@@ -379,24 +379,24 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginStart="2dp"
+                        android:layout_marginStart="@dimen/item_message_time_row_margin_start"
                 android:gravity="end"
                 android:layout_gravity="bottom"
-                android:layout_marginTop="2dp">
+                android:layout_marginTop="@dimen/item_message_time_row_margin_top">
 
                 <TextView
                     android:id="@+id/timeView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="@dimen/item_message_meta_text_size"
                     android:textColor="#CCFFFFFF"
                     tools:text="3:11 pm" />
 
                 <ImageView
                     android:id="@+id/tickView"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="2dp"
+                    android:layout_width="@dimen/item_message_tick_size"
+                    android:layout_height="@dimen/item_message_tick_size"
+                    android:layout_marginStart="@dimen/item_message_time_tick_gap"
                     android:scaleType="fitCenter"
                     android:visibility="gone"
                     android:contentDescription="@null"
@@ -407,11 +407,11 @@
                 android:id="@+id/captionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginStart="3dp"
+                android:layout_marginTop="@dimen/item_message_caption_margin_top"
+                android:layout_marginStart="@dimen/item_message_caption_margin_start"
                 android:maxWidth="@dimen/chat_bubble_max_width"
                 android:gravity="start"
-                android:textSize="14sp"
+                android:textSize="@dimen/item_message_secondary_text_size"
                 android:textColor="@android:color/white"
                 android:visibility="gone"
                 tools:text="Mesaj altyazısı"
