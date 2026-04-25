@@ -106,6 +106,10 @@
         </LinearLayout>
     </LinearLayout>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
     <!-- Puanı Al Butonu -->
     <Button
         android:id="@+id/claimButton"
@@ -113,6 +117,7 @@
         android:layout_height="56dp"
         android:fontFamily="@font/font_regular"
         android:text="Çıkış"
+        android:layout_marginBottom="20dp"
         android:textStyle="bold"
         android:textColor="#101820"
         android:backgroundTint="#29B6F6"

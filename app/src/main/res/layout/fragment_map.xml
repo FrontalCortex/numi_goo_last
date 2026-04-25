@@ -76,6 +76,7 @@
         android:id="@+id/lessonsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:clipChildren="false"
         android:clipToPadding="false"
         android:paddingTop="@dimen/map_sticky_recycler_padding_top"
         android:paddingBottom="16dp"

@@ -24,6 +24,9 @@ class MissionChestRewardFragment : Fragment() {
     private var _binding: FragmentMissionChestRewardBinding? = null
     private val binding get() = _binding!!
     private var isVideoFlowOpen = false
+    private var popBackStackOnContinue = false
+    private lateinit var beforeSnapshot: MissionsProgressStore.Snapshot
+    private lateinit var afterSnapshot: MissionsProgressStore.Snapshot
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,57 +39,156 @@ class MissionChestRewardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MainActivityChromeBlocker.acquire(requireActivity())
+        popBackStackOnContinue = requireArguments().getBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, false)
         val args = requireArguments()
-        val before = MissionsProgressStore.Snapshot(
-            dailyCount = args.getInt(ARG_DAILY_BEFORE),
-            weeklyCount = args.getInt(ARG_WEEKLY_BEFORE),
+        beforeSnapshot = MissionsProgressStore.Snapshot(
+            dailyStepFinishCount = args.getInt(ARG_DAILY_STEP_FINISH_BEFORE),
+            weeklyStepFinishCount = args.getInt(ARG_WEEKLY_STEP_FINISH_BEFORE),
+            dailyStepIncrementCount = args.getInt(ARG_DAILY_STEP_INCREMENT_BEFORE),
+            weeklyStepIncrementCount = args.getInt(ARG_WEEKLY_STEP_INCREMENT_BEFORE),
+            dailyPerfectStepIncrementCount = args.getInt(ARG_DAILY_PERFECT_STEP_INCREMENT_BEFORE),
+            weeklyPerfectStepIncrementCount = args.getInt(ARG_WEEKLY_PERFECT_STEP_INCREMENT_BEFORE),
+            dailyChestRecordBreakCount = args.getInt(ARG_DAILY_CHEST_RECORD_BREAK_BEFORE),
+            weeklyChestRecordBreakCount = args.getInt(ARG_WEEKLY_CHEST_RECORD_BREAK_BEFORE),
+            dailyChestStarGainCount = args.getInt(ARG_DAILY_CHEST_STAR_GAIN_BEFORE),
+            weeklyChestStarGainCount = args.getInt(ARG_WEEKLY_CHEST_STAR_GAIN_BEFORE),
+            dailyLearnMinutesCount = args.getInt(ARG_DAILY_LEARN_MINUTES_BEFORE),
+            weeklyLearnMinutesCount = args.getInt(ARG_WEEKLY_LEARN_MINUTES_BEFORE),
         )
-        val after = MissionsProgressStore.Snapshot(
-            dailyCount = args.getInt(ARG_DAILY_AFTER),
-            weeklyCount = args.getInt(ARG_WEEKLY_AFTER),
+        afterSnapshot = MissionsProgressStore.Snapshot(
+            dailyStepFinishCount = args.getInt(ARG_DAILY_STEP_FINISH_AFTER),
+            weeklyStepFinishCount = args.getInt(ARG_WEEKLY_STEP_FINISH_AFTER),
+            dailyStepIncrementCount = args.getInt(ARG_DAILY_STEP_INCREMENT_AFTER),
+            weeklyStepIncrementCount = args.getInt(ARG_WEEKLY_STEP_INCREMENT_AFTER),
+            dailyPerfectStepIncrementCount = args.getInt(ARG_DAILY_PERFECT_STEP_INCREMENT_AFTER),
+            weeklyPerfectStepIncrementCount = args.getInt(ARG_WEEKLY_PERFECT_STEP_INCREMENT_AFTER),
+            dailyChestRecordBreakCount = args.getInt(ARG_DAILY_CHEST_RECORD_BREAK_AFTER),
+            weeklyChestRecordBreakCount = args.getInt(ARG_WEEKLY_CHEST_RECORD_BREAK_AFTER),
+            dailyChestStarGainCount = args.getInt(ARG_DAILY_CHEST_STAR_GAIN_AFTER),
+            weeklyChestStarGainCount = args.getInt(ARG_WEEKLY_CHEST_STAR_GAIN_AFTER),
+            dailyLearnMinutesCount = args.getInt(ARG_DAILY_LEARN_MINUTES_AFTER),
+            weeklyLearnMinutesCount = args.getInt(ARG_WEEKLY_LEARN_MINUTES_AFTER),
         )
         binding.missionChestRewardTitle.setText(R.string.mission_chest_reward_title)
-        val items = buildRewardList(requireContext(), before, after)
         binding.missionChestRewardRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.missionChestRewardRecycler.adapter = MissionChestRewardAdapter(
-            items = items,
-            onCompletedQuestClick = {
-                if (isVideoFlowOpen || !isAdded) return@MissionChestRewardAdapter
-                val tag = CrystalBreakVideoFragment::class.java.simpleName
-                if (childFragmentManager.findFragmentByTag(tag) != null) return@MissionChestRewardAdapter
-                isVideoFlowOpen = true
-                CrystalBreakVideoFragment.newInstance("crystal_red_yellow")
-                    .show(childFragmentManager, tag)
-                childFragmentManager.executePendingTransactions()
-                (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
-                    ?.setOnDismissCallback { isVideoFlowOpen = false }
-            },
-        )
+        renderRewardList()
 
         binding.missionChestRewardContinue.setOnClickListener {
-            parentFragmentManager.beginTransaction().remove(this@MissionChestRewardFragment).commit()
+            GlobalValues.canConsumePendingLessonProgressAnimations = true
+            LessonManager.refreshLessonsFromGlobalData()
+            if (popBackStackOnContinue) {
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_right,
+                    )
+                    .remove(this@MissionChestRewardFragment)
+                    .commitNowAllowingStateLoss()
+                parentFragmentManager.popBackStack()
+            } else {
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_right,
+                    )
+                    .remove(this@MissionChestRewardFragment)
+                    .commit()
+            }
         }
     }
 
     override fun onDestroyView() {
+        MainActivityChromeBlocker.release(activity)
         binding.missionChestRewardRecycler.adapter = null
         _binding = null
         super.onDestroyView()
     }
 
-    companion object {
-        private const val ARG_DAILY_BEFORE = "daily_before"
-        private const val ARG_WEEKLY_BEFORE = "weekly_before"
-        private const val ARG_DAILY_AFTER = "daily_after"
-        private const val ARG_WEEKLY_AFTER = "weekly_after"
+    private fun renderRewardList() {
+        val ctx = context ?: return
+        val items = buildRewardList(ctx, beforeSnapshot, afterSnapshot)
+        binding.missionChestRewardRecycler.adapter = MissionChestRewardAdapter(
+            items = items,
+            onCompletedQuestClick = { quest ->
+                if (isVideoFlowOpen || !isAdded) return@MissionChestRewardAdapter
+                val tag = MissionRewardRevealDialogFragment::class.java.simpleName
+                if (childFragmentManager.findFragmentByTag(tag) != null) return@MissionChestRewardAdapter
+                isVideoFlowOpen = true
+                MissionRewardRevealDialogFragment().show(childFragmentManager, tag)
+                childFragmentManager.executePendingTransactions()
+                (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
+                    ?.setOnRewardClaimedCallback {
+                        MissionsProgressStore.markMissionRewardClaimed(ctx, quest.window, quest.missionId)
+                    }
+                (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
+                    ?.setOnDismissCallback {
+                        isVideoFlowOpen = false
+                        if (isAdded && _binding != null) renderRewardList()
+                    }
+            },
+        )
+    }
 
-        fun newInstance(before: MissionsProgressStore.Snapshot, after: MissionsProgressStore.Snapshot) =
+    companion object {
+        private const val ARG_DAILY_STEP_FINISH_BEFORE = "daily_step_finish_before"
+        private const val ARG_WEEKLY_STEP_FINISH_BEFORE = "weekly_step_finish_before"
+        private const val ARG_DAILY_STEP_INCREMENT_BEFORE = "daily_step_increment_before"
+        private const val ARG_WEEKLY_STEP_INCREMENT_BEFORE = "weekly_step_increment_before"
+        private const val ARG_DAILY_PERFECT_STEP_INCREMENT_BEFORE = "daily_perfect_step_increment_before"
+        private const val ARG_WEEKLY_PERFECT_STEP_INCREMENT_BEFORE = "weekly_perfect_step_increment_before"
+        private const val ARG_DAILY_CHEST_RECORD_BREAK_BEFORE = "daily_chest_record_break_before"
+        private const val ARG_WEEKLY_CHEST_RECORD_BREAK_BEFORE = "weekly_chest_record_break_before"
+        private const val ARG_DAILY_CHEST_STAR_GAIN_BEFORE = "daily_chest_star_gain_before"
+        private const val ARG_WEEKLY_CHEST_STAR_GAIN_BEFORE = "weekly_chest_star_gain_before"
+        private const val ARG_DAILY_LEARN_MINUTES_BEFORE = "daily_learn_minutes_before"
+        private const val ARG_WEEKLY_LEARN_MINUTES_BEFORE = "weekly_learn_minutes_before"
+        private const val ARG_DAILY_STEP_FINISH_AFTER = "daily_step_finish_after"
+        private const val ARG_WEEKLY_STEP_FINISH_AFTER = "weekly_step_finish_after"
+        private const val ARG_DAILY_STEP_INCREMENT_AFTER = "daily_step_increment_after"
+        private const val ARG_WEEKLY_STEP_INCREMENT_AFTER = "weekly_step_increment_after"
+        private const val ARG_DAILY_PERFECT_STEP_INCREMENT_AFTER = "daily_perfect_step_increment_after"
+        private const val ARG_WEEKLY_PERFECT_STEP_INCREMENT_AFTER = "weekly_perfect_step_increment_after"
+        private const val ARG_DAILY_CHEST_RECORD_BREAK_AFTER = "daily_chest_record_break_after"
+        private const val ARG_WEEKLY_CHEST_RECORD_BREAK_AFTER = "weekly_chest_record_break_after"
+        private const val ARG_DAILY_CHEST_STAR_GAIN_AFTER = "daily_chest_star_gain_after"
+        private const val ARG_WEEKLY_CHEST_STAR_GAIN_AFTER = "weekly_chest_star_gain_after"
+        private const val ARG_DAILY_LEARN_MINUTES_AFTER = "daily_learn_minutes_after"
+        private const val ARG_WEEKLY_LEARN_MINUTES_AFTER = "weekly_learn_minutes_after"
+        private const val ARG_POP_BACKSTACK_ON_CONTINUE = "pop_backstack_on_continue"
+
+        fun newInstance(
+            before: MissionsProgressStore.Snapshot,
+            after: MissionsProgressStore.Snapshot,
+            popBackStackOnContinue: Boolean = false,
+        ) =
             MissionChestRewardFragment().apply {
                 arguments = Bundle().apply {
-                    putInt(ARG_DAILY_BEFORE, before.dailyCount)
-                    putInt(ARG_WEEKLY_BEFORE, before.weeklyCount)
-                    putInt(ARG_DAILY_AFTER, after.dailyCount)
-                    putInt(ARG_WEEKLY_AFTER, after.weeklyCount)
+                    putInt(ARG_DAILY_STEP_FINISH_BEFORE, before.dailyStepFinishCount)
+                    putInt(ARG_WEEKLY_STEP_FINISH_BEFORE, before.weeklyStepFinishCount)
+                    putInt(ARG_DAILY_STEP_INCREMENT_BEFORE, before.dailyStepIncrementCount)
+                    putInt(ARG_WEEKLY_STEP_INCREMENT_BEFORE, before.weeklyStepIncrementCount)
+                    putInt(ARG_DAILY_PERFECT_STEP_INCREMENT_BEFORE, before.dailyPerfectStepIncrementCount)
+                    putInt(ARG_WEEKLY_PERFECT_STEP_INCREMENT_BEFORE, before.weeklyPerfectStepIncrementCount)
+                    putInt(ARG_DAILY_CHEST_RECORD_BREAK_BEFORE, before.dailyChestRecordBreakCount)
+                    putInt(ARG_WEEKLY_CHEST_RECORD_BREAK_BEFORE, before.weeklyChestRecordBreakCount)
+                    putInt(ARG_DAILY_CHEST_STAR_GAIN_BEFORE, before.dailyChestStarGainCount)
+                    putInt(ARG_WEEKLY_CHEST_STAR_GAIN_BEFORE, before.weeklyChestStarGainCount)
+                    putInt(ARG_DAILY_LEARN_MINUTES_BEFORE, before.dailyLearnMinutesCount)
+                    putInt(ARG_WEEKLY_LEARN_MINUTES_BEFORE, before.weeklyLearnMinutesCount)
+                    putInt(ARG_DAILY_STEP_FINISH_AFTER, after.dailyStepFinishCount)
+                    putInt(ARG_WEEKLY_STEP_FINISH_AFTER, after.weeklyStepFinishCount)
+                    putInt(ARG_DAILY_STEP_INCREMENT_AFTER, after.dailyStepIncrementCount)
+                    putInt(ARG_WEEKLY_STEP_INCREMENT_AFTER, after.weeklyStepIncrementCount)
+                    putInt(ARG_DAILY_PERFECT_STEP_INCREMENT_AFTER, after.dailyPerfectStepIncrementCount)
+                    putInt(ARG_WEEKLY_PERFECT_STEP_INCREMENT_AFTER, after.weeklyPerfectStepIncrementCount)
+                    putInt(ARG_DAILY_CHEST_RECORD_BREAK_AFTER, after.dailyChestRecordBreakCount)
+                    putInt(ARG_WEEKLY_CHEST_RECORD_BREAK_AFTER, after.weeklyChestRecordBreakCount)
+                    putInt(ARG_DAILY_CHEST_STAR_GAIN_AFTER, after.dailyChestStarGainCount)
+                    putInt(ARG_WEEKLY_CHEST_STAR_GAIN_AFTER, after.weeklyChestStarGainCount)
+                    putInt(ARG_DAILY_LEARN_MINUTES_AFTER, after.dailyLearnMinutesCount)
+                    putInt(ARG_WEEKLY_LEARN_MINUTES_AFTER, after.weeklyLearnMinutesCount)
+                    putBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, popBackStackOnContinue)
                 }
             }
     }
@@ -96,6 +198,9 @@ private sealed class MissionChestRewardListItem {
     data class Header(val title: String, val countdown: String) : MissionChestRewardListItem()
     data object Divider : MissionChestRewardListItem()
     data class Quest(
+        val missionId: String,
+        val window: MissionWindow,
+        val isClaimed: Boolean,
         val title: String,
         val iconRes: Int,
         val target: Int,
@@ -114,29 +219,31 @@ private fun buildRewardList(
     var stagger = 0
 
     val weeklyQuests = mutableListOf<MissionChestRewardListItem.Quest>()
-    if (minOf(before.weeklyCount, 1) != minOf(after.weeklyCount, 1)) {
-        weeklyQuests.add(
-            MissionChestRewardListItem.Quest(
-                title = ctx.getString(R.string.mission_finish_one_lesson),
-                iconRes = R.drawable.crystal_ic,
-                target = 1,
-                fromCount = minOf(before.weeklyCount, 1),
-                toCount = minOf(after.weeklyCount, 1),
-                staggerIndex = stagger++,
-            ),
+    MissionsProgressStore.selectedMissionsForWeekly(ctx).forEach { mission ->
+        val beforeCount = minOf(
+            MissionsProgressStore.missionProgress(before, MissionWindow.WEEKLY, mission),
+            mission.target,
         )
-    }
-    if (minOf(before.weeklyCount, 2) != minOf(after.weeklyCount, 2)) {
-        weeklyQuests.add(
-            MissionChestRewardListItem.Quest(
-                title = ctx.getString(R.string.mission_finish_two_lessons),
-                iconRes = R.drawable.crystal_ic,
-                target = 2,
-                fromCount = minOf(before.weeklyCount, 2),
-                toCount = minOf(after.weeklyCount, 2),
-                staggerIndex = stagger++,
-            ),
+        val afterCount = minOf(
+            MissionsProgressStore.missionProgress(after, MissionWindow.WEEKLY, mission),
+            mission.target,
         )
+        if (beforeCount != afterCount) {
+            val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.WEEKLY, mission.id)
+            weeklyQuests.add(
+                MissionChestRewardListItem.Quest(
+                    missionId = mission.id,
+                    window = MissionWindow.WEEKLY,
+                    isClaimed = claimed,
+                    title = ctx.getString(mission.titleResId),
+                    iconRes = R.drawable.crystal_ic,
+                    target = mission.target,
+                    fromCount = beforeCount,
+                    toCount = afterCount,
+                    staggerIndex = stagger++,
+                ),
+            )
+        }
     }
     if (weeklyQuests.isNotEmpty()) {
         val weeklyLabel = formatWeeklyCountdownForReward(ctx, MissionsProgressStore.millisUntilWeeklyReset())
@@ -145,29 +252,31 @@ private fun buildRewardList(
     }
 
     val dailyQuests = mutableListOf<MissionChestRewardListItem.Quest>()
-    if (minOf(before.dailyCount, 1) != minOf(after.dailyCount, 1)) {
-        dailyQuests.add(
-            MissionChestRewardListItem.Quest(
-                title = ctx.getString(R.string.mission_finish_one_lesson),
-                iconRes = R.drawable.crystal_ic,
-                target = 1,
-                fromCount = minOf(before.dailyCount, 1),
-                toCount = minOf(after.dailyCount, 1),
-                staggerIndex = stagger++,
-            ),
+    MissionsProgressStore.selectedMissionsForDaily(ctx).forEach { mission ->
+        val beforeCount = minOf(
+            MissionsProgressStore.missionProgress(before, MissionWindow.DAILY, mission),
+            mission.target,
         )
-    }
-    if (minOf(before.dailyCount, 2) != minOf(after.dailyCount, 2)) {
-        dailyQuests.add(
-            MissionChestRewardListItem.Quest(
-                title = ctx.getString(R.string.mission_finish_two_lessons),
-                iconRes = R.drawable.crystal_ic,
-                target = 2,
-                fromCount = minOf(before.dailyCount, 2),
-                toCount = minOf(after.dailyCount, 2),
-                staggerIndex = stagger++,
-            ),
+        val afterCount = minOf(
+            MissionsProgressStore.missionProgress(after, MissionWindow.DAILY, mission),
+            mission.target,
         )
+        if (beforeCount != afterCount) {
+            val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.DAILY, mission.id)
+            dailyQuests.add(
+                MissionChestRewardListItem.Quest(
+                    missionId = mission.id,
+                    window = MissionWindow.DAILY,
+                    isClaimed = claimed,
+                    title = ctx.getString(mission.titleResId),
+                    iconRes = R.drawable.crystal_ic,
+                    target = mission.target,
+                    fromCount = beforeCount,
+                    toCount = afterCount,
+                    staggerIndex = stagger++,
+                ),
+            )
+        }
     }
     if (dailyQuests.isNotEmpty()) {
         if (out.isNotEmpty()) out.add(MissionChestRewardListItem.Divider)
@@ -191,7 +300,7 @@ private fun formatWeeklyCountdownForReward(ctx: android.content.Context, ms: Lon
 
 private class MissionChestRewardAdapter(
     private val items: List<MissionChestRewardListItem>,
-    private val onCompletedQuestClick: () -> Unit,
+    private val onCompletedQuestClick: (MissionChestRewardListItem.Quest) -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -273,7 +382,7 @@ private class MissionChestRewardAdapter(
             }
         }
 
-        fun bind(q: MissionChestRewardListItem.Quest, onCompletedQuestClick: () -> Unit) {
+        fun bind(q: MissionChestRewardListItem.Quest, onCompletedQuestClick: (MissionChestRewardListItem.Quest) -> Unit) {
             cancelAnim()
             val ctx = itemView.context
             title.text = q.title
@@ -283,6 +392,7 @@ private class MissionChestRewardAdapter(
             val titleNormal = ContextCompat.getColor(ctx, R.color.missions_quest_title_normal)
             val labelDone = ContextCompat.getColor(ctx, R.color.background_color)
             val labelPending = ContextCompat.getColor(ctx, R.color.button_disabled)
+            val labelClaimed = ContextCompat.getColor(ctx, R.color.black)
 
             val target = q.target.coerceAtLeast(1)
             val from = q.fromCount
@@ -291,13 +401,22 @@ private class MissionChestRewardAdapter(
             val startPct = (from.coerceAtMost(target) * 100f) / target
             val endPct = (to.coerceAtMost(target) * 100f) / target
 
-            itemView.setOnClickListener { onCompletedQuestClick() }
+            val canClaim = completedAfter && !q.isClaimed
+            itemView.isClickable = canClaim
+            itemView.isFocusable = canClaim
+            itemView.setOnClickListener {
+                if (canClaim) onCompletedQuestClick(q)
+            }
 
             fun applyVisualPercent(pct: Float) {
                 val curEst = (target * pct / 100f).roundToInt().coerceIn(0, target)
                 val done = curEst >= target
-                applyMissionProgressOverlayNow(progressTrack, progressFill, progressShine, pct, done)
-                if (done) {
+                applyMissionProgressOverlayNow(progressTrack, progressFill, progressShine, pct, done, q.isClaimed)
+                if (q.isClaimed) {
+                    title.setTextColor(titleNormal)
+                    progressText.text = ctx.getString(R.string.mission_reward_claimed_label)
+                    progressText.setTextColor(labelClaimed)
+                } else if (done) {
                     title.setTextColor(gold)
                     progressText.text = ctx.getString(R.string.mission_completed_label)
                     progressText.setTextColor(labelDone)

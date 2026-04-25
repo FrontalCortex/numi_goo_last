@@ -29,6 +29,7 @@ class LessonResult : Fragment() {
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
+    private var lessonScore: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +46,7 @@ class LessonResult : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MainActivityChromeBlocker.acquire(requireActivity())
         GlobalValues.lessonStep++
         GlobalValues.tutorialIsWorked=true
 
@@ -67,6 +69,7 @@ class LessonResult : Fragment() {
             val chestFragment = ChestFragment()
             val args = Bundle().apply {
                 putFloat("successRate", succsessRate)
+                putInt("dersPuani", lessonScore)
             }
             if(lessonItem?.stepIsFinish==true){
                 parentFragmentManager.beginTransaction()
@@ -89,11 +92,17 @@ class LessonResult : Fragment() {
 
     }
 
+    override fun onDestroyView() {
+        MainActivityChromeBlocker.release(activity)
+        super.onDestroyView()
+    }
 
     private fun updateUI() {
         // Örnek: Doğru cevap sayısını göster
         succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions.toFloat()) * 100) else 0f
+        lessonScore = (succsessRate * 5f).toInt()
         binding.successRate.text = "${succsessRate.toInt()}%"
+        binding.totalScore.text = lessonScore.toString()
 
         // Başarı durumuna göre farklı animasyon gösterebilirsiniz
         /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı

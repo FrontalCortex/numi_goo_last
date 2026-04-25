@@ -23,7 +23,9 @@ object LessonManager {
 
     fun ensureInitialized(context: Context, partId: Int) {
         if (initializedPartId != partId) {
-            GlobalLessonData.initialize(context, partId)
+            GlobalLessonData.initialize(context, partId) {
+                refreshLessonsFromGlobalData()
+            }
             initializedPartId = partId
         }
     }
@@ -41,5 +43,9 @@ object LessonManager {
         raceAdapter?.updateRaceItem(position,item)
         Log.d("mert",item.title)
         Log.d("mert",item.raceBusyLevel.toString())
+    }
+
+    fun refreshLessonsFromGlobalData() {
+        adapter?.updateItems(GlobalLessonData.lessonItems)
     }
 } 

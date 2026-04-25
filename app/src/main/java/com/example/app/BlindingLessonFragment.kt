@@ -35,8 +35,25 @@ import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class BlindingLessonFragment : Fragment() {
+    companion object {
+        private const val ARG_DAILY_MODE = "daily_mode"
+        private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+        private const val DAILY_QUESTION_PREFS = "daily_question_prefs"
+        private const val FIRESTORE_DAILY_QUESTION = "dailyQuestion"
+
+        fun newDailyQuestionInstance(operations: List<Any>): BlindingLessonFragment {
+            return BlindingLessonFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean(ARG_DAILY_MODE, true)
+                    putSerializable("operations", ArrayList(operations))
+                }
+            }
+        }
+    }
     private lateinit var rod0BottomBead4: ImageView
     private lateinit var rod0BottomBead3: ImageView
     private lateinit var rod0BottomBead2: ImageView
@@ -107,6 +124,7 @@ class BlindingLessonFragment : Fragment() {
     private var rod4TopIsDown = false
 
     private var mediaPlayer: MediaPlayer? = null
+    private var learningSessionStartMs: Long? = null
     private var operations: List<Any> = emptyList()
     private lateinit var numberText: TextView
     private var currentIndex = 0
@@ -140,6 +158,7 @@ class BlindingLessonFragment : Fragment() {
     private var isTimerStarted = false
     private lateinit var binding: FragmentBlindingLessonBinding
     private var currentTime: String = "0:00"
+    private var isDailyQuestionMode = false
 
 
     private var isShowingSequence = false
@@ -172,7 +191,21 @@ class BlindingLessonFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        isDailyQuestionMode = arguments?.getBoolean(ARG_DAILY_MODE, false) == true
+        lessonItem = if (isDailyQuestionMode) {
+            LessonItem(
+                type = LessonItem.TYPE_LESSON,
+                title = "Günlük Soru",
+                offset = 0,
+                isCompleted = false,
+                stepCount = 1,
+                isBlinding = null,
+                blindingMultiplication = false,
+                timePeriod = 2000L,
+            )
+        } else {
+            LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        }
 
         uploadLessonData()
     }
@@ -190,6 +223,12 @@ class BlindingLessonFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         findsId()
+        if (isDailyQuestionMode) {
+            binding.progressBarContainer.visibility = View.GONE
+            binding.hintContainer.visibility = View.GONE
+            binding.fabHintTouchArea.visibility = View.GONE
+            binding.rulesBookButton.visibility = View.GONE
+        }
         controlButtonAnim()
         showCurrentOperation()
         setupQuitButton()
@@ -216,12 +255,15 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun timeStarter(){
-        if(lessonItem.type == 2)
+        if(lessonItem.type == 2){
             timerTextView.visibility = View.VISIBLE
-        if (!isTimerStarted) {
-            startTimer()
-            isTimerStarted = true
-
+            if (!isTimerStarted) {
+                startTimer()
+                isTimerStarted = true
+            }
+        }
+        else{
+            timerTextView.visibility = View.INVISIBLE
         }
     }
     private fun blindingOrRace(){
@@ -492,6 +534,10 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun closeFragment() {
+        if (isDailyQuestionMode) {
+            parentFragmentManager.popBackStack()
+            return
+        }
         // BackStack'i temizle ve MapFragment'e dön
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
@@ -588,7 +634,9 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
+                                if (isDailyQuestionMode) {
+                                    showDailyQuestionRewardFlow()
+                                } else if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
                                     showChestResult()
                                 }
                                 else{
@@ -640,6 +688,12 @@ class BlindingLessonFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            if (isDailyQuestionMode) {
+                                binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                                incorrectPanel.visibility = View.GONE
+                                closeFragment()
+                                return@setOnTouchListener true
+                            }
                             currentIndex++
                             v.animate()
                                 .scaleX(1f)
@@ -1862,12 +1916,18 @@ class BlindingLessonFragment : Fragment() {
         } else {
             0f
         }
+        val dersPuani = (successRate * 5f).toInt()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putString("time", currentTime)
+            putInt("dersPuani", dersPuani)
+            putInt(
+                "worstCupTime",
+                LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
+            )
         }
         chestResultFragment.arguments = args
 
@@ -1880,6 +1940,43 @@ class BlindingLessonFragment : Fragment() {
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
     }
+
+    private fun showDailyQuestionRewardFlow() {
+        markDailyQuestionSolvedForToday()
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+            .replace(R.id.abacusFragmentContainer, DailyQuestionRewardFragment())
+            .commit()
+    }
+
+    private fun markDailyQuestionSolvedForToday() {
+        if (!isDailyQuestionMode) return
+        val now = java.util.Calendar.getInstance()
+        val dayKey = "${now.get(java.util.Calendar.YEAR)}-${now.get(java.util.Calendar.DAY_OF_YEAR)}"
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        val uidKey = uid ?: "guest"
+        requireContext()
+            .getSharedPreferences(DAILY_QUESTION_PREFS, android.content.Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("daily_solved_${uidKey}_$dayKey", true)
+            .apply()
+        if (uid != null) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .collection(FIRESTORE_DAILY_QUESTION)
+                .document(dayKey)
+                .set(
+                    mapOf(
+                        "solved" to true,
+                    ),
+                    com.google.firebase.firestore.SetOptions.merge(),
+                )
+        }
+    }
     private fun showLessonResult() {
         val lessonResultFragment = LessonResult()
         val lessonResultFalse = LessonResultFalse()
@@ -1890,17 +1987,20 @@ class BlindingLessonFragment : Fragment() {
         } else {
             0f
         }
+        val dersPuani = (successRate * 5f).toInt()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
         }
         lessonResultFragment.arguments = args
         val argsFalse = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
         }
         lessonResultFalse.arguments = argsFalse
 
@@ -1943,7 +2043,45 @@ class BlindingLessonFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        stopLearningSessionTracking()
+        releaseLaunchTouchBlocker()
         super.onDestroyView()
         handler.removeCallbacks(showNextNumberRunnable)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startLearningSessionTracking()
+        if (isDailyQuestionMode) {
+            binding.root.postDelayed({ releaseLaunchTouchBlocker() }, 320)
+        }
+    }
+
+    override fun onPause() {
+        stopLearningSessionTracking()
+        super.onPause()
+    }
+
+    private fun startLearningSessionTracking() {
+        if (learningSessionStartMs == null) {
+            learningSessionStartMs = System.currentTimeMillis()
+        }
+    }
+
+    private fun stopLearningSessionTracking() {
+        val startMs = learningSessionStartMs ?: return
+        learningSessionStartMs = null
+        val elapsedMs = (System.currentTimeMillis() - startMs).coerceAtLeast(0L)
+        val ctx = context ?: return
+        if (elapsedMs > 0L) {
+            MissionsProgressStore.recordLearningDurationMs(ctx, elapsedMs)
+        }
+    }
+
+    private fun releaseLaunchTouchBlocker() {
+        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
+        content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { blocker ->
+            content.removeView(blocker)
+        }
     }
 }

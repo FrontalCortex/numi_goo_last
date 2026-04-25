@@ -14,7 +14,7 @@ object LessonLeaderboardRepository {
     private const val COLLECTION = "lessonLeaderboards"
     private const val ENTRIES = "entries"
 
-    private const val F_SECONDS = "recordSeconds"
+    private const val F_SCORE = "recordScore"
     private const val F_LABEL = "recordLabel"
     private const val F_NAME = "displayName"
     private const val F_PHOTO = "photoUrl"
@@ -24,11 +24,11 @@ object LessonLeaderboardRepository {
         "part_${partId}_lesson_${lessonIndex}"
 
     /**
-     * Mevcut kayıttan daha iyi (düşük) süre ise Firestore'a yazar.
+     * Mevcut kayıttan daha iyi (yüksek) puan ise Firestore'a yazar.
      */
-    fun submitBestIfNeeded(partId: Int, lessonIndex: Int, recordLabel: String) {
+    fun submitBestIfNeeded(partId: Int, lessonIndex: Int, recordScore: Int) {
         val user = FirebaseAuth.getInstance().currentUser ?: return
-        val seconds = RecordTimeUtils.parseRecordToSeconds(recordLabel) ?: return
+        if (recordScore <= 0) return
         val db = FirebaseFirestore.getInstance()
         val entryRef = db.collection(COLLECTION)
             .document(leaderboardDocumentId(partId, lessonIndex))
@@ -37,13 +37,13 @@ object LessonLeaderboardRepository {
 
         db.runTransaction { transaction ->
             val snapshot = transaction.get(entryRef)
-            val previousBest = snapshot.getLong(F_SECONDS)?.toInt()
-            if (previousBest != null && seconds >= previousBest) {
+            val previousBest = snapshot.getLong(F_SCORE)?.toInt()
+            if (previousBest != null && recordScore <= previousBest) {
                 return@runTransaction null
             }
             val data = hashMapOf<String, Any>(
-                F_SECONDS to seconds,
-                F_LABEL to recordLabel.trim(),
+                F_SCORE to recordScore,
+                F_LABEL to recordScore.toString(),
                 F_NAME to (user.displayName?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
                 F_UPDATED to FieldValue.serverTimestamp(),
                 F_PHOTO to (user.photoUrl?.toString() ?: "")
@@ -73,7 +73,7 @@ object LessonLeaderboardRepository {
         val q = db.collection(COLLECTION)
             .document(leaderboardDocumentId(partId, lessonIndex))
             .collection(ENTRIES)
-            .orderBy(F_SECONDS, Query.Direction.ASCENDING)
+            .orderBy(F_SCORE, Query.Direction.DESCENDING)
             .limit(50)
 
         return q.addSnapshotListener { snapshot, e ->

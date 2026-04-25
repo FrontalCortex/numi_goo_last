@@ -5,18 +5,14 @@
     android:background="#101820"
     android:gravity="center">
 
-    <!-- Kapalı/Açık sandık resmi -->
-
-    <!-- Parlama efekti için üstte beyaz view -->
     <ImageView
         android:id="@+id/chestImage"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:clickable="true"
         android:contentDescription="chest"
-        android:focusable="true"
-        android:src="@drawable/closed_chest"
-        android:layout_gravity="center"/>
+        android:src="@drawable/open_chest"
+        android:layout_gravity="center"
+        android:visibility="invisible"/>
     <TextView
         android:id="@+id/goldText"
         android:layout_width="wrap_content"
@@ -27,13 +23,6 @@
         android:textStyle="bold"
         android:layout_gravity="center_horizontal|top"
         android:layout_marginTop="100dp"
-        android:visibility="gone"/>
-    <View
-        android:id="@+id/flashView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#FFFFFF"
-        android:alpha="0"
         android:visibility="gone"/>
     <Button
         android:id="@+id/claimRewardButton"

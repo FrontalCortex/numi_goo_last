@@ -1007,7 +1007,71 @@ object MathOperationGenerator {
 
         return numbers
     }
-    fun generateSequence5Rules(count: Int): List<Int> {
+    fun generateSequence1Digits(count: Int, digitsOne: Int): List<Int> {
+        if (count <= 0) return emptyList()
+        val digitCount = digitsOne.coerceAtLeast(1)
+
+        fun allowedDigitsBySumDigit(sumDigit: Int): List<Int> = when (sumDigit) {
+            0, 1 -> listOf(1, 2, 5)
+            2, 3 -> listOf(1, 5)
+            4 -> listOf(5)
+            5, 6 -> listOf(1, 2)
+            7, 8 -> listOf(1)
+            9 -> listOf(0)
+            else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+        }
+
+        fun Int.pow10(exp: Int): Int {
+            var out = 1
+            repeat(exp) { out *= 10 }
+            return out
+        }
+
+        fun toDigits(value: Int, size: Int): List<Int> {
+            var x = value
+            val arr = IntArray(size)
+            for (i in size - 1 downTo 0) {
+                arr[i] = x % 10
+                x /= 10
+            }
+            return arr.toList()
+        }
+
+        // İlk sayı: en yüksek basamak 1..2, diğer basamaklar 0..2
+        val firstDigits = MutableList(digitCount) { 0 }
+        firstDigits[0] = (1..2).random()
+        for (i in 1 until digitCount) {
+            firstDigits[i] = (0..2).random()
+        }
+        val firstNumber = firstDigits.fold(0) { acc, d -> acc * 10 + d }
+
+        val numbers = mutableListOf(firstNumber)
+
+        // Kalan sayılar
+        for (i in 1 until count) {
+            val totalSum = numbers.sum()
+            val sumDigits = toDigits(totalSum, digitCount)
+
+            val newDigits = MutableList(digitCount) { 0 }
+            for (pos in 0 until digitCount) {
+                val allowed = allowedDigitsBySumDigit(sumDigits[pos])
+                newDigits[pos] = allowed.random()
+            }
+
+            // Baş basamak 0 olmasın: sadece gerekli durumda güvenli düzelt
+            if (newDigits[0] == 0 && digitCount > 1) {
+                val nonZeroAllowed = allowedDigitsBySumDigit(sumDigits[0]).filter { it != 0 }
+                if (nonZeroAllowed.isNotEmpty()) {
+                    newDigits[0] = nonZeroAllowed.random()
+                }
+            }
+
+            val newNumber = newDigits.fold(0) { acc, d -> acc * 10 + d }
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }    fun generateSequence5Rules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
         // İlk sayıyı oluştur (iki basamaklı olabilir)

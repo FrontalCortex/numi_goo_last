@@ -8,9 +8,22 @@ import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 object GlobalLessonData {
+    data class ChestLessonRef(
+        val partId: Int,
+        val index: Int,
+        val item: LessonItem,
+    )
+
     var globalPartId = 1
     private var _lessonItems: MutableList<LessonItem> = mutableListOf()
     val lessonItems: List<LessonItem> get() = _lessonItems
@@ -18,6 +31,7 @@ object GlobalLessonData {
     private val firestore by lazy { FirebaseFirestore.getInstance() }
     private const val FIRESTORE_LESSON_PROGRESS = "lessonProgress"
     private const val AUTH_WAIT_TIMEOUT_MS = 1500L
+    private const val DEBUG_LOG_PATH = "debug-33b519.log"
 
     private enum class FirestoreLoadStatus {
         LOADED,
@@ -27,22 +41,117 @@ object GlobalLessonData {
 
     private const val LOG_TAG = "LessonProgress"
 
+    private fun debugLog(hypothesisId: String, location: String, message: String, data: Map<String, Any?> = emptyMap()) {
+        try {
+            val payload = mapOf(
+                "sessionId" to "33b519",
+                "runId" to "baseline",
+                "hypothesisId" to hypothesisId,
+                "location" to location,
+                "message" to message,
+                "data" to data,
+                "timestamp" to System.currentTimeMillis(),
+            )
+            val json = Gson().toJson(payload)
+            Log.d("DBG33b519", json)
+            File(DEBUG_LOG_PATH).appendText("$json\n")
+            Thread {
+                try {
+                    val conn = (URL("http://127.0.0.1:7913/ingest/8a0b1fc3-fae1-418f-bbbd-80b43a829b14").openConnection() as HttpURLConnection)
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("X-Debug-Session-Id", "33b519")
+                    conn.doOutput = true
+                    conn.outputStream.use { it.write(json.toByteArray()) }
+                    conn.inputStream.close()
+                    conn.disconnect()
+                } catch (_: Exception) {
+                }
+            }.start()
+        } catch (_: Exception) {
+        }
+    }
+
     fun initialize(context: Context, partId: Int, onReady: (() -> Unit)? = null) {
         globalPartId = partId
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         Log.d(LOG_TAG, "initialize partId=$partId uid=${uid?.take(8) ?: "null"} onReady=${onReady != null}")
+        // #region agent log
+        debugLog(
+            hypothesisId = "H1",
+            location = "GlobalLessonData.kt:initialize",
+            message = "initialize entry",
+            data = mapOf("partId" to partId, "uidPresent" to (uid != null), "hasCallback" to (onReady != null)),
+        )
+        // #endregion
 
-        // Önce lokaldeki veriyi dene
-        if (loadFromPreferences(context)) {
+        // Önce lokaldeki veriyi dene (hızlı ilk çizim için).
+        val hadLocal = loadFromPreferences(context)
+        if (hadLocal) {
             Log.d(LOG_TAG, "initialize: loaded from LOCAL prefs, items=${_lessonItems.size}")
+            // Oturum açıkken local veri cloud'u maskelemesin: callback'li akışlarda
+            // Firestore'dan da yükle ve en güncel state'i kullan.
+            if (uid != null && onReady != null) {
+                val signedInUid = uid!!
+                Log.d(LOG_TAG, "initialize: had local + uid + callback -> also loadFromFirestore partId=$partId")
+                loadFromFirestore(context, partId, signedInUid) { status ->
+                    Log.d(LOG_TAG, "initialize(local-first): loadFromFirestore result=$status")
+                    // #region agent log
+                    debugLog(
+                        hypothesisId = "H3",
+                        location = "GlobalLessonData.kt:initialize:localFirst:status",
+                        message = "loadFromFirestore completed (local-first path)",
+                        data = mapOf("partId" to partId, "status" to status.name),
+                    )
+                    // #endregion
+                    when (status) {
+                        FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize(local-first): using CLOUD data, items=${_lessonItems.size}")
+                        FirestoreLoadStatus.NOT_FOUND -> Log.d(LOG_TAG, "initialize(local-first): NOT_FOUND -> keep LOCAL data")
+                        FirestoreLoadStatus.ERROR -> Log.w(LOG_TAG, "initialize(local-first): ERROR -> keep LOCAL data")
+                    }
+                    onReady.invoke()
+                }
+                return
+            }
+
             onReady?.invoke()
             return
         }
 
-        // Callback yoksa (senkron kullanım), sadece default (Firestore async beklenemez)
+        // Callback yoksa da cloud verisini asenkron çekmeyi dene; yoksa default'a düş.
+        // Bu sayede yeni cihazda yanlışlıkla default veriyi cloud'un üstüne yazmayız.
         if (onReady == null) {
-            Log.d(LOG_TAG, "initialize: no callback -> applyDefaultLessonItems (sync path)")
-            applyDefaultLessonItems(context, partId)
+            val auth = FirebaseAuth.getInstance()
+            val immediateUid = auth.currentUser?.uid
+            // #region agent log
+            debugLog(
+                hypothesisId = "H1",
+                location = "GlobalLessonData.kt:initialize:noCallbackBranch",
+                message = "no-callback branch decision",
+                data = mapOf("partId" to partId, "uidPresent" to (immediateUid != null)),
+            )
+            // #endregion
+            if (immediateUid != null) {
+                Log.d(LOG_TAG, "initialize: no callback + uid present -> async loadFromFirestore partId=$partId")
+                loadFromFirestore(context, partId, immediateUid) { status ->
+                    when (status) {
+                        FirestoreLoadStatus.LOADED -> {
+                            Log.d(LOG_TAG, "initialize(no callback): using CLOUD data, items=${_lessonItems.size}")
+                        }
+                        FirestoreLoadStatus.NOT_FOUND -> {
+                            Log.d(LOG_TAG, "initialize(no callback): NOT_FOUND -> applyDefaultLessonItems")
+                            applyDefaultLessonItems(context, partId)
+                        }
+                        FirestoreLoadStatus.ERROR -> {
+                            Log.w(LOG_TAG, "initialize(no callback): ERROR -> applyDefaultLessonItems(saveRemote=false)")
+                            applyDefaultLessonItems(context, partId, saveRemote = false)
+                        }
+                    }
+                }
+            } else {
+                Log.d(LOG_TAG, "initialize: no callback + uid null -> applyDefaultLessonItems(saveRemote=false)")
+                applyDefaultLessonItems(context, partId, saveRemote = false)
+            }
             return
         }
 
@@ -53,6 +162,14 @@ object GlobalLessonData {
             Log.d(LOG_TAG, "initialize: uid present -> loadFromFirestore partId=$partId")
             loadFromFirestore(context, partId, immediateUid) { status ->
                 Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
+                // #region agent log
+                debugLog(
+                    hypothesisId = "H3",
+                    location = "GlobalLessonData.kt:initialize:uidPresent:status",
+                    message = "loadFromFirestore completed",
+                    data = mapOf("partId" to partId, "status" to status.name),
+                )
+                // #endregion
                 when (status) {
                     FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize: using CLOUD data, items=${_lessonItems.size}")
                     FirestoreLoadStatus.NOT_FOUND -> {
@@ -80,6 +197,14 @@ object GlobalLessonData {
             Log.d(LOG_TAG, "initialize: after wait uid present -> loadFromFirestore partId=$partId")
             loadFromFirestore(context, partId, waitedUid) { status ->
                 Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
+                // #region agent log
+                debugLog(
+                    hypothesisId = "H3",
+                    location = "GlobalLessonData.kt:initialize:waitedUid:status",
+                    message = "loadFromFirestore completed after wait",
+                    data = mapOf("partId" to partId, "status" to status.name),
+                )
+                // #endregion
                 when (status) {
                     FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize: using CLOUD data, items=${_lessonItems.size}")
                     FirestoreLoadStatus.NOT_FOUND -> {
@@ -99,6 +224,18 @@ object GlobalLessonData {
     /** Varsayılan ders listesini oluşturur (tutorial1 bayrağı varsa 1. dersi günceller) ve kaydeder. */
     private fun applyDefaultLessonItems(context: Context, partId: Int, saveRemote: Boolean = true) {
         Log.d(LOG_TAG, "applyDefaultLessonItems partId=$partId saveRemote=$saveRemote (overwrites current _lessonItems with defaults)")
+        // #region agent log
+        debugLog(
+            hypothesisId = "H2",
+            location = "GlobalLessonData.kt:applyDefaultLessonItems",
+            message = "applying default lesson items",
+            data = mapOf(
+                "partId" to partId,
+                "saveRemote" to saveRemote,
+                "uidPresent" to (FirebaseAuth.getInstance().currentUser?.uid != null),
+            ),
+        )
+        // #endregion
         val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
         val tutorial1Pending = prefs.getBoolean("tutorial1_login_flow_pending", false)
         val items = createLessonItems(partId).toMutableList()
@@ -129,8 +266,8 @@ object GlobalLessonData {
             // aynı kalır ve "değişti" kontrolü yanlışlıkla yazmayı engeller. Bu yüzden
             // yalnızca tamamlanmış (stepIsFinish) kupa satırında, rekor doluysa gönderiyoruz.
             if (newItem.type == LessonItem.TYPE_CHEST && newItem.stepIsFinish) {
-                val newRecord = newItem.record?.trim().orEmpty()
-                if (newRecord.isNotEmpty()) {
+                val newRecord = newItem.record
+                if (newRecord != null && newRecord > 0) {
                     LessonLeaderboardRepository.submitBestIfNeeded(globalPartId, position, newRecord)
                 }
             }
@@ -143,6 +280,138 @@ object GlobalLessonData {
         } else {
             null
         }
+    }
+
+    /**
+     * Global state'i değiştirmeden (globalPartId/_lessonItems), belirli part/index için kullanıcıya ait lesson item'ı döndürür.
+     * Önce kullanıcıya özel local prefs, yoksa (uid varsa) Firestore denenir.
+     */
+    fun getLessonItemForPart(
+        context: Context,
+        partId: Int,
+        index: Int,
+        onResult: (LessonItem?) -> Unit,
+    ) {
+        val localJson = getLessonPrefs(context).getString(getKey(partId), null)
+        if (!localJson.isNullOrBlank()) {
+            try {
+                val localItems = parseLessonItemsWithMigration(localJson)
+                onResult(localItems.getOrNull(index))
+                return
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "getLessonItemForPart local parse error", e)
+            }
+        }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            onResult(createLessonItems(partId).getOrNull(index))
+            return
+        }
+
+        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .get()
+            .addOnSuccessListener { doc ->
+                val cloudJson = doc.getString("items")
+                if (cloudJson.isNullOrBlank()) {
+                    onResult(createLessonItems(partId).getOrNull(index))
+                    return@addOnSuccessListener
+                }
+                try {
+                    val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    getLessonPrefs(context).edit().putString(getKey(partId), cloudJson).apply()
+                    onResult(cloudItems.getOrNull(index))
+                } catch (e: Exception) {
+                    Log.e(LOG_TAG, "getLessonItemForPart cloud parse error", e)
+                    onResult(createLessonItems(partId).getOrNull(index))
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "getLessonItemForPart cloud load failed", e)
+                onResult(createLessonItems(partId).getOrNull(index))
+            }
+    }
+
+    /**
+     * Kullanıcının tüm part'lerindeki (1..8) TYPE_CHEST + stepIsFinish=true item'ları döndürür.
+     * Global state'i (_lessonItems/globalPartId) değiştirmez.
+     */
+    fun getFinishedChestItemsAcrossParts(
+        context: Context,
+        onResult: (List<ChestLessonRef>) -> Unit,
+    ) {
+        val partIds = 1..8
+        val out = mutableListOf<ChestLessonRef>()
+
+        fun collectAt(offset: Int) {
+            if (offset >= partIds.count()) {
+                onResult(out)
+                return
+            }
+            val partId = partIds.elementAt(offset)
+            getLessonItemsForPart(context, partId) { items ->
+                items.forEachIndexed { idx, item ->
+                    if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish) {
+                        out.add(
+                            ChestLessonRef(
+                                partId = partId,
+                                index = idx,
+                                item = item,
+                            ),
+                        )
+                    }
+                }
+                collectAt(offset + 1)
+            }
+        }
+
+        collectAt(0)
+    }
+
+    private fun getLessonItemsForPart(
+        context: Context,
+        partId: Int,
+        onResult: (List<LessonItem>) -> Unit,
+    ) {
+        val localJson = getLessonPrefs(context).getString(getKey(partId), null)
+        if (!localJson.isNullOrBlank()) {
+            try {
+                onResult(parseLessonItemsWithMigration(localJson))
+                return
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "getLessonItemsForPart local parse error", e)
+            }
+        }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            onResult(createLessonItems(partId))
+            return
+        }
+
+        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .get()
+            .addOnSuccessListener { doc ->
+                val cloudJson = doc.getString("items")
+                if (cloudJson.isNullOrBlank()) {
+                    onResult(createLessonItems(partId))
+                    return@addOnSuccessListener
+                }
+                try {
+                    val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    getLessonPrefs(context).edit().putString(getKey(partId), cloudJson).apply()
+                    onResult(cloudItems)
+                } catch (e: Exception) {
+                    Log.e(LOG_TAG, "getLessonItemsForPart cloud parse error", e)
+                    onResult(createLessonItems(partId))
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "getLessonItemsForPart cloud load failed", e)
+                onResult(createLessonItems(partId))
+            }
     }
 
 
@@ -212,8 +481,9 @@ object GlobalLessonData {
                     startStepNumber = 1005,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "2:00",
+                    cupPoint1 = 1980,
+                    cupPoint2 = 1400,
+                    worstCupTime = 240
 
                     //başarı oranı çarpan olarak eklenmeyecek sadece süre.
                     //Bütün soruları doğru cevaplarsa toplam puanı her zaman 500 olsun.
@@ -240,7 +510,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama - 1 basamaklı",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 2,
@@ -291,7 +561,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Değerlendirme",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -299,8 +569,8 @@ object GlobalLessonData {
                     startStepNumber = 7,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "2:00"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "2:00"
 
                 ),
                 LessonItem(
@@ -365,8 +635,8 @@ object GlobalLessonData {
                     mapFragmentIndex = 15,
                     startStepNumber = 19,
                     finishStepNumber = 19,
-                    cupTime1 = "2:00",
-                    cupTime2 = "3:00"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "3:00"
 
                 ),
                 LessonItem(
@@ -438,8 +708,8 @@ object GlobalLessonData {
                     mapFragmentIndex = 21,
                     startStepNumber = 36,
                     finishStepNumber = 36,
-                    cupTime1 = "2:00",
-                    cupTime2 = "3:00"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "3:00"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -516,8 +786,8 @@ object GlobalLessonData {
                     mapFragmentIndex = 27,
                     startStepNumber = 52,
                     finishStepNumber = 52,
-                    cupTime1 = "3:00",
-                    cupTime2 = "4:00"
+                    //cupTime1 = "3:00",
+                    //cupTime2 = "4:00"
 
                 ),
                 LessonItem(
@@ -582,8 +852,8 @@ object GlobalLessonData {
                     mapFragmentIndex = 32,
                     startStepNumber = 65,
                     finishStepNumber = 65,
-                    cupTime1 = "3:00",
-                    cupTime2 = "4:00"
+                    //cupTime1 = "3:00",
+                    //cupTime2 = "4:00"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -682,8 +952,8 @@ object GlobalLessonData {
                     startStepNumber = 74,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:30",
-                    cupTime2 = "2:00"
+                    //cupTime1 = "1:30",
+                    //cupTime2 = "2:00"
 
                 ),
                 LessonItem(
@@ -746,8 +1016,8 @@ object GlobalLessonData {
                     startStepNumber = 87,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "2:00",
-                    cupTime2 = "2:45"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "2:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -822,8 +1092,8 @@ object GlobalLessonData {
                     startStepNumber = 104,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "2:00",
-                    cupTime2 = "3:00"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "3:00"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -885,8 +1155,8 @@ object GlobalLessonData {
                     startStepNumber = 117,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "2:00",
-                    cupTime2 = "3:00"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "3:00"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -998,8 +1268,8 @@ object GlobalLessonData {
                     startStepNumber = 130,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1061,8 +1331,8 @@ object GlobalLessonData {
                     startStepNumber = 139,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "3:30",
-                    cupTime2 = "5:00"
+                    //cupTime1 = "3:30",
+                    //cupTime2 = "5:00"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1124,8 +1394,8 @@ object GlobalLessonData {
                     startStepNumber = 144,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "2:30",
-                    cupTime2 = "3:30"
+                    //cupTime1 = "2:30",
+                    //cupTime2 = "3:30"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1187,8 +1457,8 @@ object GlobalLessonData {
                     startStepNumber = 153,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "3:00",
-                    cupTime2 = "5:30"
+                    //cupTime1 = "3:00",
+                    //cupTime2 = "5:30"
                 ),
                 LessonItem(
                     partId = 4,
@@ -1286,8 +1556,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1357,8 +1627,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1428,8 +1698,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1499,8 +1769,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1570,8 +1840,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     partId = 5,
@@ -1670,8 +1940,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1741,8 +2011,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1812,8 +2082,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1883,8 +2153,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     timePeriod = 2000,
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     partId = 6,
@@ -1982,8 +2252,8 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -2053,8 +2323,8 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -2124,8 +2394,8 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "1:00",
-                    cupTime2 = "1:45"
+                    //cupTime1 = "1:00",
+                    //cupTime2 = "1:45"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -2195,8 +2465,8 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupTime1 = "2:00",
-                    cupTime2 = "3:00"
+                    //cupTime1 = "2:00",
+                    //cupTime2 = "3:00"
                 )
             )
             7 -> listOf(
@@ -2658,6 +2928,8 @@ object GlobalLessonData {
     fun saveToPreferences(context: Context, saveRemote: Boolean = true) {
         val gson = Gson()
         val json = gson.toJson(_lessonItems)
+        val completedCount = _lessonItems.count { it.stepIsFinish }
+        val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
         val prefs = getLessonPrefs(context)
         val key = getKey(globalPartId)
         prefs.edit().putString(key, json).apply()
@@ -2665,13 +2937,52 @@ object GlobalLessonData {
 
         // Giriş yapmış kullanıcı için Firestore'a da kaydet (uygulama silinse bile geri yüklensin)
         val uid = FirebaseAuth.getInstance().currentUser?.uid
+        // #region agent log
+        debugLog(
+            hypothesisId = "H2",
+            location = "GlobalLessonData.kt:saveToPreferences",
+            message = "save local/cloud lesson state",
+            data = mapOf(
+                "partId" to globalPartId,
+                "itemCount" to _lessonItems.size,
+                "completedCount" to completedCount,
+                "chestCompletedCount" to chestCompletedCount,
+                "saveRemote" to saveRemote,
+                "uidPresent" to (uid != null),
+            ),
+        )
+        // #endregion
         if (saveRemote && uid != null) {
             Log.d(LOG_TAG, "saveToPreferences -> Firestore users/${uid.take(8)}.../lessonProgress/$globalPartId")
             firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
                 .document(globalPartId.toString())
                 .set(mapOf("items" to json))
-                .addOnSuccessListener { Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS") }
-                .addOnFailureListener { e -> Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e) }
+                .addOnSuccessListener {
+                    Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS")
+                    // #region agent log
+                    debugLog(
+                        hypothesisId = "H3",
+                        location = "GlobalLessonData.kt:saveToPreferences:firestoreSuccess",
+                        message = "lesson cloud write success",
+                        data = mapOf("partId" to globalPartId),
+                    )
+                    // #endregion
+                }
+                .addOnFailureListener { e ->
+                    Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e)
+                    // #region agent log
+                    debugLog(
+                        hypothesisId = "H3",
+                        location = "GlobalLessonData.kt:saveToPreferences:firestoreFailure",
+                        message = "lesson cloud write failed",
+                        data = mapOf(
+                            "partId" to globalPartId,
+                            "errorType" to e.javaClass.simpleName,
+                            "errorMessage" to (e.message ?: "null"),
+                        ),
+                    )
+                    // #endregion
+                }
         } else {
             if (!saveRemote) Log.d(LOG_TAG, "saveToPreferences skip Firestore (saveRemote=false)")
             else if (uid == null) Log.d(LOG_TAG, "saveToPreferences skip Firestore (uid=null)")
@@ -2682,12 +2993,27 @@ object GlobalLessonData {
         val key = getKey(globalPartId)
         val prefs = getLessonPrefs(context)
         val json = prefs.getString(key, null)
+        // #region agent log
+        debugLog(
+            hypothesisId = "H1",
+            location = "GlobalLessonData.kt:loadFromPreferences",
+            message = "local lesson prefs lookup",
+            data = mapOf(
+                "partId" to globalPartId,
+                "uidPresent" to (FirebaseAuth.getInstance().currentUser?.uid != null),
+                "hasJson" to (json != null),
+            ),
+        )
+        // #endregion
         return if (json != null) {
-            val gson = Gson()
-            val type = object : TypeToken<List<LessonItem>>() {}.type
-            _lessonItems = gson.fromJson(json, type)
-            Log.d(LOG_TAG, "loadFromPreferences key=$key -> loaded ${_lessonItems.size} items from LOCAL")
-            true
+            try {
+                _lessonItems = parseLessonItemsWithMigration(json)
+                Log.d(LOG_TAG, "loadFromPreferences key=$key -> loaded ${_lessonItems.size} items from LOCAL")
+                true
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "loadFromPreferences parse error", e)
+                false
+            }
         } else {
             Log.d(LOG_TAG, "loadFromPreferences key=$key -> no local data")
             false
@@ -2712,13 +3038,38 @@ object GlobalLessonData {
             .addOnSuccessListener { doc ->
                 val json = doc.getString("items")
                 Log.d(LOG_TAG, "loadFromFirestore partId=$partId doc.exists=${doc.exists()} itemsFieldNull=${json == null} itemsBlank=${json.isNullOrBlank()}")
+                // #region agent log
+                debugLog(
+                    hypothesisId = "H3",
+                    location = "GlobalLessonData.kt:loadFromFirestore:success",
+                    message = "cloud lesson fetch result",
+                    data = mapOf(
+                        "partId" to partId,
+                        "docExists" to doc.exists(),
+                        "hasItemsField" to !json.isNullOrBlank(),
+                    ),
+                )
+                // #endregion
                 if (!json.isNullOrBlank()) {
                     try {
-                        val gson = Gson()
-                        val type = object : TypeToken<List<LessonItem>>() {}.type
-                        _lessonItems = gson.fromJson(json, type)
+                        _lessonItems = parseLessonItemsWithMigration(json)
+                        val completedCount = _lessonItems.count { it.stepIsFinish }
+                        val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
                         getLessonPrefs(context).edit().putString(getKey(partId), json).apply()
                         Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD and wrote to local")
+                        // #region agent log
+                        debugLog(
+                            hypothesisId = "H3",
+                            location = "GlobalLessonData.kt:loadFromFirestore:loadedStats",
+                            message = "cloud lesson payload stats",
+                            data = mapOf(
+                                "partId" to partId,
+                                "itemCount" to _lessonItems.size,
+                                "completedCount" to completedCount,
+                                "chestCompletedCount" to chestCompletedCount,
+                            ),
+                        )
+                        // #endregion
                         callback(FirestoreLoadStatus.LOADED)
                     } catch (e: Exception) {
                         Log.e(LOG_TAG, "loadFromFirestore parse error", e)
@@ -2731,8 +3082,63 @@ object GlobalLessonData {
             }
             .addOnFailureListener { e ->
                 Log.e(LOG_TAG, "loadFromFirestore FAILED", e)
+                // #region agent log
+                debugLog(
+                    hypothesisId = "H3",
+                    location = "GlobalLessonData.kt:loadFromFirestore:failure",
+                    message = "cloud lesson fetch failed",
+                    data = mapOf(
+                        "partId" to partId,
+                        "errorType" to e.javaClass.simpleName,
+                        "errorMessage" to (e.message ?: "null"),
+                    ),
+                )
+                // #endregion
                 callback(FirestoreLoadStatus.ERROR)
             }
+    }
+
+    private fun parseLessonItemsWithMigration(rawJson: String): MutableList<LessonItem> {
+        val gson = Gson()
+        val type = object : TypeToken<List<LessonItem>>() {}.type
+        return try {
+            gson.fromJson<List<LessonItem>>(rawJson, type).toMutableList()
+        } catch (_: Exception) {
+            val migratedJson = migrateLegacyRecordField(rawJson)
+            gson.fromJson<List<LessonItem>>(migratedJson, type).toMutableList()
+        }
+    }
+
+    private fun migrateLegacyRecordField(rawJson: String): String {
+        val root = JsonParser.parseString(rawJson)
+        if (!root.isJsonArray) return rawJson
+        val migratedArray = JsonArray()
+        root.asJsonArray.forEach { element ->
+            if (!element.isJsonObject) {
+                migratedArray.add(element)
+                return@forEach
+            }
+            val itemObj = element.asJsonObject
+            migrateRecordValue(itemObj)
+            migratedArray.add(itemObj)
+        }
+        return migratedArray.toString()
+    }
+
+    private fun migrateRecordValue(itemObj: JsonObject) {
+        val recordElement = itemObj.get("record") ?: return
+        if (!recordElement.isJsonPrimitive) return
+        val primitive = recordElement.asJsonPrimitive
+        if (primitive.isNumber) return
+        if (!primitive.isString) return
+        val legacyValue = primitive.asString.trim()
+        val migratedRecord = legacyValue.toIntOrNull()
+        if (migratedRecord != null) {
+            itemObj.addProperty("record", migratedRecord)
+        } else {
+            // Eski "mm:ss" kayıtları puan modeliyle uyumsuz, güvenli fallback.
+            itemObj.add("record", JsonNull.INSTANCE)
+        }
     }
 
     private fun waitForAuthUid(auth: FirebaseAuth, timeoutMs: Long, callback: (String?) -> Unit) {

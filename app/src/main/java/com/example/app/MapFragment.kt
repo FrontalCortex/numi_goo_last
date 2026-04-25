@@ -72,65 +72,21 @@ class MapFragment : Fragment() {
                 )
                 1000 -> listOf(
                     MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
                 )
                 1001 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
                     MathOperation(null,randomNumberChangeToString(2), null),
                 )
                 1002 -> listOf(
                     MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                    MathOperation(null,randomNumberChangeToString(2), null),
                 )
                 1003 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
                     MathOperation(null,randomNumberChangeToString(3), null),
                 )
                 1004 -> listOf(
                     MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
                 )
                 1005 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(4), null),
-                    MathOperation(null,randomNumberChangeToString(5), null),
-                    MathOperation(null,randomNumberChangeToString(5), null),
-                    MathOperation(null,randomNumberChangeToString(5), null),
-                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(1), null)
                 )
                 4 -> listOf(
                     MathOperation(4,"+", 5),
@@ -2350,13 +2306,6 @@ class MapFragment : Fragment() {
                 )
                 13 -> listOf(
                     MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
                 )
                 14 -> listOf(
                     MathOperationGenerator.generateSequence5Rules(3),
@@ -3486,6 +3435,10 @@ class MapFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        if (::lessonsAdapter.isInitialized) {
+            lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        }
         // Fragment yeniden görünür olduğunda sticky header'ı güncelle
         binding.lessonsRecyclerView.post {
             if (!isAdded) return@post

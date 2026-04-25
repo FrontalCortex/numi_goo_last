@@ -60,6 +60,15 @@ object GlobalValues {
     /** Hangi questionId altında hangi mesajların indirilmesi devam ediyor (alıcı taraf). */
     val activeDownloadIdsByQuestion: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+    data class PendingLessonProgressAnimation(
+        val fromFilledSegments: Int,
+        val toFilledSegments: Int,
+    )
+
+    /** Map görünür olduğunda tüketilecek progress artış animasyonları. */
+    val pendingLessonProgressAnimations: MutableMap<String, PendingLessonProgressAnimation> = mutableMapOf()
+    var canConsumePendingLessonProgressAnimations: Boolean = false
+
     /**
      * Karşıdan gelen mesajlar için, medya dosyasının cihazda nereye indirildiğini tutar.
      * key: messageId, value: absolute local file path.

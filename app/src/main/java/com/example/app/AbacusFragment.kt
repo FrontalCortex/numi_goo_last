@@ -43,6 +43,7 @@ import com.example.app.abacus.AbacusBeadMetrics
 
 class AbacusFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
+    private var learningSessionStartMs: Long? = null
 
     private var operations: List<MathOperation> = emptyList()
     private var currentIndex = 0
@@ -1241,7 +1242,9 @@ class AbacusFragment : Fragment() {
     }
 
     private fun stopTimer() {
+        if (!isTimerStarted) return
         handler.removeCallbacks(runnable)
+        isTimerStarted = false
     }
     private fun fubHintClickListener(){
         // Hint touch area listener'ını sakla
@@ -1415,6 +1418,10 @@ class AbacusFragment : Fragment() {
 
                         // Tıklama işlemini gerçekleştir
                         val isCorrect = stepAnswerAlgorithm()
+                        if (currentIndex == operations.size - 1 && isTimerStarted) {
+                            // Son soruda panel butonunu beklemeden süreyi anında durdur.
+                            stopTimer()
+                        }
                         updateProgressBar(isCorrect)
                         showResultPanel(isCorrect)
                         controlNumber = 0
@@ -2504,7 +2511,34 @@ class AbacusFragment : Fragment() {
         abacusController.reset()
     }
 
+    private fun startLearningSessionTracking() {
+        if (learningSessionStartMs == null) {
+            learningSessionStartMs = System.currentTimeMillis()
+        }
+    }
+
+    private fun stopLearningSessionTracking() {
+        val startMs = learningSessionStartMs ?: return
+        learningSessionStartMs = null
+        val elapsedMs = (System.currentTimeMillis() - startMs).coerceAtLeast(0L)
+        val ctx = context ?: return
+        if (elapsedMs > 0L) {
+            MissionsProgressStore.recordLearningDurationMs(ctx, elapsedMs)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startLearningSessionTracking()
+    }
+
+    override fun onPause() {
+        stopLearningSessionTracking()
+        super.onPause()
+    }
+
     override fun onDestroyView() {
+        stopLearningSessionTracking()
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
@@ -2613,7 +2647,11 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    showChestResult()
+                                    if (currentSuccessRate() < 10f) {
+                                        showLessonResultFalseOnly()
+                                    } else {
+                                        showChestResult()
+                                    }
                                 }
                                 else{
                                     showLessonResult()
@@ -2713,7 +2751,11 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    showChestResult()
+                                    if (currentSuccessRate() < 10f) {
+                                        showLessonResultFalseOnly()
+                                    } else {
+                                        showChestResult()
+                                    }
                                 }
                                 else{
                                     showLessonResult()
@@ -2748,17 +2790,20 @@ class AbacusFragment : Fragment() {
         } else {
             0f
         }
+        val dersPuani = (successRate * 5f).toInt()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
         }
         lessonResultFragment.arguments = args
         val argsFalse = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
         }
         lessonResultFalse.arguments = argsFalse
 
@@ -2782,6 +2827,35 @@ class AbacusFragment : Fragment() {
         }
     }
 
+    private fun currentSuccessRate(): Float {
+        return if (totalQuestions > 0) {
+            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        } else {
+            0f
+        }
+    }
+
+    private fun showLessonResultFalseOnly() {
+        val lessonResultFalse = LessonResultFalse()
+        val successRate = currentSuccessRate()
+        val dersPuani = (successRate * 5f).toInt()
+        val argsFalse = Bundle().apply {
+            putInt("correctAnswers", correctAnswer)
+            putInt("totalQuestions", totalQuestions)
+            putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
+        }
+        lessonResultFalse.arguments = argsFalse
+
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+            .replace(R.id.abacusFragmentContainer, lessonResultFalse)
+            .commit()
+    }
+
     private fun showChestResult() {
         val chestResultFragment = ChestResult()
 
@@ -2791,12 +2865,18 @@ class AbacusFragment : Fragment() {
         } else {
             0f
         }
+        val dersPuani = (successRate * 5f).toInt()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putString("time", currentTime)
+            putInt("dersPuani", dersPuani)
+            putInt(
+                "worstCupTime",
+                LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
+            )
         }
         chestResultFragment.arguments = args
         stopTimer()

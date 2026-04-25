@@ -568,7 +568,10 @@ class ProfileFragment : Fragment() {
             
             // GlobalLessonData'yı initialize et (eğer initialize edilmemişse)
             try {
-                GlobalLessonData.initialize(requireContext(), GlobalLessonData.globalPartId)
+                GlobalLessonData.initialize(requireContext(), GlobalLessonData.globalPartId) {
+                    // Count is calculated immediately below; async init is only to avoid
+                    // default-overwrite risk and keep future reads in sync.
+                }
             } catch (e: Exception) {
                 Log.e("ProfileFragment", "GlobalLessonData initialize edilemedi", e)
             }

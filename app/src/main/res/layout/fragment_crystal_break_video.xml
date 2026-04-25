@@ -17,6 +17,15 @@
         app:show_buffering="never"
         app:use_controller="false" />
 
+    <View
+        android:id="@+id/crystalVideoDimOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#58000000"
+        android:elevation="20dp"
+        android:clickable="false"
+        android:focusable="false" />
+
     <TextView
         android:id="@+id/crystalRarityText"
         android:layout_width="wrap_content"

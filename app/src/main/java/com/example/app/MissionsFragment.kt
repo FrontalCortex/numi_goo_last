@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.databinding.FragmentMissionsBinding
+import java.util.Locale
 
 class MissionsFragment : Fragment() {
 
@@ -17,16 +18,7 @@ class MissionsFragment : Fragment() {
     private val binding get() = _binding!!
     private var isVideoFlowOpen = false
 
-    private val adapter = MissionsListAdapter {
-        if (isVideoFlowOpen || !isAdded) return@MissionsListAdapter
-        val tag = CrystalBreakVideoFragment::class.java.simpleName
-        if (childFragmentManager.findFragmentByTag(tag) != null) return@MissionsListAdapter
-        isVideoFlowOpen = true
-        CrystalBreakVideoFragment.newInstance("crystal_red_yellow").show(childFragmentManager, tag)
-        childFragmentManager.executePendingTransactions()
-        (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
-            ?.setOnDismissCallback { isVideoFlowOpen = false }
-    }
+    private lateinit var adapter: MissionsListAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,6 +31,26 @@ class MissionsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        adapter = MissionsListAdapter { quest: MissionListItem.Quest ->
+            val ctx = context ?: return@MissionsListAdapter
+            val done = quest.progress >= quest.target
+            if (!done || quest.isClaimed) return@MissionsListAdapter
+            if (isVideoFlowOpen || !isAdded) return@MissionsListAdapter
+            val tag = MissionRewardRevealDialogFragment::class.java.simpleName
+            if (childFragmentManager.findFragmentByTag(tag) != null) return@MissionsListAdapter
+            isVideoFlowOpen = true
+            MissionRewardRevealDialogFragment().show(childFragmentManager, tag)
+            childFragmentManager.executePendingTransactions()
+            (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
+                ?.setOnRewardClaimedCallback {
+                    MissionsProgressStore.markMissionRewardClaimed(ctx, quest.window, quest.missionId)
+                }
+            (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
+                ?.setOnDismissCallback {
+                    isVideoFlowOpen = false
+                    if (isAdded) adapter.submitList(buildMissionRows())
+                }
+        }
         binding.missionsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.missionsRecyclerView.adapter = adapter
     }
@@ -66,36 +78,41 @@ class MissionsFragment : Fragment() {
                 getString(R.string.missions_weekly_title),
                 weeklyLabel,
             ),
+        ) + MissionsProgressStore.selectedMissionsForWeekly(ctx).map { mission ->
+            val progress = minOf(
+                MissionsProgressStore.missionProgress(snap, MissionWindow.WEEKLY, mission),
+                mission.target,
+            )
             MissionListItem.Quest(
-                getString(R.string.mission_finish_one_lesson),
-                minOf(snap.weeklyCount, 1),
-                1,
+                missionId = mission.id,
+                getString(mission.titleResId),
+                progress,
+                mission.target,
                 R.drawable.crystal_ic,
-            ),
-            MissionListItem.Quest(
-                getString(R.string.mission_finish_two_lessons),
-                minOf(snap.weeklyCount, 2),
-                2,
-                R.drawable.crystal_ic,
-            ),
+                window = MissionWindow.WEEKLY,
+                isClaimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.WEEKLY, mission.id),
+            )
+        } + listOf(
             MissionListItem.Divider,
             MissionListItem.Header(
                 getString(R.string.missions_daily_title),
                 getString(R.string.missions_hours_short, dailyHours),
             ),
+        ) + MissionsProgressStore.selectedMissionsForDaily(ctx).map { mission ->
+            val progress = minOf(
+                MissionsProgressStore.missionProgress(snap, MissionWindow.DAILY, mission),
+                mission.target,
+            )
             MissionListItem.Quest(
-                getString(R.string.mission_finish_one_lesson),
-                minOf(snap.dailyCount, 1),
-                1,
+                missionId = mission.id,
+                getString(mission.titleResId),
+                progress,
+                mission.target,
                 R.drawable.crystal_ic,
-            ),
-            MissionListItem.Quest(
-                getString(R.string.mission_finish_two_lessons),
-                minOf(snap.dailyCount, 2),
-                2,
-                R.drawable.crystal_ic,
-            ),
-        )
+                window = MissionWindow.DAILY,
+                isClaimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.DAILY, mission.id),
+            )
+        }
     }
 
     private fun formatWeeklyCountdown(ms: Long): String {
@@ -112,11 +129,19 @@ class MissionsFragment : Fragment() {
 private sealed class MissionListItem {
     data class Header(val title: String, val countdown: String) : MissionListItem()
     data object Divider : MissionListItem()
-    data class Quest(val title: String, val progress: Int, val target: Int, val iconRes: Int) : MissionListItem()
+    data class Quest(
+        val missionId: String,
+        val title: String,
+        val progress: Int,
+        val target: Int,
+        val iconRes: Int,
+        val window: MissionWindow,
+        val isClaimed: Boolean,
+    ) : MissionListItem()
 }
 
 private class MissionsListAdapter(
-    private val onQuestClick: () -> Unit,
+    private val onQuestClick: (MissionListItem.Quest) -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var items: List<MissionListItem> = emptyList()
@@ -179,7 +204,7 @@ private class MissionsListAdapter(
 
     private class QuestVH(
         view: View,
-        private val onQuestClick: () -> Unit,
+        private val onQuestClick: (MissionListItem.Quest) -> Unit,
     ) : RecyclerView.ViewHolder(view) {
         private val title = view.findViewById<TextView>(R.id.missionTitle)
         private val progressTrack = view.findViewById<View>(R.id.missionProgressTrack)
@@ -194,25 +219,40 @@ private class MissionsListAdapter(
             val pct = ((q.progress.coerceAtMost(q.target) * 100) / q.target.coerceAtLeast(1)).coerceIn(0, 100)
 
             title.text = q.title
-            applyMissionProgressOverlay(progressTrack, progressFill, progressShine, pct, done)
+            applyMissionProgressOverlay(progressTrack, progressFill, progressShine, pct, done, q.isClaimed)
             icon.setImageResource(q.iconRes)
 
             val gold = ContextCompat.getColor(ctx, R.color.missions_progress_complete)
             val titleNormal = ContextCompat.getColor(ctx, R.color.missions_quest_title_normal)
             val progressLabelDone = ContextCompat.getColor(ctx, R.color.background_color)
             val progressLabelPending = ContextCompat.getColor(ctx, R.color.button_disabled)
+            val progressLabelClaimed = ContextCompat.getColor(ctx, R.color.black)
 
-            if (done) {
+            if (q.isClaimed) {
+                title.setTextColor(titleNormal)
+                progressText.text = ctx.getString(R.string.mission_reward_claimed_label)
+                progressText.setTextColor(progressLabelClaimed)
+            } else if (done) {
                 title.setTextColor(gold)
                 progressText.text = ctx.getString(R.string.mission_completed_label)
                 progressText.setTextColor(progressLabelDone)
             } else {
                 title.setTextColor(titleNormal)
-                progressText.text = ctx.getString(R.string.mission_progress_format, q.progress.coerceAtMost(q.target), q.target)
+                progressText.text = String.format(
+                    Locale.getDefault(),
+                    "%d / %d",
+                    q.progress.coerceAtMost(q.target),
+                    q.target,
+                )
                 progressText.setTextColor(progressLabelPending)
             }
 
-            itemView.setOnClickListener { onQuestClick() }
+            val canClaim = done && !q.isClaimed
+            itemView.isClickable = canClaim
+            itemView.isFocusable = canClaim
+            itemView.setOnClickListener {
+                if (canClaim) onQuestClick(q)
+            }
         }
     }
 }

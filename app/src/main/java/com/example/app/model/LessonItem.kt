@@ -24,12 +24,14 @@ data class LessonItem(
     var startStepNumber: Int? = null,
     var mapFragmentIndex: Int? = null,
     var stepIsFinish: Boolean = false,
+    var finalGoldVisualUnlocked: Boolean = false,
     var tutorialNumber: Int = 0,
     var tutorialIsFinish: Boolean = false,
     var lessonHint: String? = null,
-    var stepCupIcon: Int = R.drawable.cup_ic,
-    var cupTime1: String? = null,
-    var cupTime2: String? = null,
+    var stepCupIcon: Int = R.drawable.chest_stars_tier0,
+    var cupPoint1: Int? = null,
+    var cupPoint2: Int? = null,
+    var worstCupTime: Int? = null,
     var sectionTitle: String? = null,
     var backPart: Boolean? = null,
     var sectionDescription: String? = null,
@@ -38,7 +40,7 @@ data class LessonItem(
     var racePartId: Int? = null,  // Race item'ının hangi partId'den veri göstereceği
     var backRaceId: Int? = null,
     var raceBusyLevel: Int? = null,
-    var record: String? = null,
+    var record: Int? = null,
     var abacusGuideNumber: Int? = null,
 ) : Serializable {
     companion object {

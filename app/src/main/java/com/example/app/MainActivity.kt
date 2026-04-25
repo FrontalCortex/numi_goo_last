@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
         @Volatile
         var currentActivity: MainActivity? = null
+        private const val PREFS_APP = "AppPrefs"
+        private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -79,7 +81,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     private val requestNotificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ -> /* FCM bildirimleri için izin sonucu */ }
+    ) { _ ->
+        notificationPermissionRequestInFlight = false
+        getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit()
+            .putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true)
+            .apply()
+    }
 
     private val recordAudioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -127,15 +134,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var teacherPendingDescription: String? = null
     private var teacherSelectedQuestionId: String? = null
     private var teacherSelectedQuestionTitle: String? = null
+    private var notificationPermissionRequestInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        //Bütün görevleri her açılışta sıfırlar
-        MissionsProgressStore.resetAllProgress(this)
 
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
@@ -332,26 +337,25 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private fun showFirstTutorial() {
         // GlobalLessonData'yı initialize et (partId = 1)
         GlobalLessonData.globalPartId = 1
-        GlobalLessonData.initialize(this, 1)
-        
-        // GlobalLessonData'dan 1. index'teki item'ı al (createLessonItems'den değil, initialize edilen verilerden)
-        val item = GlobalLessonData.getLessonItem(1)
-        item?.let {
+        GlobalLessonData.initialize(this, 1) {
+            // GlobalLessonData'dan 1. index'teki item'ı al (createLessonItems'den değil, initialize edilen verilerden)
+            val item = GlobalLessonData.getLessonItem(1) ?: return@initialize
+
             // Global değerleri set et (TutorialFragment onCreate'de kullanılacak)
-            it.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
-            it.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
-            
+            item.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
+            item.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
+
             // Önce MapFragment'i back stack'e ekle (ChestFragment'ten geri dönüş için)
             val mapFragment = MapFragment()
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragmentContainerID, mapFragment)
                 .addToBackStack(null)
                 .commit()
-            
+
             // TutorialFragment'ı başlat (abacusFragmentContainer'da gösterilecek)
             binding.abacusFragmentContainer.visibility = View.VISIBLE
             supportFragmentManager.beginTransaction()
-                .replace(R.id.abacusFragmentContainer, TutorialFragment(it.tutorialNumber))
+                .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
                 .addToBackStack(null)
                 .commit()
         }
@@ -414,6 +418,28 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val menu = binding.bottomNavigationID.menu
         for (i in 0 until menu.size()) {
             menu.getItem(i).isEnabled = enabled
+        }
+    }
+
+    /**
+     * [fragmentContainerID] içindeki MapFragment kökündeki soru sor butonu.
+     * Sandık / sonuç akışında tıklamayı keser; açılınca kayıt devam ediyorsa yine kapalı kalır.
+     */
+    fun setMapFragmentAskQuestionInteractionBlocked(blocked: Boolean) {
+        binding.fragmentContainerID.findViewById<View>(R.id.askQuestionButton)?.apply {
+            if (blocked) {
+                isEnabled = false
+                isClickable = false
+                isFocusable = false
+                setOnTouchListener { _, _ -> true }
+            } else {
+                val allow = !isQuestionRecordingInProgress()
+                isEnabled = allow
+                isClickable = allow
+                isFocusable = allow
+                setOnTouchListener(null)
+                alpha = if (allow) 1f else 0.5f
+            }
         }
     }
 
@@ -1092,8 +1118,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
         */
+        //Bütün görevleri her açılışta sıfırlar
+        //MissionsProgressStore.resetAllProgress(this)
+        // Her açılışta günlük/haftalık görev kombinasyonunu yeniden seç
+        //MissionsProgressStore.forceReselectMissions(this)
         // Sadece şu anki kullanıcının ders verisini temizle (her kullanıcıya özel)
         //GlobalLessonData.clearCurrentUserLessonData(context)
+        context.getSharedPreferences("daily_question_prefs", Context.MODE_PRIVATE) //günlük soruyu sil
+            .edit()
+            .clear()
+            .apply()
 
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
         //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
@@ -1210,7 +1244,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         if (hasExistingLogin) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                val appPrefs = getSharedPreferences(PREFS_APP, MODE_PRIVATE)
+                val prompted = appPrefs.getBoolean(KEY_NOTIF_PERMISSION_PROMPTED, false)
+                if (!prompted && !notificationPermissionRequestInFlight) {
+                    // Mark before launch to avoid duplicate prompts in repeated onResume calls.
+                    appPrefs.edit().putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true).apply()
+                    notificationPermissionRequestInFlight = true
+                    requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
             MyFirebaseMessagingService.saveCurrentTokenToFirestore()
         }

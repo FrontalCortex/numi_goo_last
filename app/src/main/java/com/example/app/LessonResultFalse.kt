@@ -35,6 +35,7 @@ class LessonResultFalse : Fragment() {
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonStep: Int = 0
+    private var lessonScore: Int = 0
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
@@ -59,6 +60,7 @@ class LessonResultFalse : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MainActivityChromeBlocker.acquire(requireActivity())
 
 // Başka bir sınıfta (örneğin LessonResult'ta)
         arguments?.let { bundle ->
@@ -105,11 +107,17 @@ class LessonResultFalse : Fragment() {
 
     }
 
+    override fun onDestroyView() {
+        MainActivityChromeBlocker.release(activity)
+        super.onDestroyView()
+    }
 
     private fun updateUI() {
         // Örnek: Doğru cevap sayısını göster
         succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions.toFloat()) * 100) else 0f
+        lessonScore = (succsessRate * 5f).toInt()
         binding.successRate.text = "${succsessRate.toInt()}%"
+        binding.totalScore.text = lessonScore.toString()
 
         // Başarı durumuna göre farklı animasyon gösterebilirsiniz
         /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı

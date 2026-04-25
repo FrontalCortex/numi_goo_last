@@ -15,10 +15,12 @@
     <dimen name="map_fab_size">60dp</dimen>
     <dimen name="map_lesson_item_padding">17dp</dimen>
     <dimen name="map_lesson_card_size">85dp</dimen>
+    <dimen name="map_lesson_outer_ring_size">102dp</dimen>
     <dimen name="map_lesson_card_corner_radius">53dp</dimen>
     <dimen name="map_lesson_card_inner_padding">13dp</dimen>
     <dimen name="map_lesson_icon_size">38dp</dimen>
-    <dimen name="map_lesson_progress_thickness">6dp</dimen>
+    <dimen name="map_lesson_chest_stars_size">76dp</dimen>
+    <dimen name="map_lesson_progress_thickness">7dp</dimen>
     <dimen name="map_race_icon_size">64dp</dimen>
     <dimen name="map_header_text_size">17sp</dimen>
     <dimen name="map_item_header_padding">14dp</dimen>

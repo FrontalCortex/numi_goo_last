@@ -12,8 +12,9 @@ fun applyMissionProgressOverlayNow(
     shine: View,
     percent: Int,
     done: Boolean,
+    claimed: Boolean = false,
 ) {
-    applyMissionProgressOverlayNow(widthHost, fill, shine, percent.toFloat().coerceIn(0f, 100f), done)
+    applyMissionProgressOverlayNow(widthHost, fill, shine, percent.toFloat().coerceIn(0f, 100f), done, claimed)
 }
 
 /** [percent] 0–100 arası ondalık; dolgu kare kare yumuşar. */
@@ -23,6 +24,7 @@ fun applyMissionProgressOverlayNow(
     shine: View,
     percent: Float,
     done: Boolean,
+    claimed: Boolean = false,
 ) {
     val w = widthHost.width
     if (w <= 0) return
@@ -31,11 +33,19 @@ fun applyMissionProgressOverlayNow(
     val p = percent.coerceIn(0f, 100f)
     fill.background = ContextCompat.getDrawable(
         ctx,
-        if (done) R.drawable.mission_progress_fill_gold else R.drawable.mission_progress_fill_blue,
+        when {
+            claimed -> R.drawable.mission_progress_fill_claimed
+            done -> R.drawable.mission_progress_fill_gold
+            else -> R.drawable.mission_progress_fill_blue
+        },
     )
     shine.background = ContextCompat.getDrawable(
         ctx,
-        if (done) R.drawable.mission_progress_shine_gold else R.drawable.mission_progress_shine_blue,
+        when {
+            claimed -> R.drawable.mission_progress_shine_claimed
+            done -> R.drawable.mission_progress_shine_gold
+            else -> R.drawable.mission_progress_shine_blue
+        },
     )
     val startInset = res.getDimensionPixelSize(R.dimen.mission_progress_shine_inset_start)
     val endGap = res.getDimensionPixelSize(R.dimen.mission_progress_shine_gap_end)
@@ -44,11 +54,15 @@ fun applyMissionProgressOverlayNow(
     fillLp.width = fillW
     fill.layoutParams = fillLp
     fill.visibility = if (fillW > 0) View.VISIBLE else View.GONE
-    val shineW = (fillW - startInset - endGap).coerceAtLeast(0)
-    val shineLp = shine.layoutParams as LayoutParams
-    shineLp.width = shineW
-    shine.layoutParams = shineLp
-    shine.visibility = if (shineW > 0) View.VISIBLE else View.GONE
+    if (claimed) {
+        shine.visibility = View.GONE
+    } else {
+        val shineW = (fillW - startInset - endGap).coerceAtLeast(0)
+        val shineLp = shine.layoutParams as LayoutParams
+        shineLp.width = shineW
+        shine.layoutParams = shineLp
+        shine.visibility = if (shineW > 0) View.VISIBLE else View.GONE
+    }
 }
 
 /**
@@ -60,9 +74,10 @@ fun applyMissionProgressOverlay(
     shine: View,
     percent: Int,
     done: Boolean,
+    claimed: Boolean = false,
 ) {
     fun layoutOverlay() {
-        applyMissionProgressOverlayNow(widthHost, fill, shine, percent.toFloat(), done)
+        applyMissionProgressOverlayNow(widthHost, fill, shine, percent.toFloat(), done, claimed)
     }
     widthHost.post {
         if (widthHost.width > 0) {

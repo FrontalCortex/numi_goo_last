@@ -26,7 +26,7 @@
             android:textColor="@color/missions_quest_title_normal"
             android:textSize="20sp"
             android:textStyle="bold"
-            tools:text="1 dersi bitir" />
+            tools:text="1 ders adımını bitir" />
 
         <FrameLayout
             android:layout_width="match_parent"

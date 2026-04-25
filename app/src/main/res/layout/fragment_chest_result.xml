@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:layout_gravity="center"
     android:background="#101820"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="80dp">
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:id="@+id/chestResultContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:layout_gravity="center"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="80dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
     <!-- Karakter ve animasyonlar için bir ImageView -->
     <com.airbnb.lottie.LottieAnimationView
@@ -30,12 +39,14 @@
         android:layout_height="wrap_content"
         android:text="Ders Bitti!"
         android:textColor="#FFF200"
+        android:layout_marginBottom="50dp"
         android:textSize="28sp"
         android:textStyle="bold"
         />
 
     <!-- Sonuç kutuları -->
     <LinearLayout
+        android:id="@+id/resultBoxesRow"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -44,6 +55,7 @@
 
         <!-- Süre -->
         <LinearLayout
+            android:id="@+id/timeBox"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
@@ -70,6 +82,7 @@
         </LinearLayout>
         <!-- Başarı Oranı -->
         <LinearLayout
+            android:id="@+id/successBox"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
@@ -107,21 +120,124 @@
         android:textSize="44sp"
         android:textStyle="bold" />
 
+    <FrameLayout
+        android:id="@+id/scoreProgressZone"
+        android:layout_width="230dp"
+        android:layout_height="58dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="10dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:id="@+id/scoreProgressBarContainer"
+            android:layout_width="230dp"
+            android:layout_height="14dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:orientation="horizontal"
+            android:background="#333333"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/scoreProgressBarFill"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0"
+                android:background="@drawable/progress_bar_fill" />
+
+            <View
+                android:id="@+id/scoreProgressBarEmpty"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/progress_bar_fill"
+                android:backgroundTint="#444444" />
+        </LinearLayout>
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/starMarker1"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="top|start"
+            android:visibility="visible"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            app:lottie_fileName="star.json" />
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/starMarker2"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="top|start"
+            android:visibility="visible"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            app:lottie_fileName="star.json" />
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/starMarker3"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="top|start"
+            android:visibility="visible"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"
+            app:lottie_fileName="star.json" />
+    </FrameLayout>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
     <!-- Puanı Al Butonu -->
-    <Button
-        android:id="@+id/claimButton"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:fontFamily="@font/font_regular"
-        android:text="Devam et"
-        android:layout_marginBottom="20dp"
-        android:textStyle="bold"
-        android:textColor="#101820"
-        android:backgroundTint="#29B6F6"
-        android:textSize="18sp"/>
-</LinearLayout>
+        <Button
+            android:id="@+id/claimButton"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#8CC63F"
+            android:text="Devam et"
+            android:layout_marginHorizontal="10dp"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:layout_marginBottom="20dp"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:cornerRadius="15dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/multiplierBubble"
+        android:layout_width="86dp"
+        android:layout_height="42dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="300dp"
+        android:background="@drawable/result_box_yellow"
+        android:elevation="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:alpha="0"
+        android:visibility="invisible">
+
+        <TextView
+            android:id="@+id/multiplierText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="x0.00"
+            android:textColor="#FFD600"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/scoreImpactFlash"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:background="@drawable/result_box_yellow"
+        android:alpha="0"
+        android:visibility="invisible" />
+</FrameLayout>

@@ -11,6 +11,12 @@ service cloud.firestore {
       allow read: if request.auth == null;
     }
 
+    // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
+    // sadece ilgili kullanıcı tarafından okunup yazılabilir.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Öğretmen davet kodları: giriş yapmış kullanıcı okuyabilir; kayıt sırasında update (used) için yazma
     match /teacherInvites/{code} {
       allow read, write: if request.auth != null;

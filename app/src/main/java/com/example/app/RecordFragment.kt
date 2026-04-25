@@ -76,8 +76,8 @@ class RecordFragment : Fragment() {
     private fun syncCurrentUserLeaderboardFromLocalLesson() {
         val item = GlobalLessonData.getLessonItem(lessonIndex) ?: return
         if (item.type != LessonItem.TYPE_CHEST || !item.stepIsFinish) return
-        val record = item.record?.trim().orEmpty()
-        if (record.isEmpty()) return
+        val record = item.record ?: return
+        if (record <= 0) return
         LessonLeaderboardRepository.submitBestIfNeeded(partId, lessonIndex, record)
     }
 

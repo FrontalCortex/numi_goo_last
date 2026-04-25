@@ -376,10 +376,6 @@ class QuestionChatFragment : Fragment() {
         else Toast.makeText(requireContext(), "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
     }
 
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { _ -> }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -732,11 +728,6 @@ class QuestionChatFragment : Fragment() {
             }
         })
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")

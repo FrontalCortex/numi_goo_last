@@ -5,10 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.os.CountDownTimer
-import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import com.example.app.GlobalValues.mapFragmentStepIndex
@@ -18,11 +15,8 @@ import com.example.app.model.LessonItem
 class CupFragment : Fragment() {
     private lateinit var binding: FragmentCupBinding
     private var targetTime: String = ""
-    private var currentSeconds: Int = 0
-    private var timer: CountDownTimer? = null
-    private var record: Int? = null
-    private val TICK_INTERVAL = 50L // 50 milisaniye
-    private val SPEED_MULTIPLIER = 1 // Her tick'te 3 saniye artacak
+    private var dersPuani: Int = 0
+    private var toplamPuan: Int = 0
     private lateinit var claimButton: View
     private lateinit var cupImageView: ImageView
     private lateinit var cupName: TextView
@@ -48,10 +42,12 @@ class CupFragment : Fragment() {
         claimButton = binding.claimButton
         arguments?.let { bundle ->
             targetTime = bundle.getString("time", "")
-            startTimer()
+            dersPuani = bundle.getInt("dersPuani", 0)
+            toplamPuan = bundle.getInt("toplamPuan", 0)
         }
         ChangeCupIcon()
         record()
+        showCup()
         resumeClick()
 
     }
@@ -74,16 +70,17 @@ class CupFragment : Fragment() {
         }
     }
     private fun record(){
-        if(lessonItem.record == null){
-            lessonItem.record = "99:40"
+        if(lessonItem.record==null){
+            lessonItem.record = toplamPuan
         }
-        if(targetTime < lessonItem.record.toString()){
-
-            lessonItem.record = targetTime
+        else if(toplamPuan>lessonItem.record!!){
+            lessonItem.record = toplamPuan
         }
     }
     private fun ChangeCupIcon(){
-        if (targetTime < lessonItem.cupTime1.toString()) {
+        val cupPoint1 = lessonItem.cupPoint1
+        val cupPoint2 = lessonItem.cupPoint2
+        if (cupPoint1 != null && toplamPuan >= cupPoint1) {
             icon= R.drawable.cup_ic3
             cupName.text = "Bilgelik Kupası"
             val cupMotivation = listOf("Tüm sorular senin zekânla boy ölçüştü, ama kazanan sensin",
@@ -91,7 +88,7 @@ class CupFragment : Fragment() {
                 "Bu seviye, sadece çok çalışanların ulaşabildiği yer.",
                 "Sen artık bu konunun ustasısın – neyi başaramazsın ki?",)
             motivationText.text = cupMotivation.random()
-        } else if (targetTime < lessonItem.cupTime2.toString()) {
+        } else if (cupPoint2 != null && toplamPuan >= cupPoint2) {
             icon = R.drawable.cup_ic2
             cupName.text = "Usta Kupası"
             val cupMotivation = listOf("Gerçek ustalık; bilgi, sabır ve kararlılıkla gelir. Tebrikler!",
@@ -100,7 +97,7 @@ class CupFragment : Fragment() {
                 "Çok iyi gidiyorsun! Birkaç adım sonra zirvedesin.",
                 "Gelişimin fark ediliyor. Pes etme, devam et!")
             motivationText.text = cupMotivation.random()
-        } else if ( targetTime < "10:00") {
+        } else if (toplamPuan > 0) {
             icon = R.drawable.cup_ic
             cupName.text = "Deneyim Kupası"
             val cupMotivation = listOf("Her usta bir zamanlar amatördü. Sen de yoldasın!",
@@ -154,109 +151,8 @@ class CupFragment : Fragment() {
         }
     }
 
-    private fun startTimer() {
-        val (targetMinutes, targetSeconds) = targetTime.split(":").map { it.toInt() }
-        val targetTotalSeconds = targetMinutes * 60 + targetSeconds
-        
-        // Timer'ı ileriye doğru sayacak şekilde ayarla
-        timer = object : CountDownTimer(targetTotalSeconds * 1000L, TICK_INTERVAL) {
-            override fun onTick(millisUntilFinished: Long) {
-                val elapsedTime = (targetTotalSeconds * 1000L - millisUntilFinished) / TICK_INTERVAL
-                currentSeconds = (elapsedTime * SPEED_MULTIPLIER).toInt().coerceAtMost(targetTotalSeconds)
-                updateTimerDisplay()
-                
-                // Hedef zamana ulaşıldığında animasyonu başlat
-                if (currentSeconds >= targetTotalSeconds) {
-                    cancel()
-                    showCupAnimation()
-                }
-            }
-
-            override fun onFinish() {
-                currentSeconds = targetTotalSeconds
-                updateTimerDisplay()
-                showCupAnimation()
-            }
-        }.start()
-    }
-
-    private fun updateTimerDisplay() {
-        val minutes = currentSeconds / 60
-        val seconds = currentSeconds % 60
-        binding.timerTextView.text = String.format("%d:%02d", minutes, seconds)
-
-        // Sürekli büyüyüp küçülme animasyonu
-        val scaleX = ObjectAnimator.ofFloat(
-            binding.timerTextView,
-            "scaleX",
-            1f,
-            1.5f,
-            1f
-        ).apply {
-            duration = 300
-            repeatCount = 0
-        }
-
-        val scaleY = ObjectAnimator.ofFloat(
-            binding.timerTextView,
-            "scaleY",
-            1f,
-            1.5f,
-            1f
-        ).apply {
-            duration = 300
-            repeatCount = 0
-        }
-
-        val animatorSet = AnimatorSet().apply {
-            playTogether(scaleX, scaleY)
-            start()
-        }
-
-        Log.d("TimerAnimation", "Animation started for time: ${binding.timerTextView.text}")
-    }
-
-    private fun showCupAnimation() {
-        // Kayma animasyonu
-        val translateY = ObjectAnimator.ofFloat(
-            binding.timerTextView,
-            "translationY",
-            0f,
-            1000f
-        )
-
-        // Küçülme animasyonu
-        val scaleX = ObjectAnimator.ofFloat(
-            binding.timerTextView,
-            "scaleX",
-            1f,
-            0.5f
-        )
-        val scaleY = ObjectAnimator.ofFloat(
-            binding.timerTextView,
-            "scaleY",
-            1f,
-            0.5f
-        )
-
-        // Animasyonları birleştir
-        val animatorSet = AnimatorSet().apply {
-            playTogether(translateY, scaleX, scaleY)
-            duration = 800
-        }
-
-        // Animasyon bittiğinde
-        animatorSet.addListener(object : android.animation.AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                showCup()
-            }
-        })
-
-        // Animasyonu başlat
-        animatorSet.start()
-    }
-
     private fun showCup() {
+        binding.timerTextView.visibility = View.GONE
         binding.cupContainer.visibility = View.VISIBLE
         binding.cupContainer.alpha = 0f
         
@@ -273,8 +169,4 @@ class CupFragment : Fragment() {
         alphaAnimator.start()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        timer?.cancel()
-    }
 }

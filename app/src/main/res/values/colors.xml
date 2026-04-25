@@ -3,6 +3,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="gray">#808080</color>
+    <color name="chest_star_light_gray">#BDBDBD</color>
     <color name="yellow">#FFFFD600</color>
     <color name="blue">#2196F3</color>
     <color name="red">#F44336</color>
@@ -38,6 +39,11 @@
     <color name="missions_progress_gold_shine">#FFF9C4</color>
     <color name="missions_quest_title_normal">#FFFFFFFF</color>
     <color name="missions_progress_text_muted">#AAFFFFFF</color>
+    <color name="lesson_center_blue">#2FA8EA</color>
+    <color name="lesson_ring_active_blue">#2196F3</color>
+    <color name="lesson_ring_inactive_dark">#465764</color>
+    <color name="lesson_center_gold">#F4C542</color>
+    <color name="lesson_ring_gold">#FFD54F</color>
 
 
 

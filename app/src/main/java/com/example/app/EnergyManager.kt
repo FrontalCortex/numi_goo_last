@@ -12,8 +12,8 @@ class EnergyManager(private val context: Context) {
         private const val KEY_CURRENT_ENERGY = "current_energy"
         private const val KEY_LAST_ENERGY_UPDATE = "last_energy_update"
         private const val MAX_ENERGY = 5
-        private const val ENERGY_REFRESH_MINUTES = 1
-        private const val ENERGY_REFRESH_MILLIS = 3L // 5 dakika = 5 * 60 * 1000 = 300000 milisaniye
+        private const val ENERGY_REFRESH_MINUTES = 5
+        private const val ENERGY_REFRESH_MILLIS = 5 * 60 * 1000L // 5 dakika
     }
     
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

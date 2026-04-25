@@ -1,11 +1,18 @@
 package com.example.app
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.widget.Button
 import android.content.Context
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -36,6 +43,8 @@ class LessonAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     companion object {
         private const val LESSON_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
+        private val lastSeenFilledSegments = mutableMapOf<String, Int>()
+        private val playedFinalGoldAnimationKeys = mutableSetOf<String>()
     }
 
     interface OnProgressUpdateListener {
@@ -209,7 +218,7 @@ class LessonAdapter(
         // Rekor alanı: GuidePanel kapalıyken liderlik tablosu (RecordFragment).
         // Guide açıkken tıklanabilir kalmalı (son adım hedefi); listener sadece guide kapalıyken.
         recordLayout.setOnClickListener(null)
-        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && !item.record.isNullOrBlank()) {
+        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && item.record != null) {
             recordLayout.isClickable = true
             if (!isGuidePanelVisible) {
                 recordLayout.setOnClickListener {
@@ -748,10 +757,29 @@ class LessonAdapter(
         }
     }
 
+    private enum class ChestStarSlot {
+        YellowOn,
+        LightGrayOn,
+        Off,
+    }
+
     inner class LessonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val chestStarLightGrayFilter = PorterDuffColorFilter(
+            ContextCompat.getColor(context, R.color.chest_star_light_gray),
+            PorterDuff.Mode.SRC_IN,
+        )
+
         private val lessonIcon: ImageView = itemView.findViewById(R.id.lessonIcon)
+        private val chestStarsRow: LinearLayout = itemView.findViewById(R.id.chestStarsRow)
+        private val chestStar1: ImageView = itemView.findViewById(R.id.chestStar1)
+        private val chestStar2: ImageView = itemView.findViewById(R.id.chestStar2)
+        private val chestStar3: ImageView = itemView.findViewById(R.id.chestStar3)
         private val lessonCard: CardView = itemView.findViewById(R.id.lessonCard)
         private val progressBar: CircleProgressBar = itemView.findViewById(R.id.progressBar)
+        private val lessonGoldShinePrimary: View = itemView.findViewById(R.id.lessonGoldShinePrimary)
+        private val lessonGoldShineSecondary: View = itemView.findViewById(R.id.lessonGoldShineSecondary)
+        private var progressBreathingAnimator: ValueAnimator? = null
+        private var progressIncreaseAnimator: ValueAnimator? = null
 
         fun updateProgress(progress: Float) {
             // Mevcut progress değerini al
@@ -774,34 +802,350 @@ class LessonAdapter(
         fun updateProgressBarColor(color: Int) {
             progressBar.setProgressColor(color)
         }
+        private fun applyStepSegments(item: LessonItem) {
+            val safeStepCount = item.stepCount.coerceAtLeast(1)
+            val completedSteps = item.stepCompletionStatus.count { it }
+            val filledSegments = if (item.stepIsFinish) safeStepCount else completedSteps
+            progressBar.setSegmentGapAngle(16f)
+            progressBar.setSegmentState(
+                segmentCount = safeStepCount,
+                completedSegments = filledSegments.coerceIn(0, safeStepCount),
+            )
+        }
+
+        private fun lessonProgressKey(item: LessonItem): String {
+            val stableId = item.id ?: -1
+            val part = item.partId ?: -1
+            val idx = item.mapFragmentIndex ?: bindingAdapterPosition
+            return "${item.type}_${stableId}_${part}_${item.title}_$idx"
+        }
+
+        private fun applyPersistentFinalGoldState() {
+            lessonCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_center_gold))
+            progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_gold))
+            progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_gold))
+            progressBar.scaleX = 0.35f
+            progressBar.scaleY = 0.35f
+            progressBar.alpha = 0f
+            lessonGoldShinePrimary.alpha = 0.75f
+            lessonGoldShineSecondary.alpha = 0.55f
+        }
+
+        private fun resetGoldEffectVisuals(baseCardColor: Int) {
+            lessonCard.setCardBackgroundColor(baseCardColor)
+            progressBar.scaleX = 1f
+            progressBar.scaleY = 1f
+            progressBar.alpha = 1f
+            lessonGoldShinePrimary.alpha = 0f
+            lessonGoldShineSecondary.alpha = 0f
+            lessonGoldShinePrimary.translationX = 0f
+            lessonGoldShineSecondary.translationX = 0f
+        }
+
+        private fun persistFinalGoldVisualState(item: LessonItem, key: String) {
+            if (item.finalGoldVisualUnlocked) return
+            item.finalGoldVisualUnlocked = true
+            playedFinalGoldAnimationKeys.add(key)
+            val index = item.mapFragmentIndex ?: bindingAdapterPosition
+            if (index in items.indices) {
+                LessonManager.updateLessonItem(context, index, item.copy(finalGoldVisualUnlocked = true))
+            }
+        }
+
+        private fun playFinalGoldMergeAnimation(item: LessonItem, baseCardColor: Int, key: String) {
+            if (playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) {
+                persistFinalGoldVisualState(item, key)
+                applyPersistentFinalGoldState()
+                return
+            }
+            stopProgressBreathingAnimation()
+            val goldCardColor = ContextCompat.getColor(context, R.color.lesson_center_gold)
+            val goldRingColor = ContextCompat.getColor(context, R.color.lesson_ring_gold)
+            progressBar.setProgressColor(goldRingColor)
+            progressBar.setBackgroundRingColor(goldRingColor)
+
+            val colorAnim = ValueAnimator.ofObject(
+                ArgbEvaluator(),
+                baseCardColor,
+                goldCardColor,
+            ).apply {
+                duration = 340L
+                addUpdateListener { va ->
+                    lessonCard.setCardBackgroundColor(va.animatedValue as Int)
+                }
+            }
+
+            val ringMerge = AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(progressBar, View.SCALE_X, 1f, 0.35f),
+                    ObjectAnimator.ofFloat(progressBar, View.SCALE_Y, 1f, 0.35f),
+                    ObjectAnimator.ofFloat(progressBar, View.ALPHA, 1f, 0f),
+                )
+                duration = 520L
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+
+            val shinePrimary = AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(lessonGoldShinePrimary, View.ALPHA, 0f, 0.95f, 0.75f),
+                    ObjectAnimator.ofFloat(lessonGoldShinePrimary, View.TRANSLATION_X, -8f, 8f),
+                )
+                duration = 430L
+                startDelay = 140L
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+            val shineSecondary = AnimatorSet().apply {
+                playTogether(
+                    ObjectAnimator.ofFloat(lessonGoldShineSecondary, View.ALPHA, 0f, 0.85f, 0.55f),
+                    ObjectAnimator.ofFloat(lessonGoldShineSecondary, View.TRANSLATION_X, 7f, -6f),
+                )
+                duration = 470L
+                startDelay = 170L
+                interpolator = AccelerateDecelerateInterpolator()
+            }
+
+            AnimatorSet().apply {
+                playTogether(colorAnim, ringMerge, shinePrimary, shineSecondary)
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        persistFinalGoldVisualState(item, key)
+                        applyPersistentFinalGoldState()
+                    }
+                })
+                start()
+            }
+        }
+
+        private fun applyStepSegmentsWithIncreaseAnimation(item: LessonItem, baseCardColor: Int) {
+            progressIncreaseAnimator?.cancel()
+            val safeStepCount = item.stepCount.coerceAtLeast(1)
+            val completedSteps = item.stepCompletionStatus.count { it }
+            val targetFilled = if (item.stepIsFinish) safeStepCount else completedSteps.coerceIn(0, safeStepCount)
+            val key = lessonProgressKey(item)
+            progressBar.setSegmentGapAngle(16f)
+            if ((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && targetFilled == safeStepCount) {
+                persistFinalGoldVisualState(item, key)
+                applyPersistentFinalGoldState()
+                lastSeenFilledSegments[key] = targetFilled
+                return
+            } else {
+                resetGoldEffectVisuals(baseCardColor)
+            }
+            val pending = GlobalValues.pendingLessonProgressAnimations[key]
+            val shouldConsumePending = GlobalValues.canConsumePendingLessonProgressAnimations && pending != null
+            val previousFilled = if (shouldConsumePending) {
+                pending!!.fromFilledSegments.coerceIn(0, safeStepCount)
+            } else {
+                targetFilled
+            }
+
+            if (targetFilled > previousFilled) {
+                // Segment yapısını animasyon başlamadan önce kesin olarak kur.
+                progressBar.setSegmentState(safeStepCount, previousFilled)
+                progressIncreaseAnimator = ValueAnimator.ofFloat(previousFilled.toFloat(), targetFilled.toFloat()).apply {
+                    duration = ((targetFilled - previousFilled) * 900L).coerceAtLeast(1800L)
+                    interpolator = AccelerateDecelerateInterpolator()
+                    addUpdateListener { animator ->
+                        val current = animator.animatedValue as Float
+                        progressBar.setSegmentProgress(current)
+                    }
+                    addListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            if (shouldConsumePending && targetFilled == safeStepCount) {
+                                playFinalGoldMergeAnimation(item, baseCardColor, key)
+                            }
+                        }
+                    })
+                    start()
+                }
+                if (shouldConsumePending) {
+                    GlobalValues.pendingLessonProgressAnimations.remove(key)
+                }
+            } else {
+                progressBar.setSegmentState(safeStepCount, targetFilled)
+                if (shouldConsumePending) {
+                    GlobalValues.pendingLessonProgressAnimations.remove(key)
+                }
+                if (
+                    shouldConsumePending &&
+                    targetFilled == safeStepCount &&
+                    !playedFinalGoldAnimationKeys.contains(key) &&
+                    !item.finalGoldVisualUnlocked
+                ) {
+                    playFinalGoldMergeAnimation(item, baseCardColor, key)
+                }
+            }
+            lastSeenFilledSegments[key] = targetFilled
+        }
+
+        private fun startProgressBreathingAnimation() {
+            progressBreathingAnimator?.cancel()
+            progressBar.scaleX = 1f
+            progressBar.scaleY = 1f
+            progressBreathingAnimator = ValueAnimator.ofFloat(1f, 1.08f, 1f).apply {
+                duration = 2200L
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = AccelerateDecelerateInterpolator()
+                addUpdateListener { animation ->
+                    val scale = animation.animatedValue as Float
+                    progressBar.scaleX = scale
+                    progressBar.scaleY = scale
+                }
+                start()
+            }
+        }
+
+        fun stopProgressBreathingAnimation() {
+            progressBreathingAnimator?.cancel()
+            progressBreathingAnimator = null
+            progressBar.scaleX = 1f
+            progressBar.scaleY = 1f
+            progressIncreaseAnimator?.cancel()
+            progressIncreaseAnimator = null
+        }
+
+        private fun applyChestStarSlot(iv: ImageView, slot: ChestStarSlot) {
+            when (slot) {
+                ChestStarSlot.YellowOn -> {
+                    iv.setImageResource(R.drawable.star_on_ic)
+                    iv.colorFilter = null
+                }
+                ChestStarSlot.LightGrayOn -> {
+                    iv.setImageResource(R.drawable.star_on_ic)
+                    iv.colorFilter = chestStarLightGrayFilter
+                }
+                ChestStarSlot.Off -> {
+                    iv.setImageResource(R.drawable.star_off_ic)
+                    iv.colorFilter = null
+                }
+            }
+        }
+
+        private fun setChestStarsRowThreeStarMode(three: Boolean) {
+            if (three) {
+                listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
+                    iv.scaleX = 1f
+                    iv.scaleY = 1f
+                }
+                chestStar2.visibility = View.VISIBLE
+                chestStar3.visibility = View.VISIBLE
+                listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
+                    val lp = iv.layoutParams as LinearLayout.LayoutParams
+                    lp.width = 0
+                    lp.weight = 1f
+                    iv.layoutParams = lp
+                }
+            } else {
+                chestStar2.visibility = View.GONE
+                chestStar3.visibility = View.GONE
+                val lp1 = chestStar1.layoutParams as LinearLayout.LayoutParams
+                lp1.width = ViewGroup.LayoutParams.MATCH_PARENT
+                lp1.weight = 0f
+                chestStar1.layoutParams = lp1
+                chestStar1.scaleX = 1f
+                chestStar1.scaleY = 1f
+                chestStar1.post {
+                    if (chestStar2.visibility != View.GONE) return@post
+                    val w = chestStar1.width
+                    val h = chestStar1.height
+                    if (w <= 0 || h <= 0) return@post
+                    chestStar1.pivotX = w / 2f
+                    chestStar1.pivotY = h / 2f
+                    chestStar1.scaleX = 0.5f
+                    chestStar1.scaleY = 0.5f
+                }
+            }
+        }
+
+        private fun bindChestStarsRow(tierResId: Int, isCompleted: Boolean) {
+            when (tierResId) {
+                0, R.drawable.chest_stars_tier0 -> {
+                    setChestStarsRowThreeStarMode(false)
+                    val slot = if (isCompleted) ChestStarSlot.YellowOn else ChestStarSlot.LightGrayOn
+                    applyChestStarSlot(chestStar1, slot)
+                }
+                R.drawable.chest_stars_tier3 -> {
+                    setChestStarsRowThreeStarMode(true)
+                    val t = Triple(
+                        ChestStarSlot.YellowOn,
+                        ChestStarSlot.YellowOn,
+                        ChestStarSlot.YellowOn,
+                    )
+                    applyChestStarSlot(chestStar1, t.first)
+                    applyChestStarSlot(chestStar2, t.second)
+                    applyChestStarSlot(chestStar3, t.third)
+                }
+                R.drawable.chest_stars_tier2 -> {
+                    setChestStarsRowThreeStarMode(true)
+                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
+                }
+                R.drawable.chest_stars_tier1 -> {
+                    setChestStarsRowThreeStarMode(true)
+                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar2, ChestStarSlot.Off)
+                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
+                }
+                R.drawable.cup_ic3 -> {
+                    setChestStarsRowThreeStarMode(true)
+                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar3, ChestStarSlot.YellowOn)
+                }
+                R.drawable.cup_ic2 -> {
+                    setChestStarsRowThreeStarMode(true)
+                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
+                }
+                R.drawable.cup_ic -> {
+                    setChestStarsRowThreeStarMode(true)
+                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
+                    applyChestStarSlot(chestStar2, ChestStarSlot.Off)
+                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
+                }
+                else -> {
+                    setChestStarsRowThreeStarMode(false)
+                    val slot = if (isCompleted) ChestStarSlot.YellowOn else ChestStarSlot.LightGrayOn
+                    applyChestStarSlot(chestStar1, slot)
+                }
+            }
+        }
+
         fun bind(item: LessonItem) {
             fun applyCupIcon() {
-                val resId = item.stepCupIcon
-
-                // 0 gelirse setImageResource(0) icon'ı siler, exception atmaz → default kupa'ya düş.
+                var resId = item.stepCupIcon
                 if (resId == 0) {
-                    lessonIcon.setImageResource(R.drawable.cup_ic)
-                    item.stepCupIcon = R.drawable.cup_ic
-                    return
+                    resId = R.drawable.chest_stars_tier0
+                    item.stepCupIcon = resId
                 }
-
-                try {
-                    lessonIcon.setImageResource(resId)
-                } catch (_: android.content.res.Resources.NotFoundException) {
-                    // Eski/geçersiz id geldiyse default kupa
-                    lessonIcon.setImageResource(R.drawable.cup_ic)
-                    item.stepCupIcon = R.drawable.cup_ic
+                val normalized = when (resId) {
+                    R.drawable.chest_stars_tier0,
+                    R.drawable.chest_stars_tier1,
+                    R.drawable.chest_stars_tier2,
+                    R.drawable.chest_stars_tier3,
+                    R.drawable.cup_ic,
+                    R.drawable.cup_ic2,
+                    R.drawable.cup_ic3 -> resId
+                    else -> {
+                        item.stepCupIcon = R.drawable.chest_stars_tier0
+                        R.drawable.chest_stars_tier0
+                    }
                 }
+                bindChestStarsRow(normalized, item.isCompleted)
             }
 
             when (item.type) {
                 LessonItem.TYPE_CHEST -> {
                     val backgroundColor = if (item.isCompleted) {
-                        ContextCompat.getColor(context, R.color.lesson_completed)
+                        ContextCompat.getColor(context, R.color.lesson_center_blue)
                     } else {
                         ContextCompat.getColor(context, R.color.lesson_locked)
                     }
                     lessonCard.setCardBackgroundColor(backgroundColor)
+                    progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_active_blue))
+                    progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_inactive_dark))
 
                     lessonCard.setOnClickListener {
                         // TYPE_CHEST kartına tıklandığında da internet + login kontrolü yap
@@ -810,37 +1154,35 @@ class LessonAdapter(
                         }
                     }
 
-                    // TYPE_CHEST için default davranış:
-                    // - Ders bitmemişse: her zaman cup_ic göster
-                    // - Ders bitmişse: CupFragment'tan gelen stepCupIcon'ı (cup_ic / cup_ic2 / cup_ic3) göster
+                    lessonIcon.visibility = View.GONE
+                    chestStarsRow.visibility = View.VISIBLE
+                    // Bitmemişse 3 kapalı yıldız; bitmişse stepCupIcon (tier0–3).
                     if (item.stepIsFinish) {
-                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
                         applyCupIcon()
                     } else {
-                        lessonIcon.setImageResource(R.drawable.cup_ic)
-                        item.stepCupIcon = R.drawable.cup_ic
+                        item.stepCupIcon = R.drawable.chest_stars_tier0
+                        bindChestStarsRow(R.drawable.chest_stars_tier0, item.isCompleted)
                     }
-                    val completedSteps = item.stepCompletionStatus.count { it }
-                    when (completedSteps) {
-                        1 -> updateProgress((1f / item.stepCount) * 100)
-                        2 -> updateProgress((2f / item.stepCount) * 100)
-                        3 -> updateProgress((3f / item.stepCount) * 100)
-                        4 -> updateProgress((4f / item.stepCount) * 100)
-                        else -> progressBar.setProgressValue(0F)
-                    }
-                    if(item.stepIsFinish){
-                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                    applyStepSegmentsWithIncreaseAnimation(item, backgroundColor)
+                    val key = lessonProgressKey(item)
+                    if (!((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && item.stepIsFinish)) {
+                        startProgressBreathingAnimation()
                     }
 
                 }
 
                 LessonItem.TYPE_LESSON -> {
+                    lessonIcon.visibility = View.VISIBLE
+                    chestStarsRow.visibility = View.GONE
+                    lessonIcon.setImageResource(R.drawable.book_icon)
                     val backgroundColor = if (item.isCompleted) {
-                        ContextCompat.getColor(context, R.color.lesson_completed)
+                        ContextCompat.getColor(context, R.color.lesson_center_blue)
                     } else {
                         ContextCompat.getColor(context, R.color.lesson_locked)
                     }
                     lessonCard.setCardBackgroundColor(backgroundColor)
+                    progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_active_blue))
+                    progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_inactive_dark))
                     lessonCard.setOnClickListener {
                         // TYPE_LESSON kartına tıklandığında da internet + login kontrolü yap
                         (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
@@ -848,17 +1190,10 @@ class LessonAdapter(
                         }
                     }
 
-                    // stepCompletionStatus kontrolü
-                    val completedSteps = item.stepCompletionStatus.count { it }
-                    when (completedSteps) {
-                        1 -> updateProgress((1f / item.stepCount) * 100)
-                        2 -> updateProgress((2f / item.stepCount) * 100)
-                        3 -> updateProgress((3f / item.stepCount) * 100)
-                        4 -> updateProgress((4f / item.stepCount) * 100)
-                        else -> progressBar.setProgressValue(0F)
-                    }
-                    if(item.stepIsFinish){
-                        updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
+                    applyStepSegmentsWithIncreaseAnimation(item, backgroundColor)
+                    val key = lessonProgressKey(item)
+                    if (!((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && item.stepIsFinish)) {
+                        startProgressBreathingAnimation()
                     }
                 }
             }
@@ -926,6 +1261,13 @@ class LessonAdapter(
         items.clear()
         items.addAll(newItems)
         notifyDataSetChanged()
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        if (holder is LessonViewHolder) {
+            holder.stopProgressBreathingAnimation()
+        }
+        super.onViewRecycled(holder)
     }
 
     /**

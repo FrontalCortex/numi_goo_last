@@ -101,6 +101,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var typewriterText: String? = null
     private var typewriterCurrentIndex: Int = 0
     private var typewriterSpeed: Long = 40L
+    private var learningSessionStartMs: Long? = null
 
 
     private var oneIsUp = false
@@ -14728,6 +14729,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
     override fun onPause() {
+        stopLearningSessionTracking()
         super.onPause()
         // Uygulama arka plana geçince sesi duraklat (geri dönünce kaldığı yerden devam edebilsin)
         try {
@@ -14746,6 +14748,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        startLearningSessionTracking()
         // Geri dönünce ses kaldığı yerden devam etsin
         if (wasPausedByLifecycle && mediaPlayer != null) {
             try {
@@ -14760,6 +14763,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     override fun onDestroyView() {
+        stopLearningSessionTracking()
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
@@ -14769,6 +14773,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         typewriterRunnable = null
         typewriterText = null
         typewriterPausedByLifecycle = false
+    }
+
+    private fun startLearningSessionTracking() {
+        if (learningSessionStartMs == null) {
+            learningSessionStartMs = System.currentTimeMillis()
+        }
+    }
+
+    private fun stopLearningSessionTracking() {
+        val startMs = learningSessionStartMs ?: return
+        learningSessionStartMs = null
+        val elapsedMs = (System.currentTimeMillis() - startMs).coerceAtLeast(0L)
+        val ctx = context ?: return
+        if (elapsedMs > 0L) {
+            MissionsProgressStore.recordLearningDurationMs(ctx, elapsedMs)
+        }
     }
     private fun playCorretSound(soundResId: Int) {
         mediaPlayer?.release() // Önceki sesi serbest bırak

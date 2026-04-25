@@ -1,9 +1,5 @@
 package com.example.app
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -18,25 +14,46 @@ import com.example.app.databinding.FragmentChestBinding
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues
 import com.example.app.GlobalValues.mapFragmentStepIndex
+import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 
 class ChestFragment : Fragment() {
-    private var isOpened = false
-    private var pulseAnimatorSet: AnimatorSet? = null
+    private var isVideoFlowOpen = false
+    private var isChestRevealReady = false
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
-    private var successRate: Float = 0F
+    private var icon: Int = 0
+    private lateinit var lessonItem : LessonItem
+    private var selectedVideoName: String = "crystal_red_yellow"
+    private var currentReward: ChestRewardOutcome = ChestRewardOutcome(
+        type = ChestRewardType.GOLD,
+        amount = 0,
+        iconRes = R.drawable.open_chest,
+        label = "0 altın",
+    )
     private var goldAmount: Int = 0
+    private var recordScore: Int = 0
+    private var lessonSuccessRate: Float = 0f
+    private var pendingChestRecordBreakMission: Boolean = false
+    private var pendingChestStarGainAmount: Int = 0
     private var goldUpdateListener: GoldUpdateListener? = null
     /** Aynı anda yalnızca bir ödül akışı (çift tıklama engeli) */
     private var claimRewardInProgress = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
+    private fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String {
+        val stableId = item.id ?: -1
+        val part = item.partId ?: -1
+        return "${item.type}_${stableId}_${part}_${item.title}_$fallbackIndex"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
             updateMapProgress()
+            GlobalValues.canConsumePendingLessonProgressAnimations = true
+            LessonManager.refreshLessonsFromGlobalData()
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     R.anim.slide_in_left,
@@ -65,36 +82,23 @@ class ChestFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-
-        arguments?.let { bundle ->
-            successRate = bundle.getFloat("successRate", 0F)
-        }
-
-        goldValueAlgorithm()
-        startPulseAnimation(binding.chestImage)
-
-        binding.chestImage.setOnClickListener {
-            if (!isOpened) {
-                isOpened = true
-                pulseAnimatorSet?.cancel()
-                binding.flashView.visibility = View.VISIBLE
-                val flashAnim = ObjectAnimator.ofFloat(binding.flashView, "alpha", 0f, 1f, 0f)
-                flashAnim.duration = 500
-                flashAnim.addListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        binding.flashView.visibility = View.GONE
-                        binding.chestImage.setImageResource(R.drawable.open_chest)
-                        binding.goldText.visibility = View.VISIBLE
-                        binding.claimRewardButton.visibility = View.VISIBLE
-                    }
-                })
-                flashAnim.start()
-            }
-        }
-
+        MainActivityChromeBlocker.acquire(requireActivity())
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        recordScore = arguments?.getInt("toplamPuan", arguments?.getInt("dersPuani", 0) ?: 0) ?: 0
+        lessonSuccessRate = arguments?.getFloat("successRate", 0f) ?: 0f
+        pendingChestRecordBreakMission =
+            arguments?.getBoolean(ChestResult.ARG_PENDING_CHEST_RECORD_BREAK_MISSION, false) == true
+        //record()
+        changeCupIcon()
+        selectedVideoName = ChestCrystalPolicy.resolveVideoName()
+        currentReward = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
+        goldAmount = if (currentReward.type == ChestRewardType.GOLD) currentReward.amount else 0
+        applyRewardUiState(currentReward)
+        prepareHiddenRewardUi()
         setupClaimRewardButton()
+        showCrystalBreakAtStart()
     }
+
 
     private fun setupClaimRewardButton() {
         binding.claimRewardButton.setOnClickListener {
@@ -122,6 +126,15 @@ class ChestFragment : Fragment() {
 
             try {
                 val beforeSnap = MissionsProgressStore.getSnapshot(requireContext())
+                MissionsProgressStore.applyPendingLearningMinutes(requireContext())
+                if (pendingChestRecordBreakMission) {
+                    MissionsProgressStore.recordChestRecordBreakProgress(requireContext())
+                    pendingChestRecordBreakMission = false
+                }
+                if (pendingChestStarGainAmount > 0) {
+                    MissionsProgressStore.recordChestStarGainProgress(requireContext(), pendingChestStarGainAmount)
+                    pendingChestStarGainAmount = 0
+                }
                 updateMapProgress()
                 val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
 
@@ -132,7 +145,7 @@ class ChestFragment : Fragment() {
                 if (hostContainerId == View.NO_ID) {
                     throw IllegalStateException("ChestFragment host container id yok")
                 }
-                if (MissionsProgressStore.hasVisibleMissionProgress(beforeSnap, afterSnap)) {
+                if (MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)) {
                     fm.beginTransaction()
                         .setCustomAnimations(
                             R.anim.slide_in_left,
@@ -144,6 +157,8 @@ class ChestFragment : Fragment() {
                         )
                         .commitNowAllowingStateLoss()
                 } else {
+                    GlobalValues.canConsumePendingLessonProgressAnimations = true
+                    LessonManager.refreshLessonsFromGlobalData()
                     fm.beginTransaction()
                         .setCustomAnimations(
                             R.anim.slide_in_left,
@@ -163,62 +178,77 @@ class ChestFragment : Fragment() {
         }
     }
 
-    private fun startPulseAnimation(view: View) {
-        val scaleUpX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.08f)
-        val scaleUpY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 1.08f)
-        val scaleDownX = ObjectAnimator.ofFloat(view, "scaleX", 1.08f, 1f)
-        val scaleDownY = ObjectAnimator.ofFloat(view, "scaleY", 1.08f, 1f)
-
-        scaleUpX.duration = 400
-        scaleUpY.duration = 400
-        scaleDownX.duration = 400
-        scaleDownY.duration = 400
-
-        pulseAnimatorSet = AnimatorSet()
-        pulseAnimatorSet?.play(scaleUpX)?.with(scaleUpY)
-        pulseAnimatorSet?.play(scaleDownX)?.with(scaleDownY)?.after(scaleUpX)
-
-        pulseAnimatorSet?.addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                if (!isOpened) pulseAnimatorSet?.start()
-            }
-        })
-        pulseAnimatorSet?.start()
+    private fun prepareHiddenRewardUi() {
+        binding.chestImage.setImageResource(R.drawable.open_chest)
+        binding.chestImage.visibility = View.INVISIBLE
+        binding.goldText.visibility = View.GONE
+        binding.claimRewardButton.visibility = View.GONE
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        pulseAnimatorSet?.cancel()
-        _binding = null
+    private fun showCrystalBreakAtStart() {
+        if (isChestRevealReady || isVideoFlowOpen || !isAdded) return
+        val tag = CrystalBreakVideoFragment::class.java.simpleName
+        if (childFragmentManager.findFragmentByTag(tag) != null) return
+
+        isVideoFlowOpen = true
+        CrystalBreakVideoFragment.newInstance(selectedVideoName).show(childFragmentManager, tag)
+        childFragmentManager.executePendingTransactions()
+        (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
+            ?.setOnDismissCallback {
+                isVideoFlowOpen = false
+                if (!isAdded || _binding == null) return@setOnDismissCallback
+                revealChestRewardUi()
+            }
     }
 
-    private fun goldValueAlgorithm(){
-        goldAmount = when (successRate) {
-            100F -> {
-                // %90 ihtimalle 100-200, %10 ihtimalle 500
-                if ((0..9).random() == 0) 500 else (100..200).random()
-            }
-            in 76F..99F -> {
-                // 50-100 arası
-                (50..100).random()
-            }
-            in 51F..75F -> {
-                // 25-50 arası
-                (25..50).random()
-            }
-            else -> {
-                // 10-25 arası
-                (10..25).random()
-            }
+    private fun revealChestRewardUi() {
+        if (isChestRevealReady) return
+        isChestRevealReady = true
+        binding.chestImage.visibility = View.VISIBLE
+        binding.goldText.visibility = View.VISIBLE
+        binding.claimRewardButton.visibility = View.VISIBLE
+    }
+
+    private fun applyRewardUiState(reward: ChestRewardOutcome) {
+        binding.chestImage.setImageResource(reward.iconRes)
+        binding.goldText.text = reward.label
+    }
+
+    private fun changeCupIcon() {
+        if (lessonItem.type != LessonItem.TYPE_CHEST) return
+        val record = lessonItem.record ?: 0
+        val p1 = lessonItem.cupPoint1
+        val p2 = lessonItem.cupPoint2
+        val resolvedIcon = when {
+            p1 != null && record >= p1 -> R.drawable.chest_stars_tier3
+            p2 != null && record >= p2 -> R.drawable.chest_stars_tier2
+            record >= 500 -> R.drawable.chest_stars_tier1
+            else -> R.drawable.chest_stars_tier0
         }
+        val currentIcon = lessonItem.stepCupIcon
+        val iconChanged = currentIcon != resolvedIcon
+        val currentStars = starCountForChestIcon(currentIcon)
+        val resolvedStars = starCountForChestIcon(resolvedIcon)
+        val gainedStars = (resolvedStars - currentStars).coerceAtLeast(0)
+        icon = if (iconChanged) resolvedIcon else currentIcon
+        pendingChestStarGainAmount = if (iconChanged) gainedStars else 0
+    }
 
-        // Sonucu ekrana yaz
-        binding.goldText.text = "$goldAmount altın"
+    private fun starCountForChestIcon(iconResId: Int): Int = when (iconResId) {
+        R.drawable.chest_stars_tier3 -> 3
+        R.drawable.chest_stars_tier2 -> 2
+        R.drawable.chest_stars_tier1 -> 1
+        R.drawable.chest_stars_tier0 -> 0
+        R.drawable.star_on_ic -> 0 // default tek yıldız görseli, görev hesabında 0 sayılıyor
+        else -> 0
     }
 
     private fun updateMapProgress() {
         val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
         val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
+        var shouldIncrementStepFinishMission = false
+        var shouldIncrementStepCountMission = false
+        var shouldIncrementPerfectStepCountMission = false
         lessonItem?.let { item ->
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
@@ -257,10 +287,35 @@ class ChestFragment : Fragment() {
 
             if(item.raceBusyLevel == null){
                 if(item.stepCount == item.currentStep){
-                    val updatedItem = item.copy(
+                    var updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,
                         stepIsFinish = true
                     )
+                    if(lessonItem.type==LessonItem.TYPE_CHEST){
+                         updatedItem = item.copy(
+                            stepCompletionStatus = newStepCompletionStatus,
+                            stepIsFinish = true,
+                            stepCupIcon = icon
+                        )
+                    }
+                    if (item.type == LessonItem.TYPE_LESSON && !item.stepIsFinish && updatedItem.stepIsFinish) {
+                        shouldIncrementStepFinishMission = true
+                        shouldIncrementStepCountMission = true
+                        if (lessonSuccessRate >= 100f) {
+                            shouldIncrementPerfectStepCountMission = true
+                        }
+                    }
+                    val beforeFilled = item.stepCompletionStatus.count { it }
+                    val afterFilled = updatedItem.stepCompletionStatus.count { it }
+                    if (afterFilled > beforeFilled) {
+                        val key = lessonProgressKey(item, mapFragmentStepIndex)
+                        GlobalValues.pendingLessonProgressAnimations[key] =
+                            GlobalValues.PendingLessonProgressAnimation(
+                                fromFilledSegments = beforeFilled,
+                                toFilledSegments = afterFilled,
+                            )
+                        GlobalValues.canConsumePendingLessonProgressAnimations = false
+                    }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
 
                     lessonItem2?.let { item2 ->
@@ -276,13 +331,36 @@ class ChestFragment : Fragment() {
                         currentStep = item.currentStep + 1,
                         startStepNumber = item.startStepNumber?.plus(1)
                     )
+                    if (item.type == LessonItem.TYPE_LESSON && updatedItem.currentStep == item.currentStep + 1) {
+                        shouldIncrementStepCountMission = true
+                        if (lessonSuccessRate >= 100f) {
+                            shouldIncrementPerfectStepCountMission = true
+                        }
+                    }
+                    val beforeFilled = item.stepCompletionStatus.count { it }
+                    val afterFilled = updatedItem.stepCompletionStatus.count { it }
+                    if (afterFilled > beforeFilled) {
+                        val key = lessonProgressKey(item, mapFragmentStepIndex)
+                        GlobalValues.pendingLessonProgressAnimations[key] =
+                            GlobalValues.PendingLessonProgressAnimation(
+                                fromFilledSegments = beforeFilled,
+                                toFilledSegments = afterFilled,
+                            )
+                        GlobalValues.canConsumePendingLessonProgressAnimations = false
+                    }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                 }
             }
         }
 
-        if (lessonItem != null) {
-            MissionsProgressStore.recordChestClaim(requireContext())
+        if (shouldIncrementStepFinishMission) {
+            MissionsProgressStore.recordStepFinishProgress(requireContext())
+        }
+        if (shouldIncrementStepCountMission) {
+            MissionsProgressStore.recordStepIncrementProgress(requireContext())
+        }
+        if (shouldIncrementPerfectStepCountMission) {
+            MissionsProgressStore.recordPerfectStepIncrementProgress(requireContext())
         }
     }
     
@@ -302,5 +380,12 @@ class ChestFragment : Fragment() {
         if (activity is MainActivity) {
             //activity.refreshRacePanel()
         }
+    }
+
+    override fun onDestroyView() {
+        MainActivityChromeBlocker.release(activity)
+        isVideoFlowOpen = false
+        _binding = null
+        super.onDestroyView()
     }
 }

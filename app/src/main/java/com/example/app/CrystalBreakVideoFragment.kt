@@ -28,11 +28,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-/**
- * Tek MP4 üzerinde checkpoint duraklarıyla ilerler:
- * 150ms -> 360ms -> 570ms durakları, her birinde tap ile devam.
- * Son checkpoint sonrası video sonuna kadar oynar; video bittikten sonraki tap ile ekran kapanır.
- */
 class CrystalBreakVideoFragment : DialogFragment() {
     private enum class RarityBehavior {
         STATIC_COMMON,
@@ -76,6 +71,7 @@ class CrystalBreakVideoFragment : DialogFragment() {
     private var rarityCheckpointAppliedCount: Int = 0
     private var waitingTapToContinue: Boolean = false
     private var videoEnded: Boolean = false
+    private var hasPlaybackStarted: Boolean = false
     private var onDismissCallback: (() -> Unit)? = null
     private var idlePulse: AnimatorSet? = null
     private var tapWaveAnimator: AnimatorSet? = null
@@ -150,6 +146,8 @@ class CrystalBreakVideoFragment : DialogFragment() {
         rarityCheckpointAppliedCount = savedInstanceState?.getInt(STATE_RARITY_CHECKPOINT_APPLIED_COUNT) ?: 0
         waitingTapToContinue = savedInstanceState?.getBoolean(STATE_WAITING_TAP) ?: false
         videoEnded = savedInstanceState?.getBoolean(STATE_VIDEO_ENDED) ?: false
+        hasPlaybackStarted = savedInstanceState?.getBoolean(STATE_PLAYBACK_STARTED)
+            ?: (nextCheckpointIndex > 0 || continueTapCount > 0 || waitingTapToContinue)
     }
 
     override fun onCreateView(
@@ -166,6 +164,7 @@ class CrystalBreakVideoFragment : DialogFragment() {
         setupClickSound()
         exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
             binding.crystalPlayerView.player = player
+            player.volume = 0.5f
             player.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
@@ -174,6 +173,14 @@ class CrystalBreakVideoFragment : DialogFragment() {
                         progressHandler.removeCallbacks(checkpointTick)
                         dismissAllowingStateLoss()
                     }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (isPlaying) {
+                        hasPlaybackStarted = true
+                    }
+                    // Video başlamadan gizli, başladıktan sonra checkpoint duraklarında da görünür.
+                    binding.crystalRarityText.alpha = if (hasPlaybackStarted && !videoEnded) 1f else 0f
                 }
             })
             val uri = Uri.parse("android.resource://${requireContext().packageName}/$currentVideoResId")
@@ -292,6 +299,7 @@ class CrystalBreakVideoFragment : DialogFragment() {
         outState.putInt(STATE_RARITY_CHECKPOINT_APPLIED_COUNT, rarityCheckpointAppliedCount)
         outState.putBoolean(STATE_WAITING_TAP, waitingTapToContinue)
         outState.putBoolean(STATE_VIDEO_ENDED, videoEnded)
+        outState.putBoolean(STATE_PLAYBACK_STARTED, hasPlaybackStarted)
     }
 
     override fun onDestroy() {
@@ -453,7 +461,7 @@ class CrystalBreakVideoFragment : DialogFragment() {
     }
 
     private fun setupRarityLabel() {
-        binding.crystalRarityText.alpha = 1f
+        binding.crystalRarityText.alpha = 0f
         applyRarityTierUi(currentRarityTier)
     }
 
@@ -705,6 +713,7 @@ class CrystalBreakVideoFragment : DialogFragment() {
         private const val STATE_RARITY_CHECKPOINT_APPLIED_COUNT = "state_rarity_checkpoint_applied_count"
         private const val STATE_WAITING_TAP = "state_waiting_tap"
         private const val STATE_VIDEO_ENDED = "state_video_ended"
+        private const val STATE_PLAYBACK_STARTED = "state_playback_started"
 
         fun newInstance(videoName: String? = null): CrystalBreakVideoFragment = CrystalBreakVideoFragment().apply {
             arguments = Bundle().apply {
