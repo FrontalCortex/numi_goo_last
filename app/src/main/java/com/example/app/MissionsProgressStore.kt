@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.gson.Gson
 import java.io.File
 import java.net.HttpURLConnection
@@ -33,6 +34,8 @@ object MissionsProgressStore {
     private const val KEY_WEEKLY_LEARN_REMAINDER_MS = "weekly_learn_remainder_ms"
     private const val KEY_DAILY_SELECTION_NONCE = "daily_selection_nonce"
     private const val KEY_WEEKLY_SELECTION_NONCE = "weekly_selection_nonce"
+    private const val KEY_DAILY_SELECTED_MISSION_IDS = "daily_selected_mission_ids"
+    private const val KEY_WEEKLY_SELECTED_MISSION_IDS = "weekly_selected_mission_ids"
     private const val FIRESTORE_COLLECTION = "missionProgress"
     private const val FIRESTORE_DOC_STATE = "state"
     private const val FIELD_REWARD_CLAIMED_KEYS = "rewardClaimedKeys"
@@ -41,6 +44,8 @@ object MissionsProgressStore {
     @Volatile private var cloudStateAppliedForUid: String? = null
     @Volatile private var lastSeenUid: String? = null
     @Volatile private var applyingCloudState = false
+    private var missionRealtimeListener: ListenerRegistration? = null
+    private var missionRealtimeUid: String? = null
     private val firestore by lazy { FirebaseFirestore.getInstance() }
 
     private fun debugLog(hypothesisId: String, location: String, message: String, data: Map<String, Any?> = emptyMap()) {
@@ -109,6 +114,9 @@ object MissionsProgressStore {
             cloudSyncRequestedForUid = null
             cloudStateAppliedForUid = null
             applyingCloudState = false
+            missionRealtimeListener?.remove()
+            missionRealtimeListener = null
+            missionRealtimeUid = null
         }
     }
 
@@ -117,6 +125,19 @@ object MissionsProgressStore {
     private fun stateDoc(uid: String) =
         firestore.collection("users").document(uid)
             .collection(FIRESTORE_COLLECTION).document(FIRESTORE_DOC_STATE)
+
+    private fun ensureMissionRealtimeSync(context: Context) {
+        ensureSyncStateForCurrentUid()
+        val uid = currentUid() ?: return
+        if (missionRealtimeListener != null && missionRealtimeUid == uid) return
+        missionRealtimeListener?.remove()
+        missionRealtimeListener = null
+        missionRealtimeUid = uid
+        missionRealtimeListener = stateDoc(uid).addSnapshotListener { snapshot, error ->
+            if (error != null) return@addSnapshotListener
+            applyCloudDocument(context, uid, snapshot?.data)
+        }
+    }
 
     private fun todayId(): String {
         val c = Calendar.getInstance()
@@ -159,7 +180,21 @@ object MissionsProgressStore {
     private fun rewardClaimKeys(p: android.content.SharedPreferences): List<String> =
         p.all.keys.filter { it.startsWith("reward_claimed_daily_") || it.startsWith("reward_claimed_weekly_") }
 
+    private fun parseMissionIdsCsv(csv: String?): List<String> =
+        csv?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+
+    private fun missionIdsCsv(ids: List<String>): String = ids.joinToString(",")
+
+    private fun missionIdsKeyForWindow(window: MissionWindow): String = when (window) {
+        MissionWindow.DAILY -> KEY_DAILY_SELECTED_MISSION_IDS
+        MissionWindow.WEEKLY -> KEY_WEEKLY_SELECTED_MISSION_IDS
+    }
+
     private fun uploadStateToCloud(context: Context) {
+        ensureMissionRealtimeSync(context)
         ensureSyncStateForCurrentUid()
         if (applyingCloudState) return
         val uid = currentUid() ?: return
@@ -195,6 +230,8 @@ object MissionsProgressStore {
             KEY_WEEKLY_LEARN_REMAINDER_MS to p.getLong(KEY_WEEKLY_LEARN_REMAINDER_MS, 0L),
             KEY_DAILY_SELECTION_NONCE to p.getInt(KEY_DAILY_SELECTION_NONCE, 0),
             KEY_WEEKLY_SELECTION_NONCE to p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0),
+            KEY_DAILY_SELECTED_MISSION_IDS to (p.getString(KEY_DAILY_SELECTED_MISSION_IDS, "") ?: ""),
+            KEY_WEEKLY_SELECTED_MISSION_IDS to (p.getString(KEY_WEEKLY_SELECTED_MISSION_IDS, "") ?: ""),
             FIELD_REWARD_CLAIMED_KEYS to rewardClaimKeys(p),
         )
         stateDoc(uid).set(payload)
@@ -206,6 +243,7 @@ object MissionsProgressStore {
      * hemen ardından hâlâ eski local değerleri döndürebiliyor.
      */
     private fun hydrateFromServerIfNeededBlocking(context: Context) {
+        ensureMissionRealtimeSync(context)
         val uid = currentUid() ?: return
         if (cloudStateAppliedForUid == uid) return
         try {
@@ -258,6 +296,8 @@ object MissionsProgressStore {
             .putLong(KEY_WEEKLY_LEARN_REMAINDER_MS, longOf(KEY_WEEKLY_LEARN_REMAINDER_MS))
             .putInt(KEY_DAILY_SELECTION_NONCE, intOf(KEY_DAILY_SELECTION_NONCE))
             .putInt(KEY_WEEKLY_SELECTION_NONCE, intOf(KEY_WEEKLY_SELECTION_NONCE))
+            .putString(KEY_DAILY_SELECTED_MISSION_IDS, data[KEY_DAILY_SELECTED_MISSION_IDS] as? String ?: "")
+            .putString(KEY_WEEKLY_SELECTED_MISSION_IDS, data[KEY_WEEKLY_SELECTED_MISSION_IDS] as? String ?: "")
         @Suppress("UNCHECKED_CAST")
         val claimedKeys = (data[FIELD_REWARD_CLAIMED_KEYS] as? List<Any?>)
             ?.mapNotNull { it as? String }
@@ -271,6 +311,7 @@ object MissionsProgressStore {
     }
 
     private fun requestCloudSync(context: Context) {
+        ensureMissionRealtimeSync(context)
         ensureSyncStateForCurrentUid()
         val uid = currentUid() ?: return
         if (cloudStateAppliedForUid == uid || cloudSyncRequestedForUid == uid) return
@@ -354,16 +395,30 @@ object MissionsProgressStore {
 
     private fun selectedMissionIdsForWindow(context: Context, window: MissionWindow): List<String> {
         val p = prefs(context)
+        val keyForStoredIds = missionIdsKeyForWindow(window)
+        val allowedMissionIds = MissionQuestCatalog.all
+            .filter { window in it.availableWindows }
+            .map { it.id }
+            .toSet()
+        val stored = parseMissionIdsCsv(p.getString(keyForStoredIds, null))
+            .filter { it in allowedMissionIds }
+            .distinct()
+            .take(3)
+        if (stored.size == 3) return stored
+
         val key = when (window) {
             MissionWindow.DAILY -> "${todayId()}_${p.getInt(KEY_DAILY_SELECTION_NONCE, 0)}"
             MissionWindow.WEEKLY -> "${weekIdNow()}_${p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0)}"
         }
         val random = Random(key.hashCode())
-        return MissionQuestCatalog.all
+        val generated = MissionQuestCatalog.all
             .filter { window in it.availableWindows }
             .shuffled(random)
             .take(3)
             .map { it.id }
+        p.edit().putString(keyForStoredIds, missionIdsCsv(generated)).apply()
+        uploadStateToCloud(context)
+        return generated
     }
 
     fun selectedMissionsForWindow(context: Context, window: MissionWindow): List<MissionQuestDefinition> {
@@ -412,6 +467,7 @@ object MissionsProgressStore {
             ed.putInt(KEY_DAILY_CHEST_STAR_GAIN_COUNT, 0)
             ed.putInt(KEY_DAILY_LEARN_MINUTES_COUNT, 0)
             ed.putLong(KEY_DAILY_LEARN_REMAINDER_MS, 0L)
+            ed.remove(KEY_DAILY_SELECTED_MISSION_IDS)
         }
         val w = weekIdNow()
         if (p.getString(KEY_WEEK_ID, null) != w) {
@@ -423,6 +479,7 @@ object MissionsProgressStore {
             ed.putInt(KEY_WEEKLY_CHEST_STAR_GAIN_COUNT, 0)
             ed.putInt(KEY_WEEKLY_LEARN_MINUTES_COUNT, 0)
             ed.putLong(KEY_WEEKLY_LEARN_REMAINDER_MS, 0L)
+            ed.remove(KEY_WEEKLY_SELECTED_MISSION_IDS)
         }
         ed.apply()
     }
@@ -469,6 +526,8 @@ object MissionsProgressStore {
         p.edit()
             .putInt(KEY_DAILY_SELECTION_NONCE, p.getInt(KEY_DAILY_SELECTION_NONCE, 0) + 1)
             .putInt(KEY_WEEKLY_SELECTION_NONCE, p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0) + 1)
+            .remove(KEY_DAILY_SELECTED_MISSION_IDS)
+            .remove(KEY_WEEKLY_SELECTED_MISSION_IDS)
             .apply()
         uploadStateToCloud(context)
     }
@@ -585,6 +644,8 @@ object MissionsProgressStore {
             .putInt(KEY_WEEKLY_LEARN_MINUTES_COUNT, 0)
             .putLong(KEY_DAILY_LEARN_REMAINDER_MS, 0L)
             .putLong(KEY_WEEKLY_LEARN_REMAINDER_MS, 0L)
+            .remove(KEY_DAILY_SELECTED_MISSION_IDS)
+            .remove(KEY_WEEKLY_SELECTED_MISSION_IDS)
             .apply()
         uploadStateToCloud(context)
     }

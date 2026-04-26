@@ -23,6 +23,7 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -91,10 +92,10 @@ class LessonAdapter(
         }
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
-            val intent = Intent(activity, LoginStartActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            val appCompatActivity = activity as? AppCompatActivity ?: return
+            SessionDeviceManager.requireLoggedInAndSingleDevice(appCompatActivity) {
+                showLessonBottomSheet(item, position)
             }
-            activity.startActivity(intent)
             return
         }
 

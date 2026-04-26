@@ -672,38 +672,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
                         binding.askQuestionButton.visibility = View.VISIBLE
                         binding.askQuestionButton.setOnClickListener {
-                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                            val current = FirebaseAuth.getInstance().currentUser
-                            if (current == null) {
-                                val intent = android.content.Intent(
-                                    requireContext(),
-                                    com.example.app.LoginStartActivity::class.java
-                                )
-                                startActivity(intent)
-                                return@setOnClickListener
+                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                                AlertDialog.Builder(requireContext())
+                                    .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
+                                    .setPositiveButton("Tamam", null)
+                                    .show()
                             }
-                            // Mesajın tamamı görünen ve kullanıcı kapatana kadar ekranda kalan diyalog
-                            AlertDialog.Builder(requireContext())
-                                .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
-                                .setPositiveButton("Tamam", null)
-                                .show()
                         }
                     } else {
                         // Onaylı öğretmen: normal soru oluşturma akışına izin ver
                         binding.askQuestionButton.visibility = View.VISIBLE
                         binding.askQuestionButton.setOnClickListener {
-                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                            val current = FirebaseAuth.getInstance().currentUser
-                            if (current == null) {
-                                val intent = android.content.Intent(
-                                    requireContext(),
-                                    com.example.app.LoginStartActivity::class.java
-                                )
-                                startActivity(intent)
-                                return@setOnClickListener
+                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+                                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
                             }
-                            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
-                            (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
                         }
                     }
                 }
@@ -717,18 +700,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             // 3) Öğrenci hesabı: mevcut davranış (normal soru oluşturma akışı)
             binding.askQuestionButton.visibility = View.VISIBLE
             binding.askQuestionButton.setOnClickListener {
-                // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                val current = FirebaseAuth.getInstance().currentUser
-                if (current == null) {
-                    val intent = android.content.Intent(
-                        requireContext(),
-                        com.example.app.LoginStartActivity::class.java
-                    )
-                    startActivity(intent)
-                    return@setOnClickListener
+                SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                    if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+                    (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
                 }
-                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
-                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
             }
         }
     }

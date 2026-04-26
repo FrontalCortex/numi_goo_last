@@ -20,6 +20,7 @@ class AuthManager {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private lateinit var prefs: SharedPreferences
+    private lateinit var appContext: Context
     private lateinit var googleSignInClient: GoogleSignInClient
 
     companion object {
@@ -29,6 +30,7 @@ class AuthManager {
     }
     
     fun initialize(context: Context) {
+        appContext = context.applicationContext
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         
         // Google Sign-In yapılandırması
@@ -143,6 +145,13 @@ class AuthManager {
             .putString("user_name", name)
             .putString("user_id", userId)
             .apply()
+    }
+
+    private fun currentLocalFirstTutorialShown(): Boolean {
+        if (!::appContext.isInitialized) return false
+        return appContext
+            .getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            .getBoolean("first_tutorial_shown", false)
     }
 
     /**
@@ -597,6 +606,7 @@ class AuthManager {
                                     "name" to (user.displayName ?: ""),
                                     "role" to ROLE_STUDENT,
                                     "verified" to true, // Google Sign-In ile gelen kullanıcılar otomatik verified
+                                    "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                                     "createdAt" to com.google.firebase.Timestamp.now()
                                 )
                                 
@@ -809,6 +819,7 @@ class AuthManager {
                     "name" to name,
                     "role" to ROLE_STUDENT,
                     "verified" to false, // E-posta doğrulanmamış - profil ekranında doğrulanacak
+                    "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                     "createdAt" to com.google.firebase.Timestamp.now()
                 )
                 
@@ -881,6 +892,7 @@ class AuthManager {
                             "email" to email,
                             "name" to name,
                             "role" to ROLE_TEACHER,
+                            "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                             "createdAt" to com.google.firebase.Timestamp.now()
                         )
                         firestore.collection("users").document(user.uid)
@@ -1102,6 +1114,7 @@ class AuthManager {
                                                 "email" to email,
                                                 "name" to name,
                                                 "role" to roleForUser,
+                                                "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                                                 "createdAt" to com.google.firebase.Timestamp.now()
                                             )
                                             if (roleForUser == ROLE_STUDENT) {

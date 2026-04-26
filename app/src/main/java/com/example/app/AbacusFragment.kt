@@ -254,15 +254,10 @@ class AbacusFragment : Fragment() {
         val authManager = AuthManager().also { it.initialize(requireContext()) }
         val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
         binding.askQuestionButton.setOnClickListener {
-            // Eğer giriş yapmış bir hesap yoksa, soru akışı yerine LoginStartActivity'e yönlendir.
-            val currentUser = FirebaseAuth.getInstance().currentUser
-            if (currentUser == null) {
-                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
-                startActivity(intent)
-                return@setOnClickListener
+            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
             }
-            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
-            (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
         }
         if (isTeacher) {
             binding.askQuestionButton.visibility = View.GONE

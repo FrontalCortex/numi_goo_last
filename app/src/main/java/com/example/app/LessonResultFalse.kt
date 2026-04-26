@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentLessonResultFalseBinding
 import com.example.app.GlobalValues
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class LessonResultFalse : Fragment() {
     private lateinit var binding: FragmentLessonResultFalseBinding

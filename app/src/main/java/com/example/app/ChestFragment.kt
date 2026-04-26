@@ -16,6 +16,7 @@ import com.example.app.GlobalValues
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ChestFragment : Fragment() {
     private var isVideoFlowOpen = false

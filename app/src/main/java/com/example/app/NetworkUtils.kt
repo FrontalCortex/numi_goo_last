@@ -8,7 +8,6 @@ import android.widget.Toast
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import com.google.firebase.auth.FirebaseAuth
 
 fun Context.isOnline(): Boolean {
     val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
@@ -62,16 +61,7 @@ fun AppCompatActivity.requireOnlineAndLoggedInOrLogin(onOnline: () -> Unit) {
         return
     }
 
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    if (currentUser == null) {
-        val intent = Intent(this, LoginStartActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
-        return
-    }
-
-    onOnline()
+    SessionDeviceManager.requireLoggedInAndSingleDevice(this, onOnline)
 }
 
 fun Fragment.requireOnlineAndLoggedInOrLogin(onOnline: () -> Unit) {
@@ -82,17 +72,7 @@ fun Fragment.requireOnlineAndLoggedInOrLogin(onOnline: () -> Unit) {
         return
     }
 
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    if (currentUser == null) {
-        val act = activity ?: return
-        val intent = Intent(act, LoginStartActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        act.startActivity(intent)
-        return
-    }
-
-    onOnline()
+    SessionDeviceManager.requireLoggedInAndSingleDevice(this, onOnline)
 }
 
 

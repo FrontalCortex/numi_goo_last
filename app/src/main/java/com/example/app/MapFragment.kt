@@ -210,19 +210,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateRelatedNumbers(5, 5),
                 )
                 7 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers0(1, 1)
                     )
                 8-> listOf(
                     MathOperation(3,"+", 4),
@@ -3024,18 +3012,12 @@ class MapFragment : Fragment() {
                         // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
                         binding.askQuestionButton.visibility = View.VISIBLE
                         binding.askQuestionButton.setOnClickListener {
-                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                            val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                            if (current == null) {
-                                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
-                                startActivity(intent)
-                                return@setOnClickListener
+                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                                    .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
+                                    .setPositiveButton("Tamam", null)
+                                    .show()
                             }
-                            // Onaysız öğretmen uyarısı
-                            androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                                .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
-                                .setPositiveButton("Tamam", null)
-                                .show()
 
                         }
                     }
@@ -3043,15 +3025,10 @@ class MapFragment : Fragment() {
                         // Onaylı öğretmen: normal soru oluşturma akışına izin ver
                         binding.askQuestionButton.visibility = View.VISIBLE
                         binding.askQuestionButton.setOnClickListener {
-                            // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                            val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                            if (current == null) {
-                                val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
-                                startActivity(intent)
-                                return@setOnClickListener
+                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+                                (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
                             }
-                            if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
-                            (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
                         }
                         startAskQuestionBounceAnimation()
                     }
@@ -3066,15 +3043,10 @@ class MapFragment : Fragment() {
             // Öğrenci (veya öğretmen olmayan) hesaplar için mevcut davranış
             binding.askQuestionButton.visibility = View.VISIBLE
             binding.askQuestionButton.setOnClickListener {
-                // Eğer giriş yapmış bir hesap yoksa, LoginStartActivity'e yönlendir.
-                val current = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                if (current == null) {
-                    val intent = android.content.Intent(requireContext(), com.example.app.LoginStartActivity::class.java)
-                    startActivity(intent)
-                    return@setOnClickListener
+                SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                    if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+                    (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
                 }
-                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@setOnClickListener
-                (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
             }
             startAskQuestionBounceAnimation()
         }

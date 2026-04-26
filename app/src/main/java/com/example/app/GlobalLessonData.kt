@@ -7,6 +7,7 @@ import android.util.Log
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -32,6 +33,9 @@ object GlobalLessonData {
     private const val FIRESTORE_LESSON_PROGRESS = "lessonProgress"
     private const val AUTH_WAIT_TIMEOUT_MS = 1500L
     private const val DEBUG_LOG_PATH = "debug-33b519.log"
+    private var lessonRealtimeListener: ListenerRegistration? = null
+    private var lessonRealtimeUid: String? = null
+    private var lessonRealtimePartId: Int? = null
 
     private enum class FirestoreLoadStatus {
         LOADED,
@@ -85,38 +89,7 @@ object GlobalLessonData {
         )
         // #endregion
 
-        // Önce lokaldeki veriyi dene (hızlı ilk çizim için).
-        val hadLocal = loadFromPreferences(context)
-        if (hadLocal) {
-            Log.d(LOG_TAG, "initialize: loaded from LOCAL prefs, items=${_lessonItems.size}")
-            // Oturum açıkken local veri cloud'u maskelemesin: callback'li akışlarda
-            // Firestore'dan da yükle ve en güncel state'i kullan.
-            if (uid != null && onReady != null) {
-                val signedInUid = uid!!
-                Log.d(LOG_TAG, "initialize: had local + uid + callback -> also loadFromFirestore partId=$partId")
-                loadFromFirestore(context, partId, signedInUid) { status ->
-                    Log.d(LOG_TAG, "initialize(local-first): loadFromFirestore result=$status")
-                    // #region agent log
-                    debugLog(
-                        hypothesisId = "H3",
-                        location = "GlobalLessonData.kt:initialize:localFirst:status",
-                        message = "loadFromFirestore completed (local-first path)",
-                        data = mapOf("partId" to partId, "status" to status.name),
-                    )
-                    // #endregion
-                    when (status) {
-                        FirestoreLoadStatus.LOADED -> Log.d(LOG_TAG, "initialize(local-first): using CLOUD data, items=${_lessonItems.size}")
-                        FirestoreLoadStatus.NOT_FOUND -> Log.d(LOG_TAG, "initialize(local-first): NOT_FOUND -> keep LOCAL data")
-                        FirestoreLoadStatus.ERROR -> Log.w(LOG_TAG, "initialize(local-first): ERROR -> keep LOCAL data")
-                    }
-                    onReady.invoke()
-                }
-                return
-            }
-
-            onReady?.invoke()
-            return
-        }
+        // Local cache kaynak olarak kullanılmıyor; girişli kullanıcıda kaynak Firestore'dur.
 
         // Callback yoksa da cloud verisini asenkron çekmeyi dene; yoksa default'a düş.
         // Bu sayede yeni cihazda yanlışlıkla default veriyi cloud'un üstüne yazmayız.
@@ -132,6 +105,7 @@ object GlobalLessonData {
             )
             // #endregion
             if (immediateUid != null) {
+                ensureLessonRealtimeSync(context.applicationContext, partId, immediateUid)
                 Log.d(LOG_TAG, "initialize: no callback + uid present -> async loadFromFirestore partId=$partId")
                 loadFromFirestore(context, partId, immediateUid) { status ->
                     when (status) {
@@ -155,10 +129,11 @@ object GlobalLessonData {
             return
         }
 
-        // Callback var: lokal yoksa Firestore'u mutlaka dene (auth geç açılıyorsa kısa süre bekle)
+        // Callback var: Firestore'u mutlaka dene (auth geç açılıyorsa kısa süre bekle)
         val auth = FirebaseAuth.getInstance()
         val immediateUid = auth.currentUser?.uid
         if (immediateUid != null) {
+            ensureLessonRealtimeSync(context.applicationContext, partId, immediateUid)
             Log.d(LOG_TAG, "initialize: uid present -> loadFromFirestore partId=$partId")
             loadFromFirestore(context, partId, immediateUid) { status ->
                 Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
@@ -194,6 +169,7 @@ object GlobalLessonData {
                 onReady.invoke()
                 return@waitForAuthUid
             }
+            ensureLessonRealtimeSync(context.applicationContext, partId, waitedUid)
             Log.d(LOG_TAG, "initialize: after wait uid present -> loadFromFirestore partId=$partId")
             loadFromFirestore(context, partId, waitedUid) { status ->
                 Log.d(LOG_TAG, "initialize: loadFromFirestore result=$status")
@@ -219,6 +195,30 @@ object GlobalLessonData {
                 onReady.invoke()
             }
         }
+    }
+
+    private fun ensureLessonRealtimeSync(appContext: Context, partId: Int, uid: String) {
+        if (lessonRealtimeListener != null && lessonRealtimeUid == uid && lessonRealtimePartId == partId) return
+        lessonRealtimeListener?.remove()
+        lessonRealtimeListener = null
+        lessonRealtimeUid = uid
+        lessonRealtimePartId = partId
+
+        lessonRealtimeListener = firestore.collection("users")
+            .document(uid)
+            .collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                val json = snapshot?.getString("items")
+                if (json.isNullOrBlank()) return@addSnapshotListener
+                try {
+                    val parsed = parseLessonItemsWithMigration(json)
+                    _lessonItems = parsed
+                    LessonManager.refreshLessonsFromGlobalData()
+                } catch (_: Exception) {
+                }
+            }
     }
 
     /** Varsayılan ders listesini oluşturur (tutorial1 bayrağı varsa 1. dersi günceller) ve kaydeder. */
@@ -284,7 +284,7 @@ object GlobalLessonData {
 
     /**
      * Global state'i değiştirmeden (globalPartId/_lessonItems), belirli part/index için kullanıcıya ait lesson item'ı döndürür.
-     * Önce kullanıcıya özel local prefs, yoksa (uid varsa) Firestore denenir.
+     * Kaynak olarak Firestore kullanılır (giriş yoksa default liste).
      */
     fun getLessonItemForPart(
         context: Context,
@@ -292,17 +292,6 @@ object GlobalLessonData {
         index: Int,
         onResult: (LessonItem?) -> Unit,
     ) {
-        val localJson = getLessonPrefs(context).getString(getKey(partId), null)
-        if (!localJson.isNullOrBlank()) {
-            try {
-                val localItems = parseLessonItemsWithMigration(localJson)
-                onResult(localItems.getOrNull(index))
-                return
-            } catch (e: Exception) {
-                Log.e(LOG_TAG, "getLessonItemForPart local parse error", e)
-            }
-        }
-
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             onResult(createLessonItems(partId).getOrNull(index))
@@ -320,7 +309,6 @@ object GlobalLessonData {
                 }
                 try {
                     val cloudItems = parseLessonItemsWithMigration(cloudJson)
-                    getLessonPrefs(context).edit().putString(getKey(partId), cloudJson).apply()
                     onResult(cloudItems.getOrNull(index))
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "getLessonItemForPart cloud parse error", e)
@@ -374,16 +362,6 @@ object GlobalLessonData {
         partId: Int,
         onResult: (List<LessonItem>) -> Unit,
     ) {
-        val localJson = getLessonPrefs(context).getString(getKey(partId), null)
-        if (!localJson.isNullOrBlank()) {
-            try {
-                onResult(parseLessonItemsWithMigration(localJson))
-                return
-            } catch (e: Exception) {
-                Log.e(LOG_TAG, "getLessonItemsForPart local parse error", e)
-            }
-        }
-
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             onResult(createLessonItems(partId))
@@ -401,7 +379,6 @@ object GlobalLessonData {
                 }
                 try {
                     val cloudItems = parseLessonItemsWithMigration(cloudJson)
-                    getLessonPrefs(context).edit().putString(getKey(partId), cloudJson).apply()
                     onResult(cloudItems)
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "getLessonItemsForPart cloud parse error", e)
@@ -510,7 +487,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama - 1 basamaklı",
                     offset = 0,
-                    isCompleted = false,
+                    isCompleted = true,
                     stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 2,
@@ -561,7 +538,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Değerlendirme",
                     offset = 0,
-                    isCompleted = false,
+                    isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -569,6 +546,9 @@ object GlobalLessonData {
                     startStepNumber = 7,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
+                    cupPoint1 = 1980,
+                    cupPoint2 = 1400,
+                    worstCupTime = 240
                     //cupTime1 = "1:00",
                     //cupTime2 = "2:00"
 
@@ -2930,10 +2910,7 @@ object GlobalLessonData {
         val json = gson.toJson(_lessonItems)
         val completedCount = _lessonItems.count { it.stepIsFinish }
         val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
-        val prefs = getLessonPrefs(context)
-        val key = getKey(globalPartId)
-        prefs.edit().putString(key, json).apply()
-        Log.d(LOG_TAG, "saveToPreferences partId=$globalPartId key=$key local OK (items=${_lessonItems.size})")
+        Log.d(LOG_TAG, "saveToPreferences partId=$globalPartId cloud-only (items=${_lessonItems.size})")
 
         // Giriş yapmış kullanıcı için Firestore'a da kaydet (uygulama silinse bile geri yüklensin)
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -3022,7 +2999,7 @@ object GlobalLessonData {
 
     /**
      * Firestore'dan ilgili part'ın ders verisini yükler (kullanıcı giriş yapmışsa).
-     * LOADED: _lessonItems set edilir ve lokala yazılır.
+     * LOADED: _lessonItems set edilir.
      * NOT_FOUND: doc/field yok.
      * ERROR: ağ/izin/diğer hata.
      */
@@ -3055,8 +3032,7 @@ object GlobalLessonData {
                         _lessonItems = parseLessonItemsWithMigration(json)
                         val completedCount = _lessonItems.count { it.stepIsFinish }
                         val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
-                        getLessonPrefs(context).edit().putString(getKey(partId), json).apply()
-                        Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD and wrote to local")
+                        Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD")
                         // #region agent log
                         debugLog(
                             hypothesisId = "H3",
@@ -3178,6 +3154,6 @@ object GlobalLessonData {
 
     /** Sadece şu anki kullanıcının ders verisini temizler (test / sıfırlama için) */
     fun clearCurrentUserLessonData(context: Context) {
-        getLessonPrefs(context).edit().clear().apply()
+        // lesson verisi cloud-only akışta tutuluyor; local lesson cache kullanılmıyor.
     }
 }

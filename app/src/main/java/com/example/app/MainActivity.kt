@@ -38,6 +38,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.ActivityMainBinding
+import com.example.app.model.LessonItem
 import com.example.app.model.QuestionMessage
 import com.example.app.model.StudentQuestion
 import java.io.File
@@ -48,6 +49,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     companion object {
         const val EXTRA_FROM_LOGIN = "from_login"
+        const val EXTRA_START_DESTINATION = "start_destination"
+        const val START_DESTINATION_MAP = "map"
+        const val START_DESTINATION_TUTORIAL = "tutorial"
         /** Set by FCM notification tap; open this question chat when activity is ready. */
         const val EXTRA_OPEN_QUESTION_ID = "open_question_id"
         const val EXTRA_NOTIFICATION_RECIPIENT_UID = "notification_recipient_uid"
@@ -229,24 +233,57 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
         
-        // İlk açılış kontrolü - TutorialFragment gösterilecek mi? (fromLogin yukarıda set edildi)
-        val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
-
         // Eğer uygulama çevrimdışıysa, doğrudan offline fragment'ı göster.
         if (!isOnline()) {
             showOfflineFragment()
         } else if (!openedFromChatNotification) {
-            // Bildirimden doğrudan bir sohbete açılmadıysak, normal akış: Map/Tutorial.
-            if (firstTutorialShown) {
-                // Giriş/kayıt sonrası veya tutorial zaten gösterildiyse - MapFragment (ana ekran)
+            val preparedDestination = intent?.getStringExtra(EXTRA_START_DESTINATION)
+            if (preparedDestination == START_DESTINATION_MAP) {
                 supportFragmentManager.beginTransaction().apply {
                     replace(R.id.fragmentContainerID, MapFragment())
                     addToBackStack(null)
                     commit()
                 }
+            } else if (preparedDestination == START_DESTINATION_TUTORIAL) {
+                showFirstTutorialFromPreparedDataOrLoad()
             } else {
-                // İlk açılış - TutorialFragment göster
-                showFirstTutorial()
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                // Hesap yoksa local flag ile karar ver
+                val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+                if (firstTutorialShown) {
+                    supportFragmentManager.beginTransaction().apply {
+                        replace(R.id.fragmentContainerID, MapFragment())
+                        addToBackStack(null)
+                        commit()
+                    }
+                } else {
+                    showFirstTutorial()
+                }
+            } else {
+                // Hesap varsa hesap bazlı Firestore flag ile karar ver
+                firestore.collection("users")
+                    .document(currentUser.uid)
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        val firstTutorialShown = doc.getBoolean("first_tutorial_shown") == true
+                        // Mevcut local davranışla tutarlı olması için locale de yansıt
+                        prefs.edit().putBoolean("first_tutorial_shown", firstTutorialShown).apply()
+                        if (firstTutorialShown) {
+                            supportFragmentManager.beginTransaction().apply {
+                                replace(R.id.fragmentContainerID, MapFragment())
+                                addToBackStack(null)
+                                commit()
+                            }
+                        } else {
+                            showFirstTutorial()
+                        }
+                    }
+                    .addOnFailureListener {
+                        // Hesaplı kullanıcıda kararlı fallback: alan yokmuş gibi tutorial göster.
+                        showFirstTutorial()
+                    }
+            }
             }
         }
         binding.fragmentContainerID.post {
@@ -340,25 +377,41 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         GlobalLessonData.initialize(this, 1) {
             // GlobalLessonData'dan 1. index'teki item'ı al (createLessonItems'den değil, initialize edilen verilerden)
             val item = GlobalLessonData.getLessonItem(1) ?: return@initialize
-
-            // Global değerleri set et (TutorialFragment onCreate'de kullanılacak)
-            item.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
-            item.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
-
-            // Önce MapFragment'i back stack'e ekle (ChestFragment'ten geri dönüş için)
-            val mapFragment = MapFragment()
-            supportFragmentManager.beginTransaction()
-                .add(R.id.fragmentContainerID, mapFragment)
-                .addToBackStack(null)
-                .commit()
-
-            // TutorialFragment'ı başlat (abacusFragmentContainer'da gösterilecek)
-            binding.abacusFragmentContainer.visibility = View.VISIBLE
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
-                .addToBackStack(null)
-                .commit()
+            renderFirstTutorial(item)
         }
+    }
+
+    private fun showFirstTutorialFromPreparedDataOrLoad() {
+        val preparedItem = GlobalLessonData.getLessonItem(1)
+        if (preparedItem == null) {
+            // Splash'tan hazır rota geldiyse burada tekrar initialize beklemesine düşme.
+            // En kötü durumda şablondan anında aç; realtime/cloud güncellemesi ayrı akışta gelecek.
+            val immediateItem = GlobalLessonData.createLessonItems(1).getOrNull(1)
+            if (immediateItem != null) {
+                renderFirstTutorial(immediateItem)
+            } else {
+                showFirstTutorial()
+            }
+            return
+        }
+        renderFirstTutorial(preparedItem)
+    }
+
+    private fun renderFirstTutorial(item: LessonItem) {
+        item.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
+        item.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
+
+        val mapFragment = MapFragment()
+        supportFragmentManager.beginTransaction()
+            .add(R.id.fragmentContainerID, mapFragment)
+            .addToBackStack(null)
+            .commit()
+
+        binding.abacusFragmentContainer.visibility = View.VISIBLE
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+            .addToBackStack(null)
+            .commit()
     }
     
     /**
@@ -1122,12 +1175,22 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         //MissionsProgressStore.resetAllProgress(this)
         // Her açılışta günlük/haftalık görev kombinasyonunu yeniden seç
         //MissionsProgressStore.forceReselectMissions(this)
-        // Sadece şu anki kullanıcının ders verisini temizle (her kullanıcıya özel)
+        // Kullanıcıya özel lesson verilerini local'den temizler.
         //GlobalLessonData.clearCurrentUserLessonData(context)
-        context.getSharedPreferences("daily_question_prefs", Context.MODE_PRIVATE) //günlük soruyu sil
-            .edit()
-            .clear()
-            .apply()
+        //Kullanıcı lesson verilerini Firestore'den siler
+        /*val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid != null) {
+            firestore.collection("users")
+                .document(uid)
+                .collection("lessonProgress")
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    if (snapshot.isEmpty) return@addOnSuccessListener
+                    val batch = firestore.batch()
+                    snapshot.documents.forEach { doc -> batch.delete(doc.reference) }
+                    batch.commit()
+                }
+        }*/
 
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
         //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
@@ -1242,18 +1305,21 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             return
         }
         if (hasExistingLogin) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                val appPrefs = getSharedPreferences(PREFS_APP, MODE_PRIVATE)
-                val prompted = appPrefs.getBoolean(KEY_NOTIF_PERMISSION_PROMPTED, false)
-                if (!prompted && !notificationPermissionRequestInFlight) {
-                    // Mark before launch to avoid duplicate prompts in repeated onResume calls.
-                    appPrefs.edit().putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true).apply()
-                    notificationPermissionRequestInFlight = true
-                    requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
+                SessionDeviceManager.startSessionHeartbeat(this)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    val appPrefs = getSharedPreferences(PREFS_APP, MODE_PRIVATE)
+                    val prompted = appPrefs.getBoolean(KEY_NOTIF_PERMISSION_PROMPTED, false)
+                    if (!prompted && !notificationPermissionRequestInFlight) {
+                        // Mark before launch to avoid duplicate prompts in repeated onResume calls.
+                        appPrefs.edit().putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true).apply()
+                        notificationPermissionRequestInFlight = true
+                        requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
                 }
+                MyFirebaseMessagingService.saveCurrentTokenToFirestore()
             }
-            MyFirebaseMessagingService.saveCurrentTokenToFirestore()
         }
 
         // Uygulama aktifken süre takibini başlat
@@ -1264,6 +1330,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     
     override fun onPause() {
         super.onPause()
+        SessionDeviceManager.stopSessionHeartbeat()
         currentActivity = null
         // Uygulama background'a geçtiğinde süre takibini durdur
         TimeTracker.stopTracking()
@@ -1271,6 +1338,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     override fun onStop() {
         super.onStop()
+        SessionDeviceManager.releaseActiveSessionIfOwned(this)
         if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
             startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
             hideRecordingOverlay()
