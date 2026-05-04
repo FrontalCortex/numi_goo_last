@@ -78,25 +78,12 @@ class TasksFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val adapter = BulletinAdapter { card ->
-            // Geçiş animasyonu boyunca ekrandaki tüm dokunuşları engelle.
-            val content = requireActivity().findViewById<ViewGroup>(android.R.id.content)
-            content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
-            val blocker = View(requireContext()).apply {
-                tag = PRACTICE_TOUCH_BLOCKER_TAG
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                setBackgroundColor(Color.TRANSPARENT)
-                isClickable = true
-                isFocusable = true
-                setOnTouchListener { _, _ -> true }
-                elevation = 1000f
-            }
-            content.addView(blocker)
-
             when (card.id) {
-                "daily_question_card" -> startDailyQuestionFlow()
+                "daily_question_card" -> {
+                    addLaunchTouchBlocker()
+                    startDailyQuestionFlow()
+                }
+                "badge_card" -> openAbacusContainerFragment(BadgeFragment())
                 else -> openAbacusContainerFragment(AbacusPracticeFragment())
             }
         }
@@ -115,6 +102,11 @@ class TasksFragment : Fragment() {
                     id = "daily_question_card",
                     title = "Günlük Soru",
                     subtitle = "Ders ilerlemene göre her gün yeni abaküs sorusu."
+                ),
+                BulletinCard(
+                    id = "badge_card",
+                    title = "Rozet Animasyonu",
+                    subtitle = "Rozet animasyonlarını görüntüle."
                 )
             )
         )
@@ -345,5 +337,23 @@ class TasksFragment : Fragment() {
         content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { blocker ->
             content.removeView(blocker)
         }
+    }
+
+    private fun addLaunchTouchBlocker() {
+        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
+        content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
+        val blocker = View(requireContext()).apply {
+            tag = PRACTICE_TOUCH_BLOCKER_TAG
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            setBackgroundColor(Color.TRANSPARENT)
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener { _, _ -> true }
+            elevation = 1000f
+        }
+        content.addView(blocker)
     }
 }

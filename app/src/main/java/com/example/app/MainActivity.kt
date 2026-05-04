@@ -396,7 +396,6 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         renderFirstTutorial(preparedItem)
     }
-
     private fun renderFirstTutorial(item: LessonItem) {
         item.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
         item.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
