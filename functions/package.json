@@ -5,7 +5,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "lint": "node -e \"process.exit(0)\""
+    "lint": "node -e \"process.exit(0)\"",
+    "seed:leaderboard": "node scripts/seed-lesson-leaderboard.js",
+    "verify:leaderboard": "node scripts/verify-lesson-leaderboard.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
