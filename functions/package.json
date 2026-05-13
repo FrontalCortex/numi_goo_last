@@ -7,7 +7,12 @@
   "scripts": {
     "lint": "node -e \"process.exit(0)\"",
     "seed:leaderboard": "node scripts/seed-lesson-leaderboard.js",
-    "verify:leaderboard": "node scripts/verify-lesson-leaderboard.js"
+    "seed:leaderboard:all-seasons": "node scripts/seed-leaderboard-all-seasons.js",
+    "seed:leaderboard:range": "node scripts/seed-leaderboard-season-range.js",
+    "verify:leaderboard": "node scripts/verify-lesson-leaderboard.js",
+    "delete:leaderboard-seeds": "node scripts/delete-lesson-leaderboard-seeds.js",
+    "delete:leaderboards:by-prefix": "node scripts/delete-lesson-leaderboards-by-prefix.js",
+    "delete:seed-users": "node scripts/delete-seed-user-ghosts.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

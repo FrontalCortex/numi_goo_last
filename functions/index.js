@@ -9,6 +9,11 @@ require('dotenv').config();
 admin.initializeApp();
 const db = admin.firestore();
 
+// Geçici: sezon finalize zamanlayıcısı kapalı (gereksiz tetiklemesin). Tekrar aç: uncomment + `firebase deploy --only functions`
+// const seasonLeaderboardFinalize = require('./seasonLeaderboardFinalize');
+// exports.finalizeSeasonLeaderboardMedals =
+//   seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
+
 // Config yükleme kontrolü için
 
 function generateCode(length = 6) {
