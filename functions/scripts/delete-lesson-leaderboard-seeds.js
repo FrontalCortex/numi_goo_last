@@ -1,6 +1,7 @@
 /**
  * lessonLeaderboards/{BOARD_ID}/entries içinde id'si seed_lb_ ile başlayan
  * tüm dokümanları siler (Admin SDK — istemci kuralları delete'e izin vermez).
+ * Sezon: [seasonCalendar.js] (UTC takvim ayı). Deploy notu: seed-lesson-leaderboard.js başlığına bakın.
  *
  *   cd functions && npm install
  *   $env:GOOGLE_APPLICATION_CREDENTIALS="..."
@@ -11,16 +12,7 @@
  * Verilmezse: part_1_lesson_4_season_{mevcutSezon} (SeasonClock ile aynı anchor)
  */
 const admin = require('firebase-admin');
-
-const SEASON_ANCHOR_UTC_MS = Date.UTC(2026, 4, 13, 0, 0, 0, 0);
-const SEASON_LENGTH_MS = 2 * 60 * 1000;
-
-function currentSeason(nowMs = Date.now()) {
-  if (nowMs < SEASON_ANCHOR_UTC_MS) return 1;
-  const elapsed = nowMs - SEASON_ANCHOR_UTC_MS;
-  const periodIndex = Math.floor(elapsed / SEASON_LENGTH_MS);
-  return Math.max(1, periodIndex + 1);
-}
+const { currentSeason } = require('../seasonCalendar');
 
 const PROJECT_ID =
   process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'numigo-new';

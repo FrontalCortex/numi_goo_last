@@ -3,20 +3,14 @@
 /**
  * Sezon sonu: lessonLeaderboards tahtalarından ilk 100 sırayı okuyup kullanıcı badgeProgress/state
  * parçalarını günceller; ardından o sezona ait tahta dokümanlarını (entries dahil) siler.
- * [SeasonClock.kt] ile aynı anchor ve süre — değiştirirken Android tarafını da güncelleyin.
- * (Mayıs JS ayı 0-tabanlı: 4 = Mayıs → 13 Mayıs 2026 00:00 UTC.)
+ * [seasonCalendar.js] / [SeasonClock.kt] ile aynı UTC takvim ayı mantığı.
  */
-const SEASON_ANCHOR_UTC_MS = Date.UTC(2026, 4, 13, 0, 0, 0, 0);
-const SEASON_LENGTH_MS = 2 * 60 * 1000;
+const {
+  SEASON_ANCHOR_UTC_MS,
+  currentSeason,
+} = require('./seasonCalendar');
 
 const SYSTEM_CURSOR = 'system/seasonLeaderboardRewards';
-
-function currentSeason(nowMs = Date.now()) {
-  if (nowMs < SEASON_ANCHOR_UTC_MS) return 1;
-  const elapsed = nowMs - SEASON_ANCHOR_UTC_MS;
-  const periodIndex = Math.floor(elapsed / SEASON_LENGTH_MS);
-  return Math.max(1, periodIndex + 1);
-}
 
 function parseMedalList(value) {
   if (!Array.isArray(value)) return [];
@@ -98,6 +92,15 @@ function medalToFs(rows) {
 
 function cupToFs(rows) {
   return rows.map((r) => ({ titleUnit: r.titleUnit, rank: r.rank, season: r.season }));
+}
+
+function hasLeaderboardRewardInc(inc) {
+  return (
+    (inc.gold && inc.gold.length > 0) ||
+    (inc.silver && inc.silver.length > 0) ||
+    (inc.bronze && inc.bronze.length > 0) ||
+    (inc.cup && inc.cup.length > 0)
+  );
 }
 
 /** orderBy recordScore desc ile gelen sıra için yarışma sırası (1224): aynı puanda paylaşılan en iyi sıra. */
@@ -212,16 +215,17 @@ async function finalizeSeason(db, season) {
         const mergedBronze = mergeMedals(exBronze, inc.bronze);
         const mergedCup = mergeCups(exCup, inc.cup);
 
-        t.set(
-          stateRef,
-          {
-            goldMedalPiece: medalToFs(mergedGold),
-            silverMedalPiece: medalToFs(mergedSilver),
-            bronzeMedalPiece: medalToFs(mergedBronze),
-            cupPiece: cupToFs(mergedCup),
-          },
-          { merge: true },
-        );
+        const payload = {
+          goldMedalPiece: medalToFs(mergedGold),
+          silverMedalPiece: medalToFs(mergedSilver),
+          bronzeMedalPiece: medalToFs(mergedBronze),
+          cupPiece: cupToFs(mergedCup),
+        };
+        if (hasLeaderboardRewardInc(inc)) {
+          payload.pendingLeaderboardRewardSeason = season;
+        }
+
+        t.set(stateRef, payload, { merge: true });
       });
     } catch (e) {
       console.error(`finalizeSeasonLeaderboardMedals: uid=${uid}`, e);
@@ -293,4 +297,4 @@ function scheduleFinalize(functions, admin, db) {
     });
 }
 
-module.exports = { scheduleFinalize, currentSeason, SEASON_ANCHOR_UTC_MS, SEASON_LENGTH_MS };
+module.exports = { scheduleFinalize, currentSeason, SEASON_ANCHOR_UTC_MS };

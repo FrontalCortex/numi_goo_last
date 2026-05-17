@@ -1,8 +1,11 @@
 /**
  * Part 1, ders indeksi 4, verilen sezon aralığında her tahtaya aynı puan + 100 seed oyuncu.
- * Ana mantık: seed-lesson-leaderboard.js (ALL_SEASONS=1).
+ * Ana mantık: seed-lesson-leaderboard.js (ALL_SEASONS=1). Sezon: [seasonCalendar.js] UTC takvim ayı.
  *
- * Varsayılan: sezon 1098…1120, SCORE=1980, COUNT=100, PART=1, LESSON=4
+ * Deploy: system/seasonLeaderboardRewards lastFinalizedSeason = currentSeason()-1;
+ * eski test tahtalarını isteğe bağlı silin (seed-lesson-leaderboard.js başlığı).
+ *
+ * Varsayılan: sezon 1…mevcut sezon, SCORE=1980, COUNT=100, PART=1, LESSON=4
  *
  *   cd functions
  *   $env:GOOGLE_APPLICATION_CREDENTIALS="..."
@@ -10,9 +13,10 @@
  *   npm run seed:leaderboard:range
  *
  * Özel aralık / puan:
- *   node scripts/seed-leaderboard-season-range.js 1098 1120 1 4 1980 100
+ *   node scripts/seed-leaderboard-season-range.js 1 3 1 4 1980 100
  *   (argv: seasonFrom seasonTo [partId] [lessonIndex] [score] [count])
  */
+const { currentSeason } = require('../seasonCalendar');
 const argv = process.argv.slice(2).map((a) => String(a).trim());
 
 function argInt(i, fallback) {
@@ -21,8 +25,9 @@ function argInt(i, fallback) {
   return Number.isNaN(n) ? fallback : n;
 }
 
-const seasonFrom = argInt(0, parseInt(process.env.SEASON_FROM || '1098', 10));
-const seasonTo = argInt(1, parseInt(process.env.SEASON_TO || '1120', 10));
+const cur = currentSeason();
+const seasonFrom = argInt(0, parseInt(process.env.SEASON_FROM || '1', 10));
+const seasonTo = argInt(1, parseInt(process.env.SEASON_TO || String(cur), 10));
 const partId = argInt(2, parseInt(process.env.PART_ID || '1', 10));
 const lessonIndex = argInt(3, parseInt(process.env.LESSON_INDEX || '4', 10));
 const score = argInt(4, parseInt(process.env.SCORE || '1980', 10));

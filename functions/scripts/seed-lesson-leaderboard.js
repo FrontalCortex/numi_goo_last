@@ -1,6 +1,9 @@
 /**
  * lessonLeaderboards tahtasına test entry'leri + tahta meta yazar (Admin SDK).
- * [SeasonClock.kt] ile aynı anchor/süre (13 Mayıs 2026 00:00 UTC) — tahta id: part_{p}_lesson_{i}_season_{s}
+ * [seasonCalendar.js] / [SeasonClock.kt] — UTC takvim ayı sezonları; tahta id: part_{p}_lesson_{i}_season_{s}
+ *
+ * Deploy (2 dk test epokundan geçiş): system/seasonLeaderboardRewards lastFinalizedSeason = currentSeason()-1;
+ * isteğe bağlı eski yüksek season lessonLeaderboards dokümanlarını silin.
  *
  *   cd functions && npm install
  *   $env:GOOGLE_APPLICATION_CREDENTIALS="...\serviceAccount.json"
@@ -24,17 +27,7 @@
  *   veya: ALL_SEASONS=1 PART_ID=1 LESSON_INDEX=4 SEASON_FROM=1045 SEASON_TO=1065 SCORE=1900 COUNT=100 npm run seed:leaderboard
  */
 const admin = require('firebase-admin');
-
-/** [SeasonClock.kt] ile aynı */
-const SEASON_ANCHOR_UTC_MS = Date.UTC(2026, 4, 13, 0, 0, 0, 0);
-const SEASON_LENGTH_MS = 2 * 60 * 1000;
-
-function currentSeason(nowMs = Date.now()) {
-  if (nowMs < SEASON_ANCHOR_UTC_MS) return 1;
-  const elapsed = nowMs - SEASON_ANCHOR_UTC_MS;
-  const periodIndex = Math.floor(elapsed / SEASON_LENGTH_MS);
-  return Math.max(1, periodIndex + 1);
-}
+const { currentSeason } = require('../seasonCalendar');
 
 const PROJECT_ID =
   process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'numigo-new';
