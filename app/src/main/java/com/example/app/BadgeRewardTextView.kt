@@ -18,6 +18,7 @@ class BadgeRewardTextView @JvmOverloads constructor(
 
     private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var strokeColorInt: Int = 0xFFFF8F00.toInt()
 
     init {
         includeFontPadding = false
@@ -42,7 +43,7 @@ class BadgeRewardTextView @JvmOverloads constructor(
         strokePaint.strokeWidth = strokeWidthPx
         strokePaint.strokeJoin = Paint.Join.ROUND
         strokePaint.strokeMiter = 4f
-        strokePaint.color = 0xFFB71C1C.toInt()
+        strokePaint.color = strokeColorInt
 
         fillPaint.set(paint)
         fillPaint.style = Paint.Style.FILL
@@ -57,5 +58,11 @@ class BadgeRewardTextView @JvmOverloads constructor(
 
         canvas.drawText(text, x, baseline, strokePaint)
         canvas.drawText(text, x, baseline, fillPaint)
+    }
+
+    fun setStrokeColorInt(color: Int) {
+        if (strokeColorInt == color) return
+        strokeColorInt = color
+        invalidate()
     }
 }

@@ -15,6 +15,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
+import com.example.app.UserWalletFirestore
 
 class AuthManager {
     private val auth = FirebaseAuth.getInstance()
@@ -599,7 +600,7 @@ class AuthManager {
                                     "Kayıt ekranından çağrıldı, otomatik kayıt yapılıyor"
                                 )
                                 generateUniqueUserId(ROLE_STUDENT) { userId ->
-                                val userData = mapOf(
+                                val userData = mutableMapOf<String, Any>(
                                     "uid" to user.uid,
                                         "userId" to userId,
                                     "email" to (user.email ?: ""),
@@ -609,6 +610,7 @@ class AuthManager {
                                     "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                                     "createdAt" to com.google.firebase.Timestamp.now()
                                 )
+                                userData.putAll(UserWalletFirestore.registrationWalletFields())
                                 
                                 firestore.collection("users").document(user.uid)
                                     .set(userData)
@@ -812,7 +814,7 @@ class AuthManager {
                 
                 // Firestore'a kullanıcı dokümanı yaz (verified: false - e-posta doğrulanmamış)
                 generateUniqueUserId(ROLE_STUDENT) { userId ->
-                val userData = mapOf(
+                val userData = mutableMapOf<String, Any>(
                     "uid" to user.uid,
                         "userId" to userId,
                     "email" to email,
@@ -822,6 +824,7 @@ class AuthManager {
                     "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                     "createdAt" to com.google.firebase.Timestamp.now()
                 )
+                userData.putAll(UserWalletFirestore.registrationWalletFields())
                 
                 firestore.collection("users").document(user.uid)
                     .set(userData)
@@ -886,7 +889,7 @@ class AuthManager {
                         user.updateProfile(profileUpdates)
 
                         generateUniqueUserId(ROLE_TEACHER) { userId ->
-                        val data = mapOf(
+                        val data = mutableMapOf<String, Any>(
                             "uid" to user.uid,
                                 "userId" to userId,
                             "email" to email,
@@ -895,6 +898,7 @@ class AuthManager {
                             "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                             "createdAt" to com.google.firebase.Timestamp.now()
                         )
+                        data.putAll(UserWalletFirestore.registrationWalletFields())
                         firestore.collection("users").document(user.uid)
                             .set(data)
                             .addOnSuccessListener {
@@ -1117,6 +1121,7 @@ class AuthManager {
                                                 "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                                                 "createdAt" to com.google.firebase.Timestamp.now()
                                             )
+                                            baseData.putAll(UserWalletFirestore.registrationWalletFields())
                                             if (roleForUser == ROLE_STUDENT) {
                                                 baseData["verified"] = true
                                             } else if (roleForUser == ROLE_TEACHER) {

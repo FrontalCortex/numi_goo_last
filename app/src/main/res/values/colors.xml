@@ -18,6 +18,7 @@
     <color name="lesson_locked">#505D66</color>
     <color name="background_color">#141F23</color>
     <color name="circleBackground_color">#383535</color>
+    <color name="badge_piece_row_divider">#40A7B4C3</color>
     <color name="circleForeground_color">#8A7E18</color>
     <color name="partLocked_color">#35363C</color>
     <color name="button_enabled">#8CC63F</color>
@@ -33,6 +34,12 @@
 
     <color name="missions_header_muted">#99EEEEEE</color>
     <color name="missions_track">#3D4A50</color>
+    <!-- Günlük soru kartı progress track: kart turuncusundan (#FFB74D–#FF8F00) biraz daha açık -->
+    <color name="daily_question_progress_track">#FFD59B</color>
+    <!-- Dolgu: kart turuncusundan daha koyu -->
+    <color name="daily_question_progress_fill">#FF5500</color>
+    <color name="daily_question_progress_shine">#FF8F00</color>
+    <color name="daily_question_progress_complete_text">#5A5A5A</color>
     <color name="missions_progress_blue">#2196F3</color>
     <color name="missions_progress_blue_shine">#B3E5FC</color>
     <color name="missions_progress_complete">#FFD600</color>
@@ -65,4 +72,11 @@
     <color name="tutorial_option_row_selected_bg">#332D4A</color>
     <color name="tutorial_option_row_selected_stroke">#7C3AED</color>
     <color name="tutorial_option_indicator_ring">#8B949E</color>
+
+    <color name="badge_locked_base">#5E6872</color>
+    <color name="badge_locked_top">#B8C0C7</color>
+    <color name="badge_tone_bronze_filter">#0089FF</color>
+    <color name="badge_tone_silver_filter">#434343</color>
+    <color name="badge_tone_red_filter">#00FF8C</color>
+    <color name="badge_tone_purple_filter">#D500FF</color>
 </resources>

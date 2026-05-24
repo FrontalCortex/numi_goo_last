@@ -59,22 +59,48 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Ders liderlik tablosu: giriş yapmış herkes okur; her kullanıcı yalnızca kendi entry dokümanını yazar
+    // Tahta üst dokümanı (meta): sezon sonu CF sorgusu için partId / lessonIndex / season (+ isteğe bağlı titleUnit).
+    // Not: [FieldValue.serverTimestamp] yazımında kurallar `updatedAt is timestamp` ile doğrulanamaz; yalnızca alanın varlığını şart koşuyoruz.
+    match /lessonLeaderboards/{leaderboardId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.partId is number
+        && request.resource.data.lessonIndex is number
+        && request.resource.data.season is number
+        && ('updatedAt' in request.resource.data)
+        && (!('titleUnit' in request.resource.data)
+            || (request.resource.data.titleUnit is string
+                && request.resource.data.titleUnit.size() < 200));
+      allow delete: if false;
+    }
+
+    // Ders liderlik tablosu: giriş yapmış herkes okur; her kullanıcı yalnızca kendi entry dokümanını yazar.
+    // İstemci [LessonLeaderboardRepository]: recordScore (puan), recordLabel, displayName, updatedAt, photoUrl.
+    // Tahta doküman id: `part_{partId}_lesson_{i}_season_{n}` (sezon başına ayrı tahta). Kurallar burada
+    // {leaderboardId} ile herhangi bir string id'ye izin verir; ayrıca id kalıbını kısıtlamak isterseniz
+    // `leaderboardId.matches('part_.*_lesson_.*_season_.*')` gibi bir koşul eklenebilir.
     match /lessonLeaderboards/{leaderboardId}/entries/{userId} {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.recordSeconds is int
-        && request.resource.data.recordSeconds >= 0
-        && request.resource.data.recordSeconds < 360000
+        && ('recordScore' in request.resource.data)
+        && request.resource.data.recordScore is number
+        && request.resource.data.recordScore >= 1
+        && request.resource.data.recordScore <= 2000000000
+        && ('recordLabel' in request.resource.data)
         && request.resource.data.recordLabel is string
-        && request.resource.data.recordLabel.size() < 32
+        && request.resource.data.recordLabel.size() < 128
+        && ('displayName' in request.resource.data)
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() < 128
+        && ('updatedAt' in request.resource.data)
         && request.resource.data.updatedAt is timestamp
         && (!('photoUrl' in request.resource.data)
             || (request.resource.data.photoUrl is string
-                && request.resource.data.photoUrl.size() < 512));
+                && request.resource.data.photoUrl.size() < 512))
+        && (!('titleUnit' in request.resource.data)
+            || (request.resource.data.titleUnit is string
+                && request.resource.data.titleUnit.size() < 200));
       allow delete: if false;
     }
 

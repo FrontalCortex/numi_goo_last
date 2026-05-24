@@ -27,6 +27,8 @@ class MissionChestRewardFragment : Fragment() {
     private var popBackStackOnContinue = false
     private lateinit var beforeSnapshot: MissionsProgressStore.Snapshot
     private lateinit var afterSnapshot: MissionsProgressStore.Snapshot
+    private var shouldOpenBadgeAfterContinue: Boolean = false
+    private var badgePayloadQueue: ArrayList<String> = arrayListOf()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,6 +43,8 @@ class MissionChestRewardFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         MainActivityChromeBlocker.acquire(requireActivity())
         popBackStackOnContinue = requireArguments().getBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, false)
+        shouldOpenBadgeAfterContinue = requireArguments().getBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, false)
+        badgePayloadQueue = requireArguments().getStringArrayList(ARG_BADGE_PAYLOAD_QUEUE) ?: arrayListOf()
         val args = requireArguments()
         beforeSnapshot = MissionsProgressStore.Snapshot(
             dailyStepFinishCount = args.getInt(ARG_DAILY_STEP_FINISH_BEFORE),
@@ -75,24 +79,32 @@ class MissionChestRewardFragment : Fragment() {
         renderRewardList()
 
         binding.missionChestRewardContinue.setOnClickListener {
-            GlobalValues.canConsumePendingLessonProgressAnimations = true
-            LessonManager.refreshLessonsFromGlobalData()
-            if (popBackStackOnContinue) {
-                parentFragmentManager.beginTransaction()
+            // remove() sonrası isAdded == false olur; kuyruk ve rozet kararını önce al, sonra activity FM ile aç.
+            val openBadgeAfter = shouldOpenBadgeAfterContinue && badgePayloadQueue.isNotEmpty()
+            val queueCopy = ArrayList(badgePayloadQueue)
+            val activityFm = requireActivity().supportFragmentManager
+            val main = activity as? MainActivity
+            main?.prepareMapReturnAfterLessonClaim()
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_right,
+                )
+                .remove(this@MissionChestRewardFragment)
+                .commitNowAllowingStateLoss()
+            main?.finalizeMapReturnAfterLessonClaim("MissionChestReward.continue")
+            if (openBadgeAfter) {
+                activityFm.beginTransaction()
                     .setCustomAnimations(
                         R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
                         R.anim.slide_out_right,
                     )
-                    .remove(this@MissionChestRewardFragment)
-                    .commitNowAllowingStateLoss()
-                parentFragmentManager.popBackStack()
-            } else {
-                parentFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_right,
+                    .replace(
+                        R.id.badgeFragmentContainter,
+                        BadgeFragment.newLevelUpSequenceInstance(queueCopy, 0),
                     )
-                    .remove(this@MissionChestRewardFragment)
                     .commit()
             }
         }
@@ -156,11 +168,15 @@ class MissionChestRewardFragment : Fragment() {
         private const val ARG_DAILY_LEARN_MINUTES_AFTER = "daily_learn_minutes_after"
         private const val ARG_WEEKLY_LEARN_MINUTES_AFTER = "weekly_learn_minutes_after"
         private const val ARG_POP_BACKSTACK_ON_CONTINUE = "pop_backstack_on_continue"
+        private const val ARG_OPEN_BADGE_AFTER_CONTINUE = "open_badge_after_continue"
+        private const val ARG_BADGE_PAYLOAD_QUEUE = "badge_payload_queue"
 
         fun newInstance(
             before: MissionsProgressStore.Snapshot,
             after: MissionsProgressStore.Snapshot,
             popBackStackOnContinue: Boolean = false,
+            openBadgeAfterContinue: Boolean = false,
+            badgePayloadQueue: List<String> = emptyList(),
         ) =
             MissionChestRewardFragment().apply {
                 arguments = Bundle().apply {
@@ -189,6 +205,8 @@ class MissionChestRewardFragment : Fragment() {
                     putInt(ARG_DAILY_LEARN_MINUTES_AFTER, after.dailyLearnMinutesCount)
                     putInt(ARG_WEEKLY_LEARN_MINUTES_AFTER, after.weeklyLearnMinutesCount)
                     putBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, popBackStackOnContinue)
+                    putBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, openBadgeAfterContinue)
+                    putStringArrayList(ARG_BADGE_PAYLOAD_QUEUE, ArrayList(badgePayloadQueue))
                 }
             }
     }

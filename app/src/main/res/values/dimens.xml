@@ -390,6 +390,9 @@
     <dimen name="main_bottom_nav_min_height">52dp</dimen>
 
     <!-- Missions: track + fill aynı köşe yarıçapı (32dp bar → kapsül) -->
+    <dimen name="daily_question_progress_width">200dp</dimen>
+    <dimen name="daily_question_progress_height">28dp</dimen>
+    <dimen name="daily_question_progress_crystal_size">36dp</dimen>
     <dimen name="mission_progress_bar_corner_radius">16dp</dimen>
     <!-- Missions: parlak çizgi overlay (clip ile kesilmez; sağda ilerleme sınırından içeride biter) -->
     <dimen name="mission_progress_shine_inset_start">14dp</dimen>
@@ -397,4 +400,10 @@
     <dimen name="mission_progress_shine_height">6dp</dimen>
     <dimen name="mission_progress_shine_top">8dp</dimen>
     <dimen name="mission_progress_shine_corner_radius">3dp</dimen>
+
+    <!-- BadgeFragment: parça listesi (Nx) Lottie altında kalmadan dokunma alır -->
+    <dimen name="badge_piece_label_elevation">32dp</dimen>
+    <dimen name="badge_piece_panel_max_height">200dp</dimen>
+    <!-- Parça listesi satır ayırıcıları: kart kenarından içeri -->
+    <dimen name="badge_piece_row_divider_inset">14dp</dimen>
 </resources>

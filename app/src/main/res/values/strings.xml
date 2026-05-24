@@ -69,6 +69,22 @@
     <string name="record_leaderboard_load_error">Liste yüklenemedi.</string>
 
     <string name="missions_daily_title">GÜNLÜK GÖREVLER</string>
+    <string name="daily_question_card_title">Günlük soru</string>
+    <string name="daily_question_card_open">Aç</string>
+    <string name="daily_question_card_subtitle_default">Ders ilerlemene göre üç soruluk mücadele.</string>
+    <string name="daily_question_challenge_complete">Mücadeleyi tamamladın!</string>
+    <string name="daily_question_claim_requires_complete">Ödülü almak için mücadeleyi tamamla.</string>
+    <string name="daily_question_focus_format">Seviye: %1$s</string>
+    <string name="daily_question_progress_format">%1$d/%2$d</string>
+    <string name="daily_question_progress_complete_label">Tamamlandı</string>
+    <string name="daily_question_refresh_countdown">%1$s</string>
+    <string name="daily_question_pool_empty">Burayı açmak için daha fazla ders tamamla.</string>
+    <string name="daily_question_continue_title">Mücadeleye devam et</string>
+    <string name="daily_question_continue_message">Mücadeleye devam etmek için 1 anahtar kullan.</string>
+    <string name="daily_question_continue_close">Kapat</string>
+    <string name="daily_question_continue_diamond">x1</string>
+    <string name="daily_question_insufficient_diamonds">Yeterli elmasın yok.</string>
+    <string name="daily_question_insufficient_keys">Yeterli anahtarın yok.</string>
     <string name="missions_weekly_title">HAFTALIK GÖREVLER</string>
     <string name="missions_hours_short">%d SA.</string>
     <string name="missions_days_short">%d GÜN</string>
@@ -79,7 +95,7 @@
     <string name="mission_finish_five_steps">5 ders adımını bitir</string>
     <string name="mission_finish_two_lessons_perfect">2 dersi hatasız tamamla</string>
     <string name="mission_finish_ten_lessons_perfect">10 dersi hatasız tamamla</string>
-    <string name="mission_break_chest_record">Ünite değerlendirmedeki kendi rekorunu kır</string>
+    <string name="mission_break_chest_record">Ünite maratonundaki kendi rekorunu kır</string>
     <string name="mission_gain_one_star_in_unit_eval">5 yıldız kazan</string>
     <string name="mission_gain_two_stars">2 yıldız kazan</string>
     <string name="mission_learn_for_10_minutes">10 dakika boyunca öğren</string>
@@ -89,4 +105,15 @@
     <string name="mission_chest_toast">sandık açıldı</string>
     <string name="mission_chest_reward_title">Görev ilerlemesi</string>
     <string name="mission_continue">Devam et</string>
+
+    <string name="season_leaderboard_reward_gate_title">Bu sezon ödüllerini topla</string>
+    <string name="season_leaderboard_reward_gate_collect">Topla</string>
+    <string name="season_leaderboard_reward_gate_season_line">Sezon %1$d</string>
+
+    <string name="record_season_countdown_days_hours">%1$d gün %2$d sa</string>
+    <string name="record_season_countdown_hours_minutes">%1$d sa %2$d dk</string>
+
+    <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
+    <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
+    <string name="ask_question_alert_ok">Tamam</string>
 </resources>

@@ -30,7 +30,7 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
 
         fun bind(entry: LeaderboardEntry) {
             val ctx = binding.root.context
-            val isSecond = entry.rank == 2
+            val isSecond = entry.displayRank == 2
             val cardColor = if (isSecond) R.color.white else R.color.panel_background
             binding.root.setCardBackgroundColor(ContextCompat.getColor(ctx, cardColor))
 
@@ -43,9 +43,9 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
             binding.rowTime.setTextColor(timeColor)
             binding.rowName.text = entry.displayName.ifBlank { ctx.getString(R.string.record_leaderboard_title) }
             binding.rowTime.text = entry.recordLabel
-            binding.rowRankBadge.text = entry.rank.toString()
+            binding.rowRankBadge.text = entry.displayRank.toString()
             binding.rowRankBadge.setTextColor(ContextCompat.getColor(ctx, R.color.black))
-            binding.rowRankBadge.background = ContextCompat.getDrawable(ctx, badgeDrawableForRank(entry.rank))
+            binding.rowRankBadge.background = ContextCompat.getDrawable(ctx, badgeDrawableForRank(entry.rewardRank))
 
             val url = entry.photoUrl
             if (!url.isNullOrBlank()) {
@@ -57,6 +57,7 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
         }
 
         private fun badgeDrawableForRank(rank: Int): Int = when (rank) {
+            1 -> R.drawable.bg_record_rank_gold
             2 -> R.drawable.bg_record_rank_badge_purple
             3 -> R.drawable.bg_record_rank_badge_yellow
             4 -> R.drawable.bg_record_rank_badge_blue

@@ -1,17 +1,18 @@
 package com.example.app
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.app.databinding.FragmentRecordBinding
-import com.example.app.model.LessonItem
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
-
 class RecordFragment : Fragment() {
 
     private var _binding: FragmentRecordBinding? = null
@@ -19,6 +20,26 @@ class RecordFragment : Fragment() {
 
     private var leaderboardListener: ListenerRegistration? = null
     private val listAdapter = RecordLeaderboardAdapter()
+
+    private var boundLeaderboardSeason: Int = -1
+
+    private val countdownHandler = Handler(Looper.getMainLooper())
+    private var countdownRunnable: Runnable? = null
+
+    private val onSeasonAdvanced: (Int, Int) -> Unit = listener@{ _, newSeason ->
+        if (!isAdded || _binding == null) return@listener
+        if (newSeason != boundLeaderboardSeason) {
+            bindLeaderboardListener(newSeason)
+        }
+    }
+
+    private fun closeRecordOverlay() {
+        val main = activity as? MainActivity
+        main?.prepareMapReturnAfterLessonClaim()
+        parentFragmentManager.popBackStack()
+        parentFragmentManager.executePendingTransactions()
+        main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
+    }
 
     private val partId: Int
         get() = requireArguments().getInt(ARG_PART_ID)
@@ -40,17 +61,36 @@ class RecordFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        MainActivityChromeBlocker.acquire(requireActivity())
         binding.recordLessonTitleText.text = lessonTitle
         binding.recordRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recordRecyclerView.adapter = listAdapter
 
         binding.recordBackButton.setOnClickListener {
-            parentFragmentManager.popBackStack()
+            closeRecordOverlay()
         }
 
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    closeRecordOverlay()
+                }
+            },
+        )
+
+        bindLeaderboardListener(SeasonClock.currentSeason())
+        SeasonClock.addSeasonChangeListener(onSeasonAdvanced)
+        startCountdownTicker()
+    }
+
+    private fun bindLeaderboardListener(season: Int) {
+        leaderboardListener?.remove()
+        boundLeaderboardSeason = season
         leaderboardListener = LessonLeaderboardRepository.listenLeaderboard(
             partId = partId,
             lessonIndex = lessonIndex,
+            season = season,
             onUpdate = { entries ->
                 if (!isAdded) return@listenLeaderboard
                 bindLeaderboard(entries)
@@ -71,14 +111,40 @@ class RecordFragment : Fragment() {
                 listAdapter.submitList(emptyList())
             },
         )
+        updateRecordSeasonIndexLabel()
     }
 
-    private fun syncCurrentUserLeaderboardFromLocalLesson() {
-        val item = GlobalLessonData.getLessonItem(lessonIndex) ?: return
-        if (item.type != LessonItem.TYPE_CHEST || !item.stepIsFinish) return
-        val record = item.record ?: return
-        if (record <= 0) return
-        LessonLeaderboardRepository.submitBestIfNeeded(partId, lessonIndex, record)
+    private fun formatSeasonCountdown(remainingMs: Long): String {
+        val totalMinutes = (remainingMs / 60_000L).toInt().coerceAtLeast(0)
+        val days = totalMinutes / (24 * 60)
+        val hours = (totalMinutes % (24 * 60)) / 60
+        val minutes = totalMinutes % 60
+        return if (days > 0) {
+            getString(R.string.record_season_countdown_days_hours, days, hours)
+        } else {
+            getString(R.string.record_season_countdown_hours_minutes, hours, minutes)
+        }
+    }
+
+    private fun updateRecordSeasonIndexLabel() {
+        val b = _binding ?: return
+        val s = if (boundLeaderboardSeason >= 1) boundLeaderboardSeason else SeasonClock.currentSeason()
+        b.recordSeasonIndexText.text = "s$s"
+    }
+
+    private fun startCountdownTicker() {
+        countdownRunnable?.let { countdownHandler.removeCallbacks(it) }
+        countdownRunnable = object : Runnable {
+            override fun run() {
+                val b = _binding ?: return
+                if (!isAdded) return
+                val ms = SeasonClock.millisUntilCurrentSeasonEnds()
+                b.recordSeasonCountdownText.text = formatSeasonCountdown(ms)
+                updateRecordSeasonIndexLabel()
+                countdownHandler.postDelayed(this, 1000L)
+            }
+        }
+        countdownHandler.post(countdownRunnable!!)
     }
 
     private fun bindLeaderboard(entries: List<LessonLeaderboardRepository.LeaderboardEntry>) {
@@ -117,9 +183,13 @@ class RecordFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        countdownRunnable?.let { countdownHandler.removeCallbacks(it) }
+        countdownRunnable = null
+        SeasonClock.removeSeasonChangeListener(onSeasonAdvanced)
         leaderboardListener?.remove()
         leaderboardListener = null
         val hostAct = activity
+        MainActivityChromeBlocker.release(hostAct)
         _binding = null
         super.onDestroyView()
         hostAct?.window?.decorView?.post {

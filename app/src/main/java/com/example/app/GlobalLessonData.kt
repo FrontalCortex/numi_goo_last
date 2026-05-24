@@ -31,6 +31,8 @@ object GlobalLessonData {
 
     private val firestore by lazy { FirebaseFirestore.getInstance() }
     private const val FIRESTORE_LESSON_PROGRESS = "lessonProgress"
+    /** [createLessonItems] ile tanımlı tüm part id'leri; seed ve çapraz-part okumalar için. */
+    private val SEED_PART_IDS = intArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
     private const val AUTH_WAIT_TIMEOUT_MS = 1500L
     private const val DEBUG_LOG_PATH = "debug-33b519.log"
     private var lessonRealtimeListener: ListenerRegistration? = null
@@ -221,7 +223,28 @@ object GlobalLessonData {
             }
     }
 
-    /** Varsayılan ders listesini oluşturur (tutorial1 bayrağı varsa 1. dersi günceller) ve kaydeder. */
+    /**
+     * Varsayılan ders listesi: [createLessonItems] + [AppPrefs] `tutorial1_login_flow_pending` ile part 1 index 1 düzeltmesi.
+     * Bellekteki [_lessonItems] / [globalPartId] değiştirilmez; seed ve [applyDefaultLessonItems] ortak kaynak.
+     */
+    private fun buildDefaultLessonItemsForPart(context: Context, partId: Int): List<LessonItem> {
+        val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val tutorial1Pending = prefs.getBoolean("tutorial1_login_flow_pending", false)
+        val items = createLessonItems(partId).toMutableList()
+        if (partId == 1 && tutorial1Pending && items.size > 1) {
+            val original = items[1]
+            val updated = original.copy(
+                tutorialIsFinish = true,
+                currentStep = 2,
+                startStepNumber = 2,
+                stepCompletionStatus = listOf(true, false, false),
+            )
+            items[1] = updated
+        }
+        return items
+    }
+
+    /** Varsayılan ders listesini oluşturur ve [_lessonItems] + tercihe göre Firestore'a kaydeder. */
     private fun applyDefaultLessonItems(context: Context, partId: Int, saveRemote: Boolean = true) {
         Log.d(LOG_TAG, "applyDefaultLessonItems partId=$partId saveRemote=$saveRemote (overwrites current _lessonItems with defaults)")
         // #region agent log
@@ -236,23 +259,60 @@ object GlobalLessonData {
             ),
         )
         // #endregion
-        val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val tutorial1Pending = prefs.getBoolean("tutorial1_login_flow_pending", false)
-        val items = createLessonItems(partId).toMutableList()
-
-        if (partId == 1 && tutorial1Pending && items.size > 1) {
-            val original = items[1]
-            val updated = original.copy(
-                tutorialIsFinish = true,
-                currentStep = 2,
-                startStepNumber = 2,
-                stepCompletionStatus = listOf(true, false, false)
-            )
-            items[1] = updated
-        }
-
-        _lessonItems = items
+        _lessonItems = buildDefaultLessonItemsForPart(context, partId).toMutableList()
         saveToPreferences(context, saveRemote = saveRemote)
+    }
+
+    /**
+     * Girişli kullanıcı için tüm seed part'larında `lessonProgress/{partId}` dokümanında `items` yoksa veya boşsa
+     * varsayılan JSON yazar. Mevcut dolu `items` alanına dokunmaz. [_lessonItems] / [globalPartId] değiştirilmez.
+     */
+    fun seedAllLessonProgressIfMissing(context: Context) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            Log.d(LOG_TAG, "seedAllLessonProgressIfMissing skip (no uid)")
+            return
+        }
+        val appCtx = context.applicationContext
+        val gson = Gson()
+        var idx = 0
+        fun processNext() {
+            if (idx >= SEED_PART_IDS.size) {
+                Log.d(LOG_TAG, "seedAllLessonProgressIfMissing completed for uid=${uid.take(8)}...")
+                return
+            }
+            val partId = SEED_PART_IDS[idx]
+            idx++
+            val items = buildDefaultLessonItemsForPart(appCtx, partId)
+            if (items.isEmpty()) {
+                Log.d(LOG_TAG, "seedAllLessonProgressIfMissing skip empty template partId=$partId")
+                processNext()
+                return
+            }
+            val ref = firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+                .document(partId.toString())
+            ref.get()
+                .addOnSuccessListener { snap ->
+                    val existing = snap.getString("items")
+                    if (snap.exists() && !existing.isNullOrBlank()) {
+                        processNext()
+                        return@addOnSuccessListener
+                    }
+                    val json = gson.toJson(items)
+                    Log.d(LOG_TAG, "seedAllLessonProgressIfMissing writing partId=$partId items=${items.size}")
+                    ref.set(mapOf("items" to json))
+                        .addOnSuccessListener { processNext() }
+                        .addOnFailureListener { e ->
+                            Log.e(LOG_TAG, "seedAllLessonProgressIfMissing write failed partId=$partId", e)
+                            processNext()
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.e(LOG_TAG, "seedAllLessonProgressIfMissing read failed partId=$partId", e)
+                    processNext()
+                }
+        }
+        processNext()
     }
 
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
@@ -261,14 +321,19 @@ object GlobalLessonData {
             _lessonItems[position] = newItem
             Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
             saveToPreferences(context)
-            // Kupa dersi tamamlandığında liderlik senkronu: CupFragment lessonItem.record'u
-            // GlobalLessonData içindeki nesneye yerinde yazar; previous.record ile newItem.record
-            // aynı kalır ve "değişti" kontrolü yanlışlıkla yazmayı engeller. Bu yüzden
-            // yalnızca tamamlanmış (stepIsFinish) kupa satırında, rekor doluysa gönderiyoruz.
+            // Kupa dersi tamamlandığında liderlik senkronu: [record] tüm zamanların en iyisi (UI);
+            // Firestore tahtasına yalnızca [leaderboardSeasonBest] (mevcut sezon) yazılır.
             if (newItem.type == LessonItem.TYPE_CHEST && newItem.stepIsFinish) {
-                val newRecord = newItem.record
-                if (newRecord != null && newRecord > 0) {
-                    LessonLeaderboardRepository.submitBestIfNeeded(globalPartId, position, newRecord)
+                val seasonNow = SeasonClock.currentSeason()
+                val lbScore = newItem.leaderboardSubmitScore(seasonNow)
+                if (lbScore != null && lbScore > 0) {
+                    LessonLeaderboardRepository.submitBestIfNeeded(
+                        globalPartId,
+                        position,
+                        lbScore,
+                        season = seasonNow,
+                        titleUnit = newItem.titleUnit?.trim()?.take(127),
+                    )
                 }
             }
         }
@@ -280,6 +345,124 @@ object GlobalLessonData {
         } else {
             null
         }
+    }
+
+    private fun templateFirstChestLessonIndexOrNull(partId: Int): Int? {
+        val idx = createLessonItems(partId).indexOfFirst { it.type == LessonItem.TYPE_CHEST }
+        return idx.takeIf { it >= 0 }
+    }
+
+    /**
+     * Kullanıcının Firestore `lessonProgress/{partId}` listesindeki ilk [LessonItem.TYPE_CHEST] satırının 0-tabanlı indeksi.
+     * [LessonLeaderboardRepository.submitBestIfNeeded] bu indeksle aynı `lessonIndex`'i kullanır; şablon listesi buluttan
+     * farklıysa burada çözülmek zorunda.
+     */
+    fun resolveFirstChestLessonIndexForUser(uid: String, partId: Int, onResult: (Int?) -> Unit) {
+        if (uid.isBlank()) {
+            onResult(templateFirstChestLessonIndexOrNull(partId))
+            return
+        }
+        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .get()
+            .addOnSuccessListener { doc ->
+                val cloudJson = doc.getString("items")
+                val (source, items) = when {
+                    cloudJson.isNullOrBlank() ->
+                        "template(empty_cloud)" to createLessonItems(partId)
+                    else -> try {
+                        "cloud_json" to parseLessonItemsWithMigration(cloudJson)
+                    } catch (e: Exception) {
+                        Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser parse error partId=$partId", e)
+                        "template(parse_error)" to createLessonItems(partId)
+                    }
+                }
+                val templateChest = templateFirstChestLessonIndexOrNull(partId)
+                var idx = items.indexOfFirst { it.type == LessonItem.TYPE_CHEST }
+                val usedFallback = idx < 0
+                if (usedFallback) {
+                    idx = templateChest ?: -1
+                }
+                val typePreview = items.take(8).mapIndexed { i, it -> "$i:t${it.type}" }.joinToString(",")
+                Log.d(
+                    LOG_TAG,
+                    "resolveFirstChest uid=${uid.take(8)} part=$partId docExists=${doc.exists()} source=$source " +
+                        "itemCount=${items.size} templateChestIdx=$templateChest resolvedChestIdx=${idx.takeIf { it >= 0 }} " +
+                        "fallback=$usedFallback types[$typePreview]",
+                )
+                onResult(idx.takeIf { it >= 0 })
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser load failed partId=$partId", e)
+                onResult(templateFirstChestLessonIndexOrNull(partId))
+            }
+    }
+
+    /**
+     * lessonProgress'ta ilk Chest tamamlanmış ve mevcut sezon için [LessonItem.leaderboardSubmitScore] doluysa
+     * liderlik girişini yazar (tüm zamanlar rekoru [record] ile karıştırılmaz).
+     * Oyun içinde hiç [submitBestIfNeeded] tetiklenmediyse (veya veri silindiyse) profil senkronu sıralamayı düzeltir.
+     * Yalnızca [uid] == oturum uid iken çalışır.
+     */
+    fun backfillLeaderboardFromStoredChest(uid: String, partId: Int, chestIndex: Int, onDone: () -> Unit) {
+        if (uid.isBlank()) {
+            onDone()
+            return
+        }
+        val sessionUid = FirebaseAuth.getInstance().currentUser?.uid
+        if (sessionUid != uid) {
+            Log.d(LOG_TAG, "backfillLeaderboard: skip session uid != target uid")
+            onDone()
+            return
+        }
+        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+            .document(partId.toString())
+            .get()
+            .addOnSuccessListener { doc ->
+                val json = doc.getString("items")
+                if (json.isNullOrBlank()) {
+                    Log.d(LOG_TAG, "backfillLeaderboard: no items json part=$partId")
+                    onDone()
+                    return@addOnSuccessListener
+                }
+                try {
+                    val items = parseLessonItemsWithMigration(json)
+                    val item = items.getOrNull(chestIndex)
+                    if (item == null || item.type != LessonItem.TYPE_CHEST) {
+                        Log.d(LOG_TAG, "backfillLeaderboard: no chest at idx=$chestIndex part=$partId")
+                        onDone()
+                        return@addOnSuccessListener
+                    }
+                    if (!item.stepIsFinish) {
+                        Log.d(LOG_TAG, "backfillLeaderboard: chest not finished idx=$chestIndex")
+                        onDone()
+                        return@addOnSuccessListener
+                    }
+                    val seasonNow = SeasonClock.currentSeason()
+                    val r = item.leaderboardSubmitScore(seasonNow)
+                    if (r == null || r <= 0) {
+                        Log.d(LOG_TAG, "backfillLeaderboard: no seasonal leaderboard score idx=$chestIndex part=$partId")
+                        onDone()
+                        return@addOnSuccessListener
+                    }
+                    Log.d(LOG_TAG, "backfillLeaderboard: submitBest part=$partId idx=$chestIndex seasonalScore=$r")
+                    LessonLeaderboardRepository.submitBestIfNeeded(
+                        partId,
+                        chestIndex,
+                        r,
+                        season = seasonNow,
+                        titleUnit = item.titleUnit?.trim()?.take(127),
+                        onComplete = onDone,
+                    )
+                } catch (e: Exception) {
+                    Log.e(LOG_TAG, "backfillLeaderboard parse/error part=$partId", e)
+                    onDone()
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(LOG_TAG, "backfillLeaderboard load failed part=$partId", e)
+                onDone()
+            }
     }
 
     /**
@@ -309,6 +492,9 @@ object GlobalLessonData {
                 }
                 try {
                     val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
+                        backfillChestTitleUnitFromLocal(partId, cloudItems)
+                    }
                     onResult(cloudItems.getOrNull(index))
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "getLessonItemForPart cloud parse error", e)
@@ -357,6 +543,15 @@ object GlobalLessonData {
         collectAt(0)
     }
 
+    /** Part lesson listesi (Firestore veya yerel şablon); günlük soru havuzu vb. için. */
+    fun loadLessonItemsForPart(
+        context: Context,
+        partId: Int,
+        onResult: (List<LessonItem>) -> Unit,
+    ) {
+        getLessonItemsForPart(context, partId, onResult)
+    }
+
     private fun getLessonItemsForPart(
         context: Context,
         partId: Int,
@@ -379,6 +574,9 @@ object GlobalLessonData {
                 }
                 try {
                     val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
+                        backfillChestTitleUnitFromLocal(partId, cloudItems)
+                    }
                     onResult(cloudItems)
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "getLessonItemsForPart cloud parse error", e)
@@ -409,10 +607,9 @@ object GlobalLessonData {
                     title = "Sayıları abaküste tanıma",
                     offset = -30,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 2,
                     currentStep = 1,
-                    lessonOperationsMap = 2,
-                    finishStepNumber = 3,
+                    finishStepNumber = 2,
                     tutorialNumber = 1,
                     startStepNumber = 1,
                     mapFragmentIndex = 1,
@@ -420,13 +617,12 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "İki basamaklı sayılar",
+                    title = "2 basamaklı sayılar",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 2,
                     currentStep = 1,
-                    lessonOperationsMap = 1,
-                    finishStepNumber = 1002,
+                    finishStepNumber = 1001,
                     tutorialNumber = 100,
                     startStepNumber = 1000,
                     mapFragmentIndex = 2,
@@ -434,12 +630,11 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Üç basamaklı sayılar",
+                    title = "3-4-5 basamaklı sayılar",
                     offset = 30,
                     isCompleted = true,
                     stepCount = 2,
                     currentStep = 1,
-                    lessonOperationsMap = 1,
                     finishStepNumber = 1004,
                     tutorialNumber = 101,
                     startStepNumber = 1003,
@@ -448,7 +643,8 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "Sayıları Abaküste Tanıma",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -458,9 +654,10 @@ object GlobalLessonData {
                     startStepNumber = 1005,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupPoint1 = 1980,
-                    cupPoint2 = 1400,
-                    worstCupTime = 240
+                    cupPoint1 = 1600,
+                    cupPoint2 = 1300,
+                    worstCupTime = 150 //1 yıldız alması için min kaç saniyede bitirmeli.
+                    //1 yıldız alma sınırı 2.30 dakikadır.
 
                     //başarı oranı çarpan olarak eklenmeyecek sadece süre.
                     //Bütün soruları doğru cevaplarsa toplam puanı her zaman 500 olsun.
@@ -488,12 +685,12 @@ object GlobalLessonData {
                     title = "Kuralsız toplama - 1 basamaklı",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 2,
                     currentStep = 1,
                     tutorialNumber = 2,
                     startStepNumber = 4,
                     mapFragmentIndex = 6,
-                    finishStepNumber = 6,
+                    finishStepNumber = 5,
                     lessonHint = "İlk sayıyı yaz. Toplanacak sayı değerinde boncuk ekle.",
                     abacusGuideNumber = 1
                 ),LessonItem(
@@ -536,14 +733,15 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "Kuralsız Toplama",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
-                    finishStepNumber = 7,
-                    startStepNumber = 7,
+                    finishStepNumber = 1005, //finish ve start 7 olarak güncellenecek test için 1005
+                    startStepNumber = 1005,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupPoint1 = 1980,
@@ -606,17 +804,19 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "5'lik Toplama",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 15,
-                    startStepNumber = 19,
-                    finishStepNumber = 19,
-                    //cupTime1 = "2:00",
-                    //cupTime2 = "3:00"
+                    startStepNumber = 1005,
+                    finishStepNumber = 1005, //finish ve start 19 olarak güncellenecek şimdilik 1005
+                    cupPoint1 = 1980,
+                    cupPoint2 = 1400,
+                    worstCupTime = 240
 
                 ),
                 LessonItem(
@@ -679,7 +879,8 @@ object GlobalLessonData {
                     tutorialIsFinish = true
                 ),LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "10'luk Toplama 1-2-3-4-5",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -757,7 +958,8 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "10'luk Toplama 6-7-8-9",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -823,7 +1025,8 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "Boncuk Kuralı",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -922,18 +1125,20 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
+                    titleUnit = "Kuralsız Çıkarma",
                     offset = 60,
                     isCompleted = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
-                    finishStepNumber = 74,
-                    startStepNumber = 74,
+                    finishStepNumber = 1005,
+                    startStepNumber = 1005, //74 olarak güncellenecek
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    //cupTime1 = "1:30",
-                    //cupTime2 = "2:00"
+                    cupPoint1 = 1980,
+                    cupPoint2 = 1400,
+                    worstCupTime = 240
 
                 ),
                 LessonItem(
@@ -986,7 +1191,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1062,7 +1267,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1125,7 +1330,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1238,7 +1443,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1301,7 +1506,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1364,7 +1569,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1427,7 +1632,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1524,7 +1729,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1595,7 +1800,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1666,7 +1871,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1737,7 +1942,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1808,7 +2013,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1908,7 +2113,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -1979,7 +2184,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2050,7 +2255,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2121,7 +2326,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2220,7 +2425,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2291,7 +2496,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2362,7 +2567,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -2433,7 +2638,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Değerlendirme",
+                    title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -3085,6 +3290,25 @@ object GlobalLessonData {
         }
     }
 
+    /**
+     * Firestore'da bazı eski kullanıcı kayıtlarında chest satırları için `titleUnit` alanı eksik olabiliyor.
+     * Parça listesini hesaplamak için (badge piece senkronu) titleUnit değerini local template'ten geri doldur.
+     */
+    private fun backfillChestTitleUnitFromLocal(partId: Int, cloudItems: MutableList<LessonItem>) {
+        val localItems = createLessonItems(partId)
+        cloudItems.forEachIndexed { idx, item ->
+            if (item.type != LessonItem.TYPE_CHEST) return@forEachIndexed
+            val raw = item.titleUnit?.trim()
+            val isMissing = raw.isNullOrBlank() || raw.equals("null", ignoreCase = true)
+            if (!isMissing) return@forEachIndexed
+            val fallback = localItems.getOrNull(idx)
+            val fallbackRaw = fallback?.titleUnit?.trim()
+            if (!fallbackRaw.isNullOrBlank() && !fallbackRaw.equals("null", ignoreCase = true)) {
+                item.titleUnit = fallback.titleUnit
+            }
+        }
+    }
+
     private fun migrateLegacyRecordField(rawJson: String): String {
         val root = JsonParser.parseString(rawJson)
         if (!root.isJsonArray) return rawJson
@@ -3154,6 +3378,13 @@ object GlobalLessonData {
 
     /** Sadece şu anki kullanıcının ders verisini temizler (test / sıfırlama için) */
     fun clearCurrentUserLessonData(context: Context) {
-        // lesson verisi cloud-only akışta tutuluyor; local lesson cache kullanılmıyor.
+        val appCtx = context.applicationContext
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        appCtx.getSharedPreferences("${PREFS_PREFIX}guest", Context.MODE_PRIVATE).edit().clear().apply()
+        if (!uid.isNullOrBlank()) {
+            appCtx.getSharedPreferences("${PREFS_PREFIX}$uid", Context.MODE_PRIVATE).edit().clear().apply()
+        }
+        _lessonItems = mutableListOf()
+        Log.d(LOG_TAG, "clearCurrentUserLessonData uidPresent=${!uid.isNullOrBlank()} local cache cleared")
     }
 }

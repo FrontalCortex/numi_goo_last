@@ -4,51 +4,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/message_topbar"
+    android:background="@color/background_color"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     tools:context=".BadgeFragment">
 
-    <TextView
-        android:id="@+id/badgeTitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:paddingStart="20dp"
-        android:paddingTop="18dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="12dp"
-        android:text="Rozet"
-        android:textColor="@android:color/white"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/badgeModeTabs"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/badgeTitle"
-        app:tabGravity="start"
-        app:tabIndicatorColor="@android:color/white"
-        app:tabMode="scrollable"
-        app:tabSelectedTextColor="@android:color/white"
-        app:tabTextColor="#CCFFFFFF" />
+    <ImageButton
+        android:id="@+id/quitButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_margin="10dp"
+        android:elevation="24dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/badgeAnimContainer"
         android:layout_width="560dp"
         android:layout_height="560dp"
+        android:layout_marginBottom="150dp"
         android:clipChildren="false"
         android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/badgeModeTabs">
+        app:layout_constraintTop_toTopOf="parent">
 
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/dailyTasksCompliteBadge"
@@ -74,31 +56,42 @@
             app:lottie_fileName="rocket_badge_anim2.json"
             app:lottie_loop="false" />
 
-        <FrameLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/badgeRewardSlot"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="56dp"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_marginBottom="20dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             app:layout_constraintBottom_toBottomOf="@id/dailyTasksCompliteBadge"
             app:layout_constraintEnd_toEndOf="@id/dailyTasksCompliteBadge"
             app:layout_constraintStart_toStartOf="@id/dailyTasksCompliteBadge">
 
+            <View
+                android:id="@+id/badgeRewardAnchor"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:visibility="invisible"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
             <com.example.app.BalloonPopBurstView
                 android:id="@+id/badgeRewardPopBurst"
                 android:layout_width="220dp"
                 android:layout_height="220dp"
-                android:layout_gravity="center"
                 android:clickable="false"
                 android:focusable="false"
-                android:visibility="invisible" />
+                android:visibility="invisible"
+                app:layout_constraintBottom_toBottomOf="@id/badgeRewardAnchor"
+                app:layout_constraintEnd_toEndOf="@id/badgeRewardAnchor"
+                app:layout_constraintStart_toStartOf="@id/badgeRewardAnchor"
+                app:layout_constraintTop_toTopOf="@id/badgeRewardAnchor" />
 
             <com.example.app.BadgeRewardTextView
                 android:id="@+id/badgeRewardAmount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
                 android:fontFamily="sans-serif-black"
                 android:letterSpacing="0.02"
                 android:text="50"
@@ -106,8 +99,223 @@
                 android:textSize="56sp"
                 android:textStyle="bold"
                 android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/badgeRewardAnchor"
+                app:layout_constraintEnd_toEndOf="@id/badgeRewardAnchor"
+                app:layout_constraintStart_toStartOf="@id/badgeRewardAnchor"
+                app:layout_constraintTop_toTopOf="@id/badgeRewardAnchor"
                 tools:visibility="visible" />
-        </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
+            android:id="@+id/badgeRewardDetailText"
+            android:layout_width="350dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-40dp"
+            android:ellipsize="none"
+            android:gravity="center"
+            android:maxLines="4"
+            android:singleLine="false"
+            android:text="Daily detay metni"
+            android:textAlignment="center"
+            android:textColor="#E6FFFFFF"
+            android:textSize="20sp"
+            app:layout_constraintEnd_toEndOf="@id/badgeRewardSlot"
+            app:layout_constraintStart_toStartOf="@id/badgeRewardSlot"
+            app:layout_constraintTop_toBottomOf="@id/badgeRewardSlot"
+            tools:visibility="visible" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout
+        android:id="@+id/badgeLockedProgressContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="80dp"
+        android:layout_marginEnd="24dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <View
+            android:id="@+id/badgeLockedProgressTrack"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:background="@drawable/mission_progress_track"
+            android:contentDescription="@null" />
+
+        <View
+            android:id="@+id/badgeLockedProgressFill"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_gravity="start|center_vertical"
+            android:contentDescription="@null" />
+
+        <View
+            android:id="@+id/badgeLockedProgressShine"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/mission_progress_shine_height"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+            android:layout_marginTop="@dimen/mission_progress_shine_top"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/badgeLockedProgressText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:elevation="2dp"
+            android:gravity="center"
+            android:outlineProvider="none"
+            android:text="2/10"
+            android:textColor="@color/button_disabled"
+            android:textSize="18sp" />
+    </FrameLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/badgePiecePanel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/circleBackground_color"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@id/medalPieceNamesList"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:strokeWidth="0dp"
+        tools:visibility="gone">
+
+        <com.example.app.BadgePieceMaxHeightScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:overScrollMode="ifContentScrolls"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:scrollbars="vertical">
+
+            <LinearLayout
+                android:id="@+id/badgePieceInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/badgePieceHeaderMedal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvBadgePieceHeaderUnitMedal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ünite"
+                        android:textColor="#E6FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:id="@+id/vBadgePieceHeaderMedalIconSpacer"
+                        android:layout_width="44dp"
+                        android:layout_height="0dp"
+                        android:layout_marginStart="14dp" />
+
+                    <TextView
+                        android:id="@+id/tvBadgePieceHeaderSeasonMedal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:text="Sezon"
+                        android:textColor="#93A5B3"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/badgePieceHeaderCup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvBadgePieceHeaderUnitCup"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ünite"
+                        android:textColor="#E6FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:id="@+id/vBadgePieceHeaderCupIconSpacer"
+                        android:layout_width="44dp"
+                        android:layout_height="0dp"
+                        android:layout_marginStart="14dp" />
+
+                    <TextView
+                        android:id="@+id/tvBadgePieceHeaderSeasonCup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:text="Sezon"
+                        android:textColor="#93A5B3"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/badgePieceRows"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </com.example.app.BadgePieceMaxHeightScrollView>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/medalPieceNamesList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="100dp"
+        android:layout_marginStart="20dp"
+        android:background="@drawable/bg_medal_piece_names_list"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:elevation="0dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
+        android:textColor="#B8D4FF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="3x"
+        tools:visibility="visible" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -38,7 +38,6 @@
             android:src="@drawable/diamond"
             android:layout_width="@dimen/main_diamond_width"
             android:layout_height="@dimen/main_diamond_height"
-            android:layout_marginStart="@dimen/main_currency_margin_start"
             android:contentDescription="Coin" />
 
         <TextView
@@ -71,15 +70,38 @@
             android:textColor="#FFD600"
             android:textStyle="bold"
             android:textSize="@dimen/main_energy_text_size"/>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+        <ImageView
+            android:id="@+id/keyIcon"
+            android:src="@drawable/key"
+            android:layout_width="@dimen/main_energy_icon_size"
+            android:layout_height="@dimen/main_energy_icon_size"
+            android:contentDescription="Energy" />
+
+        <TextView
+            android:id="@+id/keyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:layout_marginStart="3dp"
+            android:textColor="#FFD600"
+            android:textStyle="bold"
+            android:textSize="@dimen/main_energy_text_size"/>
 
 
     </LinearLayout>
 
-    <!-- Abacus Fragment Container -->
+    <!-- Ders / Record overlay — harita üstünde; varsayılan GONE (alt barı kilitlemesin) -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/abacusFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -89,8 +111,27 @@
         android:id="@+id/resultFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:elevation="10dp"/>
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/badgeFragmentContainter"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:elevation="10dp"/>
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/menuFragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationID"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:elevation="10dp"/>
@@ -226,6 +267,18 @@
         android:visibility="gone"
         android:elevation="25dp"
         android:background="#00FFFFFF"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Sezon sonu liderlik ödülü: Splash sonrası MainActivity'de zorunlu topla paneli -->
+    <FrameLayout
+        android:id="@+id/seasonLeaderboardRewardGateContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="30dp"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

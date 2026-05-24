@@ -28,14 +28,21 @@ class DailyQuestionRewardFragment : Fragment() {
         iconRes = R.drawable.open_chest,
         label = "0 altın",
     )
-    private var goldAmount: Int = 0
     private var goldUpdateListener: GoldUpdateListener? = null
+    private var badgePayloadQueue: ArrayList<String> = arrayListOf()
+    private var dailyQuestionPeriodKey: String = ""
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is GoldUpdateListener) {
             goldUpdateListener = context
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        badgePayloadQueue = arguments?.getStringArrayList(ARG_BADGE_PAYLOAD_QUEUE) ?: arrayListOf()
+        dailyQuestionPeriodKey = arguments?.getString(ARG_PERIOD_KEY).orEmpty()
     }
 
     override fun onCreateView(
@@ -52,9 +59,8 @@ class DailyQuestionRewardFragment : Fragment() {
         MainActivityChromeBlocker.acquire(requireActivity())
         selectedVideoName = ChestCrystalPolicy.resolveVideoName()
         rewardOutcome = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
-        goldAmount = if (rewardOutcome.type == ChestRewardType.GOLD) rewardOutcome.amount else 0
-        applyRewardUiState(rewardOutcome)
         prepareHiddenRewardUi()
+        applyRewardUiState(rewardOutcome)
         setupClaimRewardButton()
         showCrystalBreakAtStart()
     }
@@ -65,15 +71,43 @@ class DailyQuestionRewardFragment : Fragment() {
             claimRewardInProgress = true
             binding.claimRewardButton.isEnabled = false
             try {
-                goldUpdateListener?.onGoldUpdated(goldAmount)
-                parentFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_right,
-                    )
-                    .remove(this@DailyQuestionRewardFragment)
-                    .commitNowAllowingStateLoss()
-                parentFragmentManager.popBackStack()
+                ChestRewardClaimHelper.applyReward(goldUpdateListener, rewardOutcome)
+                if (dailyQuestionPeriodKey.isNotEmpty()) {
+                    DailyQuestionRepository.markRewardClaimed(
+                        requireContext(),
+                        dailyQuestionPeriodKey,
+                    ) { _ -> }
+                }
+                val openBadgeAfter = badgePayloadQueue.isNotEmpty()
+                val queueCopy = ArrayList(badgePayloadQueue)
+                val activityFm = requireActivity().supportFragmentManager
+                val main = activity as? MainActivity
+                if (main != null) {
+                    main.finishOverlayReturnToTasks("dailyReward.claim")
+                } else {
+                    parentFragmentManager.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.slide_out_right,
+                        )
+                        .remove(this@DailyQuestionRewardFragment)
+                        .commitNowAllowingStateLoss()
+                    parentFragmentManager.popBackStack()
+                }
+                if (openBadgeAfter) {
+                    activityFm.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.slide_out_left,
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_right,
+                        )
+                        .replace(
+                            R.id.badgeFragmentContainter,
+                            BadgeFragment.newLevelUpSequenceInstance(queueCopy, 0),
+                        )
+                        .commit()
+                }
             } catch (e: IllegalStateException) {
                 Log.e("DailyQuestionReward", "Odul akisinda hata", e)
                 claimRewardInProgress = false
@@ -85,7 +119,6 @@ class DailyQuestionRewardFragment : Fragment() {
     }
 
     private fun prepareHiddenRewardUi() {
-        binding.chestImage.setImageResource(R.drawable.open_chest)
         binding.chestImage.visibility = View.INVISIBLE
         binding.goldText.visibility = View.GONE
         binding.claimRewardButton.visibility = View.GONE
@@ -110,6 +143,7 @@ class DailyQuestionRewardFragment : Fragment() {
     private fun revealChestRewardUi() {
         if (isChestRevealReady) return
         isChestRevealReady = true
+        applyRewardUiState(rewardOutcome)
         binding.chestImage.visibility = View.VISIBLE
         binding.goldText.visibility = View.VISIBLE
         binding.claimRewardButton.visibility = View.VISIBLE
@@ -125,5 +159,22 @@ class DailyQuestionRewardFragment : Fragment() {
         isVideoFlowOpen = false
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val ARG_BADGE_PAYLOAD_QUEUE = "badge_payload_queue"
+        private const val ARG_PERIOD_KEY = "daily_period_key"
+
+        fun newInstance(
+            badgePayloadQueue: List<String> = emptyList(),
+            periodKey: String,
+        ): DailyQuestionRewardFragment {
+            return DailyQuestionRewardFragment().apply {
+                arguments = Bundle().apply {
+                    putStringArrayList(ARG_BADGE_PAYLOAD_QUEUE, ArrayList(badgePayloadQueue))
+                    putString(ARG_PERIOD_KEY, periodKey)
+                }
+            }
+        }
     }
 }

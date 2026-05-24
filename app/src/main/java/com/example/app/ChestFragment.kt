@@ -10,13 +10,13 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
 import com.example.app.databinding.FragmentChestBinding
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class ChestFragment : Fragment() {
     private var isVideoFlowOpen = false
@@ -32,7 +32,6 @@ class ChestFragment : Fragment() {
         iconRes = R.drawable.open_chest,
         label = "0 altın",
     )
-    private var goldAmount: Int = 0
     private var recordScore: Int = 0
     private var lessonSuccessRate: Float = 0f
     private var pendingChestRecordBreakMission: Boolean = false
@@ -49,6 +48,28 @@ class ChestFragment : Fragment() {
         return "${item.type}_${stableId}_${part}_${item.title}_$fallbackIndex"
     }
 
+    /** [abacusFragmentContainer] üzerinde harita ([coordinator_layout]) dokunuşunu geçirmemek için. */
+    private var chestHostView: View? = null
+    private var chestHostSavedElevationPx = Float.NaN
+
+    private fun elevateChestOverlayAboveMap() {
+        val host = binding.root.parent as? View ?: return
+        chestHostView = host
+        val base = ViewCompat.getElevation(host).let { if (it.isNaN() || it < 0f) 0f else it }
+        chestHostSavedElevationPx = base
+        val bumpPx = 16f * resources.displayMetrics.density
+        ViewCompat.setElevation(host, base + bumpPx)
+    }
+
+    private fun restoreChestOverlayElevation() {
+        val h = chestHostView ?: return
+        if (!chestHostSavedElevationPx.isNaN()) {
+            ViewCompat.setElevation(h, chestHostSavedElevationPx)
+        }
+        chestHostView = null
+        chestHostSavedElevationPx = Float.NaN
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
@@ -62,7 +83,7 @@ class ChestFragment : Fragment() {
                 )
                 .remove(this@ChestFragment)
                 .commit()
-            goldUpdateListener?.onGoldUpdated(goldAmount)
+            ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
         }
     }
 
@@ -93,11 +114,11 @@ class ChestFragment : Fragment() {
         changeCupIcon()
         selectedVideoName = ChestCrystalPolicy.resolveVideoName()
         currentReward = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
-        goldAmount = if (currentReward.type == ChestRewardType.GOLD) currentReward.amount else 0
-        applyRewardUiState(currentReward)
         prepareHiddenRewardUi()
+        applyRewardUiState(currentReward)
         setupClaimRewardButton()
         showCrystalBreakAtStart()
+        binding.root.post { elevateChestOverlayAboveMap() }
     }
 
 
@@ -106,7 +127,7 @@ class ChestFragment : Fragment() {
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
             if (GlobalValues.currentTutorialNumber == 1) {
-                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+                FirstTutorialShownStore.markShown(requireContext(), "ChestFragment.claim")
             }
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 if (claimRewardInProgress) return@setOnClickListener
@@ -136,39 +157,81 @@ class ChestFragment : Fragment() {
                     MissionsProgressStore.recordChestStarGainProgress(requireContext(), pendingChestStarGainAmount)
                     pendingChestStarGainAmount = 0
                 }
-                updateMapProgress()
+                // updateMapProgress() bu tıklamada stepIsFinish=true yapar; dart artışı için önceki durumu oku.
+                val lessonBeforeClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+                val incrementRocketDailyLessons = updateMapProgress()
                 val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
-
-                val fm = parentFragmentManager
-                // ChestFragment bazen resultFragmentContainer'da (LessonResult), bazen abacusFragmentContainer'da (BlindingLesson).
-                // Görev ekranı yanlış container'a konursa altta kalır; her zaman sandık ile aynı host'ta replace et.
-                val hostContainerId = (requireView().parent as View).id
-                if (hostContainerId == View.NO_ID) {
-                    throw IllegalStateException("ChestFragment host container id yok")
+                val isPerfectLesson = lessonSuccessRate >= 100f
+                val shouldIncrementDartProgress = when (val item = lessonBeforeClaim) {
+                    null -> false
+                    else ->
+                        item.type == LessonItem.TYPE_LESSON &&
+                            !item.stepIsFinish &&
+                            isPerfectLesson
                 }
-                if (MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)) {
-                    fm.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_left,
-                        )
-                        .replace(
-                            hostContainerId,
-                            MissionChestRewardFragment.newInstance(beforeSnap, afterSnap),
-                        )
-                        .commitNowAllowingStateLoss()
+                val shouldIncrementKarate = when (val item = lessonBeforeClaim) {
+                    null -> false
+                    else -> ChestTypeProgressHelper.shouldIncrementKarateForFirstThreeStars(item, recordScore)
+                }
+                val completedMissionCount = countCompletedMissions(beforeSnap, afterSnap)
+                val proceedWithResult: (List<BadgeLevelUpPayload>) -> Unit = { levelUpPayloads ->
+                    val fm = parentFragmentManager
+                    val hostContainerId = (requireView().parent as View).id
+                    if (hostContainerId == View.NO_ID) {
+                        Log.e("ChestFragment", "ChestFragment host container id yok")
+                        claimRewardInProgress = false
+                        if (isAdded && _binding != null) {
+                            binding.claimRewardButton.isEnabled = true
+                        }
+                    } else {
+                        val hasMissionProgress = MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)
+                        if (hasMissionProgress) {
+                            fm.beginTransaction()
+                                .setCustomAnimations(
+                                    R.anim.slide_in_left,
+                                    R.anim.slide_out_left,
+                                )
+                                .replace(
+                                    hostContainerId,
+                                    MissionChestRewardFragment.newInstance(
+                                        before = beforeSnap,
+                                        after = afterSnap,
+                                        openBadgeAfterContinue = levelUpPayloads.isNotEmpty(),
+                                        badgePayloadQueue = levelUpPayloads.map { BadgeProgressFirestore.payloadToQueueItem(it) },
+                                    ),
+                                )
+                                .commitNowAllowingStateLoss()
+                        } else {
+                            val main = activity as? MainActivity
+                            main?.prepareMapReturnAfterLessonClaim()
+                            val activityFm = requireActivity().supportFragmentManager
+                            fm.beginTransaction()
+                                .setCustomAnimations(
+                                    R.anim.slide_in_left,
+                                    R.anim.slide_out_left,
+                                )
+                                .remove(this@ChestFragment)
+                                .commitNowAllowingStateLoss()
+                            main?.finalizeMapReturnAfterLessonClaim("ChestFragment.claimAfterRemove")
+                            if (levelUpPayloads.isNotEmpty()) {
+                                BadgeProgressFirestore.openBadgeCelebration(activityFm, levelUpPayloads)
+                            }
+                        }
+                        ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
+                    }
+                }
+                if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons) {
+                    BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
+                        incrementDart = shouldIncrementDartProgress,
+                        incrementBowlingBy = completedMissionCount,
+                        incrementKarate = shouldIncrementKarate,
+                        incrementRocketDailyLessons = incrementRocketDailyLessons,
+                        incrementGolf = false,
+                        onDone = proceedWithResult,
+                    )
                 } else {
-                    GlobalValues.canConsumePendingLessonProgressAnimations = true
-                    LessonManager.refreshLessonsFromGlobalData()
-                    fm.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_left,
-                        )
-                        .remove(this@ChestFragment)
-                        .commitNowAllowingStateLoss()
+                    proceedWithResult(emptyList())
                 }
-                goldUpdateListener?.onGoldUpdated(goldAmount)
             } catch (e: IllegalStateException) {
                 Log.e("ChestFragment", "Ödül fragment işlemi başarısız", e)
                 claimRewardInProgress = false
@@ -179,8 +242,25 @@ class ChestFragment : Fragment() {
         }
     }
 
+    private fun countCompletedMissions(
+        before: MissionsProgressStore.Snapshot,
+        after: MissionsProgressStore.Snapshot,
+    ): Int {
+        val ctx = requireContext()
+        val dailyCompleted = MissionsProgressStore.selectedMissionsForDaily(ctx).count { mission ->
+            val beforeCount = MissionsProgressStore.missionProgress(before, MissionWindow.DAILY, mission)
+            val afterCount = MissionsProgressStore.missionProgress(after, MissionWindow.DAILY, mission)
+            beforeCount < mission.target && afterCount >= mission.target
+        }
+        val weeklyCompleted = MissionsProgressStore.selectedMissionsForWeekly(ctx).count { mission ->
+            val beforeCount = MissionsProgressStore.missionProgress(before, MissionWindow.WEEKLY, mission)
+            val afterCount = MissionsProgressStore.missionProgress(after, MissionWindow.WEEKLY, mission)
+            beforeCount < mission.target && afterCount >= mission.target
+        }
+        return dailyCompleted + weeklyCompleted
+    }
+
     private fun prepareHiddenRewardUi() {
-        binding.chestImage.setImageResource(R.drawable.open_chest)
         binding.chestImage.visibility = View.INVISIBLE
         binding.goldText.visibility = View.GONE
         binding.claimRewardButton.visibility = View.GONE
@@ -205,6 +285,7 @@ class ChestFragment : Fragment() {
     private fun revealChestRewardUi() {
         if (isChestRevealReady) return
         isChestRevealReady = true
+        applyRewardUiState(currentReward)
         binding.chestImage.visibility = View.VISIBLE
         binding.goldText.visibility = View.VISIBLE
         binding.claimRewardButton.visibility = View.VISIBLE
@@ -244,7 +325,11 @@ class ChestFragment : Fragment() {
         else -> 0
     }
 
-    private fun updateMapProgress() {
+    /**
+     * @return `userRocketDailyLessons` (+1) için: [MissionsProgressStore.recordStepIncrementProgress] ile aynı bayrak
+     * (`shouldIncrementStepCountMission` — günlük/haftalık STEP_INCREMENT görevleri). Firestore alanı görev prefs’ten bağımsızdır.
+     */
+    private fun updateMapProgress(): Boolean {
         val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
         val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
         var shouldIncrementStepFinishMission = false
@@ -288,15 +373,21 @@ class ChestFragment : Fragment() {
 
             if(item.raceBusyLevel == null){
                 if(item.stepCount == item.currentStep){
-                    var updatedItem = item.copy(
-                        stepCompletionStatus = newStepCompletionStatus,
-                        stepIsFinish = true
-                    )
-                    if(lessonItem.type==LessonItem.TYPE_CHEST){
-                         updatedItem = item.copy(
+                    val baseForChest = if (item.type == LessonItem.TYPE_CHEST) {
+                        LessonItem.mergeChestRun(item, recordScore, SeasonClock.currentSeason())
+                    } else {
+                        item
+                    }
+                    val updatedItem = if (baseForChest.type == LessonItem.TYPE_CHEST) {
+                        baseForChest.copy(
                             stepCompletionStatus = newStepCompletionStatus,
                             stepIsFinish = true,
-                            stepCupIcon = icon
+                            stepCupIcon = icon,
+                        )
+                    } else {
+                        baseForChest.copy(
+                            stepCompletionStatus = newStepCompletionStatus,
+                            stepIsFinish = true,
                         )
                     }
                     if (item.type == LessonItem.TYPE_LESSON && !item.stepIsFinish && updatedItem.stepIsFinish) {
@@ -363,6 +454,7 @@ class ChestFragment : Fragment() {
         if (shouldIncrementPerfectStepCountMission) {
             MissionsProgressStore.recordPerfectStepIncrementProgress(requireContext())
         }
+        return shouldIncrementStepCountMission
     }
     
     private fun isRacePanelOpen(): Boolean {
@@ -384,6 +476,7 @@ class ChestFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        restoreChestOverlayElevation()
         MainActivityChromeBlocker.release(activity)
         isVideoFlowOpen = false
         _binding = null

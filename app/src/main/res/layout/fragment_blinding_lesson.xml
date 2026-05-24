@@ -518,6 +518,7 @@
         android:layout_marginBottom="15dp"
         android:fontFamily="@font/font_regular"
         android:text="Kontrol Et"
+        android:visibility="invisible"
         android:textAllCaps="false"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -669,7 +670,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/tutorial_result_item_margin"
             android:layout_marginTop="@dimen/tutorial_result_label_top_margin"
-            android:text="Talimata uygun işlemi yap"
+            android:text=""
             android:textColor="#FF4B4B"
             android:textSize="@dimen/tutorial_result_body_text_size"
             app:layout_constraintStart_toStartOf="parent"
@@ -692,7 +693,7 @@
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
             android:backgroundTint="#FF4B4B"
-            android:text="Tekrar Dene"
+            android:text="Devam Et"
             android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
             android:textAllCaps="false"
             android:textColor="#000000"
@@ -761,5 +762,29 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
+
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="15dp"
+        android:fontFamily="@font/font_regular"
+        android:text="Başla"
+        android:visibility="visible"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:elevation="0dp"
+        android:textColor="#000000"
+        android:backgroundTint="#8CC63F"
+        app:cornerRadius="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

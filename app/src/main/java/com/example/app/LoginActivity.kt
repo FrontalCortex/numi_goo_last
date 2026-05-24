@@ -231,6 +231,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
                 if (success) {
                     setResult(RESULT_OK)
+                    GlobalLessonData.seedAllLessonProgressIfMissing(applicationContext)
                     startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                     finish()
                 } else {

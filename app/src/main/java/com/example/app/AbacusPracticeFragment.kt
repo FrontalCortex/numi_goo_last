@@ -6,11 +6,14 @@ import android.view.MotionEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.animation.ObjectAnimator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import com.example.app.auth.AuthManager
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -26,6 +29,8 @@ class AbacusPracticeFragment : Fragment() {
     private var selectedOperator: String = "+"
     private var previousSoftInputMode: Int? = null
     private var abacusMetricsInitialized: Boolean = false
+    private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
+    private var askQuestionButtonShown: Boolean = false
     companion object {
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
     }
@@ -47,6 +52,9 @@ class AbacusPracticeFragment : Fragment() {
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
             binding.abacusLinear.visibility = if (imeVisible) View.GONE else View.VISIBLE
             binding.kontrolButton.visibility = if (imeVisible) View.GONE else View.VISIBLE
+            if (askQuestionButtonShown) {
+                binding.askQuestionButton.visibility = if (imeVisible) View.GONE else View.VISIBLE
+            }
             insets
         }
         binding.root.requestApplyInsets()
@@ -83,9 +91,20 @@ class AbacusPracticeFragment : Fragment() {
         binding.operator.text = selectedOperator
         binding.operator.setOnClickListener { showOperatorPicker() }
 
-        binding.quitButton.setOnClickListener {
-            parentFragmentManager.popBackStack()
-        }
+        binding.quitButton.setOnClickListener { dismissPracticeOverlay() }
+
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (parentFragmentManager.findFragmentByTag(OperatorPickerBottomSheetFragment.TAG) != null) {
+                        parentFragmentManager.popBackStack()
+                        return
+                    }
+                    dismissPracticeOverlay()
+                }
+            },
+        )
 
         parentFragmentManager.setFragmentResultListener(
             OperatorPickerBottomSheetFragment.REQUEST_KEY,
@@ -98,9 +117,37 @@ class AbacusPracticeFragment : Fragment() {
 
         binding.kontrolButton.setOnClickListener { onKontrolClicked() }
 
+        setupAskQuestionButton()
+
         binding.okayButton.setOnClickListener { hidePanelsAndReset(animated = true) }
         binding.continueButton.setOnClickListener { hidePanelsAndReset(animated = true) }
         binding.overlay.setOnClickListener { /* eat clicks while panel visible */ }
+    }
+
+    private fun setupAskQuestionButton() {
+        val authManager = AuthManager().also { it.initialize(requireContext()) }
+        AskQuestionButtonBinder.bind(
+            fragment = this,
+            button = binding.askQuestionButton,
+            isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER,
+            onAllowedClick = {
+                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) {
+                    binding.root
+                }
+            },
+            onVisibleChanged = { visible -> askQuestionButtonShown = visible },
+            onReadyForBounce = { startAskQuestionBounceAnimation() },
+        )
+    }
+
+    private fun startAskQuestionBounceAnimation() {
+        val btn = binding.askQuestionButton
+        val translateY = ObjectAnimator.ofFloat(btn, "translationY", 0f, -20f, 0f).apply {
+            duration = 1800
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+        askQuestionBounceAnimators = listOf(translateY)
     }
 
     private fun showOperatorPicker() {
@@ -191,6 +238,8 @@ class AbacusPracticeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        askQuestionBounceAnimators?.forEach { it.cancel() }
+        askQuestionBounceAnimators = null
         releaseLaunchTouchBlocker()
         parentFragmentManager.clearFragmentResultListener(OperatorPickerBottomSheetFragment.REQUEST_KEY)
         _binding = null
@@ -236,6 +285,25 @@ class AbacusPracticeFragment : Fragment() {
         val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
         content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { blocker ->
             content.removeView(blocker)
+        }
+    }
+
+    private fun dismissPracticeOverlay() {
+        val main = activity as? MainActivity
+        val base = main?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID)
+        if (main != null && base is TasksFragment) {
+            main.finishAbacusPracticeOverlayAnimated("AbacusPractice.dismiss")
+        } else if (parentFragmentManager.backStackEntryCount > 0) {
+            parentFragmentManager.popBackStack()
+        } else if (isAdded) {
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right,
+                )
+                .remove(this@AbacusPracticeFragment)
+                .commitAllowingStateLoss()
+            main?.reconcileAbacusOverlayWhenTasksIsBase("AbacusPractice.dismiss.remove")
         }
     }
 }

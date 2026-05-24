@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#101820"
-    android:gravity="center">
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <ImageView
         android:id="@+id/chestImage"
@@ -11,28 +14,41 @@
         android:layout_height="200dp"
         android:contentDescription="chest"
         android:src="@drawable/open_chest"
-        android:layout_gravity="center"
-        android:visibility="invisible"/>
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/goldText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
     <TextView
         android:id="@+id/goldText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:text="150 altın"
         android:textColor="#FFD600"
         android:textSize="35sp"
         android:textStyle="bold"
-        android:layout_gravity="center_horizontal|top"
-        android:layout_marginTop="100dp"
-        android:visibility="gone"/>
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/claimRewardButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chestImage" />
+
     <Button
         android:id="@+id/claimRewardButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="48dp"
+        android:backgroundTint="#FFD600"
         android:text="Ödülü Al"
         android:textColor="#101820"
-        android:backgroundTint="#FFD600"
         android:textSize="20sp"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="48dp"
-        android:visibility="gone"/>
-</FrameLayout>
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

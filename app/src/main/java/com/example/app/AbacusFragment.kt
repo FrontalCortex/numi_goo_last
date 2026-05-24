@@ -33,7 +33,6 @@ import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAbacusBinding
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.app.model.LessonItem
@@ -42,6 +41,10 @@ import com.example.app.abacus.AbacusBeadController
 import com.example.app.abacus.AbacusBeadMetrics
 
 class AbacusFragment : Fragment() {
+    /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
+    private val abacusDismissSlideMs = 300L
+    private var isAbacusClosing = false
+
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
 
@@ -155,6 +158,7 @@ class AbacusFragment : Fragment() {
         val bubbleAnimationColor: Int? = null, // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
         val bubbleAnimationMaxScale: Float = 1.4f, // Baloncuk animasyonunun maksimum büyüme değeri (varsayılan: 1.4f)
         val beadIds: List<String>? = null, // Hareket ettirilecek boncuk ID'leri (opsiyonel) - adım gösterildiğinde çalışır
+        val backBeadIds: List<String>? = null, // Geri gidildiğinde tetiklenecek boncuk ID'leri (null ise [beadIds] kullanılır)
         val finishBeadIds: List<String>? = null, // Adım biterken hareket ettirilecek boncuk ID'leri (opsiyonel)
         val requiredClickTarget: View? = null // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın (opsiyonel)
     )
@@ -234,9 +238,7 @@ class AbacusFragment : Fragment() {
                     return
                 }
 
-                // Rules paneli açık değilse, normal geri davranışı çalışsın
-                isEnabled = false
-                requireActivity().onBackPressedDispatcher.onBackPressed()
+                closeFragment()
             }
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
@@ -250,34 +252,19 @@ class AbacusFragment : Fragment() {
         // Guide panel'i kur (eğer varsa)
         setupGuidePanel()
 
-        // Sorunu gönder butonu: sadece öğrenci hesabında göster; ban/restrictedUntil varsa gösterme
+        setupAskQuestionButton()
+    }
+
+    private fun setupAskQuestionButton() {
         val authManager = AuthManager().also { it.initialize(requireContext()) }
-        val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
-        binding.askQuestionButton.setOnClickListener {
-            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
+        AskQuestionButtonBinder.bind(
+            fragment = this,
+            button = binding.askQuestionButton,
+            isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER,
+            onAllowedClick = {
                 (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
-            }
-        }
-        if (isTeacher) {
-            binding.askQuestionButton.visibility = View.GONE
-        } else {
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-            if (uid == null) {
-                binding.askQuestionButton.visibility = View.GONE
-            } else {
-                binding.askQuestionButton.visibility = View.GONE
-                FirebaseFirestore.getInstance().collection("users").document(uid).get()
-                    .addOnSuccessListener { userDoc ->
-                        val banned = userDoc.getBoolean("banned") == true
-                        val restrictedUntil = userDoc.getTimestamp("restrictedUntil")
-                        val now = Timestamp.now()
-                        val isRestricted = banned || (restrictedUntil != null && restrictedUntil.compareTo(now) > 0)
-                        binding.askQuestionButton.visibility = if (isRestricted) View.GONE else View.VISIBLE
-                    }
-                    .addOnFailureListener { binding.askQuestionButton.visibility = View.VISIBLE }
-            }
-        }
+            },
+        )
     }
     
     /**
@@ -293,7 +280,7 @@ class AbacusFragment : Fragment() {
         if (lessonItem.abacusGuideNumber == null) {
             // Eğer abacusGuideNumber null ise panel'i gizle ve hiçbir şey yapma
             panelContent.visibility = View.GONE
-            binding.btnBack.visibility = View.GONE
+            setGuideNavButtonsVisibility(View.GONE)
             return
         }
         
@@ -302,9 +289,9 @@ class AbacusFragment : Fragment() {
         if(lessonItem.abacusGuideNumber != null){
             if(lessonItem.currentStep == 1){
                 val guideContents = getGuideContentsForNumber(lessonItem.abacusGuideNumber!!)
-                // Başlangıçta panel ve btnBack gizli olsun
+                // Başlangıçta panel ve guide nav butonları gizli olsun
                 panelContent.visibility = View.GONE
-                binding.btnBack.visibility = View.GONE
+                setGuideNavButtonsVisibility(View.GONE)
                 if (guideContents.isNotEmpty()) {
                     setGuideContents(guideContents)
                     // 0.5 saniye beklenirken ekrana tıklanmasını engellemek için overlay'i hemen aktif et
@@ -325,7 +312,7 @@ class AbacusFragment : Fragment() {
             }
             else {
                 panelContent.visibility = View.GONE
-                binding.btnBack.visibility = View.GONE
+                setGuideNavButtonsVisibility(View.GONE)
                 Log.d("oyuncu","work")
             }
         }
@@ -355,7 +342,8 @@ class AbacusFragment : Fragment() {
                     },
                     bubbleAnimationTarget = binding.firstNumberText,
                     bubbleAnimationColor = Color.YELLOW,
-                    beadIds = listOf("rod4BottomBead1","rod4BottomBead2","rod4BottomBead3","rod4BottomBead4")
+                    beadIds = listOf("rod4BottomBead4"),
+                    backBeadIds = listOf("rod4BottomBead1")
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
@@ -377,7 +365,7 @@ class AbacusFragment : Fragment() {
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_gpt3,
                     text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin. ",
-                    finishBeadIds = listOf("rod4BottomBead4","rod4TopBead")
+                    finishBeadIds = listOf("rod4BottomBead1","rod4TopBead")
                 )
                 // Daha fazla içerik eklenebilir
             )
@@ -467,7 +455,7 @@ class AbacusFragment : Fragment() {
             disableGuidePanelMode()
             // Panel'i sola kayarak gizle
             hideGuidePanelWithAnimation()
-            binding.btnBack.visibility = View.GONE
+            setGuideNavButtonsVisibility(View.GONE)
             
             // Normal ders akışını başlat
             showCurrentOperation()
@@ -476,6 +464,28 @@ class AbacusFragment : Fragment() {
 
         currentGuideIndex++
         showGuideContent(currentGuideIndex)
+    }
+    
+    private fun setGuideNavButtonsVisibility(visibility: Int) {
+        binding.btnBack.visibility = visibility
+        binding.btnForward.visibility = visibility
+    }
+
+    private fun setupGuideNavButtonListeners() {
+        binding.btnBack.setOnClickListener {
+            showPreviousGuideContent()
+        }
+        binding.btnForward.setOnClickListener {
+            if (guideContentList.getOrNull(currentGuideIndex)?.requiredClickTarget != null) return@setOnClickListener
+            showNextGuideContent()
+        }
+    }
+
+    /** Guide ilerlemesi yalnızca btnForward ile; overlay/panel tıklaması engellenir. */
+    private fun applyGuideForwardBlockOverlay() {
+        binding.overlay.setOnTouchListener(null)
+        binding.overlay.setOnClickListener { }
+        panelContent.setOnClickListener(null)
     }
     
     /**
@@ -487,14 +497,11 @@ class AbacusFragment : Fragment() {
         // İlk adımdaysa hiçbir şey yapma
         if (currentGuideIndex == 0) return
 
-        // Mevcut adımın beadIds'ini kontrol et ve animasyonları ters yönde çalıştır
-        // (Geriye döndüğümüz için bu adımı geri alıyoruz)
+        // Geri gidildiğinde backBeadIds (yoksa beadIds) ile boncuk animasyonu
         // Not: finishBeadIds geri gidildiğinde çalıştırılmaz
         val currentContent = guideContentList[currentGuideIndex]
-        
-        // beadIds'i ters yönde çalıştır (bu adımı geri alıyoruz)
-        // Aynı rod'un alt boncuklarından sadece en yüksek numaralı olanı çağır
-        currentContent.beadIds?.let { beadIds ->
+        val beadsOnBack = currentContent.backBeadIds ?: currentContent.beadIds
+        beadsOnBack?.let { beadIds ->
             optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
                 animateGuideBead(beadId)
             }
@@ -573,20 +580,8 @@ class AbacusFragment : Fragment() {
         binding.overlay.isFocusable = true
         binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
         
-        // Overlay'e tıklanınca bir sonraki adıma geç
-        binding.overlay.setOnClickListener {
-            showNextGuideContent()
-        }
-        
-        // panelContent'e tıklanınca bir sonraki adıma geç
-        panelContent.setOnClickListener {
-            showNextGuideContent()
-        }
-        
-        // btnBack'e tıklanınca bir önceki adıma dön
-        binding.btnBack.setOnClickListener {
-            showPreviousGuideContent()
-        }
+        applyGuideForwardBlockOverlay()
+        setupGuideNavButtonListeners()
         
         // Diğer view'ları tıklanamaz yap
         disableOtherViews()
@@ -767,26 +762,18 @@ class AbacusFragment : Fragment() {
                 // Guide panel'i kapat
                 disableGuidePanelMode()
                 hideGuidePanelWithAnimation()
-                binding.btnBack.visibility = View.GONE
+                setGuideNavButtonsVisibility(View.GONE)
                 
                 // Normal ders akışını başlat
                 showCurrentOperation()
             }
         } else {
-            // requiredClickTarget yoksa normal overlay mantığını kullan
+            // requiredClickTarget yoksa overlay yalnızca dokunuşu engeller; ilerleme btnForward ile
             binding.overlay.visibility = View.VISIBLE
             binding.overlay.isClickable = true
             binding.overlay.isFocusable = true
             binding.overlay.alpha = 0.01f
-            binding.overlay.setOnTouchListener(null) // Önceki listener'ı temizle
-            binding.overlay.setOnClickListener {
-                showNextGuideContent()
-            }
-            
-            // panelContent'e tıklanınca bir sonraki adıma geç
-            panelContent.setOnClickListener {
-                showNextGuideContent()
-            }
+            applyGuideForwardBlockOverlay()
         }
     }
     
@@ -855,25 +842,17 @@ class AbacusFragment : Fragment() {
                 // Guide panel'i kapat
                 disableGuidePanelMode()
                 hideGuidePanelWithAnimation()
-                binding.btnBack.visibility = View.GONE
+                setGuideNavButtonsVisibility(View.GONE)
                 
                 // Normal ders akışını başlat
                 showCurrentOperation()
             }
         } else {
-            // requiredClickTarget yoksa normal overlay mantığını kullan
             binding.overlay.visibility = View.VISIBLE
             binding.overlay.isClickable = true
             binding.overlay.isFocusable = true
             binding.overlay.alpha = 0.01f
-            binding.overlay.setOnClickListener {
-                showNextGuideContent()
-            }
-            
-            // panelContent'e tıklanınca bir sonraki adıma geç
-            panelContent.setOnClickListener {
-                showNextGuideContent()
-            }
+            applyGuideForwardBlockOverlay()
         }
     }
     
@@ -1032,8 +1011,7 @@ class AbacusFragment : Fragment() {
                 .setDuration(300)
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .withEndAction {
-                    // Animasyon bittikten sonra btnBack'i görünür yap
-                    binding.btnBack.visibility = View.VISIBLE
+                    setGuideNavButtonsVisibility(View.VISIBLE)
                 }
                 .start()
         }
@@ -1295,11 +1273,17 @@ class AbacusFragment : Fragment() {
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
 
-            if(lessonItem.stepIsFinish){
-                operations = MapFragment.getLessonOperations(lessonItem.finishStepNumber!!)
+            val minLessonId = lessonItem.minLessonOperationsId()
+            val requestedLessonId = if (lessonItem.stepIsFinish) {
+                lessonItem.finishStepNumber!!
             } else {
-                operations = MapFragment.getLessonOperations(currentLessonStep)
+                currentLessonStep
             }
+            val resolvedLessonId = MapFragment.resolveLessonOperationsId(
+                requestedLessonId,
+                minLessonId,
+            )
+            operations = MapFragment.getLessonOperations(resolvedLessonId)
 
         }
     }
@@ -1531,14 +1515,43 @@ class AbacusFragment : Fragment() {
     }
 
     private fun closeFragment() {
-        // BackStack'i temizle ve MapFragment'e dön
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                R.anim.slide_in_left,  // Giriş animasyonu
-                R.anim.slide_out_left // Çıkış animasyonu
-            )
-            .remove(this@AbacusFragment)
-            .commit()
+        if (!isAdded || isAbacusClosing) return
+        val rootView = view
+        if (rootView == null) {
+            performAbacusDismiss()
+            return
+        }
+        isAbacusClosing = true
+        binding.quitButton.isEnabled = false
+        val slideDistance = resources.displayMetrics.widthPixels.toFloat()
+        rootView.animate().cancel()
+        rootView.animate()
+            .translationX(slideDistance)
+            .setDuration(abacusDismissSlideMs)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                if (isAdded) {
+                    performAbacusDismiss()
+                }
+            }
+            .start()
+    }
+
+    /** [closeFragment] kayma animasyonu bittikten sonra: mevcut haritaya dönüş akışı. */
+    private fun performAbacusDismiss() {
+        val main = activity as? MainActivity
+        val fm = parentFragmentManager
+        main?.prepareMapReturnAfterLessonClaim()
+        if (fm.backStackEntryCount > 0) {
+            fm.popBackStack()
+            fm.executePendingTransactions()
+        } else if (isAdded) {
+            fm.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .remove(this@AbacusFragment)
+                .commitNowAllowingStateLoss()
+        }
+        main?.finalizeMapReturnAfterLessonClaim("AbacusFragment.quit")
     }
 
     private fun abacusNumberReturn() {

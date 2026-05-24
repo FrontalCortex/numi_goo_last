@@ -65,6 +65,43 @@ fun applyMissionProgressOverlayNow(
     }
 }
 
+/** Günlük soru kartı: turuncu dolgu; [complete] ise altın (3/3). */
+fun applyDailyQuestionProgressOverlayNow(
+    widthHost: View,
+    fill: View,
+    shine: View,
+    percent: Float,
+    complete: Boolean = false,
+) {
+    val w = widthHost.width
+    if (w <= 0) return
+    val res = widthHost.resources
+    val ctx = widthHost.context
+    val p = percent.coerceIn(0f, 100f)
+    fill.background = ContextCompat.getDrawable(
+        ctx,
+        if (complete) R.drawable.daily_question_progress_fill_complete
+        else R.drawable.daily_question_progress_fill,
+    )
+    shine.background = ContextCompat.getDrawable(
+        ctx,
+        if (complete) R.drawable.daily_question_progress_shine_complete
+        else R.drawable.daily_question_progress_shine,
+    )
+    val startInset = res.getDimensionPixelSize(R.dimen.mission_progress_shine_inset_start)
+    val endGap = res.getDimensionPixelSize(R.dimen.mission_progress_shine_gap_end)
+    val fillW = (w * p / 100f).toInt().coerceIn(0, w)
+    val fillLp = fill.layoutParams as LayoutParams
+    fillLp.width = fillW
+    fill.layoutParams = fillLp
+    fill.visibility = if (fillW > 0) View.VISIBLE else View.GONE
+    val shineW = (fillW - startInset - endGap).coerceAtLeast(0)
+    val shineLp = shine.layoutParams as LayoutParams
+    shineLp.width = shineW
+    shine.layoutParams = shineLp
+    shine.visibility = if (shineW > 0) View.VISIBLE else View.GONE
+}
+
 /**
  * İlk ölçümde genişlik 0 olabilir; [ViewTreeObserver] veya post ile tekrar dener.
  */

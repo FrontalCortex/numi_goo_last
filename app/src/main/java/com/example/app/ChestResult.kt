@@ -119,35 +119,120 @@ class ChestResult : Fragment() {
         record()
     }
     private fun record() {
-        if(lessonItem.type== LessonItem.TYPE_CHEST){
-            Log.d("kuzuşişs","work")
-            if (lessonItem.record == null) {
-                lessonItem.record = toplamPuan
-                Log.d("kuzuşişs",toplamPuan.toString())
-
-            } else if (toplamPuan > lessonItem.record!!) {
-                lessonItem.record = toplamPuan
-                shouldIncrementChestRecordBreakMission = true
-                Log.d("kuzuşişs1",toplamPuan.toString())
-            }
+        if (lessonItem.type != LessonItem.TYPE_CHEST) return
+        if (lessonItem.record != null && toplamPuan > lessonItem.record!!) {
+            shouldIncrementChestRecordBreakMission = true
         }
-
+        val m = LessonItem.mergeChestRun(lessonItem, toplamPuan, SeasonClock.currentSeason())
+        lessonItem.record = m.record
+        lessonItem.leaderboardSeasonId = m.leaderboardSeasonId
+        lessonItem.leaderboardSeasonBest = m.leaderboardSeasonBest
     }
 
     private fun continueFragment() {
         binding.claimButton.setOnClickListener {
             val shouldPassRecordBreakMission = shouldIncrementChestRecordBreakMission
             shouldIncrementChestRecordBreakMission = false
-            parentFragmentManager.beginTransaction()
-                .replace(
-                    R.id.abacusFragmentContainer,
-                    ChestFragment().apply {
-                        arguments = Bundle().apply {
-                            putBoolean(ARG_PENDING_CHEST_RECORD_BREAK_MISSION, shouldPassRecordBreakMission)
+            val shouldSkipChest =
+                lessonItem.type == LessonItem.TYPE_CHEST && lessonItem.stepIsFinish
+
+            if (shouldSkipChest) {
+                val idx = mapFragmentStepIndex
+                val chestItemBefore = LessonManager.getLessonItem(idx)
+                var gainedStars = 0
+                val shouldIncrementKarate = if (chestItemBefore != null && chestItemBefore.type == LessonItem.TYPE_CHEST) {
+                    val karateFlag = ChestTypeProgressHelper.shouldIncrementKarateForFirstThreeStars(chestItemBefore, toplamPuan)
+                    val merged = LessonItem.mergeChestRun(chestItemBefore, toplamPuan, SeasonClock.currentSeason())
+                    val newRecord = merged.record!!
+                    val newIcon = ChestTypeProgressHelper.resolvedChestIcon(chestItemBefore, newRecord)
+                    val oldStars = ChestTypeProgressHelper.starCountForChestIcon(chestItemBefore.stepCupIcon)
+                    val newStars = ChestTypeProgressHelper.starCountForChestIcon(newIcon)
+                    gainedStars = (newStars - oldStars).coerceAtLeast(0)
+                    val updated = merged.copy(stepCupIcon = newIcon)
+                    LessonManager.updateLessonItem(requireContext(), idx, updated)
+                    lessonItem = updated
+                    karateFlag
+                } else {
+                    false
+                }
+
+                val beforeSnap = MissionsProgressStore.getSnapshot(requireContext())
+                MissionsProgressStore.applyPendingLearningMinutes(requireContext())
+                if (shouldPassRecordBreakMission) {
+                    MissionsProgressStore.recordChestRecordBreakProgress(requireContext())
+                }
+                if (gainedStars > 0) {
+                    MissionsProgressStore.recordChestStarGainProgress(requireContext(), gainedStars)
+                }
+                val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
+                val hasMissionProgress = MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)
+
+                fun navigateAfterKaratePayloads(payloads: List<BadgeLevelUpPayload>) {
+                    val fm = parentFragmentManager
+                    if (hasMissionProgress) {
+                        fm.beginTransaction()
+                            .setCustomAnimations(
+                                R.anim.slide_in_left,
+                                R.anim.slide_out_left,
+                            )
+                            .replace(
+                                R.id.abacusFragmentContainer,
+                                MissionChestRewardFragment.newInstance(
+                                    before = beforeSnap,
+                                    after = afterSnap,
+                                    openBadgeAfterContinue = payloads.isNotEmpty(),
+                                    badgePayloadQueue = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) },
+                                ),
+                            )
+                            .commit()
+                    } else {
+                        val main = activity as? MainActivity
+                        main?.prepareMapReturnAfterLessonClaim()
+                        fm.beginTransaction()
+                            .setCustomAnimations(
+                                R.anim.slide_in_right,
+                                R.anim.slide_out_right,
+                            )
+                            .remove(this@ChestResult)
+                            .commitNowAllowingStateLoss()
+                        main?.let {
+                            it.logTouchDiag("ChestResult.claimAfterRemove.beforeFinalize")
+                            MainActivityChromeBlocker.release(it)
+                            it.finalizeMapReturnAfterLessonClaim("ChestResult.claimAfterRemove")
                         }
-                    },
-                )
-                .commit()
+                        if (payloads.isNotEmpty()) {
+                            BadgeProgressFirestore.openBadgeCelebration(requireActivity().supportFragmentManager, payloads)
+                        }
+                    }
+                }
+
+                if (shouldIncrementKarate) {
+                    BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
+                        incrementDart = false,
+                        incrementBowlingBy = 0,
+                        incrementKarate = true,
+                        incrementRocketDailyLessons = false,
+                        incrementGolf = false,
+                        onDone = { navigateAfterKaratePayloads(it) },
+                    )
+                } else {
+                    navigateAfterKaratePayloads(emptyList())
+                }
+            } else {
+                parentFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.abacusFragmentContainer,
+                        ChestFragment().apply {
+                            arguments = Bundle().apply {
+                                putBoolean(ARG_PENDING_CHEST_RECORD_BREAK_MISSION, shouldPassRecordBreakMission)
+                                putFloat("successRate", successRate)
+                                putInt("toplamPuan", toplamPuan)
+                                putInt("dersPuani", dersPuani)
+                            }
+                        },
+                    )
+                    .commit()
+            }
         }
     }
 

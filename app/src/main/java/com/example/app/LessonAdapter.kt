@@ -14,6 +14,7 @@ import android.content.Context
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,6 +56,39 @@ class LessonAdapter(
     private var progressUpdateListener: OnProgressUpdateListener? = null
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+
+    /** bind/layout sırasında notifyItemChanged patlamasın diye tutulur. */
+    private var attachedRecyclerView: RecyclerView? = null
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        attachedRecyclerView = recyclerView
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        if (attachedRecyclerView === recyclerView) {
+            attachedRecyclerView = null
+        }
+        super.onDetachedFromRecyclerView(recyclerView)
+    }
+
+    /**
+     * RecyclerView layout/bind döngüsü içindeyken [notifyItemChanged] IllegalStateException fırlatır;
+     * bir sonraki frame'e ertelenir ([persistFinalGoldVisualState] → [LessonManager.updateLessonItem] zinciri).
+     */
+    private fun notifyItemChangedSafe(position: Int) {
+        if (position !in items.indices) return
+        val rv = attachedRecyclerView
+        if (rv != null) {
+            rv.post {
+                if (position in items.indices) {
+                    notifyItemChanged(position)
+                }
+            }
+        } else {
+            notifyItemChanged(position)
+        }
+    }
     
     fun setProgressUpdateListener(listener: OnProgressUpdateListener) {
         this.progressUpdateListener = listener
@@ -224,21 +258,25 @@ class LessonAdapter(
             if (!isGuidePanelVisible) {
                 recordLayout.setOnClickListener {
                     blockAllTouchesForActionTransition()
+                    val act = context as FragmentActivity
+                    val openRecord = {
+                        act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
+                        act.supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(
+                                android.R.anim.slide_in_left,
+                                android.R.anim.slide_out_right,
+                            )
+                            .replace(
+                                R.id.abacusFragmentContainer,
+                                RecordFragment.newInstance(globalPartId, position, item.title),
+                            )
+                            .addToBackStack(null)
+                            .commitAllowingStateLoss()
+                    }
+                    (act as? MainActivity)?.runAbacusOverlayTransaction("record") { openRecord() }
+                        ?: openRecord()
                     behavior.isHideable = true
                     behavior.state = BottomSheetBehavior.STATE_HIDDEN
-                    val act = context as FragmentActivity
-                    act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
-                    act.supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            android.R.anim.slide_in_left,
-                            android.R.anim.slide_out_right,
-                        )
-                        .replace(
-                            R.id.abacusFragmentContainer,
-                            RecordFragment.newInstance(globalPartId, position, item.title),
-                        )
-                        .addToBackStack(null)
-                        .commit()
                 }
             }
         } else {
@@ -321,7 +359,7 @@ class LessonAdapter(
                         .setCustomAnimations(slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
                         .addToBackStack(null)
-                        .commit()
+                        .commitAllowingStateLoss()
 
 
 
@@ -390,60 +428,63 @@ class LessonAdapter(
     }
     
     private fun continueWithLesson(item: LessonItem, behavior: BottomSheetBehavior<LinearLayout>) {
-        // Bottom sheet'i aşağı doğru kaydırarak gizle
         behavior.isHideable = true
         behavior.state = BottomSheetBehavior.STATE_HIDDEN
 
-        // Activity'yi bul ve FragmentActivity olarak cast et
         val activity = context as FragmentActivity
+        (activity as? MainActivity)?.dismissMapLessonOverlayChrome()
+        val main = activity as? MainActivity
+        val startLesson = {
+            val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
+            val fm = activity.supportFragmentManager
+            fm.executePendingTransactions()
+            val existingOverlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+            if (existingOverlay is RecordFragment) {
+                if (fm.backStackEntryCount > 0) {
+                    fm.popBackStack()
+                    fm.executePendingTransactions()
+                } else {
+                    fm.beginTransaction().remove(existingOverlay).commitNowAllowingStateLoss()
+                    fm.executePendingTransactions()
+                }
+            }
+            fragmentContainer.visibility = View.VISIBLE
 
-        // Fragment container'ı görünür yap
-        val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
-        fragmentContainer.visibility = View.VISIBLE
-
-        // AbacusFragment'i oluştur
-        val fragment = item?.fragment?.invoke()
-
-        // Animasyon için slide-in efekti
-        val slideIn = android.R.anim.slide_in_left
-        val slideOut = android.R.anim.slide_out_right
-        item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
-        item.startStepNumber.also { lessonStep = it!! }
-        if(item.isBlinding == true){
-            if(item.tutorialIsFinish){
-                activity.supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(slideIn, slideOut)
-                    .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
-                    .addToBackStack(null)
-                    .commit()
+            val slideIn = android.R.anim.slide_in_left
+            val slideOut = android.R.anim.slide_out_right
+            item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
+            item.startStepNumber.also { lessonStep = it!! }
+            if (item.isBlinding == true) {
+                if (item.tutorialIsFinish) {
+                    fm.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
+                        .addToBackStack(null)
+                        .commitAllowingStateLoss()
+                } else {
+                    fm.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .addToBackStack(null)
+                        .commitAllowingStateLoss()
+                }
             } else {
-                //startStepNumber'ı global lessonStep'e atadık
-
-                activity.supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(slideIn, slideOut)
-                    .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
-                    .addToBackStack(null)
-                    .commit()
+                if (item.tutorialIsFinish) {
+                    fm.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, AbacusFragment())
+                        .addToBackStack(null)
+                        .commitAllowingStateLoss()
+                } else {
+                    fm.beginTransaction()
+                        .setCustomAnimations(slideIn, slideOut)
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .addToBackStack(null)
+                        .commitAllowingStateLoss()
+                }
             }
         }
-
-        else{
-            if(item.tutorialIsFinish){
-                activity.supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(slideIn, slideOut)
-                    .replace(R.id.abacusFragmentContainer, AbacusFragment())
-                    .addToBackStack(null)
-                    .commit()
-            } else {
-                //startStepNumber'ı global lessonStep'e atadık
-
-                activity.supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(slideIn, slideOut)
-                    .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
-                    .addToBackStack(null)
-                    .commit()
-            }
-        }
+        main?.runAbacusOverlayTransaction("continueWithLesson") { startLesson() } ?: startLesson()
     }
 
     private fun blockAllTouchesForActionTransition() {
@@ -669,7 +710,7 @@ class LessonAdapter(
             items[position].let { item ->
                 if (item.type == LessonItem.TYPE_LESSON) {
                     item.offset = newOffset
-                    notifyItemChanged(position)
+                    notifyItemChangedSafe(position)
                 }
             }
         }
@@ -678,7 +719,7 @@ class LessonAdapter(
     fun updateLessonItem(position: Int, newItem: LessonItem) {
         if (position in items.indices) {
             items[position] = newItem
-            notifyItemChanged(position)
+            notifyItemChangedSafe(position)
         }
     }
     
@@ -1024,6 +1065,7 @@ class LessonAdapter(
 
         private fun setChestStarsRowThreeStarMode(three: Boolean) {
             if (three) {
+                chestStarsRow.gravity = Gravity.CENTER_VERTICAL
                 listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
                     iv.scaleX = 1f
                     iv.scaleY = 1f
@@ -1033,28 +1075,23 @@ class LessonAdapter(
                 listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
                     val lp = iv.layoutParams as LinearLayout.LayoutParams
                     lp.width = 0
+                    lp.height = ViewGroup.LayoutParams.MATCH_PARENT
                     lp.weight = 1f
                     iv.layoutParams = lp
                 }
             } else {
                 chestStar2.visibility = View.GONE
                 chestStar3.visibility = View.GONE
+                chestStarsRow.gravity = Gravity.CENTER
+                val singleStarSize =
+                    itemView.resources.getDimensionPixelSize(R.dimen.map_lesson_icon_size)
                 val lp1 = chestStar1.layoutParams as LinearLayout.LayoutParams
-                lp1.width = ViewGroup.LayoutParams.MATCH_PARENT
+                lp1.width = singleStarSize
+                lp1.height = singleStarSize
                 lp1.weight = 0f
                 chestStar1.layoutParams = lp1
                 chestStar1.scaleX = 1f
                 chestStar1.scaleY = 1f
-                chestStar1.post {
-                    if (chestStar2.visibility != View.GONE) return@post
-                    val w = chestStar1.width
-                    val h = chestStar1.height
-                    if (w <= 0 || h <= 0) return@post
-                    chestStar1.pivotX = w / 2f
-                    chestStar1.pivotY = h / 2f
-                    chestStar1.scaleX = 0.5f
-                    chestStar1.scaleY = 0.5f
-                }
             }
         }
 

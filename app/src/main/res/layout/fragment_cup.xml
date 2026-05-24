@@ -71,7 +71,7 @@
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
-            android:text="Devam et"
+            android:text="Desvam et"
             android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"

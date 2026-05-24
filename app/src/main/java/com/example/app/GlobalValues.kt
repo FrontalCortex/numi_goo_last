@@ -18,25 +18,41 @@ object GlobalValues {
 
     /** Bu açılışta (session) tutorial 1 claim'de login zaten gösterildi mi? Process yeniden başlayınca false olur. */
     fun randomNumberChangeToString(digitCount: Int): String {
-
-        // Minimum ve maksimum değerleri hesapla
-        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
-        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
-
-        // Random sayı üret
-        return (min..max).random().toString()
+        return randomUniqueNumberStrings(digitCount, 1).single()
     }
 
+    /**
+     * [digitCount] basamaklı aralıktan [count] adet sayı string'i üretir.
+     * Havuz yeterliyse hepsi birbirinden farklı; [count] havuzdan büyükse önce tüm değerler
+     * bir kez (karışık), kalanlar rastgele (tekrarlı olabilir).
+     */
+    fun randomUniqueNumberStrings(digitCount: Int, count: Int): List<String> {
+        if (count <= 0) return emptyList()
+        val min = digitRangeMin(digitCount)
+        val max = digitRangeMax(digitCount)
+        val pool = (min..max).toMutableList()
+        if (count <= pool.size) {
+            pool.shuffle()
+            return pool.take(count).map { it.toString() }
+        }
+        pool.shuffle()
+        val result = pool.map { it.toString() }.toMutableList()
+        while (result.size < count) {
+            result.add((min..max).random().toString())
+        }
+        result.shuffle()
+        return result
+    }
+
+    private fun digitRangeMin(digitCount: Int): Int =
+        10.0.pow((digitCount - 1).coerceAtLeast(0)).toInt()
+
+    private fun digitRangeMax(digitCount: Int): Int =
+        10.0.pow(digitCount).toInt() - 1
+
     fun generateRandomNumber(digitCount: Int): Int {
-        // Basamak sayısı kontrolü
         if (digitCount < 1) return 0
-
-        // Minimum ve maksimum değerleri hesapla
-        val min = 10.0.pow(digitCount - 1).toInt()  // Örnek: 3 basamak için 100
-        val max = 10.0.pow(digitCount).toInt() - 1  // Örnek: 3 basamak için 999
-
-        // Random sayı üret
-        return (min..max).random()
+        return (digitRangeMin(digitCount)..digitRangeMax(digitCount)).random()
     }
 
     /**

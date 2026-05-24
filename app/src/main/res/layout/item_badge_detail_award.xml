@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/awardItemContainer"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="18dp"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <FrameLayout
+        android:id="@+id/awardBadgeFrame"
+        android:layout_width="200dp"
+        android:layout_height="200dp">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/awardBadgeBase"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false" />
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/awardBadgeTop"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false" />
+    </FrameLayout>
+
+    <com.example.app.BadgeRewardTextView
+        android:id="@+id/awardBadgeValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-72dp"
+        android:text="10"
+        android:textColor="@android:color/white"
+        android:textSize="36sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/awardBadgeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:maxLines="2"
+        android:text="Ödül Başlığı"
+        android:textColor="#E5EDF2"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:lineSpacingExtra="0dp"
+        android:lineSpacingMultiplier="0.6" />
+
+    <TextView
+        android:id="@+id/awardBadgeSubtext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-8dp"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="1 / 10"
+        android:textColor="#6F8595"
+        android:textSize="16sp" />
+
+</LinearLayout>

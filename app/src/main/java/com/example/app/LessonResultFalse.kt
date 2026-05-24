@@ -43,10 +43,12 @@ class LessonResultFalse : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+            val main = activity as? MainActivity
+            main?.prepareMapReturnAfterLessonClaim()
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, MapFragment())
                 .remove(this@LessonResultFalse)
-                .commit()
+                .commitNowAllowingStateLoss()
+            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.loginReturn")
         }
     }
 
@@ -82,8 +84,8 @@ class LessonResultFalse : Fragment() {
 
         binding.claimButton.setOnClickListener {
 
-            if(GlobalValues.currentTutorialNumber == 1){
-                prefs.edit().putBoolean("first_tutorial_shown", true).apply()
+            if (GlobalValues.currentTutorialNumber == 1) {
+                FirstTutorialShownStore.markShown(requireContext(), "LessonResultFalse.claim")
             }
 
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
@@ -96,10 +98,12 @@ class LessonResultFalse : Fragment() {
                 return@setOnClickListener
             }
 
+            val main = activity as? MainActivity
+            main?.prepareMapReturnAfterLessonClaim()
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, MapFragment())
                 .remove(this@LessonResultFalse)
-                .commit()
+                .commitNowAllowingStateLoss()
+            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.claim")
         }
 
         // Animasyonları başlat

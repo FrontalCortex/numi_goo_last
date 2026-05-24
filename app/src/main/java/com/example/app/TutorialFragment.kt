@@ -69,6 +69,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var optionsInteractionLocked: Boolean = false
     private var optionsContentTextSyncRetries: Int = 0
 
+    /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
+    private val tutorialDismissSlideMs = 300L
+    private var isTutorialClosing = false
+
     /** okay / continue / kontrol için çift basım koruması (ms, uptime). */
     private val tutorialResultButtonsCooldownMs = 500L
     private var tutorialResultButtonsCooldownEndUptime = 0L
@@ -174,6 +178,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private var currentAnimations: MutableList<BeadAnimation> = mutableListOf()
     private val widgetAnimators = mutableListOf<ValueAnimator>()
+    /** [resetAndWaith] sonrası planlanan [showStep]; üst üste geri basışta iptal edilir. */
+    private var pendingBackShowStepRunnable: Runnable? = null
+    private var backStepTransitionPending = false
     private lateinit var binding: FragmentTutorialBinding
     private var currentStep = 0
     private var backOrFront = true
@@ -387,9 +394,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         if (tutorialNumber == 24 || tutorialNumber == 25 || tutorialNumber == 26) {
             binding.abacusLinear.visibility = View.INVISIBLE
         }
-        if(tutorialNumber == 1){
+        if (tutorialNumber == 1) {
             val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
             val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+            Log.d(
+                MainActivity.FIRST_TUTORIAL_LOG_TAG,
+                "TutorialFragment.onViewCreated | tutorialNumber=1 first_tutorial_shown=$firstTutorialShown " +
+                    "isAdded=$isAdded view=${view != null}",
+            )
             if (!firstTutorialShown) {
                 binding.quitButton.visibility = View.INVISIBLE
             }
@@ -429,7 +441,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             backOrFront = true
             showStep(currentStep)
             if (getPlusIndexCurrentStep(-1).nextStepAbacusReset == true) {
-                resetAbacus()
+                resetAbacus("TAP_ADVANCE_nextStepAbacusReset")
             }
         } else {
             backOrFront = true
@@ -451,6 +463,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun showStep(position: Int, skipAnimations: Boolean = false) {
         val step = currentTutorialSteps[position]
+        logTutorialAbacusResetShowStep(position, "BEFORE_setupBeads")
+        // #region agent log
+        AgentDebugLog.log(
+            hypothesisId = "H3",
+            location = "TutorialFragment.showStep",
+            message = "showStep_enter",
+            data = mapOf(
+                "position" to position,
+                "currentStep" to currentStep,
+                "tutorialNumber" to tutorialNumber,
+                "backOrFront" to backOrFront,
+                "abacusClickable" to step.abacusClickable,
+                "answerNumber" to step.answerNumber,
+                "backAnswerNumber" to step.backAnswerNumber,
+                "text" to step.text.take(40),
+            ),
+        )
+        // #endregion
         
         // Her adım başında topMargin ve bottomMargin'i sıfırla (önceki adımlardan kalan değerleri temizle)
         val params = focusView.layoutParams as ViewGroup.MarginLayoutParams
@@ -500,6 +530,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         updateOptionsPanelForStep(step)
         answerNumber=step.answerNumber
         setupBeads()
+        logTutorialAbacusResetShowStep(position, "AFTER_setupBeads")
+
         if(getCurrentStep().abacusClickable){
             controlButton.visibility = View.VISIBLE
             controlButtonListener = View.OnTouchListener { v, event ->
@@ -562,6 +594,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
 
         currentAnimations.clear()
+
 
         if(backOrFront) {
             step.onStep?.invoke(focusView)
@@ -649,63 +682,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun setupAskQuestionButton() {
         val authManager = AuthManager().also { it.initialize(requireContext()) }
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        val isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
-
-        // 1) Uygulamada giriş yapmış bir hesap yoksa butonu tamamen gizle
-        if (currentUser == null) {
-            binding.askQuestionButton.visibility = View.GONE
-            return
-        }
-
-        // 2) Öğretmen hesabıysa, teacherApproved durumuna göre davran
-        if (isTeacher) {
-            val uid = currentUser.uid
-            FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .get()
-                .addOnSuccessListener { doc ->
-                    if (!isAdded) return@addOnSuccessListener
-                    val teacherApproved = doc.getBoolean("teacherApproved") == true
-                    if (!teacherApproved) {
-                        // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
-                        binding.askQuestionButton.visibility = View.VISIBLE
-                        binding.askQuestionButton.setOnClickListener {
-                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                                AlertDialog.Builder(requireContext())
-                                    .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
-                                    .setPositiveButton("Tamam", null)
-                                    .show()
-                            }
-                        }
-                    } else {
-                        // Onaylı öğretmen: normal soru oluşturma akışına izin ver
-                        binding.askQuestionButton.visibility = View.VISIBLE
-                        binding.askQuestionButton.setOnClickListener {
-                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
-                                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
-                            }
-                        }
-                    }
-                }
-                .addOnFailureListener {
-                    // Firestore okunamazsa butonu gizle (güvenli varsayım)
-                    if (isAdded) {
-                        binding.askQuestionButton.visibility = View.GONE
-                    }
-                }
-        } else {
-            // 3) Öğrenci hesabı: mevcut davranış (normal soru oluşturma akışı)
-            binding.askQuestionButton.visibility = View.VISIBLE
-            binding.askQuestionButton.setOnClickListener {
-                SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                    if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
-                    (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
-                }
-            }
-        }
+        AskQuestionButtonBinder.bind(
+            fragment = this,
+            button = binding.askQuestionButton,
+            isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER,
+            onAllowedClick = {
+                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
+            },
+        )
     }
     
     private fun setupInfoRequest() {
@@ -833,12 +817,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     private fun setupBackButton() {
         binding.backButton.setOnClickListener {
+            logTutorialBackPress("press")
             // Seçenek paneli açık ve kilitliyken geri butonu çalışmasın
             if (optionsInteractionLocked && optionsPanel.visibility == View.VISIBLE) {
+                logTutorialBackPress("ignored", "optionsLocked")
                 return@setOnClickListener
             }
             // Herhangi bir animasyon devam ediyorsa geri gitmeyi engelle
             if (isAnyAnimationRunning()) {
+                logTutorialBackPress("ignored", "isAnyAnimationRunning")
                 return@setOnClickListener
             }
             // writeAnswerNumber() çalışıyorsa geri gitmeyi engelle
@@ -876,28 +863,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     writeAnswerNumber(getCurrentStep().backAnswerNumber!!)
                 }
                 if(getCurrentStep().abacusReset==true){
-                    Log.d("libya5","work")
-                    resetAbacus()
+                    logTutorialAbacusResetBack("abacusReset_on_landed_step")
+                    resetAbacus("BACK_BUTTON_abacusReset")
                 }
-                if(getPlusIndexCurrentStep(1).resetAndWaith == true){
-                    Log.d("libya6","work")
-                    resetAbacus()
-                    // Ekrana tıklanmasını engellemek için overlay'i görünür yap
-                    binding.overlay.visibility = View.VISIBLE
-                    binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
-                    binding.overlay.isClickable = true
-                    binding.overlay.isFocusable = true
-                    // Animasyonların tamamlanması için 0.8 saniye bekle
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        showStep(currentStep, skipAnimations = skipReverseBeadAnims)
-                        hideDevamButtonIfVisible()
-                        // Overlay'i kapat
-                        binding.overlay.visibility = View.GONE
-                        binding.overlay.isClickable = false
-                        binding.overlay.isFocusable = false
-                    }, 800)
+                if (getPlusIndexCurrentStep(1).resetAndWaith == true) {
+                    logTutorialBackPress("resetAndWaith", "resetAbacus then wait 800ms")
+                    resetAbacus("BACK_BUTTON_resetAndWaith")
+                    scheduleBackShowStep(delayMs = 800L, skipReverseBeadAnims = skipReverseBeadAnims)
                 } else {
-                    Log.d("currentValue2",currentStep.toString())
+                    logTutorialBackPress("immediateShowStep")
                     showStep(currentStep, skipAnimations = skipReverseBeadAnims)
                 }
                 hideDevamButtonIfVisible()
@@ -920,50 +894,63 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
             .start()
     }
+    /**
+     * Hedef basamak değerine göre alt boncukları günceller.
+     * Animasyon yalnızca fiziksel konumu hedefle uyuşmayan boncuklarda (boolean/sync değil).
+     */
     private fun updateBeadForDigit(
         digit: Int,
         beadViews: List<ImageView>,
-        beadStates: MutableList<Boolean>
+        beadStates: MutableList<Boolean>,
+        rod: Int,
     ) {
-        // Her boncuk için hedef durumu belirle
-        val targetStates = listOf(
-            digit >= 1,  // 1. boncuk
-            digit >= 2,  // 2. boncuk  
-            digit >= 3,  // 3. boncuk
-            digit >= 4   // 4. boncuk
-        )
-        
-        // Her boncuk için durum değişikliğini kontrol et ve animasyon yap
+        val controller = abacusController ?: return
+        val targetBottom = digit % 5
+
         for (i in 0..3) {
-            val currentState = beadStates[i]
-            val targetState = targetStates[i]
-            
-            if (currentState != targetState) {
-                if (targetState) {
-                    // False'dan true'ya geçiyor - yukarı animasyon
-                    animateBeadsUp(beadViews[i])
-                    updateBeadAppearance(beadViews[i], true)
-                } else {
-                    // True'dan false'ya geçiyor - aşağı animasyon
-                    animateBeadsDown(beadViews[i])
-                    updateBeadAppearance(beadViews[i], false)
-                }
-                beadStates[i] = targetState
+            val shouldBeUp = (i + 1) <= targetBottom
+            val physicallyUp = controller.isBottomBeadPhysicallyRaised(rod, i)
+
+            if (TutorialAbacusResetDiagnostics.ENABLED && rod == 3) {
+                TutorialAbacusResetDiagnostics.log(
+                    "updateBeadForDigit rod=$rod bead=${i + 1} digit=$digit " +
+                        "shouldBeUp=$shouldBeUp physicallyUp=$physicallyUp " +
+                        "willAnimate=${shouldBeUp != physicallyUp}",
+                )
             }
+
+            if (shouldBeUp == physicallyUp) {
+                beadStates[i] = shouldBeUp
+                updateBeadAppearance(beadViews[i], shouldBeUp)
+                continue
+            }
+
+            if (shouldBeUp) {
+                animateBeadsUp(beadViews[i])
+                updateBeadAppearance(beadViews[i], true)
+            } else {
+                animateBeadsDown(beadViews[i])
+                updateBeadAppearance(beadViews[i], false)
+            }
+            beadStates[i] = shouldBeUp
         }
     }
 
-    private fun writeAnswerNumber(number:Int){
-        // writeAnswerNumber() başladığında flag'i true yap
-        isWritingAnswerNumber = true
-        // Animasyon bitene kadar controller eski bottomCount ile kalır; dokunuş yanlış hedef üretir.
-        abacusController?.setEnabled(false)
+    private fun logWriteAnswerNumber(phase: String, number: Int, extra: String = "") {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        TutorialAbacusResetDiagnostics.log(
+            "WRITE_ANSWER_NUMBER $phase target=$number currentStep=$currentStep " +
+                "isWriting=$isWritingAnswerNumber controllerValue=${abacusController?.getCurrentValue()} " +
+                "rod3Up=($rod3OneIsUp,$rod3TwoIsUp,$rod3ThreeIsUp,$rod3FourIsUp) $extra",
+        )
+        abacusController?.logInternalState("WRITE_ANSWER_NUMBER $phase")
+    }
 
-        // Önemli: Kullanıcı abaküsü controller (sürükle/tap) ile değiştirdiyse rod4OneIsUp vb.
-        // güncellenmeyebilir. writeAnswerNumber mevcut durumu bu boolean'lardan okuyor; eski kalınca
-        // updateBeadForDigit yanlış "fark" hesaplar (ör. 12 görünürken sadece top 8'e çekilir).
-        abacusController?.syncStateFromUi()
-        syncTutorialBooleansFromController()
+    private fun writeAnswerNumber(number: Int, onComplete: (() -> Unit)? = null) {
+        logWriteAnswerNumber("START", number)
+        isWritingAnswerNumber = true
+        abacusController?.setEnabled(false)
+        abacusController?.logInternalState("writeAnswerNumber START")
 
         val numberStr = number.toString().padStart(5, '0')
 
@@ -974,23 +961,27 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         var ones = numberStr[4].toString().toInt()    // Birler basamağı
 
 
+        val ctrl = abacusController
+
         // Birler basamağı kontrolleri
-        if(ones < 5 && rod4TopIsDown){
-            animateBeadUp(rod4TopBead)
+        if (ones < 5) {
+            if (ctrl?.isTopBeadDown(4) == true) {
+                animateBeadUp(rod4TopBead)
+            }
             rod4TopIsDown = false
             updateBeadAppearance(rod4TopBead, false)
         }
         if (ones >= 5) {
-            animateBeadDown(rod4TopBead)
+            if (ctrl?.isTopBeadDown(4) != true) {
+                animateBeadDown(rod4TopBead)
+            }
             ones -= 5
             rod4TopIsDown = true
             updateBeadAppearance(rod4TopBead, true)
-
         }
-            // Birler basamağı için boncukları güncelle
             val rod4BeadViews = listOf(rod4BottomBead1, rod4BottomBead2, rod4BottomBead3, rod4BottomBead4)
             val rod4BeadStates = mutableListOf(rod4OneIsUp, rod4TwoIsUp, rod4ThreeIsUp, rod4FourIsUp)
-            updateBeadForDigit(ones, rod4BeadViews, rod4BeadStates)
+            updateBeadForDigit(ones, rod4BeadViews, rod4BeadStates, rod = 4)
             
             // Boolean değişkenleri güncelle
             rod4OneIsUp = rod4BeadStates[0]
@@ -999,43 +990,54 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             rod4FourIsUp = rod4BeadStates[3]
 
         // Onlar basamağı kontrolleri
-        if(tens < 5 && rod3TopIsDown){
-            animateBeadUp(rod3TopBead)
+        if (tens < 5) {
+            if (ctrl?.isTopBeadDown(3) == true) {
+                animateBeadUp(rod3TopBead)
+            }
             rod3TopIsDown = false
             updateBeadAppearance(rod3TopBead, false)
         }
         if (tens >= 5) {
-            animateBeadDown(rod3TopBead)
+            if (ctrl?.isTopBeadDown(3) != true) {
+                animateBeadDown(rod3TopBead)
+            }
             rod3TopIsDown = true
             updateBeadAppearance(rod3TopBead, true)
             tens -= 5
         }
-        // Onlar basamağı için boncukları güncelle
         val rod3BeadViews = listOf(rod3BottomBead1, rod3BottomBead2, rod3BottomBead3, rod3BottomBead4)
         val rod3BeadStates = mutableListOf(rod3OneIsUp, rod3TwoIsUp, rod3ThreeIsUp, rod3FourIsUp)
-        updateBeadForDigit(tens, rod3BeadViews, rod3BeadStates)
+        updateBeadForDigit(tens, rod3BeadViews, rod3BeadStates, rod = 3)
         
         // Boolean değişkenleri güncelle
         rod3OneIsUp = rod3BeadStates[0]
         rod3TwoIsUp = rod3BeadStates[1]
         rod3ThreeIsUp = rod3BeadStates[2]
         rod3FourIsUp = rod3BeadStates[3]
+        logWriteAnswerNumber(
+            "AFTER_ROD3_ANIM_SCHEDULED",
+            number,
+            "rod3Up=($rod3OneIsUp,$rod3TwoIsUp,$rod3ThreeIsUp,$rod3FourIsUp)",
+        )
         // Yüzler basamağı kontrolleri
-        if(hundreds < 5 && rod2TopIsDown){
-            animateBeadUp(rod2TopBead)
+        if (hundreds < 5) {
+            if (ctrl?.isTopBeadDown(2) == true) {
+                animateBeadUp(rod2TopBead)
+            }
             rod2TopIsDown = false
             updateBeadAppearance(rod2TopBead, false)
         }
         if (hundreds >= 5) {
-            animateBeadDown(rod2TopBead)
+            if (ctrl?.isTopBeadDown(2) != true) {
+                animateBeadDown(rod2TopBead)
+            }
             rod2TopIsDown = true
             updateBeadAppearance(rod2TopBead, true)
             hundreds -= 5
         }
-        // Yüzler basamağı için boncukları güncelle
         val rod2BeadViews = listOf(rod2BottomBead1, rod2BottomBead2, rod2BottomBead3, rod2BottomBead4)
         val rod2BeadStates = mutableListOf(rod2OneIsUp, rod2TwoIsUp, rod2ThreeIsUp, rod2FourIsUp)
-        updateBeadForDigit(hundreds, rod2BeadViews, rod2BeadStates)
+        updateBeadForDigit(hundreds, rod2BeadViews, rod2BeadStates, rod = 2)
         
         // Boolean değişkenleri güncelle
         rod2OneIsUp = rod2BeadStates[0]
@@ -1043,21 +1045,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         rod2ThreeIsUp = rod2BeadStates[2]
         rod2FourIsUp = rod2BeadStates[3]
         // Binler basamağı kontrolleri
-        if(thousands < 5 && rod1TopIsDown){
-            animateBeadUp(rod1TopBead)
+        if (thousands < 5) {
+            if (ctrl?.isTopBeadDown(1) == true) {
+                animateBeadUp(rod1TopBead)
+            }
             rod1TopIsDown = false
             updateBeadAppearance(rod1TopBead, false)
         }
         if (thousands >= 5) {
-            animateBeadDown(rod1TopBead)
+            if (ctrl?.isTopBeadDown(1) != true) {
+                animateBeadDown(rod1TopBead)
+            }
             rod1TopIsDown = true
             updateBeadAppearance(rod1TopBead, true)
             thousands -= 5
         }
-        // Binler basamağı için boncukları güncelle
         val rod1BeadViews = listOf(rod1BottomBead1, rod1BottomBead2, rod1BottomBead3, rod1BottomBead4)
         val rod1BeadStates = mutableListOf(rod1OneIsUp, rod1TwoIsUp, rod1ThreeIsUp, rod1FourIsUp)
-        updateBeadForDigit(thousands, rod1BeadViews, rod1BeadStates)
+        updateBeadForDigit(thousands, rod1BeadViews, rod1BeadStates, rod = 1)
         
         // Boolean değişkenleri güncelle
         rod1OneIsUp = rod1BeadStates[0]
@@ -1065,21 +1070,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         rod1ThreeIsUp = rod1BeadStates[2]
         rod1FourIsUp = rod1BeadStates[3]
         // On binler basamağı kontrolleri (üst boncuk hepsi için tenThousands ile kontrol edilmeli)
-        if (tenThousands < 5 && topIsDown) {
-            animateBeadUp(rod0TopBead)
+        if (tenThousands < 5) {
+            if (ctrl?.isTopBeadDown(0) == true) {
+                animateBeadUp(rod0TopBead)
+            }
             topIsDown = false
             updateBeadAppearance(rod0TopBead, false)
         }
         if (tenThousands >= 5) {
-            animateBeadDown(rod0TopBead)
+            if (ctrl?.isTopBeadDown(0) != true) {
+                animateBeadDown(rod0TopBead)
+            }
             topIsDown = true
             updateBeadAppearance(rod0TopBead, true)
             tenThousands -= 5
         }
-        // On binler basamağı için boncukları güncelle
         val rod0BeadViews = listOf(rod0BottomBead1, rod0BottomBead2, rod0BottomBead3, rod0BottomBead4)
         val rod0BeadStates = mutableListOf(oneIsUp, twoIsUp, threeIsUp, fourIsUp)
-        updateBeadForDigit(tenThousands, rod0BeadViews, rod0BeadStates)
+        updateBeadForDigit(tenThousands, rod0BeadViews, rod0BeadStates, rod = 0)
         
         // Boolean değişkenleri güncelle
         oneIsUp = rod0BeadStates[0]
@@ -1087,25 +1095,60 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         threeIsUp = rod0BeadStates[2]
         fourIsUp = rod0BeadStates[3]
         
-        // Margin animasyonları 300ms; bitince controller + tutorial boolean'larını UI ile hizala.
+        // Margin animasyonları 300ms; bitince sayıdan iç state + drawable hizala (margin sync değil).
         Handler(Looper.getMainLooper()).postDelayed({
+            if (!isAdded) return@postDelayed
+            logWriteAnswerNumber("BEFORE_POST_COMPLETE", number)
             isWritingAnswerNumber = false
-            abacusController?.syncStateFromUi()
+            abacusController?.applyInternalStateFromValue(number, applyAppearance = true)
             syncTutorialBooleansFromController()
+            logWriteAnswerNumber("AFTER_POST_COMPLETE", number)
             if (getCurrentStep().abacusClickable) {
                 abacusController?.setEnabled(true)
             }
+            onComplete?.invoke()
         }, 400)
     }
-    private fun closeFragment(){// Fragment'i kapat ve MapFragment'e dön
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                R.anim.slide_in_left,  // Giriş animasyonu
-                R.anim.slide_out_left // Çıkış animasyonu
-            )
-            .remove(this)
-            .commit()
+    private fun closeFragment() { // Fragment'i kapat ve MapFragment'e dön
+        if (!isAdded || isTutorialClosing) return
+        val rootView = view
+        if (rootView == null) {
+            performTutorialDismiss()
+            return
+        }
+        isTutorialClosing = true
+        binding.quitButton.isEnabled = false
+        val slideDistance = resources.displayMetrics.widthPixels.toFloat()
+        rootView.animate().cancel()
+        rootView.animate()
+            .translationX(slideDistance)
+            .setDuration(tutorialDismissSlideMs)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                if (isAdded) {
+                    performTutorialDismiss()
+                }
+            }
+            .start()
+    }
 
+    /** [closeFragment] kayma animasyonu bittikten sonra: mevcut kapanış / sezon kapısı akışı. */
+    private fun performTutorialDismiss() {
+        val act = activity as? MainActivity
+        // popBackStack öncesi: destroy callback reconcile'ı VISIBLE+Abacus ile kilitlemesin.
+        act?.beginAbacusOverlayDismissForSeasonGate()
+        val fm = parentFragmentManager
+        // LessonAdapter replace+addToBackStack ile açıyor; yalnızca remove hayaleti geri bırakabiliyor.
+        if (fm.backStackEntryCount > 0) {
+            fm.popBackStack()
+            fm.executePendingTransactions()
+        } else if (isAdded) {
+            fm.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .remove(this)
+                .commitNowAllowingStateLoss()
+        }
+        act?.scheduleSeasonGateAfterAbacusOverlayDismissed()
     }
     private fun devametFragment(fragment: Fragment) {
         // Devam butonunu ekranın altından kayarak göster
@@ -1164,9 +1207,181 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
     private fun isAnyAnimationRunning(): Boolean {
-        return currentAnimations.any { it.isAnimating() } || 
-               widgetAnimators.any { it.isRunning }
-               // || typewriterRunnable != null  // Typewriter effect devam ediyorsa true döndür
+        return backStepTransitionPending ||
+            (abacusController?.isResetInProgress() == true) ||
+            currentAnimations.any { it.isAnimating() } ||
+            widgetAnimators.any { it.isRunning }
+    }
+
+    private fun logTutorialAbacusResetInvoke(reason: String) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        val value = abacusController?.getCurrentValue()
+        TutorialAbacusResetDiagnostics.log(
+            "resetAbacus INVOKE reason=$reason currentStep=$currentStep " +
+                "backOrFront=$backOrFront controllerValue=$value " +
+                "resetInProgress=${abacusController?.isResetInProgress() == true} " +
+                "step=${TutorialAbacusResetDiagnostics.stepLabel(getCurrentStep())}",
+        )
+    }
+
+    private fun logTutorialAbacusResetKontrol(
+        step: TutorialStep,
+        controlValue: Int,
+        correct: Boolean,
+    ) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        TutorialAbacusResetDiagnostics.log(
+            "KONTROL_ET step=$currentStep correct=$correct control=$controlValue " +
+                "expected=${step.answerNumber} ${TutorialAbacusResetDiagnostics.stepFlags(step)} " +
+                "text=${TutorialAbacusResetDiagnostics.stepLabel(step)}",
+        )
+    }
+
+    private fun logTutorialAbacusResetForwardContinue(departedIndex: Int) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        val departed = currentTutorialSteps.getOrNull(departedIndex)
+        val landed = getCurrentStep()
+        val willReset = getPlusIndexCurrentStep(-1).nextStepAbacusReset == true
+        val controllerValue = abacusController?.getCurrentValue()
+        TutorialAbacusResetDiagnostics.log(
+            "FORWARD_CONTINUE departedIndex=$departedIndex landedStep=$currentStep " +
+                "willCallResetAbacus=$willReset (onlyIf_nextStepAbacusReset_on_departed) " +
+                "departedAbacusReset=${departed?.abacusReset} " +
+                "(NOTE: abacusReset is NOT read on forward; only on BACK/INCORRECT) " +
+                "controllerValue=$controllerValue",
+        )
+        if (departed != null) {
+            TutorialAbacusResetDiagnostics.log(
+                "FORWARD_CONTINUE departed: ${TutorialAbacusResetDiagnostics.stepFlags(departed)} " +
+                    "text=${TutorialAbacusResetDiagnostics.stepLabel(departed)}",
+            )
+        }
+        TutorialAbacusResetDiagnostics.log(
+            "FORWARD_CONTINUE landed: ${TutorialAbacusResetDiagnostics.stepFlags(landed)} " +
+                "text=${TutorialAbacusResetDiagnostics.stepLabel(landed)}",
+        )
+    }
+
+    private fun logTutorialAbacusResetIncorrect(
+        step: TutorialStep,
+        needsReset: Boolean,
+        backNum: Int?,
+    ) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        TutorialAbacusResetDiagnostics.log(
+            "INCORRECT_RETRY step=$currentStep needsReset=$needsReset backAnswerNumber=$backNum " +
+                "${TutorialAbacusResetDiagnostics.stepFlags(step)} " +
+                "text=${TutorialAbacusResetDiagnostics.stepLabel(step)}",
+        )
+    }
+
+    private fun logTutorialAbacusResetBack(phase: String) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        val step = getCurrentStep()
+        TutorialAbacusResetDiagnostics.log(
+            "BACK_BUTTON phase=$phase currentStep=$currentStep " +
+                "${TutorialAbacusResetDiagnostics.stepFlags(step)} " +
+                "text=${TutorialAbacusResetDiagnostics.stepLabel(step)}",
+        )
+    }
+
+    private fun logTutorialAbacusResetShowStep(position: Int, phase: String) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        val value = abacusController?.getCurrentValue()
+        TutorialAbacusResetDiagnostics.log(
+            "SHOW_STEP $phase pos=$position currentStep=$currentStep " +
+                "controllerValue=$value backOrFront=$backOrFront",
+        )
+    }
+
+    /**
+     * Kısmi cevap zincirinde ileri geçiş (ör. 30 → 32): margin aynı kalsın, [updateAllAppearance]
+     * mevcut seçili drawable'ları ezmesin. Terk edilen adımın [answerNumber] == yeni adımın
+     * [backAnswerNumber] ve abaküs değeri uyumlu olmalı.
+     */
+    private fun shouldPreserveBeadAppearanceOnSetup(): Boolean {
+        if (!backOrFront || currentStep <= 0) return false
+        val landed = getCurrentStep()
+        val backNum = landed.backAnswerNumber ?: return false
+        val departed = getPlusIndexCurrentStep(-1)
+        val departedAnswer = departed.answerNumber ?: return false
+        if (departedAnswer != backNum) return false
+        val controllerValue = abacusController?.getCurrentValue()
+        if (controllerValue != null && controllerValue != backNum) return false
+        return true
+    }
+
+    /**
+     * Ara adımda [answerNumber] yok → [shouldPreserveBeadAppearanceOnSetup] false kalır; iç state
+     * [backAnswerNumber]'da olsa bile [syncStateFromUi] margin'i 0 okuyup [updateAllAppearance]
+     * ile seçili renkleri silebilir. Bu durumda sayıdan kur + görünümü güncelle.
+     */
+    private fun shouldApplyBackAnswerFromControllerOnSetup(): Boolean {
+        if (!backOrFront || currentStep <= 0) return false
+        val backNum = getCurrentStep().backAnswerNumber ?: return false
+        val controllerValue = abacusController?.getCurrentValue() ?: return false
+        return controllerValue == backNum
+    }
+
+    private fun logTutorialPreserveBeadAppearance(preserve: Boolean) {
+        if (!TutorialAbacusResetDiagnostics.ENABLED) return
+        val landed = getCurrentStep()
+        val departed = getPlusIndexCurrentStep(-1)
+        TutorialAbacusResetDiagnostics.log(
+            "PRESERVE_BEAD_APPEARANCE preserve=$preserve currentStep=$currentStep " +
+                "departedAnswer=${departed.answerNumber} landedBack=${landed.backAnswerNumber} " +
+                "controllerValue=${abacusController?.getCurrentValue()} " +
+                "syncPath=${if (preserve) "applyInternalStateFromValue" else "syncStateFromUi"}",
+        )
+    }
+
+    private fun logTutorialBackPress(phase: String, extra: String = "") {
+        if (!TutorialBeadDiagnostics.ENABLED) return
+        val step = getCurrentStep()
+        val nextStep = currentTutorialSteps.getOrNull(currentStep + 1)
+        val beadAnims = currentAnimations.count { it.isAnimating() }
+        TutorialBeadDiagnostics.log(
+            "[BACK $phase] currentStep=$currentStep backOrFront=$backOrFront " +
+                "pendingBack=$backStepTransitionPending pendingRunnable=${pendingBackShowStepRunnable != null} " +
+                "isAnyAnim=${isAnyAnimationRunning()} beadAnims=$beadAnims " +
+                "resetInProgress=${abacusController?.isResetInProgress() == true} " +
+                "step=${step.text.take(28)} resetAndWaithNext=${nextStep?.resetAndWaith} " +
+                "skipReverse=${step.backAnswerNumber != null} $extra",
+        )
+    }
+
+    private fun cancelPendingBackShowStep() {
+        pendingBackShowStepRunnable?.let { binding.root.removeCallbacks(it) }
+        pendingBackShowStepRunnable = null
+        backStepTransitionPending = false
+        binding.overlay.visibility = View.GONE
+        binding.overlay.isClickable = false
+        binding.overlay.isFocusable = false
+    }
+
+    private fun scheduleBackShowStep(delayMs: Long, skipReverseBeadAnims: Boolean) {
+        cancelPendingBackShowStep()
+        backStepTransitionPending = delayMs > 0
+        if (delayMs > 0) {
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.alpha = 0.01f
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+        }
+        val runnable = Runnable {
+            if (!isAdded) return@Runnable
+            pendingBackShowStepRunnable = null
+            backStepTransitionPending = false
+            binding.overlay.visibility = View.GONE
+            binding.overlay.isClickable = false
+            binding.overlay.isFocusable = false
+            logTutorialBackPress("delayedShowStep firing")
+            showStep(currentStep, skipAnimations = skipReverseBeadAnims)
+            hideDevamButtonIfVisible()
+        }
+        pendingBackShowStepRunnable = runnable
+        logTutorialBackPress("scheduleBackShowStep", "delayMs=$delayMs skipReverse=$skipReverseBeadAnims")
+        binding.root.postDelayed(runnable, delayMs)
     }
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
@@ -1603,7 +1818,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 abacusReset = true,
                 nextStepAbacusReset = true,
-                requestText = "Bir adet beşlik ve 1 adet birlik boncuğu kullan."
+                requestText = "1 adet beşlik ve 1 adet birlik boncuğu kullan."
             ),TutorialStep(
                 "Son olarak bu sayıyı yazalım.",
                 questionTextVisibility = View.VISIBLE,
@@ -1616,7 +1831,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 abacusReset = true,
                 nextStepAbacusReset = true,
-                requestText = "Bir adet beşlik ve 3 adet birlik boncuğu kullan."
+                requestText = "1 adet beşlik ve 3 adet birlik boncuğu kullan."
             ),
 
             TutorialStep(
@@ -1629,7 +1844,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
         )
     }
-    
     private fun createTutorialSteps100(){
         tutorialSteps100 = listOf(
             TutorialStep(
@@ -1728,13 +1942,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "90 ise böyle gösterilir.",
                 listOf(
                     BeadAnimation(this, "rod3_bead_bottom4", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
                 ),
                 soundResource = R.raw.tutorial3_110,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
             ),TutorialStep(
-                "Bu sayıyı beraber yazalım.",
+                "Beraber örnek yaparak pekiştirelim.",
                 listOf(
                     BeadAnimation(this, "rod3_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_bottom2", 2),
@@ -1743,6 +1956,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 4),
                     // İhtiyaca göre daha fazla animasyon eklenebilir
                 ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                resetAndWaith = true,
+                requestText = "Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle."
+            ),
+            TutorialStep(
+                "Bu sayıyı yazıp 'Kontrol Et' butonuna tıkla.",
                 soundResource = R.raw.tutorial3_111,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -1753,7 +1975,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 answerNumber = 70,
                 abacusReset = true,
                 nextStepAbacusReset = true,
-                resetAndWaith = true,
                 requestText = "Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle."
             ),TutorialStep(
                 "Birden fazla basamaklı sayılar yazılırken her zaman en büyük basamaktan başlanır.",
@@ -1952,7 +2173,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun createTutorialSteps101(){
         tutorialSteps101 = listOf(
             TutorialStep(
-                "Bu derste 3 basamaklı sayıları göreceğiz.",
+                "Bu derste 3-4-5 basamaklı sayıları göreceğiz.",
                 soundResource = R.raw.tutorial4_100,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
@@ -1973,6 +2194,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 listOf(
                     BeadAnimation(this, "rod2_bead_bottom1", 1)
                 ),
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                ),
                 soundResource = R.raw.tutorial4_103,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -1982,6 +2206,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Sonrasında onlar basamağını,",
                 listOf(
                     BeadAnimation(this, "rod3_bead_top", 3),
+                ),
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
                 ),
                 soundResource = R.raw.tutorial4_104,
                 useTypewriterEffect = true,
@@ -1995,6 +2222,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
                     BeadAnimation(this, "rod4_bead_bottom4", 1),
+                ),
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
                 ),
                 soundResource = R.raw.tutorial4_105,
                 useTypewriterEffect = true,
@@ -2011,37 +2241,44 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom3", 2),
                     BeadAnimation(this, "rod4_bead_bottom4", 2),
                 ),
-                soundResource = R.raw.tutorial4_106,
+                soundResource = R.raw.tutorial3_118,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 questionTextVisibility = View.VISIBLE,
                 questionText = "687",
                 abacusReset = true
             ),TutorialStep(
-                "Önce yüzler basamağını abaküsteki sağdan 3. sütuna yazalım.",
+                "Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
                 soundResource = R.raw.tutorial4_107,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                ),
                 questionText = "687",
                 nextStepAvailable = false,
                 abacusClickable = true,
                 answerNumber = 600,
                 abacusReset = true,
-                requestText = "Bir adet birlik ve bir adet beşlik boncuk kullan."
+                requestText = "1 adet birlik ve 1 adet beşlik boncuk kullan."
             ),TutorialStep(
-                "Sonrasında onlar basamağını 2. sütuna yazalım.",
+                "Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
                 soundResource = R.raw.tutorial4_108,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                ),
                 questionText = "687",
                 nextStepAvailable = false,
                 abacusClickable = true,
                 answerNumber = 680,
-                backAnswerNumber = 600
+                backAnswerNumber = 600,
+                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
             ),TutorialStep(
-                "Ve son olarak birler basamağını en sağdaki sütuna yazalım.",
+                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.",
                 soundResource = R.raw.tutorial4_109,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -2051,7 +2288,347 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 answerNumber = 687,
                 backAnswerNumber = 680,
-                nextStepAbacusReset = true
+                nextStepAbacusReset = true,
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                ),
+                requestText = "2 adet birlik ve 1 adet beşlik boncuk kullan."
+            ),
+
+            TutorialStep(
+                "Bu sayıyı yazarken ise...",
+                soundResource = R.raw.tutorial4_3000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "7319",
+            ),TutorialStep(
+                "İlk olarak binler basamağını abaküsteki binler basamağına yazıyorum.",
+                listOf(
+                    BeadAnimation(this, "rod1_bead_bottom1", 1),
+                    BeadAnimation(this, "rod1_bead_bottom2", 1),
+                    BeadAnimation(this, "rod1_bead_top", 3),
+                ),
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_3001,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "7319",
+            ),TutorialStep(
+                "Sonrasında yüzler basamağını,",
+                listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod2_bead_bottom2", 1),
+                    BeadAnimation(this, "rod2_bead_bottom3", 1)
+                ),
+                soundResource = R.raw.tutorial4_3002,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextVisibility = View.VISIBLE,
+                questionText = "7319",
+            ),TutorialStep(
+                "Onlar basamağını,", //sese dokunma
+                listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                ),
+                soundResource = R.raw.tutorial4_2008,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "7319",
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+            ),TutorialStep(
+                "Ve son olarakta birler basamağını yazıyorum.", //sese dokunma
+                listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                ),
+                questionTextColorPositions = listOf(
+                    3 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "7319",
+            ),TutorialStep(
+                "Bu sayıyı beraber yazalım.", //dokunma
+                listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom3", 2),
+                    BeadAnimation(this, "rod1_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom2", 2),
+                    BeadAnimation(this, "rod1_bead_top", 4),
+                    ),
+                soundResource = R.raw.tutorial3_118,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "4813",
+                abacusReset = true
+            ),TutorialStep(
+                "Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
+                soundResource = R.raw.tutorial4_3003,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextVisibility = View.VISIBLE,
+                questionText = "4813",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4000,
+                abacusReset = true,
+                requestText = "4 adet birlik boncuk kullan."
+            ),TutorialStep(
+                "Sonrasında yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
+                soundResource = R.raw.tutorial4_3004,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "4813",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4800,
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),
+                ),
+                backAnswerNumber = 4000,
+                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
+            ),TutorialStep(
+                "Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
+                soundResource = R.raw.tutorial4_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "4813",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4810,
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+                backAnswerNumber = 4800,
+                requestText = "1 adet birlik boncuk kullan."
+            ),TutorialStep(
+                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
+                soundResource = R.raw.tutorial4_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "4813",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4813,
+                backAnswerNumber = 4810,
+                questionTextColorPositions = listOf(
+                    3 to Color.parseColor("#00BFFF"),
+                ),
+                nextStepAbacusReset = true,
+                requestText = "3 adet birlik boncuk kullan."
+            ),TutorialStep(
+                "",
+                options = listOf("En küçük basamaktan.","Basamağın önemi yok. İstediğimizden başlayabiliriz.","En büyük basamaktan."),
+                correctOptionIndex = listOf(2),
+                multipleChoice = false,
+                optionText = "Abaküse sayıları hangi basamaktan başlayarak yazarız?",
+                requestText = "İleride kuralları doğru uygulayabilmemiz için en büyük basamaktan başlayarak yazarız."
+            ),TutorialStep(
+                "Bu sayıyı yazarken ise...", //aynısını kullan
+                soundResource = R.raw.tutorial4_3000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "İlk olarak on binler basamağını abaküsteki on binler basamağına yazıyorum.",
+                listOf(
+                    BeadAnimation(this, "rod0_bead_bottom1", 1),
+                    BeadAnimation(this, "rod0_bead_bottom2", 1),
+                    BeadAnimation(this, "rod0_bead_bottom3", 1),
+                ),
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_3005,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "Sonrasında binler basamağını,",
+                listOf(
+                    BeadAnimation(this, "rod1_bead_bottom1", 1),
+                    BeadAnimation(this, "rod1_bead_bottom2", 1),
+                    BeadAnimation(this, "rod1_bead_bottom3", 1),
+                    BeadAnimation(this, "rod1_bead_bottom4", 1),
+                    BeadAnimation(this, "rod1_bead_top", 3),
+                ),
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_2006,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "Yüzler basamağını,",
+                listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                ),
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_2007,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "Onlar basamağını,",
+                listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1)
+                ),
+                questionTextColorPositions = listOf(
+                    3 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_2008,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "Ve son olarakta birler basamağını yazıyorum.", //sese dokunma
+                listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                ),
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                ),
+                soundResource = R.raw.tutorial4_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "39125",
+            ),TutorialStep(
+                "Bu sayıyı beraber yazalım.", //sese dokunma
+                listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom2", 2),
+                    BeadAnimation(this, "rod1_bead_bottom3", 2),
+                    BeadAnimation(this, "rod1_bead_bottom4", 2),
+                    BeadAnimation(this, "rod1_bead_top", 4),
+                    BeadAnimation(this, "rod0_bead_bottom1", 2),
+                    BeadAnimation(this, "rod0_bead_bottom2", 2),
+                    BeadAnimation(this, "rod0_bead_bottom3", 2),
+                    ),
+                soundResource = R.raw.tutorial4_106,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                abacusReset = true
+            ),TutorialStep(
+                "On binler basamağını sağdan 5. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
+                soundResource = R.raw.tutorial4_2009,
+                useTypewriterEffect = true,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                ),
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 80000,
+                abacusReset = true,
+                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
+            ),TutorialStep(
+                "Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //aynısını yaz
+                soundResource = R.raw.tutorial4_3003,
+                useTypewriterEffect = true,
+                questionTextColorPositions = listOf(
+                    1 to Color.parseColor("#00BFFF"),
+                ),
+                typewriterSpeed = 40L,
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84000,
+                backAnswerNumber = 80000,
+                requestText = "4 adet birlik boncuk kullan."
+            ),TutorialStep(
+                "Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
+                soundResource = R.raw.tutorial4_107,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84100,
+                backAnswerNumber = 84000,
+                requestText = "1 adet birlik boncuk kullan."
+            ),TutorialStep(
+                "Onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
+                soundResource = R.raw.tutorial4_2010,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    3 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84190,
+                backAnswerNumber = 84100,
+                requestText = "4 adet birlik ve 1 adet beşlik boncuk kullan."
+            ),TutorialStep(
+                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.",//sese dokunma
+                soundResource = R.raw.tutorial4_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextVisibility = View.VISIBLE,
+                questionText = "84192",
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84192,
+                backAnswerNumber = 84190,
+                nextStepAbacusReset = true,
+                requestText = "2 adet birlik boncuk kullan."
             ),TutorialStep(
                 "İşte bu kadar basit.",
                 soundResource = R.raw.tutorial4_110,
@@ -2076,13 +2653,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L
             ),
             TutorialStep(
-                "Kuralsız Toplama",
-                null,
-                soundResource = R.raw.tutorial2_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
                 text = "Bu işlemle başlayalım.",
                 questionText = "3 + 5",
                 questionTextVisibility = View.VISIBLE,
@@ -2091,7 +2661,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L
             ),
             TutorialStep(
-                "ilk önce abaküse 3 yazıyoruz.",
+                "İlk önce abaküse 3 yazıyoruz.",
                 questionText = "3 + 5",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(BeadAnimation(this, "rod4_bead_bottom1", 1),
@@ -2099,7 +2669,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom3", 1)),
                 soundResource = R.raw.tutorial2_4,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                )
 
             ),
             TutorialStep(
@@ -2110,7 +2683,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_top", 3)),
                 soundResource = R.raw.tutorial2_5,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
+                )
 
             ),
             TutorialStep(
@@ -2122,8 +2698,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
             ),
             TutorialStep(
-                "Bu işlemde de...",
-                soundResource = R.raw.tutorial2_100,
+                "Bu işlemde ise...",
+                soundResource = R.raw.tutorial12_9,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 questionText = "1 + 7",
@@ -2143,6 +2719,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1)),
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.",
@@ -2151,6 +2730,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 questionText = "1 + 7",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.",
@@ -2161,6 +2743,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom3", 1),
                     ),
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Cevap 8.",
@@ -2186,7 +2771,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),
             TutorialStep(
-                "İlk önce abaküse 2 yazıp Kontrol Et'e basalım.",
+                "İlk önce abaküse 2 yazıp Kontrol Et'e tıkla.",
                 questionTextVisibility = View.VISIBLE,
                 questionText = "2 + 6",
                 nextStepAvailable = false,
@@ -2196,9 +2781,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 abacusReset = true,
-                requestText = "En sağdaki sütundan 2 adet birlik boncuk kullan."
+                requestText = "En sağdaki sütundan 2 adet birlik boncuk kullan.",
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                )
             ),TutorialStep(
-                "Şimdi de 6'yı ekleyip Kontrol Et'e basalım.",
+                "Şimdi de 6'yı ekleyip Kontrol Et'e tıkla.",
                 questionText = "2 + 6",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 8,
@@ -2209,16 +2797,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 nextStepAbacusReset = true,
                 backAnswerNumber = 2,
-                requestText = "En sağdaki sütuna 1 tane beşlik, 1 tane birlik boncuk ekle."
-
-
-            ),TutorialStep(
-                "Çabuk öğreniyorsun.",
-                soundResource = R.raw.tutorial2_10,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                requestText = "En sağdaki sütuna 1 tane beşlik, 1 tane birlik boncuk ekle.",
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                )
             ),
-
             TutorialStep(
                 "Son olarak bu örneği beraber yapalım.",
                 soundResource = R.raw.tutorial2_103,
@@ -2229,7 +2812,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusReset = true
             ),
             TutorialStep(
-                "İlk önce abaküse 1 yazıp Kontrol Et'e basalım.",
+                "İlk önce abaküse 1 yazıp Kontrol Et'e tıkla.",
                 questionTextVisibility = View.VISIBLE,
                 questionText = "1 + 8",
                 nextStepAvailable = false,
@@ -2239,9 +2822,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 abacusReset = true,
-                requestText = "En sağdaki sütundan 1 adet birlik boncuk kullan."
+                requestText = "En sağdaki sütundan 1 adet birlik boncuk kullan.",
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                )
             ),TutorialStep(
-                "Şimdi de 8'i ekleyip Kontrol Et'e basalım.",
+                "Şimdi de 8'i ekleyip Kontrol Et'e tıkla.",
                 questionText = "1 + 8",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 9,
@@ -2252,22 +2838,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 backAnswerNumber = 1,
                 nextStepAbacusReset = true,
-                requestText = "En sağdaki sütundan 1 adet beşlik 3 adet birlik boncuk kullan."
-            ),
-            TutorialStep(
-                "Çok güzel. Hemen kaptın.",
-                soundResource = R.raw.tutorial2_21,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
+                requestText = "En sağdaki sütundan 1 adet beşlik 3 adet birlik boncuk kullan.",
+                questionTextColorPositions = listOf(
+                    4 to Color.parseColor("#00BFFF"),
+                )
             ),TutorialStep(
-                "Şimdi kendini deneme zamanı.",
-                soundResource = R.raw.tutorial2_22,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bakalım senin için hazırladığım testi çözebilecek misin?",
-                soundResource = R.raw.tutorial2_23,
+                "Teste geç.",
+                soundResource = R.raw.tutorial15_27,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
             )
@@ -9534,7 +10111,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Bir de bu işleme bakalım.",
                 questionText = "530 - 41",
                 questionTextVisibility = View.VISIBLE,
-                onStepComplete = { resetAbacus() },
+                onStepComplete = { resetAbacus("onStepComplete_callback") },
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial14_46
@@ -13065,8 +13642,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // Tutorial'da abaküs state'i artık ortak controller'da tutuluyor.
         val controller = abacusController ?: return false
         controlNumber = controller.getCurrentValue()
+        val step = getCurrentStep()
+        val correct = controlNumber == answerNumber
+        logTutorialAbacusResetKontrol(step, controlNumber, correct)
 
-        return if (controlNumber == answerNumber) {
+        return if (correct) {
             controlNumber = 0
             true
         } else {
@@ -13385,6 +13965,48 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         optionsAdapter?.submitOptions(emptyList(), false)
     }
 
+    /** Sonuç paneli açıkken arkadaki abacus / root / soru sor butonuna tıklanmasın. */
+    private fun enableTutorialResultTouchBlock(activePanel: View) {
+        binding.overlay.apply {
+            visibility = View.VISIBLE
+            alpha = 0.01f
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { /* tıklamayı yut */ }
+            bringToFront()
+        }
+        activePanel.apply {
+            isClickable = true
+            isFocusable = true
+            bringToFront()
+        }
+        binding.askQuestionButton.isClickable = false
+        binding.quitButton.isClickable = false
+        binding.backButton.isClickable = false
+        binding.skipTutorialButton.isClickable = false
+        binding.devamButton.isClickable = false
+        binding.abacusTapBlocker.isClickable = false
+        binding.root.setOnClickListener(null)
+    }
+
+    private fun disableTutorialResultTouchBlock() {
+        binding.overlay.apply {
+            visibility = View.GONE
+            setOnClickListener(null)
+        }
+        incorrectPanel.isClickable = false
+        incorrectPanel.isFocusable = false
+        correctPanel.isClickable = false
+        correctPanel.isFocusable = false
+        binding.askQuestionButton.isClickable = true
+        binding.quitButton.isClickable = true
+        binding.backButton.isClickable = true
+        binding.skipTutorialButton.isClickable = true
+        binding.devamButton.isClickable = true
+        binding.abacusTapBlocker.isClickable = true
+        binding.root.setOnClickListener { handleTutorialTapToAdvance() }
+    }
+
     private fun showResultPanelForOptions(isCorrect: Boolean) {
         dismissOptionsPanelBeforeResult()
 
@@ -13397,8 +14019,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
-            // Overlay'i görünür yap
-            binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
+            enableTutorialResultTouchBlock(correctPanel)
 
             // Control button'u devre dışı bırak
             controlButton.isClickable = false
@@ -13423,7 +14044,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 .setDuration(100)
                                 .setInterpolator(AccelerateDecelerateInterpolator())
                                 .start()
+                            val departedIndex = currentStep
                             currentStep++
+                            logTutorialAbacusResetForwardContinue(departedIndex)
+                            // #region agent log
+                            AgentDebugLog.log(
+                                hypothesisId = "H5",
+                                location = "TutorialFragment.correctContinue",
+                                message = "forward_after_correct",
+                                data = mapOf(
+                                    "departedIndex" to departedIndex,
+                                    "landedStep" to currentStep,
+                                    "tutorialNumber" to tutorialNumber,
+                                    "landedClickable" to getCurrentStep().abacusClickable,
+                                    "departedAnswer" to currentTutorialSteps.getOrNull(departedIndex)?.answerNumber,
+                                    "landedBack" to getCurrentStep().backAnswerNumber,
+                                ),
+                            )
+                            // #endregion
 
                             // Index kontrolü yap
                             if (currentStep >= currentTutorialSteps.size) {
@@ -13443,8 +14081,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                             }
 
                             if(getPlusIndexCurrentStep(-1).nextStepAbacusReset == true){
-                                Log.d("melih","work123")
-                                resetAbacus()
+                                resetAbacus("CORRECT_CONTINUE_nextStepAbacusReset")
                             }
                             if(!getCurrentStep().abacusClickable){
                                 getCurrentStep().onStepComplete?.invoke()
@@ -13463,7 +14100,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                                 .setDuration(400)
                                 .setInterpolator(BounceInterpolator())
                                 .start()
-                            binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                            disableTutorialResultTouchBlock()
                             
                             // Control button'u tekrar aktif hale getir
                             controlButton.isClickable = true
@@ -13493,7 +14130,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             incorrectPanel.translationY = incorrectPanel.height.toFloat()
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
-            binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
+
+            enableTutorialResultTouchBlock(incorrectPanel)
             
             // Control button'u devre dışı bırak
             controlButton.isClickable = false
@@ -13507,61 +14145,71 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .start()
 
-            incorrectPanel.findViewById<Button>(R.id.okayButton)
-                .setOnTouchListener { v, event ->
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
-                            true
-                        }
-
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                            if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
-                            
-                            // Panel açıksa kapat
-                            if (requestPanelView != null && requestPanelView?.visibility == View.VISIBLE) {
-                                hideRequestPanel(requestPanelView!!)
-                            }
-                            
-                            binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
-                            
-                            // Control button'u tekrar aktif hale getir
-                            controlButton.isClickable = true
-                            controlButton.isFocusable = true
-                            controlButtonListener?.let { listener ->
-                                controlButton.setOnTouchListener(listener)
-                            }
-
-                            incorrectButtonClick()
-                            incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
-                                .setDuration(200)
-                                .setInterpolator(AccelerateInterpolator())
-                                .withEndAction {
-                                    incorrectPanel.visibility = View.GONE
-                                }
-                                .start()
-
-                            startTutorialResultButtonsCooldown()
-                            true
-                        }
-
-                        else -> false
+            val okayButton = incorrectPanel.findViewById<Button>(R.id.okayButton)
+            okayButton.setOnTouchListener { v, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
+                        v.animate()
+                            .scaleX(0.85f)
+                            .scaleY(0.85f)
+                            .setDuration(100)
+                            .setInterpolator(AccelerateDecelerateInterpolator())
+                            .start()
+                        true
                     }
+
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
+                        v.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(400)
+                            .setInterpolator(BounceInterpolator())
+                            .start()
+                        dismissIncorrectResultPanel()
+                        true
+                    }
+
+                    else -> false
                 }
+            }
+
+            incorrectPanel.findViewById<ImageView>(R.id.incorrectIcon).apply {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { dismissIncorrectResultPanel() }
+            }
         }
+    }
+
+    private fun dismissIncorrectResultPanel() {
+        if (isTutorialResultButtonsCooldownActive()) return
+        if (incorrectPanel.visibility != View.VISIBLE) return
+
+        if (requestPanelView != null && requestPanelView?.visibility == View.VISIBLE) {
+            hideRequestPanel(requestPanelView!!)
+        }
+
+        disableTutorialResultTouchBlock()
+
+        controlButton.isClickable = true
+        controlButton.isFocusable = true
+        controlButtonListener?.let { listener ->
+            controlButton.setOnTouchListener(listener)
+        }
+
+        incorrectButtonClick()
+        incorrectPanel.animate()
+            .translationY(incorrectPanel.height.toFloat())
+            .setDuration(200)
+            .setInterpolator(AccelerateInterpolator())
+            .withEndAction {
+                incorrectPanel.visibility = View.GONE
+            }
+            .start()
+
+        startTutorialResultButtonsCooldown()
     }
     private fun tutorialSkipSetup(){
         binding.skipTutorialButton.setOnClickListener {
@@ -13639,9 +14287,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             val step = getCurrentStep()
             val backNum = step.backAnswerNumber
             val needsReset = step.abacusReset == true
+            logTutorialAbacusResetIncorrect(step, needsReset, backNum)
 
             if (needsReset) {
-                resetAbacus()
+                resetAbacus("INCORRECT_RETRY_abacusReset")
             }
 
             fun finishIncorrectStepUi() {
@@ -13651,19 +14300,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             // reset() animasyonu sürerken writeAnswerNumber margin/translation ile çakışır;
             // önce sıfırlama bitsin, sonra hedef sayıyı yaz.
+            // showStep, writeAnswerNumber bitmeden çağrılırsa setupBeads sync atlanır; 400ms sonra
+            // syncStateFromUi drawable'ı ezer → aktiflik kaybı. UI'yı onComplete'te güncelle.
             if (needsReset && backNum != null) {
                 Handler(Looper.getMainLooper()).postDelayed({
                     if (!isAdded) return@postDelayed
-                    writeAnswerNumber(backNum)
-                    Log.d("libya2", backNum.toString())
-                    finishIncorrectStepUi()
+                    writeAnswerNumber(backNum) { finishIncorrectStepUi() }
                 }, 350L)
             } else {
                 if (backNum != null) {
-                    writeAnswerNumber(backNum)
-                    Log.d("libya2", backNum.toString())
+                    writeAnswerNumber(backNum) { finishIncorrectStepUi() }
+                } else {
+                    finishIncorrectStepUi()
                 }
-                finishIncorrectStepUi()
             }
 
         } else {
@@ -13776,6 +14425,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         if (tutorialAbacusMetricsInitialized) return
         if (binding.abacusLinear.visibility != View.VISIBLE) return
         val controller = abacusController ?: return
+        val scheduledAtStep = currentStep
         binding.abacusLinear.post {
             if (!isAdded || view == null) return@post
             if (tutorialAbacusMetricsInitialized) return@post
@@ -13784,8 +14434,47 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             if (ok) {
                 tutorialAbacusMetricsInitialized = true
                 if (!isWritingAnswerNumber) {
+                    // #region agent log
+                    val rod3b1 = binding.root.findViewById<ImageView>(
+                        binding.root.resources.getIdentifier(
+                            "rod3_bead_bottom1",
+                            "id",
+                            requireContext().packageName,
+                        ),
+                    )
+                    AgentDebugLog.log(
+                        hypothesisId = "H4",
+                        location = "TutorialFragment.ensureTutorialAbacusMetrics",
+                        message = "delayed_post_syncStateFromUi",
+                        data = mapOf(
+                            "scheduledAtStep" to scheduledAtStep,
+                            "currentStepNow" to currentStep,
+                            "staleStep" to (scheduledAtStep != currentStep),
+                            "abacusClickableNow" to getCurrentStep().abacusClickable,
+                            "controllerValue" to controller.getCurrentValue(),
+                            "rod3b1Drawable" to TutorialBeadDiagnostics.drawableLabel(
+                                requireContext(),
+                                rod3b1,
+                            ),
+                        ),
+                    )
+                    // #endregion
                     controller.syncStateFromUi()
                     syncTutorialBooleansFromController()
+                    // #region agent log
+                    AgentDebugLog.log(
+                        hypothesisId = "H4",
+                        location = "TutorialFragment.ensureTutorialAbacusMetrics",
+                        message = "delayed_post_sync_done",
+                        data = mapOf(
+                            "currentStepNow" to currentStep,
+                            "rod3b1DrawableAfter" to TutorialBeadDiagnostics.drawableLabel(
+                                requireContext(),
+                                rod3b1,
+                            ),
+                        ),
+                    )
+                    // #endregion
                 }
             }
         }
@@ -13793,11 +14482,38 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun setupBeads() {
         val step = getCurrentStep()
+        val wouldPreserve = shouldPreserveBeadAppearanceOnSetup()
+        val rod3b1 = binding.root.findViewById<ImageView>(
+            binding.root.resources.getIdentifier(
+                "rod3_bead_bottom1",
+                "id",
+                requireContext().packageName,
+            ),
+        )
 
         if (!step.abacusClickable) {
             disableAllClickable(binding.abacusLinear)
             abacusController?.setEnabled(false)
             controlButton.visibility = View.INVISIBLE
+            // #region agent log
+            AgentDebugLog.log(
+                hypothesisId = "H1",
+                location = "TutorialFragment.setupBeads",
+                message = "early_return_non_clickable",
+                data = mapOf(
+                    "currentStep" to currentStep,
+                    "tutorialNumber" to tutorialNumber,
+                    "wouldPreserve" to wouldPreserve,
+                    "backOrFront" to backOrFront,
+                    "answerNumber" to step.answerNumber,
+                    "backAnswerNumber" to step.backAnswerNumber,
+                    "controllerValue" to abacusController?.getCurrentValue(),
+                    "tapBlockerVisible" to (binding.abacusTapBlocker.visibility == View.VISIBLE),
+                    "rod3b1Drawable" to TutorialBeadDiagnostics.drawableLabel(requireContext(), rod3b1),
+                    "isTutorial100OnlyBranch" to false,
+                ),
+            )
+            // #endregion
             return
         }
 
@@ -13813,6 +14529,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             animationDurationMs = 300L
         ).also { abacusController = it }
 
+        controller.setExternalBeadAnimationInProgress {
+            currentAnimations.any { it.isAnimating() }
+        }
         controller.setEnabled(step.abacusClickable && !isWritingAnswerNumber)
         controller.setup()
         ensureTutorialAbacusMetricsIfVisible()
@@ -13821,8 +14540,57 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // syncTutorialBooleansFromController() da fragment boolean'larını bu yanlış değerle ezer.
         // Sonraki writeAnswerNumber yanlış "mevcut durumdan" hareket eder → giderek bozulur.
         if (!isWritingAnswerNumber) {
-            controller.syncStateFromUi()
+            val preserveAppearance = shouldPreserveBeadAppearanceOnSetup()
+            val applyBackAnswer = !preserveAppearance && shouldApplyBackAnswerFromControllerOnSetup()
+            val syncPath = when {
+                preserveAppearance -> "applyInternal_noAppearance"
+                applyBackAnswer -> "applyBackAnswer_withAppearance"
+                else -> "syncStateFromUi"
+            }
+            logTutorialPreserveBeadAppearance(preserveAppearance)
+            // #region agent log
+            AgentDebugLog.log(
+                hypothesisId = "H2",
+                location = "TutorialFragment.setupBeads",
+                message = "clickable_sync_path",
+                data = mapOf(
+                    "currentStep" to currentStep,
+                    "tutorialNumber" to tutorialNumber,
+                    "preserveAppearance" to preserveAppearance,
+                    "applyBackAnswer" to applyBackAnswer,
+                    "syncPath" to syncPath,
+                    "controllerValue" to controller.getCurrentValue(),
+                    "backAnswerNumber" to step.backAnswerNumber,
+                    "rod3b1DrawableBefore" to TutorialBeadDiagnostics.drawableLabel(requireContext(), rod3b1),
+                ),
+            )
+            when {
+                preserveAppearance -> {
+                    val value = controller.getCurrentValue()
+                    controller.logInternalState("setupBeads BEFORE applyInternalStateFromValue")
+                    controller.applyInternalStateFromValue(value, applyAppearance = false)
+                    controller.logInternalState("setupBeads AFTER applyInternalStateFromValue")
+                }
+                applyBackAnswer -> {
+                    val backNum = step.backAnswerNumber!!
+                    controller.logInternalState("setupBeads BEFORE applyBackAnswer")
+                    controller.applyInternalStateFromValue(backNum, applyAppearance = true)
+                    controller.logInternalState("setupBeads AFTER applyBackAnswer")
+                }
+                else -> controller.syncStateFromUi(applyAppearance = true)
+            }
             syncTutorialBooleansFromController()
+            // #region agent log
+            AgentDebugLog.log(
+                hypothesisId = "H2",
+                location = "TutorialFragment.setupBeads",
+                message = "clickable_sync_done",
+                data = mapOf(
+                    "preserveAppearance" to preserveAppearance,
+                    "rod3b1DrawableAfter" to TutorialBeadDiagnostics.drawableLabel(requireContext(), rod3b1),
+                ),
+            )
+            // #endregion
         }
 
         // Legacy click-listener block'u artık kullanılmıyor.
@@ -14665,7 +15433,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         updateBeadAppearance(rod4TopBead, rod4TopIsDown)
     }
 
-    private fun resetAbacus() {
+    private fun resetAbacus(reason: String) {
+        logTutorialAbacusResetInvoke(reason)
         // Ekrana tıklanmasını engellemek için overlay'i görünür yap
         binding.overlay.visibility = View.VISIBLE
         binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
@@ -14682,6 +15451,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // Controller üzerinden abaküsü sıfırla (animasyonlu)
         abacusController?.reset(animate = true)
         syncTutorialBooleansFromController()
+        if (TutorialAbacusResetDiagnostics.ENABLED) {
+            val duration = abacusController?.let { 350L } ?: 0L
+            binding.root.postDelayed({
+                if (!isAdded) return@postDelayed
+                TutorialAbacusResetDiagnostics.log(
+                    "resetAbacus DONE reason=$reason controllerValue=${abacusController?.getCurrentValue()}",
+                )
+            }, duration)
+        }
     }
 
     private fun disableAllClickable(view: View) {
@@ -14738,6 +15516,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     override fun onDestroyView() {
+        cancelPendingBackShowStep()
         stopLearningSessionTracking()
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak

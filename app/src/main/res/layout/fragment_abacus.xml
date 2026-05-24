@@ -103,6 +103,25 @@
         android:background="@drawable/guide_panel_background"
         android:contentDescription="Geri"
         />
+
+    <ImageButton
+        android:id="@+id/btnForward"
+        android:layout_width="@dimen/abacus_fragment_back_btn_size"
+        android:layout_height="@dimen/abacus_fragment_back_btn_size"
+        android:layout_gravity="start|bottom"
+        android:background="@drawable/guide_panel_background"
+        android:contentDescription="ileri"
+        android:elevation="10dp"
+        android:minWidth="@dimen/abacus_fragment_back_btn_min"
+        android:minHeight="@dimen/abacus_fragment_back_btn_min"
+        android:paddingLeft="@dimen/abacus_fragment_back_btn_padding"
+        android:paddingBottom="@dimen/abacus_fragment_back_btn_padding"
+        android:rotationY="180"
+        android:scaleType="fitCenter"
+        android:src="@drawable/back_circle_button"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/panelContent"
+        app:layout_constraintEnd_toEndOf="@id/panelContent" />
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/lottieView"
         android:layout_width="@dimen/abacus_fragment_lottie_size"

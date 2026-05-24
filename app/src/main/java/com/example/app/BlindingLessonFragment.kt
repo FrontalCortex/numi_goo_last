@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -35,21 +36,24 @@ import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-
 class BlindingLessonFragment : Fragment() {
     companion object {
         private const val ARG_DAILY_MODE = "daily_mode"
+        private const val ARG_DAILY_PERIOD_KEY = "daily_period_key"
+        private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
-        private const val DAILY_QUESTION_PREFS = "daily_question_prefs"
-        private const val FIRESTORE_DAILY_QUESTION = "dailyQuestion"
 
-        fun newDailyQuestionInstance(operations: List<Any>): BlindingLessonFragment {
+        fun newDailyQuestionInstance(
+            operations: List<Any>,
+            periodKey: String,
+            slotIndex: Int,
+        ): BlindingLessonFragment {
             return BlindingLessonFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean(ARG_DAILY_MODE, true)
                     putSerializable("operations", ArrayList(operations))
+                    putString(ARG_DAILY_PERIOD_KEY, periodKey)
+                    putInt(ARG_DAILY_SLOT_INDEX, slotIndex)
                 }
             }
         }
@@ -138,6 +142,7 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
     private lateinit var correctAnswerText: TextView
+    private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
     private lateinit var correctPanel: View
@@ -159,39 +164,71 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var binding: FragmentBlindingLessonBinding
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
-
+    /** Kart açılırken kilitlenen periyot; ödül bu anahtarla eşleşmeli. */
+    private var dailyQuestionSessionPeriodKey: String? = null
+    /** Bu oturumdaki soru indeksi (0..2). */
+    private var dailyQuestionSlotIndex: Int = 0
+    private var lessonStarted = false
 
     private var isShowingSequence = false
     private var currentSequenceIndex = 0
     private var currentSequence: List<Int> = emptyList()
-    private val showNextNumberRunnable = object : Runnable {
-        override fun run() {
-            if (currentSequenceIndex < currentSequence.size) {
-                // Önce text'i boşalt
-                numberText.text = ""
+    private val sequenceRevealRunnable: Runnable = Runnable { onSequenceRevealStep() }
+    private val showNextNumberRunnable: Runnable = Runnable { onShowNextNumberStep() }
+    private val restartSequenceRunnable: Runnable = Runnable { onRestartSequenceAfterReset() }
 
-                handler.postDelayed({
-                    val currentNumber = currentSequence[currentSequenceIndex]
-                    numberText.text = currentNumber.toString()
-                    currentSequenceIndex++
-
-                    // Son sayı değilse bekle, son sayıysa bekleme!
-                    if (currentSequenceIndex < currentSequence.size) {
-                        handler.postDelayed(this, lessonItem.timePeriod?.toLong() ?: 1000L)
-                    } else {
-                        isShowingSequence = false
-                        controlButton.isEnabled = true
-                        controlButton.setBackgroundColor(resources.getColor(R.color.button_enabled, null))
-                        controlButton.setTextColor(resources.getColor(R.color.button_text_enabled, null))
-                    }
-                }, 200)
-            }
+    private fun onSequenceRevealStep() {
+        if (!isShowingSequence) return
+        if (currentSequenceIndex >= currentSequence.size) {
+            finishSequencePlayback()
+            return
         }
+        numberText.text = currentSequence[currentSequenceIndex].toString()
+        currentSequenceIndex++
+        if (currentSequenceIndex < currentSequence.size) {
+            handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod?.toLong() ?: 1000L)
+        } else {
+            finishSequencePlayback()
+        }
+    }
+
+    private fun onShowNextNumberStep() {
+        if (!isShowingSequence) return
+        if (currentSequenceIndex >= currentSequence.size) {
+            finishSequencePlayback()
+            return
+        }
+        numberText.text = ""
+        handler.postDelayed(sequenceRevealRunnable, 200L)
+    }
+
+    private fun onRestartSequenceAfterReset() {
+        if (!isAdded) return
+        startShowingSequence(currentSequence)
+    }
+
+    private fun stopSequencePlayback() {
+        handler.removeCallbacks(showNextNumberRunnable)
+        handler.removeCallbacks(sequenceRevealRunnable)
+        handler.removeCallbacks(restartSequenceRunnable)
+        isShowingSequence = false
+    }
+
+    private fun finishSequencePlayback() {
+        isShowingSequence = false
+        controlButton.isEnabled = true
+        controlButton.setBackgroundColor(resources.getColor(R.color.button_enabled, null))
+        controlButton.setTextColor(resources.getColor(R.color.button_text_enabled, null))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isDailyQuestionMode = arguments?.getBoolean(ARG_DAILY_MODE, false) == true
+        if (isDailyQuestionMode) {
+            dailyQuestionSessionPeriodKey = arguments?.getString(ARG_DAILY_PERIOD_KEY)
+                ?: DailyQuestionPeriod.currentPeriodKey()
+            dailyQuestionSlotIndex = arguments?.getInt(ARG_DAILY_SLOT_INDEX, 0)?.coerceIn(0, 2) ?: 0
+        }
         lessonItem = if (isDailyQuestionMode) {
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
@@ -230,8 +267,9 @@ class BlindingLessonFragment : Fragment() {
             binding.rulesBookButton.visibility = View.GONE
         }
         controlButtonAnim()
-        showCurrentOperation()
+        setupStartButton()
         setupQuitButton()
+        setupBackPressHandler()
         rulesBookButtonClick()
         resetClickListener()
         blindingOrRace()
@@ -245,25 +283,44 @@ class BlindingLessonFragment : Fragment() {
             lessonStep = lessonItem.startStepNumber!!
             // lessonStep değerini kontrol et ve güvenli bir şekilde kullan
             val currentLessonStep = if (lessonStep > 0) lessonStep else 1
-            if(lessonItem.stepIsFinish){
-                operations = getLessonOperationsBlinding(lessonItem.finishStepNumber!!)
+            val minLessonId = lessonItem.minLessonOperationsId()
+            val requestedLessonId = if (lessonItem.stepIsFinish) {
+                lessonItem.finishStepNumber!!
             } else {
-                operations = getLessonOperationsBlinding(currentLessonStep)
-
+                currentLessonStep
             }
+            val resolvedLessonId = MapFragment.resolveLessonOperationsBlindingId(
+                requestedLessonId,
+                minLessonId,
+            )
+            operations = getLessonOperationsBlinding(resolvedLessonId)
 
         }
     }
     private fun timeStarter(){
         if(lessonItem.type == 2){
             timerTextView.visibility = View.VISIBLE
-            if (!isTimerStarted) {
-                startTimer()
-                isTimerStarted = true
-            }
         }
         else{
             timerTextView.visibility = View.INVISIBLE
+        }
+    }
+
+    private fun startTimerIfNeeded() {
+        if (lessonItem.type == 2 && !isTimerStarted) {
+            startTimer()
+            isTimerStarted = true
+        }
+    }
+
+    private fun setupStartButton() {
+        binding.startButton.setOnClickListener {
+            if (lessonStarted) return@setOnClickListener
+            lessonStarted = true
+            binding.startButton.visibility = View.GONE
+            controlButton.visibility = View.VISIBLE
+            startTimerIfNeeded()
+            showCurrentOperation()
         }
     }
     private fun blindingOrRace(){
@@ -299,6 +356,7 @@ class BlindingLessonFragment : Fragment() {
         fubHintClickListener()
         lottieView = binding.lottieView
         correctAnswerText = binding.correctAnswerText
+        correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
         numberText = binding.firstNumberText
@@ -349,29 +407,15 @@ class BlindingLessonFragment : Fragment() {
 
         binding.resetButton.setOnClickListener {
             binding.resetButton.playAnimation()
+            controlNumber = 0
+            when {
+                lessonItem.isBlinding == null -> resetAbacus()
+                lessonItem.isBlinding == true -> binding.numberInput.setText("")
+            }
             if (currentSequence.isNotEmpty()) {
-                // Gösterimi iptal et
-                handler.removeCallbacks(showNextNumberRunnable)
-                isShowingSequence = false
-
-                // Önce text'i boşalt
+                stopSequencePlayback()
                 numberText.text = ""
-
-                // 0.2 saniye bekle, sonra sıralamayı başlat
-                handler.postDelayed({
-                    currentSequenceIndex = 0
-
-                    // Butonu devre dışı bırak
-                    controlButton.isEnabled = false
-                    controlButton.setBackgroundColor(resources.getColor(R.color.button_disabled, null))
-                    controlButton.setTextColor(resources.getColor(R.color.button_text_disabled, null))
-
-                    // İlk sayıyı göster ve gösterimi başlat
-                    numberText.text = currentSequence[0].toString()
-                    currentSequenceIndex = 1
-                    isShowingSequence = true
-                    handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod ?: 1000L)
-                }, 200)
+                handler.postDelayed(restartSequenceRunnable, 200L)
             }
         }
 
@@ -443,6 +487,12 @@ class BlindingLessonFragment : Fragment() {
 
         return "$firstLine\n$secondLine"
     }
+
+    private fun fillIncorrectPanelAnswers() {
+        correctAnswerLabel.text = "Doğru cevap $answerNumber"
+        correctAnswerText.text = "Senin cevabın $controlNumber"
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun controlButtonAnim() {
         controlButton.setOnTouchListener { v, event ->
@@ -533,19 +583,36 @@ class BlindingLessonFragment : Fragment() {
             closeFragment()
         }
     }
+
+    private fun setupBackPressHandler() {
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    closeFragment()
+                }
+            },
+        )
+    }
     private fun closeFragment() {
         if (isDailyQuestionMode) {
-            parentFragmentManager.popBackStack()
+            (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
+                ?: parentFragmentManager.popBackStack()
             return
         }
-        // BackStack'i temizle ve MapFragment'e dön
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                R.anim.slide_in_left,  // Giriş animasyonu
-                R.anim.slide_out_left // Çıkış animasyonu
-            )
-            .remove(this@BlindingLessonFragment)
-            .commit()
+        val main = activity as? MainActivity
+        val fm = parentFragmentManager
+        main?.prepareMapReturnAfterLessonClaim()
+        if (fm.backStackEntryCount > 0) {
+            fm.popBackStack()
+            fm.executePendingTransactions()
+        } else if (isAdded) {
+            fm.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .remove(this@BlindingLessonFragment)
+                .commitNowAllowingStateLoss()
+        }
+        main?.finalizeMapReturnAfterLessonClaim("BlindingLessonFragment.quit")
     }
     private fun rulesBookButtonClick(){
         rulesBookButton.setOnClickListener{
@@ -579,9 +646,9 @@ class BlindingLessonFragment : Fragment() {
             correctAnswer++
             playSound(R.raw.correct_answer_sound)
 
-            if (currentIndex == operations.size -1 && correctAnswer == totalQuestions) {
-                lottieView.visibility=View.VISIBLE
-                lottieView.playAnimation() // Animasyonu başlat
+            if (currentIndex == operations.size - 1 && correctAnswer == totalQuestions) {
+                lottieView.visibility = View.VISIBLE
+                lottieView.playAnimation()
             }
             correctPanel.translationY = correctPanel.height.toFloat()
             correctPanel.visibility = View.VISIBLE
@@ -612,6 +679,11 @@ class BlindingLessonFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            val willFinishLesson = currentIndex + 1 > operations.size - 1
+                            if (isDailyQuestionMode && willFinishLesson) {
+                                v.isEnabled = false
+                                addExitTouchBlocker()
+                            }
                             currentIndex++
                             v.animate()
                                 .scaleX(1f)
@@ -635,7 +707,7 @@ class BlindingLessonFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if (isDailyQuestionMode) {
-                                    showDailyQuestionRewardFlow()
+                                    handleDailyQuestionLessonComplete()
                                 } else if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
                                     showChestResult()
                                 }
@@ -666,7 +738,6 @@ class BlindingLessonFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
-            correctAnswerText.text = answerNumber.toString()
             incorrectPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -689,9 +760,24 @@ class BlindingLessonFragment : Fragment() {
 
                         MotionEvent.ACTION_UP -> {
                             if (isDailyQuestionMode) {
+                                v.isEnabled = false
+                                addExitTouchBlocker()
+                                v.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(400)
+                                    .setInterpolator(BounceInterpolator())
+                                    .start()
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
-                                incorrectPanel.visibility = View.GONE
-                                closeFragment()
+                                incorrectPanel.animate()
+                                    .translationY(incorrectPanel.height.toFloat())
+                                    .setDuration(200)
+                                    .setInterpolator(AccelerateInterpolator())
+                                    .withEndAction {
+                                        incorrectPanel.visibility = View.GONE
+                                        handleDailyQuestionWrongAnswer()
+                                    }
+                                    .start()
                                 return@setOnTouchListener true
                             }
                             currentIndex++
@@ -1850,13 +1936,16 @@ class BlindingLessonFragment : Fragment() {
                                 controlNumber = 0
                                 true
                             } else {
+                                fillIncorrectPanelAnswers()
                                 controlNumber = 0
                                 false
                             }
                         } catch (e: NumberFormatException) {
+                            fillIncorrectPanelAnswers()
                             false
                         }
                     } else {
+                        fillIncorrectPanelAnswers()
                         false
                     }
                 } else {
@@ -1888,16 +1977,20 @@ class BlindingLessonFragment : Fragment() {
                                 controlNumber = 0
                                 true
                             } else {
+                                fillIncorrectPanelAnswers()
                                 controlNumber = 0
                                 false
                             }
                         } catch (e: NumberFormatException) {
+                            fillIncorrectPanelAnswers()
                             false
                         }
                     } else {
+                        fillIncorrectPanelAnswers()
                         false
                     }
                 } else {
+                    fillIncorrectPanelAnswers()
                     false
                 }
             }
@@ -1941,42 +2034,46 @@ class BlindingLessonFragment : Fragment() {
             .commit()
     }
 
-    private fun showDailyQuestionRewardFlow() {
-        markDailyQuestionSolvedForToday()
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
-            )
-            .replace(R.id.abacusFragmentContainer, DailyQuestionRewardFragment())
-            .commit()
+    private fun isDailyQuestionSessionPeriodValid(): Boolean {
+        val sessionKey = dailyQuestionSessionPeriodKey ?: return false
+        return sessionKey == DailyQuestionPeriod.currentPeriodKey()
     }
 
-    private fun markDailyQuestionSolvedForToday() {
-        if (!isDailyQuestionMode) return
-        val now = java.util.Calendar.getInstance()
-        val dayKey = "${now.get(java.util.Calendar.YEAR)}-${now.get(java.util.Calendar.DAY_OF_YEAR)}"
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        val uidKey = uid ?: "guest"
-        requireContext()
-            .getSharedPreferences(DAILY_QUESTION_PREFS, android.content.Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean("daily_solved_${uidKey}_$dayKey", true)
-            .apply()
-        if (uid != null) {
-            FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .collection(FIRESTORE_DAILY_QUESTION)
-                .document(dayKey)
-                .set(
-                    mapOf(
-                        "solved" to true,
-                    ),
-                    com.google.firebase.firestore.SetOptions.merge(),
-                )
+    private fun handleDailyQuestionWrongAnswer() {
+        if (!isAdded) return
+        val periodKey = dailyQuestionSessionPeriodKey
+        if (periodKey.isNullOrEmpty() || !isDailyQuestionSessionPeriodValid()) {
+            closeFragment()
+            return
+        }
+        DailyQuestionRepository.markPendingDiamondContinue(
+            requireContext(),
+            periodKey,
+            dailyQuestionSlotIndex,
+        ) {
+            if (!isAdded) return@markPendingDiamondContinue
+            DailyQuestionBrokenHeartStore.requestPlayOnNextBind(requireContext(), periodKey)
+            closeFragment()
         }
     }
+
+    private fun handleDailyQuestionLessonComplete() {
+        if (!isAdded) return
+        if (!isDailyQuestionSessionPeriodValid()) {
+            closeFragment()
+            return
+        }
+        val periodKey = dailyQuestionSessionPeriodKey ?: run {
+            closeFragment()
+            return
+        }
+        DailyQuestionRepository.incrementSolvedCount(requireContext(), periodKey) { _ ->
+            if (!isAdded) return@incrementSolvedCount
+            DailyQuestionBrokenHeartStore.clearBrokenHold116(requireContext(), periodKey)
+            closeFragment()
+        }
+    }
+
     private fun showLessonResult() {
         val lessonResultFragment = LessonResult()
         val lessonResultFalse = LessonResultFalse()
@@ -2024,29 +2121,26 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun startShowingSequence(sequence: List<Int>) {
-        if (isShowingSequence) return
-        
+        stopSequencePlayback()
         currentSequence = sequence
+        if (currentSequence.isEmpty()) return
+
         currentSequenceIndex = 0
         isShowingSequence = true
         controlButton.isEnabled = false
-        // Button'u devre dışı haline getir
         controlButton.setBackgroundColor(resources.getColor(R.color.button_disabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_disabled, null))
-        
-        // İlk sayıyı göster
-        if (currentSequence.isNotEmpty()) {
-            numberText.text = currentSequence[0].toString()
-            currentSequenceIndex = 1
-            handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod!!)
-        }
+
+        numberText.text = currentSequence[0].toString()
+        currentSequenceIndex = 1
+        handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod ?: 1000L)
     }
 
     override fun onDestroyView() {
         stopLearningSessionTracking()
         releaseLaunchTouchBlocker()
         super.onDestroyView()
-        handler.removeCallbacks(showNextNumberRunnable)
+        stopSequencePlayback()
     }
 
     override fun onResume() {
@@ -2076,6 +2170,24 @@ class BlindingLessonFragment : Fragment() {
         if (elapsedMs > 0L) {
             MissionsProgressStore.recordLearningDurationMs(ctx, elapsedMs)
         }
+    }
+
+    private fun addExitTouchBlocker() {
+        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
+        if (content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG) != null) return
+        val blocker = View(requireContext()).apply {
+            tag = PRACTICE_TOUCH_BLOCKER_TAG
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            setBackgroundColor(Color.TRANSPARENT)
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener { _, _ -> true }
+            elevation = 1000f
+        }
+        content.addView(blocker)
     }
 
     private fun releaseLaunchTouchBlocker() {

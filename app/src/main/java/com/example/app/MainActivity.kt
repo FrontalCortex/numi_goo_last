@@ -16,7 +16,9 @@ import android.content.pm.PackageManager
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -31,11 +33,15 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Source
 
 //import com.google.android.gms.ads.MobileAds
 
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.ActivityMainBinding
 import com.example.app.model.LessonItem
@@ -60,6 +66,65 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
+        const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+        const val LESSON_ACTION_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
+        const val FIRST_TUTORIAL_LOG_TAG = "FirstTutorialDbg"
+        /** Görevler pratik / günlük soru overlay kapanışı — [finishOverlayReturnToTasks] ile temizlenir. */
+        const val ABACUS_OVERLAY_BACK_STACK = "abacus_overlay"
+    }
+
+    internal fun buildTouchDiagSnapshot(): String {
+        if (!::binding.isInitialized) return "binding=false"
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
+        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val abacusVis = when (binding.abacusFragmentContainer.visibility) {
+            View.VISIBLE -> "VISIBLE"
+            View.GONE -> "GONE"
+            else -> binding.abacusFragmentContainer.visibility.toString()
+        }
+        return buildString {
+            append("base=").append(base)
+            append(" abacusFrag=").append(abacusFrag)
+            append(" abacusVis=").append(abacusVis)
+            append(" forceDismiss=").append(forcingAbacusOverlayDismissForSeasonGate)
+            append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        MainActivityTouchDiag.reportTouchDownIfSuspicious(this, ev)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun logFirstTutorial(event: String, details: String = "") {
+        val msg = if (details.isEmpty()) event else "$event | $details"
+        Log.d(FIRST_TUTORIAL_LOG_TAG, msg)
+    }
+
+    private fun overlaySnapshot(caller: String): String {
+        if (!::binding.isInitialized) return "caller=$caller binding=false"
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
+        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val abacusVis = when (binding.abacusFragmentContainer.visibility) {
+            View.VISIBLE -> "VISIBLE"
+            View.GONE -> "GONE"
+            else -> binding.abacusFragmentContainer.visibility.toString()
+        }
+        return buildString {
+            append("caller=").append(caller)
+            append(" dest=").append(intent?.getStringExtra(EXTRA_START_DESTINATION) ?: "null")
+            append(" fromLogin=").append(intent?.getBooleanExtra(EXTRA_FROM_LOGIN, false) == true)
+            append(" auth=").append(auth.currentUser?.uid?.take(8) ?: "null")
+            append(" firstShown=").append(FirstTutorialShownStore.readLocal(this@MainActivity))
+            append(" base=").append(base)
+            append(" abacusFrag=").append(abacusFrag)
+            append(" abacusVis=").append(abacusVis)
+            append(" backStack=").append(fm.backStackEntryCount)
+            append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
+            append(" forceDismiss=").append(forcingAbacusOverlayDismissForSeasonGate)
+        }
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -140,6 +205,41 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var teacherSelectedQuestionTitle: String? = null
     private var notificationPermissionRequestInFlight = false
 
+    private var seasonLeaderboardPendingListener: ListenerRegistration? = null
+    private var seasonLeaderboardGateRetryLifecycleCallbacks: FragmentManager.FragmentLifecycleCallbacks? = null
+
+    /**
+     * Quit / ChestResult sonrası overlay kapanırken true: [reconcileAbacusOverlayWhenMapIsBase] host VISIBLE
+     * olsa bile pop/remove yapar (aksi halde back stack Abacus geri gelir, kapı bloklanır).
+     * Lesson bottom sheet ile ders açılırken false kalır → VISIBLE iken reconcile temizlik yapmaz.
+     */
+    private var forcingAbacusOverlayDismissForSeasonGate = false
+    private var practiceOverlayDismissRunnable: Runnable? = null
+    private val practiceOverlayExitAnimMs = 320L
+
+    /** [scheduleSeasonGateAfterAbacusOverlayDismissed] birleştirme; lesson sheet overlay açılmadan önce iptal edilir. */
+    private var pendingSeasonGateReconcileRunnable: Runnable? = null
+
+    /**
+     * Claim/continue yolu [scheduleSeasonGateAfterAbacusOverlayDismissed] çağırdı;
+     * destroy lifecycle ikinci tam gate tetiklemesin.
+     */
+    private var claimPathScheduledSeasonGate = false
+
+    /** Bottom sheet → Record/Abacus commit sırasında reconcile overlay'i silmesin. */
+    private var lessonSheetOverlayNavigationDepth = 0
+
+    /**
+     * [renderFirstTutorial] Map + Tutorial commitleri arasında back stack listener
+     * overlay'i henüz görmeden [restoreMapUiAfterLessonOverlayDismiss] çağırmasın.
+     */
+    private var firstTutorialOverlayBootstrapActive = false
+
+    /** Aynı karede birden fazla [tryShowSeasonLeaderboardRewardGateIfNeeded] → tek replace/commit. */
+    private val seasonLeaderboardGateCommitRunnable = Runnable {
+        commitSeasonLeaderboardRewardGateIfNeededNow()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -149,6 +249,11 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
                 binding.createQuestionOverlayContainer.visibility = View.GONE
+                binding.root.post {
+                    if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
+                        requestSeasonLeaderboardRewardGateIfPending()
+                    }
+                }
             }
         }
 
@@ -170,17 +275,43 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         supportFragmentManager.addOnBackStackChangedListener {
             // Re-evaluate bottom nav visibility with current fragment state.
             binding.bottomNavigationID.requestApplyInsets()
+            updateCurrencyPanelVisibility()
 
-            // Overlay (abacus/tutorial/practice) kapanınca alttaki ana fragment gizliyse tekrar göster.
+            // FM transaction ortasında çağrılır — restore'u bir sonraki kareye ertele.
             val topOverlay = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
             if (topOverlay == null) {
                 val baseFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-                if (baseFragment != null && baseFragment.isHidden) {
-                    supportFragmentManager.beginTransaction()
-                        .show(baseFragment)
-                        .commitAllowingStateLoss()
+                if (baseFragment is MapFragment) {
+                    if (firstTutorialOverlayBootstrapActive) {
+                        logFirstTutorial(
+                            "backStackChanged.skip restoreMapUi",
+                            "firstTutorialOverlayBootstrapActive " +
+                                overlaySnapshot("backStackChanged.skip"),
+                        )
+                    } else {
+                        logFirstTutorial(
+                            "backStackChanged->restoreMapUi SCHEDULED",
+                            overlaySnapshot("backStackChanged.topOverlayNull"),
+                        )
+                        binding.root.post {
+                            logFirstTutorial(
+                                "backStackChanged->restoreMapUi RUN",
+                                overlaySnapshot("backStackChanged.post"),
+                            )
+                            restoreMapUiAfterLessonOverlayDismiss()
+                        }
+                    }
+                } else if (baseFragment != null && baseFragment.isHidden) {
+                    binding.root.post {
+                        if (baseFragment.isAdded && baseFragment.isHidden) {
+                            supportFragmentManager.beginTransaction()
+                                .show(baseFragment)
+                                .commitAllowingStateLoss()
+                        }
+                    }
                 }
             }
+            binding.root.post { tryShowSeasonLeaderboardRewardGateIfNeeded() }
         }
         
         // Bildirimde gelen soru ID'si var mı? (sohbete deep-link)
@@ -196,23 +327,38 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = auth.currentUser != null
+        logFirstTutorial(
+            "onCreate.enter",
+            overlaySnapshot("onCreate") +
+                " loginStartEverShown=$loginStartEverShown online=${isOnline()} " +
+                "notifOpen=$openedFromChatNotification",
+        )
         if (loginStartEverShown && !hasExistingLogin) {
-            Log.d("kesl",loginStartEverShown.toString())
-            Log.d("kesl",hasExistingLogin.toString())
+            logFirstTutorial("onCreate.redirect", "LoginStartActivity (login_start_ever_shown)")
             startActivity(Intent(this, LoginStartActivity::class.java))
             finish()
             return
         }
         if (!fromLogin) {
+            logFirstTutorial("onCreate.deleteAllLessonItems", "before clear")
             deleteAllLessonItems(this)
+            logFirstTutorial(
+                "onCreate.deleteAllLessonItems",
+                "after clear lessonItems=${GlobalLessonData.lessonItems.size} " +
+                    "first_tutorial_shown=${FirstTutorialShownStore.readLocal(this)}",
+            )
         }
         coin = binding.currencyText
-        coin.text = getCurrency(this).toString()
+        binding.currencyText.text = UserWalletFirestore.getCachedCurrency(this).toString()
+        binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
+        auth.currentUser?.uid?.let { refreshWalletFromFirestore() }
 
-        // Öğretmen hesabında currencyPanel içindeki diamond/coin ve enerji ikonlarını gizle
+        // Öğretmen hesabında currencyPanel içindeki diamond/coin, anahtar ve enerji ikonlarını gizle
         if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) {
             binding.diamondID.visibility = View.GONE
             binding.currencyText.visibility = View.GONE
+            binding.keyIcon.visibility = View.GONE
+            binding.keyText.visibility = View.GONE
             binding.energyIcon.visibility = View.GONE
             binding.energyText.visibility = View.GONE
         }
@@ -232,67 +378,97 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
+
+        // Girişli kullanıcı: tüm part'larda eksik lessonProgress dokümanlarını arka planda doldur (idempotent).
+        if (auth.currentUser != null) {
+            GlobalLessonData.seedAllLessonProgressIfMissing(applicationContext)
+        }
         
         // Eğer uygulama çevrimdışıysa, doğrudan offline fragment'ı göster.
         if (!isOnline()) {
+            logFirstTutorial("onCreate.route", "offline -> OfflineFragment")
             showOfflineFragment()
         } else if (!openedFromChatNotification) {
             val preparedDestination = intent?.getStringExtra(EXTRA_START_DESTINATION)
-            if (preparedDestination == START_DESTINATION_MAP) {
-                supportFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragmentContainerID, MapFragment())
-                    addToBackStack(null)
-                    commit()
-                }
-            } else if (preparedDestination == START_DESTINATION_TUTORIAL) {
-                showFirstTutorialFromPreparedDataOrLoad()
-            } else {
-            val currentUser = auth.currentUser
-            if (currentUser == null) {
-                // Hesap yoksa local flag ile karar ver
-                val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
-                if (firstTutorialShown) {
+            when {
+                preparedDestination == START_DESTINATION_MAP -> {
+                    logFirstTutorial("onCreate.route", "prepared=MAP -> MapFragment only")
                     supportFragmentManager.beginTransaction().apply {
                         replace(R.id.fragmentContainerID, MapFragment())
                         addToBackStack(null)
                         commit()
                     }
-                } else {
-                    showFirstTutorial()
                 }
-            } else {
-                // Hesap varsa hesap bazlı Firestore flag ile karar ver
-                firestore.collection("users")
-                    .document(currentUser.uid)
-                    .get()
-                    .addOnSuccessListener { doc ->
-                        val firstTutorialShown = doc.getBoolean("first_tutorial_shown") == true
-                        // Mevcut local davranışla tutarlı olması için locale de yansıt
-                        prefs.edit().putBoolean("first_tutorial_shown", firstTutorialShown).apply()
+                preparedDestination == START_DESTINATION_TUTORIAL -> {
+                    logFirstTutorial("onCreate.route", "prepared=TUTORIAL -> showFirstTutorialFromPreparedDataOrLoad")
+                    showFirstTutorialFromPreparedDataOrLoad()
+                }
+                else -> {
+                    logFirstTutorial("onCreate.route", "prepared=null -> fallback auth check")
+                    val currentUser = auth.currentUser
+                    if (currentUser == null) {
+                        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
                         if (firstTutorialShown) {
+                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=true -> Map only")
                             supportFragmentManager.beginTransaction().apply {
                                 replace(R.id.fragmentContainerID, MapFragment())
                                 addToBackStack(null)
                                 commit()
                             }
                         } else {
+                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=false -> showFirstTutorial")
                             showFirstTutorial()
                         }
+                    } else {
+                        logFirstTutorial("onCreate.route", "uid=${currentUser.uid.take(8)} -> Firestore first_tutorial_shown")
+                        firestore.collection("users")
+                            .document(currentUser.uid)
+                            .get()
+                            .addOnSuccessListener { doc ->
+                                val firestoreRaw =
+                                    if (doc.exists()) doc.getBoolean("first_tutorial_shown") else null
+                                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
+                                    this@MainActivity,
+                                    firestoreRaw,
+                                    "Main.onCreate.firestore",
+                                )
+                                if (firstTutorialShown) {
+                                    FirstTutorialShownStore.repairFirestoreIfLocalShown(
+                                        this@MainActivity,
+                                        "Main.onCreate.firestore",
+                                    )
+                                }
+                                logFirstTutorial(
+                                    "onCreate.firestore",
+                                    "exists=${doc.exists()} firestoreRaw=$firestoreRaw resolved=$firstTutorialShown",
+                                )
+                                if (firstTutorialShown) {
+                                    supportFragmentManager.beginTransaction().apply {
+                                        replace(R.id.fragmentContainerID, MapFragment())
+                                        addToBackStack(null)
+                                        commit()
+                                    }
+                                } else {
+                                    showFirstTutorial()
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                logFirstTutorial("onCreate.firestore", "FAIL -> showFirstTutorial err=${e.message}")
+                                showFirstTutorial()
+                            }
                     }
-                    .addOnFailureListener {
-                        // Hesaplı kullanıcıda kararlı fallback: alan yokmuş gibi tutorial göster.
-                        showFirstTutorial()
-                    }
+                }
             }
-            }
+        } else {
+            logFirstTutorial("onCreate.route", "skipped startup routing (chat notification)")
         }
         binding.fragmentContainerID.post {
             Log.d("MainActivity", "post -> handleOpenQuestionIdFromIntent() called")
             handleOpenQuestionIdFromIntent()
         }
         // Sistem çubuğu renklerini message_topbar ile eşitle
-        window.statusBarColor = ContextCompat.getColor(this, R.color.message_topbar)
-        window.navigationBarColor = ContextCompat.getColor(this, R.color.message_topbar)
+        window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
+        window.navigationBarColor = ContextCompat.getColor(this, R.color.background_color)
         binding.bottomNavigationID.apply {
             itemIconTintList = null
             elevation = 0f
@@ -307,6 +483,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (supportFragmentManager.findFragmentByTag(SeasonLeaderboardRewardGateFragment.TAG) != null) {
+                    return
+                }
                 // 1) CreateQuestion akışındayken geri tuşu:
                 //    - Eğer öğretmen seçim akışından dönülmüş CreateQuestion ise:
                 //      onTeacherCreateQuestionDismissedByBack() + fragment'i gerçekten kapat.
@@ -315,6 +494,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
                 if (createQuestionOverlay != null || createQuestionAbacus != null) {
                     val fragment = createQuestionOverlay ?: createQuestionAbacus
+                    if (fragment?.isStudentSendingInProgress() == true) {
+                        return
+                    }
                     val fromTeacherSelectionBack =
                         fragment?.arguments?.getBoolean(CreateQuestionFragment.ARG_FROM_TEACHER_SELECTION_BACK, false) == true
                     if (fromTeacherSelectionBack) {
@@ -358,45 +540,118 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
             val createQuestionVisible = createQuestionOverlay != null || createQuestionAbacus != null
             val teacherSelectingQuestion = teacherPendingMediaPath != null && current is NotificationFragment
-            backCallback.isEnabled =
+            val seasonRewardGateVisible =
+                supportFragmentManager.findFragmentByTag(SeasonLeaderboardRewardGateFragment.TAG) != null
+            backCallback.isEnabled = seasonRewardGateVisible ||
                 (current is MapFragment && supportFragmentManager.backStackEntryCount <= 1) ||
                 createQuestionVisible ||
                 teacherSelectingQuestion
+            binding.root.post { tryShowSeasonLeaderboardRewardGateIfNeeded() }
         }
 
         // Listener'ları set et
         setupClickListeners()
+        binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
+
+        // Ders overlay'i (abacus/result) kapanınca back stack her zaman değişmez; MapFragment da sürekli resumed
+        // kalabilir. Sezon ödül kapısı için bloklayıcı fragment destroy olduğunda yeniden dene.
+        seasonLeaderboardGateRetryLifecycleCallbacks =
+            object : FragmentManager.FragmentLifecycleCallbacks() {
+                override fun onFragmentDestroyed(fm: FragmentManager, f: Fragment) {
+                    val cid = fragmentHostContainerIdForSeasonGateRetry(f)
+                    val isLessonFlowType = fragmentBlocksSeasonLeaderboardGate(f)
+                    val isOverlayHost =
+                        cid == R.id.abacusFragmentContainer ||
+                            cid == R.id.resultFragmentContainer ||
+                            cid == R.id.createQuestionOverlayContainer
+                    val isMainFm = fm === supportFragmentManager
+                    if (!isLessonFlowType) return
+                    // [f.id] yerine [containerId]: LessonResult gibi replace(container, …) ile gelenlerde id yanlış kalabiliyordu.
+                    if (!isOverlayHost && !isMainFm) return
+                    binding.root.post {
+                        if (f is CreateQuestionFragment) {
+                            maybeRequestSeasonGateAfterQuestionFlowStep()
+                            return@post
+                        }
+                        if (f is QuestionMediaPickerDialogFragment) {
+                            maybeRequestSeasonGateAfterQuestionFlowStep()
+                            return@post
+                        }
+                        if (f is ChestResult || f is ChestFragment || f is MissionChestRewardFragment) {
+                            if (claimPathScheduledSeasonGate) {
+                                claimPathScheduledSeasonGate = false
+                                requestSeasonLeaderboardRewardGateIfPending()
+                            } else {
+                                scheduleSeasonGateAfterAbacusOverlayDismissed()
+                            }
+                            return@post
+                        }
+                        if (forcingAbacusOverlayDismissForSeasonGate) {
+                            requestSeasonLeaderboardRewardGateIfPending()
+                            return@post
+                        }
+                        scheduleSeasonGateAfterAbacusOverlayDismissed()
+                    }
+                }
+            }
+        supportFragmentManager.registerFragmentLifecycleCallbacks(
+            seasonLeaderboardGateRetryLifecycleCallbacks!!,
+            true,
+        )
     }
 
     /**
      * İlk açılışta TutorialFragment'ı gösterir
      */
     private fun showFirstTutorial() {
-        // GlobalLessonData'yı initialize et (partId = 1)
+        logFirstTutorial("showFirstTutorial", "initialize partId=1")
         GlobalLessonData.globalPartId = 1
         GlobalLessonData.initialize(this, 1) {
-            // GlobalLessonData'dan 1. index'teki item'ı al (createLessonItems'den değil, initialize edilen verilerden)
-            val item = GlobalLessonData.getLessonItem(1) ?: return@initialize
+            val item = GlobalLessonData.getLessonItem(1)
+            if (item == null) {
+                logFirstTutorial(
+                    "showFirstTutorial.ABORT",
+                    "getLessonItem(1)=null items=${GlobalLessonData.lessonItems.size}",
+                )
+                return@initialize
+            }
+            logFirstTutorial(
+                "showFirstTutorial.ready",
+                "tutorialNumber=${item.tutorialNumber} title=${item.title.take(40)}",
+            )
             renderFirstTutorial(item)
         }
     }
 
     private fun showFirstTutorialFromPreparedDataOrLoad() {
         val preparedItem = GlobalLessonData.getLessonItem(1)
+        logFirstTutorial(
+            "showFirstTutorialFromPrepared",
+            "preparedItem=${preparedItem != null} lessonItems=${GlobalLessonData.lessonItems.size}",
+        )
         if (preparedItem == null) {
-            // Splash'tan hazır rota geldiyse burada tekrar initialize beklemesine düşme.
-            // En kötü durumda şablondan anında aç; realtime/cloud güncellemesi ayrı akışta gelecek.
             val immediateItem = GlobalLessonData.createLessonItems(1).getOrNull(1)
             if (immediateItem != null) {
+                logFirstTutorial(
+                    "showFirstTutorialFromPrepared",
+                    "template fallback tutorialNumber=${immediateItem.tutorialNumber}",
+                )
                 renderFirstTutorial(immediateItem)
             } else {
+                logFirstTutorial("showFirstTutorialFromPrepared", "template null -> showFirstTutorial()")
                 showFirstTutorial()
             }
             return
         }
         renderFirstTutorial(preparedItem)
     }
+
     private fun renderFirstTutorial(item: LessonItem) {
+        firstTutorialOverlayBootstrapActive = true
+        logFirstTutorial(
+            "renderFirstTutorial.START",
+            "tutorialNumber=${item.tutorialNumber} ${overlaySnapshot("renderBefore")}",
+        )
         item.mapFragmentIndex?.let { index -> GlobalValues.mapFragmentStepIndex = index }
         item.startStepNumber?.let { step -> GlobalValues.lessonStep = step }
 
@@ -405,12 +660,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .add(R.id.fragmentContainerID, mapFragment)
             .addToBackStack(null)
             .commit()
+        logFirstTutorial("renderFirstTutorial", "MapFragment committed")
 
         binding.abacusFragmentContainer.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction()
             .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
             .addToBackStack(null)
             .commit()
+        logFirstTutorial(
+            "renderFirstTutorial.END",
+            overlaySnapshot("renderAfterCommit"),
+        )
+        binding.root.post {
+            firstTutorialOverlayBootstrapActive = false
+            logFirstTutorial(
+                "renderFirstTutorial.post",
+                overlaySnapshot("renderAfterPost"),
+            )
+        }
     }
     
     /**
@@ -1053,6 +1320,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         isQuestionRecordingInProgress = false
         setQuitButtonEnabled(true)
         setAskQuestionButtonEnabled(true)
+        binding.root.post { maybeRequestSeasonGateAfterQuestionFlowStep() }
     }
 
     private fun setAskQuestionButtonEnabled(enabled: Boolean) {
@@ -1074,14 +1342,34 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun changeFragment(fragment: Fragment) {
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        // Eğer mevcut fragment ile yeni fragment aynı tipteyse, işlem yapma
-
+        dismissMapLessonOverlayChrome()
+        releasePracticeTouchBlocker()
+        releaseLessonActionTouchBlocker()
+        if (fragment !is MapFragment) {
+            purgeAbacusOverlayHosts("changeFragment.leaveMap")
+        }
         supportFragmentManager.beginTransaction().apply {
             replace(R.id.fragmentContainerID, fragment)
             addToBackStack(null)
             commit()
         }
+        binding.fragmentContainerID.post {
+            updateCurrencyPanelVisibility()
+            when (fragment) {
+                is MapFragment -> sanitizeMapTouchSurface("changeFragment.map")
+                is TasksFragment -> reconcileAbacusOverlayWhenTasksIsBase("changeFragment.tasks")
+                else -> {
+                    purgeAbacusOverlayHosts("changeFragment.other")
+                    ensureChromeUnlockedAfterMapReturn("changeFragment.tab")
+                }
+            }
+            logTouchDiag("changeFragment.post:${fragment.javaClass.simpleName}")
+        }
+    }
+
+    private fun updateCurrencyPanelVisibility() {
+        val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        binding.currencyPanel.visibility = if (current is MapFragment) View.VISIBLE else View.GONE
     }
 
     fun showOfflineFragment() {
@@ -1125,7 +1413,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // Hiç fragment yoksa, bu muhtemelen uygulamanın offline olarak açıldığı ilk durumdur.
         // Normal başlangıç akışını tekrar uygula (Map/Tutorial).
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
 
         if (firstTutorialShown) {
             fm.beginTransaction().apply {
@@ -1139,22 +1427,113 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun closeBottomSheet() {
-        // Scrim'i kapat
-        findViewById<View>(R.id.scrimView)?.let { scrimView ->
-            scrimView.animate()
-                .alpha(0f)
-                .setDuration(300)
-                .withEndAction {
-                    scrimView.visibility = View.GONE
-                }
-                .start()
-        }
+        dismissMapLessonOverlayChrome()
+    }
 
-        // Bottom sheet'i bul ve kapat
-        findViewById<CoordinatorLayout>(R.id.coordinator_layout)?.let { coordinatorLayout ->
-            coordinatorLayout.findViewWithTag<View>("bottom_sheet")?.let { bottomSheetView ->
-                coordinatorLayout.removeView(bottomSheetView)
+    /**
+     * Ders bottom sheet / scrim haritayı kapattıysa anında temizle (Abacus quit sonrası liste görünmez kalmasın).
+     */
+    fun dismissMapLessonOverlayChrome() {
+        if (!::binding.isInitialized) return
+        findViewById<View>(R.id.scrimView)?.apply {
+            animate().cancel()
+            alpha = 0f
+            visibility = View.GONE
+            isClickable = false
+            isFocusable = false
+            setOnClickListener(null)
+        }
+        findViewById<CoordinatorLayout>(R.id.coordinator_layout)?.findViewWithTag<View>("bottom_sheet")
+            ?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+    }
+
+    /** [LessonAdapter] geçiş blocker'ı (content üstü tam ekran). */
+    fun releaseLessonActionTouchBlocker() {
+        findViewById<ViewGroup>(android.R.id.content)
+            ?.findViewWithTag<View>(LESSON_ACTION_TOUCH_BLOCKER_TAG)
+            ?.let { blocker -> (blocker.parent as? ViewGroup)?.removeView(blocker) }
+    }
+
+    /**
+     * Harita tabanındayken scrim / touch blocker / hayalet abacus fragment ve host'u temizler.
+     * Alt sekme → harita dönüşünde dokunma kilitlenmesini giderir.
+     */
+    fun sanitizeMapTouchSurface(caller: String) {
+        if (!::binding.isInitialized || isFinishing || isDestroyed) return
+        logFirstTutorial("sanitizeMapTouchSurface.enter", "caller=$caller ${overlaySnapshot("sanitize")}")
+        dismissMapLessonOverlayChrome()
+        releasePracticeTouchBlocker()
+        releaseLessonActionTouchBlocker()
+        val fm = supportFragmentManager
+        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) {
+            ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface.notMap:$caller")
+            return
+        }
+        fm.executePendingTransactions()
+        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        if (hostVisible && active != null && fragmentBlocksSeasonLeaderboardGate(active) &&
+            !forcingAbacusOverlayDismissForSeasonGate
+        ) {
+            logFirstTutorial("sanitizeMapTouchSurface.skip", "active lesson overlay caller=$caller")
+            ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface.activeLesson:$caller")
+            return
+        }
+        val prevForce = forcingAbacusOverlayDismissForSeasonGate
+        forcingAbacusOverlayDismissForSeasonGate = true
+        try {
+            purgeAbacusOverlayHosts("sanitizeMapTouchSurface:$caller")
+            restoreMapUiAfterLessonOverlayDismiss()
+            (fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment)?.let { map ->
+                if (map.isAdded && map.view != null) {
+                    map.enableMapTouchRouting()
+                }
             }
+        } finally {
+            forcingAbacusOverlayDismissForSeasonGate = prevForce
+        }
+        ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface:$caller")
+        logChromeBlockerDiagnostic("sanitizeMapTouchSurface:$caller")
+        logTouchDiag("sanitizeMapTouchSurface:$caller")
+    }
+
+    private fun purgeAbacusOverlayHosts(caller: String) {
+        if (!::binding.isInitialized) return
+        val fm = supportFragmentManager
+        var steps = 0
+        while (steps++ < 8) {
+            fm.executePendingTransactions()
+            val overlay = fm.findFragmentById(R.id.abacusFragmentContainer) ?: break
+            if (firstTutorialOverlayBootstrapActive && overlay is TutorialFragment) break
+            if (!fragmentBlocksSeasonLeaderboardGate(overlay)) break
+            logFirstTutorial("purgeAbacusOverlayHosts.remove", "caller=$caller frag=${overlay.javaClass.simpleName}")
+            fm.beginTransaction().remove(overlay).commitNowAllowingStateLoss()
+        }
+        binding.abacusFragmentContainer.visibility = View.GONE
+        binding.resultFragmentContainer.visibility = View.GONE
+    }
+
+    /**
+     * Overlay kapandıktan sonra harita container'ı, MapFragment ve lesson sheet chrome'unu görünür yap.
+     */
+    fun restoreMapUiAfterLessonOverlayDismiss() {
+        logFirstTutorial(
+            "restoreMapUiAfterLessonOverlayDismiss",
+            overlaySnapshot("restoreMapUi"),
+        )
+        if (!::binding.isInitialized || isFinishing || isDestroyed) return
+        dismissMapLessonOverlayChrome()
+        binding.coordinatorLayout.visibility = View.VISIBLE
+        binding.fragmentContainerID.visibility = View.VISIBLE
+        binding.abacusFragmentContainer.visibility = View.GONE
+        binding.resultFragmentContainer.visibility = View.GONE
+        releasePracticeTouchBlocker()
+        releaseLessonActionTouchBlocker()
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return
+        val base = fm.findFragmentById(R.id.fragmentContainerID) ?: return
+        if (base.isHidden) {
+            fm.beginTransaction().show(base).commitAllowingStateLoss()
         }
     }
     fun deleteAllLessonItems(context: Context) {
@@ -1170,27 +1549,23 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
         */
-        //Bütün görevleri her açılışta sıfırlar
-        //MissionsProgressStore.resetAllProgress(this)
-        // Her açılışta günlük/haftalık görev kombinasyonunu yeniden seç
-        //MissionsProgressStore.forceReselectMissions(this)
-        // Kullanıcıya özel lesson verilerini local'den temizler.
-        //GlobalLessonData.clearCurrentUserLessonData(context)
-        //Kullanıcı lesson verilerini Firestore'den siler
-        /*val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
-            firestore.collection("users")
-                .document(uid)
-                .collection("lessonProgress")
-                .get()
-                .addOnSuccessListener { snapshot ->
-                    if (snapshot.isEmpty) return@addOnSuccessListener
-                    val batch = firestore.batch()
-                    snapshot.documents.forEach { doc -> batch.delete(doc.reference) }
-                    batch.commit()
-                }
-        }*/
 
+        // Offline kullanılmayacağı için görev local cache'ini temizle. Bu kod hep kalacak.
+        //MissionsProgressStore.clearLocalCache(context)
+        // 1) Mevcut görev ilerlemesini sıfırla (daily/weekly counters + claimed flags)
+        //MissionsProgressStore.resetAllProgress(context)
+        // 2) Günlük/haftalık görev kombinasyonunu yeniden seçtir
+        //MissionsProgressStore.forceReselectMissions(context)
+        // 3) Seçilen yeni görevleri hemen üretip state'e yazdır (isteğe bağlı ama önerilir)
+        //MissionsProgressStore.selectedMissionsForDaily(context)
+        //MissionsProgressStore.selectedMissionsForWeekly(context)
+        // Cloud'daki eski mission state'in geri hydrate edilmesini engellemek için
+        // resetlenmiş local state'i doğrudan cloud'a overwrite et.
+        //MissionsProgressStore.forceUploadStateToCloud(context)
+        // Kullanıcıya özel lesson verilerini local'den temizler.
+        GlobalLessonData.clearCurrentUserLessonData(context)
+        // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
+        deleteLessonProgressFromFirestoreWithAuthWait()
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
         //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
         //guidePanelPrefs.edit().clear().apply()
@@ -1201,6 +1576,50 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             //f.putBoolean("first_tutorial_shown", false)
             //.putBoolean("tutorial1_login_shown", false)  // Test: claimButton'da login tekrar gösterilsin
             .apply()
+    }
+
+    private fun deleteLessonProgressFromFirestoreWithAuthWait() {
+        fun deleteForUid(uid: String) {
+            firestore.collection("users")
+                .document(uid)
+                .collection("lessonProgress")
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    if (snapshot.isEmpty) return@addOnSuccessListener
+                    val batch = firestore.batch()
+                    snapshot.documents.forEach { doc -> batch.delete(doc.reference) }
+                    batch.commit()
+                        .addOnFailureListener { e ->
+                            Log.e("MainActivity", "lessonProgress batch delete failed", e)
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("MainActivity", "lessonProgress read before delete failed", e)
+                }
+        }
+
+        val authInstance = FirebaseAuth.getInstance()
+        val existingUid = authInstance.currentUser?.uid
+        if (!existingUid.isNullOrBlank()) {
+            deleteForUid(existingUid)
+            return
+        }
+
+        val handler = Handler(Looper.getMainLooper())
+        lateinit var listener: FirebaseAuth.AuthStateListener
+        val timeoutRunnable = Runnable {
+            authInstance.removeAuthStateListener(listener)
+        }
+        listener = FirebaseAuth.AuthStateListener { auth ->
+            val uid = auth.currentUser?.uid
+            if (!uid.isNullOrBlank()) {
+                authInstance.removeAuthStateListener(listener)
+                handler.removeCallbacks(timeoutRunnable)
+                deleteForUid(uid)
+            }
+        }
+        authInstance.addAuthStateListener(listener)
+        handler.postDelayed(timeoutRunnable, 4000L)
     }
     private fun showAbacusFragment() {
         val fragmentContainer = binding.abacusFragmentContainer
@@ -1224,24 +1643,109 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         prefs.edit().putInt("currency", value).apply()
     }
-    fun getCurrency(context: Context): Int {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        return prefs.getInt("currency", 0)
+
+    fun getCurrency(context: Context): Int = UserWalletFirestore.getCachedCurrency(context)
+
+    private fun refreshWalletFromFirestore() {
+        val uid = auth.currentUser?.uid ?: return
+        UserWalletFirestore.loadWallet(
+            context = this,
+            uid = uid,
+            onResult = { wallet ->
+                if (::binding.isInitialized) {
+                    applyWalletToUi(wallet)
+                }
+            },
+        )
+    }
+
+    private fun applyWalletToUi(wallet: UserWallet) {
+        binding.currencyText.text = wallet.currency.toString()
+        binding.keyText.text = wallet.keys.toString()
     }
 
     override fun onGoldUpdated(amount: Int) {
         updateGoldAmount(amount)
     }
 
+    override fun onKeysUpdated(amount: Int) {
+        updateKeysAmount(amount)
+    }
+
     fun updateGoldAmount(amount: Int) {
+        if (amount == 0) return
         val currentGold = binding.currencyText.text.toString().toIntOrNull() ?: 0
         val newGold = currentGold + amount
         binding.currencyText.text = newGold.toString()
         saveCurrency(this, newGold)
+        auth.currentUser?.uid?.let { uid ->
+            UserWalletFirestore.applyCurrencyDelta(
+                context = this,
+                uid = uid,
+                delta = amount,
+                onSuccess = { wallet -> applyWalletToUi(wallet) },
+            )
+        }
     }
 
+    fun updateKeysAmount(amount: Int) {
+        if (amount == 0) return
+        val currentKeys = binding.keyText.text.toString().toIntOrNull() ?: 0
+        val newKeys = currentKeys + amount
+        binding.keyText.text = newKeys.toString()
+        auth.currentUser?.uid?.let { uid ->
+            UserWalletFirestore.applyKeyDelta(
+                context = this,
+                uid = uid,
+                delta = amount,
+                onSuccess = { wallet -> applyWalletToUi(wallet) },
+            )
+        }
+    }
 
-    
+    /** Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`). */
+    fun spendDiamonds(amount: Int): Boolean {
+        if (amount <= 0) return true
+        val current = binding.currencyText.text.toString().toIntOrNull()
+            ?: UserWalletFirestore.getCachedCurrency(this)
+        if (current < amount) return false
+        val next = current - amount
+        if (::binding.isInitialized) {
+            binding.currencyText.text = next.toString()
+        }
+        saveCurrency(this, next)
+        auth.currentUser?.uid?.let { uid ->
+            UserWalletFirestore.applyCurrencyDelta(
+                context = this,
+                uid = uid,
+                delta = -amount,
+                onSuccess = { wallet -> applyWalletToUi(wallet) },
+            )
+        }
+        return true
+    }
+
+    /** Üst paneldeki anahtar bakiyesinden düşer (Firestore `users.keys`). */
+    fun spendKeys(amount: Int): Boolean {
+        if (amount <= 0) return true
+        val current = binding.keyText.text.toString().toIntOrNull()
+            ?: UserWalletFirestore.getCachedKeys(this)
+        if (current < amount) return false
+        val next = current - amount
+        if (::binding.isInitialized) {
+            binding.keyText.text = next.toString()
+        }
+        auth.currentUser?.uid?.let { uid ->
+            UserWalletFirestore.applyKeyDelta(
+                context = this,
+                uid = uid,
+                delta = -amount,
+                onSuccess = { wallet -> applyWalletToUi(wallet) },
+            )
+        }
+        return true
+    }
+
     private fun updateEnergyDisplay(energy: Int) {
         // Abonelik durumunu kontrol et
         checkSubscriptionAndUpdateEnergy()
@@ -1289,6 +1793,601 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     fun getEnergyManager(): EnergyManager {
         return energyManager
     }
+
+    private fun attachSeasonLeaderboardPendingListenerIfLoggedIn() {
+        seasonLeaderboardPendingListener?.remove()
+        seasonLeaderboardPendingListener = null
+        val uid = auth.currentUser?.uid ?: return
+        val docRef = firestore.collection("users").document(uid)
+            .collection("badgeProgress").document("state")
+        seasonLeaderboardPendingListener = docRef.addSnapshotListener { snap, e ->
+            if (e != null) return@addSnapshotListener
+            if (snap == null || !snap.exists()) {
+                val cur = BadgeProgressRepository.getUserBadgeProgress()
+                if (cur.pendingLeaderboardRewardSeason != null) {
+                    BadgeProgressRepository.update(cur.copy(pendingLeaderboardRewardSeason = null))
+                }
+                return@addSnapshotListener
+            }
+            val p = snap.pendingLeaderboardRewardSeasonFromDoc()
+            val cur = BadgeProgressRepository.getUserBadgeProgress()
+            if (cur.pendingLeaderboardRewardSeason != p) {
+                BadgeProgressRepository.update(cur.copy(pendingLeaderboardRewardSeason = p))
+            }
+            if (p != null) {
+                tryShowSeasonLeaderboardRewardGateIfNeeded()
+            }
+        }
+    }
+
+    private fun refreshPendingSeasonLeaderboardRewardFromFirestore() {
+        val uid = auth.currentUser?.uid ?: return
+        val docRef = firestore.collection("users").document(uid).collection("badgeProgress").document("state")
+        fun applySnap(snap: com.google.firebase.firestore.DocumentSnapshot) {
+            if (!snap.exists()) return
+            val p = snap.pendingLeaderboardRewardSeasonFromDoc()
+            val cur = BadgeProgressRepository.getUserBadgeProgress()
+            BadgeProgressRepository.update(cur.copy(pendingLeaderboardRewardSeason = p))
+            tryShowSeasonLeaderboardRewardGateIfNeeded()
+        }
+        docRef.get(Source.SERVER)
+            .addOnSuccessListener { snap -> applySnap(snap) }
+            .addOnFailureListener {
+                docRef.get(Source.CACHE).addOnSuccessListener { snap -> applySnap(snap) }
+            }
+    }
+
+    /** [Fragment.getContainerId] eski classpath'te Kotlin'den görünmeyebilir; yoksa [Fragment.getId] kullanılır. */
+    private fun fragmentHostContainerIdForSeasonGateRetry(f: Fragment): Int {
+        return try {
+            val m = Fragment::class.java.getMethod("getContainerId")
+            m.invoke(f) as Int
+        } catch (_: Throwable) {
+            f.id
+        }
+    }
+
+    /** Ders/sandık akışı açıkken sezon liderlik ödülü kapısı gösterilmez; akış bitince tekrar denenir. */
+    private fun fragmentBlocksSeasonLeaderboardGate(f: Fragment?): Boolean = when (f) {
+        is TutorialFragment,
+        is AbacusFragment,
+        is BlindingLessonFragment,
+        is LessonResult,
+        is LessonResultFalse,
+        is ChestResult,
+        is MissionChestRewardFragment,
+        is ChestFragment,
+        is RecordFragment,
+        is DailyQuestionRewardFragment,
+        is CreateQuestionFragment,
+        -> true
+        else -> false
+    }
+
+    /** Map/abacus soru akışı: medya seçici, ekran kaydı veya CreateQuestion açıkken sezon kapısı gösterilmez. */
+    private fun isQuestionAskFlowBlockingSeasonLeaderboardGate(): Boolean {
+        if (!::binding.isInitialized) return false
+        if (isQuestionRecordingInProgress) return true
+        if (binding.recordingOverlayContainer.visibility == View.VISIBLE) return true
+        val picker = supportFragmentManager.findFragmentByTag(QuestionMediaPickerDialogFragment.TAG)
+        return picker != null && picker.isAdded
+    }
+
+    private fun maybeRequestSeasonGateAfterQuestionFlowStep() {
+        if (!::binding.isInitialized) return
+        if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return
+        if (isQuestionAskFlowBlockingSeasonLeaderboardGate()) return
+        if (isSeasonLeaderboardRewardBlockedByLessonFlow()) return
+        requestSeasonLeaderboardRewardGateIfPending()
+    }
+
+    private fun isSeasonLeaderboardRewardBlockedByLessonFlow(): Boolean {
+        if (!::binding.isInitialized) return false
+        if (isQuestionAskFlowBlockingSeasonLeaderboardGate()) return true
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val result = fm.findFragmentById(R.id.resultFragmentContainer)
+        val createQuestion = fm.findFragmentById(R.id.createQuestionOverlayContainer)
+        // Ders overlay'i kapalıyken (GONE) FM'de hayalet Abacus kalabiliyor; haritadayken sezon kapısını kilitleme.
+        val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
+        val createQuestionHostVisible = binding.createQuestionOverlayContainer.visibility == View.VISIBLE
+        val abacusBlocks = abacusHostVisible && fragmentBlocksSeasonLeaderboardGate(abacus)
+        val resultBlocks = resultHostVisible && fragmentBlocksSeasonLeaderboardGate(result)
+        val createQuestionBlocks =
+            createQuestionHostVisible && createQuestion is CreateQuestionFragment
+        val createQuestionInAbacus =
+            abacusHostVisible && abacus is CreateQuestionFragment
+        // activity_main'de coordinator (harita) result/abacus'tan sonra çiziliyor; sandık akışı bitip
+        // haritaya dönünce ChestFragment FM'de result'ta kalabiliyor ama görünmüyor — kapıyı sürekli kilitlemesin.
+        if (base is MapFragment) {
+            return abacusBlocks || createQuestionBlocks || createQuestionInAbacus
+        }
+        return abacusBlocks || resultBlocks || createQuestionBlocks || createQuestionInAbacus
+    }
+
+    /**
+     * [findFragmentById] bazen kapıyı kaçırabiliyor; [findFragmentByTag] ile yedeklenir.
+     * Container GONE kalsa bile FM'de instance kalabilir; görünürlük burada kontrol edilmez.
+     */
+    private fun seasonLeaderboardRewardGateFragmentMatching(pending: Int): SeasonLeaderboardRewardGateFragment? {
+        if (!::binding.isInitialized) return null
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        val f = (
+            fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
+                ?: fm.findFragmentByTag(SeasonLeaderboardRewardGateFragment.TAG)
+        ) as? SeasonLeaderboardRewardGateFragment ?: return null
+        if (!f.isAdded || f.view == null) return null
+        val argSeason = f.arguments?.getInt(SeasonLeaderboardRewardGateFragment.ARG_SEASON) ?: return null
+        return if (argSeason == pending) f else null
+    }
+
+    private fun isSeasonLeaderboardRewardGateAlreadyShowing(pending: Int): Boolean =
+        seasonLeaderboardRewardGateFragmentMatching(pending) != null
+
+    private fun ensureSeasonLeaderboardRewardGateContainerVisible() {
+        binding.seasonLeaderboardRewardGateContainer.visibility = View.VISIBLE
+        (binding.root as? android.view.ViewGroup)?.bringChildToFront(binding.seasonLeaderboardRewardGateContainer)
+    }
+
+    /**
+     * Tek runnable içinde [replace] + [commitNowAllowingStateLoss]: eski sezon / yarışlı add+evict döngüsünü kaldırır.
+     * [isSeasonLeaderboardRewardGateAlreadyShowing] ile Map onResume + snapshot çift [replace] önlenir.
+     */
+    private fun commitSeasonLeaderboardRewardGateIfNeededNow() {
+        if (isFinishing || !::binding.isInitialized) return
+        if (auth.currentUser == null) return
+        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) return
+        val pending = BadgeProgressRepository.getUserBadgeProgress().pendingLeaderboardRewardSeason
+        if (pending == null) return
+        if (isSeasonLeaderboardRewardBlockedByLessonFlow()) return
+        if (isSeasonLeaderboardRewardGateAlreadyShowing(pending)) {
+            ensureSeasonLeaderboardRewardGateContainerVisible()
+            return
+        }
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        ensureSeasonLeaderboardRewardGateContainerVisible()
+        fm.beginTransaction()
+            .replace(
+                R.id.seasonLeaderboardRewardGateContainer,
+                SeasonLeaderboardRewardGateFragment.newInstance(pending),
+                SeasonLeaderboardRewardGateFragment.TAG,
+            )
+            .commitNowAllowingStateLoss()
+    }
+
+    private fun tryShowSeasonLeaderboardRewardGateIfNeeded() {
+        if (!::binding.isInitialized) return
+        if (auth.currentUser == null) {
+            binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+            return
+        }
+        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) {
+            binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+            return
+        }
+        val pending = BadgeProgressRepository.getUserBadgeProgress().pendingLeaderboardRewardSeason
+        if (pending == null) {
+            binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+            return
+        }
+        if (isSeasonLeaderboardRewardBlockedByLessonFlow()) {
+            binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+            return
+        }
+        if (isSeasonLeaderboardRewardGateAlreadyShowing(pending)) {
+            binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+            ensureSeasonLeaderboardRewardGateContainerVisible()
+            return
+        }
+        binding.root.removeCallbacks(seasonLeaderboardGateCommitRunnable)
+        binding.root.post(seasonLeaderboardGateCommitRunnable)
+    }
+
+    fun requestSeasonLeaderboardRewardGateIfPending() {
+        val pending = BadgeProgressRepository.getUserBadgeProgress().pendingLeaderboardRewardSeason
+        if (pending != null && isSeasonLeaderboardRewardGateAlreadyShowing(pending)) {
+            ensureSeasonLeaderboardRewardGateContainerVisible()
+            return
+        }
+        tryShowSeasonLeaderboardRewardGateIfNeeded()
+    }
+
+    /**
+     * Harita [fragmentContainerID] üzerindeyken [abacusFragmentContainer] içinde kalan hayalet ders fragment'ı
+     * ve üstteki ders [popBackStack] girişlerini sınırlı adımda temizler; host GONE + sezon kapısı dener.
+     * ChestResult (skip sandık) ve RecordFragment kapanışında çağrılır.
+     */
+    /**
+     * [abacusFragmentContainer] üzerinde tam ekran overlay (Görevler, ders vb.).
+     * Haritadan [reconcileAbacusOverlayWhenMapIsBase] sonrası host GONE kalmış olabilir — her açılışta VISIBLE.
+     */
+    fun showAbacusOverlayFragment(
+        fragment: Fragment,
+        configure: (androidx.fragment.app.FragmentTransaction.() -> Unit)? = null,
+    ) {
+        if (!::binding.isInitialized) return
+        practiceOverlayDismissRunnable?.let { binding.root.removeCallbacks(it) }
+        practiceOverlayDismissRunnable = null
+        forcingAbacusOverlayDismissForSeasonGate = false
+        binding.abacusFragmentContainer.visibility = View.VISIBLE
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+            .replace(R.id.abacusFragmentContainer, fragment)
+            .apply { configure?.invoke(this) }
+            // addToBackStack yok: harita ders stack'ine pop ile dönülmesin; kapanış → [finishOverlayReturnToTasks].
+            .commitAllowingStateLoss()
+        logTouchDiag("showAbacusOverlayFragment:${fragment.javaClass.simpleName}")
+    }
+
+    /** Quit / overlay kapanmadan önce çağır: popBackStack Abacus'u geri getirmeden host GONE + zorunlu reconcile. */
+    fun beginAbacusOverlayDismissForSeasonGate() {
+        if (!::binding.isInitialized) return
+        forcingAbacusOverlayDismissForSeasonGate = true
+        binding.abacusFragmentContainer.visibility = View.GONE
+    }
+
+    /** Görevler kartı / günlük soru: [android.R.id.content] üstündeki geçici tam ekran blocker. */
+    fun releasePracticeTouchBlocker() {
+        findViewById<android.view.ViewGroup>(android.R.id.content)
+            ?.findViewWithTag<android.view.View>(PRACTICE_TOUCH_BLOCKER_TAG)
+            ?.let { blocker -> (blocker.parent as? android.view.ViewGroup)?.removeView(blocker) }
+    }
+
+    /**
+     * Görevler pratik abaküs overlay'i: sağa kayarak kapanış ([showAbacusOverlayFragment] girişinin tersi).
+     */
+    fun finishAbacusPracticeOverlayAnimated(caller: String) {
+        finishTasksOverlayAnimated(caller)
+    }
+
+    /** Görevler overlay'i (abaküs pratik, günlük soru / BlindingLesson) sağa kayarak kapatır. */
+    fun finishTasksOverlayAnimated(caller: String) {
+        if (!::binding.isInitialized) return
+        practiceOverlayDismissRunnable?.let { binding.root.removeCallbacks(it) }
+        practiceOverlayDismissRunnable = null
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
+        val overlayToRemove = when (overlay) {
+            is AbacusPracticeFragment, is BlindingLessonFragment -> overlay
+            else -> null
+        }
+        if (tasksFragment == null || overlayToRemove == null) {
+            finishOverlayReturnToTasks(caller)
+            return
+        }
+        logTouchDiag("finishTasksOverlayAnimated.BEFORE:$caller")
+        val tx = fm.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+        if (tasksFragment.isHidden) {
+            tx.show(tasksFragment)
+        }
+        tx.remove(overlayToRemove).commitAllowingStateLoss()
+        val completeRunnable = Runnable {
+            practiceOverlayDismissRunnable = null
+            completeTasksOverlayDismiss("finishTasksOverlayAnimated:$caller")
+        }
+        practiceOverlayDismissRunnable = completeRunnable
+        binding.root.postDelayed(completeRunnable, practiceOverlayExitAnimMs)
+    }
+
+    /**
+     * Görevler sekmesinden açılan abacus overlay (günlük soru vb.) kapandığında:
+     * host GONE, back stack, Tasks show, touch blocker ve chrome kilidi.
+     */
+    fun finishOverlayReturnToTasks(caller: String) {
+        if (!::binding.isInitialized) return
+        practiceOverlayDismissRunnable?.let { binding.root.removeCallbacks(it) }
+        practiceOverlayDismissRunnable = null
+        logTouchDiag("finishOverlayReturnToTasks.BEFORE:$caller")
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        beginAbacusOverlayDismissForSeasonGate()
+        purgeAbacusOverlayHosts("finishOverlayReturnToTasks:$caller")
+        val tasks = fm.findFragmentById(R.id.fragmentContainerID)
+        if (tasks is TasksFragment && tasks.isHidden) {
+            fm.beginTransaction().show(tasks).commitAllowingStateLoss()
+            fm.executePendingTransactions()
+        }
+        binding.abacusFragmentContainer.visibility = View.GONE
+        binding.root.post {
+            completeTasksOverlayDismiss("finishOverlayReturnToTasks:$caller")
+        }
+    }
+
+    private fun completeTasksOverlayDismiss(caller: String) {
+        if (!::binding.isInitialized) return
+        forcingAbacusOverlayDismissForSeasonGate = false
+        binding.abacusFragmentContainer.visibility = View.GONE
+        dismissMapLessonOverlayChrome()
+        releasePracticeTouchBlocker()
+        releaseLessonActionTouchBlocker()
+        ensureChromeUnlockedAfterOverlayDismiss(caller)
+        logTouchDiag("completeTasksOverlayDismiss:$caller")
+    }
+
+    /** [TasksFragment.onResume] için: FM transaction bitince [reconcileAbacusOverlayWhenTasksIsBase] (Map [view.post] ile aynı mantık). */
+    fun scheduleReconcileAbacusOverlayWhenTasksIsBase() {
+        if (!::binding.isInitialized) return
+        binding.root.post {
+            reconcileAbacusOverlayWhenTasksIsBase("schedule.tasks")
+        }
+    }
+
+    /** Görevler tabanındayken boş / hayalet abacus host ve blocker temizliği. */
+    fun reconcileAbacusOverlayWhenTasksIsBase(caller: String = "reconcile.tasks") {
+        if (!::binding.isInitialized) return
+        logTouchDiag("reconcileAbacusOverlayWhenTasksIsBase.BEFORE:$caller")
+        val fm = supportFragmentManager
+        if (fm.findFragmentById(R.id.fragmentContainerID) !is TasksFragment) return
+        fm.executePendingTransactions()
+        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        if (active is AbacusPracticeFragment && hostVisible) {
+            Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active AbacusPractice")
+            return
+        }
+        purgeAbacusOverlayHosts(caller)
+        val tasks = fm.findFragmentById(R.id.fragmentContainerID)
+        if (tasks is TasksFragment && tasks.isHidden) {
+            fm.beginTransaction().show(tasks).commitAllowingStateLoss()
+            fm.executePendingTransactions()
+        }
+        binding.abacusFragmentContainer.visibility = View.GONE
+        forcingAbacusOverlayDismissForSeasonGate = false
+        dismissMapLessonOverlayChrome()
+        releasePracticeTouchBlocker()
+        releaseLessonActionTouchBlocker()
+        ensureChromeUnlockedAfterOverlayDismiss("reconcile.tasks:$caller")
+        logTouchDiag("reconcileAbacusOverlayWhenTasksIsBase.AFTER:$caller")
+    }
+
+    private fun ensureChromeUnlockedAfterOverlayDismiss(caller: String) {
+        MainActivityChromeBlocker.ensureUnlockedForMapReturn(this, blockingOverlayStillActive = false)
+        logChromeBlockerDiagnostic(caller)
+    }
+
+    /**
+     * ChestResult / ChestFragment / MissionChest claim: harita verisini yenile, overlay host'ları kapat.
+     * [finalizeMapReturnAfterLessonClaim] ile eşleşir; arada fragment remove yapılır.
+     */
+    fun prepareMapReturnAfterLessonClaim() {
+        if (!::binding.isInitialized) return
+        // [canConsumePendingLessonProgressAnimations] + [LessonManager.refreshLessonsFromGlobalData] burada
+        // çağrılmasın: Chest / MissionChest / LessonResult overlay altında Map RV yenilenince progress animasyonu
+        // ekranda görülmeden biter. Tüketim + tam liste yenileme → [MapFragment.notifyVisibleAfterOverlayDismiss]
+        // ve [MapFragment.onResume] (finalize → reconcile sonrası).
+        claimPathScheduledSeasonGate = true
+        beginAbacusOverlayDismissForSeasonGate()
+        binding.resultFragmentContainer.visibility = View.GONE
+        if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
+            restoreMapUiAfterLessonOverlayDismiss()
+        }
+    }
+
+    /** [prepareMapReturnAfterLessonClaim] sonrası: chrome + sezon reconcile (tek kaynak). */
+    fun finalizeMapReturnAfterLessonClaim(caller: String) {
+        logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
+        ensureChromeUnlockedAfterMapReturn(caller)
+        scheduleSeasonGateAfterAbacusOverlayDismissed()
+        binding.root.post { logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller") }
+    }
+
+    /** LessonResult → ChestFragment: result overlay host'u görünür yap. */
+    fun showResultOverlayHost() {
+        if (!::binding.isInitialized) return
+        binding.resultFragmentContainer.visibility = View.VISIBLE
+    }
+
+    /** Quit / ders overlay kapanınca: bir sonraki karede reconcile ve sezon kapısı. [beginAbacusOverlayDismissForSeasonGate] ayrı çağrılır. */
+    fun scheduleSeasonGateAfterAbacusOverlayDismissed() {
+        if (!::binding.isInitialized) return
+        logChromeBlockerDiagnostic("scheduleSeasonGate.enter")
+        pendingSeasonGateReconcileRunnable?.let { binding.root.removeCallbacks(it) }
+        val runnable = Runnable {
+            pendingSeasonGateReconcileRunnable = null
+            try {
+                reconcileAbacusOverlayWhenMapIsBase()
+                ensureChromeUnlockedAfterMapReturn("scheduleSeasonGate.afterReconcile")
+                requestSeasonLeaderboardRewardGateIfPending()
+            } finally {
+                forcingAbacusOverlayDismissForSeasonGate = false
+                logChromeBlockerDiagnostic("scheduleSeasonGate.post.done")
+            }
+        }
+        pendingSeasonGateReconcileRunnable = runnable
+        binding.root.post(runnable)
+    }
+
+    /** Bekleyen sezon reconcile'ı iptal et (sheet'ten overlay açılırken çalıştırma — Record'u siler). */
+    fun cancelPendingSeasonGateReconcile() {
+        pendingSeasonGateReconcileRunnable?.let { binding.root.removeCallbacks(it) }
+        pendingSeasonGateReconcileRunnable = null
+    }
+
+    /**
+     * Bottom sheet'ten Record/Abacus: bekleyen gate iptal, FM boşalınca transaction.
+     */
+    fun runAbacusOverlayTransaction(caller: String, block: () -> Unit) {
+        if (!::binding.isInitialized) {
+            block()
+            return
+        }
+        cancelPendingSeasonGateReconcile()
+        if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
+            forcingAbacusOverlayDismissForSeasonGate = false
+        }
+        lessonSheetOverlayNavigationDepth++
+        binding.root.post {
+            try {
+                supportFragmentManager.executePendingTransactions()
+                android.util.Log.d("LessonFlowDbg", "[$caller] overlay tx")
+                block()
+            } finally {
+                lessonSheetOverlayNavigationDepth =
+                    (lessonSheetOverlayNavigationDepth - 1).coerceAtLeast(0)
+            }
+        }
+    }
+
+    fun logChromeBlockerDiagnostic(caller: String) {
+        MainActivityChromeBlocker.logDiagnostic(caller, this)
+    }
+
+    /**
+     * ChestResult [onDestroyView] → [release] atlanırsa alt bar kilitli kalır; Map tabanında güvenlik ağı.
+     */
+    fun ensureChromeUnlockedAfterMapReturn(caller: String) {
+        if (!::binding.isInitialized) return
+        val fm = supportFragmentManager
+        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return
+        fm.executePendingTransactions()
+        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val blockingOverlay =
+            binding.abacusFragmentContainer.visibility == View.VISIBLE &&
+                abacus != null &&
+                fragmentBlocksSeasonLeaderboardGate(abacus)
+        MainActivityChromeBlocker.ensureUnlockedForMapReturn(this, blockingOverlay)
+    }
+
+    /** Map [onResume]: yalnızca overlay host açık veya abacus'ta fragment varken reconcile (soğuk açılışta Map stack'ine dokunma). */
+    fun shouldReconcileAbacusOverlayOnMapResume(): Boolean {
+        if (!::binding.isInitialized) return false
+        if (firstTutorialOverlayBootstrapActive) return false
+        if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
+        if (forcingAbacusOverlayDismissForSeasonGate) return true
+        val orphan = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+        val result = binding.abacusFragmentContainer.visibility == View.VISIBLE ||
+            (orphan != null && fragmentBlocksSeasonLeaderboardGate(orphan))
+        logFirstTutorial(
+            "shouldReconcileOnMapResume",
+            "result=$result orphan=${orphan?.javaClass?.simpleName} ${overlaySnapshot("shouldReconcile")}",
+        )
+        return result
+    }
+
+    fun reconcileAbacusOverlayWhenMapIsBase() {
+        logFirstTutorial("reconcile.enter", overlaySnapshot("reconcile.enter"))
+        if (!::binding.isInitialized) return
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) {
+            logFirstTutorial("reconcile.skip", "base is not MapFragment")
+            return
+        }
+        if (lessonSheetOverlayNavigationDepth > 0) {
+            logFirstTutorial("reconcile.skip", "lessonSheetOverlayNavigationDepth>0")
+            return
+        }
+        val activeOverlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        if (activeOverlay is RecordFragment &&
+            binding.abacusFragmentContainer.visibility == View.VISIBLE
+        ) {
+            return
+        }
+        // Aktif ders overlay (host görünür) veya ilk tutorial bootstrap — silme.
+        if (!forcingAbacusOverlayDismissForSeasonGate &&
+            activeOverlay != null &&
+            fragmentBlocksSeasonLeaderboardGate(activeOverlay)
+        ) {
+            val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+            if (hostVisible) {
+                logFirstTutorial(
+                    "reconcile.skip",
+                    "blocking overlay active=${activeOverlay.javaClass.simpleName}",
+                )
+                tryShowSeasonLeaderboardRewardGateIfNeeded()
+                return
+            }
+            if (activeOverlay is TutorialFragment || firstTutorialOverlayBootstrapActive) {
+                binding.abacusFragmentContainer.visibility = View.VISIBLE
+                logFirstTutorial(
+                    "reconcile.reShowAbacusHost",
+                    "active=${activeOverlay.javaClass.simpleName}",
+                )
+                tryShowSeasonLeaderboardRewardGateIfNeeded()
+                return
+            }
+            logFirstTutorial(
+                "reconcile.staleGhost",
+                "will remove active=${activeOverlay.javaClass.simpleName}",
+            )
+        }
+        logFirstTutorial(
+            "reconcile.willRestoreMapUi",
+            "activeOverlay=${activeOverlay?.javaClass?.simpleName ?: "null"} abacusVis=VISIBLE=${binding.abacusFragmentContainer.visibility == View.VISIBLE}",
+        )
+        for (step in 0 until 6) {
+            fm.executePendingTransactions()
+            val orphan = fm.findFragmentById(R.id.abacusFragmentContainer)
+            if (orphan == null || !fragmentBlocksSeasonLeaderboardGate(orphan)) break
+            fm.beginTransaction().remove(orphan).commitNowAllowingStateLoss()
+            fm.executePendingTransactions()
+        }
+        restoreMapUiAfterLessonOverlayDismiss()
+        forcingAbacusOverlayDismissForSeasonGate = false
+        ensureChromeUnlockedAfterMapReturn("reconcile.done")
+        (fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment)?.let { map ->
+            map.view?.post {
+                if (map.isAdded) {
+                    map.notifyVisibleAfterOverlayDismiss()
+                }
+            }
+        }
+        tryShowSeasonLeaderboardRewardGateIfNeeded()
+    }
+
+    fun hideSeasonLeaderboardRewardGateContainer() {
+        if (!::binding.isInitialized) return
+        // replace sırasında eski instance onDestroyView'da çağırınca yeni gate zaten container'da olabilir — GONE yapma.
+        if (supportFragmentManager.findFragmentById(R.id.seasonLeaderboardRewardGateContainer) != null) {
+            return
+        }
+        binding.seasonLeaderboardRewardGateContainer.visibility = View.GONE
+    }
+
+    /** Sezon ödül kapısı: yerel repo boşsa state dokümanını tekrar okur. */
+    fun refreshUserBadgeProgressFromFirestore(onComplete: () -> Unit) {
+        val uid = auth.currentUser?.uid ?: run {
+            onComplete()
+            return
+        }
+        firestore.collection("users").document(uid).collection("badgeProgress").document("state").get()
+            .addOnCompleteListener { task ->
+                val snap = task.result
+                if (snap != null && snap.exists()) {
+                    BadgeProgressRepository.update(BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(snap))
+                    requestSeasonLeaderboardRewardGateIfPending()
+                }
+                onComplete()
+            }
+    }
+
+    /** [BadgeFragment] sezon liderlik kutlama kuyruğu bittiğinde pending alanını siler. */
+    fun onSeasonLeaderboardBadgeCelebrationFinished(ackSeason: Int) {
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(uid).collection("badgeProgress").document("state")
+            .update("pendingLeaderboardRewardSeason", FieldValue.delete())
+            .addOnSuccessListener {
+                val cur = BadgeProgressRepository.getUserBadgeProgress()
+                BadgeProgressRepository.update(cur.copy(pendingLeaderboardRewardSeason = null))
+            }
+    }
     
     override fun onResume() {
         super.onResume()
@@ -1304,6 +2403,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             return
         }
         if (hasExistingLogin) {
+            refreshWalletFromFirestore()
             SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
                 SessionDeviceManager.startSessionHeartbeat(this)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -1325,6 +2425,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         TimeTracker.startTracking()
         // Abonelik durumunu kontrol et (plan değişmiş olabilir)
         checkSubscriptionAndUpdateEnergy()
+        attachSeasonLeaderboardPendingListenerIfLoggedIn()
+        refreshPendingSeasonLeaderboardRewardFromFirestore()
     }
     
     override fun onPause() {
@@ -1391,6 +2493,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
     
     override fun onDestroy() {
+        seasonLeaderboardGateRetryLifecycleCallbacks?.let {
+            supportFragmentManager.unregisterFragmentLifecycleCallbacks(it)
+        }
+        seasonLeaderboardGateRetryLifecycleCallbacks = null
+        seasonLeaderboardPendingListener?.remove()
+        seasonLeaderboardPendingListener = null
         if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
             startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
         }

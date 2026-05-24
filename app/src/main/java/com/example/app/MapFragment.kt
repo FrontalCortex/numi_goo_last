@@ -2,6 +2,7 @@ package com.example.app
 
 import android.animation.ObjectAnimator
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -16,7 +17,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.randomNumberChangeToString
+import com.example.app.GlobalValues.randomUniqueNumberStrings
 import com.example.app.MathOperationGenerator.generateRandomMathOperation1
+import com.example.app.MathOperationGenerator.generateRelatedNumbers2
 import com.example.app.databinding.FragmentMapBinding
 import com.example.app.model.GuidePanelData
 import com.example.app.model.LessonItem
@@ -52,79 +55,29 @@ class MapFragment : Fragment() {
                     MathOperation(null,"7", null),
                     MathOperation(null,"8", null)
                 )
-                2 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null)
-                )
-                3 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                    MathOperation(null,randomNumberChangeToString(1), null),
-                )
-                1000 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                )
-                1001 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                )
-                1002 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(2), null),
-                )
-                1003 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                )
-                1004 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(3), null),
-                )
+                2 -> randomUniqueNumberStrings(1, 7).map { n ->
+                    MathOperation(null, n, null)
+                }
+                1000 -> randomUniqueNumberStrings(2, 7).map { n ->
+                    MathOperation(null, n, null)
+                }
+                1003 -> randomUniqueNumberStrings(3, 6).map { n ->
+                    MathOperation(null, n, null)
+                }
                 1005 -> listOf(
-                    MathOperation(null,randomNumberChangeToString(1), null)
-                )
-                4 -> listOf(
-                    MathOperation(4,"+", 5),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-
-                )
-                5 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                )
-                6 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
-                    )
+                    1 to 2,
+                    2 to 2,
+                    3 to 3,
+                    4 to 2,
+                    5 to 3,
+                ).flatMap { (digitCount, count) ->
+                    randomUniqueNumberStrings(digitCount, count).map { n ->
+                        MathOperation(null, n, null)
+                    }
+                }
+                4 -> listOf(MathOperation(4, "+", 5)) +
+                        MathOperationGenerator.generateRelatedNumbersList(6, 1, 1)
+                5 ->  MathOperationGenerator.generateRelatedNumbersList(8, 1, 1)
                 1007 -> listOf(
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
@@ -210,7 +163,19 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateRelatedNumbers(5, 5),
                 )
                 7 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers0(1, 1)
+                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers0(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(3, 3),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
                     )
                 8-> listOf(
                     MathOperation(3,"+", 4),
@@ -263,85 +228,85 @@ class MapFragment : Fragment() {
                     generateRandomMathOperation1()
                 )
                 12 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(2, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 2),
-                    MathOperationGenerator.generateRelatedNumbers2(2, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 2),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(2, 2),
+                    generateRelatedNumbers2(2, 3),
+                    generateRelatedNumbers2(2, 2),
+                    generateRelatedNumbers2(3, 2),
+                    generateRelatedNumbers2(2, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(2, 2),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 2),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(2, 2),
                     )
                 13 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
                     )
                 14 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
                 )
                 15 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
                 )
                 16 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4),
                 )
                 17 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(5, 4),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(5, 4),
+                    generateRelatedNumbers2(4, 5),
+                    generateRelatedNumbers2(5, 5),
                     )
                 18 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
 
                     )
                 19 -> listOf(
@@ -349,17 +314,17 @@ class MapFragment : Fragment() {
                     generateRandomMathOperation1(),
                     generateRandomMathOperation1(),
                     generateRandomMathOperation1(),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(3, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(4, 3),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 4),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 3),
+                    generateRelatedNumbers2(3, 4),
+                    generateRelatedNumbers2(4, 3),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 4),
+                    generateRelatedNumbers2(5, 5),
+                    generateRelatedNumbers2(5, 5),
                 )
                 20 -> listOf(
                     MathOperation(7,"+", 3),
@@ -2206,6 +2171,26 @@ class MapFragment : Fragment() {
                 else -> emptyList()
             }
         }
+
+        /**
+         * [requestedId] için operasyon yoksa [minLessonId]'ye kadar birer azaltarak ilk dolu id'yi döner.
+         */
+        fun resolveLessonOperationsId(requestedId: Int, minLessonId: Int): Int {
+            var id = requestedId
+            while (getLessonOperations(id).isEmpty() && id > minLessonId) {
+                id--
+            }
+            return id
+        }
+
+        fun resolveLessonOperationsBlindingId(requestedId: Int, minLessonId: Int): Int {
+            var id = requestedId
+            while (getLessonOperationsBlinding(id).isEmpty() && id > minLessonId) {
+                id--
+            }
+            return id
+        }
+
         fun getLessonOperationsBlinding(lessonId: Int): List<Any>{
             return when (lessonId) {
                 1 -> listOf(
@@ -2989,67 +2974,15 @@ class MapFragment : Fragment() {
 
     private fun setupAskQuestionButton() {
         val authManager = com.example.app.auth.AuthManager().also { it.initialize(requireContext()) }
-        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-        val isTeacher = authManager.getCurrentUserType() == com.example.app.auth.AuthManager.ROLE_TEACHER
-
-        // 1) Kullanıcı yoksa butonu tamamen gizle
-        if (currentUser == null) {
-            binding.askQuestionButton.visibility = View.GONE
-            return
-        }
-
-        // 2) Öğretmen ise teacherApproved durumunu kontrol et
-        if (isTeacher) {
-            val uid = currentUser.uid
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .get()
-                .addOnSuccessListener { doc ->
-                    if (!isAdded) return@addOnSuccessListener
-                    val teacherApproved = doc.getBoolean("teacherApproved") == true
-                    if (!teacherApproved) {
-                        // Onaysız öğretmen: buton görünsün ama tıklamada uyarı verilsin
-                        binding.askQuestionButton.visibility = View.VISIBLE
-                        binding.askQuestionButton.setOnClickListener {
-                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                                    .setMessage("Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.")
-                                    .setPositiveButton("Tamam", null)
-                                    .show()
-                            }
-
-                        }
-                    }
-                    else {
-                        // Onaylı öğretmen: normal soru oluşturma akışına izin ver
-                        binding.askQuestionButton.visibility = View.VISIBLE
-                        binding.askQuestionButton.setOnClickListener {
-                            SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                                if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
-                                (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
-                            }
-                        }
-                        startAskQuestionBounceAnimation()
-                    }
-                }
-                .addOnFailureListener {
-                    // Hata durumunda, güvenli tarafta kalmak için butonu gizle
-                    if (isAdded) {
-                        binding.askQuestionButton.visibility = View.GONE
-                    }
-                }
-        } else {
-            // Öğrenci (veya öğretmen olmayan) hesaplar için mevcut davranış
-            binding.askQuestionButton.visibility = View.VISIBLE
-            binding.askQuestionButton.setOnClickListener {
-                SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
-                    if ((activity as? MainActivity)?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
-                    (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
-                }
-            }
-            startAskQuestionBounceAnimation()
-        }
+        AskQuestionButtonBinder.bind(
+            fragment = this,
+            button = binding.askQuestionButton,
+            isTeacher = authManager.getCurrentUserType() == com.example.app.auth.AuthManager.ROLE_TEACHER,
+            onAllowedClick = {
+                (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
+            },
+            onReadyForBounce = { startAskQuestionBounceAnimation() },
+        )
     }
 
     private fun startAskQuestionBounceAnimation() {
@@ -3068,11 +3001,11 @@ class MapFragment : Fragment() {
         val guideData = listOf(
             GuidePanelData(
                 imageResId = R.drawable.teacher_emotes_gpt4,
-                text = "Ünite değerlendirmede hatasız en hızlı çözümler kaydedilir."
+                text = "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."
             ),
             GuidePanelData(
                 imageResId = R.drawable.teacher_emotes_gpt3,
-                text = "Ünite değerlendirme panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
+                text = "Ünite maratonu panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
             )
             // Daha fazla resim/text eklenebilir
         )
@@ -3351,6 +3284,26 @@ class MapFragment : Fragment() {
         lessonsAdapter.refreshRacePanelIfOpen()
     }
 
+    /** Recycler + MainActivity dokunma yönlendirmesini sıfırla (overlay / guide panel sonrası). */
+    fun enableMapTouchRouting() {
+        if (!isAdded || view == null) return
+        enableMapFragmentViews()
+        enableMainActivityViews()
+    }
+
+    /** Ders overlay (Abacus quit, ChestResult vb.) kapandıktan sonra liste ve dokunuşları yenile. */
+    fun notifyVisibleAfterOverlayDismiss() {
+        if (!isAdded || view == null) return
+        (activity as? MainActivity)?.restoreMapUiAfterLessonOverlayDismiss()
+        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        enableMapTouchRouting()
+        binding.lessonsRecyclerView.visibility = View.VISIBLE
+        if (::lessonsAdapter.isInitialized) {
+            lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        }
+        binding.lessonsRecyclerView.invalidate()
+    }
+
     /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
     private fun safeColorRes(colorResId: Int): Int {
         val ctx = requireContext()
@@ -3421,6 +3374,23 @@ class MapFragment : Fragment() {
             if (stickyHeader != null && stickySectionUnit != null && stickyHeaderTitle != null) {
                 updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
             }
+        }
+        view?.post {
+            if (!isAdded) return@post
+            val act = activity as? MainActivity ?: return@post
+            act.logChromeBlockerDiagnostic("MapFragment.onResume")
+            val shouldReconcile = act.shouldReconcileAbacusOverlayOnMapResume()
+            Log.d(
+                MainActivity.FIRST_TUTORIAL_LOG_TAG,
+                "MapFragment.onResume | shouldReconcile=$shouldReconcile",
+            )
+            if (shouldReconcile) {
+                act.reconcileAbacusOverlayWhenMapIsBase()
+            } else {
+                act.sanitizeMapTouchSurface("MapFragment.onResume")
+            }
+            act.requestSeasonLeaderboardRewardGateIfPending()
+            act.logTouchDiag("MapFragment.onResume.post")
         }
     }
 }

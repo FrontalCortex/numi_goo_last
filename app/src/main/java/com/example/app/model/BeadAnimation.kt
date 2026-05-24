@@ -6,6 +6,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import com.example.app.R
+import com.example.app.TutorialBeadDiagnostics
 import com.example.app.abacus.AbacusBeadMetrics
 import java.util.WeakHashMap
 import kotlin.math.roundToInt
@@ -29,7 +30,12 @@ class BeadAnimation(
     }
 
     fun animate() {
-        if (isAnimating) return
+        if (isAnimating) {
+            TutorialBeadDiagnostics.log(
+                "SKIP already animating beadId=$beadId type=$animationType",
+            )
+            return
+        }
 
         val rootView = fragment.requireView()
         val bead = rootView.findViewById<ImageView>(
@@ -39,6 +45,11 @@ class BeadAnimation(
             Log.e("BeadAnimation", "Bead not found: $beadId")
             return
         }
+
+        val ctx = rootView.context
+        TutorialBeadDiagnostics.log(
+            "START beadId=$beadId type=$animationType | ${TutorialBeadDiagnostics.beadState(ctx, rootView, beadId)}",
+        )
 
         isAnimating = true
         val moveDistances = resolveMoveDistances(rootView)
@@ -65,13 +76,20 @@ class BeadAnimation(
     private fun animateBeadUp(bead: ImageView) {
         isAnimating = true
         val animationDuration = 300L
+        val rootView = fragment.requireView()
         bead.setImageResource(R.drawable.soroban_bead)
+        TutorialBeadDiagnostics.log(
+            "type4 setDrawable=normal | ${TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId)}",
+        )
 
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
                 isAnimating = false
+                TutorialBeadDiagnostics.log(
+                    "END type4 beadId=$beadId | ${TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId)}",
+                )
             }
             .translationY(0f)  // Orijinal konumuna dön
             .start()
@@ -80,13 +98,21 @@ class BeadAnimation(
     private fun animateBeadDown(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
+        val rootView = fragment.requireView()
 
         bead.setImageResource(R.drawable.soroban_bead_selected)
+        TutorialBeadDiagnostics.log(
+            "type3 setDrawable=SELECTED dy=+$moveDistance | " +
+                TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId),
+        )
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
                 isAnimating = false
+                TutorialBeadDiagnostics.log(
+                    "END type3 beadId=$beadId | ${TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId)}",
+                )
             }
             .translationY(moveDistance.toFloat())
             .start()
@@ -95,11 +121,16 @@ class BeadAnimation(
     private fun animateBeadsUp(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
+        val rootView = fragment.requireView()
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
         val endMargin = startMargin + moveDistance
         bead.setImageResource(R.drawable.soroban_bead_selected)
+        TutorialBeadDiagnostics.log(
+            "type1 setDrawable=SELECTED margin $startMargin->$endMargin dy=-$moveDistance | " +
+                TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId),
+        )
         bead.animate()
             .setDuration(animationDuration)
             .setInterpolator(AccelerateDecelerateInterpolator())
@@ -108,6 +139,9 @@ class BeadAnimation(
                 bead.layoutParams = params
                 bead.translationY = 0f // Translation'ı sıfırla
                 isAnimating = false
+                TutorialBeadDiagnostics.log(
+                    "END type1 beadId=$beadId | ${TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId)}",
+                )
             }
             .translationY(-moveDistance.toFloat())
             .start()
@@ -116,11 +150,16 @@ class BeadAnimation(
     private fun animateBeadsDown(bead: ImageView, moveDistance: Int) {
         isAnimating = true
         val animationDuration = 300L
+        val rootView = fragment.requireView()
 
         val params = bead.layoutParams as ViewGroup.MarginLayoutParams
         val startMargin = params.bottomMargin
         val endMargin = startMargin - moveDistance  // Yukarı çıktığı mesafe kadar aşağı in
         bead.setImageResource(R.drawable.soroban_bead)
+        TutorialBeadDiagnostics.log(
+            "type2 setDrawable=normal margin $startMargin->$endMargin dy=+$moveDistance | " +
+                TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId),
+        )
 
         bead.animate()
             .setDuration(animationDuration)
@@ -130,6 +169,9 @@ class BeadAnimation(
                 bead.layoutParams = params
                 bead.translationY = 0f // Translation'ı sıfırla
                 isAnimating = false
+                TutorialBeadDiagnostics.log(
+                    "END type2 beadId=$beadId | ${TutorialBeadDiagnostics.beadState(rootView.context, rootView, beadId)}",
+                )
             }
             .translationY(moveDistance.toFloat())  // Aşağı doğru hareket
             .start()

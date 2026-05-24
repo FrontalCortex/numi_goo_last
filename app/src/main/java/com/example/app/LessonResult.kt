@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentLessonResultBinding
 
@@ -30,6 +31,28 @@ class LessonResult : Fragment() {
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
+
+    /** [abacusFragmentContainer] üzerinde harita dokunuşunu geçirmemek için ([ChestFragment] ile aynı mantık). */
+    private var lessonResultHostView: View? = null
+    private var lessonResultHostSavedElevationPx = Float.NaN
+
+    private fun elevateLessonResultOverlayAboveMap() {
+        val host = binding.root.parent as? View ?: return
+        lessonResultHostView = host
+        val base = ViewCompat.getElevation(host).let { if (it.isNaN() || it < 0f) 0f else it }
+        lessonResultHostSavedElevationPx = base
+        val bumpPx = 16f * resources.displayMetrics.density
+        ViewCompat.setElevation(host, base + bumpPx)
+    }
+
+    private fun restoreLessonResultOverlayElevation() {
+        val h = lessonResultHostView ?: return
+        if (!lessonResultHostSavedElevationPx.isNaN()) {
+            ViewCompat.setElevation(h, lessonResultHostSavedElevationPx)
+        }
+        lessonResultHostView = null
+        lessonResultHostSavedElevationPx = Float.NaN
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,17 +94,20 @@ class LessonResult : Fragment() {
                 putFloat("successRate", succsessRate)
                 putInt("dersPuani", lessonScore)
             }
-            if(lessonItem?.stepIsFinish==true){
+            if (lessonItem?.stepIsFinish == true) {
+                val main = activity as? MainActivity
+                main?.prepareMapReturnAfterLessonClaim()
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragmentContainerID, MapFragment())
                     .remove(this@LessonResult)
-                    .commit()
-            }else{
+                    .commitNowAllowingStateLoss()
+                main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
+            } else {
                 chestFragment.arguments = args
+                (activity as? MainActivity)?.showResultOverlayHost()
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.resultFragmentContainer, chestFragment)
                     .remove(this@LessonResult)
-                    .commit()
+                    .commitNowAllowingStateLoss()
             }
 
         }
@@ -89,10 +115,11 @@ class LessonResult : Fragment() {
         // Animasyonları başlat
         showRandomAnimation()
 
-
+        binding.root.post { elevateLessonResultOverlayAboveMap() }
     }
 
     override fun onDestroyView() {
+        restoreLessonResultOverlayElevation()
         MainActivityChromeBlocker.release(activity)
         super.onDestroyView()
     }

@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/message_topbar">
+    android:background="@color/message_topbar"
+    >
 
     <!-- Kapatma butonu -->
     <ImageButton
@@ -399,6 +400,19 @@
 
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/askQuestionButton"
+        android:layout_width="@dimen/tutorial_ask_button_size"
+        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:background="@drawable/fab_background"
+        android:elevation="4dp"
+        android:padding="@dimen/tutorial_ask_button_padding"
+        android:src="@drawable/teacher_ask_ic"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <Button
         android:id="@+id/kontrolButton"
         android:layout_width="0dp"
@@ -445,9 +459,6 @@
         android:elevation="4dp"
         android:padding="3dp"
         android:fitsSystemWindows="true"
-        android:layout_marginStart="@dimen/abacus_fragment_result_panel_margin_neg"
-        android:layout_marginEnd="@dimen/abacus_fragment_result_panel_margin_neg"
-        android:layout_marginBottom="@dimen/abacus_fragment_result_panel_margin_neg"
         android:focusable="false"
         android:importantForAccessibility="no"
         android:translationZ="0dp"
@@ -533,9 +544,6 @@
         android:focusable="false"
         android:importantForAccessibility="no"
         android:translationZ="0dp"
-        android:layout_marginStart="@dimen/abacus_fragment_result_panel_margin_neg"
-        android:layout_marginEnd="@dimen/abacus_fragment_result_panel_margin_neg"
-        android:layout_marginBottom="@dimen/abacus_fragment_result_panel_margin_neg"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

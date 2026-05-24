@@ -99,6 +99,57 @@ object MissionsProgressStore {
         return ctx.applicationContext.getSharedPreferences("${PREFS}_$uid", Context.MODE_PRIVATE)
     }
 
+    /**
+     * Offline desteği kullanılmadığında local görev cache'ini temizler.
+     * Sonraki okumada state cloud'dan tekrar hydrate edilir.
+     */
+    fun clearLocalCache(context: Context) {
+        val appCtx = context.applicationContext
+        val uid = currentUid()
+        appCtx.getSharedPreferences("${PREFS}_guest", Context.MODE_PRIVATE).edit().clear().apply()
+        if (!uid.isNullOrBlank()) {
+            appCtx.getSharedPreferences("${PREFS}_$uid", Context.MODE_PRIVATE).edit().clear().apply()
+        }
+        cloudSyncRequestedForUid = null
+        cloudStateAppliedForUid = null
+        applyingCloudState = false
+    }
+
+    /**
+     * Local state'i hiçbir hydrate/defer beklemeden direkt cloud'a yazar.
+     * Reset sonrası eski cloud state'in geri basmasını engellemek için kullanılır.
+     */
+    fun forceUploadStateToCloud(context: Context) {
+        ensureMissionRealtimeSync(context)
+        val uid = currentUid() ?: return
+        val p = prefs(context)
+        val payload = hashMapOf<String, Any>(
+            KEY_DAY_ID to (p.getString(KEY_DAY_ID, todayId()) ?: todayId()),
+            KEY_WEEK_ID to (p.getString(KEY_WEEK_ID, weekIdNow()) ?: weekIdNow()),
+            KEY_DAILY_STEP_FINISH_COUNT to p.getInt(KEY_DAILY_STEP_FINISH_COUNT, 0),
+            KEY_WEEKLY_STEP_FINISH_COUNT to p.getInt(KEY_WEEKLY_STEP_FINISH_COUNT, 0),
+            KEY_DAILY_STEP_INCREMENT_COUNT to p.getInt(KEY_DAILY_STEP_INCREMENT_COUNT, 0),
+            KEY_WEEKLY_STEP_INCREMENT_COUNT to p.getInt(KEY_WEEKLY_STEP_INCREMENT_COUNT, 0),
+            KEY_DAILY_PERFECT_STEP_INCREMENT_COUNT to p.getInt(KEY_DAILY_PERFECT_STEP_INCREMENT_COUNT, 0),
+            KEY_WEEKLY_PERFECT_STEP_INCREMENT_COUNT to p.getInt(KEY_WEEKLY_PERFECT_STEP_INCREMENT_COUNT, 0),
+            KEY_DAILY_CHEST_RECORD_BREAK_COUNT to p.getInt(KEY_DAILY_CHEST_RECORD_BREAK_COUNT, 0),
+            KEY_WEEKLY_CHEST_RECORD_BREAK_COUNT to p.getInt(KEY_WEEKLY_CHEST_RECORD_BREAK_COUNT, 0),
+            KEY_DAILY_CHEST_STAR_GAIN_COUNT to p.getInt(KEY_DAILY_CHEST_STAR_GAIN_COUNT, 0),
+            KEY_WEEKLY_CHEST_STAR_GAIN_COUNT to p.getInt(KEY_WEEKLY_CHEST_STAR_GAIN_COUNT, 0),
+            KEY_DAILY_LEARN_MINUTES_COUNT to p.getInt(KEY_DAILY_LEARN_MINUTES_COUNT, 0),
+            KEY_WEEKLY_LEARN_MINUTES_COUNT to p.getInt(KEY_WEEKLY_LEARN_MINUTES_COUNT, 0),
+            KEY_DAILY_LEARN_REMAINDER_MS to p.getLong(KEY_DAILY_LEARN_REMAINDER_MS, 0L),
+            KEY_WEEKLY_LEARN_REMAINDER_MS to p.getLong(KEY_WEEKLY_LEARN_REMAINDER_MS, 0L),
+            KEY_DAILY_SELECTION_NONCE to p.getInt(KEY_DAILY_SELECTION_NONCE, 0),
+            KEY_WEEKLY_SELECTION_NONCE to p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0),
+            KEY_DAILY_SELECTED_MISSION_IDS to (p.getString(KEY_DAILY_SELECTED_MISSION_IDS, "") ?: ""),
+            KEY_WEEKLY_SELECTED_MISSION_IDS to (p.getString(KEY_WEEKLY_SELECTED_MISSION_IDS, "") ?: ""),
+            FIELD_REWARD_CLAIMED_KEYS to rewardClaimKeys(p),
+        )
+        stateDoc(uid).set(payload)
+        cloudStateAppliedForUid = uid
+    }
+
     private fun ensureSyncStateForCurrentUid() {
         val uid = currentUid()
         if (uid != lastSeenUid) {
@@ -139,10 +190,13 @@ object MissionsProgressStore {
         }
     }
 
-    private fun todayId(): String {
+    /** Yerel takvim günü anahtarı (günlük görevler ve roket günlük sayacı ile aynı). */
+    fun calendarDayId(): String {
         val c = Calendar.getInstance()
         return "${c.get(Calendar.YEAR)}-${c.get(Calendar.DAY_OF_YEAR)}"
     }
+
+    private fun todayId(): String = calendarDayId()
 
     /** Bu haftanın Pazartesi tarihini (yerel) benzersiz anahtar olarak kullanır */
     private fun weekIdNow(): String {

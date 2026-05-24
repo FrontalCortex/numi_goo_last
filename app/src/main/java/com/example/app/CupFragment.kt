@@ -69,13 +69,12 @@ class CupFragment : Fragment() {
 
         }
     }
-    private fun record(){
-        if(lessonItem.record==null){
-            lessonItem.record = toplamPuan
-        }
-        else if(toplamPuan>lessonItem.record!!){
-            lessonItem.record = toplamPuan
-        }
+    private fun record() {
+        if (lessonItem.type != LessonItem.TYPE_CHEST) return
+        val m = LessonItem.mergeChestRun(lessonItem, toplamPuan, SeasonClock.currentSeason())
+        lessonItem.record = m.record
+        lessonItem.leaderboardSeasonId = m.leaderboardSeasonId
+        lessonItem.leaderboardSeasonBest = m.leaderboardSeasonBest
     }
     private fun ChangeCupIcon(){
         val cupPoint1 = lessonItem.cupPoint1

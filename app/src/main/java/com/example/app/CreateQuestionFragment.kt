@@ -37,9 +37,10 @@ class CreateQuestionFragment : Fragment() {
     /** Gönder'e basıldıysa (veya gönderim başlatıldıysa) true; çıkışta medya dosyasını silmeyiz. */
     private var didSendOrIsSending = false
 
-    /** Öğrenci soru gönderirken (yükleme devam ederken) telefondaki geri tuşunun çalışmaması için. */
-    fun isStudentSendingInProgress(): Boolean =
-        (arguments?.getBoolean(ARG_IS_TEACHER, false) != true) && didSendOrIsSending
+    /** Öğrenci: yükleme overlay'i açıkken (Gönder sonrası beklerken) true — sistem geri tuşu bloklanır. */
+    private var studentSendInProgress = false
+
+    fun isStudentSendingInProgress(): Boolean = studentSendInProgress
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -221,7 +222,6 @@ class CreateQuestionFragment : Fragment() {
                     firestore.collection("questions")
                         .add(data)
                         .addOnSuccessListener { docRef ->
-                            setSendingUi(false)
                             val questionId = docRef.id
                             // İlk medya+caption mesajını sohbet için oluştur
                             val msg = hashMapOf(
@@ -237,9 +237,7 @@ class CreateQuestionFragment : Fragment() {
                                 .collection("messages")
                                 .add(msg)
 
-                            Toast.makeText(requireContext(), "Soru gönderildi.", Toast.LENGTH_SHORT).show()
-                            // CreateQuestionFragment'ı kapat; öğrenci eski ekrana döner.
-                            parentFragmentManager.popBackStack()
+                            runStudentGolfBadgeThenClose("Soru gönderildi.")
                         }
                         .addOnFailureListener { e ->
                             setSendingUi(false)
@@ -302,7 +300,6 @@ class CreateQuestionFragment : Fragment() {
                     firestore.collection("questions")
                         .add(data)
                         .addOnSuccessListener { docRef ->
-                            setSendingUi(false)
                             val questionId = docRef.id
                             val msg = hashMapOf(
                                 "senderUid" to uid,
@@ -325,9 +322,7 @@ class CreateQuestionFragment : Fragment() {
                                     runCatching { File(videoPath).delete() }
                                 }
 
-                            Toast.makeText(requireContext(), "Soru gönderildi.", Toast.LENGTH_SHORT).show()
-                            // CreateQuestionFragment'ı kapat; öğrenci eski ekrana döner.
-                            parentFragmentManager.popBackStack()
+                            runStudentGolfBadgeThenClose("Soru gönderildi.")
                         }
                         .addOnFailureListener { e ->
                             setSendingUi(false)
@@ -352,8 +347,30 @@ class CreateQuestionFragment : Fragment() {
     }
 
     private fun setSendingUi(sending: Boolean) {
+        val isTeacher = arguments?.getBoolean(ARG_IS_TEACHER, false) == true
+        if (!isTeacher) studentSendInProgress = sending
         binding.sendButton.isEnabled = !sending
         binding.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
+    }
+
+    /** Soru kaydı tamam; golf +1 Firestore, gerekirse [BadgeFragment] kutlaması (Chest akışıyla aynı container). */
+    private fun runStudentGolfBadgeThenClose(toastText: String) {
+        val fm = activity?.supportFragmentManager
+        BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
+            incrementDart = false,
+            incrementBowlingBy = 0,
+            incrementKarate = false,
+            incrementRocketDailyLessons = false,
+            incrementGolf = true,
+        ) { payloads ->
+            if (!isAdded) return@incrementBadgeProgressAndDetectLevelUp
+            setSendingUi(false)
+            Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
+            if (payloads.isNotEmpty() && fm != null) {
+                BadgeProgressFirestore.openBadgeCelebration(fm, payloads)
+            }
+        }
     }
 
     override fun onDestroyView() {

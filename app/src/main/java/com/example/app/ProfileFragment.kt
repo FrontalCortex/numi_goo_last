@@ -1,19 +1,29 @@
 package com.example.app
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentProfileBinding
+import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.value.LottieValueCallback
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -21,6 +31,7 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -30,7 +41,66 @@ class ProfileFragment : Fragment() {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private var isDataLoaded = false
-    
+    private var isUserDataLoading = false
+    private val lockedBaseColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_locked_base)
+    private val lockedTopColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_locked_top)
+    private val unlockedValueStrokeColor = 0xFFFF8F00.toInt()
+    private val bronzeToneColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_tone_bronze_filter)
+    private val silverToneColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_tone_silver_filter)
+    private val redToneColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_tone_red_filter)
+    private val purpleToneColor: Int
+        get() = ContextCompat.getColor(requireContext(), R.color.badge_tone_purple_filter)
+    private val badgeProgressCollection = "badgeProgress"
+    private val badgeProgressStateDoc = "state"
+
+    private data class ProfileBadgeSlot(
+        val container: View,
+        val base: LottieAnimationView,
+        val top: LottieAnimationView,
+        val valueText: TextView,
+    )
+
+    private data class ProfileBadgeRenderConfig(
+        val baseAsset: String?,
+        val topAsset: String,
+        val topHoldFrame: Float,
+        val topScale: Float,
+        val topBackgroundRes: Int?,
+    )
+
+    // unlocked=true rozetler soldan sağa bu sıraya göre önceliklidir.
+    private val unlockedPriorityOrder = listOf(
+        BadgeKind.CUP,
+        BadgeKind.GOLD,
+        BadgeKind.SILVER,
+        BadgeKind.BRONZE,
+        BadgeKind.KARATE,
+        BadgeKind.BOWLING,
+        BadgeKind.DART,
+        BadgeKind.FISHING,
+        BadgeKind.GOLF,
+        BadgeKind.ROCKET,
+    )
+
+    // unlocked=false rozetler, unlocked slotları dolduktan sonra bu sırayla eklenir.
+    private val lockedPriorityOrder = listOf(
+        BadgeKind.ROCKET,
+        BadgeKind.GOLF,
+        BadgeKind.FISHING,
+        BadgeKind.DART,
+        BadgeKind.BOWLING,
+        BadgeKind.KARATE,
+        BadgeKind.BRONZE,
+        BadgeKind.SILVER,
+        BadgeKind.GOLD,
+        BadgeKind.CUP,
+    )
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -75,6 +145,7 @@ class ProfileFragment : Fragment() {
         // Önce widget'ları gizle (veriler yüklenene kadar)
         // Layout'ta visibility="gone" olarak ayarlandı, burada da emin olalım
         showLoadingState()
+        binding.profileBadgesCard.visibility = View.GONE
         
         setupClickListeners()
         
@@ -85,7 +156,7 @@ class ProfileFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         // İlk yükleme yapılmadıysa veya e-posta doğrulama kontrolü gerekiyorsa yeniden yükle
-        if (!isDataLoaded) {
+        if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
         } else {
             // Sadece e-posta doğrulama durumunu kontrol et (hızlı kontrol)
@@ -147,14 +218,20 @@ class ProfileFragment : Fragment() {
     }
     
     private fun loadUserData() {
+        if (isUserDataLoading) return
+        isUserDataLoading = true
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış
+            isUserDataLoading = false
             return
         }
 
          // Fragment veya view artık bağlı değilse Glide ile yükleme yapma
-        if (!isAdded || view == null) return
+        if (!isAdded || view == null) {
+            isUserDataLoading = false
+            return
+        }
         
         // Profil fotoğrafı yükle (Google hesabı avatarı)
         val photoUrl = currentUser.photoUrl
@@ -178,8 +255,13 @@ class ProfileFragment : Fragment() {
         firestore.collection("users").document(currentUser.uid)
             .get()
             .addOnSuccessListener { doc ->
-                if (!isAdded) return@addOnSuccessListener
+                if (!isAdded) {
+                    isUserDataLoading = false
+                    return@addOnSuccessListener
+                }
                 if (doc.exists()) {
+                    loadBadgeProgressFromFirestore(currentUser.uid)
+
                     // Kullanıcı ID'sini göster
                     val userId = doc.getString("userId") ?: ""
                     if (userId.isNotEmpty()) {
@@ -278,7 +360,10 @@ class ProfileFragment : Fragment() {
                     // Veriler yüklendi, widget'ları göster
                     hideLoadingState()
                     isDataLoaded = true
+                    isUserDataLoading = false
                 } else {
+                    BadgeProgressRepository.update(UserBadgeProgress())
+                    bindRandomProfileBadges()
                     // Firestore'da kayıt yok
                     binding.tvMembershipStatus.text = "Free Üye"
                     binding.tvSubscriptionInfo.text = "⏳ Abonelik: Aktif değil"
@@ -286,14 +371,60 @@ class ProfileFragment : Fragment() {
                     // Veriler yüklendi (varsayılan değerlerle), widget'ları göster
                     hideLoadingState()
                     isDataLoaded = true
+                    isUserDataLoading = false
                 }
             }
             .addOnFailureListener { e ->
-                if (!isAdded) return@addOnFailureListener
+                if (!isAdded) {
+                    isUserDataLoading = false
+                    return@addOnFailureListener
+                }
+                BadgeProgressRepository.update(UserBadgeProgress())
+                bindRandomProfileBadges()
                 Log.e("ProfileFragment", "Firestore'dan kullanıcı bilgileri yüklenemedi", e)
                 // Hata durumunda da widget'ları göster (varsayılan değerlerle)
                 hideLoadingState()
                 isDataLoaded = true
+                isUserDataLoading = false
+            }
+    }
+
+    private fun badgeProgressDoc(uid: String) = firestore.collection("users")
+        .document(uid)
+        .collection(badgeProgressCollection)
+        .document(badgeProgressStateDoc)
+
+    private fun loadBadgeProgressFromFirestore(uid: String) {
+        binding.profileBadgesCard.visibility = View.GONE
+        val defaults = mapOf(
+            "userDartProgress" to 0L,
+            "userKarateProgress" to 0L,
+            "userGolfProgress" to 0L,
+            "userBowlingProgress" to 0L,
+            "userFishingProgress" to 0L,
+            "userFishingStreak" to 0L,
+            "userFishingStreakPeriodKey" to "",
+            "userRocketProgress" to 0L,
+            "userRocketDailyLessons" to 0L,
+            "userRocketDailyDayId" to "",
+        )
+        badgeProgressDoc(uid).get()
+            .addOnSuccessListener { badgeDoc ->
+                if (!isAdded) return@addOnSuccessListener
+                val missing = defaults.filterKeys { key -> !badgeDoc.contains(key) }
+                if (missing.isNotEmpty()) {
+                    badgeProgressDoc(uid).set(missing, SetOptions.merge())
+                }
+                BadgeProgressRepository.update(BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc))
+                bindRandomProfileBadges()
+                binding.profileBadgesCard.visibility = View.VISIBLE
+                (activity as? MainActivity)?.requestSeasonLeaderboardRewardGateIfPending()
+            }
+            .addOnFailureListener {
+                if (!isAdded) return@addOnFailureListener
+                BadgeProgressRepository.update(UserBadgeProgress())
+                bindRandomProfileBadges()
+                binding.profileBadgesCard.visibility = View.VISIBLE
             }
     }
     
@@ -309,60 +440,303 @@ class ProfileFragment : Fragment() {
         }
         binding.tvTotalTime.text = timeText
     }
-    
+
+    private fun bindRandomProfileBadges() {
+        val slots = listOf(
+            ProfileBadgeSlot(binding.badgeItemDart, binding.badgeDartBase, binding.badgeDartTop, binding.badgeDartValue),
+            ProfileBadgeSlot(binding.badgeItemRocket, binding.badgeRocketBase, binding.badgeRocketTop, binding.badgeRocketValue),
+            ProfileBadgeSlot(binding.badgeItemBowling, binding.badgeBowlingBase, binding.badgeBowlingTop, binding.badgeBowlingValue),
+            ProfileBadgeSlot(binding.badgeItemGolf, binding.badgeGolfBase, binding.badgeGolfTop, binding.badgeGolfValue),
+        )
+
+        val badgesByType = BadgeProgressRepository.getStates().associateBy { it.kind }
+        val orderedUnlocked = unlockedPriorityOrder.mapNotNull { type ->
+            badgesByType[type]?.takeIf { it.unlocked }
+        }
+        val orderedLocked = lockedPriorityOrder.mapNotNull { type ->
+            badgesByType[type]?.takeIf { !it.unlocked }
+        }
+        val pickedBadges = (orderedUnlocked + orderedLocked).take(slots.size)
+
+        // Önce tüm slotları kapat; sonra soldan sağa 4 slotu sıralı doldur.
+        slots.forEach { slot ->
+            slot.container.visibility = View.GONE
+        }
+
+        pickedBadges.zip(slots).forEach { (badge, slot) ->
+            slot.container.visibility = View.VISIBLE
+            val config = getProfileBadgeRenderConfig(badge.kind)
+            bindSingleProfileBadge(
+                container = slot.container,
+                base = slot.base,
+                top = slot.top,
+                valueText = slot.valueText,
+                state = badge,
+                baseAsset = config.baseAsset,
+                topAsset = config.topAsset,
+                topHoldFrame = config.topHoldFrame,
+                topScale = config.topScale,
+                topBackgroundRes = config.topBackgroundRes,
+            )
+        }
+    }
+
+    private fun getProfileBadgeRenderConfig(type: BadgeKind): ProfileBadgeRenderConfig {
+        return when (type) {
+            BadgeKind.CUP -> ProfileBadgeRenderConfig(
+                baseAsset = null,
+                topAsset = "cup_google_anim.json",
+                topHoldFrame = 0f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.KARATE -> ProfileBadgeRenderConfig(
+                baseAsset = null,
+                topAsset = "karate_anim.json",
+                topHoldFrame = 0f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.GOLD -> ProfileBadgeRenderConfig(
+                baseAsset = null,
+                topAsset = "gold_medal_anim.json",
+                topHoldFrame = 0f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.SILVER -> ProfileBadgeRenderConfig(
+                baseAsset = null,
+                topAsset = "silver_medal_anim.json.json",
+                topHoldFrame = 0f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.BRONZE -> ProfileBadgeRenderConfig(
+                baseAsset = null,
+                topAsset = "bronze_medal_anim.json.json",
+                topHoldFrame = 0f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.DART -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "dart_anim.json",
+                topHoldFrame = 60f,
+                topScale = 0.65f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.ROCKET -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "rocket_badge_anim2.json",
+                topHoldFrame = 60f,
+                topScale = 1f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.BOWLING -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "bowling_anim.json",
+                topHoldFrame = 47f,
+                topScale = 0.68f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+
+            BadgeKind.FISHING -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "fishing_pole_anim.json",
+                topHoldFrame = 24f,
+                topScale = 0.65f,
+                topBackgroundRes = null,
+            )
+
+            BadgeKind.GOLF -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "golf_anim.json",
+                topHoldFrame = 30f,
+                topScale = 0.60f,
+                topBackgroundRes = null,
+            )
+        }
+    }
+
+    private fun bindSingleProfileBadge(
+        container: View,
+        base: LottieAnimationView,
+        top: LottieAnimationView,
+        valueText: TextView,
+        state: BadgeState,
+        baseAsset: String?,
+        topAsset: String,
+        topHoldFrame: Float,
+        topScale: Float,
+        topBackgroundRes: Int?,
+    ) {
+        if (baseAsset == null) {
+            base.cancelAnimation()
+            base.visibility = View.INVISIBLE
+        } else {
+            base.visibility = View.VISIBLE
+            base.setAnimation(baseAsset)
+            base.repeatCount = 0
+            base.speed = 1f
+            base.addLottieOnCompositionLoadedListener {
+                base.progress = 1f
+                base.pauseAnimation()
+            }
+        }
+
+        top.setAnimation(topAsset)
+        top.repeatCount = 0
+        top.speed = 1f
+        top.scaleX = topScale
+        top.scaleY = topScale
+        top.translationY = -1f * resources.displayMetrics.density
+        if (topBackgroundRes != null) {
+            top.setBackgroundResource(topBackgroundRes)
+        } else {
+            top.background = null
+        }
+        top.addLottieOnCompositionLoadedListener { composition ->
+            val progress = frameToProgress(topHoldFrame, composition.startFrame, composition.endFrame)
+            top.progress = progress
+            top.pauseAnimation()
+        }
+
+        if (state.unlocked) {
+            container.alpha = 1f
+            clearLottieFlatGrayFilter(base)
+            clearLottieFlatGrayFilter(top)
+            applyUnlockedLevelToneToBase(base, state.levelTone)
+            (valueText as? BadgeRewardTextView)?.setStrokeColorInt(unlockedValueStrokeColor)
+            valueText.setTextColor(Color.WHITE)
+            if (state.showValue) {
+                valueText.visibility = View.VISIBLE
+                valueText.text = (state.value ?: 0).toString()
+            } else {
+                valueText.visibility = View.GONE
+            }
+        } else {
+            container.alpha = 1f
+            if (base.visibility == View.VISIBLE) {
+                // Çift katmanlı rozetlerde base koyu, top açık gri.
+                applyLottieFlatGrayFilter(base, lockedBaseColor)
+                applyLottieFlatGrayFilter(top, lockedTopColor)
+            } else {
+                applyLottieFlatGrayFilter(top, lockedTopColor)
+            }
+            if (state.showValue) {
+                valueText.visibility = View.VISIBLE
+                valueText.text = (state.value ?: 0).toString()
+                (valueText as? BadgeRewardTextView)?.setStrokeColorInt(lockedTopColor)
+                valueText.setTextColor(lockedBaseColor)
+            } else {
+                valueText.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun applyUnlockedLevelToneToBase(base: LottieAnimationView, tone: BadgeLevelTone?) {
+        if (base.visibility != View.VISIBLE) return
+        when (tone) {
+            BadgeLevelTone.BRONZE -> applyLottieToneFilter(base, bronzeToneColor)
+            BadgeLevelTone.SILVER -> applyLottieToneFilter(base, silverToneColor)
+            BadgeLevelTone.RED -> applyLottieToneFilter(base, redToneColor)
+            BadgeLevelTone.PURPLE -> applyLottieToneFilterStrong(base, purpleToneColor)
+            BadgeLevelTone.ORIGINAL, null -> clearLottieFlatGrayFilter(base)
+        }
+    }
+
+    private fun applyLottieToneFilter(view: LottieAnimationView, color: Int) {
+        view.addValueCallback(
+            KeyPath("**"),
+            LottieProperty.COLOR_FILTER,
+            LottieValueCallback<ColorFilter>(PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY)),
+        )
+        view.invalidate()
+    }
+
+    private fun applyLottieToneFilterStrong(view: LottieAnimationView, color: Int) {
+        view.addValueCallback(
+            KeyPath("**"),
+            LottieProperty.COLOR_FILTER,
+            LottieValueCallback<ColorFilter>(PorterDuffColorFilter(color, PorterDuff.Mode.OVERLAY)),
+        )
+        view.invalidate()
+    }
+
+    private fun applyLottieFlatGrayFilter(view: LottieAnimationView, color: Int) {
+        view.addValueCallback(
+            KeyPath("**"),
+            LottieProperty.COLOR_FILTER,
+            LottieValueCallback<ColorFilter>(PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP)),
+        )
+        view.invalidate()
+    }
+
+    private fun clearLottieFlatGrayFilter(view: LottieAnimationView) {
+        view.clearValueCallback(
+            KeyPath("**"),
+            LottieProperty.COLOR_FILTER,
+        )
+        view.invalidate()
+    }
+
+    private fun frameToProgress(frame: Float, startFrame: Float, endFrame: Float): Float {
+        if (endFrame <= startFrame) return 0f
+        return ((frame - startFrame) / (endFrame - startFrame)).coerceIn(0f, 1f)
+    }
+
     private fun setupClickListeners() {
+        binding.btnAccountSettings.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right,
+                )
+                .replace(R.id.fragmentContainerID, AccountSettingsFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+
+        binding.profileBadgesCard.setOnClickListener {
+            openBadgeDetailFragment()
+        }
+
+        binding.btnProfileBadgesArrow.setOnClickListener {
+            openBadgeDetailFragment()
+        }
+
         // Üyelik Durumu - Abonelik sayfasına git
         binding.tvMembershipStatus.setOnClickListener {
             val intent = Intent(requireContext(), SubscriptionActivity::class.java)
             subscriptionLauncher.launch(intent)
         }
-        
-        // Profili Düzenle
-        binding.btnEditProfile.setOnClickListener {
-            showEditProfileDialog()
-        }
-        
-        // Şifre Değiştir
-        binding.btnChangePassword.setOnClickListener {
-            showChangePasswordDialog()
-        }
-        
-        // Bildirimler
-        binding.btnNotifications.setOnClickListener {
-            Toast.makeText(context, "Bildirim ayarları yakında eklenecek", Toast.LENGTH_SHORT).show()
-        }
-        
-        // Dil Seçimi
-        binding.btnLanguage.setOnClickListener {
-            Toast.makeText(context, "Dil seçimi yakında eklenecek", Toast.LENGTH_SHORT).show()
-        }
-        
-        // Yardım / Destek
-        binding.btnHelp.setOnClickListener {
-            Toast.makeText(context, "Yardım / Destek yakında eklenecek", Toast.LENGTH_SHORT).show()
-        }
-        
-        // Gizlilik
-        binding.btnPrivacy.setOnClickListener {
-            Toast.makeText(context, "Gizlilik ayarları yakında eklenecek", Toast.LENGTH_SHORT).show()
-        }
-        
-        // Çıkış Yap
-        binding.btnLogout.setOnClickListener {
-            requireOnlineAndLoggedInOrLogin {
-                showLogoutConfirmation()
-            }
-        }
-        
-        // Hesabı Sil
-        binding.btnDeleteAccount.setOnClickListener {
-            showDeleteAccountConfirmation()
-        }
-        
+
         // E-posta Doğrula
         binding.btnVerifyEmail.setOnClickListener {
             verifyEmail()
         }
+    }
+
+    private fun openBadgeDetailFragment() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+            .replace(R.id.fragmentContainerID, BadgeDetailFragment())
+            .addToBackStack(null)
+            .commit()
     }
     
     private fun verifyEmail() {

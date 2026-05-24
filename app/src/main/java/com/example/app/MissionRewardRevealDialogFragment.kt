@@ -56,9 +56,7 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
         applyRewardUiState()
         prepareHiddenRewardUi()
         binding.claimRewardButton.setOnClickListener {
-            if (rewardOutcome.type == ChestRewardType.GOLD) {
-                goldUpdateListener?.onGoldUpdated(rewardOutcome.amount)
-            }
+            ChestRewardClaimHelper.applyReward(goldUpdateListener, rewardOutcome)
             onRewardClaimedCallback?.invoke()
             dismissAllowingStateLoss()
         }
@@ -118,6 +116,7 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
     private fun revealRewardUi() {
         if (isRewardReady) return
         isRewardReady = true
+        applyRewardUiState()
         binding.chestImage.visibility = View.VISIBLE
         binding.goldText.visibility = View.VISIBLE
         binding.claimRewardButton.visibility = View.VISIBLE

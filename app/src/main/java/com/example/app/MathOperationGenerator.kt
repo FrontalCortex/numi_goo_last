@@ -32,74 +32,90 @@ object MathOperationGenerator {
         }
         val secondNumberOnes = onesDigitSecond[Random().nextInt(onesDigitSecond.size)]
         return MathOperation(onesDigitFirst, "+", secondNumberOnes)
-
     }
 
     fun generateRelatedNumbers(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
-        // İlk sayıyı oluştur
-        var firstNumber: Int
-        do {
-            // İlk basamak için (0 olamaz)
-            val firstDigit = (1..9).random()
+        val firstNumber = generateFirstNumberForRelated(firstDigitCount)
+        val secondNumber = generateSecondNumberForRelated(firstNumber, secondDigitCount)
+        return MathOperation(firstNumber, "+", secondNumber)
+    }
 
-            // Diğer basamaklar için
-            val otherDigits = if (firstDigitCount > 1) {
-                // Onlar basamağı için (9 olamaz)
-                val tensDigit = if (firstDigitCount > 1) {
-                    (0..8).random() // 9 hariç
-                } else {
-                    0
-                }
+    /**
+     * [generateRelatedNumbers] ile aynı kurallarda [count] adet toplama işlemi üretir.
+     * firstNumber mümkün olduğunca listede tekrar etmez; havuz yetmezse tekrara düşer
+     * ([GlobalValues.randomUniqueNumberStrings] mantığı).
+     */
+    fun generateRelatedNumbersList(
+        count: Int,
+        firstDigitCount: Int,
+        secondDigitCount: Int,
+    ): List<MathOperation> {
+        if (count <= 0) return emptyList()
 
-                // Diğer basamaklar için
-                val remainingDigits = if (firstDigitCount > 2) {
-                    (0 until firstDigitCount - 2).map { (0..9).random() }
-                        .fold(0) { acc, digit -> acc * 10 + digit }
-                } else {
-                    0
-                }
+        val usedFirstNumbers = mutableSetOf<Int>()
+        val operations = mutableListOf<MathOperation>()
 
-                remainingDigits * 10 + tensDigit
+        repeat(count) {
+            val firstNumber = pickUniqueFirstNumberForRelated(firstDigitCount, usedFirstNumbers)
+            usedFirstNumbers.add(firstNumber)
+            val secondNumber = generateSecondNumberForRelated(firstNumber, secondDigitCount)
+            operations.add(MathOperation(firstNumber, "+", secondNumber))
+        }
+        return operations
+    }
+
+    private fun pickUniqueFirstNumberForRelated(
+        firstDigitCount: Int,
+        usedFirstNumbers: Set<Int>,
+    ): Int {
+        repeat(500) {
+            val candidate = generateFirstNumberForRelated(firstDigitCount)
+            if (candidate !in usedFirstNumbers) return candidate
+        }
+        return generateFirstNumberForRelated(firstDigitCount)
+    }
+
+    private fun generateFirstNumberForRelated(firstDigitCount: Int): Int {
+        val firstDigit = (1..8).random()
+        val otherDigits = if (firstDigitCount > 1) {
+            val tensDigit = (0..8).random()
+            val remainingDigits = if (firstDigitCount > 2) {
+                (0 until firstDigitCount - 2).map { (0..8).random() }
+                    .fold(0) { acc, digit -> acc * 10 + digit }
             } else {
                 0
             }
+            remainingDigits * 10 + tensDigit
+        } else {
+            0
+        }
+        return firstDigit * Math.pow(10.0, (firstDigitCount - 1).toDouble()).toInt() + otherDigits
+    }
 
-            firstNumber =
-                firstDigit * Math.pow(10.0, (firstDigitCount - 1).toDouble()).toInt() + otherDigits
-        } while (firstDigitCount > 1 && (firstNumber / 10) % 10 == 9) // Onlar basamağı 9 olmamalı
-
-        // İkinci sayıyı oluştur
+    private fun generateSecondNumberForRelated(firstNumber: Int, secondDigitCount: Int): Int {
         val firstNumberStr = firstNumber.toString()
         val secondNumberDigits = mutableListOf<Int>()
-
-        // İkinci sayının her basamağı için
         for (i in 0 until secondDigitCount) {
             if (i < firstNumberStr.length) {
-                // İlk sayının aynı basamağındaki rakama göre kural uygula
                 val firstDigit = firstNumberStr[firstNumberStr.length - 1 - i].toString().toInt()
                 var allowedDigits = digitRules[firstDigit] ?: listOf(0)
-
-                // İkinci sayının onlar basamağı 0 olamaz
-                if (i == 1) { // Onlar basamağı için
+                if (i == 1 || secondDigitCount == 1) {
                     allowedDigits = allowedDigits.filter { it != 0 }
                 }
-
-                // Eğer liste boşsa varsayılan olarak 1 kullan
                 val selectedDigit = if (allowedDigits.isEmpty()) 1 else allowedDigits.random()
                 secondNumberDigits.add(0, selectedDigit)
             } else {
-                // Eğer ikinci sayı daha fazla basamağa sahipse, ekstra basamaklar için rastgele rakam
-                // Onlar basamağı için 0 olamaz
-                val digit = if (i == 1) (1..9).random() else (0..9).random()
+                val digit = when {
+                    i == 1 -> (1..9).random()
+                    secondDigitCount == 1 -> (1..9).random()
+                    else -> (0..9).random()
+                }
                 secondNumberDigits.add(0, digit)
             }
         }
-
-        // Basamakları birleştir
-        val secondNumber = secondNumberDigits.fold(0) { acc, digit -> acc * 10 + digit }
-
-        return MathOperation(firstNumber, "+", secondNumber)
+        return secondNumberDigits.fold(0) { acc, digit -> acc * 10 + digit }
     }
+
     fun generateRelatedNumbers2(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
         // İlk sayıyı oluştur - her basamak için %80 ihtimalle 1,2,3,4; %20 ihtimalle 5,6,7,8,9
         val firstNumberDigits = mutableListOf<Int>()
@@ -126,8 +142,8 @@ object MathOperationGenerator {
         // İkinci sayı için basamak kuralları
         val digitRules = mapOf(
             0 to listOf(1, 2, 3, 4, 5, 6, 7, 8, 9),
-            1 to listOf(1, 2, 3, 4, 5, 6, 7, 8), // %50 ihtimalle 4
-            2 to listOf(1, 2, 3, 4, 5, 6, 7), // %50 ihtimalle 3 veya 4
+            1 to listOf(1, 2, 3, 4, 5, 6, 7, 8),
+            2 to listOf(1, 2, 3, 4, 5, 6, 7),
             3 to listOf(1, 2, 3, 4, 5, 6),
             4 to listOf(1, 2, 3, 4, 5),
             5 to listOf(1, 2, 3, 4),
@@ -168,6 +184,54 @@ object MathOperationGenerator {
         val secondNumber = secondNumberDigits.fold(0) { acc, digit -> acc * 10 + digit }
 
         return MathOperation(firstNumber, "+", secondNumber)
+    }
+    fun generateRelatedNumbers2Blinding(count: Int, digitsOne: Int): List<Int> {
+        if (count <= 0) return emptyList()
+        val digitCount = digitsOne.coerceAtLeast(1)
+
+        val lowDigits = listOf(1, 2, 3, 4)
+        val highDigits = listOf(5, 6, 7, 8, 9)
+
+        val digitRules = mapOf(
+            0 to listOf(1, 2, 3, 4),
+            1 to listOf(1, 2, 3, 4),
+            2 to listOf(1, 2, 3, 4),
+            3 to listOf(1, 2, 3, 4),
+            4 to listOf(1, 2, 3, 4),
+            5 to listOf(1, 2, 3, 4),
+            6 to listOf(1, 2, 3),
+            7 to listOf(1, 2),
+            8 to listOf(1),
+            9 to listOf(0)
+        )
+
+        fun toDigits(value: Int, size: Int): List<Int> {
+            var x = value
+            val arr = IntArray(size)
+            for (i in size - 1 downTo 0) {
+                arr[i] = x % 10
+                x /= 10
+            }
+            return arr.toList()
+        }
+
+        fun randomDigit90_10(): Int =
+            if (Math.random() < 0.9) lowDigits.random() else highDigits.random()
+
+        val firstDigits = List(digitCount) { randomDigit90_10() }
+        val firstNumber = firstDigits.fold(0) { acc, d -> acc * 10 + d }
+        val numbers = mutableListOf(firstNumber)
+
+        for (i in 1 until count) {
+            val sumDigits = toDigits(numbers.sum(), digitCount)
+            val newDigits = sumDigits.map { posDigit ->
+                digitRules[posDigit]!!.random()
+            }
+            val newNumber = newDigits.fold(0) { acc, d -> acc * 10 + d }
+            numbers.add(newNumber)
+        }
+
+        return numbers
     }
     fun generateRandomMathOperation1(): MathOperation {
 
@@ -1071,7 +1135,8 @@ object MathOperationGenerator {
         }
 
         return numbers
-    }    fun generateSequence5Rules(count: Int): List<Int> {
+    }
+    fun generateSequence5Rules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
         // İlk sayıyı oluştur (iki basamaklı olabilir)

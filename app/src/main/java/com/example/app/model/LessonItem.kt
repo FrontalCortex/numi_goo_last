@@ -18,7 +18,6 @@ data class LessonItem(
     val color: Int? = null,    // Renk değeri, varsayılanı null
     var LESSON_ID: Int? = null,
     var isBlinding: Boolean? = null,
-    var lessonOperationsMap: Int? = null,
     var stepCompletionStatus: List<Boolean> = List(stepCount) { false },// Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
     var startStepNumber: Int? = null,
@@ -40,9 +39,32 @@ data class LessonItem(
     var racePartId: Int? = null,  // Race item'ının hangi partId'den veri göstereceği
     var backRaceId: Int? = null,
     var raceBusyLevel: Int? = null,
+    /** Tüm zamanların en yüksek kupa skoru (harita / bottom sheet "Rekor"). */
     var record: Int? = null,
+    /**
+     * Yalnızca [leaderboardSeasonId] sezonunda oynanan koşuların en iyi skoru; mevcut sezon liderlik tablosuna
+     * [LessonLeaderboardRepository.submitBestIfNeeded] ile yalnızca bu değer yazılır. Sezon değişince bucket sıfırlanır.
+     */
+    var leaderboardSeasonBest: Int? = null,
+    var leaderboardSeasonId: Int? = null,
     var abacusGuideNumber: Int? = null,
+    var titleUnit: String? = null,
 ) : Serializable {
+    /** [season] ile eşleşen sezon en iyi skoru; yoksa liderliğe eski [record] yazılmaz. */
+    /** [MapFragment.getLessonOperations] yoksa geri adım alt sınırı (dersin ilk adım id'si). */
+    fun minLessonOperationsId(): Int {
+        val finish = finishStepNumber ?: startStepNumber ?: 1
+        return finish - stepCount + 1
+    }
+
+    fun leaderboardSubmitScore(season: Int): Int? {
+        if (type != TYPE_CHEST) return null
+        val sid = leaderboardSeasonId ?: return null
+        if (sid != season) return null
+        val b = leaderboardSeasonBest ?: return null
+        return b.takeIf { it > 0 }
+    }
+
     companion object {
         const val TYPE_LESSON = 0
         const val TYPE_HEADER = 1
@@ -52,6 +74,32 @@ data class LessonItem(
         const val TYPE_BACK_PART = 5
         // Fragment ID sabitleri
 
+        /**
+         * Kupa koşusu [runScore] ile bittiğinde: [record] tüm zamanların max'ı;
+         * sezon alanları yalnızca [currentSeason] tahtası için (önceki sezon skoru taşınmaz).
+         */
+        fun mergeChestRun(item: LessonItem, runScore: Int, currentSeason: Int): LessonItem {
+            require(item.type == TYPE_CHEST)
+            val prevRecord = item.record
+            val newAllTime = when {
+                prevRecord == null -> runScore
+                runScore > prevRecord -> runScore
+                else -> prevRecord
+            }
+            val prevSeasonId = item.leaderboardSeasonId
+            val prevSeasonBest = item.leaderboardSeasonBest
+            val newSeasonBest = when {
+                prevSeasonId == null || prevSeasonId != currentSeason ->
+                    runScore
+                else ->
+                    kotlin.math.max(prevSeasonBest ?: 0, runScore)
+            }
+            return item.copy(
+                record = newAllTime,
+                leaderboardSeasonId = currentSeason,
+                leaderboardSeasonBest = newSeasonBest,
+            )
+        }
     }
 
 } //global part ıd değiştirilecek adapter'da

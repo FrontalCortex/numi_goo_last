@@ -9,6 +9,7 @@ import android.view.ViewConfiguration
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import com.example.app.R
+import com.example.app.TutorialBeadDiagnostics
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -94,6 +95,16 @@ class AbacusBeadController(
 
     private var activeDrag: DragSession? = null
 
+    /** Tutorial [BeadAnimation] gibi controller dışı boncuk animasyonları sürerken true dönmeli. */
+    private var externalBeadAnimationInProgress: () -> Boolean = { false }
+
+    fun setExternalBeadAnimationInProgress(checker: () -> Boolean) {
+        externalBeadAnimationInProgress = checker
+    }
+
+    private fun shouldDeferAppearanceDuringSync(): Boolean =
+        animatingBeads.isNotEmpty() || externalBeadAnimationInProgress()
+
     private fun isAnyBottomAnimating(rod: Int): Boolean {
         return bottomBeads[rod].any { it in animatingBeads }
     }
@@ -114,6 +125,8 @@ class AbacusBeadController(
     fun setEnabled(enabled: Boolean) {
         touchEnabled = enabled
     }
+
+    fun isResetInProgress(): Boolean = resetInProgress
 
     /**
      * Calculates runtime movement distances from barrier spacing and applies %100 ratio.
@@ -149,33 +162,92 @@ class AbacusBeadController(
      * This is needed because tutorial/guide animations (e.g., BeadAnimation) can move beads
      * without going through this controller's click/drag handlers.
      */
-    fun syncStateFromUi() {
+    /** Margin okumadan [bottomCount]/[topDown] — tutorial kısmi geçişte drawable korunurken dokunma state'i. */
+    fun applyInternalStateFromValue(value: Int, applyAppearance: Boolean = false) {
+        if (resetInProgress) return
+        val padded = value.coerceIn(0, 99999).toString().padStart(5, '0')
+        for (rod in 0..4) {
+            val digit = padded[rod].digitToInt()
+            bottomCount[rod] = digit % 5
+            topDown[rod] = digit >= 5
+        }
+        logInternalState("applyInternalStateFromValue($value) applyAppearance=$applyAppearance")
+        when {
+            !applyAppearance && TutorialBeadDiagnostics.ENABLED -> {
+                TutorialBeadDiagnostics.log(
+                    "applyInternalStateFromValue: skipped updateAllAppearance",
+                )
+            }
+            shouldDeferAppearanceDuringSync() && TutorialBeadDiagnostics.ENABLED -> {
+                TutorialBeadDiagnostics.log(
+                    "applyInternalStateFromValue: skipped updateAllAppearance (animation)",
+                )
+            }
+            applyAppearance -> updateAllAppearance()
+        }
+    }
+
+    fun logInternalState(label: String) {
+        if (!TutorialBeadDiagnostics.ENABLED) return
+        TutorialBeadDiagnostics.log(
+            "$label value=${getCurrentValue()} bottomCount=${bottomCount.contentToString()} " +
+                "topDown=${topDown.contentToString()}",
+        )
+    }
+
+    /** Alttan ardışık kaç alt boncuk yukarıda (soroban yığını; sync ile aynı kural). */
+    fun countConsecutiveRaisedBottomBeads(rod: Int): Int {
+        if (rod !in 0..4) return 0
+        captureInitialPositionsIfNeeded()
+        val raisedThreshold = bottomMoveDistancePx / 2f
+        var count = 0
+        for (i in 0..3) {
+            val bead = bottomBeads[rod][i]
+            val params = bead.layoutParams as ViewGroup.MarginLayoutParams
+            val delta =
+                params.bottomMargin - initialBottomMargins[rod][i] + bead.translationY
+            if (delta >= raisedThreshold) {
+                count = i + 1
+            } else {
+                break
+            }
+        }
+        return count
+    }
+
+    /**
+     * Tek bir alt boncuk fiziksel olarak yukarıda mı (margin+translation; ardışık yığım varsayımı yok).
+     * writeAnswerNumber: yalnızca hedefi ile fiziksel konumu uyuşmayan boncuklar animasyonlanır.
+     */
+    fun isBottomBeadPhysicallyRaised(rod: Int, beadIndex: Int): Boolean {
+        if (rod !in 0..4 || beadIndex !in 0..3) return false
+        captureInitialPositionsIfNeeded()
+        val bead = bottomBeads[rod][beadIndex]
+        val params = bead.layoutParams as ViewGroup.MarginLayoutParams
+        val delta =
+            params.bottomMargin - initialBottomMargins[rod][beadIndex] + bead.translationY
+        return delta >= bottomMoveDistancePx / 2f
+    }
+
+    /** Üst boncuk aşağıda mı (+5 konumu). */
+    fun isTopBeadDown(rod: Int): Boolean {
+        if (rod !in 0..4) return false
+        val top = topBeads[rod]
+        return top.translationY >= topMoveDistancePx / 2f
+    }
+
+    fun syncStateFromUi(applyAppearance: Boolean = true) {
         // During reset animations, syncStateFromUi can be called again from the fragment
         // (e.g., setupBeads()). If we re-read visual state mid-animation, it can reintroduce
         // selected/default desync. So we ignore sync while reset is in progress.
         if (resetInProgress) return
 
+        logInternalState("syncStateFromUi BEFORE applyAppearance=$applyAppearance")
+
         captureInitialPositionsIfNeeded()
 
-        val raisedThreshold = bottomMoveDistancePx / 2f
-
         for (rod in 0..4) {
-            // Bottom count from *visual* position (margin + any in-flight translation).
-            // Tutorial BeadAnimation / widget margin animasyonları boncukları oynatır ama drawable
-            // (soroban_bead_selected) güncellemez; sadece drawable okumak bottomCount'u 0 yapıp
-            // her showStep/setupBeads'te tutorial boolean'larını yanlış sıfırlıyordu.
-            var count = 0
-            for (i in 0..3) {
-                val bead = bottomBeads[rod][i]
-                val params = bead.layoutParams as ViewGroup.MarginLayoutParams
-                val delta =
-                    params.bottomMargin - initialBottomMargins[rod][i] + bead.translationY
-                if (delta >= raisedThreshold) {
-                    count = i + 1
-                } else {
-                    break
-                }
-            }
+            val count = countConsecutiveRaisedBottomBeads(rod)
             bottomCount[rod] = count
 
             // Top bead state.
@@ -184,9 +256,59 @@ class AbacusBeadController(
             // Key fix: infer top state from visual position, not drawable.
             // Otherwise "selected" tint can stay while the bead is reset/moving.
             topDown[rod] = topByTranslation
+
+            if (TutorialBeadDiagnostics.ENABLED && rod == 3) {
+                val b4 = bottomBeads[rod][3]
+                val p4 = b4.layoutParams as ViewGroup.MarginLayoutParams
+                val d4 =
+                    p4.bottomMargin - initialBottomMargins[rod][3] + b4.translationY
+                TutorialBeadDiagnostics.log(
+                    "syncStateFromUi rod=3 bottomCount=$count " +
+                        "bottom4 delta=$d4 initialMargin4=${initialBottomMargins[rod][3]} " +
+                        "topDown=$topByTranslation topTy=${top.translationY} " +
+                        "initialCaptured=$initialPositionsCaptured",
+                )
+                val deferAppearance = shouldDeferAppearanceDuringSync()
+                TutorialBeadDiagnostics.log(
+                    "syncStateFromUi rod=3 deferAppearance=$deferAppearance " +
+                        "(animatingBeads=${animatingBeads.size} external=${externalBeadAnimationInProgress()})",
+                )
+            }
         }
 
-        updateAllAppearance()
+        when {
+            !applyAppearance && TutorialBeadDiagnostics.ENABLED -> {
+                TutorialBeadDiagnostics.log(
+                    "syncStateFromUi: skipped updateAllAppearance (applyAppearance=false)",
+                )
+            }
+            shouldDeferAppearanceDuringSync() && TutorialBeadDiagnostics.ENABLED -> {
+                TutorialBeadDiagnostics.log(
+                    "syncStateFromUi: skipped updateAllAppearance (bead animation in progress)",
+                )
+            }
+            !shouldDeferAppearanceDuringSync() && applyAppearance -> {
+                // #region agent log
+                com.example.app.AgentDebugLog.log(
+                    hypothesisId = "H4",
+                    location = "AbacusBeadController.syncStateFromUi",
+                    message = "updateAllAppearance_invoked",
+                    data = mapOf(
+                        "controllerValue" to getCurrentValue(),
+                        "bottomCountRod3" to bottomCount[3],
+                        "bottomCountRod4" to bottomCount[4],
+                    ),
+                )
+                // #endregion
+                updateAllAppearance()
+            }
+        }
+
+        logInternalState("syncStateFromUi END applyAppearance=$applyAppearance")
+
+        if (TutorialBeadDiagnostics.ENABLED) {
+            TutorialBeadDiagnostics.rod3Snapshot(root.context, root, "syncStateFromUi END")
+        }
     }
 
     private fun bindBottomBeadTouchListener(rod: Int, beadNumber: Int, beadView: ImageView) {
@@ -220,6 +342,13 @@ class AbacusBeadController(
                     val targetCount = target.coerceIn(0, 4)
                     val directionUp = targetCount > startCount
                     val clampedTarget = targetCount
+                    if (TutorialBeadDiagnostics.ENABLED) {
+                        TutorialBeadDiagnostics.log(
+                            "TOUCH_DOWN rod=$rod bead=$beadNumber startCount=$startCount " +
+                                "targetCount=$clampedTarget directionUp=$directionUp " +
+                                "topDown=${topDown[rod]} value=${getCurrentValue()}",
+                        )
+                    }
                     if (clampedTarget == startCount) {
                         // No change; treat as tap.
                         activeDrag = BottomDragSession(
