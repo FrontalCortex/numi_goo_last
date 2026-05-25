@@ -698,37 +698,36 @@ object GlobalLessonData {
                     title = "Kuralsız toplama - 2 basamaklı",
                     offset = -30,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 1,
                     currentStep = 1,
                     tutorialNumber = 102,
                     startStepNumber = 1007,
                     mapFragmentIndex = 7,
-                    finishStepNumber = 1009,
+                    finishStepNumber = 1007,
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama - 3 basamaklı",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 2,
                     currentStep = 1,
                     tutorialNumber = 103,
                     startStepNumber = 1010,
                     mapFragmentIndex = 8,
-                    finishStepNumber = 1012,
+                    finishStepNumber = 1011,
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız toplama - 4,5 basamaklı",
                     offset = 30,
                     isCompleted = true,
-                    stepCount = 3,
+                    stepCount = 2,
                     currentStep = 1,
-                    //tutorialIsFinish = true,
-                    tutorialNumber = 9999,
+                    tutorialIsFinish = true,
                     startStepNumber = 1013,
                     mapFragmentIndex = 9,
-                    finishStepNumber = 1015,
+                    finishStepNumber = 1014,
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),
                 LessonItem(
@@ -740,15 +739,13 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
-                    finishStepNumber = 1005, //finish ve start 7 olarak güncellenecek test için 1005
-                    startStepNumber = 1005,
+                    finishStepNumber = 7, //finish ve start 7 olarak güncellenecek test için 1005
+                    startStepNumber = 7,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupPoint1 = 1980,
-                    cupPoint2 = 1400,
-                    worstCupTime = 240
-                    //cupTime1 = "1:00",
-                    //cupTime2 = "2:00"
+                    cupPoint1 = 1300,
+                    cupPoint2 = 1000,
+                    worstCupTime = 150
 
                 ),
                 LessonItem(
@@ -766,13 +763,13 @@ object GlobalLessonData {
                     title = "Basit 5'lik toplama",
                     offset = -30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 3,
                     startStepNumber = 8,
                     mapFragmentIndex = 12,
-                    finishStepNumber = 11,
-                    lessonHint = "5 gelir. Kardeş gider.",
+                    finishStepNumber = 10,
+                    lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
                     abacusGuideNumber = 2
                 ),
                 LessonItem(
@@ -780,27 +777,27 @@ object GlobalLessonData {
                     title = "Zor 5'lik toplama",
                     offset = -60,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 12,
                     mapFragmentIndex = 13,
-                    finishStepNumber = 15,
-                    tutorialNumber = 4
+                    finishStepNumber = 14,
+                    tutorialNumber = 4,
+                    lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
 
-                ),
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "İmkansız 5'lik toplama",
                     offset = -30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 16,
                     mapFragmentIndex = 14,
                     finishStepNumber = 18,
-                    tutorialIsFinish = true
-
-
+                    tutorialIsFinish = true,
+                    lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
@@ -812,11 +809,11 @@ object GlobalLessonData {
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 15,
-                    startStepNumber = 1005,
-                    finishStepNumber = 1005, //finish ve start 19 olarak güncellenecek şimdilik 1005
-                    cupPoint1 = 1980,
-                    cupPoint2 = 1400,
-                    worstCupTime = 240
+                    startStepNumber = 19,
+                    finishStepNumber = 19, //finish ve start 19 olarak güncellenecek şimdilik 1005
+                    cupPoint1 = 1400,
+                    cupPoint2 = 1200,
+                    worstCupTime = 180
 
                 ),
                 LessonItem(
@@ -834,11 +831,11 @@ object GlobalLessonData {
                     title = "Temel 10'luk toplama",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 20,
                     mapFragmentIndex = 17,
-                    finishStepNumber = 23,
+                    finishStepNumber = 22,
                     tutorialNumber = 5
 
                 ),

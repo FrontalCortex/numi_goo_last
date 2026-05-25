@@ -111,7 +111,6 @@
     <dimen name="tutorial_request_panel_margin_top">4dp</dimen>
     <dimen name="tutorial_request_text_size">15sp</dimen>
     <dimen name="tutorial_request_text_max_width">190dp</dimen>
-    <dimen name="tutorial_request_text_line_spacing">1dp</dimen>
     <dimen name="tutorial_blinding_width">220dp</dimen>
     <dimen name="tutorial_blinding_height">470dp</dimen>
     <dimen name="tutorial_rules_book_width">215dp</dimen>

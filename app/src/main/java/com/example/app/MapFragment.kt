@@ -90,73 +90,12 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateRelatedNumbers(2, 2),
 
                 )
-                1008 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
+                1010 -> MathOperationGenerator.generateRelatedNumbersList(6, 3, 3)
 
-                )
-                1009 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-                    MathOperationGenerator.generateRelatedNumbers(2, 2),
-
-                )
-                1010 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                )
-                1011 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                )
-                1012 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                    MathOperationGenerator.generateRelatedNumbers(3, 3),
-                )
                 1013 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
                     MathOperationGenerator.generateRelatedNumbers(4, 4),
                     MathOperationGenerator.generateRelatedNumbers(5, 5),
                     MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                )
-                1014 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
                     MathOperationGenerator.generateRelatedNumbers(5, 5),
                     MathOperationGenerator.generateRelatedNumbers(4, 4),
                     MathOperationGenerator.generateRelatedNumbers(5, 5),
@@ -184,38 +123,9 @@ class MapFragment : Fragment() {
                     MathOperation(3,"+", 2),
                     MathOperation(1,"+", 4),
                     MathOperation(4,"+", 2),
-                    MathOperation(4,"+", 3),
-                    MathOperation(3,"+", 3),
-                    MathOperation(4,"+", 1),
-                    MathOperation(4,"+", 2),
-                    MathOperation(3,"+", 2),
-                    MathOperation(2,"+", 4),
-                    MathOperation(4,"+", 4))
+                    MathOperation(2,"+", 3),
+                    MathOperation(3,"+", 3))
                 9-> listOf(
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1()
-                )
-                10-> listOf(
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1()
-                )
-                11-> listOf(
                     generateRandomMathOperation1(),
                     generateRandomMathOperation1(),
                     generateRandomMathOperation1(),
@@ -251,30 +161,6 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(3, 3),
                     generateRelatedNumbers2(3, 3),
                     )
-                14 -> listOf(
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                )
-                15 -> listOf(
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                    generateRelatedNumbers2(3, 3),
-                )
                 16 -> listOf(
                     generateRelatedNumbers2(4, 4),
                     generateRelatedNumbers2(4, 4),
@@ -282,10 +168,7 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(4, 4),
                     generateRelatedNumbers2(4, 4),
                     generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(4, 4),
+                    generateRelatedNumbers2(4, 4)
                 )
                 17 -> listOf(
                     generateRelatedNumbers2(4, 4),
@@ -295,8 +178,6 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(4, 4),
                     generateRelatedNumbers2(5, 4),
-                    generateRelatedNumbers2(4, 5),
-                    generateRelatedNumbers2(5, 5),
                     )
                 18 -> listOf(
                     generateRelatedNumbers2(5, 5),
@@ -306,15 +187,10 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-
                     )
                 19 -> listOf(
                     generateRandomMathOperation1(),
                     generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRandomMathOperation1(),
-                    generateRelatedNumbers2(3, 3),
                     generateRelatedNumbers2(3, 3),
                     generateRelatedNumbers2(3, 3),
                     generateRelatedNumbers2(3, 3),
@@ -323,7 +199,6 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(4, 3),
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(5, 4),
-                    generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(5, 5),
                 )
                 20 -> listOf(
@@ -338,50 +213,8 @@ class MapFragment : Fragment() {
                     MathOperation(19,"+", 1),
                     MathOperation(29,"+", 3),
                     MathOperation(3,"+", 2),
-                    MathOperation(4,"+", 4),
-                    MathOperation(9,"+", 1))
-                21 -> listOf(
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation()
-                )
-                22 -> listOf(
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation()
-                )
-                23 -> listOf(
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation()
-                )
+                    MathOperation(4,"+", 4))
+                21 -> MathOperationGenerator.generateMathOperationList(9)
                 24 -> listOf(
                     MathOperationGenerator.generateMathOperation2(),
                     MathOperationGenerator.generateMathOperation2(),

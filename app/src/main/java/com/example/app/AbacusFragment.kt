@@ -1080,7 +1080,6 @@ class AbacusFragment : Fragment() {
         Log.d("sansas","1")
 
         if(lessonItem.mapFragmentIndex!! > 11 && globalPartId == 1){
-            Log.d("sansas","3")
             rulesBookButton.visibility = View.VISIBLE
             val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
@@ -1088,7 +1087,7 @@ class AbacusFragment : Fragment() {
             rulesFragment?.updateTenRuleFiveTableVisibility(View.GONE)
             rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
         }
-        if(lessonItem.mapFragmentIndex!! < 16 && globalPartId == 1) {
+        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 1) {
             rulesBookButton.visibility = View.VISIBLE
             val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
             rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
@@ -2655,7 +2654,7 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 10f) {
+                                    if (currentSuccessRate() < 80f) {
                                         showLessonResultFalseOnly()
                                     } else {
                                         showChestResult()
@@ -2759,7 +2758,7 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 10f) {
+                                    if (currentSuccessRate() < 80f) {
                                         showLessonResultFalseOnly()
                                     } else {
                                         showChestResult()

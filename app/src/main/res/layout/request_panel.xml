@@ -22,7 +22,6 @@
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_request_text_size"
         android:maxWidth="@dimen/tutorial_request_text_max_width"
-        android:lineSpacingExtra="@dimen/tutorial_request_text_line_spacing"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -362,6 +362,24 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/rulesStepText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lineSpacingExtra="8dp"
+        android:layout_marginHorizontal="10dp"
+        android:text="10 gelir -> 6 gider"
+        android:textAlignment="center"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"
+        android:background="@drawable/rectangle_border"
+        android:textColor="@color/white"
+        android:textSize="@dimen/tutorial_text_size"
+        app:layout_constraintTop_toBottomOf="@id/tenRuleTable"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
     <LinearLayout
         android:id="@+id/tenRuleTableLinearLayout"
         android:layout_width="wrap_content"
@@ -789,6 +807,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:lineSpacingExtra="8dp"
+        android:layout_marginHorizontal="10dp"
         android:lineSpacingMultiplier="0.5"
         android:text="Deneme"
         android:textAlignment="center"
@@ -1427,7 +1446,7 @@
         app:layout_constraintEnd_toEndOf="@id/abacusLinear"
         app:layout_constraintStart_toStartOf="@id/abacusLinear"
         app:layout_constraintTop_toTopOf="@id/abacusLinear"
-        app:layout_constraintVertical_bias="0.4" />
+        app:layout_constraintVertical_bias="0.3" />
 
     <View
         android:id="@+id/overlay"

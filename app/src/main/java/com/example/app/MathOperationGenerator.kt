@@ -99,7 +99,7 @@ object MathOperationGenerator {
             if (i < firstNumberStr.length) {
                 val firstDigit = firstNumberStr[firstNumberStr.length - 1 - i].toString().toInt()
                 var allowedDigits = digitRules[firstDigit] ?: listOf(0)
-                if (i == 1 || secondDigitCount == 1) {
+                if (i == 1 || secondDigitCount == 1 || i == secondDigitCount - 1) {
                     allowedDigits = allowedDigits.filter { it != 0 }
                 }
                 val selectedDigit = if (allowedDigits.isEmpty()) 1 else allowedDigits.random()
@@ -108,6 +108,7 @@ object MathOperationGenerator {
                 val digit = when {
                     i == 1 -> (1..9).random()
                     secondDigitCount == 1 -> (1..9).random()
+                    i == secondDigitCount - 1 -> (1..9).random()
                     else -> (0..9).random()
                 }
                 secondNumberDigits.add(0, digit)
@@ -311,27 +312,42 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateMathOperation(): MathOperation { //basit 10'luk toplama
-        // İlk sayının onlar basamağı (0, 4 ve 9 hariç)
+        return generateMathOperationWithSecondNumber((1..5).random())
+    }
+
+    /**
+     * [generateMathOperation] ile aynı kurallarda [count] adet işlem üretir.
+     * secondNumber (1..5) mümkün olduğunca tekrar etmez; havuz bitince karışık yeniden dolar.
+     */
+    fun generateMathOperationList(count: Int): List<MathOperation> {
+        if (count <= 0) return emptyList()
+
+        val pendingSecondNumbers = mutableListOf<Int>()
+        val operations = mutableListOf<MathOperation>()
+
+        repeat(count) {
+            if (pendingSecondNumbers.isEmpty()) {
+                pendingSecondNumbers.addAll((1..5).shuffled())
+            }
+            val secondNumber = pendingSecondNumbers.removeAt(0)
+            operations.add(generateMathOperationWithSecondNumber(secondNumber))
+        }
+        return operations
+    }
+
+    private fun generateMathOperationWithSecondNumber(secondNumber: Int): MathOperation {
         val tensDigit = listOf(1, 2, 3, 5, 6, 7, 8).random()
 
-        val random = Random()
-
-        // İlk sayının birler basamağı (5,6,7,8,9)
-        val secondNumber = (1..5).random()
-
-        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
         val onesDigit = when (secondNumber) {
             1 -> 9
             2 -> (8..9).random()
             3 -> (7..9).random()
             4 -> (6..9).random()
             5 -> (5..9).random()
-            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+            else -> 5
         }
 
-        // İlk sayıyı oluştur
         val firstNumber = tensDigit * 10 + onesDigit
-
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateMathOperation2(): MathOperation {
