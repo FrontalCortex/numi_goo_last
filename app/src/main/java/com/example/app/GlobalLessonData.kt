@@ -211,14 +211,50 @@ object GlobalLessonData {
             .collection(FIRESTORE_LESSON_PROGRESS)
             .document(partId.toString())
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
+                if (error != null) {
+                    LessonProgressDiag.log("Firestore.realtime", "part=$partId ERROR ${error.message}")
+                    return@addSnapshotListener
+                }
+                val fromCache = snapshot?.metadata?.isFromCache == true
                 val json = snapshot?.getString("items")
                 if (json.isNullOrBlank()) return@addSnapshotListener
+                LessonProgressDiag.log(
+                    "Firestore.realtime",
+                    "part=$partId fromCache=$fromCache localItems=${_lessonItems.size} jsonLen=${json.length}",
+                )
                 try {
                     val parsed = parseLessonItemsWithMigration(json)
-                    _lessonItems = parsed
+                    val merged = if (_lessonItems.isEmpty()) {
+                        LessonProgressDiag.log("Firestore.realtime", "part=$partId local empty → use remote only")
+                        parsed
+                    } else {
+                        LessonProgressMerge.mergeListsPreferMoreProgress(_lessonItems, parsed)
+                    }
+                    if (LessonProgressMerge.sameProgressState(_lessonItems, merged)) {
+                        LessonProgressDiag.log(
+                            "Firestore.realtime",
+                            "part=$partId SKIP refresh (sameProgressState after merge) fromCache=$fromCache",
+                        )
+                        return@addSnapshotListener
+                    }
+                    val regressions = _lessonItems.mapIndexedNotNull { index, localItem ->
+                        val m = merged.getOrNull(index) ?: return@mapIndexedNotNull null
+                        if (localItem.stepIsFinish && !m.stepIsFinish) index else null
+                    }
+                    if (regressions.isNotEmpty()) {
+                        LessonProgressDiag.log(
+                            "Firestore.realtime",
+                            "part=$partId REGRESSION indices=$regressions (local finish lost after merge!)",
+                        )
+                    }
+                    LessonProgressDiag.logListChestFinishSummary("Firestore.realtime.beforeApply", partId, _lessonItems)
+                    LessonProgressDiag.logListChestFinishSummary("Firestore.realtime.afterMerge", partId, merged)
+                    _lessonItems = merged
+                    LessonProgressDiag.log("Firestore.realtime", "part=$partId → refreshLessonsFromGlobalData")
                     LessonManager.refreshLessonsFromGlobalData()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    LessonProgressDiag.log("Firestore.realtime", "part=$partId FAILED ${e.message}")
+                    Log.e(LOG_TAG, "realtimeSnapshot parse/merge failed", e)
                 }
             }
     }
@@ -318,8 +354,16 @@ object GlobalLessonData {
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
         if (position in _lessonItems.indices) {
             val previous = _lessonItems[position]
+            LessonProgressDiag.logItemDelta(
+                "GlobalLessonData.updateLessonItem",
+                globalPartId,
+                position,
+                previous,
+                newItem,
+            )
             _lessonItems[position] = newItem
             Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
+            LessonProgressDiag.log("GlobalLessonData.updateLessonItem", "part=$globalPartId idx=$position → saveToPreferences (Firestore async)")
             saveToPreferences(context)
             // Kupa dersi tamamlandığında liderlik senkronu: [record] tüm zamanların en iyisi (UI);
             // Firestore tahtasına yalnızca [leaderboardSeasonBest] (mevcut sezon) yazılır.
@@ -604,7 +648,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Sayıları abaküste tanıma",
+                    title = "Sayıları Abaküste Tanıma",
                     offset = -30,
                     isCompleted = true,
                     stepCount = 2,
@@ -617,9 +661,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "2 basamaklı sayılar",
+                    title = "2 Basamaklı Sayılar",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     finishStepNumber = 1001,
@@ -630,9 +674,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "3-4-5 basamaklı sayılar",
+                    title = "3-4-5 Basamaklı Sayılar",
                     offset = 30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     finishStepNumber = 1004,
@@ -657,18 +701,6 @@ object GlobalLessonData {
                     cupPoint1 = 1600,
                     cupPoint2 = 1300,
                     worstCupTime = 150 //1 yıldız alması için min kaç saniyede bitirmeli.
-                    //1 yıldız alma sınırı 2.30 dakikadır.
-
-                    //başarı oranı çarpan olarak eklenmeyecek sadece süre.
-                    //Bütün soruları doğru cevaplarsa toplam puanı her zaman 500 olsun.
-                    //500 puan 1 yıldız sınırı o zaman
-                    //1.30 dk = 2.85x = 1425 2 yıldız
-                    //45 sn= 1700 = 3 yıldız
-                    //Bunları düz progressBar'da ilk ikisi yıldız sonuncusu rozet olacak şekilde göster.
-                    //45 saniye full doğru 3 yıldızı hak eder.
-                    //1.30 dakika full doğru 2 yıldızı hak eder
-                    //4. dakika artık kolsuz kesin 1 yıldızda kalmalı
-                    //0'da her zaman 4x verecek. cupTime1-2 kaldırılacak onun yerine puan aralığı eklenecek
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -682,9 +714,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız toplama - 1 basamaklı",
+                    title = "Kuralsız Toplama - 1 Basamaklı",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     tutorialNumber = 2,
@@ -695,9 +727,9 @@ object GlobalLessonData {
                     abacusGuideNumber = 1
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız toplama - 2 basamaklı",
+                    title = "Kuralsız Toplama - 2 Basamaklı",
                     offset = -30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialNumber = 102,
@@ -707,9 +739,9 @@ object GlobalLessonData {
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız toplama - 3 basamaklı",
+                    title = "Kuralsız Toplama - 3 Basamaklı",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     tutorialNumber = 103,
@@ -719,9 +751,9 @@ object GlobalLessonData {
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız toplama - 4,5 basamaklı",
+                    title = "Kuralsız Toplama - 4, 5 Basamaklı",
                     offset = 30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     tutorialIsFinish = true,
@@ -735,7 +767,7 @@ object GlobalLessonData {
                     title = "Ünite Maratonu",
                     titleUnit = "Kuralsız Toplama",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -750,7 +782,7 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
-                    title = "5'lik toplama",
+                    title = "5'lik Toplama",
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -760,9 +792,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Basit 5'lik toplama",
+                    title = "5'lik Toplama - Kurallar",
                     offset = -30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 3,
@@ -774,9 +806,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zor 5'lik toplama",
+                    title = "5'lik Toplama - Kuralsız Toplama Farkı",
                     offset = -60,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 12,
@@ -788,9 +820,9 @@ object GlobalLessonData {
                     ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "İmkansız 5'lik toplama",
+                    title = "5'lik Toplama - 3, 4 Basamaklı",
                     offset = -30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 16,
@@ -804,18 +836,18 @@ object GlobalLessonData {
                     title = "Ünite Maratonu",
                     titleUnit = "5'lik Toplama",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 15,
                     startStepNumber = 19,
-                    finishStepNumber = 19, //finish ve start 19 olarak güncellenecek şimdilik 1005
+                    finishStepNumber = 19,
                     cupPoint1 = 1400,
                     cupPoint2 = 1200,
-                    worstCupTime = 180
-
-                ),
+                    worstCupTime = 180,
+                    lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
+                    ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 1-2-3-4-5",
@@ -828,66 +860,75 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Temel 10'luk toplama",
+                    title = "10'luk Toplama - Kurallar",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 20,
                     mapFragmentIndex = 17,
                     finishStepNumber = 22,
-                    tutorialNumber = 5
+                    tutorialNumber = 5,
+                    lessonHint = "10 gelir. Büyük kardeş gider.",
+                    abacusGuideNumber = 3
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zor 10'luk toplama",
+                    title = "10'luk toplama - Elde Mantığı",
                     offset = -30,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 24,
                     mapFragmentIndex = 18,
-                    finishStepNumber = 27,
-                    tutorialNumber = 6
+                    finishStepNumber = 26,
+                    tutorialNumber = 6,
+                    lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "İmkansız 10'luk toplama",
+                    title = "10'luk Toplama - 3 Basamaklı",
                     offset = -60,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 28,
                     mapFragmentIndex = 19,
                     finishStepNumber = 31,
-                    tutorialIsFinish = true
+                    tutorialIsFinish = true,
+                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
                 ),LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Çılgın 10'luk toplama",
+                    title = "10'luk Toplama - 3, 4 Basamaklı",
                     offset = -30,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 32,
                     mapFragmentIndex = 20,
-                    finishStepNumber = 35,
-                    tutorialIsFinish = true
+                    finishStepNumber = 34,
+                    tutorialIsFinish = true,
+                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
+
                 ),LessonItem(
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "10'luk Toplama 1-2-3-4-5",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 21,
                     startStepNumber = 36,
                     finishStepNumber = 36,
-                    //cupTime1 = "2:00",
-                    //cupTime2 = "3:00"
+                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan.",
+                    cupPoint1 = 1350,
+                    cupPoint2 = 1150,
+                    worstCupTime = 180,
+
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -901,55 +942,55 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Orta seviye 10'luk toplama",
+                    title = "10'luk Toplama - Kurallar",
                     offset = 0,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 37,
                     mapFragmentIndex = 23,
-                    finishStepNumber = 40,
-                    tutorialNumber = 7
+                    finishStepNumber = 38,
+                    tutorialNumber = 7,
+                    lessonHint = "10 gelir. Kardeş gider."
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk toplama mantığı",
+                    title = "10'luk Toplama - Elde Mantığı",
                     offset = -30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 41,
                     mapFragmentIndex = 24,
                     finishStepNumber = 43,
                     tutorialNumber = 105,
-                    lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
-
+                    lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zor 10'luk toplama",
+                    title = "10'luk Toplama - 3 Basamaklı",
                     offset = 0,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 44,
                     mapFragmentIndex = 25,
-                    finishStepNumber = 47,
+                    finishStepNumber = 46,
                     tutorialIsFinish = true,
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Çılgın 10'luk toplama",
+                    title = "10'luk Toplama - 3, 4 Basamaklı",
                     offset = 30,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 48,
                     mapFragmentIndex = 26,
-                    finishStepNumber = 51,
+                    finishStepNumber = 50,
                     tutorialIsFinish = true,
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
                 ),
@@ -958,15 +999,16 @@ object GlobalLessonData {
                     title = "Ünite Maratonu",
                     titleUnit = "10'luk Toplama 6-7-8-9",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 27,
                     startStepNumber = 52,
                     finishStepNumber = 52,
-                    //cupTime1 = "3:00",
-                    //cupTime2 = "4:00"
+                    cupPoint1 = 1350,
+                    cupPoint2 = 1150,
+                    worstCupTime = 180,
 
                 ),
                 LessonItem(
@@ -980,9 +1022,9 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Temel Boncuk Kuralı",
+                    title = "Boncuk Kuralı - Kurallar",
                     offset = -30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 4,
                     currentStep = 1,
                     startStepNumber = 53,
@@ -994,28 +1036,28 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zor Boncuk Kuralı",
+                    title = "Boncuk Kuralı - Onluk Kural Farkı",
                     offset = 0,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 57,
                     mapFragmentIndex = 30,
-                    finishStepNumber = 60,
+                    finishStepNumber = 59,
                     tutorialNumber = 9,
                     lessonHint = "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir."
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "İmkansız Boncuk Kuralı",
+                    title = "Boncuk Kuralı - 3, 4 Basamaklı",
                     offset = -30,
-                    isCompleted = true,
-                    stepCount = 4,
+                    isCompleted = false,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 61,
                     mapFragmentIndex = 31,
-                    finishStepNumber = 64,
+                    finishStepNumber = 63,
                     tutorialIsFinish = true,
                     lessonHint = "10 gelir adımını uygularken 5\\'lik kuralı kullanman gerekebilir."
 
@@ -1025,15 +1067,16 @@ object GlobalLessonData {
                     title = "Ünite Maratonu",
                     titleUnit = "Boncuk Kuralı",
                     offset = 0,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 32,
                     startStepNumber = 65,
                     finishStepNumber = 65,
-                    //cupTime1 = "3:00",
-                    //cupTime2 = "4:00"
+                    cupPoint1 = 1350,
+                    cupPoint2 = 1000,
+                    worstCupTime = 180,
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1051,7 +1094,7 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    tutorialIsFinish = true,
+                    tutorialIsFinish = false,
                     mapFragmentIndex = 34,
                     racePartId = 7,
                     backRaceId = 1
@@ -1096,20 +1139,21 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Basit kuralsız çıkarma",
+                    title = "Kuralsız Çıkarma - Temeli",
                     offset = 0,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 66,
                     mapFragmentIndex = 2,
-                    finishStepNumber = 69,
+                    finishStepNumber = 68,
                     tutorialNumber = 10,
+                    lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
 
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Orta seviye kuralsız çıkarma",
+                    title = "Kuralsız Çıkarma - 3,4,5 basamaklı",
                     offset = 30,
                     isCompleted = true,
                     stepCount = 4,
@@ -1129,13 +1173,13 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
-                    finishStepNumber = 1005,
-                    startStepNumber = 1005, //74 olarak güncellenecek
+                    finishStepNumber = 74,
+                    startStepNumber = 74,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
-                    cupPoint1 = 1980,
-                    cupPoint2 = 1400,
-                    worstCupTime = 240
+                    cupPoint1 = 1400,
+                    cupPoint2 = 1200,
+                    worstCupTime = 180
 
                 ),
                 LessonItem(
@@ -1149,42 +1193,42 @@ object GlobalLessonData {
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Temel 5'lik çıkarma",
+                    title = "5'lik Çıkarma - Kurallar",
                     offset = 30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 11,
                     startStepNumber = 75,
                     mapFragmentIndex = 6,
-                    finishStepNumber = 78,
-                    lessonHint = "5 gider. Kardeş gelir"
+                    finishStepNumber = 77,
+                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zor 5'lik çıkarma",
+                    title = "5'lik Çıkarma - 3 Basamaklı",
                     offset = 60,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     startStepNumber = 79,
                     mapFragmentIndex = 7,
-                    finishStepNumber = 82,
-                    lessonHint = "5 gider. Kardeş gelir"
+                    finishStepNumber = 81,
+                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kurallı - Kuralsız Çıkarma",
+                    title = "5'lik Çıkarma - Kurallı,Kuralsız Çıkarma",
                     offset = 30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
-                    tutorialIsFinish = true,
                     startStepNumber = 83,
+                    tutorialNumber = 1100,
                     mapFragmentIndex = 8,
-                    finishStepNumber = 86,
-                    lessonHint = "5 gider. Kardeş gelir"
+                    finishStepNumber = 85,
+                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
@@ -1197,9 +1241,10 @@ object GlobalLessonData {
                     finishStepNumber = 87,
                     startStepNumber = 87,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
-                    //cupTime1 = "2:00",
-                    //cupTime2 = "2:45"
+                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir.",
+                    cupPoint1 = 1350,
+                    cupPoint2 = 1050,
+                    worstCupTime = 180
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1215,12 +1260,12 @@ object GlobalLessonData {
                     title = "Temel 10'luk Çıkarma",
                     offset = -30,
                     isCompleted = true,
-                    stepCount = 4,
+                    stepCount = 3,
                     currentStep = 1,
                     tutorialNumber = 12,
                     startStepNumber = 88,
                     mapFragmentIndex = 11,
-                    finishStepNumber = 91,
+                    finishStepNumber = 90,
                     lessonHint = "10 gider. Kardeş gelir."
                 ),
                 LessonItem(
@@ -2664,7 +2709,7 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 5000,
-                    raceBusyLevel = 0
+                    raceBusyLevel = 1
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2678,7 +2723,7 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    raceBusyLevel = 1,
+                    raceBusyLevel = 2
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -3137,6 +3182,11 @@ object GlobalLessonData {
                 .document(globalPartId.toString())
                 .set(mapOf("items" to json))
                 .addOnSuccessListener {
+                    LessonProgressDiag.logListChestFinishSummary(
+                        "GlobalLessonData.saveToPreferences.SUCCESS",
+                        globalPartId,
+                        _lessonItems,
+                    )
                     Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS")
                     // #region agent log
                     debugLog(
@@ -3148,6 +3198,10 @@ object GlobalLessonData {
                     // #endregion
                 }
                 .addOnFailureListener { e ->
+                    LessonProgressDiag.log(
+                        "GlobalLessonData.saveToPreferences.FAILED",
+                        "part=$globalPartId err=${e.message}",
+                    )
                     Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e)
                     // #region agent log
                     debugLog(

@@ -69,6 +69,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
         const val LESSON_ACTION_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
         const val FIRST_TUTORIAL_LOG_TAG = "FirstTutorialDbg"
+        /** Harita dokunma kilidi teşhisi — `adb logcat -s MapTouchDbg` */
+        const val MAP_TOUCH_DIAG_LOG_TAG = MapTouchDiagnostics.LOG_TAG
         /** Görevler pratik / günlük soru overlay kapanışı — [finishOverlayReturnToTasks] ile temizlenir. */
         const val ABACUS_OVERLAY_BACK_STACK = "abacus_overlay"
     }
@@ -221,8 +223,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var pendingSeasonGateReconcileRunnable: Runnable? = null
 
     /**
-     * Claim/continue yolu [scheduleSeasonGateAfterAbacusOverlayDismissed] çağırdı;
-     * destroy lifecycle ikinci tam gate tetiklemesin.
+     * [prepareMapReturnAfterLessonClaim] claim yolunda set edilir;
+     * ChestResult/ChestFragment destroy lifecycle reconcile'ı doğru sırayla tetikler.
      */
     private var claimPathScheduledSeasonGate = false
 
@@ -234,6 +236,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      * overlay'i henüz görmeden [restoreMapUiAfterLessonOverlayDismiss] çağırmasın.
      */
     private var firstTutorialOverlayBootstrapActive = false
+
+    /**
+     * Harita üzerinden ders bottom sheet ile açılan tutorial (kullanıcı bilinçli izliyor).
+     * false iken [TutorialFragment] harita tabanında hayalet kalırsa purge/reconcile ile silinir.
+     */
+    private var activeMapTutorialOverlayFromLesson = false
 
     /** Aynı karede birden fazla [tryShowSeasonLeaderboardRewardGateIfNeeded] → tek replace/commit. */
     private val seasonLeaderboardGateCommitRunnable = Runnable {
@@ -580,7 +588,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         if (f is ChestResult || f is ChestFragment || f is MissionChestRewardFragment) {
                             if (claimPathScheduledSeasonGate) {
                                 claimPathScheduledSeasonGate = false
-                                requestSeasonLeaderboardRewardGateIfPending()
+                                // Claim yolu: reconcile + notifyVisible gerekli (yalnızca sezon kapısı yetmez).
+                                scheduleSeasonGateAfterAbacusOverlayDismissed()
                             } else {
                                 scheduleSeasonGateAfterAbacusOverlayDismissed()
                             }
@@ -1460,12 +1469,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      */
     fun sanitizeMapTouchSurface(caller: String) {
         if (!::binding.isInitialized || isFinishing || isDestroyed) return
+        logMapTouchDiag("sanitize.enter", "CHECKING", "caller=$caller")
         logFirstTutorial("sanitizeMapTouchSurface.enter", "caller=$caller ${overlaySnapshot("sanitize")}")
         dismissMapLessonOverlayChrome()
         releasePracticeTouchBlocker()
         releaseLessonActionTouchBlocker()
         val fm = supportFragmentManager
         if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) {
+            logMapTouchDiag("sanitize", "SKIP_NOT_MAP", "caller=$caller")
             ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface.notMap:$caller")
             return
         }
@@ -1473,11 +1484,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val active = fm.findFragmentById(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         if (hostVisible && active != null && fragmentBlocksSeasonLeaderboardGate(active) &&
-            !forcingAbacusOverlayDismissForSeasonGate
+            !forcingAbacusOverlayDismissForSeasonGate &&
+            !isStaleTutorialGhostOverlay(active)
         ) {
+            logMapTouchDiag(
+                "sanitize",
+                "SKIP_ACTIVE_OVERLAY",
+                "caller=$caller active=${active.javaClass.simpleName} hostVisible=true → enableMapTouchRouting ÇAĞRILMADI",
+            )
             logFirstTutorial("sanitizeMapTouchSurface.skip", "active lesson overlay caller=$caller")
             ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface.activeLesson:$caller")
             return
+        }
+        if (hostVisible && isStaleTutorialGhostOverlay(active)) {
+            logMapTouchDiag(
+                "sanitize",
+                "PURGE_STALE_TUTORIAL",
+                "caller=$caller → hayalet TutorialFragment temizlenecek",
+            )
         }
         val prevForce = forcingAbacusOverlayDismissForSeasonGate
         forcingAbacusOverlayDismissForSeasonGate = true
@@ -1493,8 +1517,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             forcingAbacusOverlayDismissForSeasonGate = prevForce
         }
         ensureChromeUnlockedAfterMapReturn("sanitizeMapTouchSurface:$caller")
+        logMapTouchDiag("sanitize", "SANITIZE_DONE", "caller=$caller")
         logChromeBlockerDiagnostic("sanitizeMapTouchSurface:$caller")
         logTouchDiag("sanitizeMapTouchSurface:$caller")
+    }
+
+    /** Harita tabanındayken bilinçli tutorial oturumu yoksa hayalet [TutorialFragment] sayılır. */
+    private fun isStaleTutorialGhostOverlay(overlay: Fragment?): Boolean {
+        if (overlay !is TutorialFragment) return false
+        if (firstTutorialOverlayBootstrapActive) return false
+        if (activeMapTutorialOverlayFromLesson) return false
+        // İlk tutorial henüz bitmediyse (renderFirstTutorial) hayalet sayma.
+        if (!FirstTutorialShownStore.readLocal(this)) return false
+        return true
+    }
+
+    fun setActiveMapTutorialOverlayFromLesson(active: Boolean) {
+        activeMapTutorialOverlayFromLesson = active
+        logFirstTutorial("setActiveMapTutorialOverlayFromLesson", "active=$active")
     }
 
     private fun purgeAbacusOverlayHosts(caller: String) {
@@ -1505,8 +1545,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             fm.executePendingTransactions()
             val overlay = fm.findFragmentById(R.id.abacusFragmentContainer) ?: break
             if (firstTutorialOverlayBootstrapActive && overlay is TutorialFragment) break
+            if (overlay is TutorialFragment && activeMapTutorialOverlayFromLesson) break
             if (!fragmentBlocksSeasonLeaderboardGate(overlay)) break
             logFirstTutorial("purgeAbacusOverlayHosts.remove", "caller=$caller frag=${overlay.javaClass.simpleName}")
+            logMapTouchDiag("purgeAbacus", "REMOVE_FRAGMENT", "caller=$caller frag=${overlay.javaClass.simpleName}")
             fm.beginTransaction().remove(overlay).commitNowAllowingStateLoss()
         }
         binding.abacusFragmentContainer.visibility = View.GONE
@@ -1848,6 +1890,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     /** Ders/sandık akışı açıkken sezon liderlik ödülü kapısı gösterilmez; akış bitince tekrar denenir. */
+    internal fun isBlockingLessonOverlayFragment(f: Fragment?): Boolean =
+        fragmentBlocksSeasonLeaderboardGate(f)
+
+    internal fun isForcingAbacusOverlayDismiss(): Boolean =
+        forcingAbacusOverlayDismissForSeasonGate
+
     private fun fragmentBlocksSeasonLeaderboardGate(f: Fragment?): Boolean = when (f) {
         is TutorialFragment,
         is AbacusFragment,
@@ -2163,29 +2211,135 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     /**
-     * ChestResult / ChestFragment / MissionChest claim: harita verisini yenile, overlay host'ları kapat.
-     * [finalizeMapReturnAfterLessonClaim] ile eşleşir; arada fragment remove yapılır.
+     * Overlay kapanışı: abacus/result host'larını purge eder, harita UI'ını geri yükler.
+     * [finalizeMapReturnAfterLessonClaim] ile eşleşir.
+     *
+     * Çağırmadan önce çağıran overlay fragment kendini FM'den ayırmalı (remove/pop);
+     * aksi halde purge sonrası `parentFragmentManager` → IllegalStateException.
      */
     fun prepareMapReturnAfterLessonClaim() {
         if (!::binding.isInitialized) return
+        logMapTouchDiag("prepareMapReturn", "ENTER", "forcingDismiss=true host→GONE hedefleniyor")
         // [canConsumePendingLessonProgressAnimations] + [LessonManager.refreshLessonsFromGlobalData] burada
         // çağrılmasın: Chest / MissionChest / LessonResult overlay altında Map RV yenilenince progress animasyonu
         // ekranda görülmeden biter. Tüketim + tam liste yenileme → [MapFragment.notifyVisibleAfterOverlayDismiss]
         // ve [MapFragment.onResume] (finalize → reconcile sonrası).
+        activeMapTutorialOverlayFromLesson = false
         claimPathScheduledSeasonGate = true
         beginAbacusOverlayDismissForSeasonGate()
         binding.resultFragmentContainer.visibility = View.GONE
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
+            purgeAbacusOverlayHosts("prepareMapReturnAfterLessonClaim")
             restoreMapUiAfterLessonOverlayDismiss()
         }
     }
 
     /** [prepareMapReturnAfterLessonClaim] sonrası: chrome + sezon reconcile (tek kaynak). */
     fun finalizeMapReturnAfterLessonClaim(caller: String) {
+        logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
-        binding.root.post { logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller") }
+        binding.root.post {
+            logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
+            logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller")
+            tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
+        }
+    }
+
+    /**
+     * Reconcile atlanırsa bile harita listesini ve progress animasyon tüketimini günceller.
+     * [MapFragment.notifyVisibleAfterOverlayDismiss] tek kaynak.
+     */
+    fun notifyMapVisibleAfterLessonClaim(caller: String) {
+        if (!::binding.isInitialized) return
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null || !map.isAdded) {
+            LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")
+            return
+        }
+        LessonProgressDiag.log("MainActivity.notifyMapVisible", "SCHEDULE caller=$caller")
+        val runNotify = Runnable {
+            if (!map.isAdded) {
+                LessonProgressDiag.log("MainActivity.notifyMapVisible", "ABORT caller=$caller map detached")
+                return@Runnable
+            }
+            LessonProgressDiag.log("MainActivity.notifyMapVisible", "RUN caller=$caller")
+            map.notifyVisibleAfterOverlayDismiss()
+        }
+        map.view?.post(runNotify) ?: runNotify.run()
+    }
+
+    /** Harita tabanı görünür; ders/sandık/görev/rozet/sezon kapısı overlay'i yok. */
+    fun marathonGuideMapBlockReason(): String? {
+        if (!::binding.isInitialized) return "binding_not_initialized"
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        if (base !is MapFragment) {
+            return "base_not_map:${base?.javaClass?.simpleName ?: "null"}"
+        }
+
+        val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        if (abacusHostVisible && abacus != null && isBlockingLessonOverlayFragment(abacus)) {
+            return "abacus_overlay:${abacus.javaClass.simpleName} hostVisible=$abacusHostVisible"
+        }
+
+        val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
+        val result = fm.findFragmentById(R.id.resultFragmentContainer)
+        if (resultHostVisible && result != null && isBlockingLessonOverlayFragment(result)) {
+            return "result_overlay:${result.javaClass.simpleName} hostVisible=$resultHostVisible"
+        }
+
+        val badge = fm.findFragmentById(R.id.badgeFragmentContainter)
+        if (badge != null) {
+            return "badge_overlay:${badge.javaClass.simpleName}"
+        }
+
+        val gateVisible = binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE
+        val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
+        if (gateVisible && gate != null) {
+            return "season_gate:${gate.javaClass.simpleName} hostVisible=$gateVisible"
+        }
+        return null
+    }
+
+    fun isMapBaseReadyForMarathonGuide(): Boolean {
+        val block = marathonGuideMapBlockReason()
+        if (block != null) {
+            Log.d(MarathonGuideStore.LOG_TAG, "mapNotReady | block=$block")
+            return false
+        }
+        Log.d(MarathonGuideStore.LOG_TAG, "mapReady | ok")
+        return true
+    }
+
+    fun tryShowPendingMarathonGuideOnMap(caller: String) {
+        if (!::binding.isInitialized) {
+            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=binding_not_initialized")
+            return
+        }
+        MarathonGuideStore.logPrefsSnapshot(this, "tryShow:$caller")
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null) {
+            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_fragment_missing")
+            return
+        }
+        if (!map.isAdded) {
+            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_not_added")
+            return
+        }
+        if (map.view == null) {
+            Log.d(MarathonGuideStore.LOG_TAG, "tryShow WAIT | caller=$caller reason=map_view_null → post")
+        }
+        map.view?.post {
+            if (map.isAdded) {
+                map.maybeShowPendingMarathonGuide(caller)
+            } else {
+                Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_detached_before_post")
+            }
+        } ?: map.maybeShowPendingMarathonGuide(caller)
     }
 
     /** LessonResult → ChestFragment: result overlay host'u görünür yap. */
@@ -2197,6 +2351,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     /** Quit / ders overlay kapanınca: bir sonraki karede reconcile ve sezon kapısı. [beginAbacusOverlayDismissForSeasonGate] ayrı çağrılır. */
     fun scheduleSeasonGateAfterAbacusOverlayDismissed() {
         if (!::binding.isInitialized) return
+        logMapTouchDiag("scheduleSeasonGate", "SCHEDULED", "post→reconcile")
         logChromeBlockerDiagnostic("scheduleSeasonGate.enter")
         pendingSeasonGateReconcileRunnable?.let { binding.root.removeCallbacks(it) }
         val runnable = Runnable {
@@ -2205,6 +2360,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 reconcileAbacusOverlayWhenMapIsBase()
                 ensureChromeUnlockedAfterMapReturn("scheduleSeasonGate.afterReconcile")
                 requestSeasonLeaderboardRewardGateIfPending()
+                logMapTouchDiag("scheduleSeasonGate", "POST_DONE", "reconcile bitti")
             } finally {
                 forcingAbacusOverlayDismissForSeasonGate = false
                 logChromeBlockerDiagnostic("scheduleSeasonGate.post.done")
@@ -2282,15 +2438,18 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     fun reconcileAbacusOverlayWhenMapIsBase() {
+        logMapTouchDiag("reconcile", "ENTER", "forcingDismiss=$forcingAbacusOverlayDismissForSeasonGate")
         logFirstTutorial("reconcile.enter", overlaySnapshot("reconcile.enter"))
         if (!::binding.isInitialized) return
         val fm = supportFragmentManager
         fm.executePendingTransactions()
         if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) {
+            logMapTouchDiag("reconcile", "SKIP_NOT_MAP", "")
             logFirstTutorial("reconcile.skip", "base is not MapFragment")
             return
         }
         if (lessonSheetOverlayNavigationDepth > 0) {
+            logMapTouchDiag("reconcile", "SKIP_LESSON_SHEET_DEPTH", "depth=$lessonSheetOverlayNavigationDepth")
             logFirstTutorial("reconcile.skip", "lessonSheetOverlayNavigationDepth>0")
             return
         }
@@ -2300,13 +2459,23 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         ) {
             return
         }
-        // Aktif ders overlay (host görünür) veya ilk tutorial bootstrap — silme.
+        // Aktif ders overlay (host görünür) — hayalet TutorialFragment hariç atlama.
         if (!forcingAbacusOverlayDismissForSeasonGate &&
             activeOverlay != null &&
             fragmentBlocksSeasonLeaderboardGate(activeOverlay)
         ) {
             val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-            if (hostVisible) {
+            val staleTutorial = isStaleTutorialGhostOverlay(activeOverlay)
+            if (hostVisible && !staleTutorial) {
+                logMapTouchDiag(
+                    "reconcile",
+                    "SKIP_BLOCKING_OVERLAY",
+                    "active=${activeOverlay.javaClass.simpleName} hostVisible=true → notifyVisible YOK",
+                )
+                LessonProgressDiag.log(
+                    "MainActivity.reconcile",
+                    "SKIP_BLOCKING_OVERLAY active=${activeOverlay.javaClass.simpleName} forcingDismiss=$forcingAbacusOverlayDismissForSeasonGate",
+                )
                 logFirstTutorial(
                     "reconcile.skip",
                     "blocking overlay active=${activeOverlay.javaClass.simpleName}",
@@ -2314,8 +2483,15 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 tryShowSeasonLeaderboardRewardGateIfNeeded()
                 return
             }
-            if (activeOverlay is TutorialFragment || firstTutorialOverlayBootstrapActive) {
+            if (!hostVisible && !staleTutorial &&
+                (activeOverlay is TutorialFragment || firstTutorialOverlayBootstrapActive)
+            ) {
                 binding.abacusFragmentContainer.visibility = View.VISIBLE
+                logMapTouchDiag(
+                    "reconcile",
+                    "RESHOW_ABACUS_HOST",
+                    "active=${activeOverlay.javaClass.simpleName} → host VISIBLE yapıldı",
+                )
                 logFirstTutorial(
                     "reconcile.reShowAbacusHost",
                     "active=${activeOverlay.javaClass.simpleName}",
@@ -2323,10 +2499,19 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 tryShowSeasonLeaderboardRewardGateIfNeeded()
                 return
             }
-            logFirstTutorial(
-                "reconcile.staleGhost",
-                "will remove active=${activeOverlay.javaClass.simpleName}",
-            )
+            if (staleTutorial) {
+                logMapTouchDiag(
+                    "reconcile",
+                    "PURGE_STALE_TUTORIAL",
+                    "active=TutorialFragment hostVisible=$hostVisible → purge devam",
+                )
+                logFirstTutorial("reconcile.purgeStaleTutorial", overlaySnapshot("purgeStaleTutorial"))
+            } else {
+                logFirstTutorial(
+                    "reconcile.staleGhost",
+                    "will remove active=${activeOverlay.javaClass.simpleName}",
+                )
+            }
         }
         logFirstTutorial(
             "reconcile.willRestoreMapUi",
@@ -2342,13 +2527,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         restoreMapUiAfterLessonOverlayDismiss()
         forcingAbacusOverlayDismissForSeasonGate = false
         ensureChromeUnlockedAfterMapReturn("reconcile.done")
-        (fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment)?.let { map ->
-            map.view?.post {
-                if (map.isAdded) {
-                    map.notifyVisibleAfterOverlayDismiss()
-                }
-            }
-        }
+        notifyMapVisibleAfterLessonClaim("reconcile.done")
+        logMapTouchDiag("reconcile", "RESTORE_DONE", "purge+notifyVisible tamamlandı")
         tryShowSeasonLeaderboardRewardGateIfNeeded()
     }
 

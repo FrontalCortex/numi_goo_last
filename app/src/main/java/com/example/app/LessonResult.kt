@@ -96,10 +96,12 @@ class LessonResult : Fragment() {
             }
             if (lessonItem?.stepIsFinish == true) {
                 val main = activity as? MainActivity
+                if (isAdded) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .remove(this@LessonResult)
+                        .commitNowAllowingStateLoss()
+                }
                 main?.prepareMapReturnAfterLessonClaim()
-                parentFragmentManager.beginTransaction()
-                    .remove(this@LessonResult)
-                    .commitNowAllowingStateLoss()
                 main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
             } else {
                 chestFragment.arguments = args

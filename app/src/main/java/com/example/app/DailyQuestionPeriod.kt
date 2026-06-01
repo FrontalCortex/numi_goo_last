@@ -2,14 +2,14 @@ package com.example.app
 
 /**
  * Günlük soru periyodu ve cache anahtarı.
- * Geçici test: [PERIOD_MS] = 2 dakika. Prod’a geçerken günlük süreye çekilir.
+ * [PERIOD_MS] = 24 saat; periyot anahtarı ve geri sayım buna göre hesaplanır.
  */
 object DailyQuestionPeriod {
     const val PREFS_NAME = "daily_question_prefs"
     const val FIRESTORE_COLLECTION = "dailyQuestion"
 
-    /** Geçici test süresi (2 dakika). Prod: 24 * 60 * 60 * 1000L */
-    const val PERIOD_MS = 2 * 60 * 1000L
+    /** Bir günlük soru setinin yenilenme aralığı (24 saat). */
+    const val PERIOD_MS = 24 * 60 * 60 * 1000L
 
     const val QUESTIONS_PER_PERIOD = 3
 

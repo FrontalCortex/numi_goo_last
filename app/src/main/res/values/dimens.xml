@@ -160,6 +160,7 @@
     <dimen name="tutorial_skip_button_text_margin_h">8dp</dimen>
     <dimen name="tutorial_ask_button_size">35dp</dimen>
     <dimen name="tutorial_ask_button_padding">6dp</dimen>
+    <dimen name="tutorial_rules_panel_button_padding">8dp</dimen>
     <dimen name="tutorial_control_button_text_size">13sp</dimen>
     <dimen name="tutorial_control_button_side_margin">12dp</dimen>
     <dimen name="tutorial_control_button_corner_radius">8dp</dimen>
@@ -177,6 +178,7 @@
     <dimen name="rules_fragment_header_text_size">12sp</dimen>
     <dimen name="rules_fragment_table_width">136dp</dimen>
     <dimen name="rules_fragment_table_margin_horizontal">20dp</dimen>
+    <dimen name="rules_fragment_table_divider_height">2dp</dimen>
     <dimen name="rules_fragment_cell_padding">0dp</dimen>
     <dimen name="rules_fragment_description_text_size">10sp</dimen>
     <dimen name="rules_fragment_description_padding">2dp</dimen>

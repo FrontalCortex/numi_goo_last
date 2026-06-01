@@ -378,61 +378,69 @@ object MathOperationGenerator {
     fun generateMathOperationWithDigits(firstDigitCount: Int, secondDigitCount: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber = 0
-        repeat(firstDigitCount) {
-            val digit = (1..9).random()
+        for (i in 0 until firstDigitCount) {
+            val digit = (5..9).random()
             firstNumber = firstNumber * 10 + digit
         }
 
         // İkinci sayıyı oluştur
         var secondNumber = 0
-        var tempFirst = firstNumber
+        val firstNumberStr = firstNumber.toString()
 
-        repeat(secondDigitCount) {
-            val digit = tempFirst % 10
-            val secondDigit = when (digit) {
-                1 -> (1..8).random()
-                2 -> (1..7).random()
-                3 -> (1..6).random()
-                4 -> (1..5).random()
-                5 -> 5
-                6 -> listOf(5, 4).random()
-                7 -> listOf(5, 4, 3).random()
-                8 -> listOf(5, 4, 3, 2).random()
-                9 -> listOf(5, 4, 3, 2, 1).random()
-                else -> 0
+        for (i in 0 until secondDigitCount) {
+            val currentDigit = firstNumberStr[i].toString().toInt()
+            val possibleDigits = when (currentDigit) {
+                5 -> listOf(5)
+                6 -> listOf(5,4)
+                7 -> listOf(5,4,3)
+                8 -> listOf(5,4,3,2)
+                9 -> listOf(5,4,3,2,1)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
             }
-            secondNumber = secondDigit * Math.pow(10.0, it.toDouble()).toInt() + secondNumber
-            tempFirst /= 10
+
+            val digit = possibleDigits.random()
+            secondNumber = secondNumber * 10 + digit
         }
 
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateMathOperation3(): MathOperation {
-        // İki basamaklı random sayı üret (10-99 arası)
-        // Birler basamağı 0 olmayan sayıları seç
-        val firstNumber = (10..99).filter { it % 10 != 0 }.random()
+        return generateMathOperation3WithSecondNumber((6..9).random())
+    }
 
-        // Birler basamağını al
-        val onesDigit = firstNumber % 10
+    /**
+     * [generateMathOperation3] ile aynı kurallarda [count] adet işlem üretir.
+     * secondNumber (6..9) mümkün olduğunca tekrar etmez; havuz bitince karışık yeniden dolar.
+     */
+    fun generateMathOperationList3(count: Int): List<MathOperation> {
+        if (count <= 0) return emptyList()
 
-        // İkinci sayı için olası değerleri belirle
-        val possibleSecondNumbers = when (onesDigit) {
-            1 -> listOf(9)
-            2 -> listOf(8, 9)
-            3 -> listOf(7, 8, 9)
-            4 -> listOf(6, 7, 8)
+        val pendingSecondNumbers = mutableListOf<Int>()
+        val operations = mutableListOf<MathOperation>()
+
+        repeat(count) {
+            if (pendingSecondNumbers.isEmpty()) {
+                pendingSecondNumbers.addAll((6..9).shuffled())
+            }
+            val secondNumber = pendingSecondNumbers.removeAt(0)
+            operations.add(generateMathOperation3WithSecondNumber(secondNumber))
+        }
+        return operations
+    }
+
+    private fun generateMathOperation3WithSecondNumber(secondNumber: Int): MathOperation {
+        val tensDigit = listOf(1, 2, 3, 5, 6, 7, 8).random()
+        val possibleOnesDigits = when (secondNumber) {
             5 -> listOf(5)
-            6 -> listOf(9)
-            7 -> listOf(8, 9)
-            8 -> listOf(7, 8, 9)
-            9 -> listOf(6, 7, 8, 9)
-            else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9) // Bu durum artık oluşmayacak
+            6 -> listOf(4, 9)
+            7 -> listOf(3, 4, 8, 9)
+            8 -> listOf(2, 3, 4, 7, 8, 9)
+            9 -> listOf(1, 2, 3, 6, 7, 8, 9)
+            else -> listOf(5, 6, 7, 8, 9)
         }
 
-        // Olası değerlerden random bir sayı seç
-        val secondNumber = possibleSecondNumbers.random()
-
-        // MathOperation formatında döndür
+        val onesDigit = possibleOnesDigits.random()
+        val firstNumber = tensDigit * 10 + onesDigit
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun generateMathOperation4(): MathOperation {
@@ -464,6 +472,41 @@ object MathOperationGenerator {
         // MathOperation formatında döndür
         return MathOperation(firstNumber, "+", secondNumber)
     }
+
+    /**
+     * [generateMathOperation4] ile aynı kurallarda [count] adet işlem üretir.
+     * secondNumber (6..9) mümkün olduğunca tekrar etmez; havuz bitince karışık yeniden dolar.
+     */
+    fun generateMathOperationList4(count: Int): List<MathOperation> {
+        if (count <= 0) return emptyList()
+
+        val pendingSecondNumbers = mutableListOf<Int>()
+        val operations = mutableListOf<MathOperation>()
+
+        repeat(count) {
+            if (pendingSecondNumbers.isEmpty()) {
+                pendingSecondNumbers.addAll((6..9).shuffled())
+            }
+            val secondNumber = pendingSecondNumbers.removeAt(0)
+            operations.add(generateMathOperation4WithSecondNumber(secondNumber))
+        }
+        return operations
+    }
+
+    private fun generateMathOperation4WithSecondNumber(secondNumber: Int): MathOperation {
+        val tensDigit = listOf(4, 9).random()
+        val possibleOnesDigits = when (secondNumber) {
+            6 -> listOf(4, 9)
+            7 -> listOf(3, 4, 8, 9)
+            8 -> listOf(2, 3, 4, 7, 8, 9)
+            9 -> listOf(1, 2, 3, 6, 7, 8, 9)
+            else -> (1..9).toList()
+        }
+        val onesDigit = possibleOnesDigits.random()
+        val firstNumber = tensDigit * 10 + onesDigit
+        return MathOperation(firstNumber, "+", secondNumber)
+    }
+
     fun generateMathOperationWithDigits2(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
         // İlk sayıyı oluştur
         var firstNumber = 0
@@ -477,7 +520,13 @@ object MathOperationGenerator {
         val firstNumberStr = firstNumber.toString()
 
         for (i in 0 until secondNumberDigits) {
-            val currentDigit = firstNumberStr[i].toString().toInt()
+            val sourceIndex = firstNumberStr.length - secondNumberDigits + i
+            val currentDigit = if (sourceIndex in firstNumberStr.indices) {
+                firstNumberStr[sourceIndex].toString().toInt()
+            } else {
+                // secondNumberDigits > firstNumberDigits durumunda solda boş kalan basamaklar.
+                9
+            }
             val possibleDigits = when (currentDigit) {
                 1 -> listOf(9)
                 2 -> listOf(8, 9)
@@ -586,35 +635,39 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "+", secondNumber)
     }
     fun irregularExtraction(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
-        var firstNumber = 0
-        repeat(firstNumberDigits) {
-            val digit = (1..9).random()
-            firstNumber = firstNumber * 10 + digit
-        }
-
-        // İkinci sayıyı oluştur
-        var secondNumber = 0
-        val firstNumberStr = firstNumber.toString()
-
-        for (i in 0 until secondNumberDigits) {
-            val currentDigit = firstNumberStr[i].toString().toInt()
-            val possibleDigits = when (currentDigit) {
-                1 -> listOf(1)
-                2 -> listOf(2, 1)
-                3 -> listOf(3, 2, 1)
-                4 -> listOf(4, 3, 2, 1)
-                5 -> listOf(5)
-                6 -> listOf(6,5,1)
-                7 -> listOf(7,6,5,2,1)
-                8 -> listOf(8,7,6,5,3,2,1)
-                9 -> listOf(9,8,7,6,5,4,3,2,1)
-                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+        while (true) {
+            var firstNumber = 0
+            repeat(firstNumberDigits) {
+                val digit = (1..9).random()
+                firstNumber = firstNumber * 10 + digit
             }
 
-            val digit = possibleDigits.random()
-            secondNumber = secondNumber * 10 + digit
+            var secondNumber = 0
+            val firstNumberStr = firstNumber.toString()
+
+            for (i in 0 until secondNumberDigits) {
+                val currentDigit = firstNumberStr[i].toString().toInt()
+                val possibleDigits = when (currentDigit) {
+                    1 -> listOf(1)
+                    2 -> listOf(2, 1)
+                    3 -> listOf(3, 2, 1)
+                    4 -> listOf(4, 3, 2, 1)
+                    5 -> listOf(5)
+                    6 -> listOf(6, 5, 1)
+                    7 -> listOf(7, 6, 5, 2, 1)
+                    8 -> listOf(8, 7, 6, 5, 3, 2, 1)
+                    9 -> listOf(9, 8, 7, 6, 5, 4, 3, 2, 1)
+                    else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                }
+
+                val digit = possibleDigits.random()
+                secondNumber = secondNumber * 10 + digit
+            }
+
+            if (firstNumber != secondNumber) {
+                return MathOperation(firstNumber, "-", secondNumber)
+            }
         }
-        return MathOperation(firstNumber, "-", secondNumber)
     }
     fun irregularExtractionFiveRules(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
         var firstNumber = 0
@@ -643,68 +696,102 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "-", secondNumber)
     }
     fun irregularExtractionFiveRulesMix(firstNumberDigits: Int, secondNumberDigits: Int): MathOperation {
-        var firstNumber = 0
-        repeat(firstNumberDigits) {
-            val digit = (1..9).random()
-            firstNumber = firstNumber * 10 + digit
-        }
-
-        // İkinci sayıyı oluştur
-        var secondNumber = 0
-        val firstNumberStr = firstNumber.toString()
-
-        for (i in 0 until secondNumberDigits) {
-            val currentDigit = firstNumberStr[i].toString().toInt()
-            val possibleDigits = when (currentDigit) {
-                5 -> {
-                    if ((0..1).random() == 0) listOf(4,3,2,1) else listOf(5)
+        while (true) {
+            var firstNumber = 0
+            repeat(firstNumberDigits) {
+                val digit = if (Math.random() < 0.9) {
+                    listOf(5, 6, 7, 8, 9).random()
+                } else {
+                    listOf(1, 2, 3, 4).random()
                 }
-                6 -> listOf(6,5,4,3,2,1)
-                7 -> {
-                    if ((0..1).random() == 0) listOf(4,3) else listOf(7,6,5,2,1)
-                }
-                8 -> {
-                    if ((0..1).random() == 0) listOf(4) else listOf(1,2,3,5,6,7,8)
-                }
-                1 -> listOf(1)
-                2 -> listOf(2,1)
-                3 -> listOf(3,2,1)
-                4 -> listOf(4,3,2,1)
-                9 -> listOf(9,8,7,6,5,4,3,2,1)
-                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                firstNumber = firstNumber * 10 + digit
             }
 
-            val digit = possibleDigits.random()
-            secondNumber = secondNumber * 10 + digit
+            var secondNumber = 0
+            val firstNumberStr = firstNumber.toString()
+
+            for (i in 0 until secondNumberDigits) {
+                val currentDigit = firstNumberStr[i].toString().toInt()
+                val possibleDigits = when (currentDigit) {
+                    5 -> listOf(5,4,3,2,1)
+                    6 -> listOf(6,5,4,3,2,1)
+                    7 -> {
+                        if ((0..1).random() == 0) listOf(4,3) else listOf(7,6,5,2,1)
+                    }
+                    8 -> {
+                        if ((0..1).random() == 0) listOf(4) else listOf(1,2,3,5,6,7,8)
+                    }
+                    1 -> listOf(1)
+                    2 -> listOf(2,1)
+                    3 -> listOf(3,2,1)
+                    4 -> listOf(4,3,2,1)
+                    9 -> listOf(9,8,7,6,5,4,3,2,1)
+                    else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                }
+
+                val digit = possibleDigits.random()
+                secondNumber = secondNumber * 10 + digit
+            }
+
+            if (firstNumber != secondNumber) {
+                return MathOperation(firstNumber, "-", secondNumber)
+            }
         }
+    }
+    /** İlk sayı birler basamağı (x) → çıkarma için izin verilen ikinci sayı (y). */
+    private val extractionOnesToSecondOptions: Map<Int, List<Int>> = mapOf(
+        0 to listOf(1, 2, 3, 4, 5, 6, 7, 8, 9),
+        1 to listOf(2, 3, 4, 5, 7, 8, 9),
+        2 to listOf(3, 4, 5, 8, 9),
+        3 to listOf(4, 5, 9),
+        4 to listOf(5),
+        5 to listOf(6, 7, 8, 9),
+        6 to listOf(7, 8, 9),
+        7 to listOf(8, 9),
+        8 to listOf(9),
+    )
+
+    private fun extractionAllowedOnesDigitsForSecond(secondNumber: Int): List<Int> =
+        (0..8).filter { secondNumber in (extractionOnesToSecondOptions[it] ?: emptyList()) }
+
+    private fun extractionSecondOptionsForOnes(onesDigit: Int): List<Int> =
+        extractionOnesToSecondOptions[onesDigit] ?: listOf(1)
+
+    /**
+     * Sabit ikinci sayı (1..9) ile çıkarma: birler basamağı ilişkisi korunur;
+     * x, y'ye göre seçilir ([extractionAllowedOnesDigitsForSecond]).
+     */
+    private fun extractionGenerateMathOperationWithSecondNumber(secondNumber: Int): MathOperation {
+        val allowedOnes = extractionAllowedOnesDigitsForSecond(secondNumber)
+        val onesDigit = allowedOnes.random()
+        val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
+        val firstNumber = tensDigit * 10 + onesDigit
         return MathOperation(firstNumber, "-", secondNumber)
     }
-    fun extractionGenerateMathOperation(): MathOperation { //basit 10'luk toplama
-        // İlk sayının onlar basamağı (5 hariç)
-        val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
 
-        val random = Random()
-
-        // İlk sayının birler basamağı (0..5,6,7,8,9)
-        val onesDigit = (0..8).random()
-
-        // İlk sayıyı oluştur
-        val firstNumber = tensDigit * 10 + onesDigit
-
-        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
-        val secondNumber = when (onesDigit) {
-            0 -> listOf(1,2,3,4,5,6,7,8,9).random()
-            1 -> listOf(2,3,4,5,7,8,9).random()
-            2 -> listOf(3,4,5,8,9).random()
-            3 -> listOf(4,5,9).random()
-            4 -> listOf(5).random()
-            5 -> listOf(6,7,8,9).random()
-            6 -> listOf(7,8,9).random()
-            7 -> listOf(8,9).random()
-            8 -> listOf(9).random()
-            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+    /**
+     * İkinci sayılar 1..9 sırayla (her biri bir kez); [count] > 9 ise döngü tekrarlanır.
+     * [generateRelatedNumbersList] / [generateMathOperationList] desenine benzer.
+     */
+    fun extractionGenerateMathOperationList(count: Int): List<MathOperation> {
+        if (count <= 0) return emptyList()
+        val pendingSeconds = mutableListOf<Int>()
+        val operations = mutableListOf<MathOperation>()
+        repeat(count) {
+            if (pendingSeconds.isEmpty()) {
+                pendingSeconds.addAll(1..9)
+            }
+            val secondNumber = pendingSeconds.removeAt(0)
+            operations.add(extractionGenerateMathOperationWithSecondNumber(secondNumber))
         }
+        return operations
+    }
 
+    fun extractionGenerateMathOperation(): MathOperation { // basit 10'luk çıkarma (tek soru)
+        val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
+        val onesDigit = (0..8).random()
+        val firstNumber = tensDigit * 10 + onesDigit
+        val secondNumber = extractionSecondOptionsForOnes(onesDigit).random()
         return MathOperation(firstNumber, "-", secondNumber)
     }
     fun extractionGenerateMathOperationTen(): MathOperation {

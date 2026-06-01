@@ -84,14 +84,21 @@ class MissionChestRewardFragment : Fragment() {
             val queueCopy = ArrayList(badgePayloadQueue)
             val activityFm = requireActivity().supportFragmentManager
             val main = activity as? MainActivity
+            main?.logMapTouchDiag(
+                "MissionChestReward.continue",
+                "CLAIM_MAP_RETURN",
+                "removeThenPrepare+finalize",
+            )
+            if (isAdded) {
+                activityFm.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_right,
+                    )
+                    .remove(this@MissionChestRewardFragment)
+                    .commitNowAllowingStateLoss()
+            }
             main?.prepareMapReturnAfterLessonClaim()
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_right,
-                )
-                .remove(this@MissionChestRewardFragment)
-                .commitNowAllowingStateLoss()
             main?.finalizeMapReturnAfterLessonClaim("MissionChestReward.continue")
             if (openBadgeAfter) {
                 activityFm.beginTransaction()

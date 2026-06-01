@@ -44,10 +44,12 @@ class LessonResultFalse : Fragment() {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
             val main = activity as? MainActivity
+            if (isAdded) {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .remove(this@LessonResultFalse)
+                    .commitNowAllowingStateLoss()
+            }
             main?.prepareMapReturnAfterLessonClaim()
-            parentFragmentManager.beginTransaction()
-                .remove(this@LessonResultFalse)
-                .commitNowAllowingStateLoss()
             main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.loginReturn")
         }
     }
@@ -99,10 +101,12 @@ class LessonResultFalse : Fragment() {
             }
 
             val main = activity as? MainActivity
+            if (isAdded) {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .remove(this@LessonResultFalse)
+                    .commitNowAllowingStateLoss()
+            }
             main?.prepareMapReturnAfterLessonClaim()
-            parentFragmentManager.beginTransaction()
-                .remove(this@LessonResultFalse)
-                .commitNowAllowingStateLoss()
             main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.claim")
         }
 

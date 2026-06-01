@@ -1461,6 +1461,7 @@ class BadgeFragment : Fragment() {
             )
             .remove(this@BadgeFragment)
             .commit()
+        (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("BadgeFragment.closeCelebration")
     }
 
     private fun hasNextCelebrationInQueue(): Boolean {

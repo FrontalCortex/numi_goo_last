@@ -136,6 +136,18 @@ class ChestResult : Fragment() {
             val shouldSkipChest =
                 lessonItem.type == LessonItem.TYPE_CHEST && lessonItem.stepIsFinish
 
+            MarathonGuideStore.logLessonSnapshot(
+                "ChestResult.continue",
+                globalPartId,
+                mapFragmentStepIndex,
+                lessonItem,
+            )
+            Log.d(
+                MarathonGuideStore.LOG_TAG,
+                "ChestResult.continue | shouldSkipChest=$shouldSkipChest " +
+                    "(ChestFragment atlanır, scheduleIfEligible çağrılmaz)",
+            )
+
             if (shouldSkipChest) {
                 val idx = mapFragmentStepIndex
                 val chestItemBefore = LessonManager.getLessonItem(idx)
@@ -187,14 +199,21 @@ class ChestResult : Fragment() {
                             .commit()
                     } else {
                         val main = activity as? MainActivity
+                        main?.logMapTouchDiag(
+                            "ChestResult.claim",
+                            "CLAIM_MAP_RETURN",
+                            "removeThenPrepare+finalize",
+                        )
+                        if (isAdded) {
+                            fm.beginTransaction()
+                                .setCustomAnimations(
+                                    R.anim.slide_in_right,
+                                    R.anim.slide_out_right,
+                                )
+                                .remove(this@ChestResult)
+                                .commitNowAllowingStateLoss()
+                        }
                         main?.prepareMapReturnAfterLessonClaim()
-                        fm.beginTransaction()
-                            .setCustomAnimations(
-                                R.anim.slide_in_right,
-                                R.anim.slide_out_right,
-                            )
-                            .remove(this@ChestResult)
-                            .commitNowAllowingStateLoss()
                         main?.let {
                             it.logTouchDiag("ChestResult.claimAfterRemove.beforeFinalize")
                             MainActivityChromeBlocker.release(it)

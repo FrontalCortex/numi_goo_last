@@ -35,9 +35,15 @@ class RecordFragment : Fragment() {
 
     private fun closeRecordOverlay() {
         val main = activity as? MainActivity
+        if (isAdded && parentFragmentManager.backStackEntryCount > 0) {
+            parentFragmentManager.popBackStack()
+            parentFragmentManager.executePendingTransactions()
+        } else if (isAdded) {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .remove(this@RecordFragment)
+                .commitNowAllowingStateLoss()
+        }
         main?.prepareMapReturnAfterLessonClaim()
-        parentFragmentManager.popBackStack()
-        parentFragmentManager.executePendingTransactions()
         main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
     }
 

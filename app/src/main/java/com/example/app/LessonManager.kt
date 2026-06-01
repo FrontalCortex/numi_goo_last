@@ -31,9 +31,11 @@ object LessonManager {
     }
 
     fun updateLessonItem(context: Context, position: Int, item: LessonItem) {
-        // Global veriyi güncelle
+        LessonProgressDiag.log(
+            "LessonManager.updateLessonItem",
+            "idx=$position finish=${item.stepIsFinish} adapter=${adapter != null}",
+        )
         GlobalLessonData.updateLessonItem(context, position, item)
-        // Adapter'ı güncelle
         adapter?.updateLessonItem(position, item)
     }
     fun updateRaceItem(context: Context, position: Int, item: LessonItem) {
@@ -46,6 +48,15 @@ object LessonManager {
     }
 
     fun refreshLessonsFromGlobalData() {
+        if (adapter?.isRacePanelOpen() == true) {
+            LessonProgressDiag.log("LessonManager.refreshLessons", "SKIP race panel open")
+            return
+        }
+        LessonProgressDiag.logListChestFinishSummary(
+            "LessonManager.refreshLessons",
+            GlobalLessonData.globalPartId,
+            GlobalLessonData.lessonItems,
+        )
         adapter?.updateItems(GlobalLessonData.lessonItems)
     }
 } 

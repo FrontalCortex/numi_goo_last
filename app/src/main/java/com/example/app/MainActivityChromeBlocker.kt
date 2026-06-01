@@ -71,23 +71,37 @@ object MainActivityChromeBlocker {
 
     fun release(activity: Activity?) {
         val caller = inferCaller()
-        val act = activity ?: run {
-            Log.w(LOG_TAG, "[$caller] release skipped (activity=null) depth=$lockDepth")
-            return
-        }
         if (lockDepth <= 0) {
             Log.w(LOG_TAG, "[$caller] release ignored (depth=$lockDepth)")
             return
         }
-        val appliedUnlock = lockDepth == 1
-        if (--lockDepth == 0) {
-            applyUnlock(act)
+        val newDepth = (lockDepth - 1).coerceAtLeast(0)
+        val shouldUnlock = lockDepth == 1
+        lockDepth = newDepth
+
+        val act = activity
+        if (shouldUnlock) {
+            if (act != null) {
+                applyUnlock(act)
+            } else {
+                // Activity referansı kaybolduysa yine de depth'i sıfırla; harita dönüşünde
+                // ensureUnlockedForMapReturn/applyUnlock zinciri son kilitleri toparlar.
+                Log.w(LOG_TAG, "[$caller] release without activity at terminal depth; depth reset to 0")
+            }
         }
-        Log.d(
-            LOG_TAG,
-            "[$caller] release → depth=$lockDepth appliedUnlock=$appliedUnlock",
-        )
-        logBottomNavState(act, "after release")
+
+        if (act != null) {
+            Log.d(
+                LOG_TAG,
+                "[$caller] release → depth=$lockDepth appliedUnlock=$shouldUnlock",
+            )
+            logBottomNavState(act, "after release")
+        } else {
+            Log.w(
+                LOG_TAG,
+                "[$caller] release(activity=null) → depth=$lockDepth appliedUnlock=false",
+            )
+        }
     }
 
     private fun applyBlock(act: Activity) {

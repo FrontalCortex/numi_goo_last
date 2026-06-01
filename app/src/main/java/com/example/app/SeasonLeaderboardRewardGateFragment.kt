@@ -47,6 +47,7 @@ class SeasonLeaderboardRewardGateFragment : Fragment() {
     override fun onDestroyView() {
         MainActivityChromeBlocker.release(activity)
         (activity as? MainActivity)?.hideSeasonLeaderboardRewardGateContainer()
+        (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("SeasonLeaderboardRewardGate.onDestroyView")
         _binding = null
         super.onDestroyView()
     }

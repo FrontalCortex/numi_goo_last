@@ -11,6 +11,8 @@ import android.app.Activity
 import android.content.Intent
 import android.widget.Button
 import android.content.Context
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.util.Log
@@ -21,6 +23,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
@@ -353,8 +356,7 @@ class LessonAdapter(
             item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
             item.startStepNumber.also { lessonStep = it!! }
 
-
-
+            (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
@@ -462,6 +464,7 @@ class LessonAdapter(
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 } else {
+                    (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
@@ -476,6 +479,7 @@ class LessonAdapter(
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 } else {
+                    (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
@@ -534,7 +538,7 @@ class LessonAdapter(
         val scrimView = activity.findViewById<View>(R.id.scrimView)
 
         scrimView.visibility = View.VISIBLE
-        scrimView.alpha = 0f
+        scrimView.alpha = 0.5f
 
         // Eğer daha önce oluşturulmuş bir race panel varsa kaldır
         coordinatorLayout.findViewWithTag<View>("race_panel")?.let {
@@ -557,40 +561,8 @@ class LessonAdapter(
         raceTitle.text = item.title
 
         val racePartId = item.racePartId!!
-        // Part verisi asenkron yüklendiği için önce yükleyip sonra paneli kuruyoruz (ilk tıklamada ders listesi yerine race listesi gösterilir)
         raceRecyclerView.layoutManager = LinearLayoutManager(context)
-        GlobalLessonData.initialize(context, racePartId) {
-            (context as? Activity)?.runOnUiThread {
-                globalPartId = racePartId
-                onPartChange(racePartId)
-
-        raceAdapter = RaceAdapter(
-            context,
-            raceItems = GlobalLessonData.lessonItems.toMutableList(),
-            { raceItem, clickedIndex ->
-                onRaceStartClicked(raceItem, clickedIndex)
-            },
-            onPartChange = { newPartId ->
-                globalPartId = newPartId
-                        GlobalLessonData.initialize(context, newPartId) {
-                val updatedRaceItems = GlobalLessonData.lessonItems.filter {
-                    it.racePartId == newPartId || it.type == LessonItem.TYPE_RACE
-                }
-                raceAdapter.raceUpdateItems(updatedRaceItems)
-                        }
-            }
-        )
-        LessonManager.setRaceAdapter(raceAdapter)
-        raceRecyclerView.adapter = raceAdapter
-        
-        coordinatorLayout.addView(racePanelView)
-
         val behavior = BottomSheetBehavior.from(raceContentLayout)
-        scrimView.visibility = View.VISIBLE
-        scrimView.animate()
-            .alpha(0.5f)
-            .setDuration(300)
-            .start()
 
         scrimView.setOnClickListener {
             globalPartId = item.backRaceId!!
@@ -623,7 +595,7 @@ class LessonAdapter(
             }
 
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                        val alpha = 0.5f * (slideOffset + 1)
+                val alpha = 0.5f * (slideOffset + 1)
                 scrimView.alpha = alpha
             }
         })
@@ -637,27 +609,70 @@ class LessonAdapter(
             behavior.peekHeight = lessonY + it.height
         }
 
-        behavior.isHideable = true
+        // Global initialize kullanma: _lessonItems + realtime listener harita adapter'ını yeniler.
+        GlobalLessonData.loadLessonItemsForPart(context, racePartId) { raceItems ->
+            (context as? Activity)?.runOnUiThread {
+                raceAdapter = RaceAdapter(
+                    context,
+                    raceItems = raceItems.toMutableList(),
+                    { raceItem, clickedIndex ->
+                        onRaceStartClicked(raceItem, clickedIndex, racePartId)
+                    },
+                    onPartChange = { newPartId ->
+                        GlobalLessonData.loadLessonItemsForPart(context, newPartId) { partItems ->
+                            (context as? Activity)?.runOnUiThread {
+                                raceAdapter.raceUpdateItems(partItems.toMutableList())
+                            }
+                        }
+                    },
+                )
+                LessonManager.setRaceAdapter(raceAdapter)
+                raceRecyclerView.adapter = raceAdapter
+
+                coordinatorLayout.addView(racePanelView)
+                behavior.isHideable = true
                 behavior.state = BottomSheetBehavior.STATE_HIDDEN
                 racePanelView.post {
-            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                    behavior.state = BottomSheetBehavior.STATE_EXPANDED
                 }
             }
         }
     }
 
-    private fun onRaceStartClicked(raceItem: LessonItem, clickedIndex: Int) {
-        val activity = context as FragmentActivity
-        
-        // Race item'ının mapFragmentIndex değerini global mapFragmentStepIndex'e ata
-        raceItem.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
-        raceItem.startStepNumber.also { lessonStep = it!! }
-        
+    fun isRacePanelOpen(): Boolean {
+        val activity = context as? Activity ?: return false
+        val coordinator = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        return coordinator?.findViewWithTag<View>("race_panel") != null
+    }
 
-        activity.supportFragmentManager.beginTransaction()
-            .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
-            .addToBackStack(null)
-            .commit()
+    private fun onRaceStartClicked(raceItem: LessonItem, clickedIndex: Int, racePartId: Int) {
+        val activity = context as FragmentActivity
+        val main = activity as? MainActivity
+
+        val startRaceLesson = {
+            val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
+            val fm = activity.supportFragmentManager
+            fm.executePendingTransactions()
+            fragmentContainer.visibility = View.VISIBLE
+
+            raceItem.mapFragmentIndex?.let { mapFragmentStepIndex = it }
+            raceItem.startStepNumber?.let { lessonStep = it }
+
+            val slideIn = android.R.anim.slide_in_left
+            val slideOut = android.R.anim.slide_out_right
+            fm.beginTransaction()
+                .setCustomAnimations(slideIn, slideOut)
+                .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
+
+        GlobalLessonData.initialize(context, racePartId) {
+            (activity as? Activity)?.runOnUiThread {
+                main?.runAbacusOverlayTransaction("onRaceStartClicked") { startRaceLesson() }
+                    ?: startRaceLesson()
+            }
+        }
     }
 
     override fun getItemViewType(position: Int): Int = GlobalLessonData.getLessonItem(position)?.type ?: items[position].type
@@ -1176,6 +1191,15 @@ class LessonAdapter(
 
             when (item.type) {
                 LessonItem.TYPE_CHEST -> {
+                    if (adapterPosition == MarathonGuideStore.firstMarathonLessonIndex()) {
+                        LessonProgressDiag.logItem(
+                            "LessonAdapter.bind",
+                            GlobalLessonData.globalPartId,
+                            adapterPosition,
+                            item,
+                            "marathonCardUI",
+                        )
+                    }
                     val backgroundColor = if (item.isCompleted) {
                         ContextCompat.getColor(context, R.color.lesson_center_blue)
                     } else {
@@ -1247,13 +1271,36 @@ class LessonAdapter(
         }
     }
 
+    /** Kilitli race bayrağı: orijinal renk ayrımını koruyan gri tonlar ([BadgeFragment] kilitli rozet mantığına yakın). */
+    private fun applyRaceFlagLockedTone(icon: ImageView) {
+        val matrix = ColorMatrix().apply { setSaturation(0f) }
+        val coolGray = ColorMatrix().apply {
+            setScale(0.72f, 0.76f, 0.80f, 1f)
+        }
+        matrix.postConcat(coolGray)
+        icon.colorFilter = ColorMatrixColorFilter(matrix)
+        icon.imageAlpha = 230
+    }
+
+    private fun applyRaceFlagUnlockedTone(icon: ImageView) {
+        icon.clearColorFilter()
+        icon.imageAlpha = 255
+    }
+
     inner class RaceViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val lessonIcon: ImageView = itemView.findViewById(R.id.lessonIcon)
         private val lessonCard: CardView = itemView.findViewById(R.id.lessonCard)
         private val progressBar: CircleProgressBar = itemView.findViewById(R.id.progressBar)
 
         fun bind(item: LessonItem) {
-            // Race item'ı için özel styling
+            progressBar.visibility = View.GONE
+            lessonIcon.setImageResource(R.drawable.flag_ic)
+            if (item.isCompleted) {
+                applyRaceFlagUnlockedTone(lessonIcon)
+            } else {
+                applyRaceFlagLockedTone(lessonIcon)
+            }
+
             val backgroundColor = if (item.isCompleted) {
                 ContextCompat.getColor(context, R.color.lesson_completed)
             } else {
@@ -1261,38 +1308,19 @@ class LessonAdapter(
             }
             lessonCard.setCardBackgroundColor(backgroundColor)
 
-            // Race item'a tıklandığında race panel'i göster
             lessonCard.setOnClickListener {
+                if (!item.isCompleted) {
+                    Toast.makeText(
+                        context,
+                        R.string.race_unlock_complete_all_lessons,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    return@setOnClickListener
+                }
                 (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
                     showRacePanel(item, adapterPosition)
                 }
             }
-
-            // Progress bar'ı ayarla
-            if (item.isCompleted) {
-                updateProgressBarColor(ContextCompat.getColor(context, R.color.yellow))
-                updateProgress(100f)
-            } else {
-                updateProgressBarColor(ContextCompat.getColor(context, R.color.circleBackground_color))
-                updateProgress(0f)
-            }
-        }
-
-        private fun updateProgress(progress: Float) {
-            val currentProgress = progressBar.progress
-            val animator = ValueAnimator.ofFloat(currentProgress, progress)
-            animator.duration = 500
-            animator.interpolator = AccelerateDecelerateInterpolator()
-
-            animator.addUpdateListener { animation ->
-                val animatedValue = animation.animatedValue as Float
-                progressBar.setProgressValue(animatedValue)
-            }
-            animator.start()
-        }
-
-        private fun updateProgressBarColor(color: Int) {
-            progressBar.setProgressColor(color)
         }
     }
     fun updateItems(newItems: List<LessonItem>) {

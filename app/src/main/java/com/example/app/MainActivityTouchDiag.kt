@@ -38,6 +38,11 @@ object MainActivityTouchDiag {
             "touchDown raw=(${ev.rawX},${ev.rawY}) local=(${ev.x},${ev.y}) | ${blockerLine(activity)}",
         )
         report(activity, "touchDown.suspicious")
+        activity.logMapTouchDiag(
+            "userTouchDown",
+            "SUSPICIOUS_TOUCH",
+            "Kullanıcı dokundu ama üst katman şüpheli — VERDICT/reasons satırına bak",
+        )
     }
 
     fun hasSuspiciousTouchState(activity: MainActivity): Boolean {

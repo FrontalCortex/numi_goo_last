@@ -128,6 +128,10 @@ class AbacusBeadController(
 
     fun isResetInProgress(): Boolean = resetInProgress
 
+    /** Kullanıcı tıklama/sürükleme veya tutorial [BeadAnimation] boncuk animasyonu sürüyor mu. */
+    fun isBeadAnimationInProgress(): Boolean =
+        animatingBeads.isNotEmpty() || externalBeadAnimationInProgress()
+
     /**
      * Calculates runtime movement distances from barrier spacing and applies %100 ratio.
      * Returns true if dynamic measurement succeeded, false if fallback values remain in use.

@@ -19,11 +19,11 @@
             android:id="@+id/progressBar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:visibility="gone"
             app:progress="0"
             app:progressBarThickness="6dp"
             app:progressbarColor="@color/circleForeground_color"
-            app:backgroundBarColor="@color/circleBackground_color">
-        </com.example.app.CircleProgressBar>
+            app:backgroundBarColor="@color/circleBackground_color" />
 
         <RelativeLayout
             android:layout_width="match_parent"

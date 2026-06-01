@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.animation.ObjectAnimator
 import android.widget.ImageView
 import android.widget.TextView
+import android.util.Log
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentCupBinding
 import com.example.app.model.LessonItem
@@ -59,6 +60,7 @@ class CupFragment : Fragment() {
 
             // Guide panel ile birlikte MapFragment'ı aç
             val mapFragment = MapFragment.newInstance(showGuide = true)
+            Log.d("klavyiye","work")
             
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainerID, mapFragment)

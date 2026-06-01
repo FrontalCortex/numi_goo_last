@@ -73,7 +73,20 @@ class ChestFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+            val lessonBeforeClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+            val guideScheduled = MarathonGuideStore.scheduleIfEligible(
+                requireContext(),
+                globalPartId,
+                mapFragmentStepIndex,
+                lessonBeforeClaim,
+                "ChestFragment.loginReturn",
+            )
             updateMapProgress()
+            val lessonAfterClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+            Log.d(
+                MarathonGuideStore.LOG_TAG,
+                "ChestFragment.loginReturn | guideScheduled=$guideScheduled stepIsFinishAfter=${lessonAfterClaim?.stepIsFinish}",
+            )
             GlobalValues.canConsumePendingLessonProgressAnimations = true
             LessonManager.refreshLessonsFromGlobalData()
             parentFragmentManager.beginTransaction()
@@ -84,6 +97,7 @@ class ChestFragment : Fragment() {
                 .remove(this@ChestFragment)
                 .commit()
             ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
+            (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("ChestFragment.loginReturn")
         }
     }
 
@@ -159,7 +173,33 @@ class ChestFragment : Fragment() {
                 }
                 // updateMapProgress() bu tıklamada stepIsFinish=true yapar; dart artışı için önceki durumu oku.
                 val lessonBeforeClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+                val guideScheduled = MarathonGuideStore.scheduleIfEligible(
+                    requireContext(),
+                    globalPartId,
+                    mapFragmentStepIndex,
+                    lessonBeforeClaim,
+                    "ChestFragment.claim",
+                )
+                LessonProgressDiag.log("ChestFragment.claim", "BEFORE updateMapProgress mapIdx=$mapFragmentStepIndex")
                 val incrementRocketDailyLessons = updateMapProgress()
+                val lessonAfterClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+                LessonProgressDiag.logItem(
+                    "ChestFragment.claim",
+                    globalPartId,
+                    mapFragmentStepIndex,
+                    lessonAfterClaim,
+                    "AFTER updateMapProgress",
+                )
+                MarathonGuideStore.logLessonSnapshot(
+                    "ChestFragment.claimAfterUpdate",
+                    globalPartId,
+                    mapFragmentStepIndex,
+                    lessonAfterClaim,
+                )
+                Log.d(
+                    MarathonGuideStore.LOG_TAG,
+                    "ChestFragment.claim | guideScheduled=$guideScheduled stepIsFinishAfter=${lessonAfterClaim?.stepIsFinish}",
+                )
                 val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
                 val isPerfectLesson = lessonSuccessRate >= 100f
                 val shouldIncrementDartProgress = when (val item = lessonBeforeClaim) {
@@ -185,6 +225,11 @@ class ChestFragment : Fragment() {
                         }
                     } else {
                         val hasMissionProgress = MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)
+                        Log.d(
+                            MarathonGuideStore.LOG_TAG,
+                            "ChestFragment.proceed | hasMissionProgress=$hasMissionProgress " +
+                                "guideScheduled=$guideScheduled badgeQueue=${levelUpPayloads.size}",
+                        )
                         if (hasMissionProgress) {
                             fm.beginTransaction()
                                 .setCustomAnimations(
@@ -203,15 +248,22 @@ class ChestFragment : Fragment() {
                                 .commitNowAllowingStateLoss()
                         } else {
                             val main = activity as? MainActivity
+                            main?.logMapTouchDiag(
+                                "ChestFragment.claim",
+                                "CLAIM_MAP_RETURN",
+                                "removeThenPrepare+finalize",
+                            )
+                            if (isAdded) {
+                                fm.beginTransaction()
+                                    .setCustomAnimations(
+                                        R.anim.slide_in_left,
+                                        R.anim.slide_out_left,
+                                    )
+                                    .remove(this@ChestFragment)
+                                    .commitNowAllowingStateLoss()
+                            }
                             main?.prepareMapReturnAfterLessonClaim()
                             val activityFm = requireActivity().supportFragmentManager
-                            fm.beginTransaction()
-                                .setCustomAnimations(
-                                    R.anim.slide_in_left,
-                                    R.anim.slide_out_left,
-                                )
-                                .remove(this@ChestFragment)
-                                .commitNowAllowingStateLoss()
                             main?.finalizeMapReturnAfterLessonClaim("ChestFragment.claimAfterRemove")
                             if (levelUpPayloads.isNotEmpty()) {
                                 BadgeProgressFirestore.openBadgeCelebration(activityFm, levelUpPayloads)
@@ -331,7 +383,22 @@ class ChestFragment : Fragment() {
      */
     private fun updateMapProgress(): Boolean {
         val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) //Global verilerden tıklanan indeksteki adım öğesini alıyor
-        val lessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
+        LessonProgressDiag.log(
+            "ChestFragment.updateMapProgress",
+            "ENTER mapIdx=$mapFragmentStepIndex part=$globalPartId recordScore=$recordScore",
+        )
+        LessonProgressDiag.logItem(
+            "ChestFragment.updateMapProgress",
+            globalPartId,
+            mapFragmentStepIndex,
+            lessonItem,
+            "BEFORE",
+        )
+        var index: Int = mapFragmentStepIndex + 1
+        if(lessonItem?.cupPoint1 != null){
+            index += 1
+        }
+        val lessonItem2 = LessonManager.getLessonItem(index)
         var shouldIncrementStepFinishMission = false
         var shouldIncrementStepCountMission = false
         var shouldIncrementPerfectStepCountMission = false
@@ -340,6 +407,10 @@ class ChestFragment : Fragment() {
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
 
             if(item.raceBusyLevel == 1){
+                LessonProgressDiag.log(
+                    "ChestFragment.updateMapProgress",
+                    "BRANCH raceBusyLevel==1 (race update; finish uses snapshot raceBusy=${item.raceBusyLevel})",
+                )
                 val updatedItem = item.copy(
                     raceBusyLevel = 0
                 )
@@ -371,8 +442,26 @@ class ChestFragment : Fragment() {
                 }
             }
 
+            when {
+                item.raceBusyLevel != null && item.raceBusyLevel != 1 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "SKIP finish block | raceBusyLevel=${item.raceBusyLevel} (not null, not 1) → stepIsFinish NOT set here",
+                    )
+                }
+                item.raceBusyLevel == 1 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "SKIP finish block | raceBusy still 1 in snapshot after race branch (stale closure?) → stepIsFinish NOT set",
+                    )
+                }
+            }
             if(item.raceBusyLevel == null){
                 if(item.stepCount == item.currentStep){
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "BRANCH FINISH stepCount==currentStep (${item.stepCount})",
+                    )
                     val baseForChest = if (item.type == LessonItem.TYPE_CHEST) {
                         LessonItem.mergeChestRun(item, recordScore, SeasonClock.currentSeason())
                     } else {
@@ -409,15 +498,26 @@ class ChestFragment : Fragment() {
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                    LessonProgressDiag.logItem(
+                        "ChestFragment.updateMapProgress",
+                        globalPartId,
+                        mapFragmentStepIndex,
+                        LessonManager.getLessonItem(mapFragmentStepIndex),
+                        "AFTER_FINISH_BRANCH",
+                    )
 
                     lessonItem2?.let { item2 ->
                         val updatedItem2 = item2.copy(
                             isCompleted = true
                         )
-                        LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
+                        LessonManager.updateLessonItem(requireContext(),index, updatedItem2)
                     }
                 }
                 else{
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "BRANCH INTERMEDIATE currentStep ${item.currentStep}→${item.currentStep + 1} (stepIsFinish stays false)",
+                    )
                     val updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,
                         currentStep = item.currentStep + 1,
@@ -441,9 +541,24 @@ class ChestFragment : Fragment() {
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
+                    LessonProgressDiag.logItem(
+                        "ChestFragment.updateMapProgress",
+                        globalPartId,
+                        mapFragmentStepIndex,
+                        LessonManager.getLessonItem(mapFragmentStepIndex),
+                        "AFTER_INTERMEDIATE_BRANCH",
+                    )
                 }
+            } else {
+                LessonProgressDiag.log(
+                    "ChestFragment.updateMapProgress",
+                    "SKIP all progress | raceBusyLevel=${item.raceBusyLevel} (finish block guard failed)",
+                )
             }
-        }
+        } ?: LessonProgressDiag.log(
+            "ChestFragment.updateMapProgress",
+            "SKIP lessonItem null at mapIdx=$mapFragmentStepIndex",
+        )
 
         if (shouldIncrementStepFinishMission) {
             MissionsProgressStore.recordStepFinishProgress(requireContext())

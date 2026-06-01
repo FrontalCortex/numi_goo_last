@@ -61,9 +61,16 @@ class MapFragment : Fragment() {
                 1000 -> randomUniqueNumberStrings(2, 7).map { n ->
                     MathOperation(null, n, null)
                 }
-                1003 -> randomUniqueNumberStrings(3, 6).map { n ->
-                    MathOperation(null, n, null)
-                }
+                1003 -> listOf(
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(3), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                    MathOperation(null,randomNumberChangeToString(5), null),
+                    MathOperation(null,randomNumberChangeToString(4), null),
+                )
                 1005 -> listOf(
                     1 to 2,
                     2 to 2,
@@ -226,50 +233,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateMathOperation2(),
                     MathOperationGenerator.generateMathOperation2(),
                     MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2()
-                )
-                25 -> listOf(
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2()
-                )
-                26 -> listOf(
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2()
-                )
-                27 -> listOf(
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2(),
-                    MathOperationGenerator.generateMathOperation2()
                 )
                 28 -> listOf(
                     MathOperationGenerator.generateMathOperationWithDigits(3,3),
@@ -280,338 +243,79 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateMathOperationWithDigits(3,3),
                     MathOperationGenerator.generateMathOperationWithDigits(3,3),
                     MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                )
-                29 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                )
-                30 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                )
-                31 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
                 )
                 32 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
+                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,4),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
                     MathOperationGenerator.generateMathOperationWithDigits(3,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4)
-                )
-                33 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4)
-                )
-                34 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4)
-                )
-                35 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(4,4)
                 )
                 36 -> listOf(
                     MathOperationGenerator.generateMathOperation(),
                     MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperation(),
-                    MathOperationGenerator.generateMathOperationWithDigits(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits(2,2),
                     MathOperationGenerator.generateMathOperationWithDigits(2,2),
                     MathOperationGenerator.generateMathOperationWithDigits(2,2),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
+                    MathOperationGenerator.generateMathOperationWithDigits(3,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,4),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,3),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
-                    MathOperationGenerator.generateMathOperationWithDigits(3,4),
+                    MathOperationGenerator.generateMathOperationWithDigits(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits(4,3),
                     MathOperationGenerator.generateMathOperationWithDigits(4,4)
                     )
                 37 -> listOf(
                     MathOperation(4, "+", 6),
                     MathOperation(4, "+", 9),
-                    MathOperation(15, "+", 5),
+                    MathOperation(17, "+", 8),
                     MathOperation(3, "+", 7),
                     MathOperation(3, "+", 8),
                     MathOperation(4, "+", 7),
                     MathOperation(4, "+", 6),
                     MathOperation(2, "+", 8),
-                    MathOperation(5, "+", 5)
+                    MathOperation(8, "+", 9)
                 )
-                38 -> listOf(
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                )
-                39 -> listOf(
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                )
-                40 -> listOf(
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                )
-                41 -> listOf(
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-
-                    )
-                43 -> listOf(
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                    MathOperationGenerator.generateMathOperation4(),
-                )
-                42 -> listOf(
-                    MathOperation(44, "+", 16),
-                    MathOperation(33, "+", 27),
-                    MathOperation(22, "+", 38),
-                    MathOperation(11, "+", 49),
-                    MathOperation(49, "+", 16),
-                    MathOperation(38, "+", 27),
-                    MathOperation(27, "+", 38),
-                    MathOperation(16, "+", 49),
-                    MathOperation(23, "+", 38),
-                    MathOperation(85, "+", 55))
+                38 -> MathOperationGenerator.generateMathOperationList3(8)
+                41 -> MathOperationGenerator.generateMathOperationList4(8)
                 44 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                )
-                45 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                )
-                46 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                )
-                47 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
                 )
                 48 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                )
-                49 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                )
-                50 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                )
-                51 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
                 )
                 52 -> listOf(
                     MathOperationGenerator.generateMathOperation3(),
                     MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
-                    MathOperationGenerator.generateMathOperation3(),
                     MathOperationGenerator.generateMathOperationWithDigits2(2,2),
                     MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigits2(3,3),
-
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,3),
+                    MathOperationGenerator.generateMathOperationWithDigits2(4,4),
                     )
                 53 -> listOf(
                     MathOperation(6,"+", 6),
@@ -646,69 +350,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateMathOperationBeadRule(),
                     MathOperationGenerator.generateMathOperationBeadRule(),
                     MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
                 )
-                56 -> listOf(
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    )
                 57 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                )
-                58 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                )
-                59 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                )
-                60 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
@@ -721,89 +364,26 @@ class MapFragment : Fragment() {
                 )
                 61 -> listOf(
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                )
-                62 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                )
-                63 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                )
-                64 -> listOf(
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
                 )
                 65 -> listOf(
                     MathOperationGenerator.generateMathOperationBeadRule(),
                     MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationBeadRule(),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(2,2),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
                     MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
-                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(3,3),
+                    MathOperationGenerator.generateMathOperationWithDigitsBeadRule(4,4),
 
                     )
                 66 -> listOf(
@@ -814,123 +394,27 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.irregularExtraction(2,2),
                     MathOperationGenerator.irregularExtraction(2,2),
                     MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                )
-                67 -> listOf(
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                )
-                68 -> listOf(
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                )
-                69 -> listOf(
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
-                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2)
                 )
                 70 -> listOf(
                     MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(5,5),
+                    MathOperationGenerator.irregularExtraction(4,4),
                     MathOperationGenerator.irregularExtraction(3,3),
                     MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-
-                    )
-                71 -> listOf(
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-
-                    )
-                72 -> listOf(
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-
-                    )
-                73 -> listOf(
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(3,3),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
+                    MathOperationGenerator.irregularExtraction(5,5),
                     MathOperationGenerator.irregularExtraction(4,4),
                     )
                 74 -> listOf(
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(2,2),
+                    MathOperationGenerator.irregularExtraction(3,3),
+                    MathOperationGenerator.irregularExtraction(3,3),
                     MathOperationGenerator.irregularExtraction(4,4),
                     MathOperationGenerator.irregularExtraction(4,4),
                     MathOperationGenerator.irregularExtraction(4,4),
                     MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(4,4),
-                    MathOperationGenerator.irregularExtraction(5,5),
-                    MathOperationGenerator.irregularExtraction(5,5),
-                    MathOperationGenerator.irregularExtraction(5,5),
                     MathOperationGenerator.irregularExtraction(5,5),
                     MathOperationGenerator.irregularExtraction(5,5),
                     MathOperationGenerator.irregularExtraction(5,5),
@@ -938,7 +422,7 @@ class MapFragment : Fragment() {
 
                 )
                 75 -> listOf(
-                    MathOperation(5, "-", 4),
+                    MathOperation(5, "-", 2),
                     MathOperation(7, "-", 3),
                     MathOperation(8, "-", 4),
                     MathOperation(60, "-", 20),
@@ -960,43 +444,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.irregularExtractionFiveRules(2,2),
                     MathOperationGenerator.irregularExtractionFiveRules(2,2),
                     MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
-
-                    )
-                77 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
-
-                    )
-                78 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
-                    MathOperationGenerator.irregularExtractionFiveRules(2,2)
 
                     )
                 79 -> listOf(
@@ -1008,125 +455,33 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.irregularExtractionFiveRules(3,3),
                     MathOperationGenerator.irregularExtractionFiveRules(3,3),
                     MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-
-                    )
-                80 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-
-                    )
-                81 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-
-                    )
-                82 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-
                     )
                 83 -> listOf(
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-
-                    )
-                84 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-
-                    )
-                85 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-
-                    )
-                86 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
 
                     )
                 87 -> listOf(
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRules(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
+                    MathOperationGenerator.irregularExtractionFiveRules(2,2),
                     MathOperationGenerator.irregularExtractionFiveRules(3,3),
                     MathOperationGenerator.irregularExtractionFiveRules(3,3),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
                     MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
-                    MathOperationGenerator.irregularExtractionFiveRulesMix(3,3),
+                    MathOperationGenerator.irregularExtractionFiveRulesMix(4,4),
+
 
                     )
                 88 -> listOf(
@@ -1151,34 +506,8 @@ class MapFragment : Fragment() {
                     MathOperation(17, "-", 8),
                     MathOperation(10, "-", 9)
                 )
-                90 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                )
-                91 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                )
+                90 -> MathOperationGenerator.extractionGenerateMathOperationList(9)
+                91 -> MathOperationGenerator.extractionGenerateMathOperationList(12)
                 92 -> listOf(
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
@@ -2583,13 +1912,11 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
                 78 -> listOf(
-                    MathOperationGenerator.generalCollectionOneDigits(2),
+                    MathOperationGenerator.generalCollectionOneDigits(6),
+                    MathOperationGenerator.generalCollectionOneDigits(6),
+                    MathOperationGenerator.generalCollectionOneDigits(6),
                 )
                 79 -> listOf(
-                    MathOperationGenerator.generalCollectionTwoDigits(4),
-                    MathOperationGenerator.generalCollectionTwoDigits(4),
-                    MathOperationGenerator.generalCollectionTwoDigits(4),
-                    MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
@@ -2598,14 +1925,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionTwoDigits(7),
                     MathOperationGenerator.generalCollectionTwoDigits(7),
                     MathOperationGenerator.generalCollectionTwoDigits(7),
-                    MathOperationGenerator.generalCollectionTwoDigits(7),
-                    MathOperationGenerator.generalCollectionTwoDigits(7)
                 )
                 81 -> listOf(
-                    MathOperationGenerator.generalCollectionThreeDigits(4),
-                    MathOperationGenerator.generalCollectionThreeDigits(4),
-                    MathOperationGenerator.generalCollectionThreeDigits(4),
-                    MathOperationGenerator.generalCollectionThreeDigits(4),
                     MathOperationGenerator.generalCollectionThreeDigits(4),
                     MathOperationGenerator.generalCollectionThreeDigits(4),
                     MathOperationGenerator.generalCollectionThreeDigits(4),
@@ -2614,13 +1935,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionThreeDigits(7),
                     MathOperationGenerator.generalCollectionThreeDigits(7),
                     MathOperationGenerator.generalCollectionThreeDigits(7),
-                    MathOperationGenerator.generalCollectionThreeDigits(7)
                 )
                 83 -> listOf(
-                    MathOperationGenerator.generalCollectionFourDigits(4),
-                    MathOperationGenerator.generalCollectionFourDigits(4),
-                    MathOperationGenerator.generalCollectionFourDigits(4),
-                    MathOperationGenerator.generalCollectionFourDigits(4),
                     MathOperationGenerator.generalCollectionFourDigits(4),
                     MathOperationGenerator.generalCollectionFourDigits(4),
                     MathOperationGenerator.generalCollectionFourDigits(4),
@@ -2629,7 +1945,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionFourDigits(7),
                     MathOperationGenerator.generalCollectionFourDigits(7),
                     MathOperationGenerator.generalCollectionFourDigits(7),
-                    MathOperationGenerator.generalCollectionFourDigits(7)
                 )
                 85 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRace(4),
@@ -2719,25 +2034,8 @@ class MapFragment : Fragment() {
                 binding.lessonsRecyclerView.scrollToPosition(GlobalValues.scrollPosition)
             }
             
-            // Guide panel gösterilmeli mi kontrol et
-            val showGuide = arguments?.getBoolean(ARG_SHOW_GUIDE, false) ?: false
-            if (showGuide) {
-                // CupFragment'ten ilk defa çağrıldığında mı kontrol et
-                val prefs = requireContext().getSharedPreferences("GuidePanelPrefs", android.content.Context.MODE_PRIVATE)
-                val cupFragmentGuideShown = prefs.getBoolean("cupFragment_guide_shown", false)
-                
-                if (!cupFragmentGuideShown) {
-                    // İlk defa gösteriliyorsa flag'i kaydet
-                    prefs.edit().putBoolean("cupFragment_guide_shown", true).apply()
-                    // Önce tıklamaları engelle (gecikme süresinde de tıklanamaz)
-                    disableMainActivityViews()
-                    disableMapFragmentViews() // Overlay ekle
-                    // MapFragment'in görünmesini beklemek için 1 saniye geciktir
-                    view.postDelayed({
-                        showGuidePanel()
-                    }, 1000)
-                }
-            }
+            // Bekleyen maraton rehberi (ChestFragment claim sonrası)
+            (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("MapFragment.onViewCreated")
         }
     }
     
@@ -2750,6 +2048,14 @@ class MapFragment : Fragment() {
         // Panel kapandığında MainActivity view'larını tekrar aktif et
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
+            if (mapTransparentTouchBlockActive || overlayView?.parent != null) {
+                MapTouchDiagnostics.reportFromFragment(
+                    this,
+                    "MapFragment.guidePanel.hide",
+                    "WARN_MAP_BLOCK_STILL_ON",
+                    "Panel kapandı ama enableMapFragmentViews henüz çağrılmamış olabilir",
+                )
+            }
         }
         
         // GuidePanel'in son adımına gelindiğinde recordLayout animasyonunu başlat
@@ -2772,7 +2078,7 @@ class MapFragment : Fragment() {
                         lessonsAdapter.startPulseAnimationForView(recordLayoutView, stopAnimationOnClick = false)
                     }
 
-                    // recordLayout'a tıklandığında: animasyonu durdur + paneli kapat + bottomSheet'i kapat + activity view'larını aktif et + flag'i kaydet
+                    // recordLayout'a tıklandığında: animasyonu durdur + paneli kapat + RecordFragment aç
                     binding.guidePanel.setTargetViewForLastStep(recordLayoutView) {
                         // Animasyonu durdur
                         val animator = recordLayoutView.tag as? android.animation.ValueAnimator
@@ -2795,8 +2101,14 @@ class MapFragment : Fragment() {
                             behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
                         }
 
-                        // Activity view'larını aktif et
                         enableMainActivityViews()
+                        enableMapFragmentViews()
+
+                        val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
+                        val chestItem = GlobalLessonData.getLessonItem(chestIndex)
+                        if (chestItem != null) {
+                            openRecordFragmentFromMarathonGuide(chestIndex, chestItem)
+                        }
 
                         // Panel kapatma işlemi setTargetViewForLastStep içinde otomatik yapılacak
                     }
@@ -2857,13 +2169,123 @@ class MapFragment : Fragment() {
         }, 1500) // Panel animasyonu (500ms) + ek güvenlik (1000ms)
         
         // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
-        // 1. listenin 3. index'i (0-based index: 3)
         view?.postDelayed({
-            val lessonItem = GlobalLessonData.getLessonItem(4)
+            val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
+            val lessonItem = GlobalLessonData.getLessonItem(chestIndex)
             if (lessonItem != null && ::lessonsAdapter.isInitialized) {
-                lessonsAdapter.showLessonBottomSheet(lessonItem, 4)
+                lessonsAdapter.showLessonBottomSheet(lessonItem, chestIndex)
             }
         }, 600) // Panel animasyonu tamamlandıktan sonra
+    }
+
+    private fun openRecordFragmentFromMarathonGuide(lessonIndex: Int, item: LessonItem) {
+        if (!isAdded) return
+        val act = requireActivity()
+        val openRecord = {
+            act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
+            act.supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.slide_in_left,
+                    android.R.anim.slide_out_right,
+                )
+                .replace(
+                    R.id.abacusFragmentContainer,
+                    RecordFragment.newInstance(globalPartId, lessonIndex, item.title),
+                )
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
+        (act as? MainActivity)?.runAbacusOverlayTransaction("marathonGuide.record") { openRecord() }
+            ?: openRecord()
+    }
+
+    private var marathonGuidePresentationScheduled = false
+
+    /** [MarathonGuideStore] pending bayrağı set edildiyse ve harita üstü temizse rehber panelini aç. */
+    fun maybeShowPendingMarathonGuide(caller: String) {
+        if (!isAdded || view == null) {
+            Log.d(
+                MarathonGuideStore.LOG_TAG,
+                "show SKIP | caller=$caller reason=fragment_not_ready isAdded=$isAdded viewNull=${view == null}",
+            )
+            return
+        }
+        val ctx = context ?: run {
+            Log.d(MarathonGuideStore.LOG_TAG, "show SKIP | caller=$caller reason=context_null")
+            return
+        }
+        MarathonGuideStore.logPrefsSnapshot(ctx, "maybeShow:$caller")
+        if (!MarathonGuideStore.isPending(ctx)) {
+            Log.d(MarathonGuideStore.LOG_TAG, "show SKIP | caller=$caller reason=not_pending")
+            return
+        }
+        if (MarathonGuideStore.isShown(ctx)) {
+            Log.w(
+                MarathonGuideStore.LOG_TAG,
+                "show SKIP | caller=$caller reason=already_shown clearing_stale_pending",
+            )
+            MarathonGuideStore.clearPending(ctx)
+            return
+        }
+        val main = activity as? MainActivity ?: run {
+            Log.d(MarathonGuideStore.LOG_TAG, "show SKIP | caller=$caller reason=activity_not_main")
+            return
+        }
+        val blockReason = main.marathonGuideMapBlockReason()
+        if (blockReason != null) {
+            Log.d(
+                MarathonGuideStore.LOG_TAG,
+                "show SKIP | caller=$caller reason=map_blocked block=$blockReason",
+            )
+            return
+        }
+        if (marathonGuidePresentationScheduled) {
+            Log.d(
+                MarathonGuideStore.LOG_TAG,
+                "show SKIP | caller=$caller reason=presentation_already_scheduled",
+            )
+            return
+        }
+
+        marathonGuidePresentationScheduled = true
+        Log.i(MarathonGuideStore.LOG_TAG, "show SCHEDULED | caller=$caller delay=1000ms")
+        disableMainActivityViews()
+        disableMapFragmentViews()
+        view?.postDelayed({
+            marathonGuidePresentationScheduled = false
+            if (!isAdded || view == null) {
+                Log.w(
+                    MarathonGuideStore.LOG_TAG,
+                    "show ABORT | caller=$caller reason=fragment_gone_after_delay",
+                )
+                return@postDelayed
+            }
+            if (!MarathonGuideStore.isPending(ctx)) {
+                Log.w(
+                    MarathonGuideStore.LOG_TAG,
+                    "show ABORT | caller=$caller reason=pending_cleared_during_delay",
+                )
+                return@postDelayed
+            }
+            val blockAfterDelay = main.marathonGuideMapBlockReason()
+            if (blockAfterDelay != null) {
+                Log.w(
+                    MarathonGuideStore.LOG_TAG,
+                    "show ABORT | caller=$caller reason=map_blocked_after_delay block=$blockAfterDelay",
+                )
+                return@postDelayed
+            }
+            LessonProgressDiag.logItem(
+                "MapFragment.maybeShowGuide",
+                globalPartId,
+                MarathonGuideStore.firstMarathonLessonIndex(),
+                GlobalLessonData.getLessonItem(MarathonGuideStore.firstMarathonLessonIndex()),
+                "showNOW",
+            )
+            Log.i(MarathonGuideStore.LOG_TAG, "show NOW | caller=$caller → showGuidePanel()")
+            showGuidePanel()
+            MarathonGuideStore.markShown(ctx)
+        }, 1000)
     }
     
     private fun disableMainActivityViews() {
@@ -2908,8 +2330,33 @@ class MapFragment : Fragment() {
     }
     
     private var overlayView: View? = null
-    
+    /** [disableMapFragmentViews] aktifken true — MapTouchDbg teşhisi. */
+    private var mapTransparentTouchBlockActive = false
+
+    data class MapTouchState(
+        val transparentOverlayAttached: Boolean,
+        val recyclerConsumingTouch: Boolean,
+        val touchRoutingEnabled: Boolean,
+    )
+
+    fun currentMapTouchState(): MapTouchState? {
+        if (!isAdded || view == null) return null
+        val overlayAttached = overlayView != null && overlayView?.parent != null
+        return MapTouchState(
+            transparentOverlayAttached = overlayAttached,
+            recyclerConsumingTouch = mapTransparentTouchBlockActive,
+            touchRoutingEnabled = !mapTransparentTouchBlockActive,
+        )
+    }
+
     private fun disableMapFragmentViews() {
+        mapTransparentTouchBlockActive = true
+        MapTouchDiagnostics.reportFromFragment(
+            this,
+            "MapFragment.disableMapFragmentViews",
+            "GUIDE_BLOCK_ON",
+            "Cup/guide panel — şeffaf overlay ekleniyor",
+        )
         // RecyclerView'ı devre dışı bırak (kaydırmayı engelle)
         binding.lessonsRecyclerView.apply {
             isClickable = false
@@ -2931,6 +2378,16 @@ class MapFragment : Fragment() {
     }
     
     private fun enableMapFragmentViews() {
+        val hadBlock = mapTransparentTouchBlockActive || (overlayView?.parent != null)
+        mapTransparentTouchBlockActive = false
+        if (hadBlock) {
+            MapTouchDiagnostics.reportFromFragment(
+                this,
+                "MapFragment.enableMapFragmentViews",
+                "MAP_BLOCK_OFF",
+                "Şeffaf map overlay / RV touch block kaldırıldı",
+            )
+        }
         // RecyclerView'ı tekrar aktif et
         binding.lessonsRecyclerView.apply {
             isClickable = true
@@ -3005,6 +2462,14 @@ class MapFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (mapTransparentTouchBlockActive || overlayView?.parent != null) {
+            MapTouchDiagnostics.reportFromFragment(
+                this,
+                "MapFragment.onDestroyView",
+                "WARN_TOUCH_BLOCK_LEAK",
+                "View yok edilirken şeffaf overlay / RV block hâlâ aktifti",
+            )
+        }
         askQuestionBounceAnimators?.forEach { it.cancel() }
         askQuestionBounceAnimators = null
         super.onDestroyView()
@@ -3122,19 +2587,65 @@ class MapFragment : Fragment() {
         if (!isAdded || view == null) return
         enableMapFragmentViews()
         enableMainActivityViews()
+        (activity as? MainActivity)?.logMapTouchDiag(
+            "MapFragment.enableMapTouchRouting",
+            "ENABLE_MAP_TOUCH",
+            "Recycler + MainActivity listener'lar sıfırlandı",
+        )
     }
 
     /** Ders overlay (Abacus quit, ChestResult vb.) kapandıktan sonra liste ve dokunuşları yenile. */
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
+        val chestIdx = MarathonGuideStore.firstMarathonLessonIndex()
+        LessonProgressDiag.logListChestFinishSummary(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            globalPartId,
+            GlobalLessonData.lessonItems,
+        )
+        LessonProgressDiag.logItem(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            globalPartId,
+            chestIdx,
+            GlobalLessonData.getLessonItem(chestIdx),
+            "marathonCard",
+        )
+        (activity as? MainActivity)?.logMapTouchDiag(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            "NOTIFY_VISIBLE_ENTER",
+        )
         (activity as? MainActivity)?.restoreMapUiAfterLessonOverlayDismiss()
         GlobalValues.canConsumePendingLessonProgressAnimations = true
         enableMapTouchRouting()
+        (activity as? MainActivity)?.logMapTouchDiag(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            "NOTIFY_VISIBLE_DONE",
+        )
         binding.lessonsRecyclerView.visibility = View.VISIBLE
         if (::lessonsAdapter.isInitialized) {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
         binding.lessonsRecyclerView.invalidate()
+        maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss")
+        scheduleMarathonGuideRetriesAfterMapVisible()
+    }
+
+    /** Sezon kapısı / overlay gecikmesinden sonra bekleyen maraton rehberini tekrar dene. */
+    private fun scheduleMarathonGuideRetriesAfterMapVisible() {
+        val ctx = context ?: return
+        if (!MarathonGuideStore.isPending(ctx)) return
+        val delaysMs = longArrayOf(1_200L, 2_800L)
+        delaysMs.forEach { delay ->
+            view?.postDelayed({
+                if (!isAdded || view == null) return@postDelayed
+                if (!MarathonGuideStore.isPending(requireContext())) return@postDelayed
+                LessonProgressDiag.log(
+                    "MapFragment.guideRetry",
+                    "delay=${delay}ms pending still true → maybeShow",
+                )
+                maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss+retry@${delay}ms")
+            }, delay)
+        }
     }
 
     /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
@@ -3218,11 +2729,23 @@ class MapFragment : Fragment() {
                 "MapFragment.onResume | shouldReconcile=$shouldReconcile",
             )
             if (shouldReconcile) {
+                act.logMapTouchDiag(
+                    "MapFragment.onResume",
+                    "PATH_RECONCILE",
+                    "shouldReconcile=true",
+                )
                 act.reconcileAbacusOverlayWhenMapIsBase()
             } else {
+                act.logMapTouchDiag(
+                    "MapFragment.onResume",
+                    "PATH_SANITIZE",
+                    "shouldReconcile=false",
+                )
                 act.sanitizeMapTouchSurface("MapFragment.onResume")
             }
             act.requestSeasonLeaderboardRewardGateIfPending()
+            act.tryShowPendingMarathonGuideOnMap("MapFragment.onResume")
+            act.logMapTouchDiag("MapFragment.onResume", "ON_RESUME_POST_DONE")
             act.logTouchDiag("MapFragment.onResume.post")
         }
     }

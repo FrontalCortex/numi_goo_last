@@ -16,11 +16,21 @@
         app:layout_constraintVertical_bias="0"
         app:layout_constraintHeight_percent="0.65"
         android:background="@drawable/guide_panel_background"
-        android:clickable="true"
-        android:focusable="true"
+        android:clickable="false"
+        android:focusable="false"
         android:padding="10dp">
 
-        <!-- Resim -->
+        <LinearLayout
+            android:id="@+id/stepDotsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
         <ImageView
             android:id="@+id/ivGuideImage"
             android:layout_width="200dp"
@@ -29,12 +39,11 @@
             android:visibility="visible"
             android:src="@drawable/teacher_emotes_gpt3"
             android:scaleType="centerCrop"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/stepDotsContainer"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="30dp"/>
+            android:layout_marginTop="16dp"/>
 
-        <!-- Text - Kalan alanın ortasında -->
         <TextView
             android:id="@+id/tvGuideText"
             android:layout_width="0dp"
@@ -54,7 +63,7 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp" />
     </androidx.constraintlayout.widget.ConstraintLayout>
-    <!-- Back Butonu -->
+
     <ImageButton
         app:layout_constraintStart_toStartOf="@id/panelContent"
         app:layout_constraintBottom_toBottomOf="@id/panelContent"
@@ -66,8 +75,20 @@
         android:paddingLeft="20dp"
         android:paddingBottom="10dp"
         android:background="@drawable/guide_panel_background"
-        android:contentDescription="Geri"
-        />
+        android:contentDescription="Geri" />
+
+    <ImageButton
+        android:id="@+id/btnForward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|bottom"
+        android:background="@drawable/guide_panel_background"
+        android:contentDescription="İleri"
+        android:paddingLeft="20dp"
+        android:paddingBottom="10dp"
+        android:rotationY="180"
+        android:src="@drawable/back_circle_button"
+        app:layout_constraintBottom_toBottomOf="@id/panelContent"
+        app:layout_constraintEnd_toEndOf="@id/panelContent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

@@ -38,7 +38,7 @@
         android:id="@+id/resultTitleComment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Başarı oranı %80'den düşük!"
+        android:text="Başarı oranı %50'den düşük!"
         android:textColor="#E00000"
         android:textSize="20sp"
         android:textStyle="bold"

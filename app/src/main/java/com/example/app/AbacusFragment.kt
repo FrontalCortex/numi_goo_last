@@ -148,6 +148,13 @@ class AbacusFragment : Fragment() {
     private lateinit var lessonItem : LessonItem
     private var currentTime: String = "0:00"
     private lateinit var rulesBookButton: ImageView
+    private lateinit var rulesPanelButton: ImageView
+
+    private enum class RulesPanelTableType {
+        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION
+    }
+
+    private var activeRulesPanelTable = RulesPanelTableType.NONE
 
     // Rehber paneli sistemi
     data class GuideContent(
@@ -202,7 +209,10 @@ class AbacusFragment : Fragment() {
         findIDs()
         //global lessonItem alınıyor
         rulesBookButton = binding.rulesBookButton
+        rulesPanelButton = binding.rulesPanelButton
         rulesBookButtonClick()
+        rulesPanelButtonClick()
+        updateActiveRulesPanelTable()
         timerTextView = binding.timerTextView
         fabHint = binding.fabHint
         tvHint = binding.tvHint
@@ -372,9 +382,24 @@ class AbacusFragment : Fragment() {
             2 -> listOf(
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
+                    text = "Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.",
 
                 ),
+                GuideContent(
+                    imageResource = R.drawable.teacher_emotes_stick,
+                    text = "Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.",
+
+                    bubbleAnimationTarget = rulesPanelButton,
+                    bubbleAnimationMaxScale = 1.1F,
+                    requiredClickTarget = rulesPanelButton, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın
+                ),
+            )
+            3 -> listOf(
+                GuideContent(
+                    imageResource = R.drawable.teacher_emotes_gpt4,
+                    text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
+
+                    ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
                     text = "Burada öğrendiğin kurallar yer alır.",
@@ -653,6 +678,9 @@ class AbacusFragment : Fragment() {
         // Diğer butonları da tekrar tıklanabilir yap
         binding.quitButton.isClickable = true
         binding.rulesBookButton.isClickable = true
+        rulesPanelButton.isClickable = true
+        rulesPanelButton.isFocusable = true
+        rulesPanelButtonClick()
         binding.askQuestionButton.isClickable = true
         binding.askQuestionButton.isFocusable = true
         binding.askQuestionButton.isEnabled = true
@@ -757,6 +785,8 @@ class AbacusFragment : Fragment() {
                         .commit()
                     rulesBookSetup()
                     changeRulesTableText()
+                } else if (content.requiredClickTarget == rulesPanelButton) {
+                    openRulesPanelTableForGuide()
                 }
                 
                 // Guide panel'i kapat
@@ -837,6 +867,8 @@ class AbacusFragment : Fragment() {
                         .commit()
                     rulesBookSetup()
                     changeRulesTableText()
+                } else if (content.requiredClickTarget == rulesPanelButton) {
+                    openRulesPanelTableForGuide()
                 }
                 
                 // Guide panel'i kapat
@@ -1067,74 +1099,132 @@ class AbacusFragment : Fragment() {
 
     }
 
+    private fun rulesPanelButtonClick() {
+        rulesPanelButton.setOnClickListener {
+            onRulesPanelButtonClicked()
+        }
+    }
+
+    private fun onRulesPanelButtonClicked() {
+        updateActiveRulesPanelTable()
+        toggleRulesPanelTable()
+    }
+
+    /** Rehber adımında panel tablosu her zaman açılır (toggle değil). */
+    private fun openRulesPanelTableForGuide() {
+        updateActiveRulesPanelTable()
+        showActiveRulesPanelTable()
+        rulesPanelButton.bringToFront()
+    }
+
+    private fun updateActiveRulesPanelTable() {
+        val index = lessonItem.mapFragmentIndex!!
+        activeRulesPanelTable = when {
+            index > 28 && globalPartId == 1 -> RulesPanelTableType.BEAD
+            index > 22 && globalPartId == 1 -> RulesPanelTableType.TEN
+            index > 16 && globalPartId == 1 -> RulesPanelTableType.TEN_FIVE
+            index >= 12 && globalPartId == 1 -> RulesPanelTableType.FIVE
+            index > 10 && globalPartId == 2 -> RulesPanelTableType.TEN_EXTRACTION
+            index > 5 && globalPartId == 2 -> RulesPanelTableType.FIVE
+            else -> RulesPanelTableType.NONE
+        }
+    }
+
+    private fun hideAllRulesPanelTables() {
+        binding.rulesPanelScrollView.visibility = View.GONE
+        binding.fiveRuleTableLinearLayout.visibility = View.GONE
+        binding.tenRuleFiveTableLayout.visibility = View.GONE
+        binding.tenRuleTableLinearLayout.visibility = View.GONE
+        binding.BeadRuleTable.visibility = View.GONE
+        binding.tenRuleExtractionTableLayout.visibility = View.GONE
+    }
+
+    private fun applyRulesPanelFiveText() {
+        if (globalPartId == 2 && lessonItem.mapFragmentIndex!! > 5) {
+            binding.fiveText.text = "Çıkarılacak Sayı"
+            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
+
+        }else{
+            binding.fiveText.text = "Eklenecek sayı"
+            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
+        }
+    }
+
+    private fun showActiveRulesPanelTable() {
+        hideAllRulesPanelTables()
+        val activeTable = when (activeRulesPanelTable) {
+            RulesPanelTableType.FIVE -> {
+                applyRulesPanelFiveText()
+                binding.fiveRuleTableLinearLayout
+            }
+            RulesPanelTableType.TEN_FIVE -> binding.tenRuleFiveTableLayout
+            RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
+            RulesPanelTableType.BEAD -> binding.BeadRuleTable
+            RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
+            RulesPanelTableType.NONE -> null
+        }
+        activeTable?.let {
+            binding.rulesPanelScrollView.visibility = View.VISIBLE
+            it.visibility = View.VISIBLE
+            binding.rulesPanelScrollView.bringToFront()
+        }
+    }
+
+    private fun toggleRulesPanelTable() {
+        if (activeRulesPanelTable == RulesPanelTableType.NONE) return
+        if (binding.rulesPanelScrollView.visibility == View.VISIBLE) {
+            hideAllRulesPanelTables()
+        } else {
+            showActiveRulesPanelTable()
+        }
+    }
+
     private fun rulesBookVisibility(){
         if (lessonItem.mapFragmentIndex!! < 12 && globalPartId == 1) {
+            rulesPanelButton.visibility = View.INVISIBLE
+            rulesBookButton.visibility = View.INVISIBLE
+        }else if (lessonItem.mapFragmentIndex!! < 17 && globalPartId == 1) {
             rulesBookButton.visibility = View.INVISIBLE
         }
         else if (lessonItem.mapFragmentIndex!! < 5 && globalPartId == 2) {
             rulesBookButton.visibility = View.INVISIBLE
+            rulesPanelButton.visibility = View.INVISIBLE
         }
     }
     private fun rulesBookSetup(){
         childFragmentManager.executePendingTransactions()
-        Log.d("sansas","1")
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
 
-        if(lessonItem.mapFragmentIndex!! > 11 && globalPartId == 1){
+        if(lessonItem.mapFragmentIndex!! >= 12 && globalPartId == 1){
+            rulesPanelButton.visibility = View.VISIBLE
+        }
+        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 1){
             rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleTableVisibility(View.GONE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.GONE)
             rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
         }
-        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 1) {
-            rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-        }
-        else if(lessonItem.mapFragmentIndex!! in 16..21 && globalPartId == 1) {
-            rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+         if(lessonItem.mapFragmentIndex!! > 22 && globalPartId == 1) {
             rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
-        }
-        else if(lessonItem.mapFragmentIndex!! in 22..28 && globalPartId == 1) {
-            rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
-        }
-        else if(lessonItem.mapFragmentIndex!! in 29..32 && globalPartId == 1){
-            rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+         }
+        if(lessonItem.mapFragmentIndex!! > 28 && globalPartId == 1) {
             rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
         }
-        else if(lessonItem.mapFragmentIndex!! in 6..10 && globalPartId == 2){
+        if(lessonItem.mapFragmentIndex!! > 5 && globalPartId == 2){
+            rulesPanelButton.visibility = View.VISIBLE
             rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.GONE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.GONE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
+            rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleExtractionTableLayout(View.GONE)
         }
-        else if(lessonItem.mapFragmentIndex!! in 11..15 && globalPartId == 2){
-            rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.GONE)
+        if(lessonItem.mapFragmentIndex!! > 10 && globalPartId == 2){
+            rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
         }
         else if(lessonItem.mapFragmentIndex!! in 16..20 && globalPartId == 2){
             rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
@@ -1142,38 +1232,47 @@ class AbacusFragment : Fragment() {
         }
         else if(globalPartId == 3){
             rulesBookButton.visibility = View.VISIBLE
-            val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
             rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
         }
+        applyRulesDividersVisibility(rulesFragment)
+        updateActiveRulesPanelTable()
+    }
+
+    private fun applyRulesDividersVisibility(rulesFragment: RulesFragment?) {
+        val index = lessonItem.mapFragmentIndex!!
+        val (view1, view2, view3) = when {
+            globalPartId == 1 && index > 11 -> Triple(
+                if (index > 16) View.VISIBLE else View.INVISIBLE,
+                if (index > 22) View.VISIBLE else View.INVISIBLE,
+                if (index > 28) View.VISIBLE else View.INVISIBLE
+            )
+            globalPartId == 2 && index in 11..15 -> Triple(
+                View.VISIBLE,
+                View.VISIBLE,
+                View.INVISIBLE
+            )
+            globalPartId == 2 && index in 16..20 -> Triple(
+                View.VISIBLE,
+                View.VISIBLE,
+                View.VISIBLE
+            )
+            globalPartId == 3 -> Triple(
+                View.VISIBLE,
+                View.VISIBLE,
+                View.VISIBLE
+            )
+            else -> Triple(View.INVISIBLE, View.INVISIBLE, View.INVISIBLE)
+        }
+        rulesFragment?.updateRulesDividerVisibilities(view1, view2, view3)
     }
 
     private fun changeRulesTableText(){
         val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
-        rulesFragment?.let { fragment ->
-            // Fragment'ın view'ından widget'a erişim
-            val fiveText = fragment.view?.findViewById<TextView>(R.id.fiveText)
-            val tenText = fragment.view?.findViewById<TextView>(R.id.tenText)
-            val tenTextSecond = fragment.view?.findViewById<TextView>(R.id.tenTextSecond)
-            val beadText = fragment.view?.findViewById<TextView>(R.id.beadText)
-
-            if (globalPartId == 2) {
-                // Widget'ı kullan
-                fiveText?.text = "Çıkarılacak Sayı"
-                tenText?.text = "Çıkarılacak Sayı"
-                tenTextSecond?.text = "Çıkarılacak Sayı"
-                beadText?.text = "Çıkarılacak Sayı"
-
-            }
-            else{
-                fiveText?.text = "Eklenecek Sayı"
-                tenText?.text = "Eklenecek Sayı"
-                tenTextSecond?.text = "Eklenecek Sayı"
-                beadText?.text = "Eklenecek Sayı"
-            }
-        }
+        rulesFragment?.applyRulesTableHeaderTexts(globalPartId == 2)
     }
     private fun splitTextEqually(text: String): String {
         val words = text.split(" ")
@@ -1539,8 +1638,8 @@ class AbacusFragment : Fragment() {
     /** [closeFragment] kayma animasyonu bittikten sonra: mevcut haritaya dönüş akışı. */
     private fun performAbacusDismiss() {
         val main = activity as? MainActivity
+        main?.logMapTouchDiag("AbacusFragment.quit", "DISMISS_ENTER", "path=removeThenPrepare+finalize")
         val fm = parentFragmentManager
-        main?.prepareMapReturnAfterLessonClaim()
         if (fm.backStackEntryCount > 0) {
             fm.popBackStack()
             fm.executePendingTransactions()
@@ -1550,6 +1649,7 @@ class AbacusFragment : Fragment() {
                 .remove(this@AbacusFragment)
                 .commitNowAllowingStateLoss()
         }
+        main?.prepareMapReturnAfterLessonClaim()
         main?.finalizeMapReturnAfterLessonClaim("AbacusFragment.quit")
     }
 
@@ -2654,7 +2754,7 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 80f) {
+                                    if (currentSuccessRate() < 0f) { //50 yapılacak
                                         showLessonResultFalseOnly()
                                     } else {
                                         showChestResult()
@@ -2758,7 +2858,7 @@ class AbacusFragment : Fragment() {
                                 showCurrentOperation()
                             } else {
                                 if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 80f) {
+                                    if (currentSuccessRate() < 0f) { //50 yapılacak
                                         showLessonResultFalseOnly()
                                     } else {
                                         showChestResult()
