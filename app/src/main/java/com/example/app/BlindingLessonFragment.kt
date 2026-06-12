@@ -607,14 +607,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if (isDailyQuestionMode) {
-                                    handleDailyQuestionLessonComplete()
-                                } else if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
-                                    showChestResult()
-                                }
-                                else{
-                                    showLessonResult()
-                                }
+                                finishLessonAfterLastQuestion()
                             }
                             true
                         }
@@ -681,6 +674,25 @@ class BlindingLessonFragment : Fragment() {
                                     .start()
                                 return@setOnTouchListener true
                             }
+                            if (isRacePanelLesson()) {
+                                v.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(400)
+                                    .setInterpolator(BounceInterpolator())
+                                    .start()
+                                binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                                incorrectPanel.animate()
+                                    .translationY(incorrectPanel.height.toFloat())
+                                    .setDuration(200)
+                                    .setInterpolator(AccelerateInterpolator())
+                                    .withEndAction {
+                                        incorrectPanel.visibility = View.GONE
+                                        showLessonResultFalse()
+                                    }
+                                    .start()
+                                return@setOnTouchListener true
+                            }
                             currentIndex++
                             v.animate()
                                 .scaleX(1f)
@@ -703,12 +715,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2 || lessonItem.raceBusyLevel != null){
-                                    showChestResult()
-                                }
-                                else{
-                                    showLessonResult()
-                                }
+                                finishLessonAfterLastQuestion()
                             }
                             true
                         }
@@ -926,6 +933,49 @@ class BlindingLessonFragment : Fragment() {
             else -> false
         }
     }
+    private fun isRacePanelLesson(): Boolean = lessonItem.raceBusyLevel != null
+
+    private fun raceLessonPassed(): Boolean =
+        totalQuestions > 0 && correctAnswer == totalQuestions
+
+    private fun finishLessonAfterLastQuestion() {
+        when {
+            isDailyQuestionMode -> handleDailyQuestionLessonComplete()
+            isRacePanelLesson() -> {
+                if (raceLessonPassed()) showChestResult() else showLessonResultFalse()
+            }
+            lessonItem.type == 2 -> showChestResult()
+            else -> showLessonResult()
+        }
+    }
+
+    private fun lessonResultArgs(): Bundle {
+        val successRate = if (totalQuestions > 0) {
+            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        } else {
+            0f
+        }
+        val dersPuani = (successRate * 5f).toInt()
+        return Bundle().apply {
+            putInt("correctAnswers", correctAnswer)
+            putInt("totalQuestions", totalQuestions)
+            putFloat("successRate", successRate)
+            putInt("dersPuani", dersPuani)
+        }
+    }
+
+    private fun showLessonResultFalse() {
+        val lessonResultFalse = LessonResultFalse()
+        lessonResultFalse.arguments = lessonResultArgs()
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+            .replace(R.id.abacusFragmentContainer, lessonResultFalse)
+            .commit()
+    }
+
     private fun showChestResult() {
         val chestResultFragment = if (lessonItem.raceBusyLevel != null) {
             ChestFragment()
@@ -1005,49 +1055,14 @@ class BlindingLessonFragment : Fragment() {
 
     private fun showLessonResult() {
         val lessonResultFragment = LessonResult()
-        val lessonResultFalse = LessonResultFalse()
-
-        // Başarı oranını hesapla
-        val successRate = if (totalQuestions > 0) {
-            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
-        } else {
-            0f
-        }
-        val dersPuani = (successRate * 5f).toInt()
-
-        val args = Bundle().apply {
-            putInt("correctAnswers", correctAnswer)
-            putInt("totalQuestions", totalQuestions)
-            putFloat("successRate", successRate)
-            putInt("dersPuani", dersPuani)
-        }
-        lessonResultFragment.arguments = args
-        val argsFalse = Bundle().apply {
-            putInt("correctAnswers", correctAnswer)
-            putInt("totalQuestions", totalQuestions)
-            putFloat("successRate", successRate)
-            putInt("dersPuani", dersPuani)
-        }
-        lessonResultFalse.arguments = argsFalse
-
-        // Yeni fragment'ı abacus container'a ekle
-        if(successRate < 0) {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
-                )
-                .replace(R.id.abacusFragmentContainer, lessonResultFalse)
-                .commit()
-        } else {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
-                )
-                .replace(R.id.abacusFragmentContainer, lessonResultFragment)
-                .commit()
-        }
+        lessonResultFragment.arguments = lessonResultArgs()
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+            .replace(R.id.abacusFragmentContainer, lessonResultFragment)
+            .commit()
     }
     private fun startShowingSequence(sequence: List<Int>) {
         stopSequencePlayback()

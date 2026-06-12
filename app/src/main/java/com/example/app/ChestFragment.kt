@@ -87,8 +87,7 @@ class ChestFragment : Fragment() {
                 MarathonGuideStore.LOG_TAG,
                 "ChestFragment.loginReturn | guideScheduled=$guideScheduled stepIsFinishAfter=${lessonAfterClaim?.stepIsFinish}",
             )
-            GlobalValues.canConsumePendingLessonProgressAnimations = true
-            LessonManager.refreshLessonsFromGlobalData()
+            (activity as? MainActivity)?.notifyMapVisibleAfterLessonClaim("ChestFragment.loginReturn")
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     R.anim.slide_in_left,
@@ -161,6 +160,11 @@ class ChestFragment : Fragment() {
             binding.claimRewardButton.isEnabled = false
 
             try {
+                LessonProgressDiag.log(
+                    "ChestFragment.claim",
+                    "ENTER mapIdx=$mapFragmentStepIndex part=$globalPartId tutorial=${GlobalValues.currentTutorialNumber} " +
+                        "successRate=$lessonSuccessRate recordScore=$recordScore",
+                )
                 val beforeSnap = MissionsProgressStore.getSnapshot(requireContext())
                 MissionsProgressStore.applyPendingLearningMinutes(requireContext())
                 if (pendingChestRecordBreakMission) {
@@ -173,6 +177,13 @@ class ChestFragment : Fragment() {
                 }
                 // updateMapProgress() bu tıklamada stepIsFinish=true yapar; dart artışı için önceki durumu oku.
                 val lessonBeforeClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+                LessonProgressDiag.logItem(
+                    "ChestFragment.claim",
+                    globalPartId,
+                    mapFragmentStepIndex,
+                    lessonBeforeClaim,
+                    "BEFORE updateMapProgress",
+                )
                 val guideScheduled = MarathonGuideStore.scheduleIfEligible(
                     requireContext(),
                     globalPartId,
@@ -182,6 +193,15 @@ class ChestFragment : Fragment() {
                 )
                 LessonProgressDiag.log("ChestFragment.claim", "BEFORE updateMapProgress mapIdx=$mapFragmentStepIndex")
                 val incrementRocketDailyLessons = updateMapProgress()
+                // Ders görev sayaçları updateMapProgress içinde yazılır; afterSnap bundan sonra okunmalı.
+                val afterSnap = MissionsProgressStore.getSnapshot(requireContext(), applyCloudHydrate = false)
+                LessonProgressDiag.logItemDelta(
+                    "ChestFragment.claim",
+                    globalPartId,
+                    mapFragmentStepIndex,
+                    lessonBeforeClaim,
+                    LessonManager.getLessonItem(mapFragmentStepIndex),
+                )
                 val lessonAfterClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
                 LessonProgressDiag.logItem(
                     "ChestFragment.claim",
@@ -200,7 +220,6 @@ class ChestFragment : Fragment() {
                     MarathonGuideStore.LOG_TAG,
                     "ChestFragment.claim | guideScheduled=$guideScheduled stepIsFinishAfter=${lessonAfterClaim?.stepIsFinish}",
                 )
-                val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
                 val isPerfectLesson = lessonSuccessRate >= 100f
                 val shouldIncrementDartProgress = when (val item = lessonBeforeClaim) {
                     null -> false
@@ -225,12 +244,42 @@ class ChestFragment : Fragment() {
                         }
                     } else {
                         val hasMissionProgress = MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)
+                        val missionCounterDelta = beforeSnap.dailyStepFinishCount != afterSnap.dailyStepFinishCount ||
+                            beforeSnap.weeklyStepFinishCount != afterSnap.weeklyStepFinishCount ||
+                            beforeSnap.dailyStepIncrementCount != afterSnap.dailyStepIncrementCount ||
+                            beforeSnap.weeklyStepIncrementCount != afterSnap.weeklyStepIncrementCount ||
+                            beforeSnap.dailyPerfectStepIncrementCount != afterSnap.dailyPerfectStepIncrementCount ||
+                            beforeSnap.weeklyPerfectStepIncrementCount != afterSnap.weeklyPerfectStepIncrementCount ||
+                            beforeSnap.dailyChestRecordBreakCount != afterSnap.dailyChestRecordBreakCount ||
+                            beforeSnap.weeklyChestRecordBreakCount != afterSnap.weeklyChestRecordBreakCount ||
+                            beforeSnap.dailyChestStarGainCount != afterSnap.dailyChestStarGainCount ||
+                            beforeSnap.weeklyChestStarGainCount != afterSnap.weeklyChestStarGainCount ||
+                            beforeSnap.dailyLearnMinutesCount != afterSnap.dailyLearnMinutesCount ||
+                            beforeSnap.weeklyLearnMinutesCount != afterSnap.weeklyLearnMinutesCount
+                        LessonProgressDiag.logMissionPanelDecision(
+                            "ChestFragment.proceed",
+                            requireContext(),
+                            beforeSnap,
+                            afterSnap,
+                            hasMissionProgress,
+                        )
                         Log.d(
                             MarathonGuideStore.LOG_TAG,
                             "ChestFragment.proceed | hasMissionProgress=$hasMissionProgress " +
-                                "guideScheduled=$guideScheduled badgeQueue=${levelUpPayloads.size}",
+                                "guideScheduled=$guideScheduled badgeQueue=${levelUpPayloads.size} " +
+                                "missionSnapLocalOnly=true",
                         )
                         if (hasMissionProgress) {
+                            LessonProgressDiag.recordClaim(
+                                mapIdx = mapFragmentStepIndex,
+                                partId = globalPartId,
+                                itemAfter = lessonAfterClaim,
+                                route = "MISSION_PANEL",
+                                hasMissionProgress = true,
+                                missionCounterDelta = missionCounterDelta,
+                                incrementRocketDailyLessons = incrementRocketDailyLessons,
+                                tutorialNumber = GlobalValues.currentTutorialNumber,
+                            )
                             fm.beginTransaction()
                                 .setCustomAnimations(
                                     R.anim.slide_in_left,
@@ -247,6 +296,16 @@ class ChestFragment : Fragment() {
                                 )
                                 .commitNowAllowingStateLoss()
                         } else {
+                            LessonProgressDiag.recordClaim(
+                                mapIdx = mapFragmentStepIndex,
+                                partId = globalPartId,
+                                itemAfter = lessonAfterClaim,
+                                route = "MAP_DIRECT",
+                                hasMissionProgress = false,
+                                missionCounterDelta = missionCounterDelta,
+                                incrementRocketDailyLessons = incrementRocketDailyLessons,
+                                tutorialNumber = GlobalValues.currentTutorialNumber,
+                            )
                             val main = activity as? MainActivity
                             main?.logMapTouchDiag(
                                 "ChestFragment.claim",
@@ -406,43 +465,33 @@ class ChestFragment : Fragment() {
             // İlk adım true, diğerleri false olacak şekilde stepCompletionStatus oluştur
             val newStepCompletionStatus = List(item.stepCount) { index -> index < item.currentStep }
 
-            if(item.raceBusyLevel == 1){
-                LessonProgressDiag.log(
-                    "ChestFragment.updateMapProgress",
-                    "BRANCH raceBusyLevel==1 (race update; finish uses snapshot raceBusy=${item.raceBusyLevel})",
-                )
-                val updatedItem = item.copy(
-                    raceBusyLevel = 0
-                )
-                LessonManager.updateRaceItem(requireContext(),mapFragmentStepIndex, updatedItem)
-                
-                // Güncelleme sonrası yeni değeri al
-                val updatedLessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
-                Log.d("senko", "Güncellenmiş: ${updatedLessonItem?.raceBusyLevel}")
-                Log.d("senko", "Güncellenmiş: ${updatedLessonItem?.title}")
-                Log.d("senko", globalPartId.toString())
-
-                lessonItem2?.let { item2 ->
-                    val updatedItem2 = item2.copy(
-                        raceBusyLevel = 1
+            when (item.raceBusyLevel) {
+                1 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "BRANCH raceBusyLevel==1 (race update; finish uses snapshot raceBusy=${item.raceBusyLevel})",
                     )
-                    LessonManager.updateRaceItem(requireContext(),mapFragmentStepIndex+1, updatedItem2)
-                    
-                    // Güncelleme sonrası yeni değeri al
-                    val updatedLessonItem2 = LessonManager.getLessonItem(mapFragmentStepIndex+1)
-                    Log.d("ukucc", "Güncellenmiş 2: ${updatedLessonItem2?.raceBusyLevel}")
-                    Log.d("ukucc", "Güncellenmiş 2: ${updatedLessonItem2?.title}")
-
+                    val updatedItem = item.copy(raceBusyLevel = 0)
+                    LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
+                    unlockNextRaceItemSkippingCompleted(mapFragmentStepIndex)
                 }
-
-
-                // UI'ı yenile - RaceAdapter'ı güncelle (sadece race panel açıksa)
-                if (isRacePanelOpen()) {
-                    //notifyRaceAdapterRefresh()
+                2 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "BRANCH raceBusyLevel==2 (fast-forward; only self → TAMAMLANDI, next unchanged)",
+                    )
+                    val updatedItem = item.copy(raceBusyLevel = 0)
+                    LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
                 }
             }
 
             when {
+                item.raceBusyLevel == 2 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "SKIP finish block | raceBusyLevel==2 handled in fast-forward branch",
+                    )
+                }
                 item.raceBusyLevel != null && item.raceBusyLevel != 1 -> {
                     LessonProgressDiag.log(
                         "ChestFragment.updateMapProgress",
@@ -569,9 +618,48 @@ class ChestFragment : Fragment() {
         if (shouldIncrementPerfectStepCountMission) {
             MissionsProgressStore.recordPerfectStepIncrementProgress(requireContext())
         }
+        LessonProgressDiag.log(
+            "ChestFragment.updateMapProgress",
+            "EXIT missionFlags finish=$shouldIncrementStepFinishMission incr=$shouldIncrementStepCountMission " +
+                "perfect=$shouldIncrementPerfectStepCountMission rocketIncr=$shouldIncrementStepCountMission",
+        )
         return shouldIncrementStepCountMission
     }
     
+    /**
+     * Sıradaki yarış dersini açar. İleri sar ile tamamlanmış (0) item'leri atlar;
+     * ilk kilitli (2) item'i BAŞLA (1) yapar. Zaten 1 olan item görülürse durur.
+     */
+    private fun unlockNextRaceItemSkippingCompleted(completedIndex: Int) {
+        val items = GlobalLessonData.lessonItems
+        for (j in (completedIndex + 1) until items.size) {
+            val next = items[j]
+            when (next.raceBusyLevel) {
+                0 -> continue
+                2 -> {
+                    LessonManager.updateRaceItem(requireContext(), j, next.copy(raceBusyLevel = 1))
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "unlockNextRace: idx=$j KİLİTLİ→BAŞLA (skipped completed after idx=$completedIndex)",
+                    )
+                    return
+                }
+                1 -> {
+                    LessonProgressDiag.log(
+                        "ChestFragment.updateMapProgress",
+                        "unlockNextRace: stop at idx=$j already BAŞLA",
+                    )
+                    return
+                }
+                else -> continue
+            }
+        }
+        LessonProgressDiag.log(
+            "ChestFragment.updateMapProgress",
+            "unlockNextRace: no locked item found after idx=$completedIndex",
+        )
+    }
+
     private fun isRacePanelOpen(): Boolean {
         // Race panel açık mı kontrol et
         val activity = requireActivity()

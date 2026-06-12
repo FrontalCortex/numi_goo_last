@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_daily_question_continue"
+    android:clipToOutline="true"
+    android:padding="20dp">
+
+    <ImageView
+        android:id="@+id/raceFastForwardClose"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@string/daily_question_continue_close"
+        android:defaultFocusHighlightEnabled="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:padding="8dp"
+        android:src="@drawable/ic_close_black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/raceFastForwardTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:text="@string/race_fast_forward_title"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/raceFastForwardClose"
+        app:layout_constraintEnd_toStartOf="@id/raceFastForwardClose"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/raceFastForwardClose" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/raceFastForwardAnimation"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/raceFastForwardTitle"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="mouse_trap_anim.json"
+        app:lottie_loop="true" />
+
+    <TextView
+        android:id="@+id/raceFastForwardMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/race_fast_forward_message"
+        android:textColor="#FFECB3"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/raceFastForwardAnimation" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/raceFastForwardDiamond"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/button_enabled"
+        android:elevation="0dp"
+        android:fontFamily="@font/font_regular"
+        android:minWidth="160dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:text="@string/daily_question_continue_diamond"
+        android:textAllCaps="false"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:cornerRadius="15dp"
+        app:icon="@drawable/key"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp"
+        app:iconSize="32dp"
+        app:iconTint="@null"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/raceFastForwardMessage" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

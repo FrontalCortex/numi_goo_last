@@ -138,6 +138,12 @@ class RulesFragment : Fragment() {
         binding.view4.visibility = visibility
 
     }
+    fun updateFiveRuleExtractionTableLayout(visibility: Int) {
+        binding.fiveRuleTableLinearLayout2.visibility = visibility
+        visibilityListener?.onRulesVisibilityChanged(visibility)
+        binding.view5.visibility = visibility
+
+    }
 
     /** Toplama + çıkarma tablo başlık hücrelerini güncelle. */
     fun applyRulesTableHeaderTexts(isSubtractionPart: Boolean) {

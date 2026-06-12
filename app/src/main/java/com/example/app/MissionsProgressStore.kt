@@ -538,10 +538,15 @@ object MissionsProgressStore {
         ed.apply()
     }
 
-    fun getSnapshot(context: Context): Snapshot {
+    /**
+     * @param applyCloudHydrate false: claim sırasında az önce yazılan local sayaçları Firestore hydrate ile ezme.
+     */
+    fun getSnapshot(context: Context, applyCloudHydrate: Boolean = true): Snapshot {
         ensureResets(context)
-        hydrateFromServerIfNeededBlocking(context)
-        requestCloudSync(context)
+        if (applyCloudHydrate) {
+            hydrateFromServerIfNeededBlocking(context)
+            requestCloudSync(context)
+        }
         val p = prefs(context)
         return Snapshot(
             dailyStepFinishCount = p.getInt(KEY_DAILY_STEP_FINISH_COUNT, 0),

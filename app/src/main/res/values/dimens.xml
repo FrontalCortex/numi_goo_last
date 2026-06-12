@@ -58,6 +58,9 @@
     <dimen name="lesson_sheet_again_padding_v">4dp</dimen>
     <dimen name="lesson_sheet_button_padding">6dp</dimen>
     <dimen name="lesson_sheet_button_text_size">10sp</dimen>
+    <dimen name="race_sheet_key_button_min_width">160dp</dimen>
+    <dimen name="race_sheet_key_button_width">120dp</dimen>
+    <dimen name="race_sheet_key_button_height">60dp</dimen>
     <dimen name="lesson_sheet_content_start_margin">6dp</dimen>
     <dimen name="lesson_sheet_content_end_margin">6dp</dimen>
     <dimen name="lesson_sheet_title_record_gap">4dp</dimen>

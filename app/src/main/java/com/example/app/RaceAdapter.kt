@@ -84,14 +84,12 @@ class RaceAdapter(
 
             // Set click listener (internet kontrolü ile)
             itemView.setOnClickListener {
-                if (item.raceBusyLevel == 2) return@setOnClickListener
                 (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
                     val pos = adapterPosition
                     if (pos != RecyclerView.NO_POSITION) onRaceItemClick(item, pos)
                 }
             }
             raceStatus.setOnClickListener {
-                if (item.raceBusyLevel == 2) return@setOnClickListener
                 (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
                     val pos = adapterPosition
                     if (pos != RecyclerView.NO_POSITION) onRaceItemClick(item, pos)

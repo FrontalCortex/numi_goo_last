@@ -1218,17 +1218,13 @@ class AbacusFragment : Fragment() {
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
             rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleExtractionTableLayout(View.GONE)
+            rulesFragment?.updateFiveRuleExtractionTableLayout(View.GONE)
         }
         if(lessonItem.mapFragmentIndex!! > 10 && globalPartId == 2){
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
         }
-        else if(lessonItem.mapFragmentIndex!! in 16..20 && globalPartId == 2){
-            rulesBookButton.visibility = View.VISIBLE
-            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 2){
+            rulesFragment?.updateFiveRuleExtractionTableLayout(View.VISIBLE)
         }
         else if(globalPartId == 3){
             rulesBookButton.visibility = View.VISIBLE

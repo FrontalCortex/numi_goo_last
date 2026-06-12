@@ -49,6 +49,7 @@ data class LessonItem(
     var leaderboardSeasonId: Int? = null,
     var abacusGuideNumber: Int? = null,
     var titleUnit: String? = null,
+    var raceTitle: String? = null
 ) : Serializable {
     /** [season] ile eşleşen sezon en iyi skoru; yoksa liderliğe eski [record] yazılmaz. */
     /** [MapFragment.getLessonOperations] yoksa geri adım alt sınırı (dersin ilk adım id'si). */

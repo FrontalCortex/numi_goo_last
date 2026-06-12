@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.util.Log
 import com.example.app.model.LessonItem
 import java.util.concurrent.atomic.AtomicInteger
@@ -99,5 +100,186 @@ object LessonProgressDiag {
             caller,
             "part=$partId chestFinishSummary=${chestIndices.joinToString { (i, f) -> "$i:$f" }}",
         )
+    }
+
+    /** Son ChestFragment claim sonucu — MapFragment notify ile karşılaştırma için. */
+    data class LastClaimRecord(
+        val mapIdx: Int,
+        val partId: Int,
+        val stepFinishAfter: Boolean?,
+        val currentStepAfter: Int?,
+        val stepCountAfter: Int?,
+        val raceBusyAfter: Int?,
+        val route: String,
+        val hasMissionProgress: Boolean,
+        val missionCounterDelta: Boolean,
+        val incrementRocketDailyLessons: Boolean,
+        val tutorialNumber: Int,
+        val atMs: Long = System.currentTimeMillis(),
+    )
+
+    @Volatile
+    var lastClaimRecord: LastClaimRecord? = null
+
+    fun logMissionCounterDelta(
+        caller: String,
+        before: MissionsProgressStore.Snapshot,
+        after: MissionsProgressStore.Snapshot,
+    ) {
+        fun delta(label: String, b: Int, a: Int) =
+            if (b != a) "$label $b→$a" else null
+        val parts = listOfNotNull(
+            delta("dailyFinish", before.dailyStepFinishCount, after.dailyStepFinishCount),
+            delta("weeklyFinish", before.weeklyStepFinishCount, after.weeklyStepFinishCount),
+            delta("dailyIncr", before.dailyStepIncrementCount, after.dailyStepIncrementCount),
+            delta("weeklyIncr", before.weeklyStepIncrementCount, after.weeklyStepIncrementCount),
+            delta("dailyPerfect", before.dailyPerfectStepIncrementCount, after.dailyPerfectStepIncrementCount),
+            delta("weeklyPerfect", before.weeklyPerfectStepIncrementCount, after.weeklyPerfectStepIncrementCount),
+            delta("dailyChestRec", before.dailyChestRecordBreakCount, after.dailyChestRecordBreakCount),
+            delta("weeklyChestRec", before.weeklyChestRecordBreakCount, after.weeklyChestRecordBreakCount),
+            delta("dailyStar", before.dailyChestStarGainCount, after.dailyChestStarGainCount),
+            delta("weeklyStar", before.weeklyChestStarGainCount, after.weeklyChestStarGainCount),
+            delta("dailyLearnMin", before.dailyLearnMinutesCount, after.dailyLearnMinutesCount),
+            delta("weeklyLearnMin", before.weeklyLearnMinutesCount, after.weeklyLearnMinutesCount),
+        )
+        val anyDelta = parts.isNotEmpty()
+        log(
+            caller,
+            "MISSION_COUNTERS anyDelta=$anyDelta | ${if (parts.isEmpty()) "unchanged" else parts.joinToString(", ")}",
+        )
+    }
+
+    /**
+     * Görev paneli neden açılmadı / açıldı — seçili görevlerde çubuk değişimi ve ham sayaç farkı.
+     * Hipotez etiketleri: H1=sayaç artmadı, H2=seçili görevde görünür fark yok (hedefte dolu vb.),
+     * H3=ham sayaç arttı ama seçili 3 görevde bar değişmedi.
+     */
+    fun logMissionPanelDecision(
+        caller: String,
+        context: Context,
+        before: MissionsProgressStore.Snapshot,
+        after: MissionsProgressStore.Snapshot,
+        hasVisible: Boolean,
+    ) {
+        logMissionCounterDelta(caller, before, after)
+        val dailyIds = MissionsProgressStore.selectedMissionsForDaily(context).map { it.id }
+        val weeklyIds = MissionsProgressStore.selectedMissionsForWeekly(context).map { it.id }
+        log(caller, "SELECTED_MISSIONS daily=$dailyIds weekly=$weeklyIds")
+
+        val visibleMissions = mutableListOf<String>()
+        MissionsProgressStore.selectedMissionsForDaily(context).forEach { mission ->
+            val b = MissionsProgressStore.missionProgress(before, MissionWindow.DAILY, mission)
+                .coerceAtMost(mission.target)
+            val a = MissionsProgressStore.missionProgress(after, MissionWindow.DAILY, mission)
+                .coerceAtMost(mission.target)
+            if (b != a) visibleMissions += "D:${mission.id} $b→$a/${mission.target}"
+            else log(caller, "MISSION_BAR daily:${mission.id} unchanged $b/${mission.target} rawBefore=${
+                MissionsProgressStore.missionProgress(before, MissionWindow.DAILY, mission)
+            } rawAfter=${
+                MissionsProgressStore.missionProgress(after, MissionWindow.DAILY, mission)
+            }")
+        }
+        MissionsProgressStore.selectedMissionsForWeekly(context).forEach { mission ->
+            val b = MissionsProgressStore.missionProgress(before, MissionWindow.WEEKLY, mission)
+                .coerceAtMost(mission.target)
+            val a = MissionsProgressStore.missionProgress(after, MissionWindow.WEEKLY, mission)
+                .coerceAtMost(mission.target)
+            if (b != a) visibleMissions += "W:${mission.id} $b→$a/${mission.target}"
+            else log(caller, "MISSION_BAR weekly:${mission.id} unchanged $b/${mission.target} rawBefore=${
+                MissionsProgressStore.missionProgress(before, MissionWindow.WEEKLY, mission)
+            } rawAfter=${
+                MissionsProgressStore.missionProgress(after, MissionWindow.WEEKLY, mission)
+            }")
+        }
+
+        val rawDelta = before != after && listOf(
+            before.dailyStepFinishCount != after.dailyStepFinishCount,
+            before.weeklyStepFinishCount != after.weeklyStepFinishCount,
+            before.dailyStepIncrementCount != after.dailyStepIncrementCount,
+            before.weeklyStepIncrementCount != after.weeklyStepIncrementCount,
+            before.dailyPerfectStepIncrementCount != after.dailyPerfectStepIncrementCount,
+            before.weeklyPerfectStepIncrementCount != after.weeklyPerfectStepIncrementCount,
+            before.dailyChestRecordBreakCount != after.dailyChestRecordBreakCount,
+            before.weeklyChestRecordBreakCount != after.weeklyChestRecordBreakCount,
+            before.dailyChestStarGainCount != after.dailyChestStarGainCount,
+            before.weeklyChestStarGainCount != after.weeklyChestStarGainCount,
+            before.dailyLearnMinutesCount != after.dailyLearnMinutesCount,
+            before.weeklyLearnMinutesCount != after.weeklyLearnMinutesCount,
+        ).any { it }
+
+        val hypothesis = when {
+            hasVisible -> "PANEL_OPEN"
+            !rawDelta -> "H1_NO_COUNTER_DELTA"
+            visibleMissions.isEmpty() && rawDelta -> "H3_RAW_DELTA_NOT_IN_SELECTED_BARS"
+            else -> "H2_BAR_UNCHANGED_AT_CAP_OR_OTHER"
+        }
+        log(
+            caller,
+            "MISSION_PANEL hasVisible=$hasVisible hypothesis=$hypothesis " +
+                "visibleBars=[${visibleMissions.joinToString()}]",
+        )
+    }
+
+    fun recordClaim(
+        mapIdx: Int,
+        partId: Int,
+        itemAfter: LessonItem?,
+        route: String,
+        hasMissionProgress: Boolean,
+        missionCounterDelta: Boolean,
+        incrementRocketDailyLessons: Boolean,
+        tutorialNumber: Int,
+    ) {
+        lastClaimRecord = LastClaimRecord(
+            mapIdx = mapIdx,
+            partId = partId,
+            stepFinishAfter = itemAfter?.stepIsFinish,
+            currentStepAfter = itemAfter?.currentStep,
+            stepCountAfter = itemAfter?.stepCount,
+            raceBusyAfter = itemAfter?.raceBusyLevel,
+            route = route,
+            hasMissionProgress = hasMissionProgress,
+            missionCounterDelta = missionCounterDelta,
+            incrementRocketDailyLessons = incrementRocketDailyLessons,
+            tutorialNumber = tutorialNumber,
+        )
+        log(
+            "ClaimDiag.record",
+            "mapIdx=$mapIdx part=$partId route=$route finish=${itemAfter?.stepIsFinish} " +
+                "step=${itemAfter?.currentStep}/${itemAfter?.stepCount} raceBusy=${itemAfter?.raceBusyLevel} " +
+                "hasMission=$hasMissionProgress missionDelta=$missionCounterDelta " +
+                "rocketIncr=$incrementRocketDailyLessons tutorial=$tutorialNumber",
+        )
+    }
+
+    /** Map görünür olduğunda son claim ile karşılaştır (H7: güncellendi ama UI eski). */
+    fun logClaimVsMapAtNotify(caller: String, partId: Int, mapIdx: Int, itemNow: LessonItem?) {
+        val last = lastClaimRecord
+        if (last == null) {
+            log(caller, "mapIdx=$mapIdx part=$partId | no lastClaimRecord")
+            return
+        }
+        val ageMs = System.currentTimeMillis() - last.atMs
+        if (mapIdx != last.mapIdx) {
+            log(caller, "mapIdx=$mapIdx != lastClaim.mapIdx=${last.mapIdx} (ageMs=$ageMs)")
+        }
+        val finishDrift = last.stepFinishAfter != itemNow?.stepIsFinish
+        val stepDrift = last.currentStepAfter != itemNow?.currentStep
+        val raceDrift = last.raceBusyAfter != itemNow?.raceBusyLevel
+        if (finishDrift || stepDrift || raceDrift) {
+            log(
+                caller,
+                "H7_MAP_DRIFT ageMs=$ageMs | claim.finish=${last.stepFinishAfter} now.finish=${itemNow?.stepIsFinish} | " +
+                    "claim.step=${last.currentStepAfter} now.step=${itemNow?.currentStep} | " +
+                    "claim.raceBusy=${last.raceBusyAfter} now.raceBusy=${itemNow?.raceBusyLevel} | " +
+                    "claimRoute=${last.route}",
+            )
+        } else {
+            log(
+                caller,
+                "CLAIM_MATCH ageMs=$ageMs mapIdx=$mapIdx finish=${itemNow?.stepIsFinish} " +
+                    "step=${itemNow?.currentStep}/${itemNow?.stepCount} (data matches last claim)",
+            )
+        }
     }
 }

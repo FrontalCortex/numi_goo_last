@@ -1893,6 +1893,27 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     internal fun isBlockingLessonOverlayFragment(f: Fragment?): Boolean =
         fragmentBlocksSeasonLeaderboardGate(f)
 
+    /**
+     * Harita kartındaki progress halkası animasyonu yalnızca kullanıcı haritayı gerçekten görürken tüketilmeli.
+     * Overlay (Chest, görev paneli vb.) açıkken [MapFragment.onResume] erken tüketim yapmasın.
+     */
+    fun shouldConsumeLessonProgressAnimationsOnMap(): Boolean {
+        if (!::binding.isInitialized) return false
+        val fm = supportFragmentManager
+        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
+        val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        if (abacusHostVisible) {
+            val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+            if (isBlockingLessonOverlayFragment(abacus)) return false
+        }
+        val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
+        if (resultHostVisible) {
+            val result = fm.findFragmentById(R.id.resultFragmentContainer)
+            if (isBlockingLessonOverlayFragment(result)) return false
+        }
+        return true
+    }
+
     internal fun isForcingAbacusOverlayDismiss(): Boolean =
         forcingAbacusOverlayDismissForSeasonGate
 

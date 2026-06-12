@@ -938,6 +938,146 @@
 
         </LinearLayout>
 
+        <View
+            android:id="@+id/view5"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+
+
+        <LinearLayout
+            android:id="@+id/fiveRuleTableLinearLayout2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center"
+            android:layout_marginBottom="20dp"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5'lik Toplama Kuralı"
+                android:layout_gravity="center"
+                android:textColor="@color/lesson_header_green"
+                android:textAlignment="center"
+                android:textSize="@dimen/rules_fragment_header_text_size">
+
+            </TextView>
+            <TableLayout
+                android:layout_width="@dimen/rules_fragment_table_width"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*">
+
+                <TableRow>
+                    <TextView
+                        android:id="@+id/fiveText2"
+                        android:text="Eklenecek sayı"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border1"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="Kardeşi"
+                        android:textStyle="bold"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border2"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border1"
+                        android:textAlignment="center"/>
+
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border2"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border1"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border2"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="3"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border1"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="2"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border2"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="4"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border3"
+                        android:textAlignment="center"/>
+                    <TextView
+                        android:text="1"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border4"
+                        android:textAlignment="center"/>
+                </TableRow>
+            </TableLayout>
+
+            <TextView
+                android:id="@+id/fiveRuleDescriptionText2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="5 gelir. Kardeş gider"
+                android:textColor="#fff"
+                android:textAlignment="center"
+                android:background="@drawable/table_cell_border"
+                android:textSize="@dimen/rules_fragment_description_text_size"
+                android:padding="@dimen/rules_fragment_description_padding"
+                android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
+                android:layout_gravity="center"/>
+
+        </LinearLayout>
+
+
     </LinearLayout>
     </LinearLayout>
 

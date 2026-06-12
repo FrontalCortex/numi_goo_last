@@ -842,27 +842,23 @@ object MathOperationGenerator {
         val hundreds = listOf(1,2,3,4,6,7,8,9).random()
 
         // Onlar ve birler basamağı
-        val tens = if ((0..1).random() == 0) {
-            0
-        } else {
-            listOf(1,2,3,4,5,6,7,8,9).random()
-        }
+        val tens = listOf(0,1,2,3,4,5,6,7,8,9).random()
         val ones = (0..8).random()
 
         val firstNumber = hundreds * 100 + tens * 10 + ones
 
         // Onlar basamağına göre ikinci sayının onlar basamağı
         val secondTens = when (tens) {
-            0 -> 0
-            1 -> if ((0..1).random() == 0) 1 else listOf(2,3,4,5,7,8,9).random()
-            2 -> if ((0..1).random() == 0) 2 else listOf(3,4,5,8,9).random()
-            3 -> listOf(3,4,5,9).random()
-            4 -> listOf(4,5).random()
-            5 -> listOf(5,6,7,8,9).random()
-            6 -> listOf(6,7,8,9).random()
-            7 -> listOf(7,8,9).random()
-            8 -> listOf(8,9).random()
-            9 -> 9
+            0 -> if ((0..100).random() < 80) 0 else listOf(1,2,3,4,5,6,7,8,9).random()
+            1 -> if ((0..100).random() < 80) 1 else listOf(2,3,4,5,7,8,9).random()
+            2 -> if ((0..100).random() < 80) 2 else listOf(3,4,5,8,9).random()
+            3 -> if ((0..100).random() < 80) 3 else listOf(4,5,9).random()
+            4 -> if ((0..100).random() < 80) 4 else listOf(5).random()
+            5 -> if ((0..100).random() < 80) 5 else listOf(1,2,3,4,6,7,8,9).random()
+            6 -> if ((0..100).random() < 80) listOf(6,1).random() else listOf(2,3,4,5,7,8,9).random()
+            7 -> if ((0..100).random() < 80) listOf(7,2).random() else listOf(1,3,4,5,6,8,9).random()
+            8 -> if ((0..100).random() < 80) listOf(8,3).random() else listOf(1,2,4,5,6,7,9).random()
+            9 -> if ((0..100).random() < 80) listOf(9,4).random() else listOf(1,2,3,5,6,7,).random()
             else -> 1
         }
 
@@ -893,27 +889,66 @@ object MathOperationGenerator {
             listOf(1,2,3,4,6,7,8,9).random()
         }
         // Onlar ve birler basamağı
-        val tens = if ((0..1).random() == 0) {
-            0
-        } else {
-            listOf(1,2,3,4,5,6,7,8,9).random()
-        }
+        val tens = listOf(0,1,2,3,4,5,6,7,8,9).random()
         val ones = (0..8).random()
 
         val firstNumber = hundreds * 100 + tens * 10 + ones
 
         // Onlar basamağına göre ikinci sayının onlar basamağı
         val secondTens = when (tens) {
-            0 -> 0
-            1 -> if ((0..1).random() == 0) 1 else listOf(2,3,4,5,7,8,9).random()
-            2 -> if ((0..1).random() == 0) 2 else listOf(3,4,5,8,9).random()
+            0 -> if ((0..100).random() < 80) 0 else listOf(1,2,3,4,5,6,7,8,9).random()
+            1 -> if ((0..100).random() < 80) 1 else listOf(2,3,4,5,7,8,9).random()
+            2 -> if ((0..100).random() < 80) 2 else listOf(3,4,5,8,9).random()
+            3 -> if ((0..100).random() < 80) 3 else listOf(4,5,9).random()
+            4 -> if ((0..100).random() < 80) 4 else listOf(5).random()
+            5 -> if ((0..100).random() < 80) 5 else listOf(1,2,3,4,6,7,8,9).random()
+            6 -> if ((0..100).random() < 80) listOf(6,1).random() else listOf(2,3,4,5,7,8,9).random()
+            7 -> if ((0..100).random() < 80) listOf(7,2).random() else listOf(1,3,4,5,6,8,9).random()
+            8 -> if ((0..100).random() < 80) listOf(8,3).random() else listOf(1,2,4,5,6,7,9).random()
+            9 -> if ((0..100).random() < 80) listOf(9,4).random() else listOf(1,2,3,5,6,7,).random()
+            else -> 1
+        }
+
+        // Birler basamağına göre ikinci sayının birler basamağı
+        val secondOnes = when (ones) {
+            0 -> listOf(1,2,3,4,5,6,7,8,9).random()
+            1 -> listOf(2,3,4,5,7,8,9).random()
+            2 -> listOf(3,4,5,8,9).random()
+            3 -> listOf(4,5,9).random()
+            4 -> listOf(5).random()
+            5 -> listOf(6,7,8,9).random()
+            6 -> listOf(7,8,9).random()
+            7 -> listOf(8,9).random()
+            8 -> listOf(9).random()
+            else -> 1
+        }
+
+        val secondNumber = secondTens * 10 + secondOnes
+
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+    fun extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(): MathOperation {
+
+        val hundreds = listOf(1,2,3,4,5,6,7,8,9).random()
+
+        // Onlar ve birler basamağı
+        val tens = listOf(0,1,2,3,4,5,6,7,8,9).random()
+        val ones = (0..8).random()
+
+        val firstNumber = hundreds * 100 + tens * 10 + ones
+
+        // Onlar basamağına göre ikinci sayının onlar basamağı
+        val secondTens = when (tens) {
+            0 -> listOf(0,1,2,3,4,5,6,7,8,9).random()
+            1 -> listOf(1,2,3,4,5,7,8,9).random()
+            2 -> listOf(2,3,4,5,8,9).random()
             3 -> listOf(3,4,5,9).random()
             4 -> listOf(4,5).random()
-            5 -> listOf(5,6,7,8,9).random()
-            6 -> listOf(6,7,8,9).random()
-            7 -> listOf(7,8,9).random()
-            8 -> listOf(8,9).random()
-            9 -> 9
+            5 -> listOf(1,2,3,4,5,6,7,8,9).random()
+            6 -> listOf(2,3,4,6,7,8,9).random()
+            7 -> listOf(3,4,7,8,9).random()
+            8 -> listOf(4,8,9).random()
+            9 -> listOf(4,9).random()
             else -> 1
         }
 
@@ -936,26 +971,50 @@ object MathOperationGenerator {
         return MathOperation(firstNumber, "-", secondNumber)
     }
     fun extractionBeadRules(): MathOperation { //basit 10'luk toplama
-        // İlk sayının onlar basamağı (5 hariç)
         val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
-
-
-        // İlk sayının birler basamağı (0..5,6,7,8,9)
         val onesDigit = (1..4).random()
-
-        // İlk sayıyı oluştur
         val firstNumber = tensDigit * 10 + onesDigit
-
-        // İkinci sayıyı belirle (ilk sayının birler basamağına göre)
         val secondNumber = when (onesDigit) {
             1 -> listOf(6).random()
-            2 -> listOf(6,7).random()
-            3 -> listOf(6,7,8).random()
-            4 -> listOf(6,7,8,9).random()
-            else -> 0 // Bu durum asla oluşmayacak ama Kotlin için gerekli
+            2 -> listOf(6, 7).random()
+            3 -> listOf(6, 7, 8).random()
+            4 -> listOf(6, 7, 8, 9).random()
+            else -> 6
         }
-
         return MathOperation(firstNumber, "-", secondNumber)
+    }
+
+    private fun extractionBeadRulesWithSecondNumber(secondNumber: Int): MathOperation {
+        val onesDigit = when (secondNumber) {
+            6 -> (1..4).random()
+            7 -> listOf(2, 3, 4).random()
+            8 -> listOf(3, 4).random()
+            9 -> 4
+            else -> (1..4).random()
+        }
+        val tensDigit = listOf(1, 2, 3, 4, 6, 7, 8, 9).random()
+        val firstNumber = tensDigit * 10 + onesDigit
+        return MathOperation(firstNumber, "-", secondNumber)
+    }
+
+    /**
+     * [extractionBeadRules] ile aynı kurallarda [count] adet işlem üretir.
+     * secondNumber (6..9) mümkün olduğunca tekrar etmez; havuz bitince karışık yeniden dolar.
+     */
+    fun extractionBeadRulesList(count: Int): List<MathOperation> {
+        if (count <= 0) return emptyList()
+
+        val pendingSecondNumbers = mutableListOf<Int>()
+        val operations = mutableListOf<MathOperation>()
+
+        repeat(count) {
+            if (pendingSecondNumbers.isEmpty()) {
+                pendingSecondNumbers.addAll((6..9).shuffled())
+            }
+            val secondNumber = pendingSecondNumbers.removeAt(0)
+            operations.add(extractionBeadRulesWithSecondNumber(secondNumber))
+        }
+        return operations
     }
     fun extractionBeadRulesThreeTwo(): MathOperation {
 
@@ -963,7 +1022,7 @@ object MathOperationGenerator {
         val hundreds = listOf(1,2,3,4,5,6,7,8,9).random()
         // Onlar ve birler basamağı: 0-8 (9 hariç)
         val tens = (1..4).random()
-        val ones = (0..9).random()
+        val ones = (1..4).random()
 
         val firstNumber = hundreds * 100 + tens * 10 + ones
 
@@ -971,13 +1030,42 @@ object MathOperationGenerator {
         val secondTens = when (tens) {
             1 -> listOf(6).random()
             2 -> listOf(6,7).random()
-            3 -> listOf(6,7,8).random()
-            4 -> listOf(6,7,8,9).random()
+            3 -> {
+                if ((1..100).random() <= 50) {
+                    8
+                } else {
+                    listOf(6,7).random()
+                }
+            }
+            4 -> {
+                if ((1..100).random() <= 50) {
+                    9
+                } else {
+                    listOf(6,7,8).random()
+                }
+            }
+            else -> 1
+        }
+        val secondOnes = when (ones) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> {
+                if ((1..100).random() <= 50) {
+                    8
+                } else {
+                    listOf(6,7).random()
+                }
+            }
+            4 -> {
+                if ((1..100).random() <= 50) {
+                    9
+                } else {
+                    listOf(6,7,8).random()
+                }
+            }
             else -> 1
         }
 
-        // Birler basamağına göre ikinci sayının birler basamağı
-        val secondOnes = (0..9).random()
 
         val secondNumber = secondTens * 10 + secondOnes
 
@@ -990,15 +1078,27 @@ object MathOperationGenerator {
         val hundreds = listOf(1,2,3,4).random()
         // Onlar ve birler basamağı: 0-8 (9 hariç)
         val tens = (1..4).random()
-        val ones = (0..9).random()
+        val ones = (1..4).random()
 
         val firstNumber = thousands * 1000 + hundreds * 100 + tens * 10 + ones
         //yüzlere göre yüzler basamağı
         val secondhundreds = when (hundreds) {
             1 -> listOf(6).random()
             2 -> listOf(6,7).random()
-            3 -> listOf(6,7,8).random()
-            4 -> listOf(6,7,8,9).random()
+            3 -> {
+                if ((1..100).random() <= 50) {
+                    8
+                } else {
+                    listOf(6,7).random()
+                }
+            }
+            4 -> {
+                if ((1..100).random() <= 50) {
+                    9
+                } else {
+                    listOf(6,7,8).random()
+                }
+            }
             else -> 1
         }
 
@@ -1006,13 +1106,43 @@ object MathOperationGenerator {
         val secondTens = when (tens) {
             1 -> listOf(6).random()
             2 -> listOf(6,7).random()
-            3 -> listOf(6,7,8).random()
-            4 -> listOf(6,7,8,9).random()
+            3 -> {
+                if ((1..100).random() <= 50) {
+                    8
+                } else {
+                    listOf(6,7).random()
+                }
+            }
+            4 -> {
+                if ((1..100).random() <= 50) {
+                    9
+                } else {
+                    listOf(6,7,8).random()
+                }
+            }
             else -> 1
         }
 
         // Birler basamağına göre ikinci sayının birler basamağı
-        val secondOnes = (0..9).random()
+        val secondOnes = when (ones) {
+            1 -> listOf(6).random()
+            2 -> listOf(6,7).random()
+            3 -> {
+                if ((1..100).random() <= 50) {
+                    8
+                } else {
+                    listOf(6,7).random()
+                }
+            }
+            4 -> {
+                if ((1..100).random() <= 50) {
+                    9
+                } else {
+                    listOf(6,7,8).random()
+                }
+            }
+            else -> 1
+        }
 
         val secondNumber = secondhundreds * 100 + secondTens * 10 + secondOnes
 

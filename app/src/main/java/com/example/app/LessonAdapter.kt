@@ -8,6 +8,7 @@ import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Dialog
 import android.content.Intent
 import android.widget.Button
 import android.content.Context
@@ -17,6 +18,7 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.util.Log
 import android.view.Gravity
+import android.view.Window
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,8 +40,10 @@ import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.airbnb.lottie.LottieAnimationView
+import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Locale
 
 class LessonAdapter(
     private val context: Context,
@@ -616,7 +620,7 @@ class LessonAdapter(
                     context,
                     raceItems = raceItems.toMutableList(),
                     { raceItem, clickedIndex ->
-                        onRaceStartClicked(raceItem, clickedIndex, racePartId)
+                        showRaceLessonBottomSheet(raceItem, clickedIndex, racePartId)
                     },
                     onPartChange = { newPartId ->
                         GlobalLessonData.loadLessonItemsForPart(context, newPartId) { partItems ->
@@ -643,6 +647,222 @@ class LessonAdapter(
         val activity = context as? Activity ?: return false
         val coordinator = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
         return coordinator?.findViewWithTag<View>("race_panel") != null
+    }
+
+    private fun formatRaceTimePeriodDescription(timePeriodMs: Long?): String {
+        val seconds = (timePeriodMs ?: 1000L) / 1000.0
+        val secondsText = if (seconds % 1.0 == 0.0) {
+            seconds.toInt().toString()
+        } else {
+            String.format(Locale.US, "%.1f", seconds).replace('.', ',')
+        }
+        return "Sayı gösterilme periyodu $secondsText saniye"
+    }
+
+    private fun applyRaceKeyUnlockButtonStyle(button: MaterialButton) {
+        val res = context.resources
+        val buttonWidth = res.getDimensionPixelSize(R.dimen.race_sheet_key_button_width)
+        val buttonHeight = res.getDimensionPixelSize(R.dimen.race_sheet_key_button_height)
+        val lp = button.layoutParams as LinearLayout.LayoutParams
+        lp.width = buttonWidth
+        lp.height = buttonHeight
+        lp.gravity = Gravity.CENTER_HORIZONTAL
+        button.layoutParams = lp
+        button.minWidth = 0
+        button.minHeight = 0
+        button.text = ""
+        button.isAllCaps = false
+        button.setTextColor(ContextCompat.getColor(context, android.R.color.black))
+        button.backgroundTintList = ContextCompat.getColorStateList(context, R.color.button_enabled)
+        button.textAlignment = View.TEXT_ALIGNMENT_CENTER
+        button.icon = ContextCompat.getDrawable(context, R.drawable.key)
+        button.iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+        button.iconPadding = 0
+        button.iconSize = (32 * context.resources.displayMetrics.density).toInt()
+        button.iconTint = null
+        button.cornerRadius = (15 * context.resources.displayMetrics.density).toInt()
+        button.elevation = 0f
+        button.setPadding(0, 0, 0, 0)
+    }
+
+    private fun showRaceFastForwardPanel(
+        raceItem: LessonItem,
+        clickedIndex: Int,
+        racePartId: Int,
+        onLessonStart: () -> Unit,
+    ) {
+        val activity = context as Activity
+        val main = activity as? MainActivity
+        val dialog = Dialog(context)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_race_fast_forward)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (context.resources.displayMetrics.widthPixels * 0.88f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+
+        val closeButton = dialog.findViewById<View>(R.id.raceFastForwardClose)
+        closeButton.setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<MaterialButton>(R.id.raceFastForwardDiamond).setOnClickListener {
+            if (main?.spendKeys(1) != true) {
+                Toast.makeText(
+                    context,
+                    R.string.daily_question_insufficient_keys,
+                    Toast.LENGTH_SHORT,
+                ).show()
+                return@setOnClickListener
+            }
+            dialog.dismiss()
+            onLessonStart()
+        }
+        dialog.setOnDismissListener {
+            dialog.findViewById<LottieAnimationView>(R.id.raceFastForwardAnimation)?.cancelAnimation()
+        }
+        dialog.show()
+    }
+
+    private fun applyRaceStartButtonStyle(button: MaterialButton) {
+        val lp = button.layoutParams as LinearLayout.LayoutParams
+        lp.width = ViewGroup.LayoutParams.MATCH_PARENT
+        lp.gravity = Gravity.NO_GRAVITY
+        button.layoutParams = lp
+        button.icon = null
+        button.minWidth = 0
+        button.cornerRadius = (15 * context.resources.displayMetrics.density).toInt()
+        button.elevation = 0f
+    }
+
+    private fun restoreRacePanelScrimIfNeeded(activity: Activity, scrimView: View) {
+        if (!isRacePanelOpen()) {
+            scrimView.setOnClickListener(null)
+            return
+        }
+        val coordinator = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        val racePanel = coordinator.findViewWithTag<View>("race_panel") ?: return
+        val closeButton = racePanel.findViewById<TextView>(R.id.closeButton)
+        scrimView.setOnClickListener { closeButton.performClick() }
+    }
+
+    private fun showRaceLessonBottomSheet(raceItem: LessonItem, clickedIndex: Int, racePartId: Int) {
+        val activity = context as Activity
+        val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        val scrimView = activity.findViewById<View>(R.id.scrimView)
+        val isLockedRace = raceItem.raceBusyLevel == 2
+
+        coordinatorLayout.findViewWithTag<View>("race_lesson_bottom_sheet")?.let {
+            coordinatorLayout.removeView(it)
+        }
+
+        val bottomSheetView = LayoutInflater.from(context)
+            .inflate(R.layout.race_lesson_bottom_sheet, coordinatorLayout, false)
+        bottomSheetView.tag = "race_lesson_bottom_sheet"
+
+        val titleText = bottomSheetView.findViewById<TextView>(R.id.raceLessonTitle)
+        val descriptionText = bottomSheetView.findViewById<TextView>(R.id.raceLessonDescription)
+        val actionButton = bottomSheetView.findViewById<MaterialButton>(R.id.raceActionButton)
+        val bottomSheetLayout = bottomSheetView.findViewById<LinearLayout>(R.id.raceBottomSheetLayout)
+
+        titleText.text = raceItem.raceTitle ?: raceItem.title
+        descriptionText.text = formatRaceTimePeriodDescription(raceItem.timePeriod)
+
+        if (isLockedRace) {
+            titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            bottomSheetLayout.backgroundTintList =
+                ContextCompat.getColorStateList(context, R.color.background_color)
+            applyRaceKeyUnlockButtonStyle(actionButton)
+        } else {
+            titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
+            descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_completed))
+            bottomSheetLayout.backgroundTintList =
+                ContextCompat.getColorStateList(context, R.color.panel_background)
+            applyRaceStartButtonStyle(actionButton)
+            when (raceItem.raceBusyLevel) {
+                0 -> {
+                    actionButton.text = "Tekrar dene"
+                    actionButton.isAllCaps = false
+                    actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                    actionButton.backgroundTintList =
+                        ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                    actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
+                }
+                else -> {
+                    actionButton.text = "                           BAŞLAT"
+                    actionButton.isAllCaps = true
+                    actionButton.textAlignment = View.TEXT_ALIGNMENT_TEXT_START
+                    actionButton.backgroundTintList =
+                        ContextCompat.getColorStateList(context, R.color.lesson_completed)
+                    actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
+                    actionButton.icon = ContextCompat.getDrawable(context, R.drawable.lighting__1_)
+                    actionButton.iconGravity = MaterialButton.ICON_GRAVITY_START
+                    actionButton.iconPadding = (8 * context.resources.displayMetrics.density).toInt()
+                    actionButton.iconTint = null
+                }
+            }
+        }
+        actionButton.isEnabled = true
+
+        val behavior = BottomSheetBehavior.from(bottomSheetLayout)
+
+        val dismissSheet = {
+            behavior.isHideable = true
+            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        }
+
+        scrimView.visibility = View.VISIBLE
+        scrimView.alpha = 0f
+        scrimView.animate()
+            .alpha(0.5f)
+            .setDuration(300)
+            .start()
+        // Yarış paneli scrim'in üstünde olduğu için önce scrim'i öne al (lesson_bottom_sheet gibi karartma)
+        scrimView.bringToFront()
+        coordinatorLayout.addView(bottomSheetView)
+
+        scrimView.setOnClickListener { dismissSheet() }
+        bottomSheetView.setOnClickListener { dismissSheet() }
+        bottomSheetLayout.setOnClickListener { }
+
+        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    coordinatorLayout.removeView(bottomSheetView)
+                    if (isRacePanelOpen()) {
+                        coordinatorLayout.findViewWithTag<View>("race_panel")?.bringToFront()
+                        restoreRacePanelScrimIfNeeded(activity, scrimView)
+                    } else {
+                        scrimView.animate()
+                            .alpha(0f)
+                            .setDuration(100)
+                            .withEndAction { scrimView.visibility = View.GONE }
+                            .start()
+                        scrimView.setOnClickListener(null)
+                    }
+                }
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                scrimView.alpha = 0.5f * (slideOffset + 1)
+            }
+        })
+
+        actionButton.setOnClickListener {
+            if (isLockedRace) {
+                showRaceFastForwardPanel(raceItem, clickedIndex, racePartId) {
+                    dismissSheet()
+                    onRaceStartClicked(raceItem, clickedIndex, racePartId)
+                }
+                return@setOnClickListener
+            }
+            dismissSheet()
+            onRaceStartClicked(raceItem, clickedIndex, racePartId)
+        }
+
+        behavior.isHideable = true
+        behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        bottomSheetView.post {
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
     }
 
     private fun onRaceStartClicked(raceItem: LessonItem, clickedIndex: Int, racePartId: Int) {
@@ -837,6 +1057,20 @@ class LessonAdapter(
         private val lessonGoldShineSecondary: View = itemView.findViewById(R.id.lessonGoldShineSecondary)
         private var progressBreathingAnimator: ValueAnimator? = null
         private var progressIncreaseAnimator: ValueAnimator? = null
+        private var progressIncreaseStepCount: Int = 0
+        private var progressIncreaseTargetFilled: Int = 0
+
+        private fun cancelProgressIncreaseAnimation(applyFinalState: Boolean = true) {
+            val animator = progressIncreaseAnimator ?: return
+            if (applyFinalState && progressIncreaseStepCount > 0) {
+                progressBar.setSegmentState(
+                    progressIncreaseStepCount,
+                    progressIncreaseTargetFilled.coerceIn(0, progressIncreaseStepCount),
+                )
+            }
+            animator.cancel()
+            progressIncreaseAnimator = null
+        }
 
         fun updateProgress(progress: Float) {
             // Mevcut progress değerini al
@@ -974,7 +1208,7 @@ class LessonAdapter(
         }
 
         private fun applyStepSegmentsWithIncreaseAnimation(item: LessonItem, baseCardColor: Int) {
-            progressIncreaseAnimator?.cancel()
+            cancelProgressIncreaseAnimation(applyFinalState = true)
             val safeStepCount = item.stepCount.coerceAtLeast(1)
             val completedSteps = item.stepCompletionStatus.count { it }
             val targetFilled = if (item.stepIsFinish) safeStepCount else completedSteps.coerceIn(0, safeStepCount)
@@ -990,33 +1224,48 @@ class LessonAdapter(
             }
             val pending = GlobalValues.pendingLessonProgressAnimations[key]
             val shouldConsumePending = GlobalValues.canConsumePendingLessonProgressAnimations && pending != null
-            val previousFilled = if (shouldConsumePending) {
-                pending!!.fromFilledSegments.coerceIn(0, safeStepCount)
-            } else {
-                targetFilled
+            val previousFilled = when {
+                shouldConsumePending -> pending!!.fromFilledSegments.coerceIn(0, safeStepCount)
+                pending != null -> pending.fromFilledSegments.coerceIn(0, safeStepCount)
+                else -> lastSeenFilledSegments[key]?.coerceIn(0, safeStepCount) ?: targetFilled
             }
 
             if (targetFilled > previousFilled) {
-                // Segment yapısını animasyon başlamadan önce kesin olarak kur.
-                progressBar.setSegmentState(safeStepCount, previousFilled)
-                progressIncreaseAnimator = ValueAnimator.ofFloat(previousFilled.toFloat(), targetFilled.toFloat()).apply {
-                    duration = ((targetFilled - previousFilled) * 900L).coerceAtLeast(1800L)
-                    interpolator = AccelerateDecelerateInterpolator()
-                    addUpdateListener { animator ->
-                        val current = animator.animatedValue as Float
-                        progressBar.setSegmentProgress(current)
-                    }
-                    addListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            if (shouldConsumePending && targetFilled == safeStepCount) {
-                                playFinalGoldMergeAnimation(item, baseCardColor, key)
-                            }
-                        }
-                    })
-                    start()
-                }
                 if (shouldConsumePending) {
+                    progressIncreaseStepCount = safeStepCount
+                    progressIncreaseTargetFilled = targetFilled
+                    progressBar.setSegmentState(safeStepCount, previousFilled)
+                    progressIncreaseAnimator = ValueAnimator.ofFloat(previousFilled.toFloat(), targetFilled.toFloat()).apply {
+                        duration = ((targetFilled - previousFilled) * 900L).coerceAtLeast(1800L)
+                        interpolator = AccelerateDecelerateInterpolator()
+                        addUpdateListener { animator ->
+                            val current = animator.animatedValue as Float
+                            progressBar.setSegmentProgress(current)
+                        }
+                        addListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                progressIncreaseAnimator = null
+                                progressBar.setSegmentState(safeStepCount, targetFilled)
+                                if (targetFilled == safeStepCount) {
+                                    playFinalGoldMergeAnimation(item, baseCardColor, key)
+                                }
+                            }
+
+                            override fun onAnimationCancel(animation: Animator) {
+                                progressIncreaseAnimator = null
+                                progressBar.setSegmentState(safeStepCount, targetFilled)
+                            }
+                        })
+                        start()
+                    }
                     GlobalValues.pendingLessonProgressAnimations.remove(key)
+                    lastSeenFilledSegments[key] = targetFilled
+                } else if (pending != null) {
+                    progressBar.setSegmentState(safeStepCount, previousFilled)
+                    lastSeenFilledSegments[key] = previousFilled
+                } else {
+                    progressBar.setSegmentState(safeStepCount, targetFilled)
+                    lastSeenFilledSegments[key] = targetFilled
                 }
             } else {
                 progressBar.setSegmentState(safeStepCount, targetFilled)
@@ -1031,8 +1280,8 @@ class LessonAdapter(
                 ) {
                     playFinalGoldMergeAnimation(item, baseCardColor, key)
                 }
+                lastSeenFilledSegments[key] = targetFilled
             }
-            lastSeenFilledSegments[key] = targetFilled
         }
 
         private fun startProgressBreathingAnimation() {
@@ -1057,8 +1306,7 @@ class LessonAdapter(
             progressBreathingAnimator = null
             progressBar.scaleX = 1f
             progressBar.scaleY = 1f
-            progressIncreaseAnimator?.cancel()
-            progressIncreaseAnimator = null
+            cancelProgressIncreaseAnimation(applyFinalState = true)
         }
 
         private fun applyChestStarSlot(iv: ImageView, slot: ChestStarSlot) {

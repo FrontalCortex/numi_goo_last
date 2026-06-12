@@ -176,7 +176,7 @@ class ChestResult : Fragment() {
                 if (gainedStars > 0) {
                     MissionsProgressStore.recordChestStarGainProgress(requireContext(), gainedStars)
                 }
-                val afterSnap = MissionsProgressStore.getSnapshot(requireContext())
+                val afterSnap = MissionsProgressStore.getSnapshot(requireContext(), applyCloudHydrate = false)
                 val hasMissionProgress = MissionsProgressStore.hasVisibleMissionProgress(requireContext(), beforeSnap, afterSnap)
 
                 fun navigateAfterKaratePayloads(payloads: List<BadgeLevelUpPayload>) {

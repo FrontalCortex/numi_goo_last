@@ -2,8 +2,10 @@ package com.example.app
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -175,6 +177,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private var currentAnimations: MutableList<BeadAnimation> = mutableListOf()
     private val widgetAnimators = mutableListOf<ValueAnimator>()
+    private var infoRequestBreathAnimator: ValueAnimator? = null
     /** [resetAndWaith] sonrası planlanan [showStep]; üst üste geri basışta iptal edilir. */
     private var pendingBackShowStepRunnable: Runnable? = null
     private var backStepTransitionPending = false
@@ -183,6 +186,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var backOrFront = true
     private lateinit var focusView: View
     private var requestPanelView: View? = null
+    /** [showRequestPanel] post gecikmesinde eski açılışları iptal etmek için. */
+    private var requestPanelShowGeneration = 0
     private var originalRootClickListener: View.OnClickListener? = null
     private var tutorialSteps: List<TutorialStep> = emptyList()
     private var tutorialSteps100: List<TutorialStep> = emptyList()
@@ -225,6 +230,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialRod4FourIsUp: Boolean = false
 
     companion object {
+        private val INFO_REQUEST_TINT = Color.parseColor("#8BC34A")
+        private val INFO_REQUEST_TINT_LIGHT = Color.parseColor("#DFF0D4")
+        private const val INFO_REQUEST_BREATH_SCALE_DELTA = 0.14f
+
         fun newInstance(tutorialNumber: Int): TutorialFragment {
             return TutorialFragment(tutorialNumber)
         }
@@ -522,6 +531,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             11 -> binding.extractionFiveRuleTable.visibility = step.rulesPanelVisibility
             1100 -> binding.extractionFiveRuleTable.visibility = step.rulesPanelVisibility
             12 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
+            13 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
             14 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
             105 ->binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             else -> View.GONE
@@ -695,9 +705,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     
     private fun setupInfoRequest() {
         binding.infoRequest.setOnClickListener {
-            // Panel açıksa kapat, kapalıysa aç
-            if (requestPanelView != null && requestPanelView?.visibility == View.VISIBLE) {
-                hideRequestPanel(requestPanelView!!)
+            if (hasActiveRequestPanel()) {
+                dismissAllRequestPanels(animated = true)
             } else {
                 val requestText = getCurrentStep().requestText
                 if (requestText != null && requestText.isNotEmpty()) {
@@ -706,66 +715,119 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         }
     }
-    
-    private fun showRequestPanel(text: String) {
-        // Eğer panel zaten açıksa, önce kapat
-        if (requestPanelView != null && requestPanelView?.visibility == View.VISIBLE) {
+
+    private fun collectRequestPanels(): List<View> {
+        val root = binding.root as ViewGroup
+        return (0 until root.childCount)
+            .map { root.getChildAt(it) }
+            .filter { it.id == R.id.requestPanel }
+    }
+
+    private fun hasActiveRequestPanel(): Boolean = collectRequestPanels().isNotEmpty()
+
+    private fun removeOrphanRequestPanels(except: View? = null) {
+        val root = binding.root as ViewGroup
+        collectRequestPanels()
+            .filter { it !== except }
+            .forEach { panel ->
+                panel.animate().cancel()
+                root.removeView(panel)
+            }
+    }
+
+    private fun dismissRequestPanelsImmediate() {
+        requestPanelShowGeneration++
+        val root = binding.root as ViewGroup
+        collectRequestPanels().forEach { panel ->
+            panel.animate().cancel()
+            root.removeView(panel)
+        }
+        requestPanelView = null
+        binding.overlay.animate().cancel()
+        binding.overlay.visibility = View.GONE
+        restoreOriginalRootClickListener()
+    }
+
+    private fun dismissAllRequestPanels(animated: Boolean) {
+        val panels = collectRequestPanels()
+        if (panels.isEmpty()) {
+            requestPanelView = null
             return
         }
-        
-        // Panel'i root layout'a ekle
+        if (animated && panels.size == 1) {
+            val panel = panels.single()
+            requestPanelView = panel
+            hideRequestPanel(panel)
+        } else {
+            dismissRequestPanelsImmediate()
+        }
+    }
+    
+    private fun requestPanelSlideOffset(panelView: View): Float {
+        if (panelView.height > 0) return panelView.height.toFloat()
+        val parentWidth = (panelView.parent as? View)?.width
+            ?: (binding.root as ViewGroup).width
+        panelView.measure(
+            View.MeasureSpec.makeMeasureSpec(parentWidth, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
+        return panelView.measuredHeight.toFloat().coerceAtLeast(1f)
+    }
+
+    private fun showRequestPanel(text: String) {
+        dismissRequestPanelsImmediate()
+
         val panelView = LayoutInflater.from(requireContext())
             .inflate(R.layout.request_panel, binding.root as ViewGroup, false)
-        
+
         val requestTextView = panelView.findViewById<TextView>(R.id.requestText)
         requestTextView.text = text
-        
-        // Panel'in kendisine tıklandığında kapanmaması için
-        panelView.setOnClickListener {
-            // Panel'in kendisine tıklandığında hiçbir şey yapma
-        }
-        
-        // Panel'i root layout'a ekle
+
+        panelView.setOnClickListener { }
+
+        // Final konumda bir kare görünmesin: eklemeden önce gizle ve sıfırla.
+        panelView.visibility = View.INVISIBLE
+        panelView.alpha = 0f
+        panelView.translationX = 0f
+        panelView.translationY = 0f
+
         (binding.root as ViewGroup).addView(panelView)
-        
-        // Panel view'ını sakla
         requestPanelView = panelView
-        
-        // Panel'in boyutunu ölçmek için post kullan
+
+        val generation = ++requestPanelShowGeneration
         panelView.post {
-            // Panel'i başlangıçta görünmez yap ve solda konumlandır
-            panelView.visibility = View.VISIBLE
-            panelView.alpha = 0f
-            val screenWidth = resources.displayMetrics.widthPixels
-            panelView.translationX = -screenWidth.toFloat()
-            
-            // Overlay'i görünür yap
+            if (generation != requestPanelShowGeneration || requestPanelView !== panelView) {
+                panelView.animate().cancel()
+                (binding.root as ViewGroup).removeView(panelView)
+                return@post
+            }
+
+            val slideOffset = requestPanelSlideOffset(panelView)
+            panelView.translationY = -slideOffset
+
             binding.overlay.visibility = View.VISIBLE
             binding.overlay.alpha = 0f
-            
-            // Overlay'e tıklanınca panel'i kapat
+
             binding.overlay.setOnClickListener {
                 hideRequestPanel(panelView)
             }
-            
-            // Root view'a yeni click listener ekle (panel açıkken herhangi bir yere tıklandığında kapat)
+
             val rootClickListener = View.OnClickListener { view ->
-                // Panel'in kendisine veya içindeki view'lara tıklanmadıysa kapat
                 if (view != panelView && !isViewInsidePanel(view, panelView)) {
                     hideRequestPanel(panelView)
                 }
             }
             binding.root.setOnClickListener(rootClickListener)
-            
-            // Animasyonları başlat
+
             binding.overlay.animate()
                 .alpha(0.5f)
                 .setDuration(200)
                 .start()
-            
+
+            panelView.visibility = View.VISIBLE
             panelView.animate()
                 .alpha(1f)
-                .translationX(0f)
+                .translationY(0f)
                 .setDuration(300)
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .start()
@@ -784,29 +846,51 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
     
     private fun hideRequestPanel(panelView: View) {
+        requestPanelShowGeneration++
+        panelView.animate().cancel()
+        binding.overlay.animate().cancel()
+
+        if (panelView.parent == null) {
+            if (requestPanelView === panelView) {
+                requestPanelView = null
+            }
+            removeOrphanRequestPanels()
+            if (!hasActiveRequestPanel()) {
+                binding.overlay.visibility = View.GONE
+                restoreOriginalRootClickListener()
+            }
+            return
+        }
+
         binding.overlay.animate()
             .alpha(0f)
             .setDuration(200)
             .setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: android.animation.Animator) {
-                    binding.overlay.visibility = View.GONE
+                    if (!hasActiveRequestPanel()) {
+                        binding.overlay.visibility = View.GONE
+                    }
                 }
             })
             .start()
-        
-        val screenWidth = resources.displayMetrics.widthPixels
+
+        val slideOffset = requestPanelSlideOffset(panelView)
         panelView.animate()
             .alpha(0f)
-            .translationX(-screenWidth.toFloat())
+            .translationY(-slideOffset)
             .setDuration(300)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: android.animation.Animator) {
                     (binding.root as ViewGroup).removeView(panelView)
-                    requestPanelView = null
-                    
-                    // Orijinal root click listener'ı geri yükle
-                    restoreOriginalRootClickListener()
+                    if (requestPanelView === panelView) {
+                        requestPanelView = null
+                    }
+                    removeOrphanRequestPanels()
+                    if (!hasActiveRequestPanel()) {
+                        binding.overlay.visibility = View.GONE
+                        restoreOriginalRootClickListener()
+                    }
                 }
             })
             .start()
@@ -10953,7 +11037,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 soundResource = R.raw.tutorial12_1
             ),
             TutorialStep(
-                "Sayılar ve kardeşleri 10'luk toplamadakiyle aynıdır.",
+                "Sayılar ve kardeşleri 10'luk toplamadaki ile aynıdır.",
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial12_2
@@ -11503,7 +11587,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),
             TutorialStep(
                 "Örneğin bu işlemde...",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -11519,24 +11603,35 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_top", 3)),
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_3
+                soundResource = R.raw.tutorial13_3,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Sonrasında çıkarılacak sayının en büyük basamağından başlayarak kuralları uyguluyoruz.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_4
+                soundResource = R.raw.tutorial13_4,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
-                "10’lar basamağından 3 çıkarmak istiyorum.",
-                questionText = " 128 - 39",
+                "Onlar basamağından 3 çıkarmak istiyorum.",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
                     {
@@ -11553,9 +11648,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
@@ -11566,29 +11661,47 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),
             TutorialStep(
                 "3’ü doğrudan çıkaramıyoruz. Kurallara başvurmak zorundayız.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_6
+                soundResource = R.raw.tutorial13_6,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "5’lik kuralı uygulamak için 5’lik boncuğa ihtiyacımız var.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_7
+                soundResource = R.raw.tutorial13_7,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Ama kullanabileceğim 5’lik boncuk yok.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                { WidgetOperation.ChangeMargin(focusView, 125, 0) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(1),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 0
+                        )
+                    },
                     {
                         WidgetOperation.ChangeConstraints(
                             view = focusView,
@@ -11600,9 +11713,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(60),
+                            toHeight = dpToPx(70),
                             duration = 200
                         )
                     }
@@ -11613,36 +11726,48 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),
             TutorialStep(
                 "Bu yüzden 10’luk kuralı uygulayacağız.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_9
+                soundResource = R.raw.tutorial13_9,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_10
+                soundResource = R.raw.tutorial13_10,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider.",
                 animation = listOf(
                     BeadAnimation(this, "rod2_bead_bottom1", 2)),
-                questionText = " 128 - 39",
-                questionTextVisibility = View.VISIBLE
+                questionText = "128 - 39",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "3’ün kardeşi 7 gelir.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_11
+                soundResource = R.raw.tutorial13_11,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "3’ün kardeşi 7 gelir.",
@@ -11650,58 +11775,79 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom4", 1),
                     BeadAnimation(this, "rod3_bead_bottom3", 1),
                     BeadAnimation(this, "rod3_bead_top", 3)),
-                questionText = " 128 - 39",
-                questionTextVisibility = View.VISIBLE
+                questionText = "128 - 39",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Onlar basamağını çıkardık. Şimdi sıra birler basamağında.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_12
+                soundResource = R.raw.tutorial13_12,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "9'u doğrudan çıkaramıyorum. Bu yüzden 10'luk kuralla çıkaracağım.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_13
+                soundResource = R.raw.tutorial13_13,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_10
+                soundResource = R.raw.tutorial13_10,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                ),
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_bottom4", 2)),
             ),
             TutorialStep(
                 "9'un kardeşi 1 gelir.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_14
+                soundResource = R.raw.tutorial13_14,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "9'un kardeşi 1 gelir.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom4", 1)),
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Cevap 89.",
-                questionText = " 128 - 39",
+                questionText = "128 - 39",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -11723,7 +11869,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 4)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_16
+                soundResource = R.raw.tutorial13_16,
+                abacusReset = true
 
             ),
             TutorialStep(
@@ -11735,18 +11882,29 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_17
+                soundResource = R.raw.tutorial9_1000,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+                abacusReset = true,
+                requestText = "Yüzler basamağında 1 adet 1'lik, onlar basamağına 1 adet 1'lik ve 1 adet 5'lik, birler basamağına 1 adet 5'lik boncuk ekle."
             ),
             TutorialStep(
-                "Sonrasında, 2. sayının en büyük basamağından başlayarak çıkarma işlemini yapalım.",
+                "Sonrasında, 2. sayının en büyük basamağından başlayarak çıkarma işlemini yap.",
                 questionText = "165 - 96",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_18
+                soundResource = R.raw.tutorial13_18,
+                backAnswerNumber = 165,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
-                "Önce onlar basamağından 9'u çıkaralım.",
+                "Önce onlar basamağından 9'u çıkar.",
                 questionText = "165 - 96",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 75,
@@ -11754,18 +11912,28 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_19
+                soundResource = R.raw.tutorial13_19,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                backAnswerNumber = 165,
+                requestText = "Yüzler basamağındaki 1'lik boncuğu çıkar. Onlar basamağına 1 adet 1'lik boncuk ekle."
             ),
             TutorialStep(
-                "Şimdi de birler basamağından 6'yı çıkaralım.",
+                "Şimdi de birler basamağından 6'yı çıkar.",
                 answerNumber = 69,
                 questionText = "165 - 96",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 abacusClickable = true,
                 useTypewriterEffect = true,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                ),
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial13_20
+                soundResource = R.raw.tutorial13_20,
+                backAnswerNumber = 75,
+                requestText = "Onlar basamağındaki 1 adet birlik boncuğu çıkar. Onlar basamağına 4 adet 1'lik boncuk ekle."
             ),
             TutorialStep(
                 "Ve cevap 69.",
@@ -11810,7 +11978,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 3)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_2
+                soundResource = R.raw.tutorial14_2,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Şimdi 5’i, 10’luk kural ile çıkaracağım.",
@@ -11818,7 +11990,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_3
+                soundResource = R.raw.tutorial14_3,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider. Kardeşi 5 gelir.",
@@ -11826,7 +12001,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_4
+                soundResource = R.raw.tutorial14_4,
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider adımını uygularken, onlar basamağından 1’i doğrudan çıkaramıyorum.",
@@ -11848,17 +12038,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_5
-
+                soundResource = R.raw.tutorial14_5,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Böyle durumlarda 5’lik veya 10’luk çıkarmadan yardım alacağız.",
@@ -11868,7 +12073,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_6
+                soundResource = R.raw.tutorial14_6,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Bu işlemde 5’lik çıkarmadan yardım alacağız. Çünkü yukarıda 5’lik boncuğum mevcut.",
@@ -11876,7 +12097,16 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                    { WidgetOperation.ChangeMargin(focusView, 125, 0) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(1),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 0
+                        )
+                    },
                     {
                         WidgetOperation.ChangeConstraints(
                             view = focusView,
@@ -11888,17 +12118,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(100),
+                            toHeight = dpToPx(70),
                             duration = 200
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_7
-
+                soundResource = R.raw.tutorial14_7,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "1’in kardeşi 4’tür.",
@@ -11908,31 +12153,92 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_8
-            ),
+                soundResource = R.raw.tutorial14_8,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )            ),
             TutorialStep(
                 "5 gider.",
                 questionText = "50 - 5",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_9
-            ),
+                soundResource = R.raw.tutorial14_9,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )            ),
             TutorialStep(
                 "5 gider.",
                 questionText = "50 - 5",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_top", 4)),
-            ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )            ),
             TutorialStep(
                 "Kardeşi 4 gelir.",
                 questionText = "50 - 5",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_10
-            ),
+                soundResource = R.raw.tutorial14_10,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+                ),
             TutorialStep(
                 "Kardeşi 4 gelir.",
                 questionText = "50 - 5",
@@ -11942,22 +12248,69 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom3", 1),
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1)),
-            ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+                ),
             TutorialStep(
-                "Bu şekilde 10’luk kuralımdaki 10 gider adımını gerçekleştirmiş oldum.",
+                "Bu şekilde 10’luk kuraldaki 10 gider adımını gerçekleştirmiş oldum.",
                 questionText = "50 - 5",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_11
-            ),
+                soundResource = R.raw.tutorial14_11,
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+                ),
             TutorialStep(
                 "Şimdi 5 gelir adımını yapıp işlemi sonlandıracağım.",
                 questionText = "50 - 5",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_12
+                soundResource = R.raw.tutorial14_12,
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Şimdi 5 gelir adımını yapıp işlemi sonlandıracağım.",
@@ -11965,6 +12318,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Cevap 45.",
@@ -11972,7 +12340,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_13
+                soundResource = R.raw.tutorial14_13,
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "Yaptığımız işlemleri tekrar edelim.",
@@ -11996,7 +12376,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 3)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_15
+                soundResource = R.raw.tutorial14_15,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "5’i doğrudan çıkaramıyorum. Bu yüzden 10’luk kuralla çıkaracağım.",
@@ -12004,7 +12388,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_16
+                soundResource = R.raw.tutorial14_16,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider. 5’in kardeşi 5 gelir.",
@@ -12012,7 +12399,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_17
+                soundResource = R.raw.tutorial14_17,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider.",
@@ -12026,7 +12428,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom2", 1)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_18
+                soundResource = R.raw.tutorial14_18,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Ve kardeş 5 gelir.",
@@ -12034,7 +12451,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_19
+                soundResource = R.raw.tutorial14_19,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Ve kardeş 5 gelir.",
@@ -12042,6 +12473,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Cevap 45.",
@@ -12049,7 +12494,18 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_13
+                soundResource = R.raw.tutorial14_13,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 5 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout
             ),
             TutorialStep(
                 "10 gider adımını uygularken 10’luk çıkarma da uygulamamız gerekebilir.",
@@ -12079,7 +12535,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom1", 1)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_22
+                soundResource = R.raw.tutorial14_22,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Şimdi 3’ü, 10’luk kural ile çıkaracağım.",
@@ -12087,7 +12548,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_23
+                soundResource = R.raw.tutorial14_23,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider. Kardeşi 7 gelir.",
@@ -12095,7 +12559,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_24
+                soundResource = R.raw.tutorial14_24,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
             ),
             TutorialStep(
                 "10 gider adımını uygularken, onlar basamağından 1’i doğrudan çıkaramıyorum.",
@@ -12117,16 +12596,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_25
+                soundResource = R.raw.tutorial14_25,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
 
             ),
             TutorialStep(
@@ -12135,7 +12630,16 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 widgetOperations = listOf(
                     { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                    { WidgetOperation.ChangeMargin(focusView, 125, 0) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(1),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 0
+                        )
+                    },
                     {
                         WidgetOperation.ChangeConstraints(
                             view = focusView,
@@ -12147,16 +12651,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = focusView.width,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = focusView.height,
-                            toHeight = dpToPx(60),
+                            toHeight = dpToPx(70),
                             duration = 200
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_26
+                soundResource = R.raw.tutorial14_26,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
 
             ),
             TutorialStep(
@@ -12167,7 +12687,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_27
+                soundResource = R.raw.tutorial14_27,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "1’in kardeşi 9.",
@@ -12175,7 +12711,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_28
+                soundResource = R.raw.tutorial14_28,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "10 gider 9 gelir.",
@@ -12183,7 +12735,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_29
+                soundResource = R.raw.tutorial14_29,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "10 gider.",
@@ -12193,7 +12761,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom1", 2)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_30
+                soundResource = R.raw.tutorial14_30,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "9 gelir.",
@@ -12201,7 +12785,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_31
+                soundResource = R.raw.tutorial14_31,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "9 gelir.",
@@ -12213,6 +12813,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
                     BeadAnimation(this, "rod3_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "3’ü çıkarırken yaptığım 10 gider adımını tamamlamış oldum.",
@@ -12220,7 +12836,23 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_32
+                soundResource = R.raw.tutorial14_32,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "Son olarak 3’ün kardeşi 7 gelir ve işlem biter.",
@@ -12228,7 +12860,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_33
+                soundResource = R.raw.tutorial14_33,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "Son olarak 3’ün kardeşi 7 gelir ve işlem biter.",
@@ -12238,12 +12885,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "Cevap 97.",
+                questionText = "100 - 3",
+                questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_34
+                soundResource = R.raw.tutorial14_34,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "Yaptığımız işlemleri tekrarlayalım.",
@@ -12270,7 +12937,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom1", 1)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_36
+                soundResource = R.raw.tutorial14_36,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "3’ü doğrudan veya 5’lik kural ile çıkaramıyorum. 10’luk kural ile çıkaracağım.",
@@ -12278,7 +12950,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_37
+                soundResource = R.raw.tutorial14_37,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
                 "10 gider. 3’ün kardeşi 7 gelir.",
@@ -12286,7 +12961,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_38
+                soundResource = R.raw.tutorial14_38,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
             ),
             TutorialStep(
                 "10 gider.",
@@ -12301,7 +12991,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 3)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_39
+                soundResource = R.raw.tutorial14_39,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
             ),
             TutorialStep(
                 "Kardeşi 7 gelir.",
@@ -12309,7 +13014,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_40
+                soundResource = R.raw.tutorial14_40,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
 
             ),
             TutorialStep(
@@ -12320,6 +13039,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 7 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.tenRuleExtractionTableLayout,
             ),
             TutorialStep(
                 "Cevap 97.",
@@ -12344,7 +13077,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_top", 4)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_41
+                soundResource = R.raw.tutorial14_41,
+                abacusReset = true
 
             ),
             TutorialStep(
@@ -12356,26 +13090,71 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_42
+                soundResource = R.raw.tutorial9_1000,
+                abacusReset = true,
+                requestText = "Yüzler basamağına 1 adet 1'lik boncuk ekle.",
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
-                "Şimdi 2. sayıyı çıkaralım.",
+                "9'u 10'luk kural ile çıkaracağız. Önce '10 gider' adımını yapıp 'Kontrol Et' butonuna tıkla.", //ses değişecek
                 questionText = "100 - 9",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_43
+                soundResource = R.raw.tutorial1400_0,
+                answerNumber = 90,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 100,
+                requestText = "10 gider adımını yaparken 10'luk çıkarma kuralı kullanacağız. Yüzler basamağındaki 1'lik boncuğu çıkar. Onlar basamağına 9 sayısını ekle.",
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 1 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
-                "10 gider. 9’un kardeşi 1 gelir.",
+                "Ve 9'un kardeşi 1 gelir adımını yapıp işlemi sonlandır.", //ses değişecek
                 questionText = "100 - 9",
                 questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_1,
                 answerNumber = 91,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_44
+                backAnswerNumber = 90,
+                requestText = "Birler basamağına 1 ekle.",
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 1 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
                 "Cevap 91.",
@@ -12383,7 +13162,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_45
+                soundResource = R.raw.tutorial14_45,
+                abacusReset = true
             ),
             TutorialStep(
                 "Bir de bu işleme bakalım.",
@@ -12392,7 +13172,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 onStepComplete = { resetAbacus("onStepComplete_callback") },
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_46
+                soundResource = R.raw.tutorial14_46,
+                abacusReset = true
 
             ),
             TutorialStep(
@@ -12404,54 +13185,143 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_47
+                soundResource = R.raw.tutorial9_1000,
+                abacusReset = true,
+                requestText = "Yüzler basamağına 5'lik, onlar basamağına 3 adet 1'lik boncuk ekle.",
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
-                "Şimdi 2. sayının en büyük basamağından başlayarak çıkarma işlemini yapalım.",
+                "40'ı 10'luk kural ile çıkaracağız. Önce '10 gider' adımını yapıp 'Kontrol Et' butonuna tıkla.",
                 questionText = "530 - 41",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_48
-            ),
+                soundResource = R.raw.tutorial1400_2,
+                answerNumber = 430,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 530,
+                requestText = "10 gider adımını yaparken 5'lik çıkarma kuralı kullanacağız. Yüzler basamağındaki 5'lik boncuğu çıkar, 4 adet 1'lik boncuk ekle.",
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+
+                ),
             TutorialStep(
-                "Önce onlar basamağını çıkaralım.",
+                "Ve 4'ün kardeşi 6 gelir adımını yapıp 'Kontrol et' butonuna tıkla.", //ses değişecek
                 questionText = "530 - 41",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_49
-            ),
-            TutorialStep(
-                "4’ün kardeşi 6'dır. 10 gider. 6 gelir.",
-                questionText = "530 - 41",
-                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial1400_3,
                 answerNumber = 490,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_50
+                backAnswerNumber = 430,
+                requestText = "Onlar basamağına 6 ekle.",
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),
             TutorialStep(
-                "Şimdi birler basamağını çıkaralım.",
+                "Onlar basamağını çıkardık. Sıra birler basamağında.",
                 questionText = "530 - 41",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_51
+                soundResource = R.raw.tutorial1400_4,
+                backAnswerNumber = 490,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
             ),
             TutorialStep(
-                "1’in kardeşi 9. 10 gider. 9 gelir.",
+                "1'i 10'luk kural ile çıkaracağız. Önce birler basamağında '10 gider' adımını yapıp 'Kontrol Et' butonuna tıkla.",
+            questionText = "530 - 41",
+            questionTextVisibility = View.VISIBLE,
+            useTypewriterEffect = true,
+            typewriterSpeed = 40L,
+            soundResource = R.raw.tutorial1400_5,
+            answerNumber = 480,
+            nextStepAvailable = false,
+            abacusClickable = true,
+            backAnswerNumber = 490,
+                requestText = "Onlar basamağından 1 adet 1'lik boncuk çıkar.",
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 9 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+
+            ),
+            TutorialStep(
+                "Ve 1'in kardeşi 9 gelir adımını yapıp işlemi sonlandır.", //ses değişecek
                 questionText = "530 - 41",
                 questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_6,
                 answerNumber = 489,
                 nextStepAvailable = false,
                 abacusClickable = true,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_52
-            ),
+                backAnswerNumber = 480,
+                requestText = "Birler basamağına 9 ekle.",
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 9 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+        ),
             TutorialStep(
                 "Cevap 489.",
                 questionText = "530 - 41",
@@ -12459,12 +13329,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial14_53
-            ),
-            TutorialStep(
-                "Şimdi teste geçelim.",
+            ),TutorialStep(
+                "10'luk çıkarmada '10 gider' adımını yaparken 10'u doğrudan çıkaramıyorsak sırasıyla hangi kuralları yapmaya çalışırız?", //yukardaki ile aynı
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial14_54
+                soundResource = R.raw.tutorial1400_7,
+                options = listOf("Kuralsız çıkarma. Olmazsa 5'lik çıkarma","5'lik çıkarma. Olmazsa 10'luk çıkarma","10'luk çıkarma. Olmazsa kuralsız çıkarma"),
+                correctOptionIndex = listOf(1),
+                multipleChoice = false,
+                optionText = "10'luk çıkarmada '10 gider' adımını yaparken 10'u doğrudan çıkaramıyorsak sırasıyla hangi kuralları yapmaya çalışırız?",
+                requestText = "İlk 5'lik çıkarma yapmayı deneriz. Eğer kullanabileceğimiz 5'lik boncuk yoksa 10'luk çıkarmayı yaparız."
+            ),
+            TutorialStep(
+                "Teste geç.",
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial15_27
             )
         )
     }
@@ -12481,7 +13361,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial10_6
             ),TutorialStep(
-                "4’ü doğrudan yada 5’lik kural ile çıkaramıyorum. O zaman 10’luk kural ile çıkaracağım.",
+                "4’ü doğrudan ya da 5’lik kural ile çıkaramıyorum. O zaman 10’luk kural ile çıkaracağım.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 widgetOperations = listOf(
@@ -12490,16 +13370,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_2
+                soundResource = R.raw.tutorial15_2,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
 
             ),TutorialStep(
                 "10 gider. Kardeşi 6 gelir.",
@@ -12509,14 +13392,42 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_3
+                soundResource = R.raw.tutorial15_3,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "10 gider adımını yapacağım.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_4
+                soundResource = R.raw.tutorial15_4,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Onlar basamağından 1 çıkaracağım.",
                 questionText = "500 - 4",
@@ -12537,16 +13448,30 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_5
+                soundResource = R.raw.tutorial15_5,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
 
             ),TutorialStep(
                 "Ama 1’i doğrudan ya da 5’lik kural ile çıkaramıyorum.",
@@ -12554,21 +13479,63 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_6
+                soundResource = R.raw.tutorial15_6,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "O zaman 10’luk kural ile çıkaracağım.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_7
+                soundResource = R.raw.tutorial15_7,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "10 gider. Kardeşi 9 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_8
+                soundResource = R.raw.tutorial15_8,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Yüzler basamağından 1 çıkaracağım.",
                 questionText = "500 - 4",
@@ -12589,16 +13556,30 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateSize(
                             view = focusView,
                             fromWidth = 0,
-                            toWidth = dpToPx(60),
+                            toWidth = dpToPx(55),
                             fromHeight = 0,
-                            toHeight = dpToPx(240),
+                            toHeight = dpToPx(270),
                             duration = 400
                         )
                     }
                 ),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_9
+                soundResource = R.raw.tutorial15_9,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
 
             ),TutorialStep(
                 "Doğrudan çıkaramıyorum. Yukarıda 5’lik boncuğum var. 5’lik kural uygulayacağım.",
@@ -12606,7 +13587,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_10
+                soundResource = R.raw.tutorial15_10,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "5 gider. Kardeşi 4 gelir.",
                 questionText = "500 - 4",
@@ -12615,7 +13610,21 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.ChangeVisibility(focusView, View.GONE) }),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_11
+                soundResource = R.raw.tutorial15_11,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "5 gider.",
                 questionText = "500 - 4",
@@ -12624,14 +13633,42 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_top", 4)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_12
+                soundResource = R.raw.tutorial15_12,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Kardeşi 4 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_13
+                soundResource = R.raw.tutorial15_13,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Kardeşi 4 gelir.",
                 questionText = "500 - 4",
@@ -12641,13 +13678,41 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom3", 1),
                     BeadAnimation(this, "rod2_bead_bottom1", 1),
                     BeadAnimation(this, "rod2_bead_bottom2", 1)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Şimdi bir önceki adımdaki 9 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_14
+                soundResource = R.raw.tutorial15_14,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Şimdi bir önceki adımdaki 9 gelir.",
                 questionText = "500 - 4",
@@ -12658,20 +13723,60 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
                     BeadAnimation(this, "rod3_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
-                "Ve son olarak ilk adımdaki 4’ün kardeşi 6 gelir.",
+                "Böylelikle 10 gider adımını tamamladık. 4’ün kardeşi 6 gelir adımını yapıp işlemi sonlandırıyorum.", //Ses değişecek
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_15
+                soundResource = R.raw.tutorial15_15,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF")
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
-                "Ve son olarak ilk adımdaki 4’ün kardeşi 6 gelir.",
+                "Böylelikle 10 gider adımını tamamladık. 4’ün kardeşi 6 gelir adımını yapıp işlemi sonlandırıyorum.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF")
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Cevap 496.",
                 questionText = "500 - 4",
@@ -12705,28 +13810,73 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_18
+                soundResource = R.raw.tutorial15_18,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
             ),TutorialStep(
                 "10 gider. 4’ün kardeşi 6 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_19
+                soundResource = R.raw.tutorial15_19,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "10 gider adımını 10’luk kural ile çıkaracağım.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_20
+                soundResource = R.raw.tutorial15_20,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "10 gider. Kardeşi 9 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_21
+                soundResource = R.raw.tutorial15_21,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "10 gider.",
                 questionText = "500 - 4",
@@ -12739,14 +13889,42 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod2_bead_bottom2", 1)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_22
+                soundResource = R.raw.tutorial15_22,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Kardeşi 9 gelir.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_23
+                soundResource = R.raw.tutorial15_23,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Kardeşi 9 gelir.",
                 questionText = "500 - 4",
@@ -12757,27 +13935,60 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom2", 1),
                     BeadAnimation(this, "rod3_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
-                "İlk adımdaki 10 gider. 4’ün kardeşi 6 gelirdeki 10 gider adımını tamamladık.",
+                "10 gider adımını tamamladık. Son olarak kardeşi 6 gelir ve işlem biter.", //ses  değişecek
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_24
+                soundResource = R.raw.tutorial15_25,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
-                "En son olarak 6 geliyor ve işlem bitiyor.",
-                questionText = "500 - 4",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial15_25
-            ),TutorialStep(
-                "En son olarak 6 geliyor ve işlem bitiyor.",
+                "10 gider adımını tamamladık. Son olarak kardeşi 6 gelir ve işlem biter.",
                 questionText = "500 - 4",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod4_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 6 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
             ),TutorialStep(
                 "Cevap 496.",
                 questionText = "500 - 4",
@@ -12812,10 +14023,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             ),
             TutorialStep(
                 "Bu işleme bakalım.",
-                questionText = "12 - 8",
+                questionText = "11 - 6",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
                     BeadAnimation(this, "rod4_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom1", 1)),
                 useTypewriterEffect = true,
@@ -12824,77 +14034,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),
             TutorialStep(
-                "8'i 10'luk kural ile çıkaracağım.",
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_3
-
-            ),
-            TutorialStep(
-                "10 gider.",
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial12_17
-
-            ),
-            TutorialStep(
-                "10 gider.",
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2)),
-
-            ),
-            TutorialStep(
-                "8’in kardeşi 2 gelir.",
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_4
-            ),
-            TutorialStep(
-                "8’in kardeşi 2 gelir.",
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE
-            ),
-            TutorialStep(
-                "Burada 10’luk kuralı sorunsuz uygulayabildik.",
-                questionText = "12 - 8",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_5
-
-            ),
-            TutorialStep(
-                "Fakat bu işlemde...",
-                questionText = "11 - 6",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial12_14
-
-            ),
-            TutorialStep(
                 "6'yı 10'luk kural ile çıkaracağız.",
                 questionText = "11 - 6",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_7
+                soundResource = R.raw.tutorial16_7,
+                widgetVisibilityMap = mapOf(
+                    R.id.tenRuleExtractionTableLayout to View.VISIBLE,
+                ),
             ),
             TutorialStep(
                 "10 gider.",
@@ -12910,7 +14058,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 animation = listOf(
                     BeadAnimation(this, "rod3_bead_bottom1", 2)),
                 questionText = "11 - 6",
-                questionTextVisibility = View.VISIBLE,
+                questionTextVisibility = View.VISIBLE
 
             ),
             TutorialStep(
@@ -12928,11 +14076,15 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_9
+                soundResource = R.raw.tutorial16_9,
+                widgetVisibilityMap = mapOf(
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                    R.id.fiveRuleTable to View.VISIBLE,
+                    )
 
             ),
             TutorialStep(
-                "Birler basamağına 4 eklemek için 4’ün kardeşi 1 gider, 5 gelir.",
+                "Birler basamağına 4 eklemek için 4’ün kardeşi 5 gelir. 1 gider.",//ses değişecek
                 questionText = "11 - 6",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
@@ -12941,31 +14093,32 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             ),
             TutorialStep(
-                "1 gider.",
+                "5 gelir", //ses değişecek
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2)),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    ),
                 questionText = "11 - 6",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_11
+                soundResource = R.raw.tutorial3_13
 
             ),
             TutorialStep(
-                "5 gelir.",
+                "1 gider.",
                 questionText = "11 - 6",
                 questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_13,
+                soundResource = R.raw.tutorial16_11,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
 
             ),
             TutorialStep(
-                "5 gelir.",
+                "1 gider.",
                 animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2)),
                 questionText = "11 - 6",
-                questionTextVisibility = View.VISIBLE,
+                questionTextVisibility = View.VISIBLE
 
             ),
             TutorialStep(
@@ -12988,7 +14141,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1)),
                 soundResource = R.raw.tutorial5_28,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                widgetVisibilityMap = mapOf(
+                    R.id.tenRuleExtractionTableLayout to View.VISIBLE,
+                    R.id.fiveRuleTable to View.GONE,
+                    )
 
             ),
             TutorialStep(
@@ -13032,7 +14189,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_15
+                soundResource = R.raw.tutorial16_15,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.VISIBLE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                )
 
             ),
             TutorialStep(
@@ -13091,7 +14252,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom1", 1)),
                 soundResource = R.raw.tutorial5_28,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.GONE,
+                    R.id.tenRuleExtractionTableLayout to View.VISIBLE,
+                )
 
             ),
             TutorialStep(
@@ -13117,7 +14282,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_16
+                soundResource = R.raw.tutorial16_16,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.VISIBLE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                )
 
             ),
             TutorialStep(
@@ -13153,7 +14322,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom2", 1)),
                 soundResource = R.raw.tutorial5_28,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.GONE,
+                    R.id.tenRuleExtractionTableLayout to View.VISIBLE,
+                )
 
 
             ),
@@ -13172,8 +14345,6 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom1", 2)),
                 questionText = "14 - 9",
                 questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true
-
             ),
             TutorialStep(
                 "9’un kardeşi 1 gelir.",
@@ -13181,7 +14352,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial16_17
+                soundResource = R.raw.tutorial16_17,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.VISIBLE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                )
 
             ),
             TutorialStep(
@@ -13194,6 +14369,168 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_bottom4", 2)),
                 questionText = "14 - 9",
                 questionTextVisibility = View.VISIBLE,
+            ),
+            TutorialStep(
+                "Boncuk çıkarmanın 10'luk çıkarmadan farkı nedir?",
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial15_29,
+                options = listOf("Kardeş gelir adımında kardeşi 5'lik kural ile ekleriz.","10 gider adımını kuralsız olarak yapamayız.","Boncuk çıkarmanın 10'luk çıkarmadan farkı yoktur."),
+                correctOptionIndex = listOf(0),
+                multipleChoice = false,
+                optionText = "Boncuk çıkarmanın 10'luk çıkarmadan farkı nedir?",
+                requestText = "Kardeş gelir adımında kardeşi 5'lik kural ile ekleriz."
+            ),
+            TutorialStep(
+                "Bu işlemi beraber yapalım.",
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial14_41,
+                abacusReset = true,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4)),
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.GONE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                )
+                ),
+            TutorialStep(
+                "Önce ilk sayıyı abaküse yaz.",
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                answerNumber = 23,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial9_1000,
+                abacusReset = true,
+                requestText = "Onlar basamağına 2 adet, birler basamağına 3 adet birlik boncuk ekle.",
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                ),
+            ),
+            TutorialStep(
+                "6'yı boncuk kuralı ile çıkaracağız.",
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_10,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+            ),
+            TutorialStep(
+                "Yapacağımız adımlar. '10 gider. 6'nın kardeşi 4 gelir.'", //ses değişecek
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 23,
+                soundResource = R.raw.tutorial1400_11,
+                requestText = "Birler basamağına 1 ekle.",
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.GONE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                ),
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 4 gelir",
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+            ),TutorialStep(
+                "Önce '10 gider' adımını yapıp 'Kontrol Et' butonuna tıkla.", //ses değişecek
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_12,
+                answerNumber = 13,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 23,
+                requestText = "Onlar basamağından 1 adet birlik boncuk çıkar.",
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 4 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+            ),TutorialStep(
+                "Kardeşi 4 gelir adımını kuralsız ekleyemiyoruz. O yüzden 5'lik toplama kuralını uygulayacağız.", //ses değişecek
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_13,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 4 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                widgetVisibilityMap = mapOf(
+                    R.id.fiveRuleTable to View.VISIBLE,
+                    R.id.tenRuleExtractionTableLayout to View.GONE,
+                )
+            ),TutorialStep(
+                "5 gelir. 4'ün kardeşi 1 gider.", //ses değişecek
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial1400_14,
+                answerNumber = 17,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 13,
+                requestText = "Birler basamağına 1 adet 5'lik boncuk ekle, 1 adet birlik boncuk çıkar.",
+                rulesPanelVisibility = View.INVISIBLE,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 4 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                questionTextColorPositions = listOf(
+                    5 to Color.parseColor("#00BFFF"),
+                )
+            ),
+            TutorialStep(
+                "Cevap 17.",
+                questionText = "23 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial14_455,
             ),
             TutorialStep(
                 "Teste geç.",
@@ -13233,7 +14570,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 soundResource = R.raw.tutorial6_21,
                 useTypewriterEffect = true,
-                typewriterSpeed = 40L
+                typewriterSpeed = 40L,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                )
                 ),
 
             TutorialStep(
@@ -13242,7 +14584,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_1
+                soundResource = R.raw.tutorial17_1,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Onlar basamağından 8’i boncuk kuralı ile çıkaracağım.",
@@ -13250,7 +14595,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_2
+                soundResource = R.raw.tutorial17_2,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "10 gider.",
@@ -13258,14 +14606,20 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial12_17
+                soundResource = R.raw.tutorial12_17,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "10 gider.",
                 questionText = "434 - 86",
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom4", 2))
+                    BeadAnimation(this, "rod2_bead_bottom4", 2)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Kardeşi 2 gelir.",
@@ -13273,7 +14627,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial11_18
+                soundResource = R.raw.tutorial11_18,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Kardeşi 2 gelir.",
@@ -13283,7 +14640,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom2", 2),
                     BeadAnimation(this, "rod3_bead_bottom1", 2),
                     BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_top", 3))
+                    BeadAnimation(this, "rod3_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Şimdi birler basamağını aynı şekil boncuk kuralı ile çıkaracağım.",
@@ -13291,7 +14651,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_3
+                soundResource = R.raw.tutorial17_3,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "10 gider.",
@@ -13299,7 +14662,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial12_17
+                soundResource = R.raw.tutorial12_17,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "10 gider.",
@@ -13310,7 +14676,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod3_bead_bottom1", 1),
                     BeadAnimation(this, "rod3_bead_bottom3", 1),
                     BeadAnimation(this, "rod3_bead_bottom4", 1),
-                    BeadAnimation(this, "rod3_bead_top", 4))
+                    BeadAnimation(this, "rod3_bead_top", 4)),
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Kardeşi 4 gelir.",
@@ -13318,7 +14687,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial11_11
+                soundResource = R.raw.tutorial11_11,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Kardeşi 4 gelir.",
@@ -13326,7 +14698,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 animation = listOf(
                     BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 3))
+                    BeadAnimation(this, "rod4_bead_top", 3)),
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Cevap 348.",
@@ -13334,7 +14709,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_4
+                soundResource = R.raw.tutorial17_4,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
                 "Bu işlemi adım adım beraber yapalım.",
@@ -13354,7 +14732,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     BeadAnimation(this, "rod4_bead_top", 4)),
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_5
+                soundResource = R.raw.tutorial17_5,
+                abacusReset = true
                 ),
             TutorialStep(
                 "Önce ilk sayıyı abaküse yaz.",
@@ -13362,10 +14741,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 544,
                 nextStepAvailable = false,
+                abacusReset = true,
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial9_22
+                soundResource = R.raw.tutorial9_1000,
+                questionTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    2 to Color.parseColor("#00BFFF"),
+                ),
+                requestText = "Yüzler basamağına 1 adet 5'lik, onlar ve birler basamağına 4 adet 1'lik boncuk ekle."
                 ),
             TutorialStep(
                 "Şimdi, adım adım onlar basamağından 8’i çıkaralım.",
@@ -13373,37 +14759,64 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_6
+                soundResource = R.raw.tutorial17_6,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),
+                backAnswerNumber = 544
                 ),
             TutorialStep(
-                "Önce 10 gider adımını uygulayalım.",
+                "Önce 10 gider adımını yapıp 'Kontrol Et' butonuna tıkla.", //
                 questionText = "544 - 87",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 444,
                 nextStepAvailable = false,
                 abacusClickable = true,
                 useTypewriterEffect = true,
+                backAnswerNumber = 544,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_7
+                soundResource = R.raw.tutorial17_7,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 2 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                requestText = "Yüzler basamağından 1 çıkaracağız. 5 gider, 4 gelir."
                 ),
             TutorialStep(
-                "Güzel! Şimdi 8’in kardeşi 2 gelir adımını uygulayalım.",
+                "Şimdi 8’in kardeşi 2 gelir adımını yapıp 'Kontrol Et' butonuna tıkla.",
                 questionText = "544 - 87",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 464,
+                backAnswerNumber = 444,
                 nextStepAvailable = false,
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_8
+                soundResource = R.raw.tutorial17_8,
+                questionTextColorPositions = listOf(
+                    6 to Color.parseColor("#00BFFF"),
+                ),rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 2 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
                 ),
-            TutorialStep(
-                "Harika !",
-                questionText = "544 - 87",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_9
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                requestText = "Onlar basamağına 2 ekleyeceğiz. 5 gelir, 2'nin kardeşi 3 gider."
                 ),
             TutorialStep(
                 "Şimdi de adım adım birler basamağından 7’yi çıkaralım.",
@@ -13411,32 +14824,69 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_10
+                soundResource = R.raw.tutorial17_10,
+                backAnswerNumber = 464,
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
-                "Önce 10 gider adımını uygulayalım.",
+                "Önce 10 gider adımını yap.",
                 questionText = "544 - 87",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 454,
+                backAnswerNumber = 464,
                 nextStepAvailable = false,
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_11
+                soundResource = R.raw.tutorial17_11,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 3 gelir",
+                rulesStepTextColorPositions = listOf(
+                    0 to Color.parseColor("#00BFFF"),
+                    1 to Color.parseColor("#00BFFF"),
+                    3 to Color.parseColor("#00BFFF"),
+                    4 to Color.parseColor("#00BFFF"),
+                    5 to Color.parseColor("#00BFFF"),
+                    6 to Color.parseColor("#00BFFF"),
+                    7 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                requestText = "Onlar basamağından 1 adet birlik boncuk çıkaracağız.",
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
-                "Güzel, şimdi de 3 gelir adımını uygulayalım.",
+                "Şimdi de 7'nin kardeşi 3 gelir adımını uygula.",
                 questionText = "544 - 87",
                 questionTextVisibility = View.VISIBLE,
                 answerNumber = 457,
                 nextStepAvailable = false,
+                backAnswerNumber = 454,
                 abacusClickable = true,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial17_12
+                soundResource = R.raw.tutorial17_12,
+                rulesStepTextVisibility = View.VISIBLE,
+                rulesStepTextContent = "10 gider -> 3 gelir",
+                rulesStepTextColorPositions = listOf(
+                    12 to Color.parseColor("#00BFFF"),
+                    14 to Color.parseColor("#00BFFF"),
+                    15 to Color.parseColor("#00BFFF"),
+                    16 to Color.parseColor("#00BFFF"),
+                    17 to Color.parseColor("#00BFFF"),
+                    18 to Color.parseColor("#00BFFF"),
+                ),
+                rulesStepTextTopToBottomOf = R.id.guide_line_2_7,
+                requestText = "Birler basamağına 3 ekleyeceğiz. 5 gelir, kardeşi 2 gider.",
+                questionTextColorPositions = listOf(
+                    7 to Color.parseColor("#00BFFF"),
+                )
                 ),
             TutorialStep(
-                "Süper hemen kaptın.",
+                "Cevap 457.",
                 questionText = "544 - 87",
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
@@ -16448,6 +17898,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction { startInfoRequestBreathAnimation() }
                 .start()
 
             val okayButton = incorrectPanel.findViewById<Button>(R.id.okayButton)
@@ -16488,13 +17939,47 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
 
+    private fun startInfoRequestBreathAnimation() {
+        stopInfoRequestBreathAnimation()
+        val icon = binding.infoRequest
+        icon.scaleX = 1f
+        icon.scaleY = 1f
+        icon.imageTintList = ColorStateList.valueOf(INFO_REQUEST_TINT)
+        val evaluator = ArgbEvaluator()
+        infoRequestBreathAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 900L
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            addUpdateListener { anim ->
+                val t = anim.animatedValue as Float
+                val scale = 1f + INFO_REQUEST_BREATH_SCALE_DELTA * t
+                icon.scaleX = scale
+                icon.scaleY = scale
+                // Büyürken (t↑) renk açılır; küçülürken (t↓) normal tona döner.
+                val color = evaluator.evaluate(t, INFO_REQUEST_TINT, INFO_REQUEST_TINT_LIGHT) as Int
+                icon.imageTintList = ColorStateList.valueOf(color)
+            }
+            start()
+        }
+    }
+
+    private fun stopInfoRequestBreathAnimation() {
+        infoRequestBreathAnimator?.cancel()
+        infoRequestBreathAnimator = null
+        if (!::binding.isInitialized) return
+        binding.infoRequest.scaleX = 1f
+        binding.infoRequest.scaleY = 1f
+        binding.infoRequest.imageTintList = ColorStateList.valueOf(INFO_REQUEST_TINT)
+    }
+
     private fun dismissIncorrectResultPanel() {
         if (isTutorialResultButtonsCooldownActive()) return
         if (incorrectPanel.visibility != View.VISIBLE) return
 
-        if (requestPanelView != null && requestPanelView?.visibility == View.VISIBLE) {
-            hideRequestPanel(requestPanelView!!)
-        }
+        stopInfoRequestBreathAnimation()
+
+        dismissAllRequestPanels(animated = true)
 
         disableTutorialResultTouchBlock()
 
@@ -17822,6 +19307,10 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onDestroyView() {
         cancelPendingBackShowStep()
+        stopInfoRequestBreathAnimation()
+        if (::binding.isInitialized) {
+            dismissRequestPanelsImmediate()
+        }
         stopLearningSessionTracking()
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak

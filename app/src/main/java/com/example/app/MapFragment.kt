@@ -517,104 +517,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                )
-                93 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                )
-                94 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                )
-                95 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
                 )
                 96 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                )
-                97 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                )
-                98 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                )
-                99 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRules(),
@@ -632,62 +536,21 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
                     MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                )
-                101 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                )
-                102 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                )
-                103 -> listOf(
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme()
                 )
                 104 -> listOf(
                     MathOperationGenerator.extractionGenerateMathOperation(),
                     MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
-                    MathOperationGenerator.extractionGenerateMathOperation(),
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
                     MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTen(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
-                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtreme(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
+                    MathOperationGenerator.extractionGenerateMathOperationTenWithOtherRulesExtremeForMaraton(),
                 )
                 105 -> listOf(
                     MathOperation(11,"-", 6),
@@ -701,94 +564,8 @@ class MapFragment : Fragment() {
                     MathOperation(34,"-", 6),
                     MathOperation(24,"-", 7)
                 )
-                106 -> listOf(
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                )
-                107 -> listOf(
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                )
-                108 -> listOf(
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                )
+                106 -> MathOperationGenerator.extractionBeadRulesList(8)
                 109 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                )
-                110 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                )
-                111 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                )
-                112 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
                     MathOperationGenerator.extractionBeadRulesThreeTwo(),
                     MathOperationGenerator.extractionBeadRulesThreeTwo(),
                     MathOperationGenerator.extractionBeadRulesThreeTwo(),
@@ -807,57 +584,17 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.extractionBeadRulesFourThree(),
                     MathOperationGenerator.extractionBeadRulesFourThree(),
                     MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                )
-                114 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                )
-                115 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                )
-                116 -> listOf(
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
-                    MathOperationGenerator.extractionBeadRulesFourThree(),
+                    MathOperationGenerator.extractionBeadRulesFourThree()
                 )
                 117 -> listOf(
                     MathOperationGenerator.extractionBeadRules(),
                     MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
-                    MathOperationGenerator.extractionBeadRules(),
                     MathOperationGenerator.extractionBeadRulesThreeTwo(),
                     MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
-                    MathOperationGenerator.extractionBeadRulesThreeTwo(),
+                    MathOperationGenerator.extractionBeadRulesFourThree(),
+                    MathOperationGenerator.extractionBeadRulesFourThree(),
+                    MathOperationGenerator.extractionBeadRulesFourThree(),
+                    MathOperationGenerator.extractionBeadRulesFourThree(),
                     MathOperationGenerator.extractionBeadRulesFourThree(),
                     MathOperationGenerator.extractionBeadRulesFourThree(),
                     MathOperationGenerator.extractionBeadRulesFourThree(),
@@ -1912,6 +1649,11 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
                 78 -> listOf(
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                    MathOperationGenerator.generalCollectionOneDigits(4),
+                )
+                1000 -> listOf(
                     MathOperationGenerator.generalCollectionOneDigits(6),
                     MathOperationGenerator.generalCollectionOneDigits(6),
                     MathOperationGenerator.generalCollectionOneDigits(6),
@@ -1922,9 +1664,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
                 80 -> listOf(
-                    MathOperationGenerator.generalCollectionTwoDigits(7),
-                    MathOperationGenerator.generalCollectionTwoDigits(7),
-                    MathOperationGenerator.generalCollectionTwoDigits(7),
+                    MathOperationGenerator.generalCollectionTwoDigits(2), //3 adet 7 olarak güncellenecek
+                    MathOperationGenerator.generalCollectionTwoDigits(2),
                 )
                 81 -> listOf(
                     MathOperationGenerator.generalCollectionThreeDigits(4),
@@ -2598,6 +2339,13 @@ class MapFragment : Fragment() {
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
         val chestIdx = MarathonGuideStore.firstMarathonLessonIndex()
+        val claimMapIdx = GlobalValues.mapFragmentStepIndex
+        LessonProgressDiag.logClaimVsMapAtNotify(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            globalPartId,
+            claimMapIdx,
+            LessonManager.getLessonItem(claimMapIdx),
+        )
         LessonProgressDiag.logListChestFinishSummary(
             "MapFragment.notifyVisibleAfterOverlayDismiss",
             globalPartId,
@@ -2609,6 +2357,13 @@ class MapFragment : Fragment() {
             chestIdx,
             GlobalLessonData.getLessonItem(chestIdx),
             "marathonCard",
+        )
+        LessonProgressDiag.logItem(
+            "MapFragment.notifyVisibleAfterOverlayDismiss",
+            globalPartId,
+            claimMapIdx,
+            GlobalLessonData.getLessonItem(claimMapIdx),
+            "claimedMapIdx",
         )
         (activity as? MainActivity)?.logMapTouchDiag(
             "MapFragment.notifyVisibleAfterOverlayDismiss",
@@ -2704,7 +2459,10 @@ class MapFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        val mayConsumeProgress = (activity as? MainActivity)?.shouldConsumeLessonProgressAnimationsOnMap() == true
+        if (mayConsumeProgress) {
+            GlobalValues.canConsumePendingLessonProgressAnimations = true
+        }
         if (::lessonsAdapter.isInitialized) {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }

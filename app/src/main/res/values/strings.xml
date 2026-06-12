@@ -83,6 +83,8 @@
     <string name="daily_question_continue_message">Mücadeleye devam etmek için 1 anahtar kullan.</string>
     <string name="daily_question_continue_close">Kapat</string>
     <string name="daily_question_continue_diamond">x1</string>
+    <string name="race_fast_forward_title">İleri Sar</string>
+    <string name="race_fast_forward_message">İleri sarmak için 1 anahtar kullan.</string>
     <string name="daily_question_insufficient_diamonds">Yeterli elmasın yok.</string>
     <string name="daily_question_insufficient_keys">Yeterli anahtarın yok.</string>
     <string name="missions_weekly_title">HAFTALIK GÖREVLER</string>
