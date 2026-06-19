@@ -2736,7 +2736,8 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    raceBusyLevel = 2
+                    raceBusyLevel = 2,
+                    raceTitle = "1 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2750,7 +2751,8 @@ object GlobalLessonData {
                     finishStepNumber = 78,
                     tutorialIsFinish = true,
                     timePeriod = 1000,
-                    raceBusyLevel = 2
+                    raceBusyLevel = 2,
+                    raceTitle = "1 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2764,7 +2766,8 @@ object GlobalLessonData {
                     finishStepNumber = 1000,
                     tutorialIsFinish = true,
                     timePeriod = 1000,
-                    raceBusyLevel = 2
+                    raceBusyLevel = 2,
+                    raceTitle = "1 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2777,8 +2780,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 4,
                     finishStepNumber = 80,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
-                    raceBusyLevel = 2
+                    timePeriod = 3000,
+                    raceBusyLevel = 2,
+                    raceTitle = "2 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2791,8 +2795,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 5,
                     finishStepNumber = 80,
                     tutorialIsFinish = true,
-                    timePeriod = 2500,
-                    raceBusyLevel = 2
+                    timePeriod = 2000,
+                    raceBusyLevel = 2,
+                    raceTitle = "2 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2801,12 +2806,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 81,
+                    startStepNumber = 1001,
                     mapFragmentIndex = 6,
-                    finishStepNumber = 81,
+                    finishStepNumber = 1001,
                     tutorialIsFinish = true,
-                    timePeriod = 8000,
-                    raceBusyLevel = 2
+                    timePeriod = 2000,
+                    raceBusyLevel = 2,
+                    raceTitle = "2 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2819,8 +2825,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 7,
                     finishStepNumber = 81,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
-                    raceBusyLevel = 2
+                    timePeriod = 4000,
+                    raceBusyLevel = 2,
+                    raceTitle = "3 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2829,12 +2836,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 82,
+                    startStepNumber = 81,
                     mapFragmentIndex = 8,
-                    finishStepNumber = 82,
+                    finishStepNumber = 81,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
-                    raceBusyLevel = 2
+                    timePeriod = 3000,
+                    raceBusyLevel = 2,
+                    raceTitle = "3 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2843,12 +2851,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 82,
+                    startStepNumber = 1002,
                     mapFragmentIndex = 9,
-                    finishStepNumber = 82,
+                    finishStepNumber = 1002,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    raceBusyLevel = 2
+                    raceBusyLevel = 2,
+                    raceTitle = "3 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2857,12 +2866,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1, //burdayız bra
-                    startStepNumber = 83,
+                    startStepNumber = 1003,
                     mapFragmentIndex = 10,
-                    finishStepNumber = 83,
+                    finishStepNumber = 1003,
                     tutorialIsFinish = true,
-                    timePeriod = 8000,
-                    raceBusyLevel = 2
+                    timePeriod = 1000,
+                    raceBusyLevel = 2,
+                    raceTitle = "1 basamaklı 15 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2871,12 +2881,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 83,
+                    startStepNumber = 1004,
                     mapFragmentIndex = 11,
-                    finishStepNumber = 83,
+                    finishStepNumber = 1004,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
-                    raceBusyLevel = 2
+                    timePeriod = 2000,
+                    raceBusyLevel = 2,
+                    raceTitle = "2 basamaklı 10 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2885,12 +2896,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 84,
+                    startStepNumber = 1005,
                     mapFragmentIndex = 12,
-                    finishStepNumber = 84,
+                    finishStepNumber = 1005,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
-                    raceBusyLevel = 2
+                    timePeriod = 2500,
+                    raceBusyLevel = 2,
+                    raceTitle = "3 basamaklı 10 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2899,12 +2911,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 84,
+                    startStepNumber = 1006,
                     mapFragmentIndex = 13,
-                    finishStepNumber = 84,
+                    finishStepNumber = 1006,
                     tutorialIsFinish = true,
-                    timePeriod = 3000,
-                    raceBusyLevel = 2
+                    timePeriod = 750,
+                    raceBusyLevel = 2,
+                    raceTitle = "1 basamaklı 20 adet sayı"
                 ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -2917,8 +2930,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 14,
                     finishStepNumber = 84,
                     tutorialIsFinish = true,
-                    timePeriod = 2500,
-                    raceBusyLevel = 2
+                    timePeriod = 2000,
+                    raceBusyLevel = 2,
+                    raceTitle = "4 basamaklı 10 adet sayı"
                 )
             )
             8 -> listOf(
@@ -2933,8 +2947,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 0,
                     finishStepNumber = 85,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
+                    timePeriod = 3000,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -2948,8 +2963,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 1,
                     finishStepNumber = 85,
                     tutorialIsFinish = true,
-                    timePeriod = 1000,
+                    timePeriod = 2000,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -2959,12 +2975,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 86,
+                    startStepNumber = 85,
                     mapFragmentIndex = 2,
-                    finishStepNumber = 86,
+                    finishStepNumber = 85,
                     tutorialIsFinish = true,
-                    timePeriod = 8000,
+                    timePeriod = 1000,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -2974,12 +2991,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 86,
+                    startStepNumber = 1007,
                     mapFragmentIndex = 3,
-                    finishStepNumber = 86,
+                    finishStepNumber = 1007,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
+                    timePeriod = 1000,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 6 adet sayı"
 
                     ),
                 LessonItem(
@@ -2989,12 +3007,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 87,
+                    startStepNumber = 86,
                     mapFragmentIndex = 4,
-                    finishStepNumber = 87,
+                    finishStepNumber = 86,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
+                    timePeriod = 3000,
                     raceBusyLevel = 1,
+                    raceTitle = "2 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -3004,12 +3023,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 87,
+                    startStepNumber = 86,
                     mapFragmentIndex = 5,
-                    finishStepNumber = 87,
+                    finishStepNumber = 86,
                     tutorialIsFinish = true,
-                    timePeriod = 3000,
+                    timePeriod = 2000,
                     raceBusyLevel = 1,
+                    raceTitle = "2 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -3019,12 +3039,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 88,
+                    startStepNumber = 1008,
                     mapFragmentIndex = 6,
-                    finishStepNumber = 88,
+                    finishStepNumber = 1008,
                     tutorialIsFinish = true,
-                    timePeriod = 8000,
+                    timePeriod = 2000,
                     raceBusyLevel = 1,
+                    raceTitle = "2 basamaklı 6 adet sayı"
 
                     ),
                 LessonItem(
@@ -3038,8 +3059,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 7,
                     finishStepNumber = 88,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
+                    timePeriod = 4000,
                     raceBusyLevel = 1,
+                    raceTitle = "3 basamaklı 4 adet sayı"
 
                     ),
                 LessonItem(
@@ -3053,10 +3075,12 @@ object GlobalLessonData {
                     mapFragmentIndex = 8,
                     finishStepNumber = 89,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
+                    timePeriod = 3000,
                     raceBusyLevel = 1,
+                    raceTitle = "3 basamaklı 4 adet sayı"
 
-                    ),
+
+                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Deha",
@@ -3070,8 +3094,10 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
+                    raceTitle = "3 basamaklı 6 adet sayı"
 
-                    ),
+
+                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Üst Zihin",
@@ -3079,13 +3105,15 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1, //burdayız bra
-                    startStepNumber = 90,
+                    startStepNumber = 1009,
                     mapFragmentIndex = 10,
-                    finishStepNumber = 90,
+                    finishStepNumber = 1009,
                     tutorialIsFinish = true,
-                    timePeriod = 8000,
+                    timePeriod = 1000,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 15 adet sayı"
 
+                    //1 15 2 10 3 10 1 20 4 10
                     ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
@@ -3094,12 +3122,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 90,
+                    startStepNumber = 1010,
                     mapFragmentIndex = 11,
-                    finishStepNumber = 90,
+                    finishStepNumber = 1010,
                     tutorialIsFinish = true,
-                    timePeriod = 5000,
+                    timePeriod = 2000,
                     raceBusyLevel = 1,
+                    raceTitle = "2 basamaklı 10 adet sayı"
 
                     ),
                 LessonItem(
@@ -3113,8 +3142,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 12,
                     finishStepNumber = 90,
                     tutorialIsFinish = true,
-                    timePeriod = 4000,
+                    timePeriod = 2500,
                     raceBusyLevel = 1,
+                    raceTitle = "3 basamaklı 10 adet sayı"
 
                     ),
                 LessonItem(
@@ -3128,8 +3158,9 @@ object GlobalLessonData {
                     mapFragmentIndex = 13,
                     finishStepNumber = 91,
                     tutorialIsFinish = true,
-                    timePeriod = 3000,
+                    timePeriod = 800,
                     raceBusyLevel = 1,
+                    raceTitle = "1 basamaklı 20 adet sayı"
 
                     ),
                 LessonItem(
@@ -3139,12 +3170,13 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    startStepNumber = 91,
+                    startStepNumber = 1011,
                     mapFragmentIndex = 14,
-                    finishStepNumber = 91,
+                    finishStepNumber = 1011,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
                     raceBusyLevel = 1,
+                    raceTitle = "4 basamaklı 10 adet sayı"
 
                     )
             )

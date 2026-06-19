@@ -1664,13 +1664,24 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
                 80 -> listOf(
-                    MathOperationGenerator.generalCollectionTwoDigits(2), //3 adet 7 olarak güncellenecek
-                    MathOperationGenerator.generalCollectionTwoDigits(2),
+                    MathOperationGenerator.generalCollectionTwoDigits(4), //3 adet 7 olarak güncellenecek
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
+                1001 -> listOf(
+                    MathOperationGenerator.generalCollectionTwoDigits(6),
+                    MathOperationGenerator.generalCollectionTwoDigits(6),
+                    MathOperationGenerator.generalCollectionTwoDigits(6),
+                    )
                 81 -> listOf(
                     MathOperationGenerator.generalCollectionThreeDigits(4),
                     MathOperationGenerator.generalCollectionThreeDigits(4),
                     MathOperationGenerator.generalCollectionThreeDigits(4),
+                )
+                1002 -> listOf(
+                    MathOperationGenerator.generalCollectionThreeDigits(6),
+                    MathOperationGenerator.generalCollectionThreeDigits(6),
+                    MathOperationGenerator.generalCollectionThreeDigits(6),
                 )
                 82 -> listOf(
                     MathOperationGenerator.generalCollectionThreeDigits(7),
@@ -1678,41 +1689,79 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionThreeDigits(7),
                 )
                 83 -> listOf(
-                    MathOperationGenerator.generalCollectionFourDigits(4),
-                    MathOperationGenerator.generalCollectionFourDigits(4),
-                    MathOperationGenerator.generalCollectionFourDigits(4),
+                    //MathOperationGenerator.generalCollectionFourDigits(4),
+                    //MathOperationGenerator.generalCollectionFourDigits(4),
+                    //MathOperationGenerator.generalCollectionFourDigits(4),
+                )
+                1003 -> listOf(
+                    MathOperationGenerator.generalCollectionOneDigits(15),
+                    MathOperationGenerator.generalCollectionOneDigits(15),
+                    MathOperationGenerator.generalCollectionOneDigits(15)
+                )
+                1004 -> listOf(
+                    MathOperationGenerator.generalCollectionTwoDigits(10),
+                    MathOperationGenerator.generalCollectionTwoDigits(10),
+                    MathOperationGenerator.generalCollectionTwoDigits(10)
+                )
+                1005 -> listOf(
+                    MathOperationGenerator.generalCollectionThreeDigits(10),
+                    MathOperationGenerator.generalCollectionThreeDigits(10),
+                    MathOperationGenerator.generalCollectionThreeDigits(10)
+                )
+                1006 -> listOf(
+                    MathOperationGenerator.generalCollectionOneDigits(20),
+                    MathOperationGenerator.generalCollectionOneDigits(20),
+                    MathOperationGenerator.generalCollectionOneDigits(20)
                 )
                 84 -> listOf(
-                    MathOperationGenerator.generalCollectionFourDigits(7),
-                    MathOperationGenerator.generalCollectionFourDigits(7),
-                    MathOperationGenerator.generalCollectionFourDigits(7),
+                    MathOperationGenerator.generalCollectionFourDigits(10),
+                    MathOperationGenerator.generalCollectionFourDigits(10),
+                    MathOperationGenerator.generalCollectionFourDigits(10),
                 )
                 85 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                    MathOperationGenerator.generateSequenceExtractionRace(4),
+                )
+                1007 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRace(6),
+                    MathOperationGenerator.generateSequenceExtractionRace(6),
+                    MathOperationGenerator.generateSequenceExtractionRace(6),
                 )
                 86 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(4),
+                )
+                1008 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(6),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(6),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(6)
                 )
                 87 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
                     MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7),
-                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigits(7)
                 )
                 88 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
                     MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
                     MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(4),
+                )
+                1009 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(15),
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(15),
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(15),
+                )
+                1010 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigitsHard(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigitsHard(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceTwoDigitsHard(10),
+                )
+                1011 -> listOf(
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(10),
                 )
                 89 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7),
@@ -1721,19 +1770,14 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequenceExtractionRaceThreeDigits(7)
                 )
                 90 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(4),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigitsHard(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigitsHard(10),
+                    MathOperationGenerator.generateSequenceExtractionRaceThreeDigitsHard(10),
                 )
                 91 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7),
-                    MathOperationGenerator.generateSequenceExtractionRaceFourDigits(7)
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(20),
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(20),
+                    MathOperationGenerator.generateSequenceExtractionRaceHard(20),
                 )
                 else -> emptyList()
             }
