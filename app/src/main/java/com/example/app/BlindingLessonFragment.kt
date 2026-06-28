@@ -13,6 +13,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -29,10 +31,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.airbnb.lottie.LottieAnimationView
+import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.MapFragment.Companion.getLessonOperationsBlinding
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
@@ -68,6 +72,8 @@ class BlindingLessonFragment : Fragment() {
     private var currentIndex = 0
     private var answerNumber = 0
     private var lastClickTime = 0L
+    private var isResultPanelAnimating = false
+    private var controlButtonListener: View.OnTouchListener? = null
     private var controlNumber = 0
     private var correctAnswer = 0
     private var totalQuestions = 0
@@ -88,6 +94,30 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var fabHintTouchArea: View
     private lateinit var lessonItem : LessonItem
     private lateinit var rulesBookButton: ImageView
+    private lateinit var rulesPanelButton: ImageView
+
+    private enum class RulesPanelTableType {
+        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION, MULTIPLICATION
+    }
+
+    private var activeRulesPanelTable = RulesPanelTableType.NONE
+    private var selectedMultiplicationDigit: Int? = null
+    private var inflatedMultiplicationDigit: Int? = null
+
+    private fun multiplicationLayoutForDigit(digit: Int): Int = when (digit) {
+        1 -> R.layout.multiplication_table_1
+        2 -> R.layout.multiplication_table_2
+        3 -> R.layout.multiplication_table_3
+        4 -> R.layout.multiplication_table_4
+        5 -> R.layout.multiplication_table_5
+        6 -> R.layout.multiplication_table_6
+        7 -> R.layout.multiplication_table_7
+        8 -> R.layout.multiplication_table_8
+        9 -> R.layout.multiplication_table_9
+        else -> R.layout.multiplication_table_1
+    }
+
+    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..6
     private var resultDialog: Dialog? = null
 
     private var seconds = 0
@@ -199,16 +229,35 @@ class BlindingLessonFragment : Fragment() {
             binding.hintContainer.visibility = View.GONE
             binding.fabHintTouchArea.visibility = View.GONE
             binding.rulesBookButton.visibility = View.GONE
+            binding.rulesPanelButton.visibility = View.GONE
         }
+        setupAskQuestionButton()
         controlButtonAnim()
         setupStartButton()
         setupQuitButton()
         setupBackPressHandler()
         rulesBookButtonClick()
+        rulesPanelButtonClick()
+        updateActiveRulesPanelTable()
+        rulesBookVisibility()
         resetClickListener()
         blindingOrRace()
         setupAbacusController()
+        setupKeyboardVisibilityListener()
     }
+
+    private fun setupAskQuestionButton() {
+        val authManager = AuthManager().also { it.initialize(requireContext()) }
+        AskQuestionButtonBinder.bind(
+            fragment = this,
+            button = binding.askQuestionButton,
+            isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER,
+            onAllowedClick = {
+                (activity as? MainActivity)?.startQuestionFlow(R.id.abacusFragmentContainer) { view }
+            },
+        )
+    }
+
 
     private fun uploadLessonData(){
         operations = arguments?.getSerializable("operations") as? List<Any> ?: emptyList()
@@ -238,6 +287,9 @@ class BlindingLessonFragment : Fragment() {
         else{
             timerTextView.visibility = View.INVISIBLE
         }
+        if(globalPartId == 4 || globalPartId == 5){
+            timerTextView.visibility = View.INVISIBLE
+        }
     }
 
     private fun startTimerIfNeeded() {
@@ -257,6 +309,28 @@ class BlindingLessonFragment : Fragment() {
             showCurrentOperation()
         }
     }
+    private var rulesPanelVisibleBeforeKeyboard = false
+
+    private fun setupKeyboardVisibilityListener() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+            if (binding.numberInput.visibility == View.VISIBLE) {
+                if (imeVisible) {
+                    rulesPanelVisibleBeforeKeyboard =
+                        binding.rulesPanelScrollView.visibility == View.VISIBLE
+                    binding.rulesPanelScrollView.visibility = View.GONE
+                    rulesPanelButton.isEnabled = false
+                } else {
+                    if (rulesPanelVisibleBeforeKeyboard) {
+                        binding.rulesPanelScrollView.visibility = View.VISIBLE
+                    }
+                    rulesPanelButton.isEnabled = true
+                }
+            }
+            insets
+        }
+    }
+
     private fun blindingOrRace() {
         if (lessonItem.isBlinding == true) {
             binding.abacusLinear.visibility = View.INVISIBLE
@@ -284,6 +358,7 @@ class BlindingLessonFragment : Fragment() {
         timerTextView = binding.timerTextView
         binding.resetButton.frame = 20
         rulesBookButton = binding.rulesBookButton
+        rulesPanelButton = binding.rulesPanelButton
         fabHint = binding.fabHint
         tvHint = binding.tvHint
         fabHintTouchArea = binding.fabHintTouchArea
@@ -344,6 +419,7 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun showHint() {
+        closeRulesPanelIfOpen()
         tvHint.text = lessonItem.lessonHint?.let { splitTextEqually(it) }
 
         // Play Lottie animation
@@ -396,7 +472,7 @@ class BlindingLessonFragment : Fragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun controlButtonAnim() {
-        controlButton.setOnTouchListener { v, event ->
+        controlButtonListener = View.OnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     v.animate()
@@ -433,7 +509,7 @@ class BlindingLessonFragment : Fragment() {
                 else -> false
             }
         }
-
+        controlButton.setOnTouchListener(controlButtonListener)
     }
     //Sorudaki sayıları gösterir
     private fun showCurrentOperation() {
@@ -490,6 +566,11 @@ class BlindingLessonFragment : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
+                    val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment")
+                    if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
+                        rulesFragment.closeWithAnimation()
+                        return
+                    }
                     closeFragment()
                 }
             },
@@ -515,18 +596,242 @@ class BlindingLessonFragment : Fragment() {
         main?.prepareMapReturnAfterLessonClaim()
         main?.finalizeMapReturnAfterLessonClaim("BlindingLessonFragment.quit")
     }
-    private fun rulesBookButtonClick(){
-        rulesBookButton.setOnClickListener{
-            childFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_down,
-                    0
-                )
-                .replace(R.id.rulesFragmentContainer, RulesFragment())
-                .commit()
+    private fun rulesBookButtonClick() {
+        rulesBookButton.setOnClickListener {
+            openRulesBook()
         }
-
     }
+
+    private fun rulesPanelButtonClick() {
+        rulesPanelButton.setOnClickListener {
+            onRulesPanelButtonClicked()
+        }
+    }
+
+    private fun onRulesPanelButtonClicked() {
+        updateActiveRulesPanelTable()
+        if (usesRulesTablePicker() && !hasRulesPanelContentToShow()) {
+            closeHintIfVisible()
+            openRulesBook()
+            return
+        }
+        toggleRulesPanelTable()
+    }
+
+    private fun hasRulesPanelContentToShow(): Boolean {
+        if (activeRulesPanelTable == RulesPanelTableType.NONE) return false
+        if (activeRulesPanelTable == RulesPanelTableType.MULTIPLICATION && selectedMultiplicationDigit == null) {
+            return false
+        }
+        return true
+    }
+
+    private fun isRulesPanelVisible(): Boolean =
+        binding.rulesPanelScrollView.visibility == View.VISIBLE
+
+    private fun closeRulesPanelIfOpen() {
+        if (isRulesPanelVisible()) {
+            hideAllRulesPanelTables()
+        }
+    }
+
+    private fun closeHintIfVisible() {
+        if (isHintVisible) {
+            hideHint()
+        }
+    }
+
+    private fun updateActiveRulesPanelTable() {
+        if (usesRulesTablePicker()) return
+        val index = lessonItem.mapFragmentIndex ?: return
+        activeRulesPanelTable = when {
+            index > 28 && globalPartId == 1 -> RulesPanelTableType.BEAD
+            index > 22 && globalPartId == 1 -> RulesPanelTableType.TEN
+            index > 16 && globalPartId == 1 -> RulesPanelTableType.TEN_FIVE
+            index >= 12 && globalPartId == 1 -> RulesPanelTableType.FIVE
+            index > 10 && globalPartId == 2 -> RulesPanelTableType.TEN_EXTRACTION
+            index > 5 && globalPartId == 2 -> RulesPanelTableType.FIVE
+            else -> RulesPanelTableType.NONE
+        }
+    }
+
+    private fun applyRulesTableSelection(selection: RulesFragment.RulesTableSelection) {
+        when (selection) {
+            RulesFragment.RulesTableSelection.FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
+            RulesFragment.RulesTableSelection.TEN_FIVE -> activeRulesPanelTable = RulesPanelTableType.TEN_FIVE
+            RulesFragment.RulesTableSelection.TEN -> activeRulesPanelTable = RulesPanelTableType.TEN
+            RulesFragment.RulesTableSelection.BEAD -> activeRulesPanelTable = RulesPanelTableType.BEAD
+            is RulesFragment.RulesTableSelection.MULTIPLICATION -> {
+                activeRulesPanelTable = RulesPanelTableType.MULTIPLICATION
+                selectedMultiplicationDigit = selection.digit
+            }
+        }
+        showActiveRulesPanelTable()
+    }
+
+    private fun ensureMultiplicationInSlot(digit: Int) {
+        val slot = binding.rulesPanelMultiplicationSlot
+        if (inflatedMultiplicationDigit != digit) {
+            slot.removeAllViews()
+            layoutInflater.inflate(multiplicationLayoutForDigit(digit), slot, true)
+            inflatedMultiplicationDigit = digit
+        }
+    }
+
+    private fun hideAllRulesPanelTables() {
+        binding.rulesPanelScrollView.visibility = View.GONE
+        binding.fiveRuleTableLinearLayout.visibility = View.GONE
+        binding.tenRuleFiveTableLayout.visibility = View.GONE
+        binding.tenRuleTableLinearLayout.visibility = View.GONE
+        binding.BeadRuleTable.visibility = View.GONE
+        binding.tenRuleExtractionTableLayout.visibility = View.GONE
+        binding.rulesPanelMultiplicationSlot.visibility = View.GONE
+    }
+
+    private fun applyRulesPanelFiveText() {
+        val index = lessonItem.mapFragmentIndex ?: return
+        if (globalPartId == 2 && index > 5) {
+            binding.fiveText.text = "Çıkarılacak Sayı"
+            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
+        } else {
+            binding.fiveText.text = "Eklenecek sayı"
+            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
+        }
+    }
+
+    private fun showActiveRulesPanelTable() {
+        closeHintIfVisible()
+        hideAllRulesPanelTables()
+        val activeTable = when (activeRulesPanelTable) {
+            RulesPanelTableType.FIVE -> {
+                applyRulesPanelFiveText()
+                binding.fiveRuleTableLinearLayout
+            }
+            RulesPanelTableType.TEN_FIVE -> binding.tenRuleFiveTableLayout
+            RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
+            RulesPanelTableType.BEAD -> binding.BeadRuleTable
+            RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
+            RulesPanelTableType.MULTIPLICATION -> {
+                val digit = selectedMultiplicationDigit
+                if (digit != null) {
+                    ensureMultiplicationInSlot(digit)
+                    binding.rulesPanelMultiplicationSlot
+                } else {
+                    null
+                }
+            }
+            RulesPanelTableType.NONE -> null
+        }
+        activeTable?.let {
+            binding.rulesPanelScrollView.visibility = View.VISIBLE
+            it.visibility = View.VISIBLE
+            binding.rulesPanelScrollView.bringToFront()
+        }
+    }
+
+    private fun toggleRulesPanelTable() {
+        if (activeRulesPanelTable == RulesPanelTableType.NONE) return
+        if (binding.rulesPanelScrollView.visibility == View.VISIBLE) {
+            hideAllRulesPanelTables()
+        } else {
+            showActiveRulesPanelTable()
+        }
+    }
+
+    private fun rulesBookVisibility() {
+        if (usesRulesTablePicker()) {
+            rulesBookButton.visibility = View.VISIBLE
+            rulesPanelButton.visibility = View.VISIBLE
+            return
+        }
+    }
+
+    private fun openRulesBook() {
+        childFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_down, 0)
+            .replace(R.id.rulesFragmentContainer, RulesFragment(), "rules_fragment")
+            .commit()
+        rulesBookSetup()
+        changeRulesTableText()
+    }
+
+    private fun rulesBookSetup() {
+        childFragmentManager.executePendingTransactions()
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+
+
+        if (usesRulesTablePicker()) {
+            rulesBookButton.visibility = View.VISIBLE
+            rulesPanelButton.visibility = View.VISIBLE
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateMultiplicationTablesVisibility(View.GONE)
+            rulesFragment?.setRulesTablePickerEnabled(true)
+            rulesFragment?.setOnRulesTableSelectedListener { selection ->
+                applyRulesTableSelection(selection)
+            }
+        } else {
+            rulesFragment?.setRulesTablePickerEnabled(false)
+            rulesFragment?.setOnRulesTableSelectedListener(null)
+        }
+        applyRulesDividersVisibility(rulesFragment)
+        if (!usesRulesTablePicker()) {
+            updateActiveRulesPanelTable()
+        }
+        if(globalPartId == 5){
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
+            rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
+            rulesFragment?.updateBeadRuleExtractionTableLayout(View.VISIBLE)
+        }
+        if(globalPartId == 6){
+            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
+            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
+            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateRulesDividerVisibilities(View.VISIBLE, View.VISIBLE, View.VISIBLE)
+            rulesFragment?.updateMultiplicationTablesVisibility(View.VISIBLE)
+            Log.d("kol","work")
+        }
+    }
+
+    private fun applyRulesDividersVisibility(rulesFragment: RulesFragment?) {
+        if (usesRulesTablePicker()) {
+            rulesFragment?.updateRulesDividerVisibilities(View.VISIBLE, View.VISIBLE, View.VISIBLE)
+            return
+        }
+        val index = lessonItem.mapFragmentIndex ?: return
+        val (view1, view2, view3) = when {
+            globalPartId == 1 && index > 11 -> Triple(
+                if (index > 16) View.VISIBLE else View.INVISIBLE,
+                if (index > 22) View.VISIBLE else View.INVISIBLE,
+                if (index > 28) View.VISIBLE else View.INVISIBLE
+            )
+            globalPartId == 2 && index in 11..15 -> Triple(
+                View.VISIBLE,
+                View.VISIBLE,
+                View.INVISIBLE
+            )
+            globalPartId == 2 && index in 16..20 -> Triple(
+                View.VISIBLE,
+                View.VISIBLE,
+                View.VISIBLE
+            )
+            else -> Triple(View.INVISIBLE, View.INVISIBLE, View.INVISIBLE)
+        }
+        rulesFragment?.updateRulesDividerVisibilities(view1, view2, view3)
+    }
+
+    private fun changeRulesTableText() {
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+        rulesFragment?.applyRulesTableHeaderTexts(globalPartId == 2)
+    }
+
+
     private fun playSound(soundResId: Int) {
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
@@ -558,16 +863,26 @@ class BlindingLessonFragment : Fragment() {
             // Overlay'i görünür yap
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
 
+            controlButton.isClickable = false
+            controlButton.isFocusable = false
+            controlButton.setOnTouchListener(null)
+
+            isResultPanelAnimating = true
+
             correctPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    isResultPanelAnimating = false
+                }
                 .start()
 
             // Geri tuşu dinleyicisi
             correctPanel.findViewById<Button>(R.id.continueButton)
                 .setOnTouchListener { v, event ->
+                    if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             v.animate()
@@ -580,6 +895,8 @@ class BlindingLessonFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            if (isResultPanelAnimating) return@setOnTouchListener true
+                            isResultPanelAnimating = true
                             val willFinishLesson = currentIndex + 1 > operations.size - 1
                             if (isDailyQuestionMode && willFinishLesson) {
                                 v.isEnabled = false
@@ -593,12 +910,24 @@ class BlindingLessonFragment : Fragment() {
                                 .setInterpolator(BounceInterpolator())
                                 .start()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+
+                            binding.root.postDelayed({
+                                if (isAdded) {
+                                    controlButton.isClickable = true
+                                    controlButton.isFocusable = true
+                                    controlButtonListener?.let { listener ->
+                                        controlButton.setOnTouchListener(listener)
+                                    }
+                                }
+                            }, 200)
+
                             correctPanel.animate()
                                 .translationY(correctPanel.height.toFloat())
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
                                     correctPanel.visibility = View.GONE
+                                    isResultPanelAnimating = false
                                 }
                                 .start()
                             if(lessonItem.isBlinding == null){
@@ -607,7 +936,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                finishLessonAfterLastQuestion()
+                                showQuestionPanel()
                             }
                             true
                         }
@@ -632,15 +961,26 @@ class BlindingLessonFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
+
+            controlButton.isClickable = false
+            controlButton.isFocusable = false
+            controlButton.setOnTouchListener(null)
+
+            isResultPanelAnimating = true
+
             incorrectPanel.animate()
                 .alpha(1f)
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    isResultPanelAnimating = false
+                }
                 .start()
 
             incorrectPanel.findViewById<Button>(R.id.okayButton)
                 .setOnTouchListener { v, event ->
+                    if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             v.animate()
@@ -667,10 +1007,10 @@ class BlindingLessonFragment : Fragment() {
                                     .translationY(incorrectPanel.height.toFloat())
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
-                                    .withEndAction {
-                                        incorrectPanel.visibility = View.GONE
-                                        handleDailyQuestionWrongAnswer()
-                                    }
+                                      .withEndAction {
+                                          incorrectPanel.visibility = View.GONE
+                                          showQuestionPanel(isWrongDailyQuestion = true)
+                                      }
                                     .start()
                                 return@setOnTouchListener true
                             }
@@ -686,13 +1026,15 @@ class BlindingLessonFragment : Fragment() {
                                     .translationY(incorrectPanel.height.toFloat())
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
-                                    .withEndAction {
-                                        incorrectPanel.visibility = View.GONE
-                                        showLessonResultFalse()
-                                    }
+                                      .withEndAction {
+                                          incorrectPanel.visibility = View.GONE
+                                          showQuestionPanel(isWrongRaceLesson = true)
+                                      }
                                     .start()
                                 return@setOnTouchListener true
                             }
+                            if (isResultPanelAnimating) return@setOnTouchListener true
+                            isResultPanelAnimating = true
                             currentIndex++
                             v.animate()
                                 .scaleX(1f)
@@ -701,12 +1043,24 @@ class BlindingLessonFragment : Fragment() {
                                 .setInterpolator(BounceInterpolator())
                                 .start()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+
+                            binding.root.postDelayed({
+                                if (isAdded) {
+                                    controlButton.isClickable = true
+                                    controlButton.isFocusable = true
+                                    controlButtonListener?.let { listener ->
+                                        controlButton.setOnTouchListener(listener)
+                                    }
+                                }
+                            }, 700)
+
                             incorrectPanel.animate()
                                 .translationY(incorrectPanel.height.toFloat())
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
                                     incorrectPanel.visibility = View.GONE
+                                    isResultPanelAnimating = false
                                 }
                                 .start()
                             if(lessonItem.isBlinding == null){
@@ -715,7 +1069,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                finishLessonAfterLastQuestion()
+                                showQuestionPanel()
                             }
                             true
                         }
@@ -938,13 +1292,71 @@ class BlindingLessonFragment : Fragment() {
     private fun raceLessonPassed(): Boolean =
         totalQuestions > 0 && correctAnswer == totalQuestions
 
+    private fun showQuestionPanel(
+        isWrongDailyQuestion: Boolean = false,
+        isWrongRaceLesson: Boolean = false
+    ) {
+        releaseLaunchTouchBlocker()
+        try {
+            if (::runnable.isInitialized) {
+                handler.removeCallbacks(runnable)
+            }
+        } catch (e: Exception) {}
+
+        val successRate = if (totalQuestions > 0) {
+            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        } else {
+            0f
+        }
+        val dersPuani = (successRate * 5f).toInt()
+        val worstCupTime = com.example.app.LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
+
+        val fragment = QuestionPanelFragment.newInstance(
+            correctAnswers = correctAnswer,
+            totalQuestions = totalQuestions,
+            successRate = successRate,
+            dersPuani = dersPuani,
+            globalPartId = globalPartId,
+            mapFragmentIndex = mapFragmentStepIndex,
+            lessonType = lessonItem.type,
+            currentTime = currentTime,
+            worstCupTime = worstCupTime
+        )
+
+        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
+            if (isWrongDailyQuestion) {
+                handleDailyQuestionWrongAnswer()
+            } else if (isWrongRaceLesson) {
+                showLessonResultFalse()
+            } else {
+                finishLessonAfterLastQuestion()
+            }
+        }
+
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+            .add(R.id.abacusFragmentContainer, fragment)
+            .hide(this)
+            .commit()
+    }
+
     private fun finishLessonAfterLastQuestion() {
         when {
             isDailyQuestionMode -> handleDailyQuestionLessonComplete()
             isRacePanelLesson() -> {
                 if (raceLessonPassed()) showChestResult() else showLessonResultFalse()
             }
-            lessonItem.type == 2 -> showChestResult()
+            globalPartId in setOf(4, 5, 6) -> {
+                // Başarı oranını hesapla
+                val successRate = if (totalQuestions > 0) (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100 else 0f
+
+                // Eğer başarı %50'den düşükse başarısız ekranına, değilse sandığa gönder
+                if (successRate < 50f) {
+                    showLessonResultFalse()
+                } else {
+                    showLessonResult()
+                }
+            }
             else -> showLessonResult()
         }
     }

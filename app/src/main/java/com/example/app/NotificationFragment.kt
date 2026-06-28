@@ -504,9 +504,10 @@ class NotificationFragment : Fragment() {
     }
 
     private fun openChatAfterPreload(questionId: String) {
+        val b = _binding ?: return
         // Loading göster, list tıklamalarını geçici olarak kapat
-        binding.chatLoading.visibility = View.VISIBLE
-        binding.questionsRecyclerView.isEnabled = false
+        b.chatLoading.visibility = View.VISIBLE
+        b.questionsRecyclerView.isEnabled = false
 
         firestore.collection("questions")
             .document(questionId)

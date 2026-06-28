@@ -610,86 +610,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
-                    )
-                119 -> listOf(
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
-                    )
-                120 -> listOf(
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
-                    )
-                121 -> listOf(
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
                     )
                 122 -> listOf(
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                123 -> listOf(
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                124 -> listOf(
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                125 -> listOf(
                     MathOperationGenerator.multiplicationLessFiveFull(),
                     MathOperationGenerator.multiplicationLessFiveFull(),
                     MathOperationGenerator.multiplicationLessFiveFull(),
@@ -710,57 +632,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                127 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                128 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                129 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
                 )
                 130 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
@@ -787,82 +660,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwo(),
                     MathOperationGenerator.multiplicationTwo(),
                 )
-                132 -> listOf(
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
-                133 -> listOf(
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
-                134 -> listOf(
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
                 135 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                )
-                136 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                )
-                137 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                )
-                138 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
@@ -872,9 +670,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
                 139 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
@@ -897,49 +692,8 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationThreeFull(),
                     MathOperationGenerator.multiplicationThreeFull(),
                     MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                )
-                141 -> listOf(
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                )
-                142 -> listOf(
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                )
-                143 -> listOf(
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
                 )
                 144 -> listOf(
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
-                    MathOperationGenerator.multiplicationThreeFull(),
                     MathOperationGenerator.multiplicationThreeFull(),
                     MathOperationGenerator.multiplicationThreeFull(),
                     MathOperationGenerator.multiplicationThreeFull(),
@@ -963,44 +717,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationThreeTwoFive(),
                     MathOperationGenerator.multiplicationThreeTwoFive(),
                     MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                )
-                146 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                )
-                147 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                )
-                148 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
                 )
                 149 -> listOf(
                     MathOperationGenerator.multiplicationThreeTwoFull(),
@@ -1011,51 +727,10 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationThreeTwoFull(),
                     MathOperationGenerator.multiplicationThreeTwoFull(),
                     MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                )
-                150 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                )
-                151 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                )
-                152 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
-                    MathOperationGenerator.multiplicationThreeTwoFull(),
                 )
                 153 -> listOf(
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
-                    MathOperationGenerator.multiplicationThreeTwoFive(),
+                    MathOperationGenerator.multiplicationThreeTwoFull(),
+                    MathOperationGenerator.multiplicationThreeTwoFull(),
                     MathOperationGenerator.multiplicationThreeTwoFull(),
                     MathOperationGenerator.multiplicationThreeTwoFull(),
                     MathOperationGenerator.multiplicationThreeTwoFull(),
@@ -1119,29 +794,10 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
                 )
                 5 -> listOf(
                     MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                )
-                6 -> listOf(
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                )
-                7 -> listOf(
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                )
-                8 -> listOf(
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
@@ -1154,119 +810,59 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
-                )
-                10 -> listOf(
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                )
-                11 -> listOf(
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                )
-                12 -> listOf(
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
-                    MathOperationGenerator.generateSequence1(3),
                     MathOperationGenerator.generateSequence1(3),
                 )
                 13 -> listOf(
                     MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
+                    MathOperationGenerator.generateSequence1(3),
                 )
                 14 -> listOf(
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3)
-                )
-                15 -> listOf(
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3)
-                )
-                16 -> listOf(
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3)
-                )
-                17 -> listOf(
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3)
-                )
-                18 -> listOf(
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3),
-                    MathOperationGenerator.generateSequence5Rules(3)
+                    MathOperationGenerator.generateSequence5RulesNew(3),
+                    MathOperationGenerator.generateSequence5RulesNew(3),
+                    MathOperationGenerator.generateSequence5RulesNew(3),
+                    MathOperationGenerator.generateSequence5RulesNew(3),
+                    MathOperationGenerator.generateSequence5RulesNew(3),
+                    MathOperationGenerator.generateSequence5RulesNew(3)
                 )
                 19 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                )
-                20 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                )
-                21 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
                 )
                 22 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                )
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOneCount(4),
+                    )
                 23 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-                    MathOperationGenerator.generateSequence10RulesEasy(3),
-
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    MathOperationGenerator.generateSequence10RulesEasyNew(3),
+                    )
+                1024 -> listOf(
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
+                    MathOperationGenerator.generateSequence10RulesEasyOldOneCount(4),
                     )
                 24 -> listOf(
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                )
-                25 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                )
-                26 -> listOf(
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                )
-                27 -> listOf(
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
@@ -1279,36 +875,16 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
                     MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
-                    MathOperationGenerator.generateSequence10RulesEasyOld(3),
                 )
                 29 -> listOf(
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
-                )
-                30 -> listOf(
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
                 )
-                31 -> listOf(
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                )
-                32 -> listOf(
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                )
-                33 -> listOf(
-                    MathOperationGenerator.generateSequenceBeadRules(3),
-                    MathOperationGenerator.generateSequenceBeadRules(3),
+                1029 -> listOf(
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
                     MathOperationGenerator.generateSequenceBeadRules(3),
@@ -1318,65 +894,8 @@ class MapFragment : Fragment() {
                 )
                 34 -> listOf(
                     MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                )
-                35 -> listOf(
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                )
-                36 -> listOf(
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                )
-                37 -> listOf(
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                )
-                38 -> listOf(
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
-                    MathOperationGenerator.generateSequenceExtraction(3),
                 )
                 39 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                )
-                40 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                )
-                41 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                )
-                42 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                )
-                43 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
-                    MathOperationGenerator.generateSequenceExtractionFiveRules(3),
                     MathOperationGenerator.generateSequenceExtractionFiveRules(3),
                     MathOperationGenerator.generateSequenceExtractionFiveRules(3),
                     MathOperationGenerator.generateSequenceExtractionFiveRules(3),
@@ -1389,62 +908,10 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequenceExtractionTenRules(3),
                     MathOperationGenerator.generateSequenceExtractionTenRules(3),
                     MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                )
-                45 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                )
-                46 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                )
-                47 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                )
-                48 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
-                    MathOperationGenerator.generateSequenceExtractionTenRules(3),
                     MathOperationGenerator.generateSequenceExtractionTenRules(3),
                     MathOperationGenerator.generateSequenceExtractionTenRules(3),
                 )
                 49 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                )
-                50 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                )
-                51 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                )
-                52 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                )
-                53 -> listOf(
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
-                    MathOperationGenerator.generateSequenceExtractionBeadRules(3),
                     MathOperationGenerator.generateSequenceExtractionBeadRules(3),
                     MathOperationGenerator.generateSequenceExtractionBeadRules(3),
                     MathOperationGenerator.generateSequenceExtractionBeadRules(3),
@@ -1458,31 +925,17 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
-
+                    MathOperationGenerator.multiplicationLessFive(),
                 )
-                55 -> listOf(
+                1054 -> listOf(
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
-
-                )
-                56 -> listOf(
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
                     MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
-                )
-                57 -> listOf(
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-
                 )
                 58 -> listOf(
                     MathOperationGenerator.multiplicationLessFiveFull(),
@@ -1490,73 +943,9 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationLessFiveFull(),
                     MathOperationGenerator.multiplicationLessFiveFull(),
                     MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                59 -> listOf(
                     MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                60 -> listOf(
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                61 -> listOf(
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                )
-                62 -> listOf(
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFive(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull(),
-                    MathOperationGenerator.multiplicationLessFiveFull()
                 )
                 63 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                64-> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                65 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                66 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                )
-                67 -> listOf(
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
-                    MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
                     MathOperationGenerator.multiplicationFull(),
@@ -1566,26 +955,6 @@ class MapFragment : Fragment() {
                 )
                 68 -> listOf(
                     MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
-                69 -> listOf(
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
-                70 -> listOf(
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                )
-                71 -> listOf(
                     MathOperationGenerator.multiplicationTwo(),
                     MathOperationGenerator.multiplicationTwo(),
                     MathOperationGenerator.multiplicationTwo(),
@@ -1601,8 +970,6 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwo(),
                     MathOperationGenerator.multiplicationTwo(),
                     MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
-                    MathOperationGenerator.multiplicationTwo(),
                 )
                 73 -> listOf(
                     MathOperationGenerator.multiplicationTwoFull(),
@@ -1610,35 +977,9 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
-                )
-                74 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                )
-                75 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                )
-                76 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                 )
                 77 -> listOf(
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
-                    MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),
                     MathOperationGenerator.multiplicationTwoFull(),

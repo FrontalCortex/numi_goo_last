@@ -194,14 +194,17 @@ class LessonAdapter(
                     // Buton metnini başta boş bırak (plan kontrolü tamamlanana kadar)
                     actionButton.text = ""
                     actionButton.isEnabled = false // Plan kontrolü tamamlanana kadar devre dışı
-                    recordLayout.setBackgroundResource(R.drawable.record_background)
-                    // Abonelik durumuna göre buton metnini ayarla
-                    record.text="Rekor: ${item.record}"
-                    fireAnim.visibility = View.VISIBLE
-                    
+                    if (globalPartId in setOf(4, 5)) {
+                        recordLayout.visibility = View.GONE
+                    } else {
+                        recordLayout.setBackgroundResource(R.drawable.record_background)
+                        // Abonelik durumuna göre buton metnini ayarla
+                        record.text = "Rekor: ${item.record}"
+                        fireAnim.visibility = View.VISIBLE
+                    }
                     // GuidePanel'in son adımında animasyon başlatma işlemi MapFragment'te yapılıyor
                     // Burada animasyon başlatmıyoruz çünkü kontrol ve başlatma MapFragment'te setOnLastStepReachedListener içinde yapılıyor
-                    
+
                     getCurrentPlan { plan ->
                         if (plan == "Free") {
                             actionButton.text = "Tekrar etmek için planı yükselt"
@@ -260,7 +263,9 @@ class LessonAdapter(
         // Rekor alanı: GuidePanel kapalıyken liderlik tablosu (RecordFragment).
         // Guide açıkken tıklanabilir kalmalı (son adım hedefi); listener sadece guide kapalıyken.
         recordLayout.setOnClickListener(null)
-        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && item.record != null) {
+        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && item.record != null &&
+            globalPartId !in setOf(4, 5)
+        ) {
             recordLayout.isClickable = true
             if (!isGuidePanelVisible) {
                 recordLayout.setOnClickListener {
@@ -288,6 +293,9 @@ class LessonAdapter(
             }
         } else {
             recordLayout.isClickable = false
+            if (globalPartId in setOf(4, 5)) {
+                recordLayout.visibility = View.GONE
+            }
         }
 
         // Scrim view'ı göster ve tıklama listener'ı ekle (sadece GuidePanel açık değilse)

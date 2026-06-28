@@ -178,9 +178,9 @@ class SplashActivity : AppCompatActivity() {
             launchMain(questionId, recipientUid, startDestination)
             return
         }
-        logFirstTutorial("Splash.prepareTutorialData", "GlobalLessonData.initialize partId=1")
-        GlobalLessonData.globalPartId = 1
-        GlobalLessonData.initialize(this, 1) {
+        logFirstTutorial("Splash.prepareTutorialData", "GlobalLessonData.initialize partId=4")
+        GlobalLessonData.globalPartId = 4
+        GlobalLessonData.initialize(this, 4) {
             logFirstTutorial(
                 "Splash.prepareTutorialData",
                 "init done lessonItems=${GlobalLessonData.lessonItems.size} item1=${GlobalLessonData.getLessonItem(1)?.tutorialNumber}",

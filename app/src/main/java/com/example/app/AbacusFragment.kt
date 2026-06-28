@@ -4,6 +4,7 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
@@ -151,10 +152,25 @@ class AbacusFragment : Fragment() {
     private lateinit var rulesPanelButton: ImageView
 
     private enum class RulesPanelTableType {
-        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION
+        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION, MULTIPLICATION
     }
 
     private var activeRulesPanelTable = RulesPanelTableType.NONE
+    private var selectedMultiplicationDigit: Int? = null
+    private var inflatedMultiplicationDigit: Int? = null
+
+    private fun multiplicationLayoutForDigit(digit: Int): Int = when (digit) {
+        1 -> R.layout.multiplication_table_1
+        2 -> R.layout.multiplication_table_2
+        3 -> R.layout.multiplication_table_3
+        4 -> R.layout.multiplication_table_4
+        5 -> R.layout.multiplication_table_5
+        6 -> R.layout.multiplication_table_6
+        7 -> R.layout.multiplication_table_7
+        8 -> R.layout.multiplication_table_8
+        9 -> R.layout.multiplication_table_9
+        else -> R.layout.multiplication_table_1
+    }
 
     // Rehber paneli sistemi
     data class GuideContent(
@@ -163,11 +179,17 @@ class AbacusFragment : Fragment() {
         val onContentShown: (() -> Unit)? = null, // Her içerik gösterildiğinde çağrılacak callback
         val bubbleAnimationTarget: View? = null, // Baloncuk animasyonu uygulanacak widget (opsiyonel)
         val bubbleAnimationColor: Int? = null, // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
+        val bubbleAnimationTintLight: Int? = null, // ImageView tint nefes animasyonu için açık renk (opsiyonel)
         val bubbleAnimationMaxScale: Float = 1.4f, // Baloncuk animasyonunun maksimum büyüme değeri (varsayılan: 1.4f)
         val beadIds: List<String>? = null, // Hareket ettirilecek boncuk ID'leri (opsiyonel) - adım gösterildiğinde çalışır
         val backBeadIds: List<String>? = null, // Geri gidildiğinde tetiklenecek boncuk ID'leri (null ise [beadIds] kullanılır)
         val finishBeadIds: List<String>? = null, // Adım biterken hareket ettirilecek boncuk ID'leri (opsiyonel)
-        val requiredClickTarget: View? = null // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın (opsiyonel)
+        val requiredClickTarget: View? = null, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın (opsiyonel)
+        val requiredClickAdvancesGuide: Boolean = false, // true → tıklamada rehber kapanmaz, sonraki adıma geçilir
+        val waitForRulesTableSelection: Boolean = false, // true → adım RulesFragment tablo seçimiyle tamamlanır
+        val soundResource: Int? = null, // Ses dosyası resource ID'si
+        val useTypewriterEffect: Boolean = false, // Typewriter effect kullanılsın mı?
+        val typewriterSpeed: Long = 40L, // Harf başına milisaniye
     )
     
     private val guideContentList = mutableListOf<GuideContent>()
@@ -179,6 +201,9 @@ class AbacusFragment : Fragment() {
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null // Mevcut baloncuk animasyonu
     private var currentAnimatedView: View? = null // Şu anda animasyon uygulanan view
     private var originalTextColor: Int? = null // TextView için orijinal renk
+    private var originalImageTintList: ColorStateList? = null // ImageView için orijinal tint
+    private var bubbleImageTintBreathApplied = false // imageTintList nefes animasyonu aktif mi
+    private var guideTypewriterRunnable: Runnable? = null
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
     private var fabHintTouchAreaListener: View.OnClickListener? = null // Hint touch area listener'ını saklamak için
 
@@ -342,7 +367,9 @@ class AbacusFragment : Fragment() {
                     text = "Bu testte toplama işlemini abaküste yapacaksın.",
                     onContentShown = {
                         // İlk içerik gösterildiğinde yapılacak işlemler
-                    },
+                    },useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide1_0,
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
@@ -353,7 +380,10 @@ class AbacusFragment : Fragment() {
                     bubbleAnimationTarget = binding.firstNumberText,
                     bubbleAnimationColor = Color.YELLOW,
                     beadIds = listOf("rod4BottomBead4"),
-                    backBeadIds = listOf("rod4BottomBead1")
+                    backBeadIds = listOf("rod4BottomBead1"),
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide1_1,
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
@@ -363,7 +393,10 @@ class AbacusFragment : Fragment() {
                     },
                     bubbleAnimationTarget = binding.secondNumberText,
                     bubbleAnimationColor = Color.YELLOW,
-                    beadIds = listOf("rod4TopBead")
+                    beadIds = listOf("rod4TopBead"),
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide1_2,
 
                 ),
                 GuideContent(
@@ -371,11 +404,17 @@ class AbacusFragment : Fragment() {
                     text = "ve işlem bitince kontrol et butonuna tıkla.",
                     bubbleAnimationTarget = binding.kontrolButton,
                     bubbleAnimationMaxScale = 1.1F,
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide1_3,
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_gpt3,
-                    text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin. ",
-                    finishBeadIds = listOf("rod4BottomBead1","rod4TopBead")
+                    text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin.",
+                    finishBeadIds = listOf("rod4BottomBead1","rod4TopBead"),
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide1_4,
                 )
                 // Daha fazla içerik eklenebilir
             )
@@ -383,14 +422,20 @@ class AbacusFragment : Fragment() {
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_gpt4,
                     text = "Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.",
-
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide2_0,
                 ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
                     text = "Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.",
-
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide2_1,
                     bubbleAnimationTarget = rulesPanelButton,
                     bubbleAnimationMaxScale = 1.1F,
+                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
+                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
                     requiredClickTarget = rulesPanelButton, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın
                 ),
             )
@@ -398,15 +443,51 @@ class AbacusFragment : Fragment() {
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_gpt4,
                     text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
-
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide3_0,
                     ),
                 GuideContent(
                     imageResource = R.drawable.teacher_emotes_stick,
                     text = "Burada öğrendiğin kurallar yer alır.",
-
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide3_1,
                     bubbleAnimationTarget = rulesBookButton,
+                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
+                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
                     bubbleAnimationMaxScale = 1.1F,
                     requiredClickTarget = rulesBookButton, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın
+                ),
+            )
+            4 -> listOf(
+                GuideContent(
+                    imageResource = R.drawable.teacher_emotes_gpt4,
+                    text = "Kurallar kitabına tıkladığında ekrana gelen kurallardan herhangi birisine tıklayarak tabloyu abaküsün üstüne alabilirsin.",
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide4_0,
+                ),
+                GuideContent(
+                    imageResource = R.drawable.teacher_emotes_gpt4,
+                    text = "Kurallar kitabına tıkla.",
+                    bubbleAnimationTarget = rulesBookButton,
+                    bubbleAnimationMaxScale = 1.1F,
+                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
+                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
+                    requiredClickTarget = rulesBookButton,
+                    requiredClickAdvancesGuide = true,
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide4_1,
+                ),
+                GuideContent(
+                    imageResource = R.drawable.teacher_emotes_gpt4,
+                    text = "Ekrana gelen kurallardan herhangi birisini seç.",
+                    waitForRulesTableSelection = true,
+                    useTypewriterEffect = true,
+                    typewriterSpeed = 40L,
+                    soundResource = R.raw.guide4_2,
                 ),
             )
             else -> emptyList()
@@ -476,6 +557,7 @@ class AbacusFragment : Fragment() {
 
         // Son adıma geldiysek guide panel'i kapat ve normal ders akışına geç
         if (currentGuideIndex >= guideContentList.size - 1) {
+            stopGuideTypewriter()
             // Guide panel'i kapat
             disableGuidePanelMode()
             // Panel'i sola kayarak gizle
@@ -501,7 +583,9 @@ class AbacusFragment : Fragment() {
             showPreviousGuideContent()
         }
         binding.btnForward.setOnClickListener {
-            if (guideContentList.getOrNull(currentGuideIndex)?.requiredClickTarget != null) return@setOnClickListener
+            val content = guideContentList.getOrNull(currentGuideIndex)
+            if (content?.requiredClickTarget != null) return@setOnClickListener
+            if (content?.waitForRulesTableSelection == true) return@setOnClickListener
             showNextGuideContent()
         }
     }
@@ -511,6 +595,86 @@ class AbacusFragment : Fragment() {
         binding.overlay.setOnTouchListener(null)
         binding.overlay.setOnClickListener { }
         panelContent.setOnClickListener(null)
+    }
+
+    /** Adım 3: RulesFragment tıklanabilir, abaküs overlay ile engelli. */
+    private fun applyGuideWaitForRulesSelectionOverlay() {
+        binding.overlay.visibility = View.VISIBLE
+        binding.overlay.isClickable = true
+        binding.overlay.isFocusable = true
+        binding.overlay.alpha = 0.01f
+        binding.overlay.setOnTouchListener { _, _ -> true }
+        panelContent.setOnClickListener(null)
+        binding.overlay.bringToFront()
+        binding.rulesFragmentContainer.bringToFront()
+        panelContent.bringToFront()
+        binding.btnBack.bringToFront()
+        binding.btnForward.bringToFront()
+    }
+
+    private fun openRulesBook() {
+        childFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_down, 0)
+            .replace(R.id.rulesFragmentContainer, RulesFragment(), "rules_fragment")
+            .commit()
+        rulesBookSetup()
+        changeRulesTableText()
+    }
+
+    private fun closeRulesBookIfOpen() {
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+        if (rulesFragment != null && rulesFragment.isVisible) {
+            rulesFragment.closeWithAnimation()
+        }
+    }
+
+    private fun completeGuideIfWaitingForRulesSelection() {
+        val content = guideContentList.getOrNull(currentGuideIndex) ?: return
+        if (!content.waitForRulesTableSelection || panelContent.visibility != View.VISIBLE) return
+        showNextGuideContent()
+    }
+
+    private fun handleRequiredClickTarget(content: GuideContent) {
+        stopBubbleAnimation()
+        when (content.requiredClickTarget) {
+            rulesBookButton -> openRulesBook()
+            rulesPanelButton -> openRulesPanelTableForGuide()
+        }
+        if (content.requiredClickAdvancesGuide) {
+            rulesBookButtonClick()
+            showNextGuideContent()
+        } else {
+            disableGuidePanelMode()
+            hideGuidePanelWithAnimation()
+            setGuideNavButtonsVisibility(View.GONE)
+            showCurrentOperation()
+        }
+    }
+
+    private fun applyGuideContentOverlay(content: GuideContent) {
+        if (content.requiredClickTarget != null) {
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+            binding.overlay.alpha = 0.01f
+            content.requiredClickTarget.bringToFront()
+            binding.overlay.setOnTouchListener { _, _ -> true }
+            panelContent.setOnClickListener(null)
+            content.requiredClickTarget.isClickable = true
+            content.requiredClickTarget.isFocusable = true
+            content.requiredClickTarget.bringToFront()
+            content.requiredClickTarget.setOnClickListener {
+                handleRequiredClickTarget(content)
+            }
+        } else if (content.waitForRulesTableSelection) {
+            applyGuideWaitForRulesSelectionOverlay()
+        } else {
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+            binding.overlay.alpha = 0.01f
+            applyGuideForwardBlockOverlay()
+        }
     }
     
     /**
@@ -530,6 +694,10 @@ class AbacusFragment : Fragment() {
             optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
                 animateGuideBead(beadId)
             }
+        }
+
+        if (currentContent.waitForRulesTableSelection) {
+            closeRulesBookIfOpen()
         }
 
         // Bir önceki adıma git
@@ -721,12 +889,13 @@ class AbacusFragment : Fragment() {
         
         // Önceki baloncuk animasyonunu durdur
         stopBubbleAnimation()
+        stopGuideTypewriter()
         
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
         ivGuideImage.setImageResource(content.imageResource)
-        tvGuideText.text = content.text
+        applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
         updateStepIndicator()
@@ -736,7 +905,12 @@ class AbacusFragment : Fragment() {
         
         // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
         content.bubbleAnimationTarget?.let { target ->
-            animateBubbleEffect(target, content.bubbleAnimationColor, maxScale = content.bubbleAnimationMaxScale)
+            animateBubbleEffect(
+                target,
+                content.bubbleAnimationColor,
+                content.bubbleAnimationTintLight,
+                maxScale = content.bubbleAnimationMaxScale,
+            )
         }
         
         // Eğer bu içerik için hareket ettirilecek boncuklar varsa animasyonu başlat
@@ -744,67 +918,7 @@ class AbacusFragment : Fragment() {
             animateGuideBead(beadId)
         }
         
-        // Eğer requiredClickTarget varsa, overlay'i görünür tut ama sadece requiredClickTarget'a tıklanabilir yap
-        if (content.requiredClickTarget != null) {
-            // Overlay'i görünür yap (diğer view'ları engellemek için)
-            binding.overlay.visibility = View.VISIBLE
-            binding.overlay.isClickable = true
-            binding.overlay.isFocusable = true
-            binding.overlay.alpha = 0.01f
-            
-            // Overlay'e tıklandığında tıklamayı yakala (diğer view'lara gitmesini engelle)
-            // requiredClickTarget'ı en üste getir ki overlay'in üstünde olsun
-            content.requiredClickTarget.bringToFront()
-            binding.overlay.setOnTouchListener { _, _ ->
-                // Tüm tıklamaları yakala (requiredClickTarget hariç)
-                true
-            }
-            
-            // panelContent'e tıklanmayı engelle
-            panelContent.setOnClickListener(null)
-            
-            // requiredClickTarget'ı tıklanabilir yap
-            content.requiredClickTarget.isClickable = true
-            content.requiredClickTarget.isFocusable = true
-            content.requiredClickTarget.bringToFront() // En üste getir
-            
-            // requiredClickTarget'a tıklandığında önce widget'in kendi işlemini yap, sonra guide panel'i kapat
-            content.requiredClickTarget.setOnClickListener {
-                // Bubble animasyonunu durdur
-                stopBubbleAnimation()
-                
-                // Widget'in kendi özel işlemini yap
-                if (content.requiredClickTarget == rulesBookButton) {
-                    // rulesBookButton'un kendi işlemini yap
-                    childFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_down,
-                            0
-                        )
-                        .replace(R.id.rulesFragmentContainer, RulesFragment(),"rules_fragment")
-                        .commit()
-                    rulesBookSetup()
-                    changeRulesTableText()
-                } else if (content.requiredClickTarget == rulesPanelButton) {
-                    openRulesPanelTableForGuide()
-                }
-                
-                // Guide panel'i kapat
-                disableGuidePanelMode()
-                hideGuidePanelWithAnimation()
-                setGuideNavButtonsVisibility(View.GONE)
-                
-                // Normal ders akışını başlat
-                showCurrentOperation()
-            }
-        } else {
-            // requiredClickTarget yoksa overlay yalnızca dokunuşu engeller; ilerleme btnForward ile
-            binding.overlay.visibility = View.VISIBLE
-            binding.overlay.isClickable = true
-            binding.overlay.isFocusable = true
-            binding.overlay.alpha = 0.01f
-            applyGuideForwardBlockOverlay()
-        }
+        applyGuideContentOverlay(content)
     }
     
     /**
@@ -817,12 +931,13 @@ class AbacusFragment : Fragment() {
         
         // Önceki baloncuk animasyonunu durdur
         stopBubbleAnimation()
+        stopGuideTypewriter()
         
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
         ivGuideImage.setImageResource(content.imageResource)
-        tvGuideText.text = content.text
+        applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
         updateStepIndicator()
@@ -832,60 +947,17 @@ class AbacusFragment : Fragment() {
         
         // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
         content.bubbleAnimationTarget?.let { target ->
-            animateBubbleEffect(target, content.bubbleAnimationColor, maxScale = content.bubbleAnimationMaxScale)
+            animateBubbleEffect(
+                target,
+                content.bubbleAnimationColor,
+                content.bubbleAnimationTintLight,
+                maxScale = content.bubbleAnimationMaxScale,
+            )
         }
         
         // Boncuk animasyonlarını çalıştırma (geri dönüş için)
         
-        // Eğer requiredClickTarget varsa, overlay'i gizle ve sadece bu widget'e tıklanabilir yap
-        if (content.requiredClickTarget != null) {
-            // Overlay'i gizle
-            binding.overlay.visibility = View.GONE
-            binding.overlay.isClickable = false
-            
-            // panelContent'e tıklanmayı engelle
-            panelContent.setOnClickListener(null)
-            
-            // requiredClickTarget'ı tıklanabilir yap
-            content.requiredClickTarget.isClickable = true
-            content.requiredClickTarget.isFocusable = true
-            
-            // requiredClickTarget'a tıklandığında guide panel'i kapat
-            content.requiredClickTarget.setOnClickListener {
-                // Bubble animasyonunu durdur
-                stopBubbleAnimation()
-                
-                // Widget'in kendi özel işlemini yap
-                if (content.requiredClickTarget == rulesBookButton) {
-                    // rulesBookButton'un kendi işlemini yap
-                    childFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_down,
-                            0
-                        )
-                        .replace(R.id.rulesFragmentContainer, RulesFragment(),"rules_fragment")
-                        .commit()
-                    rulesBookSetup()
-                    changeRulesTableText()
-                } else if (content.requiredClickTarget == rulesPanelButton) {
-                    openRulesPanelTableForGuide()
-                }
-                
-                // Guide panel'i kapat
-                disableGuidePanelMode()
-                hideGuidePanelWithAnimation()
-                setGuideNavButtonsVisibility(View.GONE)
-                
-                // Normal ders akışını başlat
-                showCurrentOperation()
-            }
-        } else {
-            binding.overlay.visibility = View.VISIBLE
-            binding.overlay.isClickable = true
-            binding.overlay.isFocusable = true
-            binding.overlay.alpha = 0.01f
-            applyGuideForwardBlockOverlay()
-        }
+        applyGuideContentOverlay(content)
     }
     
     /**
@@ -904,7 +976,12 @@ class AbacusFragment : Fragment() {
      * @param view Animasyon uygulanacak widget
      * @param targetColor Animasyon sırasında kullanılacak hedef renk (null ise sadece scale animasyonu)
      */
-    private fun animateBubbleEffect(view: View, targetColor: Int?, maxScale: Float = 1.4f) {
+    private fun animateBubbleEffect(
+        view: View,
+        targetColor: Int?,
+        tintLight: Int? = null,
+        maxScale: Float = 1.4f,
+    ) {
         // Önceki animasyonu durdur (güvenlik için)
         stopBubbleAnimation()
         
@@ -915,6 +992,7 @@ class AbacusFragment : Fragment() {
         // Orijinal rengi al ve sakla (renk animasyonu için)
         var originalColor: Int? = null
         var isTextView = false
+        val useImageTintBreath = view is ImageView && targetColor != null && tintLight != null
         
         if (targetColor != null) {
             when (view) {
@@ -924,13 +1002,19 @@ class AbacusFragment : Fragment() {
                     originalTextColor = originalColor
                 }
                 is ImageView -> {
-                    // ImageView için colorFilter kullanılabilir
-                    originalColor = Color.WHITE // Varsayılan, gerçek renk alınamazsa
+                    if (useImageTintBreath) {
+                        bubbleImageTintBreathApplied = true
+                        originalImageTintList = view.imageTintList
+                        view.imageTintList = ColorStateList.valueOf(targetColor)
+                    } else {
+                        originalColor = Color.WHITE
+                    }
                 }
             }
         }
         
         currentAnimatedView = view
+        val colorEvaluator = ArgbEvaluator()
         
         // Scale animasyonu (maxScale parametresine göre)
         val scaleAnimator = ValueAnimator.ofFloat(1.0f, maxScale, 1.0f).apply {
@@ -944,17 +1028,15 @@ class AbacusFragment : Fragment() {
                 view.scaleX = scale
                 view.scaleY = scale
                 
-                // Renk animasyonu (eğer renk belirtilmişse)
-                if (targetColor != null && originalColor != null) {
-                    val scaleRange = maxScale - 1.0f // Örn: 1.4 - 1.0 = 0.4 veya 1.15 - 1.0 = 0.15
-                    val fraction = (scale - 1.0f) / scaleRange // 1.0 -> maxScale arası fraction (0.0 -> 1.0)
-                    val clampedFraction = fraction.coerceIn(0f, 1f)
-                    
-                    val currentColor = ArgbEvaluator().evaluate(
-                        clampedFraction,
-                        originalColor,
-                        targetColor
-                    ) as Int
+                if (useImageTintBreath) {
+                    val scaleRange = maxScale - 1.0f
+                    val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
+                    val currentColor = colorEvaluator.evaluate(fraction, targetColor, tintLight) as Int
+                    (view as ImageView).imageTintList = ColorStateList.valueOf(currentColor)
+                } else if (targetColor != null && originalColor != null) {
+                    val scaleRange = maxScale - 1.0f
+                    val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
+                    val currentColor = colorEvaluator.evaluate(fraction, originalColor, targetColor) as Int
                     
                     if (isTextView) {
                         (view as TextView).setTextColor(currentColor)
@@ -987,21 +1069,80 @@ class AbacusFragment : Fragment() {
             view.scaleX = 1.0f
             view.scaleY = 1.0f
             
-            // Orijinal rengi geri yükle
             originalTextColor?.let { originalColor ->
                 when (view) {
-                    is TextView -> {
-                        view.setTextColor(originalColor)
-                    }
-                    is ImageView -> {
-                        view.clearColorFilter()
-                    }
+                    is TextView -> view.setTextColor(originalColor)
+                    is ImageView -> view.clearColorFilter()
                 }
+            }
+            if (bubbleImageTintBreathApplied && view is ImageView) {
+                view.imageTintList = originalImageTintList
             }
         }
         
         currentAnimatedView = null
         originalTextColor = null
+        originalImageTintList = null
+        bubbleImageTintBreathApplied = false
+    }
+
+    private fun stopGuideTypewriter() {
+        guideTypewriterRunnable?.let { tvGuideText.removeCallbacks(it) }
+        guideTypewriterRunnable = null
+    }
+
+    private fun applyGuideTextAndSound(content: GuideContent) {
+        if (content.useTypewriterEffect) {
+            showGuideTextWithTypewriter(content.text, tvGuideText, content.typewriterSpeed)
+        } else {
+            tvGuideText.visibility = View.VISIBLE
+            tvGuideText.text = content.text
+        }
+        playGuideSound(content.soundResource)
+    }
+
+    private fun playGuideSound(soundResource: Int?) {
+        soundResource?.let { resourceId ->
+            try {
+                mediaPlayer?.release()
+                mediaPlayer = MediaPlayer.create(requireContext(), resourceId)
+                mediaPlayer?.setOnCompletionListener {
+                    mediaPlayer?.release()
+                    mediaPlayer = null
+                }
+                mediaPlayer?.start()
+            } catch (e: Exception) {
+                Log.e("AbacusFragment", "Rehber sesi çalma hatası: ${e.message}")
+            }
+        }
+    }
+
+    private fun showGuideTextWithTypewriter(text: String, textView: TextView, speed: Long) {
+        guideTypewriterRunnable?.let { textView.removeCallbacks(it) }
+        textView.visibility = View.INVISIBLE
+        textView.text = text
+        textView.post {
+            textView.text = ""
+            var currentIndex = 0
+            guideTypewriterRunnable = object : Runnable {
+                override fun run() {
+                    if (currentIndex < text.length) {
+                        textView.visibility = View.VISIBLE
+                        val currentText = if (currentIndex == 0) {
+                            text[0].toString()
+                        } else {
+                            textView.text.toString() + text[currentIndex]
+                        }
+                        textView.text = currentText
+                        currentIndex++
+                        textView.postDelayed(this, speed)
+                    } else {
+                        guideTypewriterRunnable = null
+                    }
+                }
+            }
+            textView.post(guideTypewriterRunnable!!)
+        }
     }
     
     /**
@@ -1082,21 +1223,10 @@ class AbacusFragment : Fragment() {
             showGuideContent(0)
         }
     }
-    private fun rulesBookButtonClick(){
-        rulesBookButton.setOnClickListener{
-            childFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_down,
-                    0
-                )
-                .replace(R.id.rulesFragmentContainer, RulesFragment(),"rules_fragment")
-                .commit()
-
-            // Fragment eklendikten sonra visibility'yi ayarla
-            rulesBookSetup()
-            changeRulesTableText()
+    private fun rulesBookButtonClick() {
+        rulesBookButton.setOnClickListener {
+            openRulesBook()
         }
-
     }
 
     private fun rulesPanelButtonClick() {
@@ -1107,7 +1237,35 @@ class AbacusFragment : Fragment() {
 
     private fun onRulesPanelButtonClicked() {
         updateActiveRulesPanelTable()
+        if (globalPartId == 3 && !hasRulesPanelContentToShow()) {
+            closeHintIfVisible()
+            openRulesBook()
+            return
+        }
         toggleRulesPanelTable()
+    }
+
+    private fun hasRulesPanelContentToShow(): Boolean {
+        if (activeRulesPanelTable == RulesPanelTableType.NONE) return false
+        if (activeRulesPanelTable == RulesPanelTableType.MULTIPLICATION && selectedMultiplicationDigit == null) {
+            return false
+        }
+        return true
+    }
+
+    private fun isRulesPanelVisible(): Boolean =
+        binding.rulesPanelScrollView.visibility == View.VISIBLE
+
+    private fun closeRulesPanelIfOpen() {
+        if (isRulesPanelVisible()) {
+            hideAllRulesPanelTables()
+        }
+    }
+
+    private fun closeHintIfVisible() {
+        if (isHintVisible) {
+            hideHint()
+        }
     }
 
     /** Rehber adımında panel tablosu her zaman açılır (toggle değil). */
@@ -1118,6 +1276,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun updateActiveRulesPanelTable() {
+        if (globalPartId == 3) return
         val index = lessonItem.mapFragmentIndex!!
         activeRulesPanelTable = when {
             index > 28 && globalPartId == 1 -> RulesPanelTableType.BEAD
@@ -1130,6 +1289,29 @@ class AbacusFragment : Fragment() {
         }
     }
 
+    private fun applyRulesTableSelection(selection: RulesFragment.RulesTableSelection) {
+        when (selection) {
+            RulesFragment.RulesTableSelection.FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
+            RulesFragment.RulesTableSelection.TEN_FIVE -> activeRulesPanelTable = RulesPanelTableType.TEN_FIVE
+            RulesFragment.RulesTableSelection.TEN -> activeRulesPanelTable = RulesPanelTableType.TEN
+            RulesFragment.RulesTableSelection.BEAD -> activeRulesPanelTable = RulesPanelTableType.BEAD
+            is RulesFragment.RulesTableSelection.MULTIPLICATION -> {
+                activeRulesPanelTable = RulesPanelTableType.MULTIPLICATION
+                selectedMultiplicationDigit = selection.digit
+            }
+        }
+        showActiveRulesPanelTable()
+    }
+
+    private fun ensureMultiplicationInSlot(digit: Int) {
+        val slot = binding.rulesPanelMultiplicationSlot
+        if (inflatedMultiplicationDigit != digit) {
+            slot.removeAllViews()
+            layoutInflater.inflate(multiplicationLayoutForDigit(digit), slot, true)
+            inflatedMultiplicationDigit = digit
+        }
+    }
+
     private fun hideAllRulesPanelTables() {
         binding.rulesPanelScrollView.visibility = View.GONE
         binding.fiveRuleTableLinearLayout.visibility = View.GONE
@@ -1137,6 +1319,7 @@ class AbacusFragment : Fragment() {
         binding.tenRuleTableLinearLayout.visibility = View.GONE
         binding.BeadRuleTable.visibility = View.GONE
         binding.tenRuleExtractionTableLayout.visibility = View.GONE
+        binding.rulesPanelMultiplicationSlot.visibility = View.GONE
     }
 
     private fun applyRulesPanelFiveText() {
@@ -1151,6 +1334,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun showActiveRulesPanelTable() {
+        closeHintIfVisible()
         hideAllRulesPanelTables()
         val activeTable = when (activeRulesPanelTable) {
             RulesPanelTableType.FIVE -> {
@@ -1161,6 +1345,15 @@ class AbacusFragment : Fragment() {
             RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
             RulesPanelTableType.BEAD -> binding.BeadRuleTable
             RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
+            RulesPanelTableType.MULTIPLICATION -> {
+                val digit = selectedMultiplicationDigit
+                if (digit != null) {
+                    ensureMultiplicationInSlot(digit)
+                    binding.rulesPanelMultiplicationSlot
+                } else {
+                    null
+                }
+            }
             RulesPanelTableType.NONE -> null
         }
         activeTable?.let {
@@ -1190,6 +1383,13 @@ class AbacusFragment : Fragment() {
             rulesBookButton.visibility = View.INVISIBLE
             rulesPanelButton.visibility = View.INVISIBLE
         }
+        else if (globalPartId == 3) {
+            rulesBookButton.visibility = View.VISIBLE
+            rulesPanelButton.visibility = View.VISIBLE
+        }
+    }
+    private fun goneExtractionTables(){
+
     }
     private fun rulesBookSetup(){
         childFragmentManager.executePendingTransactions()
@@ -1197,6 +1397,7 @@ class AbacusFragment : Fragment() {
 
         if(lessonItem.mapFragmentIndex!! >= 12 && globalPartId == 1){
             rulesPanelButton.visibility = View.VISIBLE
+            rulesFragment?.updateMultiplicationTablesVisibility(View.GONE)
         }
         if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 1){
             rulesBookButton.visibility = View.VISIBLE
@@ -1218,24 +1419,36 @@ class AbacusFragment : Fragment() {
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
             rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleExtractionTableLayout(View.GONE)
-            rulesFragment?.updateFiveRuleExtractionTableLayout(View.GONE)
+            rulesFragment?.updateBeadRuleExtractionTableLayout(View.GONE)
         }
         if(lessonItem.mapFragmentIndex!! > 10 && globalPartId == 2){
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
         }
         if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 2){
-            rulesFragment?.updateFiveRuleExtractionTableLayout(View.VISIBLE)
+            rulesFragment?.updateBeadRuleExtractionTableLayout(View.VISIBLE)
         }
-        else if(globalPartId == 3){
+        if(globalPartId == 3){
             rulesBookButton.visibility = View.VISIBLE
+            rulesPanelButton.visibility = View.VISIBLE
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
             rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
+            rulesFragment?.updateMultiplicationTablesVisibility(View.VISIBLE)
+            rulesFragment?.setRulesTablePickerEnabled(true)
+            rulesFragment?.setOnRulesTableSelectedListener { selection ->
+                applyRulesTableSelection(selection)
+                completeGuideIfWaitingForRulesSelection()
+            }
+        } else {
+            rulesFragment?.setRulesTablePickerEnabled(false)
+            rulesFragment?.setOnRulesTableSelectedListener(null)
         }
         applyRulesDividersVisibility(rulesFragment)
-        updateActiveRulesPanelTable()
+        if (globalPartId != 3) {
+            updateActiveRulesPanelTable()
+        }
     }
 
     private fun applyRulesDividersVisibility(rulesFragment: RulesFragment?) {
@@ -1326,6 +1539,7 @@ class AbacusFragment : Fragment() {
         fabHintTouchArea.setOnClickListener(fabHintTouchAreaListener)
     }
     private fun showHint() {
+        closeRulesPanelIfOpen()
         tvHint.text = lessonItem.lessonHint?.let { splitTextEqually(it) }
 
         // Play Lottie animation
@@ -1713,6 +1927,7 @@ class AbacusFragment : Fragment() {
 
     }
 
+    @SuppressLint("SuspiciousIndentation")
     private fun setupBeads() {
 
 
@@ -2642,6 +2857,7 @@ class AbacusFragment : Fragment() {
 
     override fun onDestroyView() {
         stopLearningSessionTracking()
+        stopGuideTypewriter()
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
@@ -2749,16 +2965,8 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 0f) { //50 yapılacak
-                                        showLessonResultFalseOnly()
-                                    } else {
-                                        showChestResult()
-                                    }
-                                }
-                                else{
-                                    showLessonResult()
-                                }
+                                //ders sonu soru paneli burada gelecek.
+                                showQuestionPanel()
                             }
                             true
                         }
@@ -2853,16 +3061,8 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                if(lessonItem.type == 2){
-                                    if (currentSuccessRate() < 0f) { //50 yapılacak
-                                        showLessonResultFalseOnly()
-                                    } else {
-                                        showChestResult()
-                                    }
-                                }
-                                else{
-                                    showLessonResult()
-                                }
+                                //ders sonu soru paneli burada gelecek.
+                                showQuestionPanel()
                             }
                             true
                         }
@@ -2928,6 +3128,44 @@ class AbacusFragment : Fragment() {
                 .replace(R.id.abacusFragmentContainer, lessonResultFragment)
                 .commit()
         }
+    }
+
+    /** Ders sonu soru panelini açar; geçiş mantığı FragmentResult API ile AbacusFragment'e geri döner. */
+    private fun showQuestionPanel() {
+        stopTimer() // Soru panelindeyken timer çalışmasın diye durduruyoruz.
+        val successRate = currentSuccessRate()
+        val dersPuani = (successRate * 5f).toInt()
+        val worstCupTime = LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
+        val fragment = QuestionPanelFragment.newInstance(
+            correctAnswers = correctAnswer,
+            totalQuestions = totalQuestions,
+            successRate = successRate,
+            dersPuani = dersPuani,
+            globalPartId = GlobalLessonData.globalPartId,
+            mapFragmentIndex = mapFragmentStepIndex,
+            lessonType = lessonItem.type,
+            currentTime = currentTime,
+            worstCupTime = worstCupTime
+        )
+
+        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
+            // Soru paneli bittiğinde çalışacak orijinal kod:
+            if (lessonItem.type == 2) {
+                if (currentSuccessRate() < 10f) { //50 yapılacak
+                    showLessonResultFalseOnly()
+                } else {
+                    showChestResult()
+                }
+            } else {
+                showLessonResult()
+            }
+        }
+
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+            .add(R.id.abacusFragmentContainer, fragment)
+            .hide(this)
+            .commit()
     }
 
     private fun currentSuccessRate(): Float {

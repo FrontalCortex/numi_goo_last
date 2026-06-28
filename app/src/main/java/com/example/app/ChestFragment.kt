@@ -394,6 +394,7 @@ class ChestFragment : Fragment() {
     }
 
     private fun revealChestRewardUi() {
+        Log.d("bacısı","work")
         if (isChestRevealReady) return
         isChestRevealReady = true
         applyRewardUiState(currentReward)
@@ -412,11 +413,14 @@ class ChestFragment : Fragment() {
         val record = lessonItem.record ?: 0
         val p1 = lessonItem.cupPoint1
         val p2 = lessonItem.cupPoint2
-        val resolvedIcon = when {
+        var resolvedIcon = when {
             p1 != null && record >= p1 -> R.drawable.chest_stars_tier3
             p2 != null && record >= p2 -> R.drawable.chest_stars_tier2
             record >= 500 -> R.drawable.chest_stars_tier1
             else -> R.drawable.chest_stars_tier0
+        }
+        if(lessonItem.isBlinding == true){
+            resolvedIcon = R.drawable.star_on_ic
         }
         val currentIcon = lessonItem.stepCupIcon
         val iconChanged = currentIcon != resolvedIcon
@@ -434,6 +438,7 @@ class ChestFragment : Fragment() {
         R.drawable.chest_stars_tier0 -> 0
         R.drawable.star_on_ic -> 0 // default tek yıldız görseli, görev hesabında 0 sayılıyor
         else -> 0
+
     }
 
     /**

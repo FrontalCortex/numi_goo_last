@@ -989,7 +989,7 @@
 
             </LinearLayout>
 
-        <LinearLayout
+            <LinearLayout
             android:id="@+id/tenRuleFiveTableLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -1109,7 +1109,7 @@
 
         </LinearLayout>
 
-        <LinearLayout
+            <LinearLayout
             android:id="@+id/tenRuleTableLinearLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -1224,7 +1224,7 @@
 
         </LinearLayout>
 
-        <LinearLayout
+            <LinearLayout
             android:id="@+id/BeadRuleTable"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -1355,6 +1355,13 @@
             </TableLayout>
 
         </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/rulesPanelMultiplicationSlot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:id="@+id/tenRuleExtractionTableLayout"

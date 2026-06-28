@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:layout_gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Çarpım Tablosu 8x"
+        android:layout_gravity="center"
+        android:textColor="@color/lesson_header_green"
+        android:textAlignment="center"
+        android:textSize="@dimen/rules_fragment_header_text_size" />
+
+    <TableLayout
+        android:layout_width="@dimen/rules_fragment_table_width"
+        android:layout_height="wrap_content"
+        android:stretchColumns="*">
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 1 = 8"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 2 = 16"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 3 = 24"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 4 = 32"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 5 = 40"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 6 = 48"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 7 = 56"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 8 = 64"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border6"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+                <TableRow>
+                    <TextView
+                        android:text="8 x 9 = 72"
+                        android:textColor="#fff"
+                        android:textSize="@dimen/rules_fragment_cell_text_size"
+                        android:padding="@dimen/rules_fragment_cell_padding"
+                        android:background="@drawable/table_cell_border"
+                        android:textAlignment="center"/>
+                </TableRow>
+
+    </TableLayout>
+
+</LinearLayout>

@@ -613,7 +613,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      * İlk açılışta TutorialFragment'ı gösterir
      */
     private fun showFirstTutorial() {
-        logFirstTutorial("showFirstTutorial", "initialize partId=1")
+        logFirstTutorial("showFirstTutorial", "initialize partId=4")
         GlobalLessonData.globalPartId = 1
         GlobalLessonData.initialize(this, 1) {
             val item = GlobalLessonData.getLessonItem(1)
@@ -2128,7 +2128,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
-            is AbacusPracticeFragment, is BlindingLessonFragment -> overlay
+            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {

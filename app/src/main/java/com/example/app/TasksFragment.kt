@@ -54,8 +54,10 @@ class TasksFragment : Fragment() {
 
         data class Standard(
             override val id: String,
-        val title: String,
+            val title: String,
             val subtitle: String,
+            val iconRes: Int? = null,
+            val colorRes: Int? = null,
         ) : BulletinRow()
 
         data class DailyQuestion(
@@ -137,8 +139,24 @@ class TasksFragment : Fragment() {
             fun bind(item: BulletinRow.Standard) {
                 title.text = item.title
                 subtitle.text = item.subtitle
-                titleIcon.visibility =
-                    if (item.id == "daily_card") View.VISIBLE else View.GONE
+                
+                if (item.iconRes != null) {
+                    titleIcon.visibility = View.VISIBLE
+                    (titleIcon as android.widget.ImageView).setImageResource(item.iconRes)
+                } else {
+                    titleIcon.visibility = View.GONE
+                }
+                
+                val cardView = itemView as com.google.android.material.card.MaterialCardView
+                if (item.colorRes != null) {
+                    cardView.setCardBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(itemView.context, item.colorRes)
+                    )
+                } else {
+                    cardView.setCardBackgroundColor(
+                        androidx.core.content.ContextCompat.getColor(itemView.context, R.color.button_enabled)
+                    )
+                }
             }
         }
 
@@ -528,8 +546,13 @@ class TasksFragment : Fragment() {
         bulletinAdapter = BulletinAdapter(
             onClick = { row ->
                 when (row) {
-                    is BulletinRow.Standard ->
-                        openAbacusContainerFragment(AbacusPracticeFragment())
+                    is BulletinRow.Standard -> {
+                        if (row.id == "feedback_card") {
+                            openAbacusContainerFragment(FeedbackFragment())
+                        } else {
+                            openAbacusContainerFragment(AbacusPracticeFragment())
+                        }
+                    }
                     else -> Unit
                 }
             },
@@ -574,8 +597,16 @@ class TasksFragment : Fragment() {
                     id = "daily_card",
                     title = "Abaküs",
                     subtitle = "Abaküste pratik yaparak kendini geliştir.",
+                    iconRes = R.drawable.mini_abacus_ic
                 ),
                 BulletinRow.DailyQuestion(dailyCardState),
+                BulletinRow.Standard(
+                    id = "feedback_card",
+                    title = "Bize Ulaşın",
+                    subtitle = "Bir sorun mu yaşadınız? Görüşlerinizi ve önerilerinizi bizimle paylaşın.",
+                    iconRes = R.drawable.feedback_ic,
+                    colorRes = android.R.color.holo_blue_dark
+                ),
             ),
         )
     }

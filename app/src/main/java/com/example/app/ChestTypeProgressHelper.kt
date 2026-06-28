@@ -8,6 +8,10 @@ import com.example.app.model.LessonItem
 object ChestTypeProgressHelper {
 
     fun resolvedChestIcon(item: LessonItem, recordValue: Int): Int {
+        if (item.isBlinding == true) {
+            return R.drawable.star_on_ic
+        }
+        
         val record = recordValue.coerceAtLeast(0)
         val p1 = item.cupPoint1
         val p2 = item.cupPoint2
@@ -17,6 +21,7 @@ object ChestTypeProgressHelper {
             record >= 500 -> R.drawable.chest_stars_tier1
             else -> R.drawable.chest_stars_tier0
         }
+
     }
 
     fun starCountForChestIcon(iconResId: Int): Int = when (iconResId) {

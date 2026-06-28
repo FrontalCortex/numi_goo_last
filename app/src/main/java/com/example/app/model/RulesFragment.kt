@@ -11,6 +11,14 @@ import com.example.app.databinding.FragmentRulesBinding
 
 class RulesFragment : Fragment() {
 
+    sealed class RulesTableSelection {
+        data object FIVE : RulesTableSelection()
+        data object TEN_FIVE : RulesTableSelection()
+        data object TEN : RulesTableSelection()
+        data object BEAD : RulesTableSelection()
+        data class MULTIPLICATION(val digit: Int) : RulesTableSelection()
+    }
+
     enum class RulesContentSection {
         /** Toplama tabloları — [multipleLayout] */
         ADDITION,
@@ -26,6 +34,21 @@ class RulesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var activeSection: RulesContentSection = RulesContentSection.ADDITION
+    private var rulesTablePickerEnabled = false
+    private var onRulesTableSelectedListener: ((RulesTableSelection) -> Unit)? = null
+    private val multiplicationTableViews by lazy {
+        listOf(
+            binding.multiplicationTableOnes.root to 1,
+            binding.multiplicationTableTwos.root to 2,
+            binding.multiplicationTableThrees.root to 3,
+            binding.multiplicationTableFours.root to 4,
+            binding.multiplicationTableFives.root to 5,
+            binding.multiplicationTableSixes.root to 6,
+            binding.multiplicationTableSevens.root to 7,
+            binding.multiplicationTableEights.root to 8,
+            binding.multiplicationTableNines.root to 9,
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,6 +62,7 @@ class RulesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupQuitButton()
         setActiveRulesContentSection(RulesContentSection.ADDITION, resetScroll = false)
+        updateMultiplicationTablesVisibility(View.GONE)
         binding.rulesScrollView.post {
             binding.rulesScrollView.scrollTo(0, lastScrollY)
         }
@@ -91,6 +115,56 @@ class RulesFragment : Fragment() {
 
     fun getActiveRulesContentSection(): RulesContentSection = activeSection
 
+    fun setRulesTablePickerEnabled(enabled: Boolean) {
+        rulesTablePickerEnabled = enabled
+        if (enabled) {
+            setupRulesTableClickListeners()
+        } else {
+            clearRulesTableClickListeners()
+        }
+    }
+
+    fun setOnRulesTableSelectedListener(listener: ((RulesTableSelection) -> Unit)?) {
+        onRulesTableSelectedListener = listener
+    }
+
+    private fun setupRulesTableClickListeners() {
+        if (!rulesTablePickerEnabled || _binding == null) return
+        binding.fiveRuleTableLinearLayout.setRulesTablePickerClick(RulesTableSelection.FIVE)
+        binding.tenRuleFiveTableLayout.setRulesTablePickerClick(RulesTableSelection.TEN_FIVE)
+        binding.tenRuleTableLinearLayout.setRulesTablePickerClick(RulesTableSelection.TEN)
+        binding.BeadRuleTable.setRulesTablePickerClick(RulesTableSelection.BEAD)
+        multiplicationTableViews.forEach { (view, digit) ->
+            view.setRulesTablePickerClick(RulesTableSelection.MULTIPLICATION(digit))
+        }
+    }
+
+    private fun clearRulesTableClickListeners() {
+        if (_binding == null) return
+        listOf(
+            binding.fiveRuleTableLinearLayout,
+            binding.tenRuleFiveTableLayout,
+            binding.tenRuleTableLinearLayout,
+            binding.BeadRuleTable,
+        ).forEach { view ->
+            view.isClickable = false
+            view.setOnClickListener(null)
+        }
+        multiplicationTableViews.forEach { (view, _) ->
+            view.isClickable = false
+            view.setOnClickListener(null)
+        }
+    }
+
+    private fun View.setRulesTablePickerClick(selection: RulesTableSelection) {
+        isClickable = true
+        setOnClickListener {
+            if (visibility != View.VISIBLE) return@setOnClickListener
+            onRulesTableSelectedListener?.invoke(selection)
+            closeWithAnimation()
+        }
+    }
+
     // —— Toplama (multipleLayout) tabloları ——
 
     fun updateFiveRuleTableVisibility(visibility: Int) {
@@ -112,6 +186,29 @@ class RulesFragment : Fragment() {
     fun updateBeadRuleTableVisibility(visibility: Int) {
         binding.BeadRuleTable.visibility = visibility
         Log.d("kehribar", "worked3")
+        visibilityListener?.onRulesVisibilityChanged(visibility)
+    }
+
+    /** Çarpım tabloları (1x–9x) ve ayırıcıları [view6]–[view14] — tek çağrıda hepsi. */
+    fun updateMultiplicationTablesVisibility(visibility: Int) {
+        binding.view6.visibility = visibility
+        binding.multiplicationTableOnes.root.visibility = visibility
+        binding.view7.visibility = visibility
+        binding.multiplicationTableTwos.root.visibility = visibility
+        binding.view8.visibility = visibility
+        binding.multiplicationTableThrees.root.visibility = visibility
+        binding.view9.visibility = visibility
+        binding.multiplicationTableFours.root.visibility = visibility
+        binding.view10.visibility = visibility
+        binding.multiplicationTableFives.root.visibility = visibility
+        binding.view11.visibility = visibility
+        binding.multiplicationTableSixes.root.visibility = visibility
+        binding.view12.visibility = visibility
+        binding.multiplicationTableSevens.root.visibility = visibility
+        binding.view13.visibility = visibility
+        binding.multiplicationTableEights.root.visibility = visibility
+        binding.view14.visibility = visibility
+        binding.multiplicationTableNines.root.visibility = visibility
         visibilityListener?.onRulesVisibilityChanged(visibility)
     }
 
@@ -138,8 +235,8 @@ class RulesFragment : Fragment() {
         binding.view4.visibility = visibility
 
     }
-    fun updateFiveRuleExtractionTableLayout(visibility: Int) {
-        binding.fiveRuleTableLinearLayout2.visibility = visibility
+    fun updateBeadRuleExtractionTableLayout(visibility: Int) {
+        binding.BeadRuleExtractionTable.visibility = visibility
         visibilityListener?.onRulesVisibilityChanged(visibility)
         binding.view5.visibility = visibility
 

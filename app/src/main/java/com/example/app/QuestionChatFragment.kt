@@ -428,17 +428,21 @@ class QuestionChatFragment : Fragment() {
         }
 
         val backToNotification: () -> Unit = {
-            // Her zaman bildirim/sohbet listesine dön.
-            // Öğretmen: mevcut tab korunarak NotificationFragment açılır.
-            // Öğrenci: Bekleyen tab varsayılan olsun.
-            val fragment = if (isTeacher) {
-                NotificationFragment()
+            val fragmentManager = requireActivity().supportFragmentManager
+            if (fragmentManager.backStackEntryCount > 0) {
+                // Önceki fragment'a (NotificationFragment) geri dön, state korunur
+                fragmentManager.popBackStack()
             } else {
-                NotificationFragment.newWithReturnDefaults(fromTeacher = false)
+                // Fallback durumu (Normalde her zaman back stack'te olması beklenir)
+                val fragment = if (isTeacher) {
+                    NotificationFragment()
+                } else {
+                    NotificationFragment.newWithReturnDefaults(fromTeacher = false)
+                }
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerID, fragment)
+                    .commit()
             }
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainerID, fragment)
-                .commit()
         }
 
         binding.backButton.setOnClickListener {

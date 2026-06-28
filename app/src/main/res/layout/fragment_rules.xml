@@ -43,7 +43,8 @@
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp">
         <LinearLayout
             android:id="@+id/fiveRuleTableLinearLayout"
             android:layout_width="wrap_content"
@@ -599,6 +600,142 @@
             </TableLayout>
 
         </LinearLayout>
+        <View
+            android:id="@+id/view6"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableOnes"
+            layout="@layout/multiplication_table_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view7"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableTwos"
+            layout="@layout/multiplication_table_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view8"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableThrees"
+            layout="@layout/multiplication_table_3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view9"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableFours"
+            layout="@layout/multiplication_table_4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view10"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableFives"
+            layout="@layout/multiplication_table_5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view11"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableSixes"
+            layout="@layout/multiplication_table_6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view12"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableSevens"
+            layout="@layout/multiplication_table_7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view13"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableEights"
+            layout="@layout/multiplication_table_8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+        <View
+            android:id="@+id/view14"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/rules_fragment_table_divider_height"
+            android:layout_marginStart="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginTop="@dimen/rules_fragment_section_margin_top"
+            android:layout_marginEnd="@dimen/rules_fragment_table_margin_horizontal"
+            android:layout_marginBottom="@dimen/rules_fragment_section_margin_top"
+            android:background="#000000" />
+        <include
+            android:id="@+id/multiplicationTableNines"
+            layout="@layout/multiplication_table_9"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
     </LinearLayout>
     <LinearLayout
         android:id="@+id/extractionLayout"
@@ -950,17 +1087,19 @@
 
 
         <LinearLayout
-            android:id="@+id/fiveRuleTableLinearLayout2"
-            android:layout_width="wrap_content"
+            android:id="@+id/BeadRuleExtractionTable"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:layout_marginHorizontal="5dp"
+            android:layout_marginBottom="10dp"
             android:layout_gravity="center"
-            android:layout_marginBottom="20dp"
-            >
+            android:paddingStart="@dimen/rules_fragment_panel_padding_h"
+            android:paddingEnd="@dimen/rules_fragment_panel_padding_h">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="5'lik Toplama Kuralı"
+                android:text="Boncuk Çıkarma"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -968,14 +1107,17 @@
 
             </TextView>
             <TableLayout
-                android:layout_width="@dimen/rules_fragment_table_width"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:stretchColumns="*">
+                android:stretchColumns="1"
+                android:shrinkColumns="1">
 
                 <TableRow>
                     <TextView
-                        android:id="@+id/fiveText2"
-                        android:text="Eklenecek sayı"
+                        android:id="@+id/beadExtractionText"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="Çıkarılacak sayı"
                         android:textStyle="bold"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
@@ -983,7 +1125,9 @@
                         android:background="@drawable/table_cell_border1"
                         android:textAlignment="center"/>
                     <TextView
-                        android:text="Kardeşi"
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:text="İşlem"
                         android:textStyle="bold"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
@@ -994,7 +1138,9 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="6"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -1002,7 +1148,9 @@
                         android:textAlignment="center"/>
 
                     <TextView
-                        android:text="4"
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:text="1 gider - 5 gelir - 10 gider"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -1012,14 +1160,18 @@
 
                 <TableRow>
                     <TextView
-                        android:text="2"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="7"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border1"
                         android:textAlignment="center"/>
                     <TextView
-                        android:text="3"
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:text="2 gider - 5 gelir - 10 gider"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -1029,14 +1181,18 @@
 
                 <TableRow>
                     <TextView
-                        android:text="3"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="8"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border1"
                         android:textAlignment="center"/>
                     <TextView
-                        android:text="2"
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:text="3 gider - 5 gelir - 10 gider"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -1046,14 +1202,18 @@
 
                 <TableRow>
                     <TextView
-                        android:text="4"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:text="9"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
                         android:background="@drawable/table_cell_border3"
                         android:textAlignment="center"/>
                     <TextView
-                        android:text="1"
+                        android:layout_width="0dp"
+                        android:layout_weight="2"
+                        android:text="4 gider - 5 gelir - 10 gider"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -1062,20 +1222,8 @@
                 </TableRow>
             </TableLayout>
 
-            <TextView
-                android:id="@+id/fiveRuleDescriptionText2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="5 gelir. Kardeş gider"
-                android:textColor="#fff"
-                android:textAlignment="center"
-                android:background="@drawable/table_cell_border"
-                android:textSize="@dimen/rules_fragment_description_text_size"
-                android:padding="@dimen/rules_fragment_description_padding"
-                android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
-                android:layout_gravity="center"/>
-
         </LinearLayout>
+
 
 
     </LinearLayout>
