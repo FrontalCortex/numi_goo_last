@@ -21,6 +21,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
+import com.airbnb.lottie.LottieDrawable
 import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.value.LottieValueCallback
@@ -46,6 +47,8 @@ class BadgeFragment : Fragment() {
         private const val TOP_HOLD_FRAME_BOWLING = 47f
         private const val TOP_HOLD_FRAME_GOLF = 30f
         private const val TOP_HOLD_FRAME_FISHING = 24f
+        private const val TOP_HOLD_FRAME_TORNADO = 9999f
+        private const val TOP_HOLD_FRAME_VOLCANO = 9999f
         private const val CUP_GOOGLE_HOLD_FRAME = 135f
         private const val KARATE_HOLD_FRAME = 1f
         private const val KARATE_REPLAY_START_FRAME = 40f
@@ -63,6 +66,8 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.BOWLING_WITH_BASE to "x günlük görev tamamlayarak Strike Ustası rozetini kazandın.",
             BadgeAnimMode.GOLF_WITH_BASE to "x kere eğitmene danışarak Nokta Atışı rozetini kazandın.",
             BadgeAnimMode.FISHING_WITH_BASE to "x gün üst üste Günlük Soru mücadelesini tamamlayarak Derin Avcı rozetini kazandın.",
+            BadgeAnimMode.TORNADO to "x Toplama Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
+            BadgeAnimMode.VOLCANO to "x Çıkarma Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
             BadgeAnimMode.CUP_GOOGLE to "Ünite Maratonunda x. olarak Elit Seviye kupasını kazandın.",
             BadgeAnimMode.KARATE to "x Ünite Maratonunu 3 yıldız ile tamamlayarak Siyah Kuşak rozetini kazandın.",
             BadgeAnimMode.GOLD_MEDAL to "Ünite maratonunda 1. olarak Altın Madalya kazandın.",
@@ -79,6 +84,8 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.BOWLING_WITH_BASE to "Bu rozeti kazanmak için 5 günlük görevi tamamlayarak başarı elde et.",
             BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 5 kere öğretmene danış.",
             BadgeAnimMode.FISHING_WITH_BASE to "Bu rozeti kazanmak için 3 gün üst üste Günlük Soru mücadelesini çözerek başarı elde et.",
+            BadgeAnimMode.TORNADO to "Bu rozeti kazanmak için Toplama Ustalık Yolunda 1 adımı tamamla.",
+            BadgeAnimMode.VOLCANO to "Bu rozeti kazanmak için Çıkarma Ustalık Yolunda 1 adımı tamamla.",
             BadgeAnimMode.CUP_GOOGLE to "Bu kupayı kazanmak için ünite maratonunda ilk 100'e girerek başarı elde et.",
             BadgeAnimMode.KARATE to "Bu rozeti kazanmak için ünite maratonunu 3 yıldız ile tamamlayarak başarı elde et.",
             BadgeAnimMode.GOLD_MEDAL to "Bu madalyayı kazanmak için bir ünite maratonu liderliğinde birinci ol.",
@@ -186,6 +193,8 @@ class BadgeFragment : Fragment() {
         GOLD_MEDAL,
         SILVER_MEDAL,
         BRONZE_MEDAL,
+        TORNADO,
+        VOLCANO,
     }
 
     /** Bu modlarda tam ekran tıklama replay’i [medalPieceNamesList] ile çakışmasın diye root/daily kapalı; replay [rocketBadgeAnim] üzerinde. */
@@ -316,6 +325,8 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.GOLF_WITH_BASE -> 225
             BadgeAnimMode.CUP_GOOGLE -> 87
             BadgeAnimMode.KARATE -> 1
+            BadgeAnimMode.TORNADO -> 1
+            BadgeAnimMode.VOLCANO -> 1
             BadgeAnimMode.GOLD_MEDAL,
             BadgeAnimMode.SILVER_MEDAL,
             BadgeAnimMode.BRONZE_MEDAL -> null
@@ -540,6 +551,9 @@ class BadgeFragment : Fragment() {
         bowlingStartOffsetMs: Long = 0L,
         topStartDelayMs: Long = 1000L,
         rewardAmount: Int? = null,
+        topScale: Float = 0.68f,
+        holdFrame: Float = TOP_HOLD_FRAME_BOWLING,
+        topRepeatCount: Int = 0,
     ) {
         val safeBinding = _binding ?: return
         applyRewardAmount(rewardAmount)
@@ -548,8 +562,8 @@ class BadgeFragment : Fragment() {
         clearPendingTopStart()
         applyRewardSlotExtraDownOffset(false)
         safeBinding.dailyTasksCompliteBadge.alpha = 1f
-        safeBinding.rocketBadgeAnim.scaleX = 0.68f
-        safeBinding.rocketBadgeAnim.scaleY = 0.68f
+        safeBinding.rocketBadgeAnim.scaleX = topScale
+        safeBinding.rocketBadgeAnim.scaleY = topScale
         safeBinding.rocketBadgeAnim.translationY = -5f * resources.displayMetrics.density
         safeBinding.rocketBadgeAnim.setBackgroundResource(R.drawable.bg_badge_circle_frame)
         safeBinding.rocketBadgeAnim.outlineProvider = ViewOutlineProvider.BACKGROUND
@@ -561,7 +575,7 @@ class BadgeFragment : Fragment() {
         safeBinding.dailyTasksCompliteBadge.setAnimation(baseAssetFile)
         safeBinding.rocketBadgeAnim.setAnimation(topAssetFile)
         safeBinding.dailyTasksCompliteBadge.repeatCount = 0
-        safeBinding.rocketBadgeAnim.repeatCount = 0
+        safeBinding.rocketBadgeAnim.repeatCount = topRepeatCount
         safeBinding.rocketBadgeAnim.speed = 0.5f
         safeBinding.rocketBadgeAnim.visibility = View.INVISIBLE
         rocketStartProgress = 0f
@@ -588,12 +602,12 @@ class BadgeFragment : Fragment() {
             val durationMs = composition.duration.toLong().coerceAtLeast(1L)
             val normalizedOffsetMs = (bowlingStartOffsetMs % durationMs).toFloat()
             rocketStartProgress = normalizedOffsetMs / durationMs.toFloat()
-            topHoldProgress = frameToProgress(TOP_HOLD_FRAME_BOWLING, composition.startFrame, composition.endFrame)
+            topHoldProgress = frameToProgress(holdFrame, composition.startFrame, composition.endFrame)
             if (isLoopActive) {
                 startDelayedTopLoopCycle(
                     topStartDelayMs = topStartDelayMs,
-                    growTopScaleOverDelay = false,
-                    topTargetScale = 0.68f,
+                    growTopScaleOverDelay = true,
+                    topTargetScale = topScale,
                 )
             }
         }
@@ -605,6 +619,7 @@ class BadgeFragment : Fragment() {
         dailyStartOffsetMs: Long = 0L,
         topStartDelayMs: Long = 800L,
         topScale: Float = 0.65f,
+        topHoldFrame: Float = TOP_HOLD_FRAME_DART,
         rewardAmount: Int? = null,
     ) {
         val safeBinding = _binding ?: return
@@ -654,7 +669,7 @@ class BadgeFragment : Fragment() {
             val durationMs = composition.duration.toLong().coerceAtLeast(1L)
             val normalizedOffsetMs = (dailyStartOffsetMs % durationMs).toFloat()
             rocketStartProgress = normalizedOffsetMs / durationMs.toFloat()
-            topHoldProgress = frameToProgress(TOP_HOLD_FRAME_DART, composition.startFrame, composition.endFrame)
+            topHoldProgress = frameToProgress(topHoldFrame, composition.startFrame, composition.endFrame)
             if (isLoopActive) {
                 startDelayedTopLoopCycle(
                     topStartDelayMs = topStartDelayMs,
@@ -817,6 +832,7 @@ class BadgeFragment : Fragment() {
         var speed = 1f
         var withCircleFrame = false
         var startOffsetMs = 0L
+        var topRepeatCount = 0
 
         when (currentMode) {
             BadgeAnimMode.DAILY_ONLY -> {
@@ -847,6 +863,17 @@ class BadgeFragment : Fragment() {
                 animationFile = "fishing_pole_anim.json"
                 topScale = 0.65f
             }
+            BadgeAnimMode.TORNADO -> {
+                holdFrame = TOP_HOLD_FRAME_TORNADO
+                animationFile = "tornado_anim.json"
+                topScale = 0.65f
+            }
+            BadgeAnimMode.VOLCANO -> {
+                holdFrame = TOP_HOLD_FRAME_VOLCANO
+                animationFile = "volcano_anim.json"
+                topScale = 0.65f
+                topRepeatCount = 1
+            }
             BadgeAnimMode.CUP_GOOGLE -> Unit
             BadgeAnimMode.KARATE -> Unit
             BadgeAnimMode.GOLD_MEDAL -> Unit
@@ -868,7 +895,7 @@ class BadgeFragment : Fragment() {
             safeBinding.rocketBadgeAnim.clipToOutline = false
         }
         safeBinding.rocketBadgeAnim.setAnimation(animationFile)
-        safeBinding.rocketBadgeAnim.repeatCount = 0
+        safeBinding.rocketBadgeAnim.repeatCount = topRepeatCount
         safeBinding.rocketBadgeAnim.speed = speed
         safeBinding.rocketBadgeAnim.visibility = View.VISIBLE
 
@@ -919,6 +946,19 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.GOLD_MEDAL -> goldMedalAnim(rewardAmount = rewardAmount)
             BadgeAnimMode.SILVER_MEDAL -> silverMedalAnim(rewardAmount = rewardAmount)
             BadgeAnimMode.BRONZE_MEDAL -> bronzeMedalAnim(rewardAmount = rewardAmount)
+            BadgeAnimMode.TORNADO -> bowlingAnim(
+                topAssetFile = "tornado_anim.json",
+                topScale = 0.65f,
+                holdFrame = TOP_HOLD_FRAME_TORNADO,
+                rewardAmount = rewardAmount
+            )
+            BadgeAnimMode.VOLCANO -> bowlingAnim(
+                topAssetFile = "volcano_anim.json",
+                topScale = 0.65f,
+                holdFrame = TOP_HOLD_FRAME_VOLCANO,
+                rewardAmount = rewardAmount,
+                topRepeatCount = 1
+            )
         }
         applyUnlockedLevelToneToBase(mode)
         if (!isCelebrationFlow && isUnlockedState && mode in pieceReplayModes) {
@@ -1125,6 +1165,8 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.GOLF_WITH_BASE,
             BadgeAnimMode.CUP_GOOGLE,
             BadgeAnimMode.KARATE,
+            BadgeAnimMode.TORNADO,
+            BadgeAnimMode.VOLCANO,
         )
         if (mode !in modesWithDynamicProgress) return template
         val progress = BadgeProgressRepository.getProgressValueByMode(mode) ?: return template
@@ -1215,6 +1257,20 @@ class BadgeFragment : Fragment() {
                 topScale = 1f
                 withCircleFrame = false
                 applyKarateRewardSlotOffset()
+            }
+            BadgeAnimMode.TORNADO -> {
+                baseAsset = "daily_tasks_complite_badge2.json"
+                topAsset = "tornado_anim.json"
+                holdFrame = TOP_HOLD_FRAME_TORNADO
+                topScale = 0.65f
+                withCircleFrame = true
+            }
+            BadgeAnimMode.VOLCANO -> {
+                baseAsset = "daily_tasks_complite_badge2.json"
+                topAsset = "volcano_anim.json"
+                holdFrame = TOP_HOLD_FRAME_VOLCANO
+                topScale = 0.65f
+                withCircleFrame = true
             }
             BadgeAnimMode.GOLD_MEDAL -> {
                 baseAsset = null
@@ -1494,6 +1550,7 @@ class BadgeFragment : Fragment() {
         val topScale: Float,
         val topSpeed: Float = 1f,
         val withCircleFrame: Boolean = false,
+        val topRepeatCount: Int = 0,
     )
 
     private fun levelUpAnimConfig(mode: BadgeAnimMode): LevelUpAnimConfig = when (mode) {
@@ -1503,6 +1560,8 @@ class BadgeFragment : Fragment() {
         BadgeAnimMode.FISHING_WITH_BASE -> LevelUpAnimConfig("fishing_pole_anim.json", TOP_HOLD_FRAME_FISHING, 0.65f)
         BadgeAnimMode.GOLF_WITH_BASE -> LevelUpAnimConfig("golf_anim.json", TOP_HOLD_FRAME_GOLF, 0.60f)
         BadgeAnimMode.KARATE -> LevelUpAnimConfig("karate_anim.json", KARATE_HOLD_FRAME, 1f)
+        BadgeAnimMode.TORNADO -> LevelUpAnimConfig("tornado_anim.json", TOP_HOLD_FRAME_TORNADO, 0.65f, topSpeed = 0.5f, withCircleFrame = true)
+        BadgeAnimMode.VOLCANO -> LevelUpAnimConfig("volcano_anim.json", TOP_HOLD_FRAME_VOLCANO, 0.65f, topSpeed = 0.5f, withCircleFrame = true, topRepeatCount = 1)
         else -> LevelUpAnimConfig("dart_anim.json", TOP_HOLD_FRAME_DART, 0.65f)
     }
 
@@ -1652,6 +1711,7 @@ class BadgeFragment : Fragment() {
             b.rocketBadgeAnim.speed = cfg.topSpeed
             b.rocketBadgeAnim.scaleX = cfg.topScale
             b.rocketBadgeAnim.scaleY = cfg.topScale
+            b.rocketBadgeAnim.repeatCount = cfg.topRepeatCount
             b.rocketBadgeAnim.background = null
             b.rocketBadgeAnim.clipToOutline = false
             b.rocketBadgeAnim.outlineProvider = ViewOutlineProvider.BOUNDS
@@ -1695,6 +1755,7 @@ class BadgeFragment : Fragment() {
         b.rocketBadgeAnim.speed = cfg.topSpeed
         b.rocketBadgeAnim.scaleX = cfg.topScale
         b.rocketBadgeAnim.scaleY = cfg.topScale
+        b.rocketBadgeAnim.repeatCount = cfg.topRepeatCount
         if (cfg.withCircleFrame) {
             b.rocketBadgeAnim.setBackgroundResource(R.drawable.bg_badge_circle_frame)
             b.rocketBadgeAnim.outlineProvider = ViewOutlineProvider.BACKGROUND
@@ -1784,7 +1845,9 @@ class BadgeFragment : Fragment() {
             mode == BadgeAnimMode.ROCKET_WITH_BASE ||
             mode == BadgeAnimMode.BOWLING_WITH_BASE ||
             mode == BadgeAnimMode.FISHING_WITH_BASE ||
-            mode == BadgeAnimMode.GOLF_WITH_BASE
+            mode == BadgeAnimMode.GOLF_WITH_BASE ||
+            mode == BadgeAnimMode.TORNADO ||
+            mode == BadgeAnimMode.VOLCANO
     }
 
     private fun updateProgressContainerVisibility(mode: BadgeAnimMode) {
@@ -2061,6 +2124,8 @@ class BadgeFragment : Fragment() {
         binding.rocketBadgeAnim.cancelAnimation()
         _binding = null
         super.onDestroyView()
+
+        (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("BadgeFragment.onDestroyView")
     }
 
     private fun configureBackPressBehavior() {

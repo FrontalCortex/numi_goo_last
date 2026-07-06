@@ -86,6 +86,26 @@ object GlobalValues {
     var canConsumePendingLessonProgressAnimations: Boolean = false
 
     /**
+     * Chest ödül akışı (Chest → Görev → Rozet) tamamlandıktan sonra
+     * TasksFragment'te panel_cup_path'i otomatik açmak için set edilir.
+     * 1, 2 veya 3 (globalPartId). TasksFragment onResume/onHiddenChanged'de tüketilir.
+     */
+    var pendingCupPathRevealPartId: Int? = null
+
+    /**
+     * Kupa modu dersi (globalPartId == 9) tamamlandığında burada delta bırakılır.
+     * +[AbacusCupRepository.CUP_STEP] (doğru) veya -[AbacusCupRepository.CUP_STEP] (yanlış).
+     * TasksFragment onResume / onHiddenChanged'de tüketilir.
+     */
+    var pendingCupDelta: Int? = null
+
+    /**
+     * panel_cup_path dialog'unun zayıf referansı.
+     * Kupa güncellemesi sonrası card1CupValue'nin anlık güncellenmesi için kullanılır.
+     */
+    var cupPathDialogRef: java.lang.ref.WeakReference<android.app.Dialog>? = null
+
+    /**
      * Karşıdan gelen mesajlar için, medya dosyasının cihazda nereye indirildiğini tutar.
      * key: messageId, value: absolute local file path.
      */

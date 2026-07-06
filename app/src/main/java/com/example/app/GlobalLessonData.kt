@@ -201,10 +201,18 @@ object GlobalLessonData {
 
     private fun ensureLessonRealtimeSync(appContext: Context, partId: Int, uid: String) {
         if (lessonRealtimeListener != null && lessonRealtimeUid == uid && lessonRealtimePartId == partId) return
+        val oldListenerPartId = lessonRealtimePartId
         lessonRealtimeListener?.remove()
         lessonRealtimeListener = null
         lessonRealtimeUid = uid
         lessonRealtimePartId = partId
+
+        // Part değiştiğinde eski part'ın _lessonItems'ını temizle.
+        // Böylece yeni listener ateşlendiğinde merge mantığı eski part verisiyle
+        // yeni part verisini karıştırmaz, doğrudan Firestore verisini kullanır.
+        if (oldListenerPartId != null && oldListenerPartId != partId) {
+            _lessonItems = mutableListOf()
+        }
 
         lessonRealtimeListener = firestore.collection("users")
             .document(uid)
@@ -212,55 +220,28 @@ object GlobalLessonData {
             .document(partId.toString())
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    LessonProgressDiag.log("Firestore.realtime", "part=$partId ERROR ${error.message}")
+                    return@addSnapshotListener
+                }
+                if (partId != globalPartId) {
+                    Log.w(LOG_TAG, "ensureLessonRealtimeSync: Snapshot for partId=$partId ignored because globalPartId is $globalPartId")
                     return@addSnapshotListener
                 }
                 val fromCache = snapshot?.metadata?.isFromCache == true
                 val json = snapshot?.getString("items")
                 if (json.isNullOrBlank()) return@addSnapshotListener
-                LessonProgressDiag.log(
-                    "Firestore.realtime",
-                    "part=$partId fromCache=$fromCache localItems=${_lessonItems.size} jsonLen=${json.length}",
-                )
                 try {
-                    val parsed = parseLessonItemsWithMigration(json)
+                    val parsed = parseLessonItemsWithMigration(json, partId)
                     val merged = if (_lessonItems.isEmpty()) {
-                        LessonProgressDiag.log("Firestore.realtime", "part=$partId local empty → use remote only")
                         parsed
                     } else {
                         LessonProgressMerge.mergeListsPreferMoreProgress(_lessonItems, parsed)
                     }
                     if (LessonProgressMerge.sameProgressState(_lessonItems, merged)) {
-                        LessonProgressDiag.log(
-                            "Firestore.realtime",
-                            "part=$partId SKIP refresh (sameProgressState after merge) fromCache=$fromCache",
-                        )
                         return@addSnapshotListener
                     }
-                    val regressions = _lessonItems.mapIndexedNotNull { index, localItem ->
-                        val m = merged.getOrNull(index) ?: return@mapIndexedNotNull null
-                        if (localItem.stepIsFinish && !m.stepIsFinish) index else null
-                    }
-                    if (regressions.isNotEmpty()) {
-                        val last = LessonProgressDiag.lastClaimRecord
-                        val nearClaim = last != null &&
-                            System.currentTimeMillis() - last.atMs < 8_000L &&
-                            partId == last.partId
-                        val claimIdxHit = last != null && last.mapIdx in regressions
-                        LessonProgressDiag.log(
-                            "Firestore.realtime",
-                            "H8_REGRESSION indices=$regressions (local finish lost after merge!) " +
-                                "nearClaim=$nearClaim claimIdxHit=$claimIdxHit claimRoute=${last?.route} " +
-                                "fromCache=$fromCache",
-                        )
-                    }
-                    LessonProgressDiag.logListChestFinishSummary("Firestore.realtime.beforeApply", partId, _lessonItems)
-                    LessonProgressDiag.logListChestFinishSummary("Firestore.realtime.afterMerge", partId, merged)
                     _lessonItems = merged
-                    LessonProgressDiag.log("Firestore.realtime", "part=$partId → refreshLessonsFromGlobalData")
                     LessonManager.refreshLessonsFromGlobalData()
                 } catch (e: Exception) {
-                    LessonProgressDiag.log("Firestore.realtime", "part=$partId FAILED ${e.message}")
                     Log.e(LOG_TAG, "realtimeSnapshot parse/merge failed", e)
                 }
             }
@@ -359,18 +340,12 @@ object GlobalLessonData {
     }
 
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
+        if (newItem.partId != null && newItem.partId != globalPartId) {
+            return
+        }
         if (position in _lessonItems.indices) {
-            val previous = _lessonItems[position]
-            LessonProgressDiag.logItemDelta(
-                "GlobalLessonData.updateLessonItem",
-                globalPartId,
-                position,
-                previous,
-                newItem,
-            )
             _lessonItems[position] = newItem
             Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
-            LessonProgressDiag.log("GlobalLessonData.updateLessonItem", "part=$globalPartId idx=$position → saveToPreferences (Firestore async)")
             saveToPreferences(context)
             // Kupa dersi tamamlandığında liderlik senkronu: [record] tüm zamanların en iyisi (UI);
             // Firestore tahtasına yalnızca [leaderboardSeasonBest] (mevcut sezon) yazılır.
@@ -426,7 +401,7 @@ object GlobalLessonData {
                     cloudJson.isNullOrBlank() ->
                         "template(empty_cloud)" to createLessonItems(partId)
                     else -> try {
-                        "cloud_json" to parseLessonItemsWithMigration(cloudJson)
+                        "cloud_json" to parseLessonItemsWithMigration(cloudJson, partId)
                     } catch (e: Exception) {
                         Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser parse error partId=$partId", e)
                         "template(parse_error)" to createLessonItems(partId)
@@ -438,12 +413,11 @@ object GlobalLessonData {
                 if (usedFallback) {
                     idx = templateChest ?: -1
                 }
-                val typePreview = items.take(8).mapIndexed { i, it -> "$i:t${it.type}" }.joinToString(",")
                 Log.d(
                     LOG_TAG,
                     "resolveFirstChest uid=${uid.take(8)} part=$partId docExists=${doc.exists()} source=$source " +
                         "itemCount=${items.size} templateChestIdx=$templateChest resolvedChestIdx=${idx.takeIf { it >= 0 }} " +
-                        "fallback=$usedFallback types[$typePreview]",
+                        "fallback=$usedFallback",
                 )
                 onResult(idx.takeIf { it >= 0 })
             }
@@ -481,7 +455,7 @@ object GlobalLessonData {
                     return@addOnSuccessListener
                 }
                 try {
-                    val items = parseLessonItemsWithMigration(json)
+                    val items = parseLessonItemsWithMigration(json, partId)
                     val item = items.getOrNull(chestIndex)
                     if (item == null || item.type != LessonItem.TYPE_CHEST) {
                         Log.d(LOG_TAG, "backfillLeaderboard: no chest at idx=$chestIndex part=$partId")
@@ -546,7 +520,7 @@ object GlobalLessonData {
                     return@addOnSuccessListener
                 }
                 try {
-                    val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    val cloudItems = parseLessonItemsWithMigration(cloudJson, partId)
                     if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
                         backfillChestTitleUnitFromLocal(partId, cloudItems)
                     }
@@ -628,7 +602,7 @@ object GlobalLessonData {
                     return@addOnSuccessListener
                 }
                 try {
-                    val cloudItems = parseLessonItemsWithMigration(cloudJson)
+                    val cloudItems = parseLessonItemsWithMigration(cloudJson, partId)
                     if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
                         backfillChestTitleUnitFromLocal(partId, cloudItems)
                     }
@@ -646,7 +620,7 @@ object GlobalLessonData {
 
 
     fun createLessonItems(partId : Int): List<LessonItem> {
-        return when(partId) {
+        val items = when(partId) {
             1 -> listOf(
                 LessonItem(
                     type = LessonItem.TYPE_HEADER,
@@ -1079,6 +1053,7 @@ object GlobalLessonData {
                     titleUnit = "Boncuk Kuralı",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
@@ -1088,42 +1063,8 @@ object GlobalLessonData {
                     cupPoint1 = 1350,
                     cupPoint2 = 1000,
                     worstCupTime = 180,
-                ),
-                LessonItem(
-                    type = LessonItem.TYPE_HEADER,
-                    title = "Ustalık Yolu",
-                    offset = 0,
-                    isCompleted = false,
-                    stepCount = 1,
-                    currentStep = 1,
-                    color = R.color.lesson_header_green
-                ),
-                LessonItem(
-                    type = LessonItem.TYPE_RACE,
-                    title = "Ustalık Yolu",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = false,
-                    mapFragmentIndex = 34,
-                    racePartId = 7,
-                    backRaceId = 1
-                    ),
-                LessonItem(
-                    partId = 2,
-                    type = LessonItem.TYPE_PART,
-                    title = "2. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 35,
-                    sectionTitle = "2. Kısım Çıkarma",
-                    sectionDescription = "Abaküste çıkarmaya dair her şeyi öğreneceğiz. "
-
                 )
+
             )
             2 -> listOf(
                 LessonItem(
@@ -1135,19 +1076,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     color = R.color.lesson_header_blue
                 ),
-                LessonItem(
-                    type = LessonItem.TYPE_BACK_PART,
-                    title = "1. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    partId = 1,
-                    stepCount = 1,
-                    currentStep = 1,
-                    backPart = true,
-                    sectionTitle = "2. Kısım Çıkarma",
-                    sectionDescription = "Abaküste çıkarmaya dair her şeyi öğreneceğiz."
 
-                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - Temeli",
@@ -1397,42 +1326,8 @@ object GlobalLessonData {
                     cupPoint1 = 1300,
                     cupPoint2 = 1000,
                     worstCupTime = 180
-                ),
-                LessonItem(
-                    type = LessonItem.TYPE_HEADER,
-                    title = "Ustalık Yolu",
-                    offset = 0,
-                    isCompleted = false,
-                    stepCount = 1,
-                    currentStep = 1,
-                    color = R.color.lesson_header_green
-                ),
-                LessonItem(
-                    type = LessonItem.TYPE_RACE,
-                    title = "Ustalık Yolu",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 21,
-                    racePartId = 8,
-                    backRaceId = 2
-                ),
-                LessonItem(
-                    partId = 3,
-                    type = LessonItem.TYPE_PART,
-                    title = "3. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 21,
-                    sectionTitle = "3. Kısım Çarpma",
-                    sectionDescription = "Abaküste çarpmaya dair her şey. "
-
                 )
+
             )
             3 -> listOf(
                 LessonItem(
@@ -1444,19 +1339,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     color = R.color.lesson_header_blue
                 ),
-                LessonItem(
-                    type = LessonItem.TYPE_BACK_PART,
-                    title = "2. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    partId = 2,
-                    stepCount = 1,
-                    currentStep = 1,
-                    backPart = true,
-                    sectionTitle = "3. Kısım Çarpma",
-                    sectionDescription = "Abaküste çarpmaya dair her şey."
 
-                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma - Kuralsız",
@@ -1706,19 +1589,7 @@ object GlobalLessonData {
                     cupPoint2 = 700,
                     worstCupTime = 300
                 ),
-                LessonItem(
-                    partId = 4,
-                    type = LessonItem.TYPE_PART,
-                    title = "4. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 21,
-                    sectionTitle = "4. Körleme Toplama",
-                    sectionDescription = "Akıldan Toplama"
-                )
+
             )
             4 -> listOf(
                 LessonItem(
@@ -1730,19 +1601,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     color = R.color.lesson_header_green
                 ),
-                LessonItem(
-                    type = LessonItem.TYPE_BACK_PART,
-                    title = "3. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    partId = 2,
-                    stepCount = 1,
-                    currentStep = 1,
-                    backPart = true,
-                    sectionTitle = "3. Kısım Çarpma",
-                    sectionDescription = "Abaküste çarpmaya dair her şey. "
 
-                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 3 Saniye Arayla",
@@ -2079,19 +1938,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik uygulaman gerekebilir.",
                     timePeriod = 2000,
                 ),
-                LessonItem(
-                    partId = 5,
-                    type = LessonItem.TYPE_PART,
-                    title = "5. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 25,
-                    sectionTitle = "5. Körleme Çıkarma",
-                    sectionDescription = "Akıldan Çıkarma"
-                )
+
 
             )
             5 -> listOf(
@@ -2104,19 +1951,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     color = R.color.lesson_header_red
                 ),
-                LessonItem(
-                    type = LessonItem.TYPE_BACK_PART,
-                    title = "4. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    partId = 4,
-                    stepCount = 1,
-                    currentStep = 1,
-                    backPart = true,
-                    sectionTitle = "4. Kısım Körleme Toplama",
-                    sectionDescription = "Körleme Toplama"
 
-                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - 3 Saniye Arayla",
@@ -2384,19 +2219,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
                     timePeriod = 2000,
                 ),
-                LessonItem(
-                    partId = 6,
-                    type = LessonItem.TYPE_PART,
-                    title = "6. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    stepCount = 1,
-                    currentStep = 1,
-                    tutorialIsFinish = true,
-                    mapFragmentIndex = 21,
-                    sectionTitle = "6. Körleme Çarpma",
-                    sectionDescription = "Akıldan Çarpma"
-                )
+
             )
             6 -> listOf(
                 LessonItem(
@@ -2408,19 +2231,7 @@ object GlobalLessonData {
                     currentStep = 1,
                     color = R.color.lesson_header_red
                 ),
-                LessonItem(
-                    type = LessonItem.TYPE_BACK_PART,
-                    title = "5. Kısım",
-                    offset = 0,
-                    isCompleted = true,
-                    partId = 5,
-                    stepCount = 1,
-                    currentStep = 1,
-                    backPart = true,
-                    sectionTitle = "5. Kısım Körleme Çıkarma",
-                    sectionDescription = "Körleme Çıkarma"
 
-                ),
                 LessonItem(
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
@@ -3175,7 +2986,32 @@ object GlobalLessonData {
             )
 
 
+            // ──────────────────────────────────────────────────────────────────────────────────
+            // Part 9 — Kupa Modu (Addition Abacus Cup)
+            // Bu placeholder statik kalır; gerçek timePeriod / cupDigitSize / cupNumberCount
+            // değerleri CupRuleEngine.buildLessonItem(cupScore) tarafından runtime'da override edilir.
+            // ──────────────────────────────────────────────────────────────────────────────────
+            9 -> listOf(
+                LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Kupa Modu",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    raceBusyLevel = 1,
+                    raceTitle = "Kupa Zorluğu",
+                )
+            )
+
             else -> emptyList()
+        }
+        return items.mapIndexed { index, item ->
+            item.apply { 
+                mapFragmentIndex = index
+                this.partId = partId
+            }
         }
     }
 
@@ -3193,8 +3029,6 @@ object GlobalLessonData {
     fun saveToPreferences(context: Context, saveRemote: Boolean = true) {
         val gson = Gson()
         val json = gson.toJson(_lessonItems)
-        val completedCount = _lessonItems.count { it.stepIsFinish }
-        val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
         Log.d(LOG_TAG, "saveToPreferences partId=$globalPartId cloud-only (items=${_lessonItems.size})")
 
         // Giriş yapmış kullanıcı için Firestore'a da kaydet (uygulama silinse bile geri yüklensin)
@@ -3207,8 +3041,6 @@ object GlobalLessonData {
             data = mapOf(
                 "partId" to globalPartId,
                 "itemCount" to _lessonItems.size,
-                "completedCount" to completedCount,
-                "chestCompletedCount" to chestCompletedCount,
                 "saveRemote" to saveRemote,
                 "uidPresent" to (uid != null),
             ),
@@ -3220,11 +3052,6 @@ object GlobalLessonData {
                 .document(globalPartId.toString())
                 .set(mapOf("items" to json))
                 .addOnSuccessListener {
-                    LessonProgressDiag.logListChestFinishSummary(
-                        "GlobalLessonData.saveToPreferences.SUCCESS",
-                        globalPartId,
-                        _lessonItems,
-                    )
                     Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS")
                     // #region agent log
                     debugLog(
@@ -3236,10 +3063,6 @@ object GlobalLessonData {
                     // #endregion
                 }
                 .addOnFailureListener { e ->
-                    LessonProgressDiag.log(
-                        "GlobalLessonData.saveToPreferences.FAILED",
-                        "part=$globalPartId err=${e.message}",
-                    )
                     Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e)
                     // #region agent log
                     debugLog(
@@ -3278,7 +3101,7 @@ object GlobalLessonData {
         // #endregion
         return if (json != null) {
             try {
-                _lessonItems = parseLessonItemsWithMigration(json)
+                _lessonItems = parseLessonItemsWithMigration(json, globalPartId)
                 Log.d(LOG_TAG, "loadFromPreferences key=$key -> loaded ${_lessonItems.size} items from LOCAL")
                 true
             } catch (e: Exception) {
@@ -3309,6 +3132,12 @@ object GlobalLessonData {
             .addOnSuccessListener { doc ->
                 val json = doc.getString("items")
                 Log.d(LOG_TAG, "loadFromFirestore partId=$partId doc.exists=${doc.exists()} itemsFieldNull=${json == null} itemsBlank=${json.isNullOrBlank()}")
+                if (partId != globalPartId) {
+                    Log.w(LOG_TAG, "loadFromFirestore: Success callback for partId=$partId ignored because globalPartId is $globalPartId")
+                    // We call the callback so the caller doesn't hang, but we don't overwrite _lessonItems
+                    callback(FirestoreLoadStatus.ERROR)
+                    return@addOnSuccessListener
+                }
                 // #region agent log
                 debugLog(
                     hypothesisId = "H3",
@@ -3323,7 +3152,7 @@ object GlobalLessonData {
                 // #endregion
                 if (!json.isNullOrBlank()) {
                     try {
-                        _lessonItems = parseLessonItemsWithMigration(json)
+                        _lessonItems = parseLessonItemsWithMigration(json, partId)
                         val completedCount = _lessonItems.count { it.stepIsFinish }
                         val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
                         Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD")
@@ -3368,15 +3197,17 @@ object GlobalLessonData {
             }
     }
 
-    private fun parseLessonItemsWithMigration(rawJson: String): MutableList<LessonItem> {
+    private fun parseLessonItemsWithMigration(rawJson: String, partId: Int): MutableList<LessonItem> {
         val gson = Gson()
         val type = object : TypeToken<List<LessonItem>>() {}.type
-        return try {
+        val list = try {
             gson.fromJson<List<LessonItem>>(rawJson, type).toMutableList()
         } catch (_: Exception) {
             val migratedJson = migrateLegacyRecordField(rawJson)
             gson.fromJson<List<LessonItem>>(migratedJson, type).toMutableList()
         }
+        list.forEach { it.partId = partId }
+        return list
     }
 
     /**

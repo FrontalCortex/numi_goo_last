@@ -271,10 +271,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigationID) { view, insets ->
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
             val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+            val coordinator = findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+            val isRacePanelOpen = coordinator?.findViewWithTag<View>("race_panel") != null
             view.visibility = when {
                 current is AbacusPracticeFragment -> View.GONE
                 imeVisible -> View.GONE
                 teacherPendingMediaPath != null -> View.GONE
+                isRacePanelOpen -> View.GONE
                 else -> View.VISIBLE
             }
             insets
@@ -402,7 +405,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 preparedDestination == START_DESTINATION_MAP -> {
                     logFirstTutorial("onCreate.route", "prepared=MAP -> MapFragment only")
                     supportFragmentManager.beginTransaction().apply {
-                        replace(R.id.fragmentContainerID, MapFragment())
+                        replace(R.id.fragmentContainerID, PartSelectionFragment())
                         addToBackStack(null)
                         commit()
                     }
@@ -419,7 +422,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         if (firstTutorialShown) {
                             logFirstTutorial("onCreate.route", "guest first_tutorial_shown=true -> Map only")
                             supportFragmentManager.beginTransaction().apply {
-                                replace(R.id.fragmentContainerID, MapFragment())
+                                replace(R.id.fragmentContainerID, PartSelectionFragment())
                                 addToBackStack(null)
                                 commit()
                             }
@@ -452,7 +455,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                                 )
                                 if (firstTutorialShown) {
                                     supportFragmentManager.beginTransaction().apply {
-                                        replace(R.id.fragmentContainerID, MapFragment())
+                                        replace(R.id.fragmentContainerID, PartSelectionFragment())
                                         addToBackStack(null)
                                         commit()
                                     }
@@ -526,7 +529,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
                 // 3) Kökte değilsek normal backstack davranışı
                 val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-                val atRoot = supportFragmentManager.backStackEntryCount <= 1 && current is MapFragment
+                val atRoot = supportFragmentManager.backStackEntryCount <= 1 && current is PartSelectionFragment
                 if (!atRoot) {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
@@ -551,7 +554,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             val seasonRewardGateVisible =
                 supportFragmentManager.findFragmentByTag(SeasonLeaderboardRewardGateFragment.TAG) != null
             backCallback.isEnabled = seasonRewardGateVisible ||
-                (current is MapFragment && supportFragmentManager.backStackEntryCount <= 1) ||
+                (current is PartSelectionFragment && supportFragmentManager.backStackEntryCount <= 1) ||
                 createQuestionVisible ||
                 teacherSelectingQuestion
             binding.root.post { tryShowSeasonLeaderboardRewardGateIfNeeded() }
@@ -698,9 +701,30 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 closeBottomSheet()
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 when (it.itemId) {
-                    R.id.map ->
-                        if (currentFragment is MapFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(MapFragment())
+                    R.id.map -> {
+                        if (currentFragment is PartSelectionFragment) return@requireOnlineAndLoggedInOrLogin
+                        if (currentFragment is MapFragment) {
+                            supportFragmentManager.popBackStack("part_map", androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                            binding.lessonPartBackButton.visibility = View.GONE
+                            return@requireOnlineAndLoggedInOrLogin
+                        }
+                        
+                        var hasPartMap = false
+                        for (i in 0 until supportFragmentManager.backStackEntryCount) {
+                            if (supportFragmentManager.getBackStackEntryAt(i).name == "part_map") {
+                                hasPartMap = true
+                                break
+                            }
+                        }
+                        
+                        if (hasPartMap) {
+                            supportFragmentManager.popBackStackImmediate("part_map", 0)
+                            binding.lessonPartBackButton.visibility = View.VISIBLE
+                            binding.currencyPanel.visibility = View.VISIBLE
+                        } else {
+                            changeFragment(PartSelectionFragment())
+                        }
+                    }
                     R.id.tasks ->
                         if (currentFragment is MissionsFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(MissionsFragment())
@@ -726,6 +750,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             // Test için enerjiyi sıfırla
             energyManager.useEnergy(energyManager.getCurrentEnergy())
             true
+        }
+
+        // lessonPartBackButton: MapFragment'i kapat, PartSelectionFragment'e dön
+        binding.lessonPartBackButton.setOnClickListener {
+            val fm = supportFragmentManager
+            // İçinde ne kadar hayalet lesson kaydı birikmiş olursa olsun, "part_map" (MapFragment) işlemini ve üstündekileri tamamen temizle.
+            fm.popBackStack("part_map", FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            binding.lessonPartBackButton.visibility = View.GONE
         }
         
         // Enerji paneli tıklama
@@ -1378,7 +1410,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     private fun updateCurrencyPanelVisibility() {
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        binding.currencyPanel.visibility = if (current is MapFragment) View.VISIBLE else View.GONE
+        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment) View.VISIBLE else View.GONE
+        
+        // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle
+        if (current !is MapFragment) {
+            binding.lessonPartBackButton.visibility = View.GONE
+        }
     }
 
     fun showOfflineFragment() {
@@ -1593,17 +1630,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         */
 
         // Offline kullanılmayacağı için görev local cache'ini temizle. Bu kod hep kalacak.
-        //MissionsProgressStore.clearLocalCache(context)
+        MissionsProgressStore.clearLocalCache(context)
         // 1) Mevcut görev ilerlemesini sıfırla (daily/weekly counters + claimed flags)
-        //MissionsProgressStore.resetAllProgress(context)
+        MissionsProgressStore.resetAllProgress(context)
         // 2) Günlük/haftalık görev kombinasyonunu yeniden seçtir
-        //MissionsProgressStore.forceReselectMissions(context)
+        MissionsProgressStore.forceReselectMissions(context)
         // 3) Seçilen yeni görevleri hemen üretip state'e yazdır (isteğe bağlı ama önerilir)
-        //MissionsProgressStore.selectedMissionsForDaily(context)
-        //MissionsProgressStore.selectedMissionsForWeekly(context)
+        MissionsProgressStore.selectedMissionsForDaily(context)
+        MissionsProgressStore.selectedMissionsForWeekly(context)
         // Cloud'daki eski mission state'in geri hydrate edilmesini engellemek için
         // resetlenmiş local state'i doğrudan cloud'a overwrite et.
-        //MissionsProgressStore.forceUploadStateToCloud(context)
+        MissionsProgressStore.forceUploadStateToCloud(context)
         // Kullanıcıya özel lesson verilerini local'den temizler.
         GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
@@ -2249,7 +2286,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         claimPathScheduledSeasonGate = true
         beginAbacusOverlayDismissForSeasonGate()
         binding.resultFragmentContainer.visibility = View.GONE
-        if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
+        val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (base is MapFragment || base is PartSelectionFragment) {
             purgeAbacusOverlayHosts("prepareMapReturnAfterLessonClaim")
             restoreMapUiAfterLessonOverlayDismiss()
         }
@@ -2341,6 +2379,23 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=binding_not_initialized")
             return
         }
+
+        // Kupa yolu panel açılış emri varsa, tüm ödül/görev/rozet overlay'leri kapandığında
+        // haritada maraton rehberi göstermek yerine 0.5 saniye bekleyip TasksFragment'a (explore sekmesine) geç.
+        if (GlobalValues.pendingCupPathRevealPartId != null && isMapBaseReadyForMarathonGuide()) {
+            Log.d(MarathonGuideStore.LOG_TAG, "tryShow ROUTE | caller=$caller routing to TasksFragment for Cup Path in 500ms")
+            // Dokunmaları Activity düzeyinde (Pencere - Window seviyesinde) engelle
+            window.setFlags(
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            )
+
+            binding.root.postDelayed({
+                binding.bottomNavigationID.selectedItemId = R.id.explore
+            }, 500L)
+            return
+        }
+
         MarathonGuideStore.logPrefsSnapshot(this, "tryShow:$caller")
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
         if (map == null) {
@@ -2432,7 +2487,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     fun ensureChromeUnlockedAfterMapReturn(caller: String) {
         if (!::binding.isInitialized) return
         val fm = supportFragmentManager
-        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        if (base !is MapFragment && base !is PartSelectionFragment) return
         fm.executePendingTransactions()
         val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
         val blockingOverlay =

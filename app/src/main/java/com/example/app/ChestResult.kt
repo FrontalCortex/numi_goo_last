@@ -95,17 +95,10 @@ class ChestResult : Fragment() {
             time = bundle.getString("time", "")
             dersPuani = bundle.getInt("dersPuani", 0)
             worstCupTime = bundle.getInt("worstCupTime", 0)
-            if (worstCupTime <= 0) {
-                worstCupTime = resolveWorstCupTimeFallback()
-            }
-            successRate = if (totalQuestions > 0) {
-                (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
-            } else {
-                0f
-            }
+            successRate = bundle.getFloat("successRate", 0f)
             targetTimeSeconds = parseTimeToSeconds(time) ?: 0
-            carpan = calculateCarpan(targetTimeSeconds, worstCupTime)
-            toplamPuan = calculateToplamPuan(dersPuani, carpan)
+            carpan = bundle.getFloat("carpan", 1f)
+            toplamPuan = bundle.getInt("toplamPuan", 0)
             scoreCap = resolveScoreCap()
             cupPoint2Threshold = resolveCupPoint2Threshold()
         }
@@ -225,13 +218,17 @@ class ChestResult : Fragment() {
                     }
                 }
 
-                if (shouldIncrementKarate) {
+                val shouldIncrementTornado = globalPartId == 4
+                val shouldIncrementVolcano = globalPartId == 8
+                if (shouldIncrementKarate || shouldIncrementTornado || shouldIncrementVolcano) {
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,
-                        incrementKarate = true,
+                        incrementKarate = shouldIncrementKarate,
                         incrementRocketDailyLessons = false,
                         incrementGolf = false,
+                        incrementTornado = shouldIncrementTornado,
+                        incrementVolcano = shouldIncrementVolcano,
                         onDone = { navigateAfterKaratePayloads(it) },
                     )
                 } else {
@@ -511,15 +508,7 @@ class ChestResult : Fragment() {
         }
     }
 
-    private fun calculateCarpan(targetTimeSec: Int, worstCupTime: Int): Float {
-        if (worstCupTime <= 0) return 1f
-        val rawCarpan = 4f - ((targetTimeSec * 3f) / worstCupTime.toFloat())
-        return rawCarpan.coerceAtLeast(1f)
-    }
 
-    private fun calculateToplamPuan(dersPuani: Int, carpan: Float): Int {
-        return ceil(dersPuani * carpan).toInt()
-    }
 
     private fun updateScoreProgressBar(animatedScore: Int, previousScore: Int) {
         val fill = binding.scoreProgressBarFill
@@ -558,18 +547,7 @@ class ChestResult : Fragment() {
         maybeTriggerStarMarkers(previousScore, animatedScore)
     }
 
-    private fun resolveWorstCupTimeFallback(): Int {
-        val fromCurrent = LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime
-        if (fromCurrent != null && fromCurrent > 0) return fromCurrent
 
-        val fromTemplate = GlobalLessonData.createLessonItems(globalPartId)
-            .getOrNull(mapFragmentStepIndex)
-            ?.worstCupTime
-        if (fromTemplate != null && fromTemplate > 0) return fromTemplate
-
-        // Nihai fallback: çarpanı devre dışı bırakmamak için güvenli varsayılan.
-        return 240
-    }
 
     private fun resolveScoreCap(): Int {
         val currentCupPoint = LessonManager.getLessonItem(mapFragmentStepIndex)?.cupPoint1

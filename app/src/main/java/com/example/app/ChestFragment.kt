@@ -233,6 +233,23 @@ class ChestFragment : Fragment() {
                     else -> ChestTypeProgressHelper.shouldIncrementKarateForFirstThreeStars(item, recordScore)
                 }
                 val completedMissionCount = countCompletedMissions(beforeSnap, afterSnap)
+
+                // Kupa Yolu tetikleyici: part 1-6'daki son TYPE_CHEST tamamlandıysa bayrak set et.
+                // proceedWithResult içindeki tüm akış (Görev / Rozet) bitmeden TasksFragment onResume tarafından tüketilmez.
+                val isLastChestOfCupPathPart = lessonAfterClaim?.let { afterItem ->
+                    if (afterItem.type == LessonItem.TYPE_CHEST && afterItem.stepIsFinish && globalPartId in 1..6) {
+                        val allChestsInPart = GlobalLessonData.lessonItems.filter {
+                            it.type == LessonItem.TYPE_CHEST
+                        }
+                        val lastChest = allChestsInPart.lastOrNull()
+                        lastChest != null && lastChest.mapFragmentIndex != null && lastChest.mapFragmentIndex == afterItem.mapFragmentIndex
+                    } else false
+                } == true
+
+                if (isLastChestOfCupPathPart) {
+                    GlobalValues.pendingCupPathRevealPartId = globalPartId
+                }
+
                 val proceedWithResult: (List<BadgeLevelUpPayload>) -> Unit = { levelUpPayloads ->
                     val fm = parentFragmentManager
                     val hostContainerId = (requireView().parent as View).id
@@ -331,13 +348,17 @@ class ChestFragment : Fragment() {
                         ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
                     }
                 }
-                if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons) {
+                val shouldIncrementTornado = globalPartId == 7
+                val shouldIncrementVolcano = globalPartId == 8
+                if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons || shouldIncrementTornado || shouldIncrementVolcano) {
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = shouldIncrementDartProgress,
                         incrementBowlingBy = completedMissionCount,
                         incrementKarate = shouldIncrementKarate,
                         incrementRocketDailyLessons = incrementRocketDailyLessons,
                         incrementGolf = false,
+                        incrementTornado = shouldIncrementTornado,
+                        incrementVolcano = shouldIncrementVolcano,
                         onDone = proceedWithResult,
                     )
                 } else {
@@ -419,7 +440,7 @@ class ChestFragment : Fragment() {
             record >= 500 -> R.drawable.chest_stars_tier1
             else -> R.drawable.chest_stars_tier0
         }
-        if(lessonItem.isBlinding == true){
+        if(lessonItem.isBlinding == true && globalPartId != 6){
             resolvedIcon = R.drawable.star_on_ic
         }
         val currentIcon = lessonItem.stepCupIcon

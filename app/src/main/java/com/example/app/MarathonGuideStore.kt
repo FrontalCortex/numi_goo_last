@@ -92,14 +92,7 @@ object MarathonGuideStore {
             Log.w(LOG_TAG, "schedule REJECT | source=$source reason=item_null")
             return false
         }
-        if (isShown(context)) {
-            Log.w(
-                LOG_TAG,
-                "schedule REJECT | source=$source reason=already_shown " +
-                    "(marathon or legacy cupFragment_guide_shown)",
-            )
-            return false
-        }
+
         val rejectReason = eligibilityRejectReason(partId, lessonIndex, item)
         if (rejectReason != null) {
             Log.w(

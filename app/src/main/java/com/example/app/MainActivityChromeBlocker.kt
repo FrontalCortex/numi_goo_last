@@ -127,6 +127,10 @@ object MainActivityChromeBlocker {
             isEnabled = false
             setOnTouchListener { _, _ -> true }
         }
+        act.findViewById<View>(R.id.lessonPartBackButton)?.apply {
+            isEnabled = false
+            setOnTouchListener { _, _ -> true }
+        }
         act.findViewById<BottomNavigationView>(R.id.bottomNavigationID)?.apply {
             isClickable = false
             isFocusable = false
@@ -159,6 +163,10 @@ object MainActivityChromeBlocker {
             setOnTouchListener(null)
         }
         act.findViewById<View>(R.id.teacherSendBackButton)?.apply {
+            isEnabled = true
+            setOnTouchListener(null)
+        }
+        act.findViewById<View>(R.id.lessonPartBackButton)?.apply {
             isEnabled = true
             setOnTouchListener(null)
         }

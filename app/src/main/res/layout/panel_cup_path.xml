@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bottom_sheet_background"
+    android:backgroundTint="@color/background_color">
+
+    <!-- Panel Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="16dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="@android:color/transparent">
+
+        <!-- Drag Handle / Çizgi -->
+        <View
+            android:layout_width="32dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:background="#80FFFFFF" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Kupa Yolu"
+                android:textColor="@android:color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Cards -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="12dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp">
+
+            <!-- ===== Card 1: Toplama Kupa Yolu ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card1View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card1TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card1Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Toplama Kupa Yolu"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card1CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card1TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card1CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card1CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="500"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card1DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="dinosaur_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Card 2: Çıkarma Kupa Yolu ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card2View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card2TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card2Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Çıkarma Kupa Yolu"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card2CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card2TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card2CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card2CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="1480"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card2DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="crocodile_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Card 3: Çarpma Kupa Yolu ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card3View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card3TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card3Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Çarpma Kupa Yolu"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card3CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card3TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card3CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card3CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="1480"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card3DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="goat_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card4View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card4TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card4Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Toplama Kupa Yolu - Körleme"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card4CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card4TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card4CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card4CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="1480"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card4DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="eagle_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card5View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card5TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card5Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Çıkarma Kupa Yolu - Körleme"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card5CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card5TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card5CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card5CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="1480"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card5DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="fly_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card6View"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="@color/button_enabled"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/card6TitleRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <TextView
+                            android:id="@+id/card6Title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:includeFontPadding="false"
+                            android:text="Çarpma Kupa Yolu - Körleme"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/card6CupInfoRow"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card6TitleRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/card6CupIcon"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@null"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/infinity_cup_ic" />
+
+                        <TextView
+                            android:id="@+id/card6CupValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="1480"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/card6DinoAnim"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:contentDescription="@null"
+                        app:lottie_fileName="dog_anim.json"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

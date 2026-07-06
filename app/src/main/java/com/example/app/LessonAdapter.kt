@@ -48,7 +48,6 @@ import java.util.Locale
 class LessonAdapter(
     private val context: Context,
     private val items: MutableList<LessonItem>,
-    private val onPartChange: (Int) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     companion object {
         private const val LESSON_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
@@ -543,7 +542,7 @@ class LessonAdapter(
         mainActivity.showEnergyRefillDialog()
     }
 
-    private fun showRacePanel(item: LessonItem, position: Int) {
+    fun showRacePanel(item: LessonItem, position: Int, isFromPartSelection: Boolean = false) {
         // Activity'deki view'ları bul
         val activity = context as Activity
         val coordinatorLayout = activity.findViewById<CoordinatorLayout>(R.id.coordinator_layout)
@@ -551,6 +550,9 @@ class LessonAdapter(
 
         scrimView.visibility = View.VISIBLE
         scrimView.alpha = 0.5f
+        
+        // Race panel açıldığında alt menüyü gizle
+        activity.findViewById<View>(R.id.bottomNavigationID)?.visibility = View.GONE
 
         // Eğer daha önce oluşturulmuş bir race panel varsa kaldır
         coordinatorLayout.findViewWithTag<View>("race_panel")?.let {
@@ -577,15 +579,13 @@ class LessonAdapter(
         val behavior = BottomSheetBehavior.from(raceContentLayout)
 
         scrimView.setOnClickListener {
-            globalPartId = item.backRaceId!!
-            onPartChange(globalPartId)
+            if (!isFromPartSelection) globalPartId = item.backRaceId!!
             behavior.isHideable = true
             behavior.state = BottomSheetBehavior.STATE_HIDDEN
         }
 
         closeButton.setOnClickListener {
-            globalPartId = item.backRaceId!!
-            onPartChange(globalPartId)
+            if (!isFromPartSelection) globalPartId = item.backRaceId!!
             behavior.isHideable = true
             behavior.state = BottomSheetBehavior.STATE_HIDDEN
         }
@@ -593,8 +593,14 @@ class LessonAdapter(
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    globalPartId = item.backRaceId!!
-                    onPartChange(globalPartId)
+                    if (!isFromPartSelection) {
+                        globalPartId = item.backRaceId!!
+                        GlobalLessonData.initialize(context, globalPartId) {
+                            (context as? Activity)?.runOnUiThread { updateItems(GlobalLessonData.lessonItems) }
+                        }
+                    }
+                    // Race panel kapandığında alt menüyü geri getir
+                    activity.findViewById<View>(R.id.bottomNavigationID)?.visibility = View.VISIBLE
                     coordinatorLayout.removeView(racePanelView)
                     scrimView.animate()
                         .alpha(0f)
@@ -613,7 +619,7 @@ class LessonAdapter(
         })
 
         val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
-            .layoutManager?.findViewByPosition(position)
+            ?.layoutManager?.findViewByPosition(position)
         lessonView?.let {
             val location = IntArray(2)
             it.getLocationInWindow(location)
@@ -903,7 +909,7 @@ class LessonAdapter(
         }
     }
 
-    override fun getItemViewType(position: Int): Int = GlobalLessonData.getLessonItem(position)?.type ?: items[position].type
+    override fun getItemViewType(position: Int): Int = items.getOrNull(position)?.type ?: LessonItem.TYPE_LESSON
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -918,35 +924,25 @@ class LessonAdapter(
             LessonItem.TYPE_CHEST -> LessonViewHolder(
                 inflater.inflate(R.layout.item_lesson, parent, false)
             )
-                LessonItem.TYPE_RACE -> RaceViewHolder(
+            LessonItem.TYPE_RACE -> RaceViewHolder(
                 inflater.inflate(R.layout.item_race, parent, false)
-            )
-            LessonItem.TYPE_PART -> PartViewHolder(
-                inflater.inflate(R.layout.item_part, parent, false)
-            )
-            LessonItem.TYPE_BACK_PART -> BackPartViewHolder(
-                inflater.inflate(R.layout.item_back_part, parent, false)
             )
             else -> throw IllegalArgumentException("Unknown view type")
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = GlobalLessonData.getLessonItem(position) ?: items[position]
+        val item = items.getOrNull(position) ?: return
         when (holder) {
-            is LessonViewHolder -> {
-                holder.bind(item)
-            }
+            is LessonViewHolder -> { holder.bind(item) }
             is HeaderViewHolder -> holder.bind(item)
-            is PartViewHolder -> holder.bind(item)
-            is BackPartViewHolder -> holder.bind(item)
             is RaceViewHolder -> holder.bind(item)
         }
     }
 
-    override fun getItemCount(): Int = GlobalLessonData.lessonItems.size
+    override fun getItemCount(): Int = items.size
 
-    fun getItem(position: Int): LessonItem = GlobalLessonData.getLessonItem(position) ?: items[position]
+    fun getItem(position: Int): LessonItem = items.getOrNull(position) ?: GlobalLessonData.getLessonItem(position) ?: error("No item at position $position")
 
     fun updateLessonOffset(position: Int, newOffset: Int) {
         if (position in items.indices) {
@@ -1008,40 +1004,6 @@ class LessonAdapter(
     }
 
     // ViewHolder sınıfları
-    inner class PartViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
-        private val sectionDescription: TextView = itemView.findViewById(R.id.sectionDescription)
-
-        private val fastForwardButton: Button = itemView.findViewById(R.id.fastForwardButton)
-        fun bind(item: LessonItem) {
-            fastForwardButton.setOnClickListener {
-                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
-                    // Butona tıklandığında item'in partId'sini onPartChange callback'ine gönder
-                    globalPartId = item.partId!!
-                    item.partId?.let { partId ->
-                        onPartChange(partId)
-                    }
-                    sectionTitle.text = item.sectionTitle
-                    sectionDescription.text = item.sectionDescription
-                }
-            }
-        }
-    }
-    inner class BackPartViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val fastForwardButton: Button = itemView.findViewById(R.id.fastForwardButton)
-        private val sectionTitle: TextView = itemView.findViewById(R.id.sectionTitle)
-        fun bind(item: LessonItem) {
-            fastForwardButton.setOnClickListener {
-                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
-                    globalPartId = item.partId!!
-                    onPartChange(item.partId!!)
-                }
-            }
-
-            sectionTitle.text = item.sectionTitle
-        }
-    }
-
     private enum class ChestStarSlot {
         YellowOn,
         LightGrayOn,
@@ -1067,8 +1029,12 @@ class LessonAdapter(
         private var progressIncreaseAnimator: ValueAnimator? = null
         private var progressIncreaseStepCount: Int = 0
         private var progressIncreaseTargetFilled: Int = 0
+        private var finalGoldAnimator: AnimatorSet? = null
 
         private fun cancelProgressIncreaseAnimation(applyFinalState: Boolean = true) {
+            finalGoldAnimator?.cancel()
+            finalGoldAnimator = null
+            
             val animator = progressIncreaseAnimator ?: return
             if (applyFinalState && progressIncreaseStepCount > 0) {
                 progressBar.setSegmentState(
@@ -1203,12 +1169,15 @@ class LessonAdapter(
                 interpolator = AccelerateDecelerateInterpolator()
             }
 
-            AnimatorSet().apply {
+            finalGoldAnimator = AnimatorSet().apply {
                 playTogether(colorAnim, ringMerge, shinePrimary, shineSecondary)
                 addListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
                         persistFinalGoldVisualState(item, key)
                         applyPersistentFinalGoldState()
+                        if (finalGoldAnimator == this@apply) {
+                            finalGoldAnimator = null
+                        }
                     }
                 })
                 start()
@@ -1251,17 +1220,21 @@ class LessonAdapter(
                             progressBar.setSegmentProgress(current)
                         }
                         addListener(object : AnimatorListenerAdapter() {
+                            var isCancelled = false
+                            
+                            override fun onAnimationCancel(animation: Animator) {
+                                isCancelled = true
+                                progressIncreaseAnimator = null
+                                progressBar.setSegmentState(safeStepCount, targetFilled)
+                            }
+                            
                             override fun onAnimationEnd(animation: Animator) {
+                                if (isCancelled) return
                                 progressIncreaseAnimator = null
                                 progressBar.setSegmentState(safeStepCount, targetFilled)
                                 if (targetFilled == safeStepCount) {
                                     playFinalGoldMergeAnimation(item, baseCardColor, key)
                                 }
-                            }
-
-                            override fun onAnimationCancel(animation: Animator) {
-                                progressIncreaseAnimator = null
-                                progressBar.setSegmentState(safeStepCount, targetFilled)
                             }
                         })
                         start()
@@ -1281,7 +1254,6 @@ class LessonAdapter(
                     GlobalValues.pendingLessonProgressAnimations.remove(key)
                 }
                 if (
-                    shouldConsumePending &&
                     targetFilled == safeStepCount &&
                     !playedFinalGoldAnimationKeys.contains(key) &&
                     !item.finalGoldVisualUnlocked

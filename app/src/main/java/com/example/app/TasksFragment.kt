@@ -15,12 +15,16 @@ import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
 import android.view.Window
 import android.widget.TextView
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.airbnb.lottie.LottieAnimationView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import androidx.fragment.app.Fragment
 import com.google.android.material.card.MaterialCardView
+import com.example.app.model.LessonItem
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -547,10 +551,10 @@ class TasksFragment : Fragment() {
             onClick = { row ->
                 when (row) {
                     is BulletinRow.Standard -> {
-                        if (row.id == "feedback_card") {
-                            openAbacusContainerFragment(FeedbackFragment())
-                        } else {
-                            openAbacusContainerFragment(AbacusPracticeFragment())
+                        when (row.id) {
+                            "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
+                            "cup_path" -> showCupPathPanel()
+                            else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
                     else -> Unit
@@ -574,7 +578,11 @@ class TasksFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        releaseLaunchTouchBlocker()
+        consumePendingCupDelta()
+        // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
+        if (!checkAndTriggerCupPathReveal()) {
+            releaseLaunchTouchBlocker()
+        }
         refreshDailyQuestionCard()
         val main = activity as? MainActivity
         main?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
@@ -584,7 +592,11 @@ class TasksFragment : Fragment() {
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
-            releaseLaunchTouchBlocker()
+            consumePendingCupDelta()
+            // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
+            if (!checkAndTriggerCupPathReveal()) {
+                releaseLaunchTouchBlocker()
+            }
             refreshDailyQuestionCard()
             (activity as? MainActivity)?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         }
@@ -597,9 +609,16 @@ class TasksFragment : Fragment() {
                     id = "daily_card",
                     title = "Abaküs",
                     subtitle = "Abaküste pratik yaparak kendini geliştir.",
-                    iconRes = R.drawable.mini_abacus_ic
+                    iconRes = R.drawable.mini_abacus_ic,
                 ),
                 BulletinRow.DailyQuestion(dailyCardState),
+                BulletinRow.Standard(
+                    id = "cup_path",
+                    title = "Kupa Yolu",
+                    subtitle = "Başarılarını kupalarla ölç, seviyeni yükselt ve yeni zorluklara ilerle.",
+                    iconRes = R.drawable.infinity_cup_ic,
+                    colorRes = R.color.lesson_header_yellow
+                ),
                 BulletinRow.Standard(
                     id = "feedback_card",
                     title = "Bize Ulaşın",
@@ -871,9 +890,7 @@ class TasksFragment : Fragment() {
         if (main != null) {
             main.showAbacusOverlayFragment(targetFragment) {
                 hide(this@TasksFragment)
-                if (targetFragment !is BlindingLessonFragment) {
-                    releaseLaunchTouchBlocker()
-                }
+                releaseLaunchTouchBlocker()
             }
         } else {
             requireActivity().findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
@@ -884,38 +901,477 @@ class TasksFragment : Fragment() {
                     R.anim.slide_in_left,
                     R.anim.slide_out_right,
                 )
-                .replace(R.id.abacusFragmentContainer, targetFragment)
+                    .replace(R.id.abacusFragmentContainer, targetFragment)
                 .hide(this@TasksFragment)
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
-            if (targetFragment !is BlindingLessonFragment) {
-                releaseLaunchTouchBlocker()
+            releaseLaunchTouchBlocker()
+        }
+    }
+
+    private fun showCupPathPanel() {
+        if (!isAdded) return
+        
+        addLaunchTouchBlocker()
+        
+        val context = requireContext()
+
+        // Sequentially load the parts data so we don't need complex sync blocks
+        GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
+            val active1 = items1.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
+                val active2 = items2.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
+                    val active3 = items3.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
+                        val active4 = items4.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
+                            val active5 = items5.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
+                                releaseLaunchTouchBlocker()
+                                
+                                val active6 = items6.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+
+                                if (isAdded) {
+                                    displayCupPathDialog(active1, active2, active3, active4, active5, active6)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    private fun releaseLaunchTouchBlocker() {
-        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
-        content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { blocker ->
-            content.removeView(blocker)
+    private fun displayCupPathDialog(active1: Boolean, active2: Boolean, active3: Boolean, active4: Boolean, active5: Boolean, active6: Boolean) {
+        if (!isAdded) return
+        val dialog = BottomSheetDialog(requireContext())
+        val contentView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.panel_cup_path, null)
+        dialog.setContentView(contentView)
+
+        // Expand the sheet fully on show
+        dialog.setOnShowListener {
+            val bottomSheet = dialog.findViewById<View>(
+                com.google.android.material.R.id.design_bottom_sheet
+            )
+            bottomSheet?.let {
+                it.setBackgroundResource(android.R.color.transparent)
+                val behavior = BottomSheetBehavior.from(it)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+            }
+        }
+
+
+
+        // Apply visual states to each card
+        setupCupPathCard(contentView, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, active1)
+        setupCupPathCard(contentView, R.id.card2View, R.id.card2Title, R.id.card2CupIcon, R.id.card2CupValue, R.id.card2DinoAnim, active2)
+        setupCupPathCard(contentView, R.id.card3View, R.id.card3Title, R.id.card3CupIcon, R.id.card3CupValue, R.id.card3DinoAnim, active3)
+        setupCupPathCard(contentView, R.id.card4View, R.id.card4Title, R.id.card4CupIcon, R.id.card4CupValue, R.id.card4DinoAnim, active4)
+        setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
+        setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
+
+        // Cancel lottie animations on dismiss
+        dialog.setOnDismissListener {
+            listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
+                contentView.findViewById<LottieAnimationView>(id)?.cancelAnimation()
+            }
+        }
+
+        val card1View = contentView.findViewById<View>(R.id.card1View)
+        card1View?.setOnClickListener {
+            showCupDifficultyPanel()
+        }
+
+        // Dialog referansını sakla (kupa güncellemesi için)
+        GlobalValues.cupPathDialogRef = java.lang.ref.WeakReference(dialog as android.app.Dialog)
+        dialog.setOnDismissListener {
+            listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
+                contentView.findViewById<LottieAnimationView>(id)?.cancelAnimation()
+            }
+            if (GlobalValues.cupPathDialogRef?.get() === (dialog as? android.app.Dialog)) {
+                GlobalValues.cupPathDialogRef = null
+            }
+        }
+
+        // card1CupValue'yi Firestore'dan çek
+        val card1CupValue = contentView.findViewById<TextView>(R.id.card1CupValue)
+        AbacusCupRepository.fetchCupScore { score ->
+            if (!isAdded) return@fetchCupScore
+            requireActivity().runOnUiThread {
+                card1CupValue?.text = score.toString()
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showCupDifficultyPanel() {
+        if (!isAdded) return
+        val contentView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.panel_cup_difficulty, null)
+
+        val dialog = android.app.AlertDialog.Builder(requireContext())
+            .setView(contentView)
+            .create()
+
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            window.attributes.windowAnimations = R.style.DialogAnimationSlideLeft
+        }
+
+        val closeBtn = contentView.findViewById<View>(R.id.cupDifficultyClose)
+        closeBtn?.setOnClickListener { dialog.dismiss() }
+
+        val startBtn = contentView.findViewById<View>(R.id.cupDifficultyStartButton)
+        startBtn?.isEnabled = false
+
+        // Başlat butonunu kupa skoru okunduktan sonra aktif et
+        AbacusCupRepository.fetchCupScore { cupScore ->
+            if (!isAdded) return@fetchCupScore
+            requireActivity().runOnUiThread {
+                startBtn?.isEnabled = true
+                startBtn?.setOnClickListener {
+                    dialog.dismiss()
+                    launchCupModeLesson(cupScore)
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    /** Kupa skoruna göre çalışma-zamanı LessonItem oluşturur ve BlindingLessonFragment'i açar. */
+    private fun launchCupModeLesson(cupScore: Int) {
+        if (!isAdded) return
+        val activity = requireActivity()
+        val lessonItem = CupRuleEngine.buildLessonItem(cupScore)
+
+        // Kupa modu için part 9'u initialize et
+        GlobalLessonData.initialize(requireContext(), 9) {
+            activity.runOnUiThread {
+                val fm = activity.supportFragmentManager
+                val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
+                    ?: return@runOnUiThread
+                fragmentContainer.visibility = View.VISIBLE
+                fm.executePendingTransactions()
+
+                // Sayı listesini üret ve bundle'a koy
+                val digitSize = lessonItem.cupDigitSize ?: 1
+                val count = lessonItem.cupNumberCount ?: 3
+                val numbers = GlobalValues.randomUniqueNumberStrings(digitSize, count)
+                    .map { it.toInt() }
+
+                val fragment = BlindingLessonFragment().apply {
+                    arguments = android.os.Bundle().apply {
+                        putSerializable("operations", ArrayList(numbers))
+                    }
+                }
+
+                fm.beginTransaction()
+                    .setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
+                    .replace(R.id.abacusFragmentContainer, fragment)
+                    .addToBackStack(null)
+                    .commitAllowingStateLoss()
+            }
         }
     }
 
-    private fun addLaunchTouchBlocker() {
-        val content = activity?.findViewById<ViewGroup>(android.R.id.content) ?: return
-        content.findViewWithTag<View>(PRACTICE_TOUCH_BLOCKER_TAG)?.let { content.removeView(it) }
-        val blocker = View(requireContext()).apply {
-            tag = PRACTICE_TOUCH_BLOCKER_TAG
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-            )
-            setBackgroundColor(Color.TRANSPARENT)
-            isClickable = true
-            isFocusable = true
-            setOnTouchListener { _, _ -> true }
-            elevation = 1000f
+    /**
+     * BlindingLessonFragment'ten döndükten sonra [GlobalValues.pendingCupDelta] bayrağını tüketir.
+     * Delta varsa Firestore'a yazar ve panel_cup_path'teki card1CupValue'yi günceller.
+     * Panel kapalıysa displayCupPathDialog'u yeniden açar.
+     */
+    private fun consumePendingCupDelta() {
+        val delta = GlobalValues.pendingCupDelta ?: return
+        GlobalValues.pendingCupDelta = null
+
+        AbacusCupRepository.updateCupScore(delta) { newScore ->
+            if (!isAdded) return@updateCupScore
+            requireActivity().runOnUiThread {
+                val existingDialog = GlobalValues.cupPathDialogRef?.get()
+                if (existingDialog != null && existingDialog.isShowing) {
+                    // Panel zaten açık — card1CupValue'yi güncelle
+                    existingDialog.findViewById<TextView>(R.id.card1CupValue)?.text = newScore.toString()
+                } else {
+                    // Panel kapandı — durumu yeniden yükleyip aç
+                    GlobalValues.cupPathDialogRef = null
+                    loadAndShowCupPathDialogAfterCupUpdate()
+                }
+            }
         }
-        content.addView(blocker)
+    }
+
+    /** Kupa güncellemesinden sonra panel_cup_path'i güncel verilerle açar. */
+    private fun loadAndShowCupPathDialogAfterCupUpdate() {
+        if (!isAdded) return
+        val context = requireContext()
+        GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
+            val active1 = items1.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
+                val active2 = items2.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
+                    val active3 = items3.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
+                        val active4 = items4.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
+                            val active5 = items5.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
+                                val active6 = items6.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                                if (isAdded) {
+                                    displayCupPathDialog(active1, active2, active3, active4, active5, active6)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * GlobalValues.pendingCupPathRevealPartId bayrağını tüketir.
+     * Bayrak set ise: veri yükler, dialog açar ve aktif olacak kartı önce inaktif,
+     * 0.5s sonra aktif + pop animasyonuyla gösterir. Tüm süre boyunca ekran kilitli.
+     * @return bayrak tüketildiyse true (blocker bu fonksiyon tarafından yönetilir)
+     */
+    private fun checkAndTriggerCupPathReveal(): Boolean {
+        val partId = GlobalValues.pendingCupPathRevealPartId ?: return false
+        GlobalValues.pendingCupPathRevealPartId = null
+
+        if (!isAdded) return false
+
+        addLaunchTouchBlocker()
+
+        val context = requireContext()
+        GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
+            val active1 = items1.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
+                val active2 = items2.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
+                    val active3 = items3.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
+                        val active4 = items4.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
+                            val active5 = items5.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
+                                val active6 = items6.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                                if (!isAdded) {
+                                    releaseLaunchTouchBlocker()
+                                    return@loadLessonItemsForPart
+                                }
+                                view?.postDelayed({
+                                    displayCupPathDialogWithReveal(active1, active2, active3, active4, active5, active6, partId)
+                                }, 500L) ?: displayCupPathDialogWithReveal(active1, active2, active3, active4, active5, active6, partId)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true
+    }
+
+    /**
+     * panel_cup_path'i [partId]'ye karşılık gelen kartı önce inaktif göstererek açar.
+     * 0.5s sonra kart aktif hale gelir ve pop (scale) animasyonu oynar.
+     * Animasyon bitince [releaseLaunchTouchBlocker] çağrılır.
+     */
+    private fun displayCupPathDialogWithReveal(
+        active1: Boolean,
+        active2: Boolean,
+        active3: Boolean,
+        active4: Boolean,
+        active5: Boolean,
+        active6: Boolean,
+        revealPartId: Int,
+    ) {
+        if (!isAdded) {
+            releaseLaunchTouchBlocker()
+            return
+        }
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setCancelable(false) // Animasyon bitene kadar kapatılmasını engelle
+        val contentView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.panel_cup_path, null)
+        dialog.setContentView(contentView)
+
+        dialog.setOnShowListener {
+            val bottomSheet = dialog.findViewById<View>(
+                com.google.android.material.R.id.design_bottom_sheet
+            )
+            bottomSheet?.let {
+                it.setBackgroundResource(android.R.color.transparent)
+                val behavior = BottomSheetBehavior.from(it)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+            }
+        }
+
+        // Aktif olacak kartın ID'lerini belirle
+        val revealCardViewId: Int
+        val revealTitleId: Int
+        val revealCupIconId: Int
+        val revealCupValueId: Int
+        val revealLottieId: Int
+        when (revealPartId) {
+            1 -> { revealCardViewId = R.id.card1View; revealTitleId = R.id.card1Title; revealCupIconId = R.id.card1CupIcon; revealCupValueId = R.id.card1CupValue; revealLottieId = R.id.card1DinoAnim }
+            2 -> { revealCardViewId = R.id.card2View; revealTitleId = R.id.card2Title; revealCupIconId = R.id.card2CupIcon; revealCupValueId = R.id.card2CupValue; revealLottieId = R.id.card2DinoAnim }
+            3 -> { revealCardViewId = R.id.card3View; revealTitleId = R.id.card3Title; revealCupIconId = R.id.card3CupIcon; revealCupValueId = R.id.card3CupValue; revealLottieId = R.id.card3DinoAnim }
+            4 -> { revealCardViewId = R.id.card4View; revealTitleId = R.id.card4Title; revealCupIconId = R.id.card4CupIcon; revealCupValueId = R.id.card4CupValue; revealLottieId = R.id.card4DinoAnim }
+            5 -> { revealCardViewId = R.id.card5View; revealTitleId = R.id.card5Title; revealCupIconId = R.id.card5CupIcon; revealCupValueId = R.id.card5CupValue; revealLottieId = R.id.card5DinoAnim }
+            else -> { revealCardViewId = R.id.card6View; revealTitleId = R.id.card6Title; revealCupIconId = R.id.card6CupIcon; revealCupValueId = R.id.card6CupValue; revealLottieId = R.id.card6DinoAnim }
+        }
+
+        // Önce tüm kartları gerçek durumlarıyla göster; reveal kart için aktif=false (inaktif) kullan
+        setupCupPathCard(contentView, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, if (revealPartId == 1) false else active1)
+        setupCupPathCard(contentView, R.id.card2View, R.id.card2Title, R.id.card2CupIcon, R.id.card2CupValue, R.id.card2DinoAnim, if (revealPartId == 2) false else active2)
+        setupCupPathCard(contentView, R.id.card3View, R.id.card3Title, R.id.card3CupIcon, R.id.card3CupValue, R.id.card3DinoAnim, if (revealPartId == 3) false else active3)
+        setupCupPathCard(contentView, R.id.card4View, R.id.card4Title, R.id.card4CupIcon, R.id.card4CupValue, R.id.card4DinoAnim, if (revealPartId == 4) false else active4)
+        setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, if (revealPartId == 5) false else active5)
+        setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, if (revealPartId == 6) false else active6)
+
+        dialog.setOnDismissListener {
+            listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
+                contentView.findViewById<LottieAnimationView>(id)?.cancelAnimation()
+            }
+        }
+
+        dialog.show()
+
+        // Panel açıldığında dialog'un kendi penceresindeki dokunmaları da engelle
+        dialog.window?.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        )
+
+        // 0.5s sonra reveal kart aktif hale geçer + pop animasyonu
+        val revealCardView = contentView.findViewById<com.google.android.material.card.MaterialCardView>(revealCardViewId)
+        contentView.postDelayed({
+            if (!isAdded) {
+                releaseLaunchTouchBlocker()
+                return@postDelayed
+            }
+            // Kartı aktif duruma geçir
+            val revealActive = when (revealPartId) { 1 -> active1; 2 -> active2; 3 -> active3; 4 -> active4; 5 -> active5; else -> active6 }
+            setupCupPathCard(
+                contentView,
+                revealCardViewId,
+                revealTitleId,
+                revealCupIconId,
+                revealCupValueId,
+                revealLottieId,
+                revealActive
+            )
+            
+            val card1View = contentView.findViewById<View>(R.id.card1View)
+            card1View?.setOnClickListener {
+                showCupDifficultyPanel()
+            }
+            
+            // Pop (baloncuk) animasyonu: 1f → 1.18f → 1f
+            revealCardView?.let { card ->
+                card.animate()
+                    .scaleX(1.18f).scaleY(1.18f)
+                    .setDuration(160)
+                    .withEndAction {
+                        card.animate()
+                            .scaleX(1f).scaleY(1f)
+                            .setDuration(140)
+                            .withEndAction {
+                                dialog.setCancelable(true)
+                                dialog.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+                                releaseLaunchTouchBlocker()
+                            }
+                            .start()
+                    }.start()
+            } ?: run {
+                dialog.setCancelable(true)
+                dialog.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+                releaseLaunchTouchBlocker()
+            }
+        }, 1000L)
+    }
+
+    private fun setupCupPathCard(
+        root: View,
+        cardViewId: Int,
+        titleId: Int,
+        cupIconId: Int,
+        cupValueId: Int,
+        lottieId: Int,
+        isActive: Boolean
+    ) {
+        val cardView = root.findViewById<com.google.android.material.card.MaterialCardView>(cardViewId)
+        val titleText = root.findViewById<TextView>(titleId)
+        val cupIcon = root.findViewById<ImageView>(cupIconId)
+        val cupValue = root.findViewById<TextView>(cupValueId)
+        val lottieView = root.findViewById<LottieAnimationView>(lottieId)
+
+        val context = root.context
+
+        if (isActive) {
+            // Active visual state
+            val colorRes = when (cardViewId) {
+                R.id.card1View, R.id.card4View -> R.color.lesson_header_orange
+                R.id.card2View, R.id.card5View -> R.color.lesson_header_green
+                R.id.card3View, R.id.card6View -> R.color.lesson_header_blue
+                else -> R.color.button_enabled
+            }
+            cardView.setCardBackgroundColor(ContextCompat.getColor(context, colorRes))
+            titleText.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            cupValue.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            cupIcon.clearColorFilter()
+
+            // Lottie: active, playing, color filter cleared
+            lottieView.speed = 1f
+            lottieView.clearColorFilter()
+            lottieView.clearValueCallback(
+                com.airbnb.lottie.model.KeyPath("**"),
+                com.airbnb.lottie.LottieProperty.COLOR_FILTER
+            )
+            lottieView.addValueCallback(
+                com.airbnb.lottie.model.KeyPath("**"),
+                com.airbnb.lottie.LottieProperty.COLOR_FILTER,
+                com.airbnb.lottie.value.LottieValueCallback<android.graphics.ColorFilter?>(null)
+            )
+            lottieView.playAnimation()
+        } else {
+            // Inactive visual state
+            cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.background_color))
+
+            val lockedColor = ContextCompat.getColor(context, R.color.lesson_locked)
+            titleText.setTextColor(lockedColor)
+            cupValue.setTextColor(lockedColor)
+
+            // Cup icon: gray color tint
+            cupIcon.setColorFilter(lockedColor, android.graphics.PorterDuff.Mode.SRC_IN)
+
+            // Lottie: gray color, paused
+            lottieView.speed = 0f
+            lottieView.pauseAnimation()
+            lottieView.progress = 0f
+
+            val filter = android.graphics.PorterDuffColorFilter(lockedColor, android.graphics.PorterDuff.Mode.SRC_ATOP)
+            lottieView.addValueCallback(
+                com.airbnb.lottie.model.KeyPath("**"),
+                com.airbnb.lottie.LottieProperty.COLOR_FILTER,
+                com.airbnb.lottie.value.LottieValueCallback<android.graphics.ColorFilter>(filter)
+            )
+            lottieView.invalidate()
+        }
+    }
+
+    private fun releaseLaunchTouchBlocker() {
+        activity?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+    }
+
+    private fun addLaunchTouchBlocker() {
+        activity?.window?.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        )
     }
 }

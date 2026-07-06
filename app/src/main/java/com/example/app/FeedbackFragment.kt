@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.content.Context
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentFeedbackBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -31,6 +32,9 @@ class FeedbackFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
+            closeFragment()
+        }
         // Önceki ekrandan açık kalan bir klavye varsa kapat
         view.post {
             try {
@@ -42,6 +46,8 @@ class FeedbackFragment : Fragment() {
         binding.closeButton.setOnClickListener {
             closeFragment()
         }
+
+
 
         binding.sendFeedbackButton.setOnClickListener {
             if (!canSendFeedback()) {

@@ -1,6 +1,8 @@
 package com.example.app
 
+import android.content.Intent
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
@@ -70,12 +72,26 @@ object AskQuestionButtonBinder {
         isTeacher: Boolean,
         onAllowedClick: () -> Unit,
     ) {
+        val isPremium = doc.getBoolean("isPremium") == true
+        val plan = doc.getString("plan")
+        
+        val isFreePlan = if (plan.isNullOrEmpty()) {
+            !isPremium
+        } else {
+            plan.equals("Free", ignoreCase = true)
+        }
+
         when {
             UserAskQuestionRestriction.isRestricted(doc) -> {
                 showMessage(fragment, R.string.ask_question_account_restricted)
             }
             isTeacher && doc.getBoolean("teacherApproved") != true -> {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
+            }
+            !isTeacher && isFreePlan -> {
+                Toast.makeText(fragment.requireContext(), "Bu özelliği kullanabilmek için planı yükselt", Toast.LENGTH_LONG).show()
+                val intent = Intent(fragment.requireContext(), SubscriptionActivity::class.java)
+                fragment.startActivity(intent)
             }
             else -> {
                 val main = fragment.activity as? MainActivity

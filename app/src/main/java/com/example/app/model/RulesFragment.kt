@@ -16,6 +16,9 @@ class RulesFragment : Fragment() {
         data object TEN_FIVE : RulesTableSelection()
         data object TEN : RulesTableSelection()
         data object BEAD : RulesTableSelection()
+        data object EXTRACTION_FIVE : RulesTableSelection()
+        data object TEN_EXTRACTION : RulesTableSelection()
+        data object BEAD_EXTRACTION : RulesTableSelection()
         data class MULTIPLICATION(val digit: Int) : RulesTableSelection()
     }
 
@@ -134,6 +137,9 @@ class RulesFragment : Fragment() {
         binding.tenRuleFiveTableLayout.setRulesTablePickerClick(RulesTableSelection.TEN_FIVE)
         binding.tenRuleTableLinearLayout.setRulesTablePickerClick(RulesTableSelection.TEN)
         binding.BeadRuleTable.setRulesTablePickerClick(RulesTableSelection.BEAD)
+        binding.extractionFiveRuleTable.setRulesTablePickerClick(RulesTableSelection.EXTRACTION_FIVE)
+        binding.tenRuleExtractionTableLayout.setRulesTablePickerClick(RulesTableSelection.TEN_EXTRACTION)
+        binding.BeadRuleExtractionTable.setRulesTablePickerClick(RulesTableSelection.BEAD_EXTRACTION)
         multiplicationTableViews.forEach { (view, digit) ->
             view.setRulesTablePickerClick(RulesTableSelection.MULTIPLICATION(digit))
         }
@@ -146,6 +152,9 @@ class RulesFragment : Fragment() {
             binding.tenRuleFiveTableLayout,
             binding.tenRuleTableLinearLayout,
             binding.BeadRuleTable,
+            binding.extractionFiveRuleTable,
+            binding.tenRuleExtractionTableLayout,
+            binding.BeadRuleExtractionTable,
         ).forEach { view ->
             view.isClickable = false
             view.setOnClickListener(null)

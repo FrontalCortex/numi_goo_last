@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_daily_question_continue"
+    android:clipToOutline="true"
+    android:padding="20dp">
+
+    <ImageView
+        android:id="@+id/cupDifficultyClose"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@null"
+        android:defaultFocusHighlightEnabled="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:padding="8dp"
+        android:src="@drawable/ic_close_black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/cupDifficultyTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:text="Zorluk Seviyesi"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/cupDifficultyClose"
+        app:layout_constraintEnd_toStartOf="@id/cupDifficultyClose"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/cupDifficultyClose" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/cupDifficultyAnim"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cupDifficultyTitle"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="dinosaur_anim.json"
+        app:lottie_loop="true" />
+
+    <TextView
+        android:id="@+id/cupDifficultyMessage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Seviyeyi Ayarla"
+        android:textColor="#FFECB3"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cupDifficultyAnim" />
+
+    <SeekBar
+        android:id="@+id/cupDifficultySeekBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="10"
+        android:progress="5"
+        android:progressTint="@color/button_enabled"
+        android:thumbTint="@color/button_enabled"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cupDifficultyMessage" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cupDifficultyStartButton"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="@color/button_enabled"
+        android:elevation="0dp"
+        android:fontFamily="@font/font_regular"
+        android:minWidth="160dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:text="BAŞLAT"
+        android:textColor="#000000"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:cornerRadius="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cupDifficultySeekBar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

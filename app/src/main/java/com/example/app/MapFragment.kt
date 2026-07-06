@@ -1120,6 +1120,9 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generateSequenceExtractionRaceHard(20),
                     MathOperationGenerator.generateSequenceExtractionRaceHard(20),
                 )
+                100-> listOf(
+
+                )
                 else -> emptyList()
             }
         }
@@ -1196,13 +1199,9 @@ class MapFragment : Fragment() {
 
                 recordLayout?.let { recordLayoutView ->
                     // Animasyonun daha önce gösterilip gösterilmediğini kontrol et
-                    val prefs = requireContext().getSharedPreferences("GuidePanelPrefs", android.content.Context.MODE_PRIVATE)
-                    val animationShown = prefs.getBoolean("recordLayout_animation_shown", false)
 
-                    // Eğer animasyon daha önce gösterilmemişse başlat
-                    if (!animationShown) {
                         lessonsAdapter.startPulseAnimationForView(recordLayoutView, stopAnimationOnClick = false)
-                    }
+
 
                     // recordLayout'a tıklandığında: animasyonu durdur + paneli kapat + RecordFragment aç
                     binding.guidePanel.setTargetViewForLastStep(recordLayoutView) {
@@ -1213,8 +1212,6 @@ class MapFragment : Fragment() {
                         recordLayoutView.scaleX = 1f
                         recordLayoutView.scaleY = 1f
 
-                        // Animasyonun gösterildiğini kaydet (bir daha gösterilmesin)
-                        prefs.edit().putBoolean("recordLayout_animation_shown", true).apply()
 
                         // BottomSheet'i kapat
                         val activity = requireActivity()
@@ -1289,10 +1286,10 @@ class MapFragment : Fragment() {
         // Panel'i göster
         binding.guidePanel.show()
         
-        // Panel animasyonu tamamlandıktan sonra overlay'i kaldır (panel 500ms animasyon + 1000ms ek güvenlik)
-        view?.postDelayed({
-            enableMapFragmentViews() // Overlay'i kaldır (Panel tamamen göründükten sonra)
-        }, 1500) // Panel animasyonu (500ms) + ek güvenlik (1000ms)
+        // Panel gizlendiğinde overlay'i ve kilitleri kaldır
+        binding.guidePanel.setOnPanelHideListener {
+            enableMapTouchRouting()
+        }
         
         // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
         view?.postDelayed({
@@ -1345,14 +1342,7 @@ class MapFragment : Fragment() {
             Log.d(MarathonGuideStore.LOG_TAG, "show SKIP | caller=$caller reason=not_pending")
             return
         }
-        if (MarathonGuideStore.isShown(ctx)) {
-            Log.w(
-                MarathonGuideStore.LOG_TAG,
-                "show SKIP | caller=$caller reason=already_shown clearing_stale_pending",
-            )
-            MarathonGuideStore.clearPending(ctx)
-            return
-        }
+
         val main = activity as? MainActivity ?: run {
             Log.d(MarathonGuideStore.LOG_TAG, "show SKIP | caller=$caller reason=activity_not_main")
             return
@@ -1416,6 +1406,8 @@ class MapFragment : Fragment() {
     
     private fun disableMainActivityViews() {
         val activity = requireActivity()
+        android.util.Log.d("GuideDebug", "disableMainActivityViews called, locking ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
+        MainActivityChromeBlocker.acquire(activity)
         
         // Currency panel (üstteki panel)
         activity.findViewById<View>(R.id.currencyPanel)?.apply {
@@ -1440,16 +1432,10 @@ class MapFragment : Fragment() {
             setOnClickListener(null) // Click listener'ı kaldır
         }
         
-        // Bottom navigation
-        activity.findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigationID)?.apply {
-            isClickable = false
-            isFocusable = false
-            isEnabled = false // Tamamen devre dışı bırak (tıklama efektleri de engellenir)
-            setOnTouchListener { _, _ -> true } // Touch event'leri consume et
-            setOnItemSelectedListener(null) // Item selected listener'ı kaldır
-            
-            // Menu item'lerini de devre dışı bırak
-            menu.setGroupEnabled(0, false)
+        // Lesson part back button
+        activity.findViewById<View>(R.id.lessonPartBackButton)?.apply {
+            isEnabled = false
+            setOnTouchListener { _, _ -> true }
         }
         
         android.util.Log.d("MapFragment", "MainActivity views disabled")
@@ -1504,8 +1490,10 @@ class MapFragment : Fragment() {
     }
     
     private fun enableMapFragmentViews() {
+        android.util.Log.d("GuideDebug", "enableMapFragmentViews called, releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
         val hadBlock = mapTransparentTouchBlockActive || (overlayView?.parent != null)
         mapTransparentTouchBlockActive = false
+        MainActivityChromeBlocker.release(activity)
         if (hadBlock) {
             MapTouchDiagnostics.reportFromFragment(
                 this,
@@ -1550,6 +1538,12 @@ class MapFragment : Fragment() {
             isClickable = true
             isFocusable = true
             setOnTouchListener(null) // Touch listener'ı kaldır
+        }
+        
+        // Lesson part back button
+        activity.findViewById<View>(R.id.lessonPartBackButton)?.apply {
+            isEnabled = true
+            setOnTouchListener(null)
         }
         
         // Bottom navigation
@@ -1606,15 +1600,7 @@ class MapFragment : Fragment() {
     private fun setupRecyclerView() {
         lessonsAdapter = LessonAdapter(
             context = requireContext(),
-            items = GlobalLessonData.lessonItems.toMutableList(),
-            onPartChange = { newPartId ->
-                globalPartId = newPartId
-                GlobalLessonData.initialize(requireContext(), newPartId) {
-                    activity?.runOnUiThread {
-                        lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
-                    }
-                }
-            }
+            items = GlobalLessonData.lessonItems.toMutableList()
         )
 
         // LessonManager'a adapter'ı set et
@@ -1711,6 +1697,12 @@ class MapFragment : Fragment() {
     /** Recycler + MainActivity dokunma yönlendirmesini sıfırla (overlay / guide panel sonrası). */
     fun enableMapTouchRouting() {
         if (!isAdded || view == null) return
+        
+        if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE) {
+            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled or visible")
+            return
+        }
+        
         enableMapFragmentViews()
         enableMainActivityViews()
         (activity as? MainActivity)?.logMapTouchDiag(

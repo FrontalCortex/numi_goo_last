@@ -49,7 +49,11 @@ data class LessonItem(
     var leaderboardSeasonId: Int? = null,
     var abacusGuideNumber: Int? = null,
     var titleUnit: String? = null,
-    var raceTitle: String? = null
+    var raceTitle: String? = null,
+    /** Kupa modunda (globalPartId == 9) seçilen basamak sayısı (1, 2 veya 3). */
+    var cupDigitSize: Int? = null,
+    /** Kupa modunda kullanıcıya gösterilecek sayı adedi. */
+    var cupNumberCount: Int? = null,
 ) : Serializable {
     /** [season] ile eşleşen sezon en iyi skoru; yoksa liderliğe eski [record] yazılmaz. */
     /** [MapFragment.getLessonOperations] yoksa geri adım alt sınırı (dersin ilk adım id'si). */
@@ -71,8 +75,6 @@ data class LessonItem(
         const val TYPE_HEADER = 1
         const val TYPE_CHEST = 2
         const val TYPE_RACE = 3
-        const val TYPE_PART = 4
-        const val TYPE_BACK_PART = 5
         // Fragment ID sabitleri
 
         /**

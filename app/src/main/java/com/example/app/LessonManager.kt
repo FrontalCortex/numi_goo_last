@@ -31,6 +31,9 @@ object LessonManager {
     }
 
     fun updateLessonItem(context: Context, position: Int, item: LessonItem) {
+        if (item.partId != null && item.partId != GlobalLessonData.globalPartId) {
+            return
+        }
         LessonProgressDiag.log(
             "LessonManager.updateLessonItem",
             "idx=$position finish=${item.stepIsFinish} adapter=${adapter != null}",
@@ -39,6 +42,9 @@ object LessonManager {
         adapter?.updateLessonItem(position, item)
     }
     fun updateRaceItem(context: Context, position: Int, item: LessonItem) {
+        if (item.partId != null && item.partId != GlobalLessonData.globalPartId) {
+            return
+        }
         // Global veriyi güncelle
         GlobalLessonData.updateLessonItem(context, position, item)
         // RaceAdapter'ı da güncelle (eğer race item'ı ise)

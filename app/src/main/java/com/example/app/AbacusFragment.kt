@@ -152,7 +152,7 @@ class AbacusFragment : Fragment() {
     private lateinit var rulesPanelButton: ImageView
 
     private enum class RulesPanelTableType {
-        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION, MULTIPLICATION
+        NONE, FIVE, TEN_FIVE, TEN, BEAD, BEAD_EXTRACTION, TEN_EXTRACTION, MULTIPLICATION
     }
 
     private var activeRulesPanelTable = RulesPanelTableType.NONE
@@ -1292,9 +1292,12 @@ class AbacusFragment : Fragment() {
     private fun applyRulesTableSelection(selection: RulesFragment.RulesTableSelection) {
         when (selection) {
             RulesFragment.RulesTableSelection.FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
+            RulesFragment.RulesTableSelection.EXTRACTION_FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
             RulesFragment.RulesTableSelection.TEN_FIVE -> activeRulesPanelTable = RulesPanelTableType.TEN_FIVE
             RulesFragment.RulesTableSelection.TEN -> activeRulesPanelTable = RulesPanelTableType.TEN
+            RulesFragment.RulesTableSelection.TEN_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.TEN_EXTRACTION
             RulesFragment.RulesTableSelection.BEAD -> activeRulesPanelTable = RulesPanelTableType.BEAD
+            RulesFragment.RulesTableSelection.BEAD_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.BEAD_EXTRACTION
             is RulesFragment.RulesTableSelection.MULTIPLICATION -> {
                 activeRulesPanelTable = RulesPanelTableType.MULTIPLICATION
                 selectedMultiplicationDigit = selection.digit
@@ -1318,12 +1321,13 @@ class AbacusFragment : Fragment() {
         binding.tenRuleFiveTableLayout.visibility = View.GONE
         binding.tenRuleTableLinearLayout.visibility = View.GONE
         binding.BeadRuleTable.visibility = View.GONE
+        binding.BeadRuleExtractionTable.visibility = View.GONE
         binding.tenRuleExtractionTableLayout.visibility = View.GONE
         binding.rulesPanelMultiplicationSlot.visibility = View.GONE
     }
 
     private fun applyRulesPanelFiveText() {
-        if (globalPartId == 2 && lessonItem.mapFragmentIndex!! > 5) {
+        if ((globalPartId == 2 && lessonItem.mapFragmentIndex!! > 5) || globalPartId == 5) {
             binding.fiveText.text = "Çıkarılacak Sayı"
             binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
 
@@ -1344,6 +1348,7 @@ class AbacusFragment : Fragment() {
             RulesPanelTableType.TEN_FIVE -> binding.tenRuleFiveTableLayout
             RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
             RulesPanelTableType.BEAD -> binding.BeadRuleTable
+            RulesPanelTableType.BEAD_EXTRACTION -> binding.BeadRuleExtractionTable
             RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
             RulesPanelTableType.MULTIPLICATION -> {
                 val digit = selectedMultiplicationDigit
@@ -3135,7 +3140,8 @@ class AbacusFragment : Fragment() {
         stopTimer() // Soru panelindeyken timer çalışmasın diye durduruyoruz.
         val successRate = currentSuccessRate()
         val dersPuani = (successRate * 5f).toInt()
-        val worstCupTime = LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
+        val (carpan, toplamPuan) = calculateChestScore(successRate, currentTime)
+        val worstCupTime = resolveWorstCupTimeFallback()
         val fragment = QuestionPanelFragment.newInstance(
             correctAnswers = correctAnswer,
             totalQuestions = totalQuestions,
@@ -3150,11 +3156,11 @@ class AbacusFragment : Fragment() {
 
         parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
             // Soru paneli bittiğinde çalışacak orijinal kod:
-            if (lessonItem.type == 2) {
-                if (currentSuccessRate() < 10f) { //50 yapılacak
-                    showLessonResultFalseOnly()
+            if (lessonItem.type == LessonItem.TYPE_CHEST) {
+                if (toplamPuan < 500) { 
+                    showLessonResultFalseOnly(true)
                 } else {
-                    showChestResult()
+                    showChestResult(carpan, toplamPuan)
                 }
             } else {
                 showLessonResult()
@@ -3176,7 +3182,7 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    private fun showLessonResultFalseOnly() {
+    private fun showLessonResultFalseOnly(isChestFailure: Boolean = false) {
         val lessonResultFalse = LessonResultFalse()
         val successRate = currentSuccessRate()
         val dersPuani = (successRate * 5f).toInt()
@@ -3185,6 +3191,7 @@ class AbacusFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putBoolean("isChestFailure", isChestFailure)
         }
         lessonResultFalse.arguments = argsFalse
 
@@ -3197,16 +3204,12 @@ class AbacusFragment : Fragment() {
             .commit()
     }
 
-    private fun showChestResult() {
+    private fun showChestResult(carpan: Float, toplamPuan: Int) {
         val chestResultFragment = ChestResult()
 
-        // Başarı oranını hesapla
-        val successRate = if (totalQuestions > 0) {
-            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
-        } else {
-            0f
-        }
+        val successRate = currentSuccessRate()
         val dersPuani = (successRate * 5f).toInt()
+        val worstCupTime = resolveWorstCupTimeFallback()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
@@ -3214,10 +3217,9 @@ class AbacusFragment : Fragment() {
             putFloat("successRate", successRate)
             putString("time", currentTime)
             putInt("dersPuani", dersPuani)
-            putInt(
-                "worstCupTime",
-                LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
-            )
+            putInt("worstCupTime", worstCupTime)
+            putFloat("carpan", carpan)
+            putInt("toplamPuan", toplamPuan)
         }
         chestResultFragment.arguments = args
         stopTimer()
@@ -3232,5 +3234,47 @@ class AbacusFragment : Fragment() {
             .commit()
     }
 
+    private fun parseTimeToSeconds(value: String): Int {
+        val parts = value.split(":").map { it.trim() }
+        return when (parts.size) {
+            2 -> {
+                val minutes = parts[0].toIntOrNull() ?: 0
+                val seconds = parts[1].toIntOrNull() ?: 0
+                minutes * 60 + seconds
+            }
+            3 -> {
+                val hours = parts[0].toIntOrNull() ?: 0
+                val minutes = parts[1].toIntOrNull() ?: 0
+                val seconds = parts[2].toIntOrNull() ?: 0
+                hours * 3600 + minutes * 60 + seconds
+            }
+            else -> 0
+        }
+    }
+
+    private fun resolveWorstCupTimeFallback(): Int {
+        val fromCurrent = LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime
+        if (fromCurrent != null && fromCurrent > 0) return fromCurrent
+
+        val fromTemplate = GlobalLessonData.createLessonItems(GlobalLessonData.globalPartId)
+            .getOrNull(mapFragmentStepIndex)
+            ?.worstCupTime
+        if (fromTemplate != null && fromTemplate > 0) return fromTemplate
+
+        return 240
+    }
+
+    private fun calculateChestScore(successRate: Float, timeStr: String): Pair<Float, Int> {
+        val dersPuani = (successRate * 5f).toInt()
+        val targetTimeSec = parseTimeToSeconds(timeStr)
+        val worstCupTime = resolveWorstCupTimeFallback()
+
+        val carpan = if (worstCupTime <= 0) 1f else {
+            val rawCarpan = 4f - ((targetTimeSec * 3f) / worstCupTime.toFloat())
+            rawCarpan.coerceAtLeast(1f)
+        }
+        val toplamPuan = kotlin.math.ceil(dersPuani * carpan).toInt()
+        return Pair(carpan, toplamPuan)
+    }
 
 }

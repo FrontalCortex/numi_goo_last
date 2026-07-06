@@ -30,8 +30,17 @@
             android:background="@android:color/transparent"
             android:src="@drawable/ic_back_arrow"
             android:contentDescription="@string/notification_download_cancel"
-            android:tint="@android:color/white"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:tint="@android:color/white" />
+        <ImageButton
+            android:id="@+id/lessonPartBackButton"
+            android:layout_width="@dimen/main_toolbar_icon_back"
+            android:layout_height="@dimen/main_toolbar_icon_back"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back_arrow"
+            android:contentDescription="@string/notification_download_cancel"
+            android:visibility="gone"
+            app:tint="@android:color/white" />
 
         <ImageView
             android:id="@+id/diamondID"
@@ -45,10 +54,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0"
-            android:textColor="#FFD600"
+            android:textColor="#00BCD4"
             android:textStyle="bold"
-            android:textSize="@dimen/main_currency_text_size"
-            android:layout_marginStart="@dimen/main_currency_margin_start"/>
+            android:textSize="@dimen/main_currency_text_size"/>
 
         <View
             android:layout_width="0dp"
@@ -67,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="5/5"
-            android:textColor="#FFD600"
+            android:textColor="#4CAF50"
             android:textStyle="bold"
             android:textSize="@dimen/main_energy_text_size"/>
         <View

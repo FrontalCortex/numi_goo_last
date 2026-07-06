@@ -73,19 +73,6 @@ class ProfileFragment : Fragment() {
         val topBackgroundRes: Int?,
     )
 
-    // unlocked=true rozetler soldan sağa bu sıraya göre önceliklidir.
-    private val unlockedPriorityOrder = listOf(
-        BadgeKind.CUP,
-        BadgeKind.GOLD,
-        BadgeKind.SILVER,
-        BadgeKind.BRONZE,
-        BadgeKind.KARATE,
-        BadgeKind.BOWLING,
-        BadgeKind.DART,
-        BadgeKind.FISHING,
-        BadgeKind.GOLF,
-        BadgeKind.ROCKET,
-    )
 
     // unlocked=false rozetler, unlocked slotları dolduktan sonra bu sırayla eklenir.
     private val lockedPriorityOrder = listOf(
@@ -94,6 +81,8 @@ class ProfileFragment : Fragment() {
         BadgeKind.FISHING,
         BadgeKind.DART,
         BadgeKind.BOWLING,
+        BadgeKind.VOLCANO,
+        BadgeKind.TORNADO,
         BadgeKind.KARATE,
         BadgeKind.BRONZE,
         BadgeKind.SILVER,
@@ -441,6 +430,75 @@ class ProfileFragment : Fragment() {
         binding.tvTotalTime.text = timeText
     }
 
+    private fun getBadgeLevel(kind: BadgeKind): Int {
+        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val raw = when (kind) {
+            BadgeKind.DART -> progress.userDartProgress
+            BadgeKind.FISHING -> progress.userFishingProgress
+            BadgeKind.GOLF -> progress.userGolfProgress
+            BadgeKind.TORNADO -> progress.userTornadoProgress
+            BadgeKind.VOLCANO -> progress.userVolcanoProgress
+            BadgeKind.ROCKET -> progress.userRocketProgress
+            BadgeKind.BOWLING -> progress.userBowlingProgress
+            else -> 0
+        }
+        val spec = when (kind) {
+            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
+            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
+            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
+            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
+            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
+            else -> return 0
+        }
+        val (levels, step) = spec
+        val rawCapped = raw.coerceAtLeast(0)
+        val first = levels.first()
+        if (rawCapped < first) return 0
+        val last = levels.last()
+        if (rawCapped <= last) {
+            return levels.count { it <= rawCapped }
+        }
+        val extra = (rawCapped - last) / step
+        return levels.size + extra
+    }
+
+    private fun getBadgeSortingWeight(kind: BadgeKind): Double {
+        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val raw = when (kind) {
+            BadgeKind.DART -> progress.userDartProgress
+            BadgeKind.FISHING -> progress.userFishingProgress
+            BadgeKind.GOLF -> progress.userGolfProgress
+            BadgeKind.TORNADO -> progress.userTornadoProgress
+            BadgeKind.VOLCANO -> progress.userVolcanoProgress
+            BadgeKind.ROCKET -> progress.userRocketProgress
+            BadgeKind.BOWLING -> progress.userBowlingProgress
+            else -> 0
+        }
+        val spec = when (kind) {
+            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
+            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
+            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
+            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
+            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
+            else -> return 0.0
+        }
+        val (levels, step) = spec
+        val rawCapped = raw.coerceAtLeast(0)
+        val first = levels.first()
+        if (rawCapped < first) return 0.0
+        val last = levels.last()
+        if (rawCapped <= last) {
+            return levels.count { it <= rawCapped }.toDouble()
+        }
+        // 5. seviyeden sonra: (Mevcut İlerleme - Son Eleman) / levelUp
+        val extra = (rawCapped - last).toDouble() / step.toDouble()
+        return levels.size.toDouble() + extra
+    }
+
     private fun bindRandomProfileBadges() {
         val slots = listOf(
             ProfileBadgeSlot(binding.badgeItemDart, binding.badgeDartBase, binding.badgeDartTop, binding.badgeDartValue),
@@ -450,9 +508,38 @@ class ProfileFragment : Fragment() {
         )
 
         val badgesByType = BadgeProgressRepository.getStates().associateBy { it.kind }
-        val orderedUnlocked = unlockedPriorityOrder.mapNotNull { type ->
+
+        // İlk grup (sabit öncelikli): GOLD, SILVER, BRONZE, CUP, KARATE
+        val firstGroupOrder = listOf(
+            BadgeKind.GOLD,
+            BadgeKind.SILVER,
+            BadgeKind.BRONZE,
+            BadgeKind.CUP,
+            BadgeKind.KARATE
+        )
+        val firstGroupPart = firstGroupOrder.mapNotNull { type ->
             badgesByType[type]?.takeIf { it.unlocked }
         }
+
+        // İkinci grup (seviyeye göre azalan sıralı): TORNADO, VOLCANO, BOWLING, DART, FISHING, GOLF, ROCKET
+        val secondGroupDefaultOrder = listOf(
+            BadgeKind.TORNADO,
+            BadgeKind.VOLCANO,
+            BadgeKind.BOWLING,
+            BadgeKind.DART,
+            BadgeKind.FISHING,
+            BadgeKind.GOLF,
+            BadgeKind.ROCKET
+        )
+        val secondGroupPart = secondGroupDefaultOrder.mapNotNull { type ->
+            badgesByType[type]?.takeIf { it.unlocked }
+        }.sortedWith(
+            compareByDescending<BadgeState> { getBadgeSortingWeight(it.kind) }
+                .thenBy { secondGroupDefaultOrder.indexOf(it.kind) }
+        )
+
+        val orderedUnlocked = firstGroupPart + secondGroupPart
+
         val orderedLocked = lockedPriorityOrder.mapNotNull { type ->
             badgesByType[type]?.takeIf { !it.unlocked }
         }
@@ -561,6 +648,22 @@ class ProfileFragment : Fragment() {
                 topHoldFrame = 30f,
                 topScale = 0.60f,
                 topBackgroundRes = null,
+            )
+
+            BadgeKind.TORNADO -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "tornado_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+
+            BadgeKind.VOLCANO -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "volcano_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
             )
         }
     }

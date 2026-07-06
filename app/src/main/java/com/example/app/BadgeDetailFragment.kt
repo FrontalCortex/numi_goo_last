@@ -68,6 +68,8 @@ class BadgeDetailFragment : Fragment() {
         BadgeKind.BOWLING,
         BadgeKind.FISHING,
         BadgeKind.GOLF,
+        BadgeKind.TORNADO,
+        BadgeKind.VOLCANO,
     )
 
     override fun onCreateView(
@@ -394,6 +396,22 @@ class BadgeDetailFragment : Fragment() {
                 topHoldFrame = 30f,
                 topScale = 0.60f,
                 topBackgroundRes = null,
+            )
+
+            BadgeKind.TORNADO -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "tornado_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+
+            BadgeKind.VOLCANO -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "volcano_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
             )
         }
     }

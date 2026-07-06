@@ -1,5 +1,8 @@
 package com.example.app
 
+import android.util.Log
+import com.example.app.GlobalLessonData.globalPartId
+import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.model.LessonItem
 
 /**
@@ -8,7 +11,8 @@ import com.example.app.model.LessonItem
 object ChestTypeProgressHelper {
 
     fun resolvedChestIcon(item: LessonItem, recordValue: Int): Int {
-        if (item.isBlinding == true) {
+        if(item.isBlinding == true && globalPartId != 6){
+            Log.d("guguk","work")
             return R.drawable.star_on_ic
         }
         

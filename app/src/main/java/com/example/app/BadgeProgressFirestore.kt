@@ -32,6 +32,8 @@ object BadgeProgressFirestore {
             userRocketProgress = (doc.get("userRocketProgress") as? Number)?.toInt() ?: 0,
             userRocketDailyLessons = (doc.get("userRocketDailyLessons") as? Number)?.toInt() ?: 0,
             userRocketDailyDayId = doc.getString("userRocketDailyDayId") ?: "",
+            userTornadoProgress = (doc.get("userTornadoProgress") as? Number)?.toInt() ?: 0,
+            userVolcanoProgress = (doc.get("userVolcanoProgress") as? Number)?.toInt() ?: 0,
             abacusLeaderboardRank = abacusRank,
             goldMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("goldMedalPiece")),
             silverMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("silverMedalPiece")),
@@ -190,6 +192,8 @@ object BadgeProgressFirestore {
         incrementGolf: Boolean = false,
         /** Günlük soru doğru: art arda periyot serisi (+1); periyot atlanırsa seri sıfırlanıp 1’den başlar. */
         incrementFishing: Boolean = false,
+        incrementTornado: Boolean = false,
+        incrementVolcano: Boolean = false,
         /** [BlindingLessonFragment] oturum periyodu; yoksa [DailyQuestionPeriod.currentPeriodKey]. */
         dailyQuestionPeriodKey: String? = null,
         onDone: (List<BadgeLevelUpPayload>) -> Unit,
@@ -212,6 +216,8 @@ object BadgeProgressFirestore {
             val beforeKarate = (snapshot.getLong("userKarateProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeRocket = (snapshot.getLong("userRocketProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeGolf = (snapshot.getLong("userGolfProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeTornado = (snapshot.getLong("userTornadoProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeVolcano = (snapshot.getLong("userVolcanoProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeFishingTier = (snapshot.getLong("userFishingProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeFishingStreakStored = if (snapshot.contains("userFishingStreak")) {
                 (snapshot.getLong("userFishingStreak") ?: 0L).toInt().coerceAtLeast(0)
@@ -238,6 +244,8 @@ object BadgeProgressFirestore {
             val afterBowling = if (incrementBowlingBy > 0) beforeBowling + incrementBowlingBy else beforeBowling
             val afterKarate = if (incrementKarate) beforeKarate + 1 else beforeKarate
             val afterGolf = if (incrementGolf) beforeGolf + 1 else beforeGolf
+            val afterTornado = if (incrementTornado) beforeTornado + 1 else beforeTornado
+            val afterVolcano = if (incrementVolcano) beforeVolcano + 1 else beforeVolcano
             val afterFishingStreak: Int
             val afterFishingStreakPeriod: String
             if (incrementFishing) {
@@ -278,6 +286,8 @@ object BadgeProgressFirestore {
             if (incrementBowlingBy > 0) updateMap["userBowlingProgress"] = afterBowling.toLong()
             if (incrementKarate) updateMap["userKarateProgress"] = afterKarate.toLong()
             if (incrementGolf) updateMap["userGolfProgress"] = afterGolf.toLong()
+            if (incrementTornado) updateMap["userTornadoProgress"] = afterTornado.toLong()
+            if (incrementVolcano) updateMap["userVolcanoProgress"] = afterVolcano.toLong()
             if (incrementFishing) {
                 updateMap["userFishingProgress"] = afterFishingTier.toLong()
                 updateMap["userFishingStreak"] = afterFishingStreak.toLong()
@@ -301,6 +311,10 @@ object BadgeProgressFirestore {
                 afterFishingTier,
                 afterFishingStreak,
                 afterFishingStreakPeriod,
+                beforeTornado,
+                afterTornado,
+                beforeVolcano,
+                afterVolcano,
             )
         }.addOnSuccessListener { values ->
             fun num(i: Int) = (values[i] as Number).toInt()
@@ -320,10 +334,16 @@ object BadgeProgressFirestore {
             val afterFishingTier = num(13)
             val afterFishingStreak = num(14)
             val afterFishingStreakPeriod = values[15] as String
+            val beforeTornado = num(16)
+            val afterTornado = num(17)
+            val beforeVolcano = num(18)
+            val afterVolcano = num(19)
             if (incrementDart) BadgeProgressRepository.updateDartProgress(afterDart)
             if (incrementBowlingBy > 0) BadgeProgressRepository.updateBowlingProgress(afterBowling)
             if (incrementKarate) BadgeProgressRepository.updateKarateProgress(afterKarate)
             if (incrementGolf) BadgeProgressRepository.updateGolfProgress(afterGolf)
+            if (incrementTornado) BadgeProgressRepository.updateTornadoProgress(afterTornado)
+            if (incrementVolcano) BadgeProgressRepository.updateVolcanoProgress(afterVolcano)
             if (incrementFishing) {
                 BadgeProgressRepository.updateFishingSync(
                     userFishingProgress = afterFishingTier,
@@ -363,6 +383,22 @@ object BadgeProgressFirestore {
             }
             if (incrementFishing) {
                 payloads.addAll(resolveFishingLevelUpChain(beforeFishingTier, afterFishingTier))
+            }
+            if (incrementTornado) {
+                resolveLevelUpPayload(
+                    BadgeFragment.BadgeAnimMode.TORNADO,
+                    beforeTornado,
+                    afterTornado,
+                    listOf(1, 3, 5, 10, 15),
+                )?.let { payloads.add(it) }
+            }
+            if (incrementVolcano) {
+                resolveLevelUpPayload(
+                    BadgeFragment.BadgeAnimMode.VOLCANO,
+                    beforeVolcano,
+                    afterVolcano,
+                    listOf(1, 3, 5, 10, 15),
+                )?.let { payloads.add(it) }
             }
             onDone(payloads)
         }.addOnFailureListener { e ->

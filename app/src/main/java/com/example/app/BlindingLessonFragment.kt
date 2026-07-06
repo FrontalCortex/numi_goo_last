@@ -97,7 +97,7 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var rulesPanelButton: ImageView
 
     private enum class RulesPanelTableType {
-        NONE, FIVE, TEN_FIVE, TEN, BEAD, TEN_EXTRACTION, MULTIPLICATION
+        NONE, FIVE, TEN_FIVE, TEN, BEAD, BEAD_EXTRACTION, TEN_EXTRACTION, MULTIPLICATION
     }
 
     private var activeRulesPanelTable = RulesPanelTableType.NONE
@@ -117,7 +117,7 @@ class BlindingLessonFragment : Fragment() {
         else -> R.layout.multiplication_table_1
     }
 
-    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..6
+    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..8
     private var resultDialog: Dialog? = null
 
     private var seconds = 0
@@ -261,6 +261,9 @@ class BlindingLessonFragment : Fragment() {
 
     private fun uploadLessonData(){
         operations = arguments?.getSerializable("operations") as? List<Any> ?: emptyList()
+
+        // Kupa modu: sayılar zaten bundle'dan geldi, ek işlem gerekmez
+        if (globalPartId == 9) return
 
         if (operations.isEmpty()) {
             lessonStep = lessonItem.startStepNumber!!
@@ -658,9 +661,12 @@ class BlindingLessonFragment : Fragment() {
     private fun applyRulesTableSelection(selection: RulesFragment.RulesTableSelection) {
         when (selection) {
             RulesFragment.RulesTableSelection.FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
+            RulesFragment.RulesTableSelection.EXTRACTION_FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
             RulesFragment.RulesTableSelection.TEN_FIVE -> activeRulesPanelTable = RulesPanelTableType.TEN_FIVE
             RulesFragment.RulesTableSelection.TEN -> activeRulesPanelTable = RulesPanelTableType.TEN
+            RulesFragment.RulesTableSelection.TEN_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.TEN_EXTRACTION
             RulesFragment.RulesTableSelection.BEAD -> activeRulesPanelTable = RulesPanelTableType.BEAD
+            RulesFragment.RulesTableSelection.BEAD_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.BEAD_EXTRACTION
             is RulesFragment.RulesTableSelection.MULTIPLICATION -> {
                 activeRulesPanelTable = RulesPanelTableType.MULTIPLICATION
                 selectedMultiplicationDigit = selection.digit
@@ -684,13 +690,14 @@ class BlindingLessonFragment : Fragment() {
         binding.tenRuleFiveTableLayout.visibility = View.GONE
         binding.tenRuleTableLinearLayout.visibility = View.GONE
         binding.BeadRuleTable.visibility = View.GONE
+        binding.BeadRuleExtractionTable.visibility = View.GONE
         binding.tenRuleExtractionTableLayout.visibility = View.GONE
         binding.rulesPanelMultiplicationSlot.visibility = View.GONE
     }
 
     private fun applyRulesPanelFiveText() {
         val index = lessonItem.mapFragmentIndex ?: return
-        if (globalPartId == 2 && index > 5) {
+        if ((globalPartId == 2 && index > 5) || globalPartId == 5) {
             binding.fiveText.text = "Çıkarılacak Sayı"
             binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
         } else {
@@ -710,6 +717,7 @@ class BlindingLessonFragment : Fragment() {
             RulesPanelTableType.TEN_FIVE -> binding.tenRuleFiveTableLayout
             RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
             RulesPanelTableType.BEAD -> binding.BeadRuleTable
+            RulesPanelTableType.BEAD_EXTRACTION -> binding.BeadRuleExtractionTable
             RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
             RulesPanelTableType.MULTIPLICATION -> {
                 val digit = selectedMultiplicationDigit
@@ -781,7 +789,7 @@ class BlindingLessonFragment : Fragment() {
         if (!usesRulesTablePicker()) {
             updateActiveRulesPanelTable()
         }
-        if(globalPartId == 5){
+        if(globalPartId == 5 || globalPartId == 8){
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
             rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
@@ -1343,10 +1351,25 @@ class BlindingLessonFragment : Fragment() {
     private fun finishLessonAfterLastQuestion() {
         when {
             isDailyQuestionMode -> handleDailyQuestionLessonComplete()
-            isRacePanelLesson() -> {
-                if (raceLessonPassed()) showChestResult() else showLessonResultFalse()
+            // Kupa modu: doğru tamamlandı — +5 delta bırak ve kapat
+            globalPartId == 9 -> {
+                GlobalValues.pendingCupDelta = AbacusCupRepository.CUP_STEP
+                closeFragment()
             }
-            globalPartId in setOf(4, 5, 6) -> {
+            isRacePanelLesson() || (lessonItem.type == LessonItem.TYPE_CHEST && globalPartId !in setOf(4, 5)) -> {
+                if (lessonItem.raceBusyLevel == 0) {
+                    closeFragment()
+                    return
+                }
+                val successRate = if (totalQuestions > 0) (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100 else 0f
+                val (carpan, toplamPuan) = calculateChestScore(successRate, currentTime)
+                if (toplamPuan >= 500) {
+                    showChestResult(carpan, toplamPuan)
+                } else {
+                    showLessonResultFalse(true)
+                }
+            }
+            globalPartId in setOf(4, 5) -> {
                 // Başarı oranını hesapla
                 val successRate = if (totalQuestions > 0) (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100 else 0f
 
@@ -1361,7 +1384,7 @@ class BlindingLessonFragment : Fragment() {
         }
     }
 
-    private fun lessonResultArgs(): Bundle {
+    private fun lessonResultArgs(isChestFailure: Boolean = false): Bundle {
         val successRate = if (totalQuestions > 0) {
             (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
         } else {
@@ -1373,12 +1396,23 @@ class BlindingLessonFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putBoolean("isChestFailure", isChestFailure)
         }
     }
 
-    private fun showLessonResultFalse() {
+    private fun showLessonResultFalse(isChestFailure: Boolean = false) {
+        // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
+        if (globalPartId == 9) {
+            GlobalValues.pendingCupDelta = -AbacusCupRepository.CUP_STEP
+            closeFragment()
+            return
+        }
+        if (lessonItem.raceBusyLevel == 0) {
+            closeFragment()
+            return
+        }
         val lessonResultFalse = LessonResultFalse()
-        lessonResultFalse.arguments = lessonResultArgs()
+        lessonResultFalse.arguments = lessonResultArgs(isChestFailure)
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 R.anim.slide_in_left,
@@ -1388,7 +1422,7 @@ class BlindingLessonFragment : Fragment() {
             .commit()
     }
 
-    private fun showChestResult() {
+    private fun showChestResult(carpan: Float, toplamPuan: Int) {
         val chestResultFragment = if (lessonItem.raceBusyLevel != null) {
             ChestFragment()
         } else {
@@ -1401,6 +1435,7 @@ class BlindingLessonFragment : Fragment() {
             0f
         }
         val dersPuani = (successRate * 5f).toInt()
+        val worstCupTime = resolveWorstCupTimeFallback()
 
         val args = Bundle().apply {
             putInt("correctAnswers", correctAnswer)
@@ -1408,10 +1443,9 @@ class BlindingLessonFragment : Fragment() {
             putFloat("successRate", successRate)
             putString("time", currentTime)
             putInt("dersPuani", dersPuani)
-            putInt(
-                "worstCupTime",
-                LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
-            )
+            putInt("worstCupTime", worstCupTime)
+            putFloat("carpan", carpan)
+            putInt("toplamPuan", toplamPuan)
         }
         chestResultFragment.arguments = args
 
@@ -1423,6 +1457,49 @@ class BlindingLessonFragment : Fragment() {
             )
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
+    }
+
+    private fun parseTimeToSeconds(value: String): Int {
+        val parts = value.split(":").map { it.trim() }
+        return when (parts.size) {
+            2 -> {
+                val minutes = parts[0].toIntOrNull() ?: 0
+                val seconds = parts[1].toIntOrNull() ?: 0
+                minutes * 60 + seconds
+            }
+            3 -> {
+                val hours = parts[0].toIntOrNull() ?: 0
+                val minutes = parts[1].toIntOrNull() ?: 0
+                val seconds = parts[2].toIntOrNull() ?: 0
+                hours * 3600 + minutes * 60 + seconds
+            }
+            else -> 0
+        }
+    }
+
+    private fun resolveWorstCupTimeFallback(): Int {
+        val fromCurrent = LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime
+        if (fromCurrent != null && fromCurrent > 0) return fromCurrent
+
+        val fromTemplate = GlobalLessonData.createLessonItems(GlobalLessonData.globalPartId)
+            .getOrNull(mapFragmentStepIndex)
+            ?.worstCupTime
+        if (fromTemplate != null && fromTemplate > 0) return fromTemplate
+
+        return 240
+    }
+
+    private fun calculateChestScore(successRate: Float, timeStr: String): Pair<Float, Int> {
+        val dersPuani = (successRate * 5f).toInt()
+        val targetTimeSec = parseTimeToSeconds(timeStr)
+        val worstCupTime = resolveWorstCupTimeFallback()
+
+        val carpan = if (worstCupTime <= 0) 1f else {
+            val rawCarpan = 4f - ((targetTimeSec * 3f) / worstCupTime.toFloat())
+            rawCarpan.coerceAtLeast(1f)
+        }
+        val toplamPuan = kotlin.math.ceil(dersPuani * carpan).toInt()
+        return Pair(carpan, toplamPuan)
     }
 
     private fun isDailyQuestionSessionPeriodValid(): Boolean {

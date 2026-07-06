@@ -210,6 +210,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private var tutorialSteps12: List<TutorialStep> = emptyList()
     private var tutorialSteps13: List<TutorialStep> = emptyList()
     private var tutorialSteps14: List<TutorialStep> = emptyList()
+    private var tutorialSteps999: List<TutorialStep> = emptyList()
     private var tutorialSteps15: List<TutorialStep> = emptyList()
     private var tutorialSteps16: List<TutorialStep> = emptyList()
     private var tutorialSteps17: List<TutorialStep> = emptyList()
@@ -378,6 +379,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             12 -> tutorialSteps12
             13 -> tutorialSteps13
             14 -> tutorialSteps14
+            999 -> tutorialSteps999
             15 -> tutorialSteps15
             16 -> tutorialSteps16
             17 -> tutorialSteps17
@@ -1267,34 +1269,45 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // Devam butonuna tıklama olayını ekle
         binding.devamButton.setOnClickListener {
             (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(false)
-            // Yeni fragment'i göster
+
+            // Tutorial soru panelini aç; panel bittikten sonra asıl geçişi yap
+            val globalPartId = GlobalLessonData.globalPartId
+            val mapFragmentIndex = lessonItem?.mapFragmentIndex ?: 0
+            val panelFragment = TutorialQuestionPanelFragment.newInstance(
+                globalPartId = globalPartId,
+                mapFragmentIndex = mapFragmentIndex,
+            )
+
+            parentFragmentManager.setFragmentResultListener(
+                "tutorialQuestionPanelResult",
+                viewLifecycleOwner
+            ) { _, _ ->
+                if (!isAdded) return@setFragmentResultListener
+                // Panel bitti — asıl derse geçiş
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
                     )
-
-                    .replace(R.id.abacusFragmentContainer, fragment)  // fragment_container, ana layout'taki container ID'si
+                    .replace(R.id.abacusFragmentContainer, fragment)
                     .commit()
+                currentStep = 0
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
                     )
-
-                    .replace(R.id.abacusFragmentContainer, fragment)  // fragment_container, ana layout'taki container ID'si
+                    .remove(this)
                     .commit()
+            }
 
-
-//eğer adımdaki şey true ise geri giderken ve
-            // TutorialFragment'i kapat
-            currentStep=0
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,  // Giriş animasyonu
-                    R.anim.slide_out_right  // Çıkış animasyonu
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
                 )
-                .remove(this)
+                .add(R.id.abacusFragmentContainer, panelFragment)
+                .hide(this)
                 .commit()
         }
     }
@@ -1522,6 +1535,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         createTutorialSteps12()
         createTutorialSteps13()
         createTutorialSteps14()
+        createTutorialSteps999()
         createTutorialSteps15()
         createTutorialSteps16()
         createTutorialSteps17()
@@ -13346,6 +13360,22 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial15_27
             )
+        )
+    }
+
+    private fun createTutorialSteps999(){
+        tutorialSteps999 = listOf(
+            TutorialStep(
+            "10’luk çıkarma yaparken 5’lik çıkarmayı kullanmamız gerekebilir.",
+            useTypewriterEffect = true,
+            typewriterSpeed = 40L,
+            soundResource = R.raw.tutorial14_1
+        ),TutorialStep(
+        "10’luk çıkarma yaparken 5’lik çıkarmayı kullanmamız gerekebilir.",
+        useTypewriterEffect = true,
+        typewriterSpeed = 40L,
+        soundResource = R.raw.tutorial14_1
+        )
         )
     }
     

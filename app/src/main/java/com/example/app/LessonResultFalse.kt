@@ -37,6 +37,7 @@ class LessonResultFalse : Fragment() {
     private var succsessRate: Float = 0F
     private var lessonStep: Int = 0
     private var lessonScore: Int = 0
+    private var isChestFailure: Boolean = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
@@ -71,6 +72,7 @@ class LessonResultFalse : Fragment() {
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
+            isChestFailure = bundle.getBoolean("isChestFailure", false)
             Log.d("mesi","$correctAnswers, $totalQuestions")
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
@@ -127,6 +129,12 @@ class LessonResultFalse : Fragment() {
         lessonScore = (succsessRate * 5f).toInt()
         binding.successRate.text = "${succsessRate.toInt()}%"
         binding.totalScore.text = lessonScore.toString()
+        
+        if (isChestFailure) {
+            binding.resultTitleComment.text = "Puan 500'den düşük!"
+        } else {
+            binding.resultTitleComment.text = "Başarı oranı %80'den düşük!"
+        }
 
         // Başarı durumuna göre farklı animasyon gösterebilirsiniz
         /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı

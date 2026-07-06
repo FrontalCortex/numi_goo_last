@@ -54,9 +54,7 @@ object LessonProgressMerge {
             a.finalGoldVisualUnlocked == b.finalGoldVisualUnlocked
 
     private fun progressRank(item: LessonItem): Int {
-        if (item.type == LessonItem.TYPE_HEADER || item.type == LessonItem.TYPE_PART ||
-            item.type == LessonItem.TYPE_BACK_PART
-        ) {
+        if (item.type == LessonItem.TYPE_HEADER) {
             return 0
         }
         var rank = item.currentStep.coerceAtLeast(0)
@@ -73,9 +71,7 @@ object LessonProgressMerge {
         if (local.type != remote.type) {
             return if (progressRank(local) >= progressRank(remote)) local else remote
         }
-        if (local.type == LessonItem.TYPE_HEADER || local.type == LessonItem.TYPE_PART ||
-            local.type == LessonItem.TYPE_BACK_PART
-        ) {
+        if (local.type == LessonItem.TYPE_HEADER) {
             return if (progressRank(local) >= progressRank(remote)) local else remote
         }
 
