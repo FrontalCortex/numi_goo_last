@@ -204,6 +204,19 @@ class BlindingLessonFragment : Fragment() {
                 blindingMultiplication = false,
                 timePeriod = 2000L,
             )
+        } else if (globalPartId == 9) {
+            arguments?.getSerializable("cup_lesson_item") as? LessonItem 
+                ?: LessonManager.getLessonItem(0) ?: LessonItem(
+                    type = LessonItem.TYPE_LESSON,
+                    title = "Kupa Modu",
+                    offset = 0,
+                    isCompleted = false,
+                    stepCount = 1,
+                    currentStep = 1,
+                    tutorialIsFinish = true,
+                    raceBusyLevel = 1,
+                    raceTitle = "Kupa Zorluğu",
+                )
         } else {
             LessonManager.getLessonItem(mapFragmentStepIndex)!!
         }
@@ -502,6 +515,15 @@ class BlindingLessonFragment : Fragment() {
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
                         val isCorrect = stepAnswerAlgorithm()
                         updateProgressBar(isCorrect)
+                        
+                        if (globalPartId == 9) {
+                            val winDelta = lessonItem.cupWinDelta ?: 10
+                            val lossDelta = lessonItem.cupLossDelta ?: 30
+                            GlobalValues.pendingCupDelta = if (isCorrect) winDelta else -lossDelta
+                            closeFragment()
+                            return@OnTouchListener true
+                        }
+                        
                         showResultPanel(isCorrect)
                         controlNumber = 0
                         binding.numberInput.setText("")
@@ -583,6 +605,11 @@ class BlindingLessonFragment : Fragment() {
         if (isDailyQuestionMode) {
             (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
                 ?: parentFragmentManager.popBackStack()
+            return
+        }
+        if (globalPartId == 9) {
+            parentFragmentManager.setFragmentResult("cupModeResult", android.os.Bundle())
+            parentFragmentManager.popBackStack()
             return
         }
         val main = activity as? MainActivity

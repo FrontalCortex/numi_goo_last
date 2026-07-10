@@ -912,28 +912,51 @@ class TasksFragment : Fragment() {
     private fun showCupPathPanel() {
         if (!isAdded) return
         
-        addLaunchTouchBlocker()
+        // Paneli varsayılan kapalı (inaktif) durumlarla anında aç
+        displayCupPathDialog(
+            active1 = false, active2 = false, active3 = false, 
+            active4 = false, active5 = false, active6 = false,
+            isLoading = true
+        )
         
         val context = requireContext()
 
-        // Sequentially load the parts data so we don't need complex sync blocks
+        // Arka planda Firestore verilerini çek ve gelince paneli güncelle
         GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
-            val active1 = items1.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            val active1 = items1.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
-                val active2 = items2.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                val active2 = items2.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val active3 = items3.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    val active3 = items3.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                     GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
-                        val active4 = items4.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        val active4 = items4.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                         GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
-                            val active5 = items5.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            val active5 = items5.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                             GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
-                                releaseLaunchTouchBlocker()
+                                val active6 = items6.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                                 
-                                val active6 = items6.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
-
                                 if (isAdded) {
-                                    displayCupPathDialog(active1, active2, active3, active4, active5, active6)
+                                    requireActivity().runOnUiThread {
+                                        val dialog = GlobalValues.cupPathDialogRef?.get()
+                                        if (dialog != null && dialog.isShowing) {
+                                            val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+                                            if (bottomSheet != null) {
+                                                bottomSheet.findViewById<TextView>(R.id.card1CupValue)?.visibility = View.VISIBLE
+                                                bottomSheet.findViewById<TextView>(R.id.card2CupValue)?.visibility = View.VISIBLE
+                                                bottomSheet.findViewById<TextView>(R.id.card3CupValue)?.visibility = View.VISIBLE
+                                                bottomSheet.findViewById<TextView>(R.id.card4CupValue)?.visibility = View.VISIBLE
+                                                bottomSheet.findViewById<TextView>(R.id.card5CupValue)?.visibility = View.VISIBLE
+                                                bottomSheet.findViewById<TextView>(R.id.card6CupValue)?.visibility = View.VISIBLE
+
+                                                setupCupPathCard(bottomSheet, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, active1)
+                                                setupCupPathCard(bottomSheet, R.id.card2View, R.id.card2Title, R.id.card2CupIcon, R.id.card2CupValue, R.id.card2DinoAnim, active2)
+                                                setupCupPathCard(bottomSheet, R.id.card3View, R.id.card3Title, R.id.card3CupIcon, R.id.card3CupValue, R.id.card3DinoAnim, active3)
+                                                setupCupPathCard(bottomSheet, R.id.card4View, R.id.card4Title, R.id.card4CupIcon, R.id.card4CupValue, R.id.card4DinoAnim, active4)
+                                                setupCupPathCard(bottomSheet, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
+                                                setupCupPathCard(bottomSheet, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -943,7 +966,11 @@ class TasksFragment : Fragment() {
         }
     }
 
-    private fun displayCupPathDialog(active1: Boolean, active2: Boolean, active3: Boolean, active4: Boolean, active5: Boolean, active6: Boolean) {
+    private fun displayCupPathDialog(
+        active1: Boolean, active2: Boolean, active3: Boolean, 
+        active4: Boolean, active5: Boolean, active6: Boolean,
+        isLoading: Boolean = false
+    ) {
         if (!isAdded) return
         val dialog = BottomSheetDialog(requireContext())
         val contentView = LayoutInflater.from(requireContext())
@@ -963,7 +990,14 @@ class TasksFragment : Fragment() {
             }
         }
 
-
+        if (isLoading) {
+            contentView.findViewById<TextView>(R.id.card1CupValue)?.visibility = View.INVISIBLE
+            contentView.findViewById<TextView>(R.id.card2CupValue)?.visibility = View.INVISIBLE
+            contentView.findViewById<TextView>(R.id.card3CupValue)?.visibility = View.INVISIBLE
+            contentView.findViewById<TextView>(R.id.card4CupValue)?.visibility = View.INVISIBLE
+            contentView.findViewById<TextView>(R.id.card5CupValue)?.visibility = View.INVISIBLE
+            contentView.findViewById<TextView>(R.id.card6CupValue)?.visibility = View.INVISIBLE
+        }
 
         // Apply visual states to each card
         setupCupPathCard(contentView, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, active1)
@@ -981,7 +1015,11 @@ class TasksFragment : Fragment() {
         }
 
         val card1View = contentView.findViewById<View>(R.id.card1View)
+        var lastCardClickTime = 0L
         card1View?.setOnClickListener {
+            val now = System.currentTimeMillis()
+            if (now - lastCardClickTime < 500) return@setOnClickListener
+            lastCardClickTime = now
             showCupDifficultyPanel()
         }
 
@@ -994,6 +1032,7 @@ class TasksFragment : Fragment() {
             if (GlobalValues.cupPathDialogRef?.get() === (dialog as? android.app.Dialog)) {
                 GlobalValues.cupPathDialogRef = null
             }
+            releaseLaunchTouchBlocker()
         }
 
         // card1CupValue'yi Firestore'dan çek
@@ -1028,14 +1067,54 @@ class TasksFragment : Fragment() {
         val startBtn = contentView.findViewById<View>(R.id.cupDifficultyStartButton)
         startBtn?.isEnabled = false
 
+        // SeekBar: 5 durak (0,25,50,75,100) → max=4
+        val seekBar    = contentView.findViewById<android.widget.SeekBar>(R.id.cupDifficultySeekBar)
+        val thumbLabel = contentView.findViewById<TextView>(R.id.cupDifficultyThumbLabel)
+
+        /** Thumb etiketini seekbar üzerinde thumb'ın ortasına hizalar. */
+        fun updateThumbLabel(progress: Int) {
+            val percentage = progress * 25
+            thumbLabel?.text = "$percentage"
+            thumbLabel?.post {
+                val seekBarWidth  = seekBar?.width ?: return@post
+                val thumbOffset   = seekBar?.thumbOffset ?: 0
+                val trackWidth    = seekBarWidth - 2 * thumbOffset
+                val thumbCenterX  = thumbOffset + trackWidth * progress / 4f
+                val labelHalfW    = (thumbLabel?.width ?: 0) / 2f
+                thumbLabel?.translationX = thumbCenterX - labelHalfW
+            }
+        }
+
+        seekBar?.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar, progress: Int, fromUser: Boolean) {
+                updateThumbLabel(progress)
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar) {}
+        })
+
+        // İlk konumlandırma
+        seekBar?.post { updateThumbLabel(seekBar.progress) }
+
         // Başlat butonunu kupa skoru okunduktan sonra aktif et
         AbacusCupRepository.fetchCupScore { cupScore ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
                 startBtn?.isEnabled = true
                 startBtn?.setOnClickListener {
+                    addLaunchTouchBlocker() // Activity ekranını kilitler
+                    
+                    // panel_cup_path dialog'unun penceresini de kilitler
+                    GlobalValues.cupPathDialogRef?.get()?.window?.setFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                    )
+
+                    val difficultyLevel = seekBar?.progress ?: 0   // 0–4 kademe
                     dialog.dismiss()
-                    launchCupModeLesson(cupScore)
+                    // Dialog'u kapatmak yerine sadece gizliyoruz (hide), böylece arka planda açık kalacak
+                    GlobalValues.cupPathDialogRef?.get()?.hide()
+                    launchCupModeLesson(cupScore, difficultyLevel)
                 }
             }
         }
@@ -1043,11 +1122,11 @@ class TasksFragment : Fragment() {
         dialog.show()
     }
 
-    /** Kupa skoruna göre çalışma-zamanı LessonItem oluşturur ve BlindingLessonFragment'i açar. */
-    private fun launchCupModeLesson(cupScore: Int) {
+    /** Kupa skoruna ve zorluk seviyesine göre çalışma-zamanı LessonItem oluşturur ve BlindingLessonFragment'i açar. */
+    private fun launchCupModeLesson(cupScore: Int, difficultyLevel: Int = 0) {
         if (!isAdded) return
         val activity = requireActivity()
-        val lessonItem = CupRuleEngine.buildLessonItem(cupScore)
+        val lessonItem = CupRuleEngine.buildLessonItem(cupScore, difficultyLevel)
 
         // Kupa modu için part 9'u initialize et
         GlobalLessonData.initialize(requireContext(), 9) {
@@ -1058,6 +1137,9 @@ class TasksFragment : Fragment() {
                 fragmentContainer.visibility = View.VISIBLE
                 fm.executePendingTransactions()
 
+                // Fragment yerleştirildi, engellemeyi kaldır
+                releaseLaunchTouchBlocker()
+
                 // Sayı listesini üret ve bundle'a koy
                 val digitSize = lessonItem.cupDigitSize ?: 1
                 val count = lessonItem.cupNumberCount ?: 3
@@ -1066,8 +1148,19 @@ class TasksFragment : Fragment() {
 
                 val fragment = BlindingLessonFragment().apply {
                     arguments = android.os.Bundle().apply {
-                        putSerializable("operations", ArrayList(numbers))
+                        // operations listesi, bir grup soru barındırır.
+                        // Biz kupa modunda 1 adet soru sormak istediğimiz için
+                        // ürettiğimiz sayı dizisini tek bir soru olacak şekilde listeye sarıyoruz.
+                        putSerializable("operations", ArrayList(listOf(numbers)))
+                        putSerializable("cup_lesson_item", lessonItem)
                     }
+                }
+
+                // Fragment kapandığında TasksFragment'in haberi olması için result listener ekliyoruz
+                fm.setFragmentResultListener("cupModeResult", viewLifecycleOwner) { _, _ ->
+                    // Fragment container görünür kaldığı için tıklamaları engelliyordu, onu gizliyoruz
+                    activity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.GONE
+                    consumePendingCupDelta()
                 }
 
                 fm.beginTransaction()
@@ -1088,17 +1181,17 @@ class TasksFragment : Fragment() {
         val delta = GlobalValues.pendingCupDelta ?: return
         GlobalValues.pendingCupDelta = null
 
+        // Panel arka planda gizli durumdaydı, direkt tekrar görünür yapıyoruz (yeniden veri çekme/açma maliyeti yok)
+        val existingDialog = GlobalValues.cupPathDialogRef?.get()
+        existingDialog?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        existingDialog?.show()
+
+        // Arka planda skoru güncelle ve sonucu dialoga yansıt
         AbacusCupRepository.updateCupScore(delta) { newScore ->
             if (!isAdded) return@updateCupScore
             requireActivity().runOnUiThread {
-                val existingDialog = GlobalValues.cupPathDialogRef?.get()
                 if (existingDialog != null && existingDialog.isShowing) {
-                    // Panel zaten açık — card1CupValue'yi güncelle
                     existingDialog.findViewById<TextView>(R.id.card1CupValue)?.text = newScore.toString()
-                } else {
-                    // Panel kapandı — durumu yeniden yükleyip aç
-                    GlobalValues.cupPathDialogRef = null
-                    loadAndShowCupPathDialogAfterCupUpdate()
                 }
             }
         }

@@ -39,6 +39,12 @@ data class LessonItem(
     var racePartId: Int? = null,  // Race item'ının hangi partId'den veri göstereceği
     var backRaceId: Int? = null,
     var raceBusyLevel: Int? = null,
+    
+    // --- Kupa Modu Dinamik Zorluk ---
+    var cupDifficultyLevel: Int? = null, // 0-4
+    var cupWinDelta: Int? = null,        // Doğru cevapta kazanılacak kupa
+    var cupLossDelta: Int? = null,       // Yanlış cevapta kaybedilecek kupa
+    
     /** Tüm zamanların en yüksek kupa skoru (harita / bottom sheet "Rekor"). */
     var record: Int? = null,
     /**

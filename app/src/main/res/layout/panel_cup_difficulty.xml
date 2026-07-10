@@ -65,20 +65,46 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cupDifficultyAnim" />
 
-    <SeekBar
-        android:id="@+id/cupDifficultySeekBar"
+    <!-- SeekBar kapsayıcı: thumb etiketi + seekbar birlikte -->
+    <FrameLayout
+        android:id="@+id/seekBarContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:max="10"
-        android:progress="5"
-        android:progressTint="@color/button_enabled"
-        android:thumbTint="@color/button_enabled"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cupDifficultyMessage" />
+        app:layout_constraintTop_toBottomOf="@id/cupDifficultyMessage">
+
+        <!-- Thumb üzerindeki yüzde etiketi -->
+        <TextView
+            android:id="@+id/cupDifficultyThumbLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:background="@null"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:text="0"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:translationY="-4dp" />
+
+        <SeekBar
+            android:id="@+id/cupDifficultySeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:max="4"
+            android:progress="0"
+            android:progressTint="@color/button_enabled"
+            android:thumbTint="@color/button_enabled" />
+
+    </FrameLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/cupDifficultyStartButton"
@@ -99,6 +125,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cupDifficultySeekBar" />
+        app:layout_constraintTop_toBottomOf="@id/seekBarContainer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
