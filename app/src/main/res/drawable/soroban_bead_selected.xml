@@ -1,25 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="15dp"
-    android:viewportWidth="24"
-    android:viewportHeight="15">
-    <!-- Ana rhombus (kırmızı ton) -->
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış siyah çerçeve (Pill shape, daha yüksek) -->
     <path
-        android:fillColor="#E53935"
-        android:pathData="M12,0 Q13,1 24,7.5 Q13,14 12,15 Q11,14 0,7.5 Q11,1 12,0 Z"
-        android:strokeWidth="1"
-        android:strokeColor="#E53935"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"/>
-    <!-- Sol alt gölge (daha koyu kırmızı) -->
+        android:fillColor="#000000"
+        android:pathData="M 36,0
+                          L 84,0
+                          A 36,36 0 0,1 120,36
+                          A 36,36 0 0,1 84,72
+                          L 36,72
+                          A 36,36 0 0,1 0,36
+                          A 36,36 0 0,1 36,0
+                          Z" />
+
+    <!-- İç kısım tam zemin (Koyu gri) -->
     <path
-        android:fillColor="#B71C1C"
-        android:fillAlpha="0.5"
-        android:pathData="M12,7.5 L12,15 Q11,14 0,7.5 Q11,7.5 12,7.5 Z"/>
-    <!-- Sağ üst highlight (açık pembe ton) -->
+        android:fillColor="#4D0000"
+        android:pathData="M 36,12
+                          L 84,12
+                          A 24,24 0 0,1 108,36
+                          A 24,24 0 0,1 84,60
+                          L 36,60
+                          A 24,24 0 0,1 12,36
+                          A 24,24 0 0,1 36,12
+                          Z" />
+
+    <!-- İç sağ kısım (Açık gri) - Sol çizgisi kavisli (oval) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.25"
-        android:pathData="M12,0 Q13,1 24,7.5 Q13,7.5 12,7.5 Z"/>
+        android:fillColor="#731616"
+        android:pathData="M 60,12
+                          L 84,12
+                          A 24,24 0 0,1 108,36
+                          A 24,24 0 0,1 84,60
+                          L 60,60
+                          Q 40,36 60,12
+                          Z" />
+
 </vector>

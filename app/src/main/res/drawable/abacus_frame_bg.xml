@@ -1,0 +1,30 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dış siyah sınır -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#000000" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <!-- Ahşap çerçeve -->
+    <item android:bottom="4dp" android:top="4dp" android:left="4dp" android:right="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#DDA379" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- İç siyah sınır -->
+    <item android:bottom="20dp" android:top="20dp" android:left="20dp" android:right="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#000000" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- İç arka plan -->
+    <item android:bottom="24dp" android:top="24dp" android:left="24dp" android:right="24dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#212226" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+</layer-list>

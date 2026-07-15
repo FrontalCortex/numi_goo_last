@@ -68,12 +68,12 @@
     <dimen name="tutorial_quit_button_size">40dp</dimen>
     <dimen name="tutorial_text_size">26sp</dimen>
     <dimen name="tutorial_question_width">190dp</dimen>
-    <dimen name="tutorial_question_margin_bottom">18dp</dimen>
+    <dimen name="tutorial_question_margin_bottom">2dp</dimen>
     <dimen name="tutorial_focus_width">54dp</dimen>
     <dimen name="tutorial_focus_height">255dp</dimen>
     <dimen name="tutorial_focus_corner_radius">10dp</dimen>
-    <dimen name="tutorial_focus_margin_right_step">42dp</dimen>
-    <dimen name="tutorial_focus_column_highlight_width">223dp</dimen>
+    <dimen name="tutorial_focus_margin_right_step">45dp</dimen>
+    <dimen name="tutorial_focus_column_highlight_width">270dp</dimen>
     <dimen name="tutorial_focus_column_highlight_height">280dp</dimen>
     <dimen name="tutorial_focus_column_band_width">245dp</dimen>
     <dimen name="tutorial_focus_top_bead_band_height">60dp</dimen>

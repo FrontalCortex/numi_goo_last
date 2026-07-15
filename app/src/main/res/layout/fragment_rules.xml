@@ -6,6 +6,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".model.RulesFragment"
     android:background="@drawable/result_box_green"
+    android:elevation="15dp"
     android:backgroundTint="#333C42"
     >
     <ImageButton

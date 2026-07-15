@@ -5,29 +5,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 
 /**
- * Kullanıcının `addition_abacus_cup` kupa skorunu Firestore üzerinden okur/yazar.
- *
- * Veri yolu: `users/{uid}/addition_abacus_cup` (INT alanı)
- * İlk erişimde alan yoksa varsayılan değer [DEFAULT_CUP_SCORE] olarak seed edilir.
+ * Kullanıcının `blinding_impact_abacus_cup` kupa skorunu Firestore üzerinden okur/yazar.
+ * Card6View körleme çarpma kupa modu için kullanılır.
  */
-object AbacusCupRepository {
+object BlindingImpactCupRepository {
 
     private const val DEFAULT_CUP_SCORE = 200
-    private const val FIELD = "addition_abacus_cup"
+    private const val FIELD = "blinding_impact_abacus_cup"
     private const val COLLECTION = "users"
 
-    /** Kupa değişiminin sabit adım büyüklüğü. */
-    const val CUP_STEP = 5
-
-    // --------------------------------------------------------------------------------------------
-    // Okuma
-    // --------------------------------------------------------------------------------------------
-
-    /**
-     * Güncel kupa skorunu Firestore'dan asenkron olarak okur.
-     * Alan yoksa [DEFAULT_CUP_SCORE] ile seed eder ve aynı değeri döner.
-     * Kullanıcı giriş yapmamışsa [onResult] çağrılmaz.
-     */
     fun fetchCupScore(onResult: (score: Int) -> Unit) {
         val uid = uid() ?: return
         FirebaseFirestore.getInstance()
@@ -39,7 +25,6 @@ object AbacusCupRepository {
             .addOnSuccessListener { doc ->
                 val raw = (doc?.get(FIELD) as? Number)?.toInt()
                 if (raw == null) {
-                    // Alan yok → seed et
                     val initialScore = DEFAULT_CUP_SCORE
                     doc?.reference?.set(
                         mapOf(FIELD to initialScore),
@@ -51,22 +36,10 @@ object AbacusCupRepository {
                 }
             }
             .addOnFailureListener {
-                // Okuma başarısız → güvenli varsayılan
                 onResult(DEFAULT_CUP_SCORE)
             }
     }
 
-    // --------------------------------------------------------------------------------------------
-    // Yazma
-    // --------------------------------------------------------------------------------------------
-
-    /**
-     * Kupa skorunu [delta] kadar artırır/azaltır. Sonuç 0'ın altına düşemez.
-     * İşlem Firestore transaction ile atomik olarak yapılır.
-     *
-     * @param delta  Pozitif (kazanç) veya negatif (kayıp) değişim miktarı
-     * @param onDone İşlem tamamlandığında yeni skoru iletir
-     */
     fun updateCupScore(delta: Int, onDone: ((oldScore: Int, newScore: Int) -> Unit)? = null) {
         val uid = uid() ?: return
         val ref = FirebaseFirestore.getInstance()
@@ -83,14 +56,8 @@ object AbacusCupRepository {
             Pair(current, updated)
         }.addOnSuccessListener { (oldScore, newScore) ->
             onDone?.invoke(oldScore, newScore)
-        }.addOnFailureListener {
-            // Hata durumunda callback'i atla; UI eski değeri göstermeye devam eder
-        }
+        }.addOnFailureListener { }
     }
-
-    // --------------------------------------------------------------------------------------------
-    // Yardımcı
-    // --------------------------------------------------------------------------------------------
 
     private fun uid(): String? = FirebaseAuth.getInstance().currentUser?.uid
 }

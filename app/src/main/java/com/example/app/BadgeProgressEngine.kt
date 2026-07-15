@@ -30,6 +30,12 @@ data class UserBadgeProgress(
     val userRocketDailyDayId: String = "",
     val userTornadoProgress: Int = 0,
     val userVolcanoProgress: Int = 0,
+    val userDinoProgress: Int = 0,
+    val userCrocodileProgress: Int = 0,
+    val userGoatProgress: Int = 0,
+    val userEagleProgress: Int = 0,
+    val userFlyProgress: Int = 0,
+    val userTurtleProgress: Int = 0,
     /** Eski alan; rozet mantığında kullanılmıyor, geriye dönük okuma için tutulabilir. */
     val abacusLeaderboardRank: Int = Int.MAX_VALUE,
     val goldMedalPiece: List<MedalPieceRow> = emptyList(),
@@ -60,6 +66,12 @@ enum class BadgeKind(
     ROCKET(BadgeFragment.BadgeAnimMode.ROCKET_WITH_BASE, "Sınır Tanımaz", "1 / 10"),
     TORNADO(BadgeFragment.BadgeAnimMode.TORNADO, "Kasırga", "0 / 1"),
     VOLCANO(BadgeFragment.BadgeAnimMode.VOLCANO, "Yanardağ", "0 / 1"),
+    DINO(BadgeFragment.BadgeAnimMode.DINO, "Dino", "0 / 500"),
+    CROCODILE(BadgeFragment.BadgeAnimMode.CROCODILE, "Timsah", "0 / 500"),
+    GOAT(BadgeFragment.BadgeAnimMode.GOAT, "Keçi", "0 / 500"),
+    EAGLE(BadgeFragment.BadgeAnimMode.EAGLE, "Şaho", "0 / 500"),
+    FLY(BadgeFragment.BadgeAnimMode.FLY, "Sino", "0 / 500"),
+    TURTLE(BadgeFragment.BadgeAnimMode.TURTLE, "Kapi", "0 / 500"),
     ;
 
     companion object {
@@ -96,6 +108,12 @@ object BadgeProgressEngine {
     private val fishingLevel = listOf(3, 5, 15, 25, 50)
     private val tornadoLevel = listOf(1, 3, 5, 10, 15)
     private val volcanoLevel = listOf(1, 3, 5, 10, 15)
+    private val dinoLevel = listOf(500, 1000, 1500, 2000, 2500)
+    private val crocodileLevel = listOf(500, 1000, 1500, 2000, 2500)
+    private val goatLevel = listOf(500, 1000, 1500, 2000, 2500)
+    private val eagleLevel = listOf(500, 1000, 1500, 2000, 2500)
+    private val flyLevel = listOf(500, 1000, 1500, 2000, 2500)
+    private val turtleLevel = listOf(500, 1000, 1500, 2000, 2500)
 
     private const val dartLevelUp = 5
     private const val fishingLevelUp = 5
@@ -104,6 +122,12 @@ object BadgeProgressEngine {
     private const val bowlingLevelUp = 5
     private const val tornadoLevelUp = 3
     private const val volcanoLevelUp = 3
+    private const val dinoLevelUp = 500
+    private const val crocodileLevelUp = 500
+    private const val goatLevelUp = 500
+    private const val eagleLevelUp = 500
+    private const val flyLevelUp = 500
+    private const val turtleLevelUp = 500
 
     /** Günlük soru serisi: en az bir periyot atlanmışsa 0; aksi halde [userFishingStreak]. */
     fun effectiveFishingStreak(progress: UserBadgeProgress): Int {
@@ -144,6 +168,12 @@ object BadgeProgressEngine {
         val fishingUnlocked = progress.userFishingProgress >= fishingLevel.first()
         val tornadoUnlocked = progress.userTornadoProgress >= tornadoLevel.first()
         val volcanoUnlocked = progress.userVolcanoProgress >= volcanoLevel.first()
+        val dinoUnlocked = progress.userDinoProgress >= dinoLevel.first()
+        val crocodileUnlocked = progress.userCrocodileProgress >= crocodileLevel.first()
+        val goatUnlocked = progress.userGoatProgress >= goatLevel.first()
+        val eagleUnlocked = progress.userEagleProgress >= eagleLevel.first()
+        val flyUnlocked = progress.userFlyProgress >= flyLevel.first()
+        val turtleUnlocked = progress.userTurtleProgress >= turtleLevel.first()
 
         val dartValue = resolveLeveledValue(progress.userDartProgress, dartLevel, dartLevelUp, dartUnlocked)
         val fishingValue = resolveLeveledValue(progress.userFishingProgress, fishingLevel, fishingLevelUp, fishingUnlocked)
@@ -152,6 +182,12 @@ object BadgeProgressEngine {
         val bowlingValue = resolveLeveledValue(progress.userBowlingProgress, bowlingLevel, bowlingLevelUp, bowlingUnlocked)
         val tornadoValue = resolveLeveledValue(progress.userTornadoProgress, tornadoLevel, tornadoLevelUp, tornadoUnlocked)
         val volcanoValue = resolveLeveledValue(progress.userVolcanoProgress, volcanoLevel, volcanoLevelUp, volcanoUnlocked)
+        val dinoValue = resolveLeveledValue(progress.userDinoProgress, dinoLevel, dinoLevelUp, dinoUnlocked)
+        val crocodileValue = resolveLeveledValue(progress.userCrocodileProgress, crocodileLevel, crocodileLevelUp, crocodileUnlocked)
+        val goatValue = resolveLeveledValue(progress.userGoatProgress, goatLevel, goatLevelUp, goatUnlocked)
+        val eagleValue = resolveLeveledValue(progress.userEagleProgress, eagleLevel, eagleLevelUp, eagleUnlocked)
+        val flyValue = resolveLeveledValue(progress.userFlyProgress, flyLevel, flyLevelUp, flyUnlocked)
+        val turtleValue = resolveLeveledValue(progress.userTurtleProgress, turtleLevel, turtleLevelUp, turtleUnlocked)
         
         val dartTone = resolveLevelTone(progress.userDartProgress, dartLevel, dartUnlocked)
         val golfTone = resolveLevelTone(progress.userGolfProgress, golfLevel, golfUnlocked)
@@ -160,6 +196,12 @@ object BadgeProgressEngine {
         val fishingTone = resolveLevelTone(progress.userFishingProgress, fishingLevel, fishingUnlocked)
         val tornadoTone = resolveLevelTone(progress.userTornadoProgress, tornadoLevel, tornadoUnlocked)
         val volcanoTone = resolveLevelTone(progress.userVolcanoProgress, volcanoLevel, volcanoUnlocked)
+        val dinoTone = resolveLevelTone(progress.userDinoProgress, dinoLevel, dinoUnlocked)
+        val crocodileTone = resolveLevelTone(progress.userCrocodileProgress, crocodileLevel, crocodileUnlocked)
+        val goatTone = resolveLevelTone(progress.userGoatProgress, goatLevel, goatUnlocked)
+        val eagleTone = resolveLevelTone(progress.userEagleProgress, eagleLevel, eagleUnlocked)
+        val flyTone = resolveLevelTone(progress.userFlyProgress, flyLevel, flyUnlocked)
+        val turtleTone = resolveLevelTone(progress.userTurtleProgress, turtleLevel, turtleUnlocked)
         
         val karateValue = if (karateUnlocked) progress.userKarateProgress else null
         val cupValue = if (cupUnlocked) {
@@ -181,6 +223,12 @@ object BadgeProgressEngine {
             BadgeState(BadgeKind.ROCKET, unlocked = rocketUnlocked, value = rocketValue, showValue = true, levelTone = rocketTone),
             BadgeState(BadgeKind.TORNADO, unlocked = tornadoUnlocked, value = tornadoValue, showValue = true, levelTone = tornadoTone),
             BadgeState(BadgeKind.VOLCANO, unlocked = volcanoUnlocked, value = volcanoValue, showValue = true, levelTone = volcanoTone),
+            BadgeState(BadgeKind.DINO, unlocked = dinoUnlocked, value = dinoValue, showValue = true, levelTone = dinoTone),
+            BadgeState(BadgeKind.CROCODILE, unlocked = crocodileUnlocked, value = crocodileValue, showValue = true, levelTone = crocodileTone),
+            BadgeState(BadgeKind.GOAT, unlocked = goatUnlocked, value = goatValue, showValue = true, levelTone = goatTone),
+            BadgeState(BadgeKind.EAGLE, unlocked = eagleUnlocked, value = eagleValue, showValue = true, levelTone = eagleTone),
+            BadgeState(BadgeKind.FLY, unlocked = flyUnlocked, value = flyValue, showValue = true, levelTone = flyTone),
+            BadgeState(BadgeKind.TURTLE, unlocked = turtleUnlocked, value = turtleValue, showValue = true, levelTone = turtleTone),
         )
     }
 
@@ -279,6 +327,102 @@ object BadgeProgressEngine {
         return last + (steps + 1) * levelUpStep
     }
 
+    fun dinoProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, dinoLevel, dinoLevelUp)
+    }
+
+    fun dinoNextThreshold(tierProgress: Int): Int {
+        val levels = dinoLevel
+        val levelUpStep = dinoLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
+    fun crocodileProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, crocodileLevel, crocodileLevelUp)
+    }
+
+    fun crocodileNextThreshold(tierProgress: Int): Int {
+        val levels = crocodileLevel
+        val levelUpStep = crocodileLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
+    fun goatProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, goatLevel, goatLevelUp)
+    }
+
+    fun goatNextThreshold(tierProgress: Int): Int {
+        val levels = goatLevel
+        val levelUpStep = goatLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
+    fun eagleProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, eagleLevel, eagleLevelUp)
+    }
+
+    fun eagleNextThreshold(tierProgress: Int): Int {
+        val levels = eagleLevel
+        val levelUpStep = eagleLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
+    fun flyProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, flyLevel, flyLevelUp)
+    }
+
+    fun flyNextThreshold(tierProgress: Int): Int {
+        val levels = flyLevel
+        val levelUpStep = flyLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
+    fun turtleProgressWindow(tierProgress: Int): BadgeProgressWindow {
+        return leveledProgressWindow(tierProgress, turtleLevel, turtleLevelUp)
+    }
+
+    fun turtleNextThreshold(tierProgress: Int): Int {
+        val levels = turtleLevel
+        val levelUpStep = turtleLevelUp
+        val safeProgress = tierProgress.coerceAtLeast(0)
+        val nextInList = levels.firstOrNull { it > safeProgress }
+        if (nextInList != null) return nextInList
+        val last = levels.last()
+        val diff = safeProgress - last
+        val steps = diff / levelUpStep
+        return last + (steps + 1) * levelUpStep
+    }
+
     fun bowlingProgressWindow(tierProgress: Int): BadgeProgressWindow {
         val levels = bowlingLevel
         val levelUpStep = bowlingLevelUp
@@ -317,6 +461,22 @@ object BadgeProgressEngine {
     }
 
     fun rocketNextThreshold(rawProgress: Int): Int = rocketProgressWindow(rawProgress).target
+    
+    private fun leveledProgressWindow(progress: Int, levels: List<Int>, levelUpStep: Int): BadgeProgressWindow {
+        val safeProgress = progress.coerceAtLeast(0)
+        val first = levels.first()
+        val last = levels.last()
+        if (safeProgress < first) {
+            return BadgeProgressWindow(current = safeProgress, target = first)
+        }
+        if (safeProgress < last) {
+            val nextTarget = levels.firstOrNull { it > safeProgress } ?: last
+            return BadgeProgressWindow(current = safeProgress, target = nextTarget)
+        }
+        val extraSteps = ((safeProgress - last) / levelUpStep) + 1
+        val nextTarget = last + (extraSteps * levelUpStep)
+        return BadgeProgressWindow(current = safeProgress, target = nextTarget)
+    }
 }
 
 object BadgeProgressRepository {
@@ -407,6 +567,12 @@ object BadgeProgressRepository {
             BadgeKind.GOLF -> leveledProgressWindow(currentUserProgress.userGolfProgress, listOf(5, 10, 20, 50, 100), 5)
             BadgeKind.TORNADO -> BadgeProgressEngine.tornadoProgressWindow(currentUserProgress.userTornadoProgress)
             BadgeKind.VOLCANO -> BadgeProgressEngine.volcanoProgressWindow(currentUserProgress.userVolcanoProgress)
+            BadgeKind.DINO -> BadgeProgressEngine.dinoProgressWindow(currentUserProgress.userDinoProgress)
+            BadgeKind.CROCODILE -> BadgeProgressEngine.crocodileProgressWindow(currentUserProgress.userCrocodileProgress)
+            BadgeKind.GOAT -> BadgeProgressEngine.goatProgressWindow(currentUserProgress.userGoatProgress)
+            BadgeKind.EAGLE -> BadgeProgressEngine.eagleProgressWindow(currentUserProgress.userEagleProgress)
+            BadgeKind.FLY -> BadgeProgressEngine.flyProgressWindow(currentUserProgress.userFlyProgress)
+            BadgeKind.TURTLE -> BadgeProgressEngine.turtleProgressWindow(currentUserProgress.userTurtleProgress)
             BadgeKind.ROCKET -> {
                 val today = MissionsProgressStore.calendarDayId()
                 val daily = if (currentUserProgress.userRocketDailyDayId == today) {
@@ -429,6 +595,12 @@ object BadgeProgressRepository {
             BadgeKind.GOLF -> currentUserProgress.userGolfProgress
             BadgeKind.TORNADO -> currentUserProgress.userTornadoProgress
             BadgeKind.VOLCANO -> currentUserProgress.userVolcanoProgress
+            BadgeKind.DINO -> currentUserProgress.userDinoProgress
+            BadgeKind.CROCODILE -> currentUserProgress.userCrocodileProgress
+            BadgeKind.GOAT -> currentUserProgress.userGoatProgress
+            BadgeKind.EAGLE -> currentUserProgress.userEagleProgress
+            BadgeKind.FLY -> currentUserProgress.userFlyProgress
+            BadgeKind.TURTLE -> currentUserProgress.userTurtleProgress
             BadgeKind.ROCKET -> currentUserProgress.userRocketProgress
             BadgeKind.BOWLING -> currentUserProgress.userBowlingProgress
             BadgeKind.CUP -> currentUserProgress.cupPiece.minOfOrNull { it.rank }
@@ -444,6 +616,12 @@ object BadgeProgressRepository {
             BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
             BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
             BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
             else -> null

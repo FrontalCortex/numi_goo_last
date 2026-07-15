@@ -40,6 +40,8 @@ import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
+import androidx.core.view.isInvisible
+
 class BlindingLessonFragment : Fragment() {
     companion object {
         private const val ARG_DAILY_MODE = "daily_mode"
@@ -117,7 +119,7 @@ class BlindingLessonFragment : Fragment() {
         else -> R.layout.multiplication_table_1
     }
 
-    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..8
+    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..9
     private var resultDialog: Dialog? = null
 
     private var seconds = 0
@@ -128,6 +130,14 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var binding: FragmentBlindingLessonBinding
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
+    private var isAbacusSettingsPanelOpen = false
+    private var savedAbacusScaleX = 1.0f
+    private var savedAbacusScaleY = 1.0f
+    private var savedAbacusMarginBottomDp = 0f
+    private var savedBeadScaleX = 1.0f
+    private var savedBeadScaleY = 1.0f
+    private var savedBeadMarginTopDp = 0f
+    private var savedBeadMarginBottomDp = 0f
     /** Kart açılırken kilitlenen periyot; ödül bu anahtarla eşleşmeli. */
     private var dailyQuestionSessionPeriodKey: String? = null
     /** Bu oturumdaki soru indeksi (0..2). */
@@ -248,6 +258,7 @@ class BlindingLessonFragment : Fragment() {
         controlButtonAnim()
         setupStartButton()
         setupQuitButton()
+        setupSkipStepButton()
         setupBackPressHandler()
         rulesBookButtonClick()
         rulesPanelButtonClick()
@@ -256,9 +267,22 @@ class BlindingLessonFragment : Fragment() {
         resetClickListener()
         blindingOrRace()
         setupAbacusController()
+        setupAbacusSettingsPanel()
         setupKeyboardVisibilityListener()
+        skipStepButtonVisibility()
+        abacusModeVisibility()
+        cupWay()
     }
 
+    private fun skipStepButtonVisibility(){
+        if(globalPartId == 6){
+            binding.skipStepButton.visibility = View.GONE
+            binding.resetButton.visibility = View.GONE
+        }
+        if (lessonItem.isMultiplication == true) {
+            binding.skipStepButton.visibility = View.GONE
+        }
+    }
     private fun setupAskQuestionButton() {
         val authManager = AuthManager().also { it.initialize(requireContext()) }
         AskQuestionButtonBinder.bind(
@@ -319,7 +343,7 @@ class BlindingLessonFragment : Fragment() {
         binding.startButton.setOnClickListener {
             if (lessonStarted) return@setOnClickListener
             lessonStarted = true
-            binding.startButton.visibility = View.GONE
+            binding.startButton.visibility = View.INVISIBLE
             controlButton.visibility = View.VISIBLE
             startTimerIfNeeded()
             showCurrentOperation()
@@ -351,6 +375,13 @@ class BlindingLessonFragment : Fragment() {
         if (lessonItem.isBlinding == true) {
             binding.abacusLinear.visibility = View.INVISIBLE
             binding.numberInput.visibility = View.VISIBLE
+            binding.abacusContainer.visibility = View.INVISIBLE
+
+            val params = binding.rulesPanelScrollView.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            params.height = (160 * resources.displayMetrics.density).toInt()
+            params.bottomToTop = R.id.numberInput
+            binding.rulesPanelScrollView.layoutParams = params
+            params.bottomMargin = (5 * resources.displayMetrics.density).toInt()
         } else {
             binding.numberInput.visibility = View.INVISIBLE
             binding.abacusLinear.visibility = View.VISIBLE
@@ -393,7 +424,291 @@ class BlindingLessonFragment : Fragment() {
         secondNumberText = binding.secondNumberText
         timeStarter()
 
+        binding.abacusModeButton.setOnClickListener {
+            abacusModeButtonClick()
+        }
     }
+    private fun abacusModeButtonClick() {
+        if (!isAbacusSettingsPanelOpen) {
+            // Panelı aç: 0 → 25. frame
+            binding.abacusModeButton.setMinAndMaxFrame(0, 25)
+            binding.abacusModeButton.playAnimation()
+            showAbacusSettingsPanel()
+        } else {
+            // Panelı kapat: 25 → 45. frame
+            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
+            binding.abacusModeButton.playAnimation()
+            hideAbacusSettingsPanel()
+        }
+    }
+
+    private fun abacusModeVisibility(){
+        if(globalPartId in listOf(7,8,9)){
+            binding.abacusModeButton.visibility= View.VISIBLE
+            if(lessonItem.isBlinding == true){
+                binding.abacusModeButton.visibility= View.GONE
+
+            }
+        }
+        else{
+            binding.abacusModeButton.visibility = View.GONE
+        }
+    }
+
+    private fun showAbacusSettingsPanel() {
+        isAbacusSettingsPanelOpen = true
+        binding.abacusSettingsPanel.animate()
+            .translationX(0f)
+            .setDuration(300)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+    }
+
+    private fun hideAbacusSettingsPanel() {
+        isAbacusSettingsPanelOpen = false
+        val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
+        binding.abacusSettingsPanel.animate()
+            .translationX(offset)
+            .setDuration(300)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .start()
+    }
+
+    private fun setAllBeadsScale(scaleX: Float?, scaleY: Float?) {
+        val allViews = getAllChildren(binding.abacusContainer)
+        for (v in allViews) {
+            if (v.id != View.NO_ID) {
+                try {
+                    val idName = resources.getResourceEntryName(v.id)
+                    if (idName.contains("bead") && v is ImageView) {
+                        scaleX?.let { v.scaleX = it }
+                        scaleY?.let { v.scaleY = it }
+                    }
+                } catch (e: Exception) {
+                    // Ignore views without resource names
+                }
+            }
+        }
+    }
+
+    private fun setAllBeadsMargins(marginTopDp: Float?, marginBottomDp: Float?) {
+        val density = resources.displayMetrics.density
+        val allViews = getAllChildren(binding.abacusContainer)
+        for (v in allViews) {
+            if (v.id != View.NO_ID) {
+                try {
+                    val idName = resources.getResourceEntryName(v.id)
+                    if (idName.contains("bead") && v is ImageView) {
+                        if (marginTopDp != null && idName.contains("top")) {
+                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                            params?.topMargin = (marginTopDp * density).toInt()
+                            v.layoutParams = params
+                        }
+                        if (marginBottomDp != null && idName.contains("bottom")) {
+                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                            val baseMarginDp = when {
+                                idName.contains("bottom1") -> 82f
+                                idName.contains("bottom2") -> 58f
+                                idName.contains("bottom3") -> 34f
+                                idName.contains("bottom4") -> 10f
+                                else -> 0f
+                            }
+                            params?.bottomMargin = ((baseMarginDp + marginBottomDp) * density).toInt()
+                            v.layoutParams = params
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore views without resource names
+                }
+            }
+        }
+    }
+
+
+    private fun getAllChildren(v: View): List<View> {
+        val visited = ArrayList<View>()
+        val unvisited = ArrayList<View>()
+        unvisited.add(v)
+        while (unvisited.isNotEmpty()) {
+            val child = unvisited.removeAt(0)
+            visited.add(child)
+            if (child is ViewGroup) {
+                for (i in 0 until child.childCount) {
+                    unvisited.add(child.getChildAt(i))
+                }
+            }
+        }
+        return visited
+    }
+
+    private fun setupAbacusSettingsPanel() {
+        val density = resources.displayMetrics.density
+
+        if (savedAbacusMarginBottomDp == 0f) {
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            savedAbacusMarginBottomDp = (params?.bottomMargin ?: 0) / density
+        }
+
+        // Abacus boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
+        binding.seekBarScaleX.progress = ((savedAbacusScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarScaleY.progress = ((savedAbacusScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarMarginBottom.progress = savedAbacusMarginBottomDp.toInt().coerceIn(0, 100)
+        
+        // Boncuk boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
+        binding.seekBarBeadScaleX.progress = ((savedBeadScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarBeadScaleY.progress = ((savedBeadScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        
+        binding.seekBarBeadMarginTop.progress = savedBeadMarginTopDp.toInt().coerceIn(0, 30)
+        binding.seekBarBeadMarginBottom.progress = savedBeadMarginBottomDp.toInt().coerceIn(0, 50)
+
+        // Panel açıldığında kaydedilmiş boncuk boyutlarını ve boşluklarını uygula
+        setAllBeadsScale(savedBeadScaleX, savedBeadScaleY)
+        setAllBeadsMargins(savedBeadMarginTopDp, savedBeadMarginBottomDp)
+
+        binding.seekBarScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                binding.abacusContainer.scaleX = scale
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                binding.abacusContainer.scaleY = scale
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                params?.bottomMargin = (progress * density).toInt()
+                binding.abacusContainer.layoutParams = params
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                // 0-100 -> 0.5 - 2.0
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                setAllBeadsScale(scale, null)
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                setAllBeadsScale(null, scale)
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+        
+        binding.seekBarBeadMarginTop.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                setAllBeadsMargins(progress.toFloat(), null)
+                binding.abacusContainer.post {
+                    if (::abacusController.isInitialized) {
+                        val topOffsetPx = progress * density
+                        val bottomOffsetPx = binding.seekBarBeadMarginBottom.progress * density
+                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
+                        abacusController.computeMovementDistancesFromLayout(force = true)
+                    }
+                }
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                setAllBeadsMargins(null, progress.toFloat())
+                binding.abacusContainer.post {
+                    if (::abacusController.isInitialized) {
+                        val topOffsetPx = binding.seekBarBeadMarginTop.progress * density
+                        val bottomOffsetPx = progress * density
+                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
+                        abacusController.computeMovementDistancesFromLayout(force = true)
+                    }
+                }
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+        
+        binding.abacusSettingsResetButton.setOnClickListener {
+            // Default progress for 1.0f on 0.5-2.0 scale is 33
+            val defaultProgress = ((1.0f - 0.5f) * (100f / 1.5f)).toInt()
+            
+            // Abacus default: 1.0f, 1.0f
+            binding.seekBarScaleX.progress = defaultProgress
+            binding.seekBarScaleY.progress = defaultProgress
+            
+            // Margin bottom default
+            val defaultMarginPx = resources.getDimensionPixelSize(R.dimen.tutorial_abacus_linear_margin_bottom)
+            binding.seekBarMarginBottom.progress = (defaultMarginPx / density).toInt()
+            
+            // Bead default: 1.0f, 1.0f
+            binding.seekBarBeadScaleX.progress = defaultProgress
+            binding.seekBarBeadScaleY.progress = defaultProgress
+            
+            binding.seekBarBeadMarginTop.progress = 0
+            binding.seekBarBeadMarginBottom.progress = 0
+            
+            binding.abacusContainer.scaleX = 1.0f
+            binding.abacusContainer.scaleY = 1.0f
+            
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            params?.bottomMargin = defaultMarginPx
+            binding.abacusContainer.layoutParams = params
+            
+            setAllBeadsScale(1.0f, 1.0f)
+            setAllBeadsMargins(0f, 0f)
+            
+            binding.abacusContainer.post {
+                if (::abacusController.isInitialized) {
+                    abacusController.setBeadMarginOffsets(0f, 0f)
+                    abacusController.computeMovementDistancesFromLayout(force = true)
+                }
+            }
+        }
+
+        binding.abacusSettingsSaveButton.setOnClickListener {
+            // Mevcut değerleri kaydet
+            savedAbacusScaleX = binding.abacusContainer.scaleX
+            savedAbacusScaleY = binding.abacusContainer.scaleY
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            savedAbacusMarginBottomDp = ((params?.bottomMargin ?: 0) / density)
+            
+            savedBeadScaleX = 0.5f + (binding.seekBarBeadScaleX.progress / 100f) * 1.5f
+            savedBeadScaleY = 0.5f + (binding.seekBarBeadScaleY.progress / 100f) * 1.5f
+            
+            savedBeadMarginTopDp = binding.seekBarBeadMarginTop.progress.toFloat()
+            savedBeadMarginBottomDp = binding.seekBarBeadMarginBottom.progress.toFloat()
+            
+            // Offset'leri controller'a kaydet
+            if (::abacusController.isInitialized) {
+                abacusController.setBeadMarginOffsets(
+                    savedBeadMarginBottomDp * density,
+                    savedBeadMarginTopDp * density
+                )
+                abacusController.computeMovementDistancesFromLayout(force = true)
+            }
+            
+            hideAbacusSettingsPanel()
+            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
+            binding.abacusModeButton.playAnimation()
+        }
+    }
+
     private fun resetClickListener() {
         // İlk başta 20. frame'de başlat
 
@@ -486,6 +801,18 @@ class BlindingLessonFragment : Fragment() {
         correctAnswerText.text = "Senin cevabın $controlNumber"
     }
 
+    private fun cupWay(){
+        if(globalPartId == 9){
+            binding.progressBarContainer.visibility = View.GONE
+            binding.hintContainer.visibility = View.GONE
+            binding.fabHintTouchArea.visibility = View.GONE
+        }
+        if (globalPartId in listOf(4, 5, 6, 7, 8, 9)) {
+            binding.hintContainer.visibility = View.GONE
+            binding.fabHintTouchArea.visibility = View.GONE
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private fun controlButtonAnim() {
         controlButtonListener = View.OnTouchListener { v, event ->
@@ -519,8 +846,23 @@ class BlindingLessonFragment : Fragment() {
                         if (globalPartId == 9) {
                             val winDelta = lessonItem.cupWinDelta ?: 10
                             val lossDelta = lessonItem.cupLossDelta ?: 30
-                            GlobalValues.pendingCupDelta = if (isCorrect) winDelta else -lossDelta
-                            closeFragment()
+                            val delta = if (isCorrect) winDelta else -lossDelta
+                            if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
+                                GlobalValues.pendingBlindingImpactCupDelta = delta
+                            } else if (lessonItem.isMultiplication == true) {
+                                GlobalValues.pendingImpactCupDelta = delta
+                            } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
+                                GlobalValues.pendingBlindingExtractionCupDelta = delta
+                            } else if (lessonItem.isExtraction == true) {
+                                GlobalValues.pendingExtractionCupDelta = delta
+                            } else if (lessonItem.isBlinding == true) {
+                                GlobalValues.pendingBlindingCupDelta = delta
+                            } else {
+                                GlobalValues.pendingCupDelta = delta
+                            }
+                            showResultPanel(isCorrect)
+                            controlNumber = 0
+                            binding.numberInput.setText("")
                             return@OnTouchListener true
                         }
                         
@@ -543,7 +885,7 @@ class BlindingLessonFragment : Fragment() {
             return
         }
 
-        if(lessonItem.blindingMultiplication == true){
+        if (lessonItem.blindingMultiplication == true || lessonItem.isMultiplication == true) {
             if (currentIndex < operations.size) {
                 val currentOperation = operations[currentIndex] as MathOperation
                 currentOperation.firstNumber?.let { number ->
@@ -580,8 +922,36 @@ class BlindingLessonFragment : Fragment() {
             }
         }
     }
+    private fun setupSkipStepButton() {
+        binding.skipStepButton.setMinFrame(10) // Animasyonun 10. frame'den başlamasını sağla
+        
+        binding.skipStepButton.setOnClickListener {
+            if (!isShowingSequence) return@setOnClickListener
+            binding.skipStepButton.playAnimation()
+            handler.removeCallbacks(showNextNumberRunnable)
+            handler.removeCallbacks(sequenceRevealRunnable)
+            onSequenceRevealStep()
+        }
+    }
+
     private fun setupQuitButton() {
         binding.quitButton.setOnClickListener {
+            if (globalPartId == 9) {
+                val lossDelta = lessonItem.cupLossDelta ?: 30
+                if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
+                    GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
+                } else if (lessonItem.isMultiplication == true) {
+                    GlobalValues.pendingImpactCupDelta = -lossDelta
+                } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
+                    GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
+                } else if (lessonItem.isExtraction == true) {
+                    GlobalValues.pendingExtractionCupDelta = -lossDelta
+                } else if (lessonItem.isBlinding == true) {
+                    GlobalValues.pendingBlindingCupDelta = -lossDelta
+                } else {
+                    GlobalValues.pendingCupDelta = -lossDelta
+                }
+            }
             closeFragment()
         }
     }
@@ -595,6 +965,22 @@ class BlindingLessonFragment : Fragment() {
                     if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
                         rulesFragment.closeWithAnimation()
                         return
+                    }
+                    if (globalPartId == 9) {
+                        val lossDelta = lessonItem.cupLossDelta ?: 30
+                        if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
+                            GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
+                        } else if (lessonItem.isMultiplication == true) {
+                            GlobalValues.pendingImpactCupDelta = -lossDelta
+                        } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
+                            GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
+                        } else if (lessonItem.isExtraction == true) {
+                            GlobalValues.pendingExtractionCupDelta = -lossDelta
+                        } else if (lessonItem.isBlinding == true) {
+                            GlobalValues.pendingBlindingCupDelta = -lossDelta
+                        } else {
+                            GlobalValues.pendingCupDelta = -lossDelta
+                        }
                     }
                     closeFragment()
                 }
@@ -930,6 +1316,25 @@ class BlindingLessonFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            if (globalPartId == 9) {
+                                v.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(400)
+                                    .setInterpolator(BounceInterpolator())
+                                    .start()
+                                binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                                correctPanel.animate()
+                                    .translationY(correctPanel.height.toFloat())
+                                    .setDuration(200)
+                                    .setInterpolator(AccelerateInterpolator())
+                                    .withEndAction {
+                                        correctPanel.visibility = View.GONE
+                                        closeFragment()
+                                    }
+                                    .start()
+                                return@setOnTouchListener true
+                            }
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             val willFinishLesson = currentIndex + 1 > operations.size - 1
@@ -1028,6 +1433,25 @@ class BlindingLessonFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            if (globalPartId == 9) {
+                                v.animate()
+                                    .scaleX(1f)
+                                    .scaleY(1f)
+                                    .setDuration(400)
+                                    .setInterpolator(BounceInterpolator())
+                                    .start()
+                                binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
+                                incorrectPanel.animate()
+                                    .translationY(incorrectPanel.height.toFloat())
+                                    .setDuration(200)
+                                    .setInterpolator(AccelerateInterpolator())
+                                    .withEndAction {
+                                        incorrectPanel.visibility = View.GONE
+                                        closeFragment()
+                                    }
+                                    .start()
+                                return@setOnTouchListener true
+                            }
                             if (isDailyQuestionMode) {
                                 v.isEnabled = false
                                 addExitTouchBlocker()
@@ -1251,27 +1675,40 @@ class BlindingLessonFragment : Fragment() {
         val currentOperation = operations[currentIndex]
         return when (currentOperation) {
             is MathOperation -> {
-                if (lessonItem.blindingMultiplication == true) {
+                if (lessonItem.blindingMultiplication == true || lessonItem.isMultiplication == true) {
                     answerNumber = currentOperation.firstNumber?.times(currentOperation.secondNumber!!) ?: 0
-                    val inputText = binding.numberInput.text.toString()
-                    if (inputText.isNotEmpty()) {
-                        try {
-                            controlNumber = inputText.toInt()
-                            if (controlNumber == answerNumber) {
-                                controlNumber = 0
-                                true
-                            } else {
+                    
+                    if (lessonItem.isMultiplication == true && lessonItem.isBlinding != true) {
+                        controlNumber = abacusController.getCurrentValue()
+                        if (controlNumber == answerNumber) {
+                            controlNumber = 0
+                            return true
+                        } else {
+                            fillIncorrectPanelAnswers()
+                            controlNumber = 0
+                            return false
+                        }
+                    } else {
+                        val inputText = binding.numberInput.text.toString()
+                        if (inputText.isNotEmpty()) {
+                            try {
+                                controlNumber = inputText.toInt()
+                                if (controlNumber == answerNumber) {
+                                    controlNumber = 0
+                                    true
+                                } else {
+                                    fillIncorrectPanelAnswers()
+                                    controlNumber = 0
+                                    false
+                                }
+                            } catch (e: NumberFormatException) {
                                 fillIncorrectPanelAnswers()
-                                controlNumber = 0
                                 false
                             }
-                        } catch (e: NumberFormatException) {
+                        } else {
                             fillIncorrectPanelAnswers()
                             false
                         }
-                    } else {
-                        fillIncorrectPanelAnswers()
-                        false
                     }
                 } else {
                     // Normal MathOperation işlemi
@@ -1380,7 +1817,23 @@ class BlindingLessonFragment : Fragment() {
             isDailyQuestionMode -> handleDailyQuestionLessonComplete()
             // Kupa modu: doğru tamamlandı — +5 delta bırak ve kapat
             globalPartId == 9 -> {
-                GlobalValues.pendingCupDelta = AbacusCupRepository.CUP_STEP
+                if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
+                    if (GlobalValues.pendingBlindingImpactCupDelta == null) {
+                        GlobalValues.pendingBlindingImpactCupDelta = AbacusCupRepository.CUP_STEP
+                    }
+                } else if (lessonItem.isMultiplication == true) {
+                    if (GlobalValues.pendingImpactCupDelta == null) {
+                        GlobalValues.pendingImpactCupDelta = AbacusCupRepository.CUP_STEP
+                    }
+                } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
+                    GlobalValues.pendingBlindingExtractionCupDelta = AbacusCupRepository.CUP_STEP
+                } else if (lessonItem.isExtraction == true) {
+                    GlobalValues.pendingExtractionCupDelta = AbacusCupRepository.CUP_STEP
+                } else if (lessonItem.isBlinding == true) {
+                    GlobalValues.pendingBlindingCupDelta = AbacusCupRepository.CUP_STEP
+                } else {
+                    GlobalValues.pendingCupDelta = AbacusCupRepository.CUP_STEP
+                }
                 closeFragment()
             }
             isRacePanelLesson() || (lessonItem.type == LessonItem.TYPE_CHEST && globalPartId !in setOf(4, 5)) -> {
@@ -1430,7 +1883,23 @@ class BlindingLessonFragment : Fragment() {
     private fun showLessonResultFalse(isChestFailure: Boolean = false) {
         // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
         if (globalPartId == 9) {
-            GlobalValues.pendingCupDelta = -AbacusCupRepository.CUP_STEP
+            if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
+                if (GlobalValues.pendingBlindingImpactCupDelta == null) {
+                    GlobalValues.pendingBlindingImpactCupDelta = -AbacusCupRepository.CUP_STEP
+                }
+            } else if (lessonItem.isMultiplication == true) {
+                if (GlobalValues.pendingImpactCupDelta == null) {
+                    GlobalValues.pendingImpactCupDelta = -AbacusCupRepository.CUP_STEP
+                }
+            } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
+                GlobalValues.pendingBlindingExtractionCupDelta = -AbacusCupRepository.CUP_STEP
+            } else if (lessonItem.isExtraction == true) {
+                GlobalValues.pendingExtractionCupDelta = -AbacusCupRepository.CUP_STEP
+            } else if (lessonItem.isBlinding == true) {
+                GlobalValues.pendingBlindingCupDelta = -AbacusCupRepository.CUP_STEP
+            } else {
+                GlobalValues.pendingCupDelta = -AbacusCupRepository.CUP_STEP
+            }
             closeFragment()
             return
         }

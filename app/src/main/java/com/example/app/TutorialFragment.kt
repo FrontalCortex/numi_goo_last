@@ -403,6 +403,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // Tutorial 24 için özel kontrol
         if (tutorialNumber == 24 || tutorialNumber == 25 || tutorialNumber == 26) {
             binding.abacusLinear.visibility = View.INVISIBLE
+            binding.abacusContainer.visibility = View.INVISIBLE
         }
         if (tutorialNumber == 1) {
             val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -938,15 +939,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 val skipReverseBeadAnims = getCurrentStep().backAnswerNumber != null
 
                 if(binding.abacusLinear.visibility == View.INVISIBLE && tutorialNumber<24){
-                    Log.d("libya1","work")
                     binding.abacusLinear.visibility = View.VISIBLE
+                    binding.abacusContainer.visibility = View.VISIBLE
                 }
                 if(binding.abacusLinear.visibility == View.INVISIBLE && tutorialNumber>99){
-                    Log.d("libya2","work")
                     binding.abacusLinear.visibility = View.VISIBLE
+                    binding.abacusContainer.visibility = View.VISIBLE
                 }
                 if(getCurrentStep().backAnswerNumber != null){
-                    Log.d("libya4","work")
                     writeAnswerNumber(getCurrentStep().backAnswerNumber!!)
                 }
                 if(getCurrentStep().abacusReset==true){
@@ -1246,6 +1246,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun devametFragment(fragment: Fragment) {
         // Devam butonunu ekranın altından kayarak göster
         binding.abacusLinear.visibility = View.INVISIBLE
+        binding.abacusContainer.visibility = View.INVISIBLE
         val screenHeight = resources.displayMetrics.heightPixels
         binding.devamButton.translationY = screenHeight.toFloat()
         binding.devamButton.visibility = View.VISIBLE
@@ -1496,7 +1497,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     /** Bir basamak (sütun) için sağ margin adımı (px). Onlar=1, Yüzler=2, Binler=3, Onbinler=4. */
     private fun focusMarginRightPx(steps: Int): Int =
-        resources.getDimensionPixelSize(R.dimen.tutorial_focus_margin_right_step) * steps
+        dpToPx(19) + (if (steps <= 0) 0 else resources.getDimensionPixelSize(R.dimen.tutorial_focus_margin_right_step) * steps)
 
     private fun focusDimenPx(resId: Int): Int = resources.getDimensionPixelSize(resId)
 
@@ -1557,6 +1558,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 null,
                 listOf(
                     { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.INVISIBLE) },
                     { WidgetOperation.ChangeVisibility(binding.backButton, View.INVISIBLE) },
                     { WidgetOperation.ChangeVisibility(binding.skipTutorialButton, View.VISIBLE) },//sonradan INV yapılacak
                     ),
@@ -1578,6 +1580,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 null,
                 listOf(
                     { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.VISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.VISIBLE) },
                     ),
                 soundResource = R.raw.tutorial1_4,
                 useTypewriterEffect = true,
@@ -1606,7 +1609,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                         WidgetOperation.AnimateMargin(
                             view = focusView,
                             fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = dpToPx(0),
+                            toMarginRight = focusMarginRightPx(0),
                             fromMarginLeft = 0,
                             toMarginLeft = 0,
                             duration = 200
@@ -1688,7 +1691,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 0,
+                        toMarginRight = 1,
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -1716,7 +1719,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 "Üstteki boncuklar beşlik değere sahipken,",
                 null,
                 listOf(
-                    { WidgetOperation.ChangeMargin(focusView, 0, 0) },
+                    { WidgetOperation.ChangeMargin(focusView, 1, 0) },
                     {
                         WidgetOperation.ChangeConstraints(
                             view = focusView,
@@ -1750,7 +1753,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 0,
+                        toMarginRight = 1,
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -4803,7 +4806,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L
 
-            ),TutorialStep(
+            ),
+            TutorialStep(
                 "9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.",
                 questionText = "9 + 1",
                 questionTextVisibility = View.VISIBLE,
@@ -4819,7 +4823,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     { WidgetOperation.AnimateMargin(
                         view = focusView,
                         fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 0,
+                        toMarginRight = focusMarginRightPx(0),
                         fromMarginLeft = 0,
                         toMarginLeft = 0,
                         duration = 200
@@ -4834,7 +4838,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                     {
                         WidgetOperation.ChangeMargin(
                             view = focusView,
-                            marginRight = 0,
+                            marginRight = focusMarginRightPx(0),
                             marginLeft = 0,
                             marginTop = -dpToPx(10) // 10dp yukarı taşı
                         )
@@ -6724,6 +6728,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         )
     }
 
+    //Bu tutorial kullanılmıyor.
     private fun createTutorialSteps104(){
         tutorialSteps104 = listOf(
             //846 + 345
@@ -18008,7 +18013,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 }
                 is WidgetOperation.ChangeMargin -> {
                     val params = operation.view.layoutParams as ViewGroup.MarginLayoutParams
-                    params.rightMargin = operation.marginRight
+                    params.rightMargin = if (operation.marginRight == 0) focusMarginRightPx(0) else operation.marginRight
                     params.leftMargin = operation.marginLeft
                     operation.marginTop?.let { params.topMargin = it }
                     operation.marginBottom?.let { params.bottomMargin = it }
@@ -18043,8 +18048,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 is WidgetOperation.AnimateMargin -> {
                     val params = operation.view.layoutParams as ViewGroup.MarginLayoutParams
 
+                    val targetRightMargin = if (operation.toMarginRight == 0) focusMarginRightPx(0) else operation.toMarginRight
                     // Sağ margin animasyonu
-                    ValueAnimator.ofInt(operation.fromMarginRight, operation.toMarginRight).apply {
+                    ValueAnimator.ofInt(operation.fromMarginRight, targetRightMargin).apply {
                         duration = operation.duration
                         addUpdateListener { animator ->
                             params.rightMargin = animator.animatedValue as Int

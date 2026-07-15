@@ -34,6 +34,12 @@ object BadgeProgressFirestore {
             userRocketDailyDayId = doc.getString("userRocketDailyDayId") ?: "",
             userTornadoProgress = (doc.get("userTornadoProgress") as? Number)?.toInt() ?: 0,
             userVolcanoProgress = (doc.get("userVolcanoProgress") as? Number)?.toInt() ?: 0,
+            userDinoProgress = (doc.get("userDinoProgress") as? Number)?.toInt() ?: 0,
+            userCrocodileProgress = (doc.get("userCrocodileProgress") as? Number)?.toInt() ?: 0,
+            userTurtleProgress = (doc.get("userTurtleProgress") as? Number)?.toInt() ?: 0,
+            userGoatProgress = (doc.get("userGoatProgress") as? Number)?.toInt() ?: 0,
+            userEagleProgress = (doc.get("userEagleProgress") as? Number)?.toInt() ?: 0,
+            userFlyProgress = (doc.get("userFlyProgress") as? Number)?.toInt() ?: 0,
             abacusLeaderboardRank = abacusRank,
             goldMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("goldMedalPiece")),
             silverMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("silverMedalPiece")),
@@ -45,7 +51,10 @@ object BadgeProgressFirestore {
     }
 
     /** Eski şema: [userFishingProgress] seri sayısıydı; tier + [userFishingStreak] ayrımına geçiş. */
-    private fun migrateLegacyFishingFields(doc: DocumentSnapshot, progress: UserBadgeProgress): UserBadgeProgress {
+    private fun migrateLegacyFishingFields(
+        doc: DocumentSnapshot,
+        progress: UserBadgeProgress
+    ): UserBadgeProgress {
         if (doc.contains("userFishingStreak")) return progress
         val legacyStreak = progress.userFishingProgress.coerceAtLeast(0)
         var tier = 0
@@ -110,6 +119,7 @@ object BadgeProgressFirestore {
             DailyQuestionPeriod.isFishingStreakBroken(lastStreakPeriodKey, currentPeriodKey) -> 1
             DailyQuestionPeriod.isConsecutivePeriodAfter(lastStreakPeriodKey, currentPeriodKey) ->
                 storedStreak + 1
+
             else -> 1
         }
         return after to currentPeriodKey
@@ -142,7 +152,10 @@ object BadgeProgressFirestore {
         )
     }
 
-    private fun resolveRocketLevelUpChain(beforeRocket: Int, afterRocket: Int): List<BadgeLevelUpPayload> {
+    private fun resolveRocketLevelUpChain(
+        beforeRocket: Int,
+        afterRocket: Int
+    ): List<BadgeLevelUpPayload> {
         if (afterRocket <= beforeRocket) return emptyList()
         val payloads = mutableListOf<BadgeLevelUpPayload>()
         var cur = beforeRocket
@@ -162,7 +175,10 @@ object BadgeProgressFirestore {
         return payloads
     }
 
-    private fun resolveFishingLevelUpChain(beforeTier: Int, afterTier: Int): List<BadgeLevelUpPayload> {
+    private fun resolveFishingLevelUpChain(
+        beforeTier: Int,
+        afterTier: Int
+    ): List<BadgeLevelUpPayload> {
         if (afterTier <= beforeTier) return emptyList()
         val payloads = mutableListOf<BadgeLevelUpPayload>()
         var cur = beforeTier
@@ -212,13 +228,19 @@ object BadgeProgressFirestore {
         FirebaseFirestore.getInstance().runTransaction { transaction ->
             val snapshot = transaction.get(docRef)
             val beforeDart = (snapshot.getLong("userDartProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeBowling = (snapshot.getLong("userBowlingProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeKarate = (snapshot.getLong("userKarateProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeRocket = (snapshot.getLong("userRocketProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeBowling =
+                (snapshot.getLong("userBowlingProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeKarate =
+                (snapshot.getLong("userKarateProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeRocket =
+                (snapshot.getLong("userRocketProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeGolf = (snapshot.getLong("userGolfProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeTornado = (snapshot.getLong("userTornadoProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeVolcano = (snapshot.getLong("userVolcanoProgress") ?: 0L).toInt().coerceAtLeast(0)
-            val beforeFishingTier = (snapshot.getLong("userFishingProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeTornado =
+                (snapshot.getLong("userTornadoProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeVolcano =
+                (snapshot.getLong("userVolcanoProgress") ?: 0L).toInt().coerceAtLeast(0)
+            val beforeFishingTier =
+                (snapshot.getLong("userFishingProgress") ?: 0L).toInt().coerceAtLeast(0)
             val beforeFishingStreakStored = if (snapshot.contains("userFishingStreak")) {
                 (snapshot.getLong("userFishingStreak") ?: 0L).toInt().coerceAtLeast(0)
             } else {
@@ -226,7 +248,8 @@ object BadgeProgressFirestore {
                     snapshot,
                     UserBadgeProgress(
                         userFishingProgress = beforeFishingTier,
-                        userFishingStreakPeriodKey = snapshot.getString("userFishingStreakPeriodKey") ?: "",
+                        userFishingStreakPeriodKey = snapshot.getString("userFishingStreakPeriodKey")
+                            ?: "",
                     ),
                 ).userFishingStreak
             }
@@ -241,7 +264,8 @@ object BadgeProgressFirestore {
                 dayId = today
             }
             val afterDart = if (incrementDart) beforeDart + 1 else beforeDart
-            val afterBowling = if (incrementBowlingBy > 0) beforeBowling + incrementBowlingBy else beforeBowling
+            val afterBowling =
+                if (incrementBowlingBy > 0) beforeBowling + incrementBowlingBy else beforeBowling
             val afterKarate = if (incrementKarate) beforeKarate + 1 else beforeKarate
             val afterGolf = if (incrementGolf) beforeGolf + 1 else beforeGolf
             val afterTornado = if (incrementTornado) beforeTornado + 1 else beforeTornado
@@ -262,7 +286,10 @@ object BadgeProgressFirestore {
             }
             var afterFishingTier = beforeFishingTier
             if (incrementFishing) {
-                while (afterFishingStreak >= BadgeProgressEngine.fishingNextThreshold(afterFishingTier)) {
+                while (afterFishingStreak >= BadgeProgressEngine.fishingNextThreshold(
+                        afterFishingTier
+                    )
+                ) {
                     val next = BadgeProgressEngine.fishingNextThreshold(afterFishingTier)
                     if (next <= afterFishingTier) break
                     afterFishingTier = next
@@ -406,27 +433,369 @@ object BadgeProgressFirestore {
             onDone(emptyList())
         }
     }
-}
+
+    fun resolveDinoLevelUpChain(
+            beforeDino: Int,
+            afterDino: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterDino <= beforeDino) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeDino
+            while (cur < afterDino) {
+                val nextTarget = BadgeProgressEngine.dinoNextThreshold(cur)
+                if (afterDino >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.DINO,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncDinoProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeDino =
+                    (snapshot.getLong("userDinoProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeDino) {
+                    tx.set(
+                        ref,
+                        mapOf("userDinoProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeDino, newCupScore)
+                } else {
+                    Pair(beforeDino, beforeDino)
+                }
+            }.addOnSuccessListener { (beforeDino, afterDino) ->
+                if (afterDino > beforeDino) {
+                    val payloads = resolveDinoLevelUpChain(beforeDino, afterDino)
+                    onDone(payloads)
+                } else {
+                    onDone(emptyList())
+                }
+            }.addOnFailureListener { e ->
+                Log.e(TAG, "Dino badge progress sync failed", e)
+                onDone(emptyList())
+            }
+        }
+
+        fun resolveCrocodileLevelUpChain(
+            beforeCrocodile: Int,
+            afterCrocodile: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterCrocodile <= beforeCrocodile) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeCrocodile
+            while (cur < afterCrocodile) {
+                val nextTarget = BadgeProgressEngine.crocodileNextThreshold(cur)
+                if (afterCrocodile >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.CROCODILE,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncCrocodileProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeCrocodile =
+                    (snapshot.getLong("userCrocodileProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeCrocodile) {
+                    tx.set(
+                        ref,
+                        mapOf("userCrocodileProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeCrocodile, newCupScore)
+                } else {
+                    Pair(beforeCrocodile, beforeCrocodile)
+                }
+            }.addOnSuccessListener { (before, after) ->
+                val payloads = resolveCrocodileLevelUpChain(before, after)
+                onDone(payloads)
+            }.addOnFailureListener {
+                onDone(emptyList())
+            }
+        }
+
+        fun resolveGoatLevelUpChain(
+            beforeGoat: Int,
+            afterGoat: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterGoat <= beforeGoat) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeGoat
+            while (cur < afterGoat) {
+                val nextTarget = BadgeProgressEngine.goatNextThreshold(cur)
+                if (afterGoat >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.GOAT,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncGoatProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeGoat =
+                    (snapshot.getLong("userGoatProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeGoat) {
+                    tx.set(
+                        ref,
+                        mapOf("userGoatProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeGoat, newCupScore)
+                } else {
+                    Pair(beforeGoat, beforeGoat)
+                }
+            }.addOnSuccessListener { (before, after) ->
+                val payloads = resolveGoatLevelUpChain(before, after)
+                onDone(payloads)
+            }.addOnFailureListener {
+                onDone(emptyList())
+            }
+        }
+
+        fun resolveEagleLevelUpChain(
+            beforeEagle: Int,
+            afterEagle: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterEagle <= beforeEagle) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeEagle
+            while (cur < afterEagle) {
+                val nextTarget = BadgeProgressEngine.eagleNextThreshold(cur)
+                if (afterEagle >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.EAGLE,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncEagleProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeEagle =
+                    (snapshot.getLong("userEagleProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeEagle) {
+                    tx.set(
+                        ref,
+                        mapOf("userEagleProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeEagle, newCupScore)
+                } else {
+                    Pair(beforeEagle, beforeEagle)
+                }
+            }.addOnSuccessListener { (before, after) ->
+                val payloads = resolveEagleLevelUpChain(before, after)
+                onDone(payloads)
+            }.addOnFailureListener {
+                onDone(emptyList())
+            }
+        }
+
+        fun resolveFlyLevelUpChain(
+            beforeFly: Int,
+            afterFly: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterFly <= beforeFly) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeFly
+            while (cur < afterFly) {
+                val nextTarget = BadgeProgressEngine.flyNextThreshold(cur)
+                if (afterFly >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.FLY,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncFlyProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeFly =
+                    (snapshot.getLong("userFlyProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeFly) {
+                    tx.set(
+                        ref,
+                        mapOf("userFlyProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeFly, newCupScore)
+                } else {
+                    Pair(beforeFly, beforeFly)
+                }
+            }.addOnSuccessListener { (before, after) ->
+                val payloads = resolveFlyLevelUpChain(before, after)
+                onDone(payloads)
+            }.addOnFailureListener {
+                onDone(emptyList())
+            }
+        }
+
+        fun resolveTurtleLevelUpChain(
+            beforeTurtle: Int,
+            afterTurtle: Int
+        ): List<BadgeLevelUpPayload> {
+            if (afterTurtle <= beforeTurtle) return emptyList()
+            val payloads = mutableListOf<BadgeLevelUpPayload>()
+            var cur = beforeTurtle
+            while (cur < afterTurtle) {
+                val nextTarget = BadgeProgressEngine.turtleNextThreshold(cur)
+                if (afterTurtle >= nextTarget) {
+                    payloads.add(
+                        BadgeLevelUpPayload(
+                            mode = BadgeFragment.BadgeAnimMode.TURTLE,
+                            fromProgress = cur,
+                            toProgress = nextTarget,
+                            reachedTarget = nextTarget,
+                        )
+                    )
+                    cur = nextTarget
+                } else {
+                    break
+                }
+            }
+            return payloads
+        }
+
+        fun syncTurtleProgressAndDetectLevelUp(
+            uid: String,
+            newCupScore: Int,
+            onDone: (List<BadgeLevelUpPayload>) -> Unit
+        ) {
+            val ref = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .collection("badgeProgress").document("state")
+            FirebaseFirestore.getInstance().runTransaction { tx ->
+                val snapshot = tx.get(ref)
+                val beforeTurtle =
+                    (snapshot.getLong("userTurtleProgress") ?: 0L).toInt().coerceAtLeast(0)
+
+                if (newCupScore > beforeTurtle) {
+                    tx.set(
+                        ref,
+                        mapOf("userTurtleProgress" to newCupScore.toLong()),
+                        SetOptions.merge()
+                    )
+                    Pair(beforeTurtle, newCupScore)
+                } else {
+                    Pair(beforeTurtle, beforeTurtle)
+                }
+            }.addOnSuccessListener { (before, after) ->
+                val payloads = resolveTurtleLevelUpChain(before, after)
+                onDone(payloads)
+            }.addOnFailureListener {
+                onDone(emptyList())
+            }
+        }
+    }
+
 
 /**
  * Firestore tam sayıları Android SDK’da çoğunlukla [Long] döndürür; Kotlin’de [Long], [Number] değildir,
- * bu yüzden `(x as? Number)?.toInt()` çoğu zaman null kalır. [java.lang.Integer] vb. için [java.lang.Number] yolu kullanılır.
- */
-fun Any?.firestoreIntOrNull(): Int? = when (this) {
-    null -> null
-    is Int -> this
-    is Long -> this.toInt()
-    is Short -> this.toInt()
-    is Byte -> this.toInt()
-    is Double -> if (this.isFinite()) this.toInt() else null
-    is Float -> this.toInt()
-    is String -> this.trim().toIntOrNull()
-    else -> (this as? java.lang.Number)?.doubleValue()?.toInt()
-}
+     * bu yüzden `(x as? Number)?.toInt()` çoğu zaman null kalır. [java.lang.Integer] vb. için [java.lang.Number] yolu kullanılır.
+     */
+    fun Any?.firestoreIntOrNull(): Int? = when (this) {
+        null -> null
+        is Int -> this
+        is Long -> this.toInt()
+        is Short -> this.toInt()
+        is Byte -> this.toInt()
+        is Double -> if (this.isFinite()) this.toInt() else null
+        is Float -> this.toInt()
+        is String -> this.trim().toIntOrNull()
+        else -> (this as? java.lang.Number)?.doubleValue()?.toInt()
+    }
 
-/** `get` ile gelmeyen edge-case’ler için [data] haritası da dener. */
-fun DocumentSnapshot.pendingLeaderboardRewardSeasonFromDoc(): Int? {
-    if (!exists()) return null
-    return get("pendingLeaderboardRewardSeason").firestoreIntOrNull()
-        ?: data?.get("pendingLeaderboardRewardSeason").firestoreIntOrNull()
-}
+    /** `get` ile gelmeyen edge-case’ler için [data] haritası da dener. */
+    fun DocumentSnapshot.pendingLeaderboardRewardSeasonFromDoc(): Int? {
+        if (!exists()) return null
+        return get("pendingLeaderboardRewardSeason").firestoreIntOrNull()
+            ?: data?.get("pendingLeaderboardRewardSeason").firestoreIntOrNull()
+    }

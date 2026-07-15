@@ -717,12 +717,18 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                             }
                         }
                         
-                        if (hasPartMap) {
+                        if (hasPartMap && GlobalLessonData.globalPartId != 9) {
                             supportFragmentManager.popBackStackImmediate("part_map", 0)
                             binding.lessonPartBackButton.visibility = View.VISIBLE
                             binding.currencyPanel.visibility = View.VISIBLE
                         } else {
-                            changeFragment(PartSelectionFragment())
+                            if (hasPartMap) {
+                                supportFragmentManager.popBackStackImmediate("part_map", androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                                binding.lessonPartBackButton.visibility = View.GONE
+                                binding.currencyPanel.visibility = View.VISIBLE
+                            } else {
+                                changeFragment(PartSelectionFragment())
+                            }
                         }
                     }
                     R.id.tasks ->

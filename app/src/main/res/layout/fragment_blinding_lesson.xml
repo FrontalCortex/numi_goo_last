@@ -36,14 +36,15 @@
         android:id="@+id/askQuestionButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:elevation="10dp"
         android:textAllCaps="false"
         android:padding="@dimen/tutorial_ask_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/hintContainer"
+        app:layout_constraintBottom_toTopOf="@id/resetButton"
         android:src="@drawable/teacher_ask_ic"/>
 
     <TextView
@@ -79,11 +80,11 @@
         android:id="@+id/rulesFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:translationZ="3dp"
+        android:elevation="20dp"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/abacusLinear"/>
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"/>
     <LinearLayout
         android:id="@+id/progressBarContainer"
         android:layout_width="250dp"
@@ -198,30 +199,38 @@
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
-    <LinearLayout
-        android:id="@+id/abacusLinear"
+    <FrameLayout
+        android:id="@+id/abacusContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="visible"
+        android:background="@drawable/abacus_frame_bg"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:layout_marginBottom="@dimen/tutorial_abacus_linear_margin_bottom"
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="10dp">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <FrameLayout
-            android:id="@+id/rod0"
+        <LinearLayout
+            android:id="@+id/abacusLinear"
             android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp"
-            android:layout_marginStart="5dp">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="visible">
 
-            <!-- Dikey Ã§izgi -->
-            <View
-                android:layout_width="5dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_horizontal"
-                android:background="#888"/>
+            <FrameLayout
+                android:id="@+id/rod0"
+                android:layout_width="45dp"
+                android:layout_height="250dp">
+
+                <!-- Dikey Çizgi -->
+                <View
+                    android:layout_width="5dp"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a"/>
 
             <!-- Alt boncuklar (aÅŸaÄŸÄ±dan yukarÄ±ya doÄŸru) -->
             <ImageView
@@ -258,11 +267,11 @@
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
-                android:background="#888"/>
+                android:background="@drawable/abacus_horizontal_bar"/>
 
             <!-- Ãœst boncuk -->
             <ImageView
@@ -276,16 +285,15 @@
 
         <FrameLayout
             android:id="@+id/rod1"
-            android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_width="45dp"
+            android:layout_height="250dp">
 
             <!-- Dikey Ã§izgi -->
             <View
                 android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888"/>
+                android:background="#1a1a1a"/>
 
             <!-- Alt boncuklar (aÅŸaÄŸÄ±dan yukarÄ±ya doÄŸru) -->
             <ImageView
@@ -322,11 +330,12 @@
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
-                android:background="#888"/>
+
+                android:background="@drawable/abacus_horizontal_bar"/>
 
             <!-- Ãœst boncuk -->
             <ImageView
@@ -340,16 +349,15 @@
 
         <FrameLayout
             android:id="@+id/rod2"
-            android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_width="45dp"
+            android:layout_height="250dp">
 
             <!-- Dikey Ã§izgi -->
             <View
                 android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888"/>
+                android:background="#1a1a1a"/>
 
             <!-- Alt boncuklar (aÅŸaÄŸÄ±dan yukarÄ±ya doÄŸru) -->
             <ImageView
@@ -386,11 +394,11 @@
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
-                android:background="#888"/>
+                android:background="@drawable/abacus_horizontal_bar"/>
 
             <!-- Ãœst boncuk -->
             <ImageView
@@ -404,16 +412,15 @@
 
         <FrameLayout
             android:id="@+id/rod3"
-            android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_width="45dp"
+            android:layout_height="250dp">
 
             <!-- Dikey Ã§izgi -->
             <View
                 android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888"/>
+                android:background="#1a1a1a"/>
 
             <!-- Alt boncuklar (aÅŸaÄŸÄ±dan yukarÄ±ya doÄŸru) -->
             <ImageView
@@ -450,11 +457,11 @@
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="6dp"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
-                android:background="#888"/>
+                android:background="@drawable/abacus_horizontal_bar"/>
 
             <!-- Ãœst boncuk -->
             <ImageView
@@ -468,16 +475,15 @@
 
         <FrameLayout
             android:id="@+id/rod4"
-            android:layout_width="wrap_content"
-            android:layout_height="250dp"
-            android:layout_marginEnd="5dp">
+            android:layout_width="45dp"
+            android:layout_height="250dp">
 
             <!-- Dikey Ã§izgi -->
             <View
-                android:layout_width="6dp"
+                android:layout_width="5dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888"/>
+                android:background="#1a1a1a"/>
 
             <!-- Alt boncuklar (aÅŸaÄŸÄ±dan yukarÄ±ya doÄŸru) -->
             <ImageView
@@ -514,11 +520,11 @@
 
             <!-- Bariyer -->
             <View
-                android:layout_width="40dp"
-                android:layout_height="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="50dp"
-                android:background="#888"/>
+                android:background="@drawable/abacus_horizontal_bar"/>
 
             <!-- Ãœst boncuk -->
             <ImageView
@@ -530,17 +536,18 @@
 
         </FrameLayout>
 
-    </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 
     <FrameLayout
         android:id="@+id/rulesPanelScrollView"
         android:layout_width="wrap_content"
-        android:layout_height="140dp"
-        android:visibility="visible"
-        android:layout_marginBottom="5dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="-5dp"
+        android:visibility="gone"
         android:clipChildren="true"
         android:clipToPadding="true"
-        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -1414,29 +1421,61 @@
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
         android:padding="5dp"
-        android:elevation="0dp"
+        android:elevation="10dp"
         android:layout_marginEnd="-9dp"
         tools:visibility="gone"
         app:lottie_rawRes="@raw/reset"
         android:layout_gravity="end|center_vertical"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
-        app:layout_constraintTop_toBottomOf="@id/askQuestionButton"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        app:layout_constraintBottom_toTopOf="@id/rulesPanelButton"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageView
         android:id="@+id/rulesPanelButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:elevation="10dp"
         android:textAllCaps="false"
         android:visibility="visible"
         android:padding="@dimen/tutorial_rules_panel_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/resetButton"
+        app:layout_constraintBottom_toTopOf="@id/skipStepButton"
         android:src="@drawable/magic_wand_ic"/>
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/skipStepButton"
+        android:layout_width="@dimen/tutorial_ask_button_size"
+        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:visibility="visible"
+        android:padding="2dp"
+        android:background="@drawable/fab_background"
+        android:scaleType="centerCrop"
+        app:lottie_fileName="skip_step_arrow_anim.json"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/abacusModeButton"/>
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/abacusModeButton"
+        android:layout_width="@dimen/tutorial_ask_button_size"
+        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:visibility="visible"
+        android:padding="2dp"
+        android:background="@drawable/fab_background"
+        android:scaleType="centerCrop"
+        app:lottie_fileName="abacus_mode_ic_anim.json"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/startButton"/>
 
 
     <FrameLayout
@@ -1444,11 +1483,9 @@
         android:layout_width="wrap_content"
         android:layout_height="56dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="20dp"
-
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/numberInput"
-        app:layout_constraintTop_toBottomOf="@id/blackboardImage">
+        app:layout_constraintBottom_toTopOf="@id/askQuestionButton">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="wrap_content"
@@ -1666,5 +1703,138 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/abacusSettingsPanel"
+        android:layout_width="340dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/guide_panel_background"
+        android:elevation="12dp"
+        android:padding="16dp"
+        android:translationX="400dp"
+        android:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_bias="0.1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginEnd="8dp">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/mini_abacus_ic"
+                    android:layout_marginBottom="12dp"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarScaleX"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarScaleY"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarMarginBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="0"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginStart="8dp">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/bead"
+                    android:layout_marginBottom="12dp"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadScaleX"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadScaleY"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+                    
+                <SeekBar
+                    android:id="@+id/seekBarBeadMarginTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="30"
+                    android:progress="0"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadMarginBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="50"
+                    android:progress="0"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="8dp">
+            <ImageButton
+                android:id="@+id/abacusSettingsResetButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/special_reset_ic"
+                android:scaleType="centerInside"
+                android:background="@drawable/fab_background"
+                android:layout_marginEnd="16dp"
+                android:padding="8dp"/>
+            <ImageButton
+                android:id="@+id/abacusSettingsSaveButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/correct_ic"
+                android:background="@drawable/fab_background"
+                android:padding="6dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

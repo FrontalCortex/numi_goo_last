@@ -18,6 +18,8 @@ data class LessonItem(
     val color: Int? = null,    // Renk değeri, varsayılanı null
     var LESSON_ID: Int? = null,
     var isBlinding: Boolean? = null,
+    var isExtraction: Boolean? = null,
+    var isMultiplication: Boolean? = null,
     var stepCompletionStatus: List<Boolean> = List(stepCount) { false },// Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
     var startStepNumber: Int? = null,

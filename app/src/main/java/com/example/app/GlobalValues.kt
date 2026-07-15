@@ -100,6 +100,35 @@ object GlobalValues {
     var pendingCupDelta: Int? = null
 
     /**
+     * Blinding kupa modu (card4View) dersi tamamlandığında burada delta bırakılır.
+     * TasksFragment onResume / onHiddenChanged'de tüketilir.
+     */
+    var pendingBlindingCupDelta: Int? = null
+
+    /**
+     * Extraction kupa modu (card2View) dersi tamamlandığında burada delta bırakılır.
+     * TasksFragment onResume / onHiddenChanged'de tüketilir.
+     */
+    var pendingExtractionCupDelta: Int? = null
+
+    /**
+     * Blinding Extraction kupa modu (card5View) dersi tamamlandığında burada delta bırakılır.
+     * TasksFragment onResume / onHiddenChanged'de tüketilir.
+     */
+    var pendingBlindingExtractionCupDelta: Int? = null
+
+    /**
+     * Çarpma kupa modu (card3View) dersi tamamlandığında burada delta bırakılır.
+     * TasksFragment onResume / onHiddenChanged'de tüketilir.
+     */
+    var pendingImpactCupDelta: Int? = null
+
+    /**
+     * Körleme Çarpma kupa modu (card6View) dersi tamamlandığında burada delta bırakılır.
+     */
+    var pendingBlindingImpactCupDelta: Int? = null
+
+    /**
      * panel_cup_path dialog'unun zayıf referansı.
      * Kupa güncellemesi sonrası card1CupValue'nin anlık güncellenmesi için kullanılır.
      */

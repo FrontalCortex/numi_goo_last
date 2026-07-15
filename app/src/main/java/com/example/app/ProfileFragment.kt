@@ -83,6 +83,11 @@ class ProfileFragment : Fragment() {
         BadgeKind.BOWLING,
         BadgeKind.VOLCANO,
         BadgeKind.TORNADO,
+        BadgeKind.DINO,
+        BadgeKind.CROCODILE,
+        BadgeKind.GOAT,
+        BadgeKind.EAGLE,
+        BadgeKind.FLY,
         BadgeKind.KARATE,
         BadgeKind.BRONZE,
         BadgeKind.SILVER,
@@ -438,6 +443,12 @@ class ProfileFragment : Fragment() {
             BadgeKind.GOLF -> progress.userGolfProgress
             BadgeKind.TORNADO -> progress.userTornadoProgress
             BadgeKind.VOLCANO -> progress.userVolcanoProgress
+            BadgeKind.DINO -> progress.userDinoProgress
+            BadgeKind.CROCODILE -> progress.userCrocodileProgress
+            BadgeKind.GOAT -> progress.userGoatProgress
+            BadgeKind.EAGLE -> progress.userEagleProgress
+            BadgeKind.FLY -> progress.userFlyProgress
+            BadgeKind.TURTLE -> progress.userTurtleProgress
             BadgeKind.ROCKET -> progress.userRocketProgress
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
@@ -448,6 +459,12 @@ class ProfileFragment : Fragment() {
             BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
             BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
             BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
             else -> return 0
@@ -472,6 +489,12 @@ class ProfileFragment : Fragment() {
             BadgeKind.GOLF -> progress.userGolfProgress
             BadgeKind.TORNADO -> progress.userTornadoProgress
             BadgeKind.VOLCANO -> progress.userVolcanoProgress
+            BadgeKind.DINO -> progress.userDinoProgress
+            BadgeKind.CROCODILE -> progress.userCrocodileProgress
+            BadgeKind.GOAT -> progress.userGoatProgress
+            BadgeKind.EAGLE -> progress.userEagleProgress
+            BadgeKind.FLY -> progress.userFlyProgress
+            BadgeKind.TURTLE -> progress.userTurtleProgress
             BadgeKind.ROCKET -> progress.userRocketProgress
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
@@ -482,6 +505,12 @@ class ProfileFragment : Fragment() {
             BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
+            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
+            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
             BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
             BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
             else -> return 0.0
@@ -521,8 +550,13 @@ class ProfileFragment : Fragment() {
             badgesByType[type]?.takeIf { it.unlocked }
         }
 
-        // İkinci grup (seviyeye göre azalan sıralı): TORNADO, VOLCANO, BOWLING, DART, FISHING, GOLF, ROCKET
+        // İkinci grup (seviyeye göre azalan sıralı): DINO, CROCODILE, GOAT, EAGLE, FLY, TORNADO, VOLCANO, BOWLING, DART, FISHING, GOLF, ROCKET
         val secondGroupDefaultOrder = listOf(
+            BadgeKind.DINO,
+            BadgeKind.CROCODILE,
+            BadgeKind.GOAT,
+            BadgeKind.EAGLE,
+            BadgeKind.FLY,
             BadgeKind.TORNADO,
             BadgeKind.VOLCANO,
             BadgeKind.BOWLING,
@@ -663,6 +697,49 @@ class ProfileFragment : Fragment() {
                 topAsset = "volcano_anim.json",
                 topHoldFrame = 9999f,
                 topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            
+            BadgeKind.DINO -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "dinosaur_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.5f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.CROCODILE -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "crocodile_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.GOAT -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "goat_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.EAGLE -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "eagle_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.FLY -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "fly_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.TURTLE -> ProfileBadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "turtle_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
                 topBackgroundRes = R.drawable.bg_badge_circle_frame,
             )
         }

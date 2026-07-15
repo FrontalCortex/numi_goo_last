@@ -41,6 +41,10 @@ class AbacusBeadController(
     private var bottomMoveDistancePx: Float = AbacusBeadMetrics.bottomStepPx(context)
     private var topMoveDistancePx: Float = AbacusBeadMetrics.topStepPx(context)
 
+    /** Settings panelinden eklenen boncuk margin offset'leri (px). */
+    private var beadMarginBottomOffsetPx: Float = 0f
+    private var beadMarginTopOffsetPx: Float = 0f
+
     private var initialPositionsCaptured = false
     private val initialBottomMargins: Array<IntArray> = Array(5) { IntArray(4) }
 
@@ -143,16 +147,26 @@ class AbacusBeadController(
         if (!force && bottomMoveDistancePx > 0f && topMoveDistancePx > 0f) return true
         val dynamic = AbacusBeadMetrics.fromBarrierDistances(root, ratio)
         if (dynamic != null) {
-            bottomMoveDistancePx = dynamic.bottomPx
-            topMoveDistancePx = dynamic.topPx
-            d("Dynamic distances applied bottom=$bottomMoveDistancePx top=$topMoveDistancePx")
+            bottomMoveDistancePx = (dynamic.bottomPx - beadMarginBottomOffsetPx).coerceAtLeast(1f)
+            topMoveDistancePx = (dynamic.topPx - beadMarginTopOffsetPx).coerceAtLeast(1f)
+            d("Dynamic distances applied bottom=$bottomMoveDistancePx top=$topMoveDistancePx (offsets: bottom=$beadMarginBottomOffsetPx top=$beadMarginTopOffsetPx)")
             return true
         }
         // Keep dimen fallback if measurement fails.
-        bottomMoveDistancePx = AbacusBeadMetrics.bottomStepPx(context)
-        topMoveDistancePx = AbacusBeadMetrics.topStepPx(context)
+        bottomMoveDistancePx = (AbacusBeadMetrics.bottomStepPx(context) - beadMarginBottomOffsetPx).coerceAtLeast(1f)
+        topMoveDistancePx = (AbacusBeadMetrics.topStepPx(context) - beadMarginTopOffsetPx).coerceAtLeast(1f)
         d("Dynamic distances unavailable; using fallback bottom=$bottomMoveDistancePx top=$topMoveDistancePx")
         return false
+    }
+
+    /**
+     * Settings panelinden eklenen boncuk margin değerlerini px olarak ayarlar.
+     * Bu değerler, hareket mesafesinden çıkarılarak boncukların daha kısa mesafe katetmesini sağlar.
+     */
+    fun setBeadMarginOffsets(bottomOffsetPx: Float, topOffsetPx: Float) {
+        beadMarginBottomOffsetPx = bottomOffsetPx.coerceAtLeast(0f)
+        beadMarginTopOffsetPx = topOffsetPx.coerceAtLeast(0f)
+        d("Bead margin offsets set: bottom=$beadMarginBottomOffsetPx top=$beadMarginTopOffsetPx")
     }
 
     /** Alt boncuk adım mesafesi (px); dokunma/sürükleme ile aynı değer. */
@@ -335,11 +349,11 @@ class AbacusBeadController(
             when (action) {
                 MotionEvent.ACTION_DOWN -> {
                     d("Bottom ACTION_DOWN rod=$rod bead=$beadNumber rawY=${event.rawY} t=${event.eventTime}")
-                    if (beadView in animatingBeads) return@setOnTouchListener true
-                    // Rule: if any bottom bead in this rod is currently animating,
-                    // block starting a new interaction on other bottom beads.
-                    // This prevents "bottom2 dragging while bottom1 animation is running".
-                    if (isAnyBottomAnimating(rod)) return@setOnTouchListener true
+                    // If any bottom bead in this rod is mid-animation, interrupt and snap
+                    // to clean positions so the new interaction starts from a consistent state.
+                    if (isAnyBottomAnimating(rod)) {
+                        interruptAndSnapBottomBeads(rod)
+                    }
 
                     val startCount = bottomCount[rod]
                     val target = if (startCount >= beadNumber) beadNumber - 1 else beadNumber
@@ -526,7 +540,9 @@ class AbacusBeadController(
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     d("Top ACTION_DOWN rod=$rod rawY=${event.rawY} t=${event.eventTime}")
-                    if (beadView in animatingBeads) return@setOnTouchListener true
+                    if (beadView in animatingBeads) {
+                        interruptAndSnapTopBead(rod)
+                    }
                     // Allow top interactions even if bottom is animating, because top translation is independent.
                     // (Bottom taps/drags are gated separately.)
 
@@ -764,6 +780,11 @@ class AbacusBeadController(
     }
 
     private fun onBottomBeadClicked(rod: Int, beadNumber: Int) {
+        // If any bottom bead in this rod is mid-animation, interrupt and snap first
+        if (isAnyBottomAnimating(rod)) {
+            interruptAndSnapBottomBeads(rod)
+        }
+
         val current = bottomCount[rod]
         val target = if (current >= beadNumber) beadNumber - 1 else beadNumber
         val clampedTarget = target.coerceIn(0, 4)
@@ -774,8 +795,6 @@ class AbacusBeadController(
         val affected = (from..to)
             .map { n -> bottomBeads[rod][n - 1] }
             .toTypedArray()
-
-        if (affected.any { it in animatingBeads }) return
 
         if (clampedTarget > current) {
             animateBeadsUp(*affected)
@@ -788,7 +807,9 @@ class AbacusBeadController(
 
     private fun toggleTopBead(rod: Int) {
         val bead = topBeads[rod]
-        if (bead in animatingBeads) return
+        if (bead in animatingBeads) {
+            interruptAndSnapTopBead(rod)
+        }
         if (!topDown[rod]) {
             animateTopBeadDown(bead)
             topDown[rod] = true
@@ -963,6 +984,62 @@ class AbacusBeadController(
             bead.layoutParams = params
             bead.translationY = 0f
         }
+    }
+
+    /**
+     * Animasyon ortasındaki alt boncukları durdurur, mevcut translation'ı margin'e yazar,
+     * en yakın temiz konuma (tam yukarı veya tam aşağı) yapıştırır ve bottomCount'u günceller.
+     */
+    private fun interruptAndSnapBottomBeads(rod: Int) {
+        val moveDistance = bottomMoveDistancePx.roundToInt()
+
+        // 1. Animasyonları durdur ve translation → margin'e yaz
+        for (i in 0..3) {
+            val bead = bottomBeads[rod][i]
+            if (bead in animatingBeads) {
+                commitBottomTranslationToMargin(bead)
+            }
+        }
+
+        // 2. Fiziksel konuma göre hangi boncukların yukarıda olduğunu bul
+        val newCount = countConsecutiveRaisedBottomBeads(rod)
+
+        // 3. Tüm boncukları en yakın temiz konuma yapıştır
+        for (i in 0..3) {
+            val bead = bottomBeads[rod][i]
+            val params = bead.layoutParams as ViewGroup.MarginLayoutParams
+            val shouldBeUp = i < newCount
+            params.bottomMargin = if (shouldBeUp) {
+                initialBottomMargins[rod][i] + moveDistance
+            } else {
+                initialBottomMargins[rod][i]
+            }
+            bead.layoutParams = params
+            bead.translationY = 0f
+        }
+
+        bottomCount[rod] = newCount
+        updateRodAppearance(rod)
+    }
+
+    /**
+     * Animasyon ortasındaki üst boncuğu durdurur ve en yakın temiz konuma yapıştırır.
+     */
+    private fun interruptAndSnapTopBead(rod: Int) {
+        val bead = topBeads[rod]
+        bead.animate().cancel()
+        animatingBeads.remove(bead)
+
+        // Fiziksel konuma göre en yakın temiz konuma yapıştır
+        val halfStep = topMoveDistancePx / 2f
+        if (bead.translationY >= halfStep) {
+            bead.translationY = topMoveDistancePx
+            topDown[rod] = true
+        } else {
+            bead.translationY = 0f
+            topDown[rod] = false
+        }
+        updateTopAppearance(rod)
     }
 
     private fun captureInitialPositionsIfNeeded() {

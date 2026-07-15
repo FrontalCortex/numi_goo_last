@@ -128,7 +128,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="500"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -213,7 +213,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="1480"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -224,12 +224,13 @@
                         android:layout_width="70dp"
                         android:layout_height="70dp"
                         android:contentDescription="@null"
-                        app:lottie_fileName="crocodile_anim.json"
-                        app:lottie_autoPlay="true"
-                        app:lottie_loop="true"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintVertical_bias="0.0"
+                        app:lottie_autoPlay="true"
+                        app:lottie_fileName="crocodile_anim.json"
+                        app:lottie_loop="true" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -298,7 +299,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="1480"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -382,7 +383,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="1480"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -466,7 +467,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="1480"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -550,7 +551,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:includeFontPadding="false"
-                            android:text="1480"
+                            android:text="200"
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -561,7 +562,7 @@
                         android:layout_width="70dp"
                         android:layout_height="70dp"
                         android:contentDescription="@null"
-                        app:lottie_fileName="dog_anim.json"
+                        app:lottie_fileName="turtle_anim.json"
                         app:lottie_autoPlay="true"
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"

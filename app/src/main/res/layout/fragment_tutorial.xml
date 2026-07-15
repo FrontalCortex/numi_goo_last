@@ -898,24 +898,11 @@
         android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_text_size"
-        app:layout_constraintBottom_toTopOf="@id/abacusLinear"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <View
-        android:id="@+id/focusView"
-        android:layout_width="@dimen/tutorial_focus_width"
-        android:layout_height="@dimen/tutorial_focus_height"
-        android:layout_marginLeft="0dp"
-        android:layout_marginRight="0dp"
-        android:background="@drawable/tutorial_focus_border"
-        android:translationZ="5dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
-        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
-        app:layout_constraintTop_toTopOf="@id/abacusLinear">
 
-    </View>
 
     <ImageView
         android:id="@+id/blinding_tutorial2"
@@ -965,33 +952,39 @@
 
     </ImageView>
 
-    <LinearLayout
-        android:id="@+id/abacusLinear"
+    <FrameLayout
+        android:id="@+id/abacusContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:visibility="visible"
+        android:background="@drawable/abacus_frame_bg"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
         android:layout_marginBottom="@dimen/tutorial_abacus_linear_margin_bottom"
         app:layout_constraintBottom_toTopOf="@id/bottomPanelID"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+    <LinearLayout
+        android:id="@+id/abacusLinear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="visible">
+
 
         <FrameLayout
             android:id="@+id/rod0"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/tutorial_abacus_rod_height"
-            android:layout_marginStart="@dimen/tutorial_abacus_rod_spacing_start"
-            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
 
             <!-- Dikey çizgi -->
-
-
             <View
                 android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888" />
+                android:background="#1a1a1a" />
 
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
@@ -1027,15 +1020,13 @@
                 android:src="@drawable/soroban_bead" />
 
             <!-- Bariyer -->
-
             <View
                 android:id="@+id/rod0_barrier"
-                android:layout_width="@dimen/tutorial_abacus_bead_size"
-                android:layout_height="@dimen/tutorial_abacus_barrier_height"
-
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
-                android:background="#888" />
+                android:background="@drawable/abacus_horizontal_bar" />
 
             <!-- Üst boncuk -->
             <ImageView
@@ -1049,16 +1040,15 @@
 
         <FrameLayout
             android:id="@+id/rod1"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/tutorial_abacus_rod_height"
-            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
 
             <!-- Dikey çizgi -->
             <View
                 android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888" />
+                android:background="#1a1a1a" />
 
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
@@ -1096,11 +1086,11 @@
             <!-- Bariyer -->
             <View
                 android:id="@+id/rod1_barrier"
-                android:layout_width="@dimen/tutorial_abacus_bead_size"
-                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
-                android:background="#888" />
+                android:background="@drawable/abacus_horizontal_bar" />
 
             <!-- Üst boncuk -->
             <ImageView
@@ -1114,16 +1104,15 @@
 
         <FrameLayout
             android:id="@+id/rod2"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/tutorial_abacus_rod_height"
-            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
 
             <!-- Dikey çizgi -->
             <View
                 android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888" />
+                android:background="#1a1a1a" />
 
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
@@ -1161,11 +1150,11 @@
             <!-- Bariyer -->
             <View
                 android:id="@+id/rod2_barrier"
-                android:layout_width="@dimen/tutorial_abacus_bead_size"
-                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
-                android:background="#888" />
+                android:background="@drawable/abacus_horizontal_bar" />
 
             <!-- Üst boncuk -->
             <ImageView
@@ -1179,16 +1168,15 @@
 
         <FrameLayout
             android:id="@+id/rod3"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/tutorial_abacus_rod_height"
-            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_end">
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
 
             <!-- Dikey çizgi -->
             <View
                 android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888" />
+                android:background="#1a1a1a" />
 
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
@@ -1226,11 +1214,11 @@
             <!-- Bariyer -->
             <View
                 android:id="@+id/rod3_barrier"
-                android:layout_width="@dimen/tutorial_abacus_bead_size"
-                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
-                android:background="#888" />
+                android:background="@drawable/abacus_horizontal_bar" />
 
             <!-- Üst boncuk -->
             <ImageView
@@ -1244,16 +1232,15 @@
 
         <FrameLayout
             android:id="@+id/rod4"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/tutorial_abacus_rod_height"
-            android:layout_marginEnd="@dimen/tutorial_abacus_rod_spacing_start">
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
 
             <!-- Dikey çizgi -->
             <View
                 android:layout_width="@dimen/tutorial_abacus_line_width"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
-                android:background="#888" />
+                android:background="#1a1a1a" />
 
             <!-- Alt boncuklar (aşağıdan yukarıya doğru) -->
             <ImageView
@@ -1291,11 +1278,11 @@
             <!-- Bariyer -->
             <View
                 android:id="@+id/rod4_barrier"
-                android:layout_width="@dimen/tutorial_abacus_bead_size"
-                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
-                android:background="#888" />
+                android:background="@drawable/abacus_horizontal_bar" />
 
             <!-- Üst boncuk -->
             <ImageView
@@ -1309,6 +1296,44 @@
 
     </LinearLayout>
 
+    </FrameLayout>
+
+    <View
+        android:id="@+id/guideline"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_marginBottom="10dp"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
+        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintTop_toTopOf="@id/abacusContainer" />
+    <View
+        android:id="@+id/guideline2"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:importantForAccessibility="no"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
+        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintTop_toTopOf="@id/abacusContainer"
+        app:layout_constraintVertical_bias="0.3" />
+    <View
+        android:id="@+id/focusView"
+        android:layout_width="@dimen/tutorial_focus_width"
+        android:layout_height="@dimen/tutorial_focus_height"
+        android:layout_marginLeft="0dp"
+        android:layout_marginRight="0dp"
+        android:background="@drawable/tutorial_focus_border"
+        android:translationZ="5dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
+        app:layout_constraintTop_toTopOf="@id/abacusContainer">
+
+    </View>
+
     <!-- abacusClickable=false iken boncukları kaplar; tıklanınca ekran tıklaması gibi sonraki adım. -->
     <View
         android:id="@+id/abacusTapBlocker"
@@ -1319,10 +1344,10 @@
         android:focusable="true"
         android:visibility="gone"
         android:elevation="12dp"
-        app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
-        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
-        app:layout_constraintStart_toStartOf="@id/abacusLinear"
-        app:layout_constraintTop_toTopOf="@id/abacusLinear" />
+        app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
+        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintTop_toTopOf="@id/abacusContainer" />
 
     <LinearLayout
         android:id="@+id/bottomPanelID"
@@ -1495,28 +1520,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/backButton" />
 
-    <View
-        android:id="@+id/guideline"
-        android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:layout_marginBottom="10dp"
-        android:importantForAccessibility="no"
-        android:visibility="invisible"
-        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
-        app:layout_constraintStart_toStartOf="@id/abacusLinear"
-        app:layout_constraintTop_toTopOf="@id/abacusLinear" />
 
-    <View
-        android:id="@+id/guideline2"
-        android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:importantForAccessibility="no"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@id/abacusLinear"
-        app:layout_constraintEnd_toEndOf="@id/abacusLinear"
-        app:layout_constraintStart_toStartOf="@id/abacusLinear"
-        app:layout_constraintTop_toTopOf="@id/abacusLinear"
-        app:layout_constraintVertical_bias="0.3" />
+
 
     <View
         android:id="@+id/overlay"

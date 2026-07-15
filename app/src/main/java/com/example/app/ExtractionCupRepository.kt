@@ -5,15 +5,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 
 /**
- * Kullanıcının `addition_abacus_cup` kupa skorunu Firestore üzerinden okur/yazar.
+ * Kullanıcının `extraction_abacus_cup` kupa skorunu Firestore üzerinden okur/yazar.
  *
- * Veri yolu: `users/{uid}/addition_abacus_cup` (INT alanı)
+ * Veri yolu: `users/{uid}/extraction_abacus_cup` (INT alanı)
  * İlk erişimde alan yoksa varsayılan değer [DEFAULT_CUP_SCORE] olarak seed edilir.
  */
-object AbacusCupRepository {
+object ExtractionCupRepository {
 
     private const val DEFAULT_CUP_SCORE = 200
-    private const val FIELD = "addition_abacus_cup"
+    private const val FIELD = "extraction_abacus_cup"
     private const val COLLECTION = "users"
 
     /** Kupa değişiminin sabit adım büyüklüğü. */

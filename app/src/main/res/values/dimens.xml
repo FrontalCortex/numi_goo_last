@@ -83,13 +83,13 @@
     <dimen name="tutorial_quit_button_size">25dp</dimen>
     <dimen name="tutorial_text_size">16sp</dimen>
     <dimen name="tutorial_question_width">140dp</dimen>
-    <dimen name="tutorial_question_margin_bottom">4dp</dimen>
+    <dimen name="tutorial_question_margin_bottom">2dp</dimen>
     <dimen name="tutorial_focus_width">34dp</dimen>
     <dimen name="tutorial_focus_height">190dp</dimen>
     <!-- focusView küçülünce sabit 10dp köşe orantısız kalmasın -->
     <dimen name="tutorial_focus_corner_radius">4dp</dimen>
     <!-- Basamak adımı: focusView sağ margin (Birler=0, Onlar=1×, Yüzler=2×…); küçük ekran -->
-    <dimen name="tutorial_focus_margin_right_step">28dp</dimen>
+    <dimen name="tutorial_focus_margin_right_step">45dp</dimen>
     <!-- focusView AnimateSize hedefleri: sütun vurgusu ve boncuk şeritleri (küçük / kısa ekran) -->
     <dimen name="tutorial_focus_column_highlight_width">146dp</dimen>
     <dimen name="tutorial_focus_column_highlight_height">186dp</dimen>

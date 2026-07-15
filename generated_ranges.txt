@@ -1,0 +1,160 @@
+    private val RANGES = listOf(
+        CupRange(
+            minCup = 1000, maxCup = 1099,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(8, 9, 10),         intervals = listOf(2500L, 2250L, 2000L)),
+                DigitConfig(digits = 2, counts = listOf(6, 7, 8),          intervals = listOf(3750L, 3375L, 3000L)),
+                DigitConfig(digits = 3, counts = listOf(4, 5),             intervals = listOf(4999L, 4666L, 4333L, 4000L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1100, maxCup = 1199,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(8, 9, 10),         intervals = listOf(2400L, 2150L, 1900L)),
+                DigitConfig(digits = 2, counts = listOf(6, 7, 8),          intervals = listOf(3600L, 3225L, 2850L)),
+                DigitConfig(digits = 3, counts = listOf(4, 5),             intervals = listOf(4799L, 4466L, 4133L, 3800L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1200, maxCup = 1299,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(8, 9, 10),         intervals = listOf(2300L, 2050L, 1800L)),
+                DigitConfig(digits = 2, counts = listOf(6, 7, 8),          intervals = listOf(3450L, 3075L, 2700L)),
+                DigitConfig(digits = 3, counts = listOf(4, 5),             intervals = listOf(4599L, 4266L, 3933L, 3600L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1300, maxCup = 1399,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(9, 10, 11),         intervals = listOf(2300L, 2050L, 1800L)),
+                DigitConfig(digits = 2, counts = listOf(6, 7, 8),          intervals = listOf(3450L, 3075L, 2700L)),
+                DigitConfig(digits = 3, counts = listOf(4, 5),             intervals = listOf(4599L, 4266L, 3933L, 3600L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1400, maxCup = 1499,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(10, 11, 12),         intervals = listOf(2300L, 2050L, 1800L)),
+                DigitConfig(digits = 2, counts = listOf(7, 8, 9),          intervals = listOf(3450L, 3075L, 2700L)),
+                DigitConfig(digits = 3, counts = listOf(4, 5),             intervals = listOf(4599L, 4266L, 3933L, 3600L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1500, maxCup = 1599,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(10, 11, 12),         intervals = listOf(2200L, 1950L, 1700L)),
+                DigitConfig(digits = 2, counts = listOf(7, 8, 9),          intervals = listOf(3300L, 2925L, 2550L)),
+                DigitConfig(digits = 3, counts = listOf(5, 6),             intervals = listOf(4399L, 4066L, 3733L, 3400L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1600, maxCup = 1699,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(10, 11, 12),         intervals = listOf(2100L, 1850L, 1600L)),
+                DigitConfig(digits = 2, counts = listOf(7, 8, 9),          intervals = listOf(3150L, 2775L, 2400L)),
+                DigitConfig(digits = 3, counts = listOf(5, 6),             intervals = listOf(4199L, 3866L, 3533L, 3200L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1700, maxCup = 1799,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(11, 12, 13),         intervals = listOf(2100L, 1850L, 1600L)),
+                DigitConfig(digits = 2, counts = listOf(8, 9, 10),          intervals = listOf(3150L, 2775L, 2400L)),
+                DigitConfig(digits = 3, counts = listOf(5, 6),             intervals = listOf(4199L, 3866L, 3533L, 3200L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1800, maxCup = 1899,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(12, 13, 14),         intervals = listOf(2100L, 1850L, 1600L)),
+                DigitConfig(digits = 2, counts = listOf(8, 9, 10),          intervals = listOf(3150L, 2775L, 2400L)),
+                DigitConfig(digits = 3, counts = listOf(5, 6),             intervals = listOf(4199L, 3866L, 3533L, 3200L)),
+            ),
+        ),
+        CupRange(
+            minCup = 1900, maxCup = 1999,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(12, 13, 14),         intervals = listOf(2000L, 1750L, 1500L)),
+                DigitConfig(digits = 2, counts = listOf(8, 9, 10),          intervals = listOf(3000L, 2625L, 2250L)),
+                DigitConfig(digits = 3, counts = listOf(5, 6),             intervals = listOf(3999L, 3666L, 3333L, 3000L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2000, maxCup = 2099,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(13, 14, 15),         intervals = listOf(1900L, 1650L, 1400L)),
+                DigitConfig(digits = 2, counts = listOf(9, 10, 11),          intervals = listOf(2850L, 2475L, 2100L)),
+                DigitConfig(digits = 3, counts = listOf(6, 7),             intervals = listOf(3799L, 3466L, 3133L, 2800L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2100, maxCup = 2199,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(14, 15, 16),         intervals = listOf(1900L, 1650L, 1400L)),
+                DigitConfig(digits = 2, counts = listOf(9, 10, 11),          intervals = listOf(2850L, 2475L, 2100L)),
+                DigitConfig(digits = 3, counts = listOf(6, 7),             intervals = listOf(3799L, 3466L, 3133L, 2800L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2200, maxCup = 2299,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(15, 16, 17),         intervals = listOf(1900L, 1650L, 1400L)),
+                DigitConfig(digits = 2, counts = listOf(9, 10, 11),          intervals = listOf(2850L, 2475L, 2100L)),
+                DigitConfig(digits = 3, counts = listOf(6, 7),             intervals = listOf(3799L, 3466L, 3133L, 2800L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2300, maxCup = 2399,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(15, 16, 17),         intervals = listOf(1800L, 1550L, 1300L)),
+                DigitConfig(digits = 2, counts = listOf(9, 10, 11),          intervals = listOf(2700L, 2325L, 1950L)),
+                DigitConfig(digits = 3, counts = listOf(6, 7),             intervals = listOf(3599L, 3266L, 2933L, 2600L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2400, maxCup = 2499,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(15, 16, 17),         intervals = listOf(1700L, 1450L, 1200L)),
+                DigitConfig(digits = 2, counts = listOf(10, 11, 12),          intervals = listOf(2550L, 2175L, 1800L)),
+                DigitConfig(digits = 3, counts = listOf(6, 7),             intervals = listOf(3399L, 3066L, 2733L, 2400L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2400, maxCup = 2499,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(16, 17, 18),         intervals = listOf(1700L, 1450L, 1200L)),
+                DigitConfig(digits = 2, counts = listOf(10, 11, 12),          intervals = listOf(2550L, 2175L, 1800L)),
+                DigitConfig(digits = 3, counts = listOf(7, 8),             intervals = listOf(3399L, 3066L, 2733L, 2400L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2500, maxCup = 2599,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(16, 17, 18),         intervals = listOf(1600L, 1350L, 1100L)),
+                DigitConfig(digits = 2, counts = listOf(10, 11, 12),          intervals = listOf(2400L, 2025L, 1650L)),
+                DigitConfig(digits = 3, counts = listOf(7, 8),             intervals = listOf(3199L, 2866L, 2533L, 2200L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2600, maxCup = 2699,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(16, 17, 18),         intervals = listOf(1500L, 1250L, 1000L)),
+                DigitConfig(digits = 2, counts = listOf(10, 11, 12),          intervals = listOf(2250L, 1875L, 1500L)),
+                DigitConfig(digits = 3, counts = listOf(7, 8),             intervals = listOf(2999L, 2666L, 2333L, 2000L)),
+            ),
+        ),
+        CupRange(
+            minCup = 2700, maxCup = 2799,
+            configs = listOf(
+                DigitConfig(digits = 1, counts = listOf(16, 17, 18),         intervals = listOf(1400L, 1150L, 900L)),
+                DigitConfig(digits = 2, counts = listOf(10, 11, 12),          intervals = listOf(2100L, 1725L, 1350L)),
+                DigitConfig(digits = 3, counts = listOf(7, 8),             intervals = listOf(2799L, 2466L, 2133L, 1800L)),
+            ),
+        ),
+        CupRange(
+            minCup = 6000, maxCup = Int.MAX_VALUE,
+            configs = listOf(
+                DigitConfig(digits = 3, counts = listOf(3), intervals = listOf(500L)),
+            ),
+        ),
+    )

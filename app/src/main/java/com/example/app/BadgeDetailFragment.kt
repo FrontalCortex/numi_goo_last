@@ -70,6 +70,12 @@ class BadgeDetailFragment : Fragment() {
         BadgeKind.GOLF,
         BadgeKind.TORNADO,
         BadgeKind.VOLCANO,
+        BadgeKind.DINO,
+        BadgeKind.CROCODILE,
+        BadgeKind.GOAT,
+        BadgeKind.EAGLE,
+        BadgeKind.FLY,
+        BadgeKind.TURTLE,
     )
 
     override fun onCreateView(
@@ -411,6 +417,48 @@ class BadgeDetailFragment : Fragment() {
                 topAsset = "volcano_anim.json",
                 topHoldFrame = 9999f,
                 topScale = 0.65f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.DINO -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "dinosaur_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.5f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.CROCODILE -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "crocodile_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.GOAT -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "goat_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.EAGLE -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "eagle_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.FLY -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "fly_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
+                topBackgroundRes = R.drawable.bg_badge_circle_frame,
+            )
+            BadgeKind.TURTLE -> BadgeRenderConfig(
+                baseAsset = "daily_tasks_complite_badge2.json",
+                topAsset = "turtle_anim.json",
+                topHoldFrame = 9999f,
+                topScale = 0.50f,
                 topBackgroundRes = R.drawable.bg_badge_circle_frame,
             )
         }
