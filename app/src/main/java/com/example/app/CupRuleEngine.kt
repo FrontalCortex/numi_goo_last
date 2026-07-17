@@ -313,7 +313,24 @@ object CupRuleEngine {
      * @param cupScore Kullanıcının güncel kupa skoru
      * @param ranges   Kullanılacak kural tablosu (RANGES veya BLINDING_RANGES)
      */
-    fun resolve(cupScore: Int, ranges: List<CupRange> = RANGES): DigitConfig {
+    fun getAvailableDigits(cupScore: Int, isBlinding: Boolean): List<Int> {
+        val ranges = if (isBlinding) BLINDING_RANGES else RANGES
+        val configs = resolveConfigs(cupScore, ranges)
+        return configs.map { it.digits }.distinct().sorted()
+    }
+
+    fun resolve(cupScore: Int, ranges: List<CupRange> = RANGES, forcedDigitSize: Int? = null): DigitConfig {
+        val configs = resolveConfigs(cupScore, ranges)
+        if (forcedDigitSize != null) {
+            val valid = configs.filter { it.digits == forcedDigitSize }
+            if (valid.isNotEmpty()) {
+                return valid.random()
+            }
+        }
+        return configs.random()
+    }
+
+    fun resolveConfigs(cupScore: Int, ranges: List<CupRange> = RANGES): List<DigitConfig> {
         // Körleme kupa modu için 0-999 arası dinamik hesaplama (900 baz alınarak aşağı inilir)
         if (ranges === BLINDING_RANGES && cupScore in 0..999) {
             val step = (999 - cupScore) / 100
@@ -324,7 +341,7 @@ object CupRuleEngine {
                 counts = listOf(maxOf(1, 6 - countDrop1d)),
                 intervals = listOf(2900L + step * 100L, 2650L + step * 100L, 2400L + step * 100L)
             )
-            return c1
+            return listOf(c1)
         }
 
         // Körleme kupa modu için 1000-1999 arası dinamik hesaplama (2000 baz alınarak aşağı inilir)
@@ -343,7 +360,7 @@ object CupRuleEngine {
                 counts = listOf(5 - countDrop2d, 6 - countDrop2d),
                 intervals = listOf(3800L + step * 200L, 3300L + step * 200L, 2800L + step * 200L)
             )
-            return listOf(c1, c2).random()
+            return listOf(c1, c2)
         }
 
         // Körleme kupa modu için 2000-2999 arası dinamik hesaplama (3000 baz alınarak aşağı inilir)
@@ -367,7 +384,7 @@ object CupRuleEngine {
                 counts = listOf(4 - countDrop3d),
                 intervals = listOf(4500L + step * 400L, 3875L + step * 400L, 3250L + step * 400L, 2625L + step * 400L, 2000L + step * 400L)
             )
-            return listOf(c1, c2, c3).random()
+            return listOf(c1, c2, c3)
         }
 
         // Körleme kupa modu için 3000-sonsuz arası dinamik hesaplama (açık uçlu ölçekleme)
@@ -416,7 +433,7 @@ object CupRuleEngine {
                     maxOf(400L, 4000L - step * 150L)
                 )
             )
-            return listOf(c1, c2, c3, c4).random()
+            return listOf(c1, c2, c3, c4)
         }
 
         // Standart kupa modu için 3200-sonsuz arası dinamik hesaplama (açık uçlu ölçekleme)
@@ -465,12 +482,12 @@ object CupRuleEngine {
                     maxOf(100L, 1500L - step * 150L)
                 )
             )
-            return listOf(c1, c2, c3, c4).random()
+            return listOf(c1, c2, c3, c4)
         }
 
         val range = ranges.firstOrNull { cupScore in it.minCup..it.maxCup }
             ?: ranges.first { it.minCup == 3100 } // Fallback
-        return range.configs.random()
+        return range.configs
     }
 
 
@@ -524,9 +541,15 @@ object CupRuleEngine {
      * @param cupScore       Kullanıcının güncel kupa skoru
      * @param difficultyLevel SeekBar kademesi (0–4 → %0, %25, %50, %75, %100)
      */
-    fun buildLessonItem(cupScore: Int, difficultyLevel: Int = 0, isBlinding: Boolean = false, isExtraction: Boolean = false): LessonItem {
+    fun buildLessonItem(
+        cupScore: Int,
+        difficultyLevel: Int = 0,
+        isBlinding: Boolean = false,
+        isExtraction: Boolean = false,
+        forcedDigitSize: Int? = null
+    ): LessonItem {
         val ranges = if (isBlinding) BLINDING_RANGES else RANGES
-        val config = resolve(cupScore, ranges)
+        val config = resolve(cupScore, ranges, forcedDigitSize)
         val level = difficultyLevel.coerceIn(0, 4)
         val (count, intervalMs) = selectValues(config, level)
         val placeholder = GlobalLessonData.createLessonItems(9).first()
@@ -671,3 +694,4 @@ object CupRuleEngine {
         return MathOperation(first, "x", second)
     }
 }
+

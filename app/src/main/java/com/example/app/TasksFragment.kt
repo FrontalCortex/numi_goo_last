@@ -941,7 +941,8 @@ class TasksFragment : Fragment() {
                                     requireActivity().runOnUiThread {
                                         val dialog = GlobalValues.cupPathDialogRef?.get()
                                         if (dialog != null && dialog.isShowing) {
-                                            val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+                                            val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
+                                            val bottomSheet = dialog.findViewById<View>(bottomSheetId)
                                             if (bottomSheet != null) {
                                                 bottomSheet.findViewById<TextView>(R.id.card1CupValue)?.visibility = View.VISIBLE
                                                 bottomSheet.findViewById<TextView>(R.id.card2CupValue)?.visibility = View.VISIBLE
@@ -1000,9 +1001,8 @@ class TasksFragment : Fragment() {
 
         // Expand the sheet fully on show
         dialog.setOnShowListener {
-            val bottomSheet = dialog.findViewById<View>(
-                com.google.android.material.R.id.design_bottom_sheet
-            )
+            val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
+            val bottomSheet = dialog.findViewById<View>(bottomSheetId)
             bottomSheet?.let {
                 it.setBackgroundResource(android.R.color.transparent)
                 val behavior = BottomSheetBehavior.from(it)
@@ -1238,12 +1238,15 @@ class TasksFragment : Fragment() {
         val closeBtn = contentView.findViewById<View>(R.id.cupDifficultyClose)
         closeBtn?.setOnClickListener { dialog.dismiss() }
 
-        val startBtn = contentView.findViewById<View>(R.id.cupDifficultyStartButton)
-        startBtn?.isEnabled = false
-
         // SeekBar: 5 durak (0,25,50,75,100) → max=4
         val seekBar    = contentView.findViewById<android.widget.SeekBar>(R.id.cupDifficultySeekBar)
         val thumbLabel = contentView.findViewById<TextView>(R.id.cupDifficultyThumbLabel)
+        val startBtn = contentView.findViewById<com.google.android.material.button.MaterialButton>(R.id.cupDifficultyStartButton)
+        val digitContainer = contentView.findViewById<android.view.View>(R.id.cupDigitContainer)
+        val digitSpinner = contentView.findViewById<android.widget.Spinner>(R.id.cupDigitSpinner)
+        var selectedDigitSize: Int? = null
+        
+        startBtn?.isEnabled = false
 
         /** Thumb etiketini seekbar üzerinde thumb'ın ortasına hizalar. */
         fun updateThumbLabel(progress: Int) {
@@ -1285,6 +1288,29 @@ class TasksFragment : Fragment() {
             if (!isAdded) return@cupScoreProvider
             requireActivity().runOnUiThread {
                 startBtn?.isEnabled = true
+                
+                if (!isMultiplicationMode && cupScore >= 3000) {
+                    val availableDigits = CupRuleEngine.getAvailableDigits(cupScore, isBlindingMode)
+                    if (availableDigits.isNotEmpty() && digitSpinner != null && digitContainer != null) {
+                        digitContainer.visibility = android.view.View.VISIBLE
+                        val options = mutableListOf("Rastgele")
+                        options.addAll(availableDigits.map { "$it Basamak" })
+                        
+                        val adapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, options)
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        digitSpinner.adapter = adapter
+                        
+                        digitSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                                selectedDigitSize = if (position == 0) null else availableDigits[position - 1]
+                            }
+                            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                                selectedDigitSize = null
+                            }
+                        }
+                    }
+                }
+                
                 startBtn?.setOnClickListener {
                     addLaunchTouchBlocker()
                     GlobalValues.cupPathDialogRef?.get()?.window?.setFlags(
@@ -1294,6 +1320,7 @@ class TasksFragment : Fragment() {
                     val difficultyLevel = seekBar?.progress ?: 0
                     dialog.dismiss()
                     GlobalValues.cupPathDialogRef?.get()?.hide()
+                    GlobalValues.currentLessonOldCupScore = cupScore
                     launchCupModeLesson(
                         cupScore = cupScore,
                         difficultyLevel = if (isMultiplicationMode) 0 else difficultyLevel,
@@ -1301,7 +1328,8 @@ class TasksFragment : Fragment() {
                         isExtractionMode = isExtractionMode,
                         isMultiplicationMode = isMultiplicationMode,
                         pendingDeltaSetter = pendingDeltaSetter,
-                        cardCupValueId = cardCupValueId
+                        cardCupValueId = cardCupValueId,
+                        forcedDigitSize = selectedDigitSize
                     )
                 }
             }
@@ -1318,7 +1346,8 @@ class TasksFragment : Fragment() {
         isExtractionMode: Boolean = false,
         isMultiplicationMode: Boolean = false,
         pendingDeltaSetter: (Int) -> Unit = { GlobalValues.pendingCupDelta = it },
-        cardCupValueId: Int? = null
+        cardCupValueId: Int? = null,
+        forcedDigitSize: Int? = null
     ) {
         if (!isAdded) return
         val activity = requireActivity()
@@ -1326,7 +1355,8 @@ class TasksFragment : Fragment() {
             cupScore = cupScore, 
             difficultyLevel = difficultyLevel, 
             isBlinding = isBlindingMode, 
-            isExtraction = isExtractionMode
+            isExtraction = isExtractionMode,
+            forcedDigitSize = forcedDigitSize
         )
         if (isMultiplicationMode) {
             lessonItem.isMultiplication = true
@@ -1430,160 +1460,84 @@ class TasksFragment : Fragment() {
         GlobalValues.pendingImpactCupDelta = null
         GlobalValues.pendingBlindingImpactCupDelta = null
 
-        val updateFn: (Int, ((Int, Int) -> Unit)?) -> Unit = when {
-            isBlindingImpactDelta -> BlindingImpactCupRepository::updateCupScore
-            isImpactDelta -> ImpactCupRepository::updateCupScore
-            isBlindingExtractionDelta -> BlindingExtractionCupRepository::updateCupScore
-            isExtractionDelta -> ExtractionCupRepository::updateCupScore
-            isBlindingDelta -> BlindingAdditionCupRepository::updateCupScore
-            else -> AbacusCupRepository::updateCupScore
-        }
+        val newScore = (GlobalValues.currentLessonOldCupScore ?: 0) + delta
+        val payloads = GlobalValues.pendingCupBadgePayloads
 
-        // İşlem asenkron. Tıklamaları güvenli şekilde engelle ve 5s failsafe koy.
-        addLaunchTouchBlocker()
-        val failsafeRunnable = Runnable { releaseLaunchTouchBlocker() }
-        view?.postDelayed(failsafeRunnable, 5000L)
-
-        updateFn(delta) { oldScore, newScore ->
-            if (!isAdded) {
-                releaseLaunchTouchBlocker()
-                return@updateFn
+        if (payloads == null) {
+            // Asenkron işlem (Firestore) internet hızı nedeniyle henüz bitmemiş, bitmesini bekle
+            addLaunchTouchBlocker()
+            val handler = android.os.Handler(android.os.Looper.getMainLooper())
+            var attempts = 0
+            val runnable = object : Runnable {
+                override fun run() {
+                    val p = GlobalValues.pendingCupBadgePayloads
+                    if (p != null) {
+                        releaseLaunchTouchBlocker()
+                        GlobalValues.pendingCupBadgePayloads = null
+                        if (p.isNotEmpty() && isAdded) {
+                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
+                            GlobalValues.cupPathDialogRef = null
+                            BadgeProgressFirestore.openBadgeCelebration(
+                                requireActivity().supportFragmentManager,
+                                p
+                            )
+                        } else {
+                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
+                        }
+                    } else {
+                        attempts++
+                        if (attempts < 100) { // Maksimum 5 saniye bekle (50ms * 100)
+                            handler.postDelayed(this, 50)
+                        } else {
+                            // Timeout: çok uzun sürdü, es geç
+                            releaseLaunchTouchBlocker()
+                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
+                        }
+                    }
+                }
             }
-            view?.removeCallbacks(failsafeRunnable)
-
-            // DINO Rozeti Kontrolü
-            if (updateFn == AbacusCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncDinoProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
-            } else if (updateFn == ExtractionCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncCrocodileProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
-            } else if (updateFn == ImpactCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncGoatProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
-            } else if (updateFn == BlindingAdditionCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncEagleProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
-            } else if (updateFn == BlindingImpactCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncTurtleProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
-            } else if (updateFn == BlindingExtractionCupRepository::updateCupScore) {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-                    BadgeProgressFirestore.syncFlyProgressAndDetectLevelUp(uid, newScore) { payloads ->
-                        if (payloads.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                payloads
-                            )
-                            view?.postDelayed({ releaseLaunchTouchBlocker() }, 500)
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate()
-                            releaseLaunchTouchBlocker()
-                        }
-                    }
-                } ?: run {
-                    loadAndShowCupPathDialogAfterCupUpdate()
-                    releaseLaunchTouchBlocker()
-                }
+            handler.postDelayed(runnable, 50)
+        } else {
+            GlobalValues.pendingCupBadgePayloads = null
+            if (payloads.isNotEmpty() && isAdded) {
+                GlobalValues.cupPathDialogRef?.get()?.dismiss()
+                GlobalValues.cupPathDialogRef = null
+                BadgeProgressFirestore.openBadgeCelebration(
+                    requireActivity().supportFragmentManager,
+                    payloads
+                )
             } else {
-                loadAndShowCupPathDialogAfterCupUpdate()
-                releaseLaunchTouchBlocker()
+                loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
             }
         }
+
         return true
     }
 
+
     /** Kupa güncellemesinden sonra panel_cup_path'i güncel verilerle açar. */
-    private fun loadAndShowCupPathDialogAfterCupUpdate() {
+    private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, updatedScore: Int? = null) {
         if (!isAdded) return
+        val dialog = GlobalValues.cupPathDialogRef?.get()
+        if (dialog != null) {
+            // Eskiden olduğu gibi gizlenmiş dialogu anında aç
+            dialog.show()
+            // Dokunmatik kilidini kaldır (eğer derse girilirken konulmuşsa)
+            dialog.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+            // Arka planda verileri çekip dialogu güncelle
+            updateExistingCupPathDialog(dialog, updatedCardId, updatedScore)
+        } else {
+            // Eğer referans kayıpsa baştan yükle
+            showCupPathPanel()
+        }
+    }
+
+    private fun updateExistingCupPathDialog(dialog: android.app.Dialog, updatedCardId: Int? = null, updatedScore: Int? = null) {
+        val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
+        val contentView = dialog.findViewById<View>(bottomSheetId) ?: return
         val context = requireContext()
+
+        // 1. Kilit/Aktif durumlarını güncelle
         GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
             val active1 = items1.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
@@ -1596,13 +1550,82 @@ class TasksFragment : Fragment() {
                             val active5 = items5.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
                             GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
                                 val active6 = items6.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
-                                if (isAdded) {
-                                    displayCupPathDialog(active1, active2, active3, active4, active5, active6)
+                                if (isAdded && dialog.isShowing) {
+                                    requireActivity().runOnUiThread {
+                                        setupCupPathCard(contentView, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, active1)
+                                        setupCupPathCard(contentView, R.id.card2View, R.id.card2Title, R.id.card2CupIcon, R.id.card2CupValue, R.id.card2DinoAnim, active2)
+                                        setupCupPathCard(contentView, R.id.card3View, R.id.card3Title, R.id.card3CupIcon, R.id.card3CupValue, R.id.card3DinoAnim, active3)
+                                        setupCupPathCard(contentView, R.id.card4View, R.id.card4Title, R.id.card4CupIcon, R.id.card4CupValue, R.id.card4DinoAnim, active4)
+                                        setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
+                                        setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
+
+                                        contentView.findViewById<View>(R.id.card1View)?.apply { isClickable = active1; isEnabled = active1 }
+                                        contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = active2; isEnabled = active2 }
+                                        contentView.findViewById<View>(R.id.card3View)?.apply { isClickable = active3; isEnabled = active3 }
+                                        contentView.findViewById<View>(R.id.card4View)?.apply { isClickable = active4; isEnabled = active4 }
+                                        contentView.findViewById<View>(R.id.card5View)?.apply { isClickable = active5; isEnabled = active5 }
+                                        contentView.findViewById<View>(R.id.card6View)?.apply { isClickable = active6; isEnabled = active6 }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        // 2. Kupa değerlerini güncelle
+        val card1CupValue = contentView.findViewById<android.widget.TextView>(R.id.card1CupValue)
+        if (updatedCardId == R.id.card1CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card1CupValue?.text = updatedScore.toString(); card1CupValue?.visibility = View.VISIBLE }
+        } else {
+            AbacusCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card1CupValue?.text = score.toString(); card1CupValue?.visibility = View.VISIBLE }
+            }
+        }
+        
+        val card4CupValue = contentView.findViewById<android.widget.TextView>(R.id.card4CupValue)
+        if (updatedCardId == R.id.card4CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card4CupValue?.text = updatedScore.toString(); card4CupValue?.visibility = View.VISIBLE }
+        } else {
+            BlindingAdditionCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card4CupValue?.text = score.toString(); card4CupValue?.visibility = View.VISIBLE }
+            }
+        }
+        
+        val card2CupValue = contentView.findViewById<android.widget.TextView>(R.id.card2CupValue)
+        if (updatedCardId == R.id.card2CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card2CupValue?.text = updatedScore.toString(); card2CupValue?.visibility = View.VISIBLE }
+        } else {
+            ExtractionCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card2CupValue?.text = score.toString(); card2CupValue?.visibility = View.VISIBLE }
+            }
+        }
+        
+        val card5CupValue = contentView.findViewById<android.widget.TextView>(R.id.card5CupValue)
+        if (updatedCardId == R.id.card5CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card5CupValue?.text = updatedScore.toString(); card5CupValue?.visibility = View.VISIBLE }
+        } else {
+            BlindingExtractionCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card5CupValue?.text = score.toString(); card5CupValue?.visibility = View.VISIBLE }
+            }
+        }
+        
+        val card3CupValue = contentView.findViewById<android.widget.TextView>(R.id.card3CupValue)
+        if (updatedCardId == R.id.card3CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card3CupValue?.text = updatedScore.toString(); card3CupValue?.visibility = View.VISIBLE }
+        } else {
+            ImpactCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card3CupValue?.text = score.toString(); card3CupValue?.visibility = View.VISIBLE }
+            }
+        }
+        
+        val card6CupValue = contentView.findViewById<android.widget.TextView>(R.id.card6CupValue)
+        if (updatedCardId == R.id.card6CupValue && updatedScore != null) {
+            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card6CupValue?.text = updatedScore.toString(); card6CupValue?.visibility = View.VISIBLE }
+        } else {
+            BlindingImpactCupRepository.fetchCupScore { score ->
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card6CupValue?.text = score.toString(); card6CupValue?.visibility = View.VISIBLE }
             }
         }
     }
@@ -1675,9 +1698,8 @@ class TasksFragment : Fragment() {
         dialog.setContentView(contentView)
 
         dialog.setOnShowListener {
-            val bottomSheet = dialog.findViewById<View>(
-                com.google.android.material.R.id.design_bottom_sheet
-            )
+            val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
+            val bottomSheet = dialog.findViewById<View>(bottomSheetId)
             bottomSheet?.let {
                 it.setBackgroundResource(android.R.color.transparent)
                 val behavior = BottomSheetBehavior.from(it)

@@ -1042,6 +1042,11 @@ class AbacusBeadController(
         updateTopAppearance(rod)
     }
 
+    fun forceRecaptureInitialPositions() {
+        initialPositionsCaptured = false
+        captureInitialPositionsIfNeeded()
+    }
+
     private fun captureInitialPositionsIfNeeded() {
         if (initialPositionsCaptured) return
         for (rod in 0..4) {

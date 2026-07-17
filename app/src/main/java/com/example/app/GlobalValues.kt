@@ -100,6 +100,16 @@ object GlobalValues {
     var pendingCupDelta: Int? = null
 
     /**
+     * Rozet kontrolü için asenkron Firestore işleminden dönen rozet bilgileri.
+     */
+    var pendingCupBadgePayloads: List<com.example.app.BadgeLevelUpPayload>? = null
+
+    /**
+     * Derse girerken bilinen mevcut kupa skoru (Rozet pre-calculation için).
+     */
+    var currentLessonOldCupScore: Int? = null
+
+    /**
      * Blinding kupa modu (card4View) dersi tamamlandığında burada delta bırakılır.
      * TasksFragment onResume / onHiddenChanged'de tüketilir.
      */

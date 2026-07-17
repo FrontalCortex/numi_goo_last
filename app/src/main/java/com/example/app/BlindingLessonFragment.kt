@@ -456,6 +456,8 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun showAbacusSettingsPanel() {
+        resetAbacus()
+        abacusController.setEnabled(false)
         isAbacusSettingsPanelOpen = true
         binding.abacusSettingsPanel.animate()
             .translationX(0f)
@@ -465,6 +467,7 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun hideAbacusSettingsPanel() {
+        abacusController.setEnabled(true)
         isAbacusSettingsPanelOpen = false
         val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
         binding.abacusSettingsPanel.animate()
@@ -701,6 +704,7 @@ class BlindingLessonFragment : Fragment() {
                     savedBeadMarginTopDp * density
                 )
                 abacusController.computeMovementDistancesFromLayout(force = true)
+                abacusController.forceRecaptureInitialPositions()
             }
             
             hideAbacusSettingsPanel()
@@ -860,6 +864,7 @@ class BlindingLessonFragment : Fragment() {
                             } else {
                                 GlobalValues.pendingCupDelta = delta
                             }
+                            BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
                             showResultPanel(isCorrect)
                             controlNumber = 0
                             binding.numberInput.setText("")
@@ -951,6 +956,7 @@ class BlindingLessonFragment : Fragment() {
                 } else {
                     GlobalValues.pendingCupDelta = -lossDelta
                 }
+                BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
             }
             closeFragment()
         }
@@ -981,6 +987,7 @@ class BlindingLessonFragment : Fragment() {
                         } else {
                             GlobalValues.pendingCupDelta = -lossDelta
                         }
+                        BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
                     }
                     closeFragment()
                 }
@@ -1834,6 +1841,7 @@ class BlindingLessonFragment : Fragment() {
                 } else {
                     GlobalValues.pendingCupDelta = AbacusCupRepository.CUP_STEP
                 }
+                BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
                 closeFragment()
             }
             isRacePanelLesson() || (lessonItem.type == LessonItem.TYPE_CHEST && globalPartId !in setOf(4, 5)) -> {
@@ -1900,6 +1908,7 @@ class BlindingLessonFragment : Fragment() {
             } else {
                 GlobalValues.pendingCupDelta = -AbacusCupRepository.CUP_STEP
             }
+            BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
             closeFragment()
             return
         }

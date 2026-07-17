@@ -106,6 +106,38 @@
 
     </FrameLayout>
 
+    <LinearLayout
+        android:id="@+id/cupDigitContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/seekBarContainer">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Basamak Sayısı:"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="12dp" />
+
+        <Spinner
+            android:id="@+id/cupDigitSpinner"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:backgroundTint="@android:color/white"
+            android:spinnerMode="dropdown" />
+    </LinearLayout>
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/cupDifficultyStartButton"
         android:layout_width="wrap_content"
@@ -125,6 +157,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/seekBarContainer" />
+        app:layout_constraintTop_toBottomOf="@id/cupDigitContainer" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

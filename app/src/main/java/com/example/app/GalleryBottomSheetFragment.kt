@@ -113,7 +113,9 @@ class GalleryBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun setupBottomSheetBehavior() {
         dialog?.setOnShowListener { dialogInterface ->
-            val bottomSheet = (dialogInterface as? android.app.Dialog)?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            val dialog = dialogInterface as? android.app.Dialog
+            val bottomSheetId = dialog?.context?.resources?.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName) ?: 0
+            val bottomSheet = dialog?.findViewById<View>(bottomSheetId)
             bottomSheet?.let {
                 val behavior = BottomSheetBehavior.from(it)
                 behavior.isFitToContents = true
