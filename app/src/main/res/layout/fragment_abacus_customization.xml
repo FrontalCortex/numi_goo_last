@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color">
+
+    <!-- ── Back button ──────────────────────────────────────────────────── -->
+    <ImageButton
+        android:id="@+id/customizationBackButton"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="10dp"
+        android:background="@drawable/fab_background"
+        android:contentDescription="@null"
+        android:padding="8dp"
+        android:src="@drawable/cross"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- ── Title ─────────────────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/customizationTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="10dp"
+        android:gravity="center"
+        android:text="Abaküs Özelleştir"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/customizationBackButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/customizationBackButton"
+        app:layout_constraintTop_toTopOf="@id/customizationBackButton" />
+
+    <!-- ── Preview area ─────────────────────────────────────────────────── -->
+    <FrameLayout
+        android:id="@+id/previewContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:minHeight="120dp"
+        android:padding="12dp"
+        app:layout_constraintTop_toBottomOf="@id/customizationBackButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Inflated by the Fragment: layout_customization_preview.xml -->
+    </FrameLayout>
+
+    <!-- ── Tab strip ─────────────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/tabStrip"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:layout_marginTop="4dp"
+        android:background="#1A1F22"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/previewContainer">
+
+        <ImageView
+            android:id="@+id/tab1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:padding="12dp"
+            android:src="@drawable/bead"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/tab2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:padding="12dp"
+            android:src="@drawable/abacus_color_tab_ic"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/tab3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:padding="12dp"
+            android:src="@drawable/abacus_frame_tab_ic"
+            android:scaleType="fitCenter" />
+
+        <ImageView
+            android:id="@+id/tab4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:contentDescription="@null"
+            android:padding="12dp"
+            android:src="@drawable/abacus_frame_color_tab_ic"
+            android:scaleType="fitCenter" />
+    </LinearLayout>
+
+    <!-- Tab indicator (coloured underline for the active tab) -->
+    <View
+        android:id="@+id/tabIndicator"
+        android:layout_width="0dp"
+        android:layout_height="3dp"
+        android:background="#FFFFD600"
+        app:layout_constraintTop_toBottomOf="@id/tabStrip"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ── Tab content area ────────────────────────────────────────────── -->
+    <FrameLayout
+        android:id="@+id/tabContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/tabIndicator"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

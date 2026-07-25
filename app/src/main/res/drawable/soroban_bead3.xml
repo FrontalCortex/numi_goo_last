@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış siyah çerçeve (Pill shape) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36,0 L 84,0 A 36,36 0 0,1 120,36 A 36,36 0 0,1 84,72 L 36,72 A 36,36 0 0,1 0,36 A 36,36 0 0,1 36,0 Z" />
+
+    <!-- Mücevher Zemin Rengi (Yakut Kırmızısı - Radial Gradient) -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="60"
+                android:centerY="36"
+                android:gradientRadius="60">
+                <item android:color="#FF5252" android:offset="0.0" />
+                <item android:color="#D50000" android:offset="0.6" />
+                <item android:color="#880000" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- İç Faset (Düz Tepe - Hafif parlak) -->
+    <path
+        android:fillColor="#1AFFFFFF"
+        android:pathData="M 40,20 L 80,20 A 16,16 0 0,1 96,36 A 16,16 0 0,1 80,52 L 40,52 A 16,16 0 0,1 24,36 A 16,16 0 0,1 40,20 Z" />
+        
+    <!-- Üst Işık Yansıması (Mücevher eğimi - Keskin Beyazlık) -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 L 96,36 A 16,16 0 0,0 80,20 L 40,20 A 16,16 0 0,0 24,36 L 12,36 A 24,24 0 0,1 36,12 Z" />
+
+    <!-- Çapraz Kristal Kesik (Işık parlaması) -->
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M 16,28 L 50,12 L 70,12 L 24,45 Z" />
+
+    <!-- Minik Elmas Parıltısı (Işık Yıldızı - Sol Üst) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 34,16 L 36,22 L 42,24 L 36,26 L 34,32 L 32,26 L 26,24 L 32,22 Z" />
+
+</vector>

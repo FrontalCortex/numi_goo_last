@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Preview abacus for AbacusCustomizationFragment.
+  Dimensions and spacing are IDENTICAL to fragment_abacus.xml so the
+  preview matches the real abacus exactly (rod width 45dp, padding 20/24dp).
+  Bead IDs follow the same rod{n}_bead_bottom{1..4} / rod{n}_bead_top / rod{n}_barrier
+  convention so AbacusBeadController.setup() finds them automatically.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/abacusContainer"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:background="@drawable/abacus_frame_bg2"
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp">
+
+    <LinearLayout
+        android:id="@+id/abacusLinear"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- ── Rod 0 ─────────────────────────────────────────────────────── -->
+        <FrameLayout
+            android:id="@+id/rod0"
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+            <View
+                android:layout_width="@dimen/tutorial_abacus_line_width"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#1a1a1a" />
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom4"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom3"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom2"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod0_bead_bottom1"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <View
+                android:id="@+id/rod0_barrier"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                android:background="@drawable/abacus_horizontal_bar" />
+
+            <ImageView
+                android:id="@+id/rod0_bead_top"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- ── Rod 1 ─────────────────────────────────────────────────────── -->
+        <FrameLayout
+            android:id="@+id/rod1"
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+            <View
+                android:layout_width="@dimen/tutorial_abacus_line_width"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#1a1a1a" />
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom4"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom3"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom2"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod1_bead_bottom1"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <View
+                android:id="@+id/rod1_barrier"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                android:background="@drawable/abacus_horizontal_bar" />
+
+            <ImageView
+                android:id="@+id/rod1_bead_top"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- ── Rod 2 ─────────────────────────────────────────────────────── -->
+        <FrameLayout
+            android:id="@+id/rod2"
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+            <View
+                android:layout_width="@dimen/tutorial_abacus_line_width"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#1a1a1a" />
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom4"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom3"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom2"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod2_bead_bottom1"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <View
+                android:id="@+id/rod2_barrier"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                android:background="@drawable/abacus_horizontal_bar" />
+
+            <ImageView
+                android:id="@+id/rod2_bead_top"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- ── Rod 3 ─────────────────────────────────────────────────────── -->
+        <FrameLayout
+            android:id="@+id/rod3"
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+            <View
+                android:layout_width="@dimen/tutorial_abacus_line_width"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#1a1a1a" />
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom4"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom3"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom2"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod3_bead_bottom1"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <View
+                android:id="@+id/rod3_barrier"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                android:background="@drawable/abacus_horizontal_bar" />
+
+            <ImageView
+                android:id="@+id/rod3_bead_top"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- ── Rod 4 ─────────────────────────────────────────────────────── -->
+        <FrameLayout
+            android:id="@+id/rod4"
+            android:layout_width="45dp"
+            android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+            <View
+                android:layout_width="@dimen/tutorial_abacus_line_width"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:background="#1a1a1a" />
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom4"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom3"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom2"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/rod4_bead_bottom1"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+
+            <View
+                android:id="@+id/rod4_barrier"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tutorial_abacus_barrier_height"
+                android:layout_gravity="center_vertical|center_horizontal"
+                android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                android:background="@drawable/abacus_horizontal_bar" />
+
+            <ImageView
+                android:id="@+id/rod4_bead_top"
+                android:layout_width="@dimen/tutorial_abacus_bead_size"
+                android:layout_height="@dimen/tutorial_abacus_bead_size"
+                android:layout_gravity="top|center_horizontal"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+    </LinearLayout>
+</FrameLayout>

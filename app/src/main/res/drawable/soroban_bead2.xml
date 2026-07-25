@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış siyah çerçeve (Pill shape, daha yüksek) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36,0
+                          L 84,0
+                          A 36,36 0 0,1 120,36
+                          A 36,36 0 0,1 84,72
+                          L 36,72
+                          A 36,36 0 0,1 0,36
+                          A 36,36 0 0,1 36,0
+                          Z" />
+
+    <!-- İç kısım tam zemin (Instagram Gökkuşağı) -->
+    <path
+        android:pathData="M 36,12
+                          L 84,12
+                          A 24,24 0 0,1 108,36
+                          A 24,24 0 0,1 84,60
+                          L 36,60
+                          A 24,24 0 0,1 12,36
+                          A 24,24 0 0,1 36,12
+                          Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="72"
+                android:endX="120"
+                android:endY="0">
+                <item android:color="#FEDA77" android:offset="0.0" />
+                <item android:color="#F58529" android:offset="0.25" />
+                <item android:color="#DD2A7B" android:offset="0.5" />
+                <item android:color="#8134AF" android:offset="0.75" />
+                <item android:color="#515BD4" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+</vector>

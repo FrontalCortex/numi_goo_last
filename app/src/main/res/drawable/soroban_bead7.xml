@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış sınır (Tamamen siyah boşluk) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36,0 L 84,0 A 36,36 0 0,1 120,36 A 36,36 0 0,1 84,72 L 36,72 A 36,36 0 0,1 0,36 A 36,36 0 0,1 36,0 Z" />
+
+    <!-- Derin Uzay Zemin (Lacivert ve Koyu Mor Sweep Gradient) -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="sweep"
+                android:centerX="60"
+                android:centerY="36">
+                <item android:color="#070216" android:offset="0.0" />
+                <item android:color="#1B0434" android:offset="0.25" />
+                <item android:color="#061B3B" android:offset="0.5" />
+                <item android:color="#1E072E" android:offset="0.75" />
+                <item android:color="#070216" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Bulutsu / Nebula Işıltısı (Merkezden yayılan pembe/mor aura) -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="60"
+                android:centerY="36"
+                android:gradientRadius="40">
+                <item android:color="#4DFF00FF" android:offset="0.0" />
+                <item android:color="#00000000" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Büyük Altın Yıldız -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M 49,18 L 50,24 L 56,25 L 50,26 L 49,32 L 48,26 L 42,25 L 48,24 Z" />
+
+    <!-- Orta Beyaz Yıldız -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 69.5,40 L 70,43 L 73,43.5 L 70,44 L 69.5,47 L 69,44 L 66,43.5 L 69,43 Z" />
+
+    <!-- Minik Mavi Yıldız -->
+    <path
+        android:fillColor="#88CCFF"
+        android:pathData="M 79.5,22 L 80,23.5 L 81.5,24 L 80,24.5 L 79.5,26 L 79,24.5 L 77.5,24 L 79,23.5 Z" />
+
+    <!-- Uzay Tozu (Uzak Yıldız Noktaları) -->
+    <path android:fillColor="#FFFFFF" android:pathData="M 40,46 h1.5 v1.5 h-1.5 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M 60,20 h1 v1 h-1 z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M 85,38 h1.5 v1.5 h-1.5 z" />
+    <path android:fillColor="#B3FFFFFF" android:pathData="M 55,50 h1 v1 h-1 z" />
+    <path android:fillColor="#80FFFFFF" android:pathData="M 28,30 h1.2 v1.2 h-1.2 z" />
+    <path android:fillColor="#80FFFFFF" android:pathData="M 92,26 h1 v1 h-1 z" />
+
+    <!-- Atmosferik Gezegen Kenarı (Turkuaz İnce Işık) -->
+    <path
+        android:strokeWidth="1"
+        android:strokeColor="#6600FFFF"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z" />
+
+</vector>

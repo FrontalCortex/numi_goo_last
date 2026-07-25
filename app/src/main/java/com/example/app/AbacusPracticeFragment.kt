@@ -259,11 +259,28 @@ class AbacusPracticeFragment : Fragment() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
         // Enter animasyonu bitene kadar tüm dokunmaları bloklu tut.
         binding.root.postDelayed({ releaseLaunchTouchBlocker() }, 320)
+        applyCustomization()
     }
 
     override fun onPause() {
         previousSoftInputMode?.let { requireActivity().window.setSoftInputMode(it) }
         super.onPause()
+    }
+
+    /**
+     * Applies abacus customization preferences (frame background + bead colours).
+     * Called in onResume so changes from [AbacusCustomizationFragment] take effect
+     * when the user navigates back.
+     */
+    private fun applyCustomization() {
+        if (view == null) return
+        try {
+            binding.abacusContainer.background =
+                com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(requireContext())
+            abacusController.refreshAll()
+        } catch (_: Exception) {
+            // Ignore if binding or controller not yet ready
+        }
     }
 
     private fun ensureAbacusMetricsIfVisible() {

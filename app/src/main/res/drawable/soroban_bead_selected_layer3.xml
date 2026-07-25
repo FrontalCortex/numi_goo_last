@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soroban bead selected — layer 3: right medium red highlight -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <path
+        android:fillColor="#731616"
+        android:pathData="M 60,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 60,60 Q 40,36 60,12 Z" />
+</vector>

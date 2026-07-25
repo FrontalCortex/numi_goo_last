@@ -14,6 +14,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.functions.FirebaseFunctions
 import com.example.app.UserWalletFirestore
 
@@ -153,6 +154,33 @@ class AuthManager {
         return appContext
             .getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
             .getBoolean("first_tutorial_shown", false)
+    }
+
+    fun checkSkipStepTutorialShown(callback: (Boolean) -> Unit) {
+        val uid = auth.currentUser?.uid ?: ""
+        if (uid.isEmpty()) {
+            callback(true) // Kullanıcı yoksa gösterilmiş say
+            return
+        }
+        firestore.collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists() && doc.contains("skip_step_tutorial_shown")) {
+                    callback(doc.getBoolean("skip_step_tutorial_shown") ?: false)
+                } else {
+                    callback(false)
+                }
+            }
+            .addOnFailureListener {
+                callback(true)
+            }
+    }
+
+    fun setSkipStepTutorialShown() {
+        val uid = auth.currentUser?.uid ?: ""
+        if (uid.isNotEmpty()) {
+            firestore.collection("users").document(uid)
+                .set(mapOf("skip_step_tutorial_shown" to true), SetOptions.merge())
+        }
     }
 
     /**

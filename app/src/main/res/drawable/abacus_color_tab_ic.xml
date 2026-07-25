@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış siyah çerçeve (Pill shape, daha yüksek) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36,0
+                          L 84,0
+                          A 36,36 0 0,1 120,36
+                          A 36,36 0 0,1 84,72
+                          L 36,72
+                          A 36,36 0 0,1 0,36
+                          A 36,36 0 0,1 36,0
+                          Z" />
+
+    <!-- İç kısım tam zemin (Koyu gri) -->
+    <path
+        android:fillColor="#737373"
+        android:pathData="M 36,12
+                          L 84,12
+                          A 24,24 0 0,1 108,36
+                          A 24,24 0 0,1 84,60
+                          L 36,60
+                          A 24,24 0 0,1 12,36
+                          A 24,24 0 0,1 36,12
+                          Z" />
+
+    <!-- İç sağ kısım (Açık gri) - Sol çizgisi kavisli (oval) -->
+    <path
+        android:fillColor="#8C8C8C"
+        android:pathData="M 60,12
+                          L 84,12
+                          A 24,24 0 0,1 108,36
+                          A 24,24 0 0,1 84,60
+                          L 60,60
+                          Q 40,36 60,12
+                          Z" />
+
+    <!-- Sağ alt köşede Renk Paleti (Kullanıcının Yeni SVG'si) -->
+    <!-- Boyutu %45 büyütüldü (scaleX=0.13). Taşmayı önlemek için x=67, y=33.5 noktasına çekildi. Y ekseni esnemesi dengelendi (scaleY=0.1017) -->
+    <group
+        android:translateX="67"
+        android:translateY="33.5"
+        android:scaleX="0.13"
+        android:scaleY="0.1017">
+        <path
+            android:fillColor="#ffffff"
+            android:pathData="M402 248.77c0 34.03-13.8 64.84-36.1 87.15-22.31 22.3-53.12 36.1-87.15 36.1-29.52 0-56.63-10.39-77.85-27.7-21.19 17.22-48.21 27.54-77.65 27.54-34.02 0-64.84-13.8-87.15-36.1C13.8 313.45 0 282.64 0 248.61c0-34.04 13.8-64.85 36.1-87.16 10-9.99 21.7-18.28 34.64-24.38-.51-4.53-.77-9.14-.77-13.82 0-34.03 13.8-64.84 36.11-87.15C128.38 13.8 159.2 0 193.23 0c34.03 0 64.85 13.8 87.15 36.1 22.31 22.31 36.1 53.12 36.1 87.15 0 2.71-.09 5.4-.26 8.07 18.97 6.04 35.94 16.55 49.68 30.3 22.3 22.3 36.1 53.11 36.1 87.15z"/>
+        <path
+            android:fillColor="#5EAC24"
+            android:pathData="M186.86 330.91c-17.58 13.61-39.65 21.71-63.61 21.71-57.45 0-104.02-46.57-104.02-104.01 0-39.86 22.42-74.47 55.33-91.94 5.79 20.6 16.8 39.02 31.52 53.74 13.74 13.74 30.71 24.25 49.67 30.29-.17 2.67-.26 5.36-.26 8.07 0 31.54 11.87 60.34 31.37 82.14z"/>
+        <path
+            android:fillColor="#ED1C24"
+            android:pathData="M382.77 248.77c0 57.45-46.57 104.01-104.02 104.01-57.45 0-104.02-46.56-104.02-104.01 0-1.22.03-2.43.07-3.63 6.01.9 12.17 1.37 18.43 1.37 34.03 0 64.85-13.8 87.15-36.1 16.12-16.13 27.81-36.71 33.04-59.74 40.4 14.28 69.35 52.81 69.35 98.1z"/>
+        <path
+            android:fillColor="#2488FF"
+            android:pathData="M297.25 123.25c0 57.45-46.57 104.02-104.02 104.02-57.45 0-104.02-46.57-104.02-104.02 0-57.45 46.57-104.01 104.02-104.01 57.45 0 104.02 46.56 104.02 104.01z"/>
+    </group>
+
+</vector>

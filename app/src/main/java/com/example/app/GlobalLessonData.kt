@@ -679,6 +679,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
+                    abacusGuideNumber = 6,
                     finishStepNumber = 1005,
                     startStepNumber = 1005,
                     tutorialIsFinish = true,

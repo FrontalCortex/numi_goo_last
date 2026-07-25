@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soroban bead — layer 2: inner dark gray fill -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <path
+        android:fillColor="#737373"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z" />
+</vector>

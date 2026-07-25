@@ -1,0 +1,154 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="1dp"
+    android:height="1dp"
+    android:viewportWidth="1000"
+    android:viewportHeight="1000">
+
+    <!-- Dış siyah sınır -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 100,0 L 900,0 A 100,100 0 0 1 1000,100 L 1000,900 A 100,100 0 0 1 900,1000 L 100,1000 A 100,100 0 0 1 0,900 L 0,100 A 100,100 0 0 1 100,0 Z" />
+
+    <!-- Ahşap çerçeve -->
+    <path
+        android:fillColor="#DDA379"
+        android:pathData="M 100,14 L 900,14 A 86,86 0 0 1 986,100 L 986,900 A 86,86 0 0 1 900,986 L 100,986 A 86,86 0 0 1 14,900 L 14,100 A 86,86 0 0 1 100,14 Z" />
+
+    <!-- ÜST KENAR (10 KALP) -->
+    <group android:translateX="80.0" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="168.9" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="257.8" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="346.7" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="435.6" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="524.4" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="613.3" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="702.2" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="791.1" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="880.0" android:translateY="22.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+
+    <!-- ALT KENAR (10 KALP) -->
+    <group android:translateX="80.0" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="168.9" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="257.8" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="346.7" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="435.6" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="524.4" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="613.3" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="702.2" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="791.1" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="880.0" android:translateY="938.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+
+    <!-- SOL KENAR (10 KALP) -->
+    <group android:translateX="22.0" android:translateY="80.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="168.9" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="257.8" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="346.7" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="435.6" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="524.4" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="613.3" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="702.2" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="791.1" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="22.0" android:translateY="880.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+
+    <!-- SAĞ KENAR (10 KALP) -->
+    <group android:translateX="938.0" android:translateY="80.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="168.9" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="257.8" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="346.7" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="435.6" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="524.4" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="613.3" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="702.2" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="791.1" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:fillType="evenOdd" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+    <group android:translateX="938.0" android:translateY="880.0" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#E63946" android:fillType="evenOdd" android:pathData="M25 39.7l-.6-.5C11.5 28.7 8 25 8 19c0-5 4-9 9-9 4.1 0 6.4 2.3 8 4.1 1.6-1.8 3.9-4.1 8-4.1 5 0 9 4 9 9 0 6-3.5 9.7-16.4 20.2l-.6.5z" />
+    </group>
+
+    <!-- İç siyah sınır -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 100,70 L 900,70 A 30,30 0 0 1 930,100 L 930,900 A 30,30 0 0 1 900,930 L 100,930 A 30,30 0 0 1 70,900 L 70,100 A 30,30 0 0 1 100,70 Z" />
+
+    <!-- İç arka plan -->
+    <path
+        android:fillColor="#212226"
+        android:pathData="M 100,84 L 900,84 A 16,16 0 0 1 916,100 L 916,900 A 16,16 0 0 1 900,916 L 100,916 A 16,16 0 0 1 84,900 L 84,100 A 16,16 0 0 1 100,84 Z" />
+</vector>

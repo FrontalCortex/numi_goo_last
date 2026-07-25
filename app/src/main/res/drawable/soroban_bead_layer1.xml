@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soroban bead — layer 1: outer black pill shell -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 36,0 L 84,0 A 36,36 0 0,1 120,36 A 36,36 0 0,1 84,72 L 36,72 A 36,36 0 0,1 0,36 A 36,36 0 0,1 36,0 Z" />
+</vector>

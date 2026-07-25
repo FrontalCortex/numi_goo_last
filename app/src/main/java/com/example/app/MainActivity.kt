@@ -740,6 +740,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                     R.id.profile ->
                         if (currentFragment is ProfileFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(ProfileFragment())
+                    R.id.shop ->
+                        if (currentFragment is ShopFragment) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(ShopFragment())
                     R.id.notification -> {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
                         // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma

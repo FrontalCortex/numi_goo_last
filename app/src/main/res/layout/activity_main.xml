@@ -219,7 +219,7 @@
 
     </LinearLayout>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
+    <com.example.app.CustomBottomNavigationView
         android:id="@+id/bottomNavigationID"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

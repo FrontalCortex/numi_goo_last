@@ -44,6 +44,14 @@ import com.example.app.abacus.AbacusBeadMetrics
 class AbacusFragment : Fragment() {
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
     private val abacusDismissSlideMs = 300L
+    private var isAbacusSettingsPanelOpen = false
+    private var savedAbacusScaleX = 1.0f
+    private var savedAbacusScaleY = 1.0f
+    private var savedAbacusMarginBottomDp = 0f
+    private var savedBeadScaleX = 1.0f
+    private var savedBeadScaleY = 1.0f
+    private var savedBeadMarginTopDp = 0f
+    private var savedBeadMarginBottomDp = 0f
     private var isAbacusClosing = false
 
     private var mediaPlayer: MediaPlayer? = null
@@ -173,25 +181,7 @@ class AbacusFragment : Fragment() {
     }
 
     // Rehber paneli sistemi
-    data class GuideContent(
-        val imageResource: Int,
-        val text: String,
-        val onContentShown: (() -> Unit)? = null, // Her içerik gösterildiğinde çağrılacak callback
-        val bubbleAnimationTarget: View? = null, // Baloncuk animasyonu uygulanacak widget (opsiyonel)
-        val bubbleAnimationColor: Int? = null, // Baloncuk animasyonu sırasında kullanılacak renk (opsiyonel)
-        val bubbleAnimationTintLight: Int? = null, // ImageView tint nefes animasyonu için açık renk (opsiyonel)
-        val bubbleAnimationMaxScale: Float = 1.4f, // Baloncuk animasyonunun maksimum büyüme değeri (varsayılan: 1.4f)
-        val beadIds: List<String>? = null, // Hareket ettirilecek boncuk ID'leri (opsiyonel) - adım gösterildiğinde çalışır
-        val backBeadIds: List<String>? = null, // Geri gidildiğinde tetiklenecek boncuk ID'leri (null ise [beadIds] kullanılır)
-        val finishBeadIds: List<String>? = null, // Adım biterken hareket ettirilecek boncuk ID'leri (opsiyonel)
-        val requiredClickTarget: View? = null, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın (opsiyonel)
-        val requiredClickAdvancesGuide: Boolean = false, // true → tıklamada rehber kapanmaz, sonraki adıma geçilir
-        val waitForRulesTableSelection: Boolean = false, // true → adım RulesFragment tablo seçimiyle tamamlanır
-        val soundResource: Int? = null, // Ses dosyası resource ID'si
-        val useTypewriterEffect: Boolean = false, // Typewriter effect kullanılsın mı?
-        val typewriterSpeed: Long = 40L, // Harf başına milisaniye
-    )
-    
+
     private val guideContentList = mutableListOf<GuideContent>()
     private var currentGuideIndex = 0
     private lateinit var panelContent: View
@@ -202,6 +192,7 @@ class AbacusFragment : Fragment() {
     private var currentAnimatedView: View? = null // Şu anda animasyon uygulanan view
     private var originalTextColor: Int? = null // TextView için orijinal renk
     private var originalImageTintList: ColorStateList? = null // ImageView için orijinal tint
+    private var originalBackgroundTintList: ColorStateList? = null // Arka plan tint listesi için
     private var bubbleImageTintBreathApplied = false // imageTintList nefes animasyonu aktif mi
     private var guideTypewriterRunnable: Runnable? = null
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
@@ -232,6 +223,11 @@ class AbacusFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         abacusMetricsInitialized = false
         findIDs()
+        
+        binding.abacusModeButton.setOnClickListener {
+            abacusModeButtonClick()
+        }
+        setupAbacusSettingsPanel()
         //global lessonItem alınıyor
         rulesBookButton = binding.rulesBookButton
         rulesPanelButton = binding.rulesPanelButton
@@ -323,12 +319,20 @@ class AbacusFragment : Fragment() {
 
         if(lessonItem.abacusGuideNumber != null){
             if(lessonItem.currentStep == 1){
-                val guideContents = getGuideContentsForNumber(lessonItem.abacusGuideNumber!!)
+                val guideContents = SharedGuideHelper.getGuideContentsForNumber(
+                    guideNumber = lessonItem.abacusGuideNumber!!,
+                    firstNumberText = firstNumberText,
+                    secondNumberText = secondNumberText,
+                    kontrolButton = controlButton,
+                    rulesPanelButton = rulesPanelButton,
+                    rulesBookButton = rulesBookButton,
+                    skipStepButton = fabHint,
+                    abacusModeButton = binding.abacusModeButton
+                )
                 // Başlangıçta panel ve guide nav butonları gizli olsun
                 panelContent.visibility = View.GONE
                 setGuideNavButtonsVisibility(View.GONE)
                 if (guideContents.isNotEmpty()) {
-                    setGuideContents(guideContents)
                     // 0.5 saniye beklenirken ekrana tıklanmasını engellemek için overlay'i hemen aktif et
                     binding.overlay.visibility = View.VISIBLE
                     binding.overlay.isClickable = true
@@ -338,9 +342,10 @@ class AbacusFragment : Fragment() {
                     binding.overlay.setOnClickListener { /* Panel gelene kadar tıklamayı engelle */ }
                     // Fragment açıldıktan 0.5 saniye sonra panel'i soldan kayarak göster
                     Handler(Looper.getMainLooper()).postDelayed({
-                        showGuidePanelWithAnimation()
                         // İlk adım gösterildikten sonra guide panel modunu aktif et
                         enableGuidePanelMode()
+                        setGuideContents(guideContents)
+                        showGuidePanelWithAnimation()
                     }, 500)
 
                 }
@@ -354,146 +359,7 @@ class AbacusFragment : Fragment() {
 
     }
     
-    /**
-     * abacusGuideNumber'a göre rehber içeriklerini döndürür
-     * @param guideNumber Rehber numarası
-     * @return Rehber içerikleri listesi
-     */
-    private fun getGuideContentsForNumber(guideNumber: Int): List<GuideContent> {
-        return when (guideNumber) {
-            1 -> listOf(
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Bu testte toplama işlemini abaküste yapacaksın.",
-                    onContentShown = {
-                        // İlk içerik gösterildiğinde yapılacak işlemler
-                    },useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_0,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Önce abaküse ilk sayıyı yazıp...",
-                    onContentShown = {
-                        // İkinci içerik gösterildiğinde yapılacak işlemler
-                    },
-                    bubbleAnimationTarget = binding.firstNumberText,
-                    bubbleAnimationColor = Color.YELLOW,
-                    beadIds = listOf("rod4BottomBead4"),
-                    backBeadIds = listOf("rod4BottomBead1"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_1,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Sonrasında ikinci sayıyı ekle.",
-                    onContentShown = {
-                        // İkinci içerik gösterildiğinde yapılacak işlemler
-                    },
-                    bubbleAnimationTarget = binding.secondNumberText,
-                    bubbleAnimationColor = Color.YELLOW,
-                    beadIds = listOf("rod4TopBead"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_2,
 
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "ve işlem bitince kontrol et butonuna tıkla.",
-                    bubbleAnimationTarget = binding.kontrolButton,
-                    bubbleAnimationMaxScale = 1.1F,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_3,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt3,
-                    text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin.",
-                    finishBeadIds = listOf("rod4BottomBead1","rod4TopBead"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_4,
-                )
-                // Daha fazla içerik eklenebilir
-            )
-            2 -> listOf(
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide2_0,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide2_1,
-                    bubbleAnimationTarget = rulesPanelButton,
-                    bubbleAnimationMaxScale = 1.1F,
-                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
-                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
-                    requiredClickTarget = rulesPanelButton, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın
-                ),
-            )
-            3 -> listOf(
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide3_0,
-                    ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Burada öğrendiğin kurallar yer alır.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide3_1,
-                    bubbleAnimationTarget = rulesBookButton,
-                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
-                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
-                    bubbleAnimationMaxScale = 1.1F,
-                    requiredClickTarget = rulesBookButton, // Bu widget'e tıklanmadan diğer hiçbir şeye tıklanamasın, tıklandığında guide panel kapansın
-                ),
-            )
-            4 -> listOf(
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kurallar kitabına tıkladığında ekrana gelen kurallardan herhangi birisine tıklayarak tabloyu abaküsün üstüne alabilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_0,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kurallar kitabına tıkla.",
-                    bubbleAnimationTarget = rulesBookButton,
-                    bubbleAnimationMaxScale = 1.1F,
-                    bubbleAnimationColor = Color.parseColor("#8BC34A"),
-                    bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
-                    requiredClickTarget = rulesBookButton,
-                    requiredClickAdvancesGuide = true,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_1,
-                ),
-                GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Ekrana gelen kurallardan herhangi birisini seç.",
-                    waitForRulesTableSelection = true,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_2,
-                ),
-            )
-            else -> emptyList()
-        }
-    }
-    
     /**
      * Rehber içeriklerini ayarlar
      * @param contents Rehber içerikleri listesi
@@ -635,10 +501,15 @@ class AbacusFragment : Fragment() {
     }
 
     private fun handleRequiredClickTarget(content: GuideContent) {
+        Log.d("GuideDebug", "handleRequiredClickTarget called with target: ${content.requiredClickTarget}")
         stopBubbleAnimation()
         when (content.requiredClickTarget) {
             rulesBookButton -> openRulesBook()
             rulesPanelButton -> openRulesPanelTableForGuide()
+            binding.abacusModeButton -> {
+                Log.d("GuideDebug", "abacusModeButton matched in handleRequiredClickTarget")
+                abacusModeButtonClick()
+            }
         }
         if (content.requiredClickAdvancesGuide) {
             rulesBookButtonClick()
@@ -658,12 +529,18 @@ class AbacusFragment : Fragment() {
             binding.overlay.isFocusable = true
             binding.overlay.alpha = 0.01f
             content.requiredClickTarget.bringToFront()
+            content.requiredClickTarget.elevation = 15f * resources.displayMetrics.density
             binding.overlay.setOnTouchListener { _, _ -> true }
             panelContent.setOnClickListener(null)
+            content.requiredClickTarget.visibility = View.VISIBLE
             content.requiredClickTarget.isClickable = true
             content.requiredClickTarget.isFocusable = true
+            content.requiredClickTarget.isEnabled = true
             content.requiredClickTarget.bringToFront()
+            content.requiredClickTarget.requestLayout()
+            Log.d("GuideDebug", "applyGuideContentOverlay: target=${content.requiredClickTarget}, isEnabled=${content.requiredClickTarget.isEnabled}, isClickable=${content.requiredClickTarget.isClickable}, elevation=${content.requiredClickTarget.elevation}")
             content.requiredClickTarget.setOnClickListener {
+                Log.d("GuideDebug", "requiredClickTarget CLICKED: ${content.requiredClickTarget}")
                 handleRequiredClickTarget(content)
             }
         } else if (content.waitForRulesTableSelection) {
@@ -805,6 +682,9 @@ class AbacusFragment : Fragment() {
         binding.askQuestionButton.isClickable = false
         binding.askQuestionButton.isFocusable = false
         binding.askQuestionButton.isEnabled = false
+        binding.abacusModeButton.isClickable = false
+        binding.abacusModeButton.isFocusable = false
+        binding.abacusModeButton.isEnabled = false
     }
     
     /**
@@ -818,6 +698,8 @@ class AbacusFragment : Fragment() {
         
         // Diğer view'ları tekrar tıklanabilir yap
         enableOtherViews()
+        
+        binding.abacusModeButton.elevation = 10f * resources.displayMetrics.density
     }
     
     /**
@@ -852,6 +734,11 @@ class AbacusFragment : Fragment() {
         binding.askQuestionButton.isClickable = true
         binding.askQuestionButton.isFocusable = true
         binding.askQuestionButton.isEnabled = true
+        binding.abacusModeButton.isClickable = true
+        binding.abacusModeButton.isFocusable = true
+        binding.abacusModeButton.isEnabled = true
+        binding.abacusModeButton.setOnClickListener { abacusModeButtonClick() }
+        rulesBookButtonClick()
     }
     
     /**
@@ -1004,8 +891,8 @@ class AbacusFragment : Fragment() {
                 is ImageView -> {
                     if (useImageTintBreath) {
                         bubbleImageTintBreathApplied = true
-                        originalImageTintList = view.imageTintList
-                        view.imageTintList = ColorStateList.valueOf(targetColor)
+                        originalBackgroundTintList = view.backgroundTintList
+                        view.backgroundTintList = ColorStateList.valueOf(targetColor)
                     } else {
                         originalColor = Color.WHITE
                     }
@@ -1032,7 +919,7 @@ class AbacusFragment : Fragment() {
                     val scaleRange = maxScale - 1.0f
                     val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
                     val currentColor = colorEvaluator.evaluate(fraction, targetColor, tintLight) as Int
-                    (view as ImageView).imageTintList = ColorStateList.valueOf(currentColor)
+                    view.backgroundTintList = ColorStateList.valueOf(currentColor)
                 } else if (targetColor != null && originalColor != null) {
                     val scaleRange = maxScale - 1.0f
                     val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
@@ -1076,7 +963,7 @@ class AbacusFragment : Fragment() {
                 }
             }
             if (bubbleImageTintBreathApplied && view is ImageView) {
-                view.imageTintList = originalImageTintList
+                view.backgroundTintList = originalBackgroundTintList
             }
         }
         
@@ -1379,14 +1266,14 @@ class AbacusFragment : Fragment() {
 
     private fun rulesBookVisibility(){
         if (lessonItem.mapFragmentIndex!! < 12 && globalPartId == 1) {
-            rulesPanelButton.visibility = View.INVISIBLE
-            rulesBookButton.visibility = View.INVISIBLE
+            rulesPanelButton.visibility = View.GONE
+            rulesBookButton.visibility = View.GONE
         }else if (lessonItem.mapFragmentIndex!! < 17 && globalPartId == 1) {
             rulesBookButton.visibility = View.INVISIBLE
         }
         else if (lessonItem.mapFragmentIndex!! < 5 && globalPartId == 2) {
-            rulesBookButton.visibility = View.INVISIBLE
-            rulesPanelButton.visibility = View.INVISIBLE
+            rulesBookButton.visibility = View.GONE
+            rulesPanelButton.visibility = View.GONE
         }
         else if (globalPartId == 3) {
             rulesBookButton.visibility = View.VISIBLE
@@ -1700,23 +1587,27 @@ class AbacusFragment : Fragment() {
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
-                        (activity as? MainActivity)?.requireOnlineOrShowOffline {
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
+                        val ctx = context
+                        if (ctx != null && isDeviceOnline(ctx)) {
+                            v.animate()
+                                .scaleX(1f)
+                                .scaleY(1f)
+                                .setDuration(400)
+                                .setInterpolator(BounceInterpolator())
+                                .start()
 
-                        // Tıklama işlemini gerçekleştir
-                        val isCorrect = stepAnswerAlgorithm()
-                        if (currentIndex == operations.size - 1 && isTimerStarted) {
-                            // Son soruda panel butonunu beklemeden süreyi anında durdur.
-                            stopTimer()
-                        }
-                        updateProgressBar(isCorrect)
-                        showResultPanel(isCorrect)
-                        controlNumber = 0
+                            // Tıklama işlemini gerçekleştir
+                            val isCorrect = stepAnswerAlgorithm()
+                            if (currentIndex == operations.size - 1 && isTimerStarted) {
+                                // Son soruda panel butonunu beklemeden süreyi anında durdur.
+                                stopTimer()
+                            }
+                            updateProgressBar(isCorrect)
+                            showResultPanel(isCorrect)
+                            controlNumber = 0
+                        } else if (ctx != null) {
+                            (activity as? MainActivity)?.showOfflineFragment()
+                                ?: android.widget.Toast.makeText(ctx, "İnternet bağlantınız yok.", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                     true
@@ -1726,6 +1617,7 @@ class AbacusFragment : Fragment() {
             }
         }
         controlButton.setOnTouchListener(controlButtonListener)
+        abacusModeVisibility()
     }
 
     private fun findIDs() {
@@ -1853,7 +1745,7 @@ class AbacusFragment : Fragment() {
     /** [closeFragment] kayma animasyonu bittikten sonra: mevcut haritaya dönüş akışı. */
     private fun performAbacusDismiss() {
         val main = activity as? MainActivity
-        main?.logMapTouchDiag("AbacusFragment.quit", "DISMISS_ENTER", "path=removeThenPrepare+finalize")
+        android.util.Log.d("MapTouchDiag", "AbacusFragment.quit DISMISS_ENTER path=removeThenPrepare+finalize")
         val fm = parentFragmentManager
         if (fm.backStackEntryCount > 0) {
             fm.popBackStack()
@@ -2637,7 +2529,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsUp(vararg beads: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L // milisaniye cinsinden
-        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
+        val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -2663,7 +2555,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadDown(bead: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L
-        val moveDistance = AbacusBeadMetrics.topStepPxInt(requireContext())
+        val moveDistance = if (::abacusController.isInitialized && abacusController.getTopMoveDistancePx() > 0f) abacusController.getTopMoveDistancePx().toInt() else AbacusBeadMetrics.topStepPxInt(requireContext())
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDuration)
@@ -2696,7 +2588,7 @@ class AbacusFragment : Fragment() {
 
     private fun animateBeadsDown(vararg beads: ImageView) {
         val animationDuration = if (lessonItem.type == 2) 50L else 300L
-        val moveDistance = AbacusBeadMetrics.bottomStepPxInt(requireContext())
+        val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
             val params = bead.layoutParams as ViewGroup.MarginLayoutParams
@@ -2853,11 +2745,25 @@ class AbacusFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         startLearningSessionTracking()
+        applyCustomization()
     }
 
     override fun onPause() {
         stopLearningSessionTracking()
         super.onPause()
+    }
+
+    /**
+     * Applies abacus customization preferences: frame background and bead colours.
+     * Called in onResume so changes made in [AbacusCustomizationFragment] take effect
+     * when the user navigates back to this fragment.
+     */
+    private fun applyCustomization() {
+        if (!::binding.isInitialized) return
+        val ctx = requireContext()
+        binding.abacusContainer.background =
+            com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(ctx)
+        abacusController.refreshAll()
     }
 
     override fun onDestroyView() {
@@ -3277,4 +3183,363 @@ class AbacusFragment : Fragment() {
         return Pair(carpan, toplamPuan)
     }
 
+
+    private fun abacusModeButtonClick() {
+        if (!isAbacusSettingsPanelOpen) {
+            // Panelı aç: 0 → 25. frame
+            binding.abacusModeButton.setMinAndMaxFrame(0, 25)
+            binding.abacusModeButton.playAnimation()
+            showAbacusSettingsPanel()
+        } else {
+            // Panelı kapat: 25 → 45. frame
+            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
+            binding.abacusModeButton.playAnimation()
+            hideAbacusSettingsPanel()
+        }
+    }
+
+    private fun abacusModeVisibility() {
+        binding.abacusModeButton.visibility = View.VISIBLE
+        if (lessonItem.isBlinding == true) {
+            binding.abacusModeButton.visibility = View.GONE
+            return
+        }
+        if (globalPartId == 1) {
+            val firstChestIndex = GlobalLessonData.lessonItems.indexOfFirst { it.type == LessonItem.TYPE_CHEST }
+            if (firstChestIndex != -1 && mapFragmentStepIndex < firstChestIndex) {
+                binding.abacusModeButton.visibility = View.GONE
+            } else if (firstChestIndex == -1 && mapFragmentStepIndex <= 3) {
+                binding.abacusModeButton.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showAbacusSettingsPanel() {
+        resetAbacus()
+        abacusController.setEnabled(false)
+        isAbacusSettingsPanelOpen = true
+        binding.abacusSettingsPanel.animate()
+            .translationX(0f)
+            .setDuration(300)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+    }
+
+    private fun hideAbacusSettingsPanel() {
+        abacusController.setEnabled(true)
+        isAbacusSettingsPanelOpen = false
+        val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
+        binding.abacusSettingsPanel.animate()
+            .translationX(offset)
+            .setDuration(300)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .start()
+    }
+
+    private fun setAllBeadsScale(scaleX: Float?, scaleY: Float?) {
+        val allViews = getAllChildren(binding.abacusContainer)
+        for (v in allViews) {
+            if (v.id != View.NO_ID) {
+                try {
+                    val idName = resources.getResourceEntryName(v.id)
+                    if (idName.contains("bead") && v is ImageView) {
+                        scaleX?.let { v.scaleX = it }
+                        scaleY?.let { v.scaleY = it }
+                    }
+                } catch (e: Exception) {
+                    // Ignore views without resource names
+                }
+            }
+        }
+    }
+
+    private fun setAllBeadsMargins(marginTopDp: Float?, marginBottomDp: Float?) {
+        val density = resources.displayMetrics.density
+        val allViews = getAllChildren(binding.abacusContainer)
+        for (v in allViews) {
+            if (v.id != View.NO_ID) {
+                try {
+                    val idName = resources.getResourceEntryName(v.id)
+                    if (idName.contains("bead") && v is ImageView) {
+                        if (marginTopDp != null && idName.contains("top")) {
+                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                            params?.topMargin = (marginTopDp * density).toInt()
+                            v.layoutParams = params
+                        }
+                        if (marginBottomDp != null && idName.contains("bottom")) {
+                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                            val baseMarginDp = when {
+                                idName.contains("bottom1") -> 82f
+                                idName.contains("bottom2") -> 58f
+                                idName.contains("bottom3") -> 34f
+                                idName.contains("bottom4") -> 10f
+                                else -> 0f
+                            }
+                            params?.bottomMargin = ((baseMarginDp + marginBottomDp) * density).toInt()
+                            v.layoutParams = params
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore views without resource names
+                }
+            }
+        }
+    }
+
+
+    private fun getAllChildren(v: View): List<View> {
+        val visited = ArrayList<View>()
+        val unvisited = ArrayList<View>()
+        unvisited.add(v)
+        while (unvisited.isNotEmpty()) {
+            val child = unvisited.removeAt(0)
+            visited.add(child)
+            if (child is ViewGroup) {
+                for (i in 0 until child.childCount) {
+                    unvisited.add(child.getChildAt(i))
+                }
+            }
+        }
+        return visited
+    }
+
+
+    private fun loadAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        savedAbacusScaleX = prefs.getFloat("savedAbacusScaleX", 1.0f)
+        savedAbacusScaleY = prefs.getFloat("savedAbacusScaleY", 1.0f)
+        savedAbacusMarginBottomDp = prefs.getFloat("savedAbacusMarginBottomDp", 0f)
+        savedBeadScaleX = prefs.getFloat("savedBeadScaleX", 1.0f)
+        savedBeadScaleY = prefs.getFloat("savedBeadScaleY", 1.0f)
+        savedBeadMarginTopDp = prefs.getFloat("savedBeadMarginTopDp", 0f)
+        savedBeadMarginBottomDp = prefs.getFloat("savedBeadMarginBottomDp", 0f)
+    }
+
+    private fun saveAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putFloat("savedAbacusScaleX", savedAbacusScaleX)
+            putFloat("savedAbacusScaleY", savedAbacusScaleY)
+            putFloat("savedAbacusMarginBottomDp", savedAbacusMarginBottomDp)
+            putFloat("savedBeadScaleX", savedBeadScaleX)
+            putFloat("savedBeadScaleY", savedBeadScaleY)
+            putFloat("savedBeadMarginTopDp", savedBeadMarginTopDp)
+            putFloat("savedBeadMarginBottomDp", savedBeadMarginBottomDp)
+            apply()
+        }
+    }
+
+    private fun clearAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        savedAbacusScaleX = 1.0f
+        savedAbacusScaleY = 1.0f
+        savedAbacusMarginBottomDp = 0f
+        savedBeadScaleX = 1.0f
+        savedBeadScaleY = 1.0f
+        savedBeadMarginTopDp = 0f
+        savedBeadMarginBottomDp = 0f
+    }
+    private fun setupAbacusSettingsPanel() {
+        loadAbacusSettings()
+
+        val density = resources.displayMetrics.density
+
+        binding.abacusContainer.scaleX = savedAbacusScaleX
+        binding.abacusContainer.scaleY = savedAbacusScaleY
+        val initParams = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+        if (savedAbacusMarginBottomDp > 0f) {
+            initParams?.bottomMargin = (savedAbacusMarginBottomDp * density).toInt()
+            binding.abacusContainer.layoutParams = initParams
+        }
+
+        if (savedAbacusMarginBottomDp == 0f) {
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            savedAbacusMarginBottomDp = (params?.bottomMargin ?: 0) / density
+        }
+
+        // Abacus boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
+        binding.seekBarScaleX.progress = ((savedAbacusScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarScaleY.progress = ((savedAbacusScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarMarginBottom.progress = savedAbacusMarginBottomDp.toInt().coerceIn(0, 100)
+        
+        // Boncuk boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
+        binding.seekBarBeadScaleX.progress = ((savedBeadScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        binding.seekBarBeadScaleY.progress = ((savedBeadScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
+        
+        binding.seekBarBeadMarginTop.progress = savedBeadMarginTopDp.toInt().coerceIn(0, 30)
+        binding.seekBarBeadMarginBottom.progress = savedBeadMarginBottomDp.toInt().coerceIn(0, 50)
+
+        // Panel açıldığında kaydedilmiş boncuk boyutlarını ve boşluklarını uygula
+        setAllBeadsScale(savedBeadScaleX, savedBeadScaleY)
+        setAllBeadsMargins(savedBeadMarginTopDp, savedBeadMarginBottomDp)
+
+        binding.seekBarScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                binding.abacusContainer.scaleX = scale
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                binding.abacusContainer.scaleY = scale
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+                params?.bottomMargin = (progress * density).toInt()
+                binding.abacusContainer.layoutParams = params
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                // 0-100 -> 0.5 - 2.0
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                setAllBeadsScale(scale, null)
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                val scale = 0.5f + (progress / 100f) * 1.5f
+                setAllBeadsScale(null, scale)
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+        
+        binding.seekBarBeadMarginTop.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                setAllBeadsMargins(progress.toFloat(), null)
+                binding.abacusContainer.post {
+                    if (::abacusController.isInitialized) {
+                        val topOffsetPx = progress * density
+                        val bottomOffsetPx = binding.seekBarBeadMarginBottom.progress * density
+                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
+                        abacusController.computeMovementDistancesFromLayout(force = true)
+                    }
+                }
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.seekBarBeadMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                setAllBeadsMargins(null, progress.toFloat())
+                binding.abacusContainer.post {
+                    if (::abacusController.isInitialized) {
+                        val topOffsetPx = binding.seekBarBeadMarginTop.progress * density
+                        val bottomOffsetPx = progress * density
+                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
+                        abacusController.computeMovementDistancesFromLayout(force = true)
+                    }
+                }
+            }
+            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
+        })
+
+        binding.abacusSettingsResetButton.setOnClickListener {
+            // Default progress for 1.0f on 0.5-2.0 scale is 33
+            val defaultProgress = ((1.0f - 0.5f) * (100f / 1.5f)).toInt()
+            
+            // Abacus default: 1.0f, 1.0f
+            binding.seekBarScaleX.progress = defaultProgress
+            binding.seekBarScaleY.progress = defaultProgress
+            
+            // Margin bottom default
+            val defaultMarginPx = resources.getDimensionPixelSize(R.dimen.tutorial_abacus_linear_margin_bottom)
+            binding.seekBarMarginBottom.progress = (defaultMarginPx / density).toInt()
+            
+            // Bead default: 1.0f, 1.0f
+            binding.seekBarBeadScaleX.progress = defaultProgress
+            binding.seekBarBeadScaleY.progress = defaultProgress
+            
+            binding.seekBarBeadMarginTop.progress = 0
+            binding.seekBarBeadMarginBottom.progress = 0
+            
+            binding.abacusContainer.scaleX = 1.0f
+            binding.abacusContainer.scaleY = 1.0f
+            
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            params?.bottomMargin = defaultMarginPx
+            binding.abacusContainer.layoutParams = params
+            
+            setAllBeadsScale(1.0f, 1.0f)
+            setAllBeadsMargins(0f, 0f)
+            
+            clearAbacusSettings()
+            
+            binding.abacusContainer.post {
+                if (::abacusController.isInitialized) {
+                    abacusController.setBeadMarginOffsets(0f, 0f)
+                    abacusController.computeMovementDistancesFromLayout(force = true)
+                }
+            }
+        }
+
+        binding.abacusSettingsSaveButton.setOnClickListener {
+            // Mevcut degerleri kaydet
+            savedAbacusScaleX = binding.abacusContainer.scaleX
+            savedAbacusScaleY = binding.abacusContainer.scaleY
+            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+            savedAbacusMarginBottomDp = ((params?.bottomMargin ?: 0) / density)
+            
+            savedBeadScaleX = 0.5f + (binding.seekBarBeadScaleX.progress / 100f) * 1.5f
+            savedBeadScaleY = 0.5f + (binding.seekBarBeadScaleY.progress / 100f) * 1.5f
+            
+            savedBeadMarginTopDp = binding.seekBarBeadMarginTop.progress.toFloat()
+            savedBeadMarginBottomDp = binding.seekBarBeadMarginBottom.progress.toFloat()
+            
+            // Offset'leri controller'a kaydet
+            if (::abacusController.isInitialized) {
+                abacusController.setBeadMarginOffsets(
+                    savedBeadMarginBottomDp * density,
+                    savedBeadMarginTopDp * density
+                )
+                abacusController.computeMovementDistancesFromLayout(force = true)
+                abacusController.forceRecaptureInitialPositions()
+            }
+            
+            saveAbacusSettings()
+            
+            hideAbacusSettingsPanel()
+            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
+            binding.abacusModeButton.playAnimation()
+        }
+        
+
+    }
+
+
+
+    private fun isDeviceOnline(context: android.content.Context): Boolean {
+        val cm = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager ?: return false
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            val info = cm.activeNetworkInfo
+            @Suppress("DEPRECATION")
+            info != null && info.isConnected
+        }
+    }
 }

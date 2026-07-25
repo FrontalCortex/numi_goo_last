@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Dış ahşap çerçeve -->
+    <path
+        android:fillColor="#DDA379"
+        android:pathData="M6,2 L18,2 C20.2,2 22,3.8 22,6 L22,18 C22,20.2 20.2,22 18,22 L6,22 C3.8,22 2,20.2 2,18 L2,6 C2,3.8 3.8,2 6,2 Z" />
+
+    <!-- İç koyu arka plan -->
+    <path
+        android:fillColor="#212226"
+        android:pathData="M6,4 L18,4 C19.1,4 20,4.9 20,6 L20,18 C20,19.1 19.1,20 18,20 L6,20 C4.9,20 4,19.1 4,18 L4,6 C4,4.9 4.9,4 6,4 Z" />
+
+
+</vector>

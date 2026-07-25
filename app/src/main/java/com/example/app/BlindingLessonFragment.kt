@@ -5,6 +5,7 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
@@ -66,6 +67,7 @@ class BlindingLessonFragment : Fragment() {
     }
     private lateinit var abacusController: AbacusBeadController
     private var abacusMetricsInitialized = false
+    private var originalTargetElevation: Float = 0f
 
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
@@ -75,7 +77,6 @@ class BlindingLessonFragment : Fragment() {
     private var answerNumber = 0
     private var lastClickTime = 0L
     private var isResultPanelAnimating = false
-    private var controlButtonListener: View.OnTouchListener? = null
     private var controlNumber = 0
     private var correctAnswer = 0
     private var totalQuestions = 0
@@ -131,6 +132,23 @@ class BlindingLessonFragment : Fragment() {
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
     private var isAbacusSettingsPanelOpen = false
+    
+    // Guide UI Variables
+    private lateinit var panelContent: View
+    private lateinit var ivGuideImage: ImageView
+    private lateinit var tvGuideText: TextView
+    private lateinit var stepDotsContainer: LinearLayout
+    private var currentBubbleAnimator: android.animation.ValueAnimator? = null
+    private var currentAnimatedView: View? = null
+    private var originalTextColor: Int? = null
+    private var originalImageTintList: android.content.res.ColorStateList? = null
+    private var originalBackgroundTintList: android.content.res.ColorStateList? = null
+    private var bubbleImageTintBreathApplied = false
+    private var guideTypewriterRunnable: Runnable? = null
+    private var controlButtonListener: View.OnTouchListener? = null
+    private var fabHintTouchAreaListener: View.OnClickListener? = null
+    private val guideContentList = mutableListOf<GuideContent>()
+    private var currentGuideIndex = 0
     private var savedAbacusScaleX = 1.0f
     private var savedAbacusScaleY = 1.0f
     private var savedAbacusMarginBottomDp = 0f
@@ -264,23 +282,85 @@ class BlindingLessonFragment : Fragment() {
         rulesPanelButtonClick()
         updateActiveRulesPanelTable()
         rulesBookVisibility()
+        initializeGuideSystem()
         resetClickListener()
         blindingOrRace()
         setupAbacusController()
         setupAbacusSettingsPanel()
         setupKeyboardVisibilityListener()
-        skipStepButtonVisibility()
         abacusModeVisibility()
         cupWay()
     }
 
-    private fun skipStepButtonVisibility(){
-        if(globalPartId == 6){
+    private fun initializeGuideSystem() {
+        panelContent = binding.guidePanelInclude.panelContent
+        ivGuideImage = binding.guidePanelInclude.ivGuideImage
+        tvGuideText = binding.guidePanelInclude.tvGuideText
+        stepDotsContainer = binding.guidePanelInclude.stepDotsContainer
+
+        // Başlangıçta paneli gizle ki Firestore'dan cevap gelene kadar ekranda yanıp sönmesin
+        panelContent.visibility = View.GONE
+        setGuideNavButtonsVisibility(View.GONE)
+
+        if (globalPartId == 6) {
             binding.skipStepButton.visibility = View.GONE
             binding.resetButton.visibility = View.GONE
         }
         if (lessonItem.isMultiplication == true) {
             binding.skipStepButton.visibility = View.GONE
+        }
+
+        val isSkipStepButtonVisible = (binding.skipStepButton.visibility == View.VISIBLE)
+        
+        if (isSkipStepButtonVisible) {
+            val authManager = AuthManager().also { it.initialize(requireContext()) }
+            authManager.checkSkipStepTutorialShown { shown ->
+                if (!shown) {
+                    startGuideNumber(5)
+                } else {
+                    startNormalGuide()
+                }
+            }
+        } else {
+            startNormalGuide()
+        }
+    }
+
+    private fun startNormalGuide() {
+        if (lessonItem.abacusGuideNumber == null || lessonItem.abacusGuideNumber == 5) {
+            panelContent.visibility = View.GONE
+            setGuideNavButtonsVisibility(View.GONE)
+            return
+        }
+        if (lessonItem.currentStep == 1) {
+            startGuideNumber(lessonItem.abacusGuideNumber!!)
+        } else {
+            panelContent.visibility = View.GONE
+            setGuideNavButtonsVisibility(View.GONE)
+        }
+    }
+
+    private fun startGuideNumber(guideNumber: Int) {
+        val guideContents = SharedGuideHelper.getGuideContentsForNumber(
+            guideNumber, binding.firstNumberText, binding.secondNumberText, 
+            binding.kontrolButton, rulesPanelButton, rulesBookButton, binding.skipStepButton, binding.abacusModeButton
+        )
+        panelContent.visibility = View.GONE
+        setGuideNavButtonsVisibility(View.GONE)
+        if (guideContents.isNotEmpty()) {
+            setGuideContents(guideContents)
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+            binding.overlay.alpha = 0.01f
+            binding.overlay.setOnClickListener { }
+            Handler(Looper.getMainLooper()).postDelayed({
+                enableGuidePanelMode()
+                showGuidePanelWithAnimation()
+                if (guideNumber == 5) {
+                    AuthManager().also { it.initialize(requireContext()) }.setSkipStepTutorialShown()
+                }
+            }, 500)
         }
     }
     private fun setupAskQuestionButton() {
@@ -544,8 +624,55 @@ class BlindingLessonFragment : Fragment() {
         return visited
     }
 
+
+    private fun loadAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        savedAbacusScaleX = prefs.getFloat("savedAbacusScaleX", 1.0f)
+        savedAbacusScaleY = prefs.getFloat("savedAbacusScaleY", 1.0f)
+        savedAbacusMarginBottomDp = prefs.getFloat("savedAbacusMarginBottomDp", 0f)
+        savedBeadScaleX = prefs.getFloat("savedBeadScaleX", 1.0f)
+        savedBeadScaleY = prefs.getFloat("savedBeadScaleY", 1.0f)
+        savedBeadMarginTopDp = prefs.getFloat("savedBeadMarginTopDp", 0f)
+        savedBeadMarginBottomDp = prefs.getFloat("savedBeadMarginBottomDp", 0f)
+    }
+
+    private fun saveAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putFloat("savedAbacusScaleX", savedAbacusScaleX)
+            putFloat("savedAbacusScaleY", savedAbacusScaleY)
+            putFloat("savedAbacusMarginBottomDp", savedAbacusMarginBottomDp)
+            putFloat("savedBeadScaleX", savedBeadScaleX)
+            putFloat("savedBeadScaleY", savedBeadScaleY)
+            putFloat("savedBeadMarginTopDp", savedBeadMarginTopDp)
+            putFloat("savedBeadMarginBottomDp", savedBeadMarginBottomDp)
+            apply()
+        }
+    }
+
+    private fun clearAbacusSettings() {
+        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+        savedAbacusScaleX = 1.0f
+        savedAbacusScaleY = 1.0f
+        savedAbacusMarginBottomDp = 0f
+        savedBeadScaleX = 1.0f
+        savedBeadScaleY = 1.0f
+        savedBeadMarginTopDp = 0f
+        savedBeadMarginBottomDp = 0f
+    }
+
     private fun setupAbacusSettingsPanel() {
+        loadAbacusSettings()
         val density = resources.displayMetrics.density
+
+        binding.abacusContainer.scaleX = savedAbacusScaleX
+        binding.abacusContainer.scaleY = savedAbacusScaleY
+        val initParams = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
+        if (savedAbacusMarginBottomDp > 0f) {
+            initParams?.bottomMargin = (savedAbacusMarginBottomDp * density).toInt()
+            binding.abacusContainer.layoutParams = initParams
+        }
 
         if (savedAbacusMarginBottomDp == 0f) {
             val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
@@ -676,6 +803,8 @@ class BlindingLessonFragment : Fragment() {
             setAllBeadsScale(1.0f, 1.0f)
             setAllBeadsMargins(0f, 0f)
             
+            clearAbacusSettings()
+            
             binding.abacusContainer.post {
                 if (::abacusController.isInitialized) {
                     abacusController.setBeadMarginOffsets(0f, 0f)
@@ -706,6 +835,8 @@ class BlindingLessonFragment : Fragment() {
                 abacusController.computeMovementDistancesFromLayout(force = true)
                 abacusController.forceRecaptureInitialPositions()
             }
+            
+            saveAbacusSettings()
             
             hideAbacusSettingsPanel()
             binding.abacusModeButton.setMinAndMaxFrame(25, 45)
@@ -2084,6 +2215,7 @@ class BlindingLessonFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         startLearningSessionTracking()
+        applyCustomization()
         if (isDailyQuestionMode) {
             binding.root.postDelayed({ releaseLaunchTouchBlocker() }, 320)
         }
@@ -2092,6 +2224,18 @@ class BlindingLessonFragment : Fragment() {
     override fun onPause() {
         stopLearningSessionTracking()
         super.onPause()
+    }
+
+    /**
+     * Applies abacus customization preferences (frame background + bead colours).
+     * Called in onResume so changes from [AbacusCustomizationFragment] take effect
+     * when the user navigates back.
+     */
+    private fun applyCustomization() {
+        if (!::binding.isInitialized) return
+        binding.abacusContainer.background =
+            com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(requireContext())
+        if (::abacusController.isInitialized) abacusController.refreshAll()
     }
 
     private fun startLearningSessionTracking() {
@@ -2134,4 +2278,775 @@ class BlindingLessonFragment : Fragment() {
             content.removeView(blocker)
         }
     }
+
+
+    
+    /**
+     * abacusGuideNumber'a göre rehber içeriklerini döndürür
+     * @param guideNumber Rehber numarası
+     * @return Rehber içerikleri listesi
+     */
+    
+    
+    /**
+     * Rehber içeriklerini ayarlar
+     * @param contents Rehber içerikleri listesi
+     */
+    fun setGuideContents(contents: List<GuideContent>) {
+        guideContentList.clear()
+        guideContentList.addAll(contents)
+        currentGuideIndex = 0
+        
+        // Adım göstergesini oluştur
+        updateStepIndicator()
+        
+        // İlk içeriği göster
+        if (guideContentList.isNotEmpty()) {
+            showGuideContent(0)
+        }
+    }
+    
+    /**
+     * Adım göstergesini günceller (noktalar)
+     */
+    private fun updateStepIndicator() {
+        val totalSteps = guideContentList.size
+        
+        // Nokta göstergelerini oluştur
+        stepDotsContainer.removeAllViews()
+        for (i in 0 until totalSteps) {
+            val dotView = TextView(requireContext()).apply {
+                text = if (i == currentGuideIndex) "●" else "○"
+                textSize = 16f
+                setTextColor(android.graphics.Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginEnd = if (i < totalSteps - 1) 8.dpToPx() else 0
+                }
+            }
+            stepDotsContainer.addView(dotView)
+        }
+    }
+    
+    /**
+     * dp değerini px'e çevirir
+     */
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
+    }
+    
+    /**
+     * Bir sonraki rehber içeriğini gösterir
+     */
+    private fun showNextGuideContent() {
+        if (guideContentList.isEmpty() || panelContent.visibility != View.VISIBLE) return
+
+        // Mevcut adımın finishBeadIds'ini kontrol et ve animasyonları çalıştır
+        val currentContent = guideContentList[currentGuideIndex]
+        currentContent.finishBeadIds?.forEach { beadId ->
+            animateGuideBead(beadId)
+        }
+
+        // Son adıma geldiysek guide panel'i kapat ve normal ders akışına geç
+        if (currentGuideIndex >= guideContentList.size - 1) {
+            stopGuideTypewriter()
+            // Guide panel'i kapat
+            disableGuidePanelMode()
+            // Panel'i sola kayarak gizle
+            hideGuidePanelWithAnimation()
+            setGuideNavButtonsVisibility(View.GONE)
+            return
+        }
+
+        currentGuideIndex++
+        showGuideContent(currentGuideIndex)
+    }
+    
+    private fun setGuideNavButtonsVisibility(visibility: Int) {
+        binding.guidePanelInclude.btnBack.visibility = visibility
+        binding.guidePanelInclude.btnForward.visibility = visibility
+    }
+
+    private fun setupGuideNavButtonListeners() {
+        binding.guidePanelInclude.btnBack.setOnClickListener {
+            showPreviousGuideContent()
+        }
+        binding.guidePanelInclude.btnForward.setOnClickListener {
+            val content = guideContentList.getOrNull(currentGuideIndex)
+            if (content?.requiredClickTarget != null) return@setOnClickListener
+            if (content?.waitForRulesTableSelection == true) return@setOnClickListener
+            showNextGuideContent()
+        }
+    }
+
+    /** Guide ilerlemesi yalnızca btnForward ile; overlay/panel tıklaması engellenir. */
+    private fun applyGuideForwardBlockOverlay() {
+        binding.overlay.setOnTouchListener(null)
+        binding.overlay.setOnClickListener { }
+        panelContent.setOnClickListener(null)
+    }
+
+    /** Adım 3: RulesFragment tıklanabilir, abaküs overlay ile engelli. */
+    private fun applyGuideWaitForRulesSelectionOverlay() {
+        binding.overlay.visibility = View.VISIBLE
+        binding.overlay.isClickable = true
+        binding.overlay.isFocusable = true
+        binding.overlay.alpha = 0.01f
+        binding.overlay.setOnTouchListener { _, _ -> true }
+        panelContent.setOnClickListener(null)
+        binding.overlay.bringToFront()
+        binding.rulesFragmentContainer.bringToFront()
+        panelContent.bringToFront()
+        binding.guidePanelInclude.btnBack.bringToFront()
+        binding.guidePanelInclude.btnForward.bringToFront()
+    }
+
+
+
+    private fun closeRulesBookIfOpen() {
+        val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment") as? RulesFragment
+        if (rulesFragment != null && rulesFragment.isVisible) {
+            rulesFragment.closeWithAnimation()
+        }
+    }
+
+    private fun completeGuideIfWaitingForRulesSelection() {
+        val content = guideContentList.getOrNull(currentGuideIndex) ?: return
+        if (!content.waitForRulesTableSelection || panelContent.visibility != View.VISIBLE) return
+        showNextGuideContent()
+    }
+
+    private fun openRulesPanelTableForGuide() {
+        updateActiveRulesPanelTable()
+        showActiveRulesPanelTable()
+        rulesPanelButton.bringToFront()
+    }
+
+    private fun handleRequiredClickTarget(content: GuideContent) {
+        stopBubbleAnimation()
+        content.requiredClickTarget?.elevation = originalTargetElevation
+        when (content.requiredClickTarget) {
+            rulesBookButton -> openRulesBook()
+            rulesPanelButton -> openRulesPanelTableForGuide()
+            binding.skipStepButton -> {
+                if (isShowingSequence) {
+                    binding.skipStepButton.playAnimation()
+                    handler.removeCallbacks(showNextNumberRunnable)
+                    handler.removeCallbacks(sequenceRevealRunnable)
+                    onSequenceRevealStep()
+                }
+            }
+        }
+        if (content.requiredClickAdvancesGuide) {
+            when (content.requiredClickTarget) {
+                rulesBookButton -> rulesBookButtonClick()
+                rulesPanelButton -> rulesPanelButtonClick()
+                binding.skipStepButton -> setupSkipStepButton()
+                else -> rulesBookButtonClick()
+            }
+            showNextGuideContent()
+        } else {
+            disableGuidePanelMode()
+            hideGuidePanelWithAnimation()
+            setGuideNavButtonsVisibility(View.GONE)
+        }
+    }
+
+    private fun applyGuideContentOverlay(content: GuideContent) {
+        if (content.requiredClickTarget != null) {
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+            binding.overlay.alpha = 0.01f
+            content.requiredClickTarget.bringToFront()
+            originalTargetElevation = content.requiredClickTarget.elevation
+            content.requiredClickTarget.elevation = 15f * resources.displayMetrics.density
+            binding.overlay.setOnTouchListener { _, _ -> true }
+            panelContent.setOnClickListener(null)
+            content.requiredClickTarget.isClickable = true
+            content.requiredClickTarget.isFocusable = true
+            content.requiredClickTarget.bringToFront()
+            content.requiredClickTarget.setOnClickListener {
+                handleRequiredClickTarget(content)
+            }
+        } else if (content.waitForRulesTableSelection) {
+            applyGuideWaitForRulesSelectionOverlay()
+        } else {
+            binding.overlay.visibility = View.VISIBLE
+            binding.overlay.isClickable = true
+            binding.overlay.isFocusable = true
+            binding.overlay.alpha = 0.01f
+            applyGuideForwardBlockOverlay()
+        }
+    }
+    
+    /**
+     * Bir önceki rehber içeriğini gösterir
+     */
+    private fun showPreviousGuideContent() {
+        if (guideContentList.isEmpty() || panelContent.visibility != View.VISIBLE) return
+        
+        // İlk adımdaysa hiçbir şey yapma
+        if (currentGuideIndex == 0) return
+
+        // Geri gidildiğinde backBeadIds (yoksa beadIds) ile boncuk animasyonu
+        // Not: finishBeadIds geri gidildiğinde çalıştırılmaz
+        val currentContent = guideContentList[currentGuideIndex]
+        val beadsOnBack = currentContent.backBeadIds ?: currentContent.beadIds
+        beadsOnBack?.let { beadIds ->
+            optimizeBeadIdsForReverse(beadIds).forEach { beadId ->
+                animateGuideBead(beadId)
+            }
+        }
+
+        if (currentContent.waitForRulesTableSelection) {
+            closeRulesBookIfOpen()
+        }
+
+        // Bir önceki adıma git
+        currentGuideIndex--
+        
+        // Önceki adımı göster ama beadIds'ini çalıştırma (çünkü geri dönüşte zaten ters yönde çalıştırdık)
+        showGuideContentWithoutBeads(currentGuideIndex)
+    }
+    
+    /**
+     * Geri dönüş için boncuk ID'lerini optimize eder
+     * Aynı rod'un alt boncuklarından sadece en yüksek numaralı olanı bırakır
+     * (Çünkü en yüksek numaralı boncuk zaten tüm boncukları hareket ettirir)
+     * @param beadIds Boncuk ID'leri listesi
+     * @return Optimize edilmiş boncuk ID'leri listesi
+     */
+    private fun optimizeBeadIdsForReverse(beadIds: List<String>): List<String> {
+        val optimized = mutableListOf<String>()
+        val rodGroups = mutableMapOf<String, MutableList<String>>()
+        
+        // Boncukları rod'lara göre grupla
+        beadIds.forEach { beadId ->
+            when {
+                beadId.startsWith("rod0BottomBead") -> {
+                    rodGroups.getOrPut("rod0") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod1BottomBead") -> {
+                    rodGroups.getOrPut("rod1") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod2BottomBead") -> {
+                    rodGroups.getOrPut("rod2") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod3BottomBead") -> {
+                    rodGroups.getOrPut("rod3") { mutableListOf() }.add(beadId)
+                }
+                beadId.startsWith("rod4BottomBead") -> {
+                    rodGroups.getOrPut("rod4") { mutableListOf() }.add(beadId)
+                }
+                else -> {
+                    // Top boncuklar veya diğer boncuklar için direkt ekle
+                    optimized.add(beadId)
+                }
+            }
+        }
+        
+        // Her rod için en yüksek numaralı alt boncuğu ekle
+        rodGroups.forEach { (_, beads) ->
+            if (beads.isNotEmpty()) {
+                // En yüksek numaralı boncuğu bul (Bead4 > Bead3 > Bead2 > Bead1)
+                val sortedBeads = beads.sortedByDescending { it ->
+                    when {
+                        it.contains("Bead4") -> 4
+                        it.contains("Bead3") -> 3
+                        it.contains("Bead2") -> 2
+                        it.contains("Bead1") -> 1
+                        else -> 0
+                    }
+                }
+                optimized.add(sortedBeads.first())
+            }
+        }
+        
+        return optimized
+    }
+    
+    /**
+     * Guide panel aktifken tıklanabilirliği ayarlar
+     */
+    private fun enableGuidePanelMode() {
+        // Overlay'i görünür ve tıklanabilir yap
+        binding.overlay.visibility = View.VISIBLE
+        binding.overlay.isClickable = true
+        binding.overlay.isFocusable = true
+        binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
+        
+        binding.guidePanelInclude.root.bringToFront()
+        binding.guidePanelInclude.root.translationZ = 20f * resources.displayMetrics.density
+        
+        applyGuideForwardBlockOverlay()
+        setupGuideNavButtonListeners()
+        
+        // Diğer view'ları tıklanamaz yap
+        disableOtherViews()
+    }
+    
+    /**
+     * Guide panel aktifken diğer view'ları tıklanamaz yapar
+     */
+    private fun disableOtherViews() {
+        // Abaküs ve tüm alt view'lerini tıklanamaz yap
+        disableAllClickable(binding.abacusLinear)
+        
+        // Kontrol butonunu tıklanamaz yap
+        binding.kontrolButton.isClickable = false
+        binding.kontrolButton.isFocusable = false
+        // Control button'un listener'ını geçici olarak kaldır
+        binding.kontrolButton.setOnTouchListener(null)
+        
+        // Hint touch area'yı tıklanamaz yap
+        binding.fabHintTouchArea.isClickable = false
+        binding.fabHintTouchArea.isFocusable = false
+        // Hint touch area'nın listener'ını geçici olarak kaldır
+        binding.fabHintTouchArea.setOnClickListener(null)
+        
+        // Diğer butonları da tıklanamaz yap
+        binding.quitButton.isClickable = false
+        binding.rulesBookButton.isClickable = false
+        binding.askQuestionButton.isClickable = false
+        binding.askQuestionButton.isFocusable = false
+        binding.askQuestionButton.isEnabled = false
+        binding.abacusModeButton.isClickable = false
+        binding.abacusModeButton.isFocusable = false
+        binding.abacusModeButton.isEnabled = false
+    }
+    
+    /**
+     * Guide panel kapatıldığında tıklanabilirliği geri yükler
+     */
+    private fun disableGuidePanelMode() {
+        // Overlay'i gizle
+        binding.overlay.visibility = View.GONE
+        binding.overlay.isClickable = false
+        binding.overlay.isFocusable = false
+        binding.overlay.setOnTouchListener(null)
+        
+        binding.guidePanelInclude.root.translationZ = 0f
+        
+        // Elevation değerlerini güvenli bir şekilde sıfırla
+        rulesBookButton.elevation = 0f
+        rulesPanelButton.elevation = 10f * resources.displayMetrics.density
+        binding.skipStepButton.elevation = 10f * resources.displayMetrics.density
+        binding.abacusModeButton.elevation = 10f * resources.displayMetrics.density
+        binding.resetButton.elevation = 10f * resources.displayMetrics.density
+        
+        // Diğer view'ları tekrar tıklanabilir yap
+        enableOtherViews()
+    }
+    
+    /**
+     * Diğer view'ları tekrar tıklanabilir yapar
+     */
+    private fun enableOtherViews() {
+        // Abaküs ve tüm alt view'lerini tekrar tıklanabilir yap
+        enableAllClickable(binding.abacusLinear)
+        
+        // Kontrol butonunu tekrar tıklanabilir yap
+        binding.kontrolButton.isClickable = true
+        binding.kontrolButton.isFocusable = true
+        // Control button'un listener'ını geri yükle
+        controlButtonListener?.let { listener ->
+            binding.kontrolButton.setOnTouchListener(listener)
+        }
+        
+        // Hint touch area'yı tekrar tıklanabilir yap
+        binding.fabHintTouchArea.isClickable = true
+        binding.fabHintTouchArea.isFocusable = true
+        // Hint touch area'nın listener'ını geri yükle
+        fabHintTouchAreaListener?.let { listener ->
+            binding.fabHintTouchArea.setOnClickListener(listener)
+        }
+        
+        // Diğer butonları da tekrar tıklanabilir yap
+        binding.quitButton.isClickable = true
+        binding.rulesBookButton.isClickable = true
+        rulesPanelButton.isClickable = true
+        rulesPanelButton.isFocusable = true
+        rulesPanelButtonClick()
+        binding.askQuestionButton.isClickable = true
+        binding.askQuestionButton.isFocusable = true
+        binding.askQuestionButton.isEnabled = true
+        binding.abacusModeButton.isClickable = true
+        binding.abacusModeButton.isFocusable = true
+        binding.abacusModeButton.isEnabled = true
+    }
+    
+    /**
+     * Bir view ve tüm alt view'lerini tıklanamaz yapar
+     */
+    private fun disableAllClickable(view: View) {
+        view.isClickable = false
+        view.isFocusable = false
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                disableAllClickable(view.getChildAt(i))
+            }
+        }
+    }
+    
+    /**
+     * Bir view ve tüm alt view'lerini tıklanabilir yapar
+     */
+    private fun enableAllClickable(view: View) {
+        view.isClickable = true
+        view.isFocusable = true
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                enableAllClickable(view.getChildAt(i))
+            }
+        }
+    }
+    
+    /**
+     * Belirli bir index'teki rehber içeriğini gösterir
+     * @param index Gösterilecek içeriğin index'i
+     */
+    private fun showGuideContent(index: Int) {
+        if (index < 0 || index >= guideContentList.size) return
+        
+        // Önceki baloncuk animasyonunu durdur
+        stopBubbleAnimation()
+        stopGuideTypewriter()
+        
+        val content = guideContentList[index]
+        
+        // ImageView ve TextView içeriğini güncelle
+        ivGuideImage.setImageResource(content.imageResource)
+        applyGuideTextAndSound(content)
+        
+        // Adım göstergesini güncelle
+        updateStepIndicator()
+        
+        // Callback fonksiyonunu çağır
+        content.onContentShown?.invoke()
+        
+        // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
+        content.bubbleAnimationTarget?.let { target ->
+            animateBubbleEffect(
+                target,
+                content.bubbleAnimationColor,
+                content.bubbleAnimationTintLight,
+                maxScale = content.bubbleAnimationMaxScale,
+            )
+        }
+        
+        // Eğer bu içerik için hareket ettirilecek boncuklar varsa animasyonu başlat
+        content.beadIds?.forEach { beadId ->
+            animateGuideBead(beadId)
+        }
+        
+        applyGuideContentOverlay(content)
+    }
+    
+    /**
+     * Belirli bir index'teki rehber içeriğini gösterir ama boncuk animasyonlarını çalıştırmaz
+     * (Geri dönüş için kullanılır)
+     * @param index Gösterilecek içeriğin index'i
+     */
+    private fun showGuideContentWithoutBeads(index: Int) {
+        if (index < 0 || index >= guideContentList.size) return
+        
+        // Önceki baloncuk animasyonunu durdur
+        stopBubbleAnimation()
+        stopGuideTypewriter()
+        
+        val content = guideContentList[index]
+        
+        // ImageView ve TextView içeriğini güncelle
+        ivGuideImage.setImageResource(content.imageResource)
+        applyGuideTextAndSound(content)
+        
+        // Adım göstergesini güncelle
+        updateStepIndicator()
+        
+        // Callback fonksiyonunu çağır
+        content.onContentShown?.invoke()
+        
+        // Eğer bu içerik için baloncuk animasyonu hedefi varsa animasyonu başlat
+        content.bubbleAnimationTarget?.let { target ->
+            animateBubbleEffect(
+                target,
+                content.bubbleAnimationColor,
+                content.bubbleAnimationTintLight,
+                maxScale = content.bubbleAnimationMaxScale,
+            )
+        }
+        
+        // Boncuk animasyonlarını çalıştırma (geri dönüş için)
+        
+        applyGuideContentOverlay(content)
+    }
+    
+    /**
+     * Guide içeriğinde belirtilen boncuğu hareket ettirir
+     * Eğer boncuk daha önce hareket ettirildiyse ters yönde hareket ettirir
+     * @param beadId Hareket ettirilecek boncuk ID'si (örn: "rod1BottomBead4", "rod0TopBead")
+     */
+    private fun animateGuideBead(beadId: String) {
+        // New shared controller handles all rod ids (rod0..rod4).
+        abacusController.animateGuideBead(beadId)
+    }
+
+    
+    /**
+     * Bir widget'e baloncuk animasyonu uygular (1.0 -> 1.4 -> 1.0) ve renk geçişi yapar
+     * @param view Animasyon uygulanacak widget
+     * @param targetColor Animasyon sırasında kullanılacak hedef renk (null ise sadece scale animasyonu)
+     */
+    private fun animateBubbleEffect(
+        view: View,
+        targetColor: Int?,
+        tintLight: Int? = null,
+        maxScale: Float = 1.4f,
+    ) {
+        // Önceki animasyonu durdur (güvenlik için)
+        stopBubbleAnimation()
+        
+        // Önceki animasyonun scale'ini sıfırla (eğer varsa)
+        view.scaleX = 1.0f
+        view.scaleY = 1.0f
+        
+        // Orijinal rengi al ve sakla (renk animasyonu için)
+        var originalColor: Int? = null
+        var isTextView = false
+        val useImageTintBreath = view is ImageView && targetColor != null && tintLight != null
+        
+        if (targetColor != null) {
+            when (view) {
+                is TextView -> {
+                    isTextView = true
+                    originalColor = view.currentTextColor
+                    originalTextColor = originalColor
+                }
+                is ImageView -> {
+                    if (useImageTintBreath) {
+                        bubbleImageTintBreathApplied = true
+                        originalBackgroundTintList = view.backgroundTintList
+                        view.backgroundTintList = android.content.res.ColorStateList.valueOf(targetColor)
+                    } else {
+                        originalColor = Color.WHITE
+                    }
+                }
+            }
+        }
+        
+        currentAnimatedView = view
+        val colorEvaluator = ArgbEvaluator()
+        
+        // Scale animasyonu (maxScale parametresine göre)
+        val scaleAnimator = ValueAnimator.ofFloat(1.0f, maxScale, 1.0f).apply {
+            duration = 600 // 0.6 saniye
+            repeatCount = ValueAnimator.INFINITE // Sonsuz tekrar
+            repeatMode = ValueAnimator.RESTART
+            interpolator = AccelerateDecelerateInterpolator()
+            
+            addUpdateListener { animator ->
+                val scale = animator.animatedValue as Float
+                view.scaleX = scale
+                view.scaleY = scale
+                
+                if (useImageTintBreath) {
+                    val scaleRange = maxScale - 1.0f
+                    val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
+                    val currentColor = colorEvaluator.evaluate(fraction, targetColor, tintLight) as Int
+                    view.backgroundTintList = ColorStateList.valueOf(currentColor)
+                } else if (targetColor != null && originalColor != null) {
+                    val scaleRange = maxScale - 1.0f
+                    val fraction = ((scale - 1.0f) / scaleRange).coerceIn(0f, 1f)
+                    val currentColor = colorEvaluator.evaluate(fraction, originalColor, targetColor) as Int
+                    
+                    if (isTextView) {
+                        (view as TextView).setTextColor(currentColor)
+                    } else if (view is ImageView) {
+                        view.setColorFilter(currentColor)
+                    }
+                }
+            }
+            
+            start()
+        }
+        
+        currentBubbleAnimator = scaleAnimator
+    }
+    
+    /**
+     * Mevcut baloncuk animasyonunu durdurur
+     */
+    private fun stopBubbleAnimation() {
+        currentBubbleAnimator?.let { animator ->
+            if (animator.isRunning) {
+                animator.cancel()
+            }
+            animator.removeAllUpdateListeners()
+        }
+        currentBubbleAnimator = null
+        
+        // Önceki view'in scale'ini ve rengini sıfırla
+        currentAnimatedView?.let { view ->
+            view.scaleX = 1.0f
+            view.scaleY = 1.0f
+            
+            originalTextColor?.let { originalColor ->
+                when (view) {
+                    is TextView -> view.setTextColor(originalColor)
+                    is ImageView -> view.clearColorFilter()
+                }
+            }
+            if (bubbleImageTintBreathApplied && view is ImageView) {
+                view.backgroundTintList = originalBackgroundTintList
+            }
+        }
+        
+        currentAnimatedView = null
+        originalTextColor = null
+        originalImageTintList = null
+        originalBackgroundTintList = null
+        bubbleImageTintBreathApplied = false
+    }
+
+    private fun stopGuideTypewriter() {
+        guideTypewriterRunnable?.let { tvGuideText.removeCallbacks(it) }
+        guideTypewriterRunnable = null
+    }
+
+    private fun applyGuideTextAndSound(content: GuideContent) {
+        if (content.useTypewriterEffect) {
+            showGuideTextWithTypewriter(content.text, tvGuideText, content.typewriterSpeed)
+        } else {
+            tvGuideText.visibility = View.VISIBLE
+            tvGuideText.text = content.text
+        }
+        playGuideSound(content.soundResource)
+    }
+
+    private fun playGuideSound(soundResource: Int?) {
+        soundResource?.let { resourceId ->
+            try {
+                mediaPlayer?.release()
+                mediaPlayer = MediaPlayer.create(requireContext(), resourceId)
+                mediaPlayer?.setOnCompletionListener {
+                    mediaPlayer?.release()
+                    mediaPlayer = null
+                }
+                mediaPlayer?.start()
+            } catch (e: Exception) {
+                Log.e("AbacusFragment", "Rehber sesi çalma hatası: ${e.message}")
+            }
+        }
+    }
+
+    private fun showGuideTextWithTypewriter(text: String, textView: TextView, speed: Long) {
+        guideTypewriterRunnable?.let { textView.removeCallbacks(it) }
+        textView.visibility = View.INVISIBLE
+        textView.text = text
+        textView.post {
+            textView.text = ""
+            var currentIndex = 0
+            guideTypewriterRunnable = object : Runnable {
+                override fun run() {
+                    if (currentIndex < text.length) {
+                        textView.visibility = View.VISIBLE
+                        val currentText = if (currentIndex == 0) {
+                            text[0].toString()
+                        } else {
+                            textView.text.toString() + text[currentIndex]
+                        }
+                        textView.text = currentText
+                        currentIndex++
+                        textView.postDelayed(this, speed)
+                    } else {
+                        guideTypewriterRunnable = null
+                    }
+                }
+            }
+            textView.post(guideTypewriterRunnable!!)
+        }
+    }
+    
+    /**
+     * Rehber panelini gösterir veya gizler
+     * @param visible true ise gösterir, false ise gizler
+     */
+    fun setGuidePanelVisibility(visible: Boolean) {
+        if (visible) {
+            showGuidePanelWithAnimation()
+        } else {
+            hideGuidePanelWithAnimation()
+        }
+    }
+    
+    /**
+     * Guide panel'i soldan kayarak gösterir
+     */
+    private fun showGuidePanelWithAnimation() {
+        // Önce panel'i INVISIBLE yaparak genişliğini ölçebilmek için görünür yap (ama görünmez)
+        panelContent.visibility = View.INVISIBLE
+        panelContent.alpha = 1f
+        
+        // Panel'in genişliğini ölçmek için layout'u zorla
+        panelContent.post {
+            // Panel'in genişliğini al
+            val panelWidth = panelContent.width
+            // Eğer genişlik hala 0 ise, parent'ın genişliğini kullan
+            val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
+            
+            // Panel'i ekranın soluna taşı (genişliği kadar sola)
+            panelContent.translationX = -widthToUse.toFloat()
+            
+            // Şimdi panel'i görünür yap
+            panelContent.visibility = View.VISIBLE
+            
+            // Soldan sağa kayarak göster
+            panelContent.animate()
+                .translationX(0f)
+                .setDuration(300)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .withEndAction {
+                    setGuideNavButtonsVisibility(View.VISIBLE)
+                }
+                .start()
+        }
+    }
+    
+    /**
+     * Guide panel'i sola kayarak gizler
+     */
+    private fun hideGuidePanelWithAnimation() {
+        // Panel'in genişliğini al
+        val panelWidth = panelContent.width
+        if (panelWidth == 0) {
+            // Eğer genişlik henüz ölçülmemişse, direkt gizle
+            panelContent.visibility = View.GONE
+            return
+        }
+        
+        // Sola kayarak gizle
+        panelContent.animate()
+            .translationX(-panelWidth.toFloat())
+            .setDuration(300)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                panelContent.visibility = View.GONE
+                panelContent.translationX = 0f // Translation'ı sıfırla
+            }
+            .start()
+    }
+    
+    /**
+     * Rehber içeriğini sıfırlar (ilk içeriğe döner)
+     */
+    fun resetGuideContent() {
+        currentGuideIndex = 0
+        if (guideContentList.isNotEmpty()) {
+            showGuideContent(0)
+        }
+    }
+    
 }

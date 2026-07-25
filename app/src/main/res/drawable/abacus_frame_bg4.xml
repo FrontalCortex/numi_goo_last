@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="1dp"
+    android:height="1dp"
+    android:viewportWidth="1000"
+    android:viewportHeight="1000">
+
+    <!-- Dış siyah sınır -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 100,0 L 900,0 A 100,100 0 0 1 1000,100 L 1000,900 A 100,100 0 0 1 900,1000 L 100,1000 A 100,100 0 0 1 0,900 L 0,100 A 100,100 0 0 1 100,0 Z" />
+
+    <!-- Instagram Renk Geçişli Çerçeve (Kalınlık: 56 birim) -->
+    <path
+        android:pathData="M 100,14 L 900,14 A 86,86 0 0 1 986,100 L 986,900 A 86,86 0 0 1 900,986 L 100,986 A 86,86 0 0 1 14,900 L 14,100 A 86,86 0 0 1 100,14 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="1000"
+                android:endX="1000"
+                android:endY="0">
+                <item android:color="#FEDA77" android:offset="0.0" />
+                <item android:color="#F58529" android:offset="0.25" />
+                <item android:color="#DD2A7B" android:offset="0.5" />
+                <item android:color="#8134AF" android:offset="0.75" />
+                <item android:color="#515BD4" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- İç siyah sınır -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M 100,70 L 900,70 A 30,30 0 0 1 930,100 L 930,900 A 30,30 0 0 1 900,930 L 100,930 A 30,30 0 0 1 70,900 L 70,100 A 30,30 0 0 1 100,70 Z" />
+
+    <!-- İç arka plan -->
+    <path
+        android:fillColor="#212226"
+        android:pathData="M 100,84 L 900,84 A 16,16 0 0 1 916,100 L 916,900 A 16,16 0 0 1 900,916 L 100,916 A 16,16 0 0 1 84,900 L 84,100 A 16,16 0 0 1 100,84 Z" />
+
+</vector>

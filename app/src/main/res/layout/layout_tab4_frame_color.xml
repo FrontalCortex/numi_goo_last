@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tab 4: Frame colour customisation.
+  SeekBars are generated programmatically based on the selected frame type:
+  - FRAME_BG:  1 seekbar (wood hue)
+  - FRAME_BG2: 2 seekbars (wood hue + heart hue)
+  This XML provides the scroll container and the injection target.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Dynamic SeekBar rows injected here by Fragment -->
+        <LinearLayout
+            android:id="@+id/frameColorRows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Reset button -->
+        <ImageButton
+            android:id="@+id/resetFrameColors"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@android:color/transparent"
+            android:src="@drawable/special_reset_ic"
+            android:scaleType="fitCenter"
+            android:contentDescription="@null" />
+
+    </LinearLayout>
+</ScrollView>

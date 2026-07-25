@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Dış çok koyu kahverengi çerçeve (Siyah yerine yumuşak premium kenar) -->
+    <path
+        android:fillColor="#1A0A00"
+        android:pathData="M 36,0 L 84,0 A 36,36 0 0,1 120,36 A 36,36 0 0,1 84,72 L 36,72 A 36,36 0 0,1 0,36 A 36,36 0 0,1 36,0 Z" />
+
+    <!-- Ahşap Zemin Rengi (Cilalı Maun - Silindirik 3D Işıklandırma) -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="60"
+                android:startY="12"
+                android:endX="60"
+                android:endY="60">
+                <item android:color="#4A1C06" android:offset="0.0" />
+                <item android:color="#8E3C14" android:offset="0.15" />
+                <item android:color="#EFA162" android:offset="0.30" />
+                <item android:color="#B3521E" android:offset="0.55" />
+                <item android:color="#280C02" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Cilalı Yansıma (Üst kısımdaki camsı cila parlaması) -->
+    <path
+        android:fillColor="#26FFFFFF"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 Q 60,18 12,36 A 24,24 0 0,1 36,12 Z" />
+
+</vector>

@@ -1408,6 +1408,7 @@
         android:focusable="true"
         android:visibility="gone"
         android:alpha="0"
+        android:elevation="12dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -1544,7 +1545,7 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
+        android:elevation="14dp"
         android:padding="3dp"
         android:fitsSystemWindows="true"
         android:layout_marginStart="@dimen/abacus_fragment_result_panel_margin_neg"
@@ -1628,7 +1629,7 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
+        android:elevation="14dp"
         android:padding="@dimen/tutorial_result_panel_padding"
         android:clipToPadding="false"
         android:focusable="false"
@@ -1836,5 +1837,16 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <include
+        layout="@layout/view_guide_panel"
+        android:id="@+id/guidePanelInclude"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:elevation="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
+        android:layout_marginBottom="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="92dp"
+    android:viewportWidth="120"
+    android:viewportHeight="72">
+
+    <!-- Neumorphic Basılı Hali (Seçili / Pressed State) -->
+    <!-- Drop Shadow tamamen kaldırıldı çünkü buton içeri göçmüş durumda -->
+
+    <!-- Kil / Mat Plastik Ana Zemin (Pastel Mint Yeşili) -->
+    <path
+        android:fillColor="#9AE2C6"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z" />
+
+    <!-- Neumorphic Üst-Sol İÇ GÖLGE (Inner Shadow) -->
+    <!-- Buton içeri göçtüğü için, ışık vuran sol üst kısımdaki iç duvar gölgede kalıyor -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="12"
+                android:startY="12"
+                android:endX="80"
+                android:endY="60">
+                <item android:color="#80005533" android:offset="0.0" />
+                <item android:color="#00000000" android:offset="0.5" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Neumorphic Alt-Sağ İÇ IŞIK (Inner Highlight) -->
+    <!-- Işık karşı duvara (sağ alt iç yüzeye) vurduğu için orası parlıyor -->
+    <path
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="40"
+                android:startY="20"
+                android:endX="108"
+                android:endY="60">
+                <item android:color="#00000000" android:offset="0.4" />
+                <item android:color="#B3FFFFFF" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    
+    <!-- Yumuşak sınır çizgisi -->
+    <path
+        android:strokeWidth="1"
+        android:strokeColor="#1A000000"
+        android:pathData="M 36,12 L 84,12 A 24,24 0 0,1 108,36 A 24,24 0 0,1 84,60 L 36,60 A 24,24 0 0,1 12,36 A 24,24 0 0,1 36,12 Z" />
+
+</vector>

@@ -147,9 +147,9 @@ class AbacusBeadController(
         if (!force && bottomMoveDistancePx > 0f && topMoveDistancePx > 0f) return true
         val dynamic = AbacusBeadMetrics.fromBarrierDistances(root, ratio)
         if (dynamic != null) {
-            bottomMoveDistancePx = (dynamic.bottomPx - beadMarginBottomOffsetPx).coerceAtLeast(1f)
-            topMoveDistancePx = (dynamic.topPx - beadMarginTopOffsetPx).coerceAtLeast(1f)
-            d("Dynamic distances applied bottom=$bottomMoveDistancePx top=$topMoveDistancePx (offsets: bottom=$beadMarginBottomOffsetPx top=$beadMarginTopOffsetPx)")
+            bottomMoveDistancePx = dynamic.bottomPx.coerceAtLeast(1f)
+            topMoveDistancePx = dynamic.topPx.coerceAtLeast(1f)
+            d("Dynamic distances applied bottom=$bottomMoveDistancePx top=$topMoveDistancePx (offsets ignored because dynamic gap already includes them)")
             return true
         }
         // Keep dimen fallback if measurement fails.
@@ -955,6 +955,14 @@ class AbacusBeadController(
         }
     }
 
+    /**
+     * Public wrapper for [updateAllAppearance]. Called by [AbacusCustomizationFragment]
+     * after the user changes bead type or colours, so the preview updates instantly.
+     */
+    fun refreshAll() {
+        updateAllAppearance()
+    }
+
     private fun updateRodAppearance(rod: Int) {
         val count = bottomCount[rod]
         for (i in 1..4) {
@@ -968,7 +976,7 @@ class AbacusBeadController(
     }
 
     private fun updateBeadAppearance(bead: ImageView, isSelected: Boolean) {
-        bead.setImageResource(if (isSelected) R.drawable.soroban_bead_selected else R.drawable.soroban_bead)
+        bead.setImageDrawable(AbacusBeadRenderer.buildCurrentBead(context, isSelected))
     }
 
     private fun commitBottomTranslationToMargin(bead: ImageView) {

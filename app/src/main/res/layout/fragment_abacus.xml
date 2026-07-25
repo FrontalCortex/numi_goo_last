@@ -159,7 +159,6 @@
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         />
 
     <LinearLayout
@@ -203,14 +202,14 @@
 
     <ImageView
         android:id="@+id/blackboardImage"
-        android:layout_width="@dimen/abacus_fragment_blackboard_width"
-        android:layout_height="@dimen/abacus_fragment_blackboard_height"
-        android:scaleType="fitXY"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        android:scaleType="centerCrop"
+        android:layout_marginTop="20dp"
         android:src="@drawable/class_board"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="@id/timerTextView"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <!-- İlk sayı widget'ı -->
     <TextView
@@ -262,7 +261,7 @@
         android:id="@+id/abacusContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/abacus_frame_bg"
+        android:background="@drawable/abacus_frame_bg4"
         android:paddingTop="20dp"
         android:paddingBottom="20dp"
         android:paddingStart="24dp"
@@ -1609,7 +1608,6 @@
         android:layout_marginEnd="@dimen/abacus_fragment_hint_container_margin_end"
         android:layout_marginBottom="@dimen/abacus_fragment_hint_container_margin_bottom"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -1660,27 +1658,26 @@
         android:background="@android:color/transparent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginEnd="@dimen/abacus_fragment_fab_touch_margin_end"
-        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"/>
 
     <ImageView
         android:id="@+id/askQuestionButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:padding="@dimen/tutorial_ask_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/hintContainer"
+        app:layout_constraintBottom_toTopOf="@id/rulesPanelButton"
         android:src="@drawable/teacher_ask_ic"/>
     <ImageView
         android:id="@+id/rulesPanelButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:visibility="visible"
@@ -1688,15 +1685,157 @@
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/askQuestionButton"
+        app:layout_constraintBottom_toTopOf="@id/abacusModeButton"
         android:src="@drawable/magic_wand_ic"/>
 
 
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/abacusModeButton"
+        android:layout_width="@dimen/tutorial_ask_button_size"
+        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:visibility="visible"
+        android:padding="2dp"
+        android:background="@drawable/fab_background"
+        android:scaleType="centerCrop"
+        app:lottie_fileName="abacus_mode_ic_anim.json"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/kontrolButton"/>
 
+    <LinearLayout
+        android:id="@+id/abacusSettingsPanel"
+        android:layout_width="340dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/guide_panel_background"
+        android:elevation="12dp"
+        android:padding="16dp"
+        android:translationX="400dp"
+        android:visibility="visible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_bias="0.1">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
 
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginEnd="8dp">
 
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/mini_abacus_ic"
+                    android:layout_marginBottom="12dp"/>
 
+                <SeekBar
+                    android:id="@+id/seekBarScaleX"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
 
+                <SeekBar
+                    android:id="@+id/seekBarScaleY"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarMarginBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="0"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginStart="8dp">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/bead"
+                    android:layout_marginBottom="12dp"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadScaleX"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadScaleY"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="100"
+                    android:progress="50"/>
+                    
+                <SeekBar
+                    android:id="@+id/seekBarBeadMarginTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:max="30"
+                    android:progress="0"/>
+
+                <SeekBar
+                    android:id="@+id/seekBarBeadMarginBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="50"
+                    android:progress="0"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="8dp">
+            <ImageButton
+                android:id="@+id/abacusSettingsResetButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/special_reset_ic"
+                android:scaleType="centerInside"
+                android:background="@drawable/fab_background"
+                android:layout_marginEnd="16dp"
+                android:padding="8dp"/>
+            <ImageButton
+                android:id="@+id/abacusSettingsSaveButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/correct_ic"
+                android:background="@drawable/fab_background"
+                android:padding="6dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
