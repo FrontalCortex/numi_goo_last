@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Tab 1: Bead type selection (soroban vs rabbit) -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -23,463 +24,1090 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <!-- 1. Satır -->
+            <!-- 1. Sat�r -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="0dp"
+                android:weightSum="4"
                 android:baselineAligned="false">
 
-<!-- Soroban bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadSoroban"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadSoroban"
-                            android:layout_width="60dp"
-                            android:layout_height="46dp"
-                            android:src="@drawable/soroban_bead"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Soroban"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadSoroban"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadSoroban"
+                android:layout_width="60dp"
+                android:layout_height="46dp"
+                android:src="@drawable/soroban_bead"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Soroban"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-<!-- Animal bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic1"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Köpek"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadSoroban2"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgcardBeadSoroban2"
+                android:layout_width="60dp"
+                android:layout_height="46dp"
+                android:src="@drawable/soroban_bead2"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Gökkuşağı"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
+                
 
-<!-- Animal 2 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal2"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal2"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic2"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Maymun"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadSoroban6"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgcardBeadSoroban6"
+                android:layout_width="60dp"
+                android:layout_height="46dp"
+                android:src="@drawable/soroban_bead6"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Bulut"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBowling"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBowling"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/bowling_ball_ic"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Bowling"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
             </LinearLayout>
 
-            <!-- 2. Satır -->
+            <!-- 2. Sat�r -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="8dp"
+                android:weightSum="4"
                 android:baselineAligned="false">
 
-<!-- Animal 3 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal3"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal3"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic3"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Kaplan"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall1"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall1"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball1"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Tenis"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-<!-- Animal 4 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal4"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal4"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic4"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Tilki"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall3"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall3"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball3"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Bilardo"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-<!-- Animal 5 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal5"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal5"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic5"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Fil"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall4"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall4"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball4"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Basketbol"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall5"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall5"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball5"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Futbol"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
             </LinearLayout>
 
-            <!-- 3. Satır -->
+            <!-- 3. Sat�r -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="8dp"
+                android:weightSum="4"
                 android:baselineAligned="false">
 
-<!-- Animal 6 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal6"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal6"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic6"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Panda"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall6"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall6"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball6"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Birto"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-<!-- Animal 7 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal7"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal7"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic7"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Kedi"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall7"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall7"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball7"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Golf"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-<!-- Animal 8 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal8"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal8"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic8"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Mors"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall8"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall8"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball8"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Futbol"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall9"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadBall9"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball9"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Plaj Topu"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
             </LinearLayout>
 
-            <!-- 4. Satır -->
+            <!-- 4. Sat�r -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="8dp"
+                android:weightSum="4"
                 android:baselineAligned="false">
 
-<!-- Animal 9 bead card -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardBeadAnimal9"
-                    android:layout_width="0dp"
-                    android:layout_height="110dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    app:cardBackgroundColor="#1A262B"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
-                    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="4dp">
-
-                        <ImageView
-                            android:id="@+id/imgBeadAnimal9"
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@drawable/animal_head_ic9"
-                            android:scaleType="fitCenter"
-                            android:contentDescription="@null" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Ördek"
-                            android:textColor="@android:color/white"
-                            android:textSize="11sp" />
-                    </LinearLayout>
+                android:id="@+id/cardBeadBall10"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgBeadBall10"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball10"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Bowling"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                
 
-                <!-- Boşluk -->
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    />
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall11"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgBeadBall11"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball11"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Basketbol"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+                
 
-                <!-- Boşluk -->
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp"
-                    />
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall12"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgBeadBall12"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball12"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Tenis"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+                
 
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall13"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgBeadBall13"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball13"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Beyzbol"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+                
+            </LinearLayout>
+
+            <!-- 5. Sat�r -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:weightSum="4"
+                android:baselineAligned="false">
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadBall14"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                <ImageView
+                android:id="@+id/imgBeadBall14"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/abacus_bead_ball14"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Buz Hokeyi"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic1"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Köpek"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal2"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal2"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic2"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Maymun"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal3"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal3"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic3"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Kaplan"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+            </LinearLayout>
+
+            <!-- 6. Sat�r -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:weightSum="4"
+                android:baselineAligned="false">
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal4"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal4"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic4"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Tilki"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal5"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal5"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic5"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Fil"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal6"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal6"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic6"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Panda"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal7"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal7"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic7"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Kedi"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+            </LinearLayout>
+
+            <!-- 7. Sat�r -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:weightSum="4"
+                android:baselineAligned="false">
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal8"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal8"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic8"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Mors"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
+
+                <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBeadAnimal9"
+                android:layout_width="0dp"
+                android:layout_height="110dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="#1A262B"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                xmlns:app="http://schemas.android.com/apk/res-auto">
+                
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+                
+                <ImageView
+                android:id="@+id/imgBeadAnimal9"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/animal_head_ic9"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+                
+                <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Ördek"
+                android:textColor="@android:color/white"
+                android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+                
             </LinearLayout>
 
         </LinearLayout>
