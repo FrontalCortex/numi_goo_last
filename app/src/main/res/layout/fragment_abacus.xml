@@ -141,7 +141,7 @@
         android:id="@+id/rulesFragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:translationZ="3dp"
+        android:elevation="20dp"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -1611,6 +1611,7 @@
         app:layout_constraintTop_toBottomOf="@id/blackboardImage">
 
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/fabLayoutId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clipChildren="true"
@@ -1664,20 +1665,20 @@
         android:id="@+id/askQuestionButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginTop="@dimen/abacus_fragment_fab_touch_margin_bottom_negative"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:padding="@dimen/tutorial_ask_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/rulesPanelButton"
+        app:layout_constraintTop_toBottomOf="@id/fabHintTouchArea"
         android:src="@drawable/teacher_ask_ic"/>
     <ImageView
         android:id="@+id/rulesPanelButton"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
-        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:visibility="visible"
@@ -1685,7 +1686,7 @@
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/abacusModeButton"
+        app:layout_constraintTop_toBottomOf="@id/askQuestionButton"
         android:src="@drawable/magic_wand_ic"/>
 
 
@@ -1703,7 +1704,7 @@
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/kontrolButton"/>
+        app:layout_constraintTop_toBottomOf="@id/rulesPanelButton"/>
 
     <LinearLayout
         android:id="@+id/abacusSettingsPanel"

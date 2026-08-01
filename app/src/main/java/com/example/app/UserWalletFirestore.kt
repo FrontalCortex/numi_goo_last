@@ -65,6 +65,23 @@ object UserWalletFirestore {
             }
     }
 
+    fun listenToWallet(
+        context: Context,
+        uid: String,
+        onUpdate: (UserWallet) -> Unit
+    ): com.google.firebase.firestore.ListenerRegistration {
+        return FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+                val keys = snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS
+                val currency = snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context)
+                cacheLocally(context, keys, currency)
+                onUpdate(UserWallet(keys, currency))
+            }
+    }
+
     fun applyKeyDelta(
         context: Context,
         uid: String,
@@ -78,9 +95,8 @@ object UserWalletFirestore {
             .document(uid)
             .update(FIELD_KEYS, FieldValue.increment(delta.toLong()))
             .addOnSuccessListener {
-                val cachedKeys = getCachedKeys(context) + delta
+                val cachedKeys = getCachedKeys(context)
                 val cachedCurrency = getCachedCurrency(context)
-                cacheLocally(context, cachedKeys, cachedCurrency)
                 onSuccess?.invoke(UserWallet(keys = cachedKeys, currency = cachedCurrency))
             }
             .addOnFailureListener { e ->
@@ -102,8 +118,7 @@ object UserWalletFirestore {
             .update(FIELD_CURRENCY, FieldValue.increment(delta.toLong()))
             .addOnSuccessListener {
                 val cachedKeys = getCachedKeys(context)
-                val cachedCurrency = getCachedCurrency(context) + delta
-                cacheLocally(context, cachedKeys, cachedCurrency)
+                val cachedCurrency = getCachedCurrency(context)
                 onSuccess?.invoke(UserWallet(keys = cachedKeys, currency = cachedCurrency))
             }
             .addOnFailureListener { e ->

@@ -623,14 +623,54 @@ object AbacusPreferences {
 
     // ── Bead type ─────────────────────────────────────────────────────────────
 
+    private fun getUidPrefix(): String {
+        return com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
+    }
+
+    private fun getBeadTypeKey() = "${getUidPrefix()}_$KEY_BEAD_TYPE"
+
     fun getBeadType(context: Context): BeadType {
-        val name = prefs(context).getString(KEY_BEAD_TYPE, BeadType.SOROBAN.name)
+        val name = prefs(context).getString(getBeadTypeKey(), BeadType.SOROBAN.name)
             ?: BeadType.SOROBAN.name
         return try { BeadType.valueOf(name) } catch (_: Exception) { BeadType.SOROBAN }
     }
 
     fun setBeadType(context: Context, type: BeadType) {
-        prefs(context).edit().putString(KEY_BEAD_TYPE, type.name).apply()
+        prefs(context).edit().putString(getBeadTypeKey(), type.name).apply()
+    }
+
+    // ── Per-bead slot storage ─────────────────────────────────────────────────
+    // Key format:
+    //   top bead of rod R   → "bead_slot_top_R"
+    //   bottom bead R, i    → "bead_slot_bot_R_I"   (i in 0..3)
+
+    private fun slotKeyTop(rod: Int) = "${getUidPrefix()}_bead_slot_top_$rod"
+    private fun slotKeyBottom(rod: Int, beadIndex: Int) = "${getUidPrefix()}_bead_slot_bot_${rod}_${beadIndex}"
+
+    /**
+     * Returns the BeadType assigned to a specific bead slot.
+     * Falls back to the global BeadType if no slot override exists.
+     */
+    fun getBeadTypeForSlot(context: Context, rod: Int, isTop: Boolean, beadIndex: Int = 0): BeadType {
+        val key = if (isTop) slotKeyTop(rod) else slotKeyBottom(rod, beadIndex)
+        val name = prefs(context).getString(key, null) ?: return BeadType.SOROBAN
+        return try { BeadType.valueOf(name) } catch (_: Exception) { BeadType.SOROBAN }
+    }
+
+    /** Assigns a BeadType to a specific bead slot. */
+    fun setBeadTypeForSlot(context: Context, rod: Int, isTop: Boolean, beadIndex: Int = 0, type: BeadType) {
+        val key = if (isTop) slotKeyTop(rod) else slotKeyBottom(rod, beadIndex)
+        prefs(context).edit().putString(key, type.name).apply()
+    }
+
+    /** Clears all per-bead slot overrides (global BeadType will be used for all). */
+    fun resetAllBeadSlots(context: Context) {
+        val edit = prefs(context).edit()
+        for (rod in 0..4) {
+            edit.remove(slotKeyTop(rod))
+            for (i in 0..3) edit.remove(slotKeyBottom(rod, i))
+        }
+        edit.apply()
     }
 
     // ── Frame type ────────────────────────────────────────────────────────────

@@ -208,6 +208,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var notificationPermissionRequestInFlight = false
 
     private var seasonLeaderboardPendingListener: ListenerRegistration? = null
+    private var walletListenerRegistration: ListenerRegistration? = null
     private var seasonLeaderboardGateRetryLifecycleCallbacks: FragmentManager.FragmentLifecycleCallbacks? = null
 
     /**
@@ -1736,14 +1737,15 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     private fun refreshWalletFromFirestore() {
         val uid = auth.currentUser?.uid ?: return
-        UserWalletFirestore.loadWallet(
+        walletListenerRegistration?.remove()
+        walletListenerRegistration = UserWalletFirestore.listenToWallet(
             context = this,
             uid = uid,
-            onResult = { wallet ->
+            onUpdate = { wallet ->
                 if (::binding.isInitialized) {
                     applyWalletToUi(wallet)
                 }
-            },
+            }
         )
     }
 
@@ -1751,6 +1753,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding.currencyText.text = wallet.currency.toString()
         binding.keyText.text = wallet.keys.toString()
     }
+
+    fun refreshWalletUi() {
+        binding.currencyText.text = UserWalletFirestore.getCachedCurrency(this).toString()
+        binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
+    }
+
 
     override fun onGoldUpdated(amount: Int) {
         updateGoldAmount(amount)
@@ -2764,6 +2772,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
         seasonLeaderboardGateRetryLifecycleCallbacks = null
         seasonLeaderboardPendingListener?.remove()
+        walletListenerRegistration?.remove()
         seasonLeaderboardPendingListener = null
         if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
             startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))

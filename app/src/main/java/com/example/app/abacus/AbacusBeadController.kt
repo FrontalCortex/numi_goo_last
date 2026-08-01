@@ -967,16 +967,17 @@ class AbacusBeadController(
         val count = bottomCount[rod]
         for (i in 1..4) {
             val selected = i <= count
-            updateBeadAppearance(bottomBeads[rod][i - 1], selected)
+            updateBeadAppearance(bottomBeads[rod][i - 1], selected, rod = rod, isTop = false, beadIndex = i - 1)
         }
     }
 
     private fun updateTopAppearance(rod: Int) {
-        updateBeadAppearance(topBeads[rod], topDown[rod])
+        updateBeadAppearance(topBeads[rod], topDown[rod], rod = rod, isTop = true, beadIndex = 0)
     }
 
-    private fun updateBeadAppearance(bead: ImageView, isSelected: Boolean) {
-        bead.setImageDrawable(AbacusBeadRenderer.buildCurrentBead(context, isSelected))
+    private fun updateBeadAppearance(bead: ImageView, isSelected: Boolean, rod: Int, isTop: Boolean, beadIndex: Int) {
+        val type = AbacusPreferences.getBeadTypeForSlot(context, rod, isTop, beadIndex)
+        bead.setImageDrawable(AbacusBeadRenderer.buildBeadForType(context, type, isSelected))
     }
 
     private fun commitBottomTranslationToMargin(bead: ImageView) {

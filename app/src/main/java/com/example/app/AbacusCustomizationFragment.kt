@@ -32,7 +32,7 @@ import com.example.app.abacus.AbacusFrameRenderer
 import com.example.app.abacus.AbacusPreferences
 import com.example.app.abacus.AbacusPreferences.BeadType
 import com.example.app.abacus.AbacusPreferences.FrameType
-import com.google.android.material.button.MaterialButton
+
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +52,8 @@ import kotlinx.coroutines.withContext
  * main thread stays responsive while the user drags seekbars.
  */
 class AbacusCustomizationFragment : Fragment() {
+    private var isDialogShowing = false
+
 
     // ── Views ─────────────────────────────────────────────────────────────────
     private lateinit var previewContainer: FrameLayout
@@ -61,6 +63,7 @@ class AbacusCustomizationFragment : Fragment() {
 
     private val tabViews = arrayOfNulls<ImageView>(4)
 
+    private var currencyText: TextView? = null
     private var previewController: AbacusBeadController? = null
     private var previewAbacusRoot: View? = null
 
@@ -71,7 +74,7 @@ class AbacusCustomizationFragment : Fragment() {
 
     // ── Bead ownership ────────────────────────────────────────────────────────
     /** Bead IDs the current user owns (loaded from Firestore on fragment creation). */
-    private var ownedBeads: Set<String> = emptySet()
+    private var ownedBeads: Map<String, BeadData> = emptyMap()
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -97,9 +100,15 @@ class AbacusCustomizationFragment : Fragment() {
 
         inflatePreviewAbacus()
 
-        // Load owned beads from Firestore, then refresh tab1 if visible
+        currencyText = v.findViewById(R.id.currencyText)
+        refreshCurrencyUi()
+
+        // Load owned beads and wallet from Firestore, then refresh tab1 if visible
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
+            UserWalletFirestore.loadWallet(requireContext(), uid, onResult = { wallet ->
+                currencyText?.text = wallet.currency.toString()
+            })
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
                 ownedBeads = owned
                 if (currentTab == 0) selectTab(0)
@@ -235,14 +244,27 @@ class AbacusCustomizationFragment : Fragment() {
         fun updateSelection() {
             val type = AbacusPreferences.getBeadType(ctx)
             val sel = Color.parseColor("#FFFFD600")
+            val selStateList = android.content.res.ColorStateList.valueOf(sel)
             // Soroban
-            cardSoroban.strokeColor = if (type == BeadType.SOROBAN) sel else Color.TRANSPARENT
-            cardSoroban.strokeWidth = if (type == BeadType.SOROBAN) 6 else 0
+            if (type == BeadType.SOROBAN) {
+                cardSoroban.setStrokeColor(selStateList)
+                cardSoroban.strokeWidth = 6
+            } else {
+                cardSoroban.setStrokeColor(android.content.res.ColorStateList.valueOf(Color.TRANSPARENT))
+                cardSoroban.strokeWidth = 0
+            }
+            cardSoroban.invalidate()
             // All paid beads
             for ((cardId, beadType, _) in PAID_BEAD_INFO) {
                 val card = v.findViewById<MaterialCardView>(cardId)
-                card.strokeColor = if (type == beadType) sel else Color.TRANSPARENT
-                card.strokeWidth = if (type == beadType) 6 else 0
+                if (type == beadType) {
+                    card.setStrokeColor(selStateList)
+                    card.strokeWidth = 6
+                } else {
+                    card.setStrokeColor(android.content.res.ColorStateList.valueOf(Color.TRANSPARENT))
+                    card.strokeWidth = 0
+                }
+                card.invalidate()
             }
         }
         updateSelection()
@@ -251,7 +273,7 @@ class AbacusCustomizationFragment : Fragment() {
         cardSoroban.setOnClickListener {
             AbacusPreferences.setBeadType(ctx, BeadType.SOROBAN)
             updateSelection()
-            scheduleBeadRefresh(debounce = false)
+            showBeadSlotSelectPanel(BeadType.SOROBAN)
         }
 
         // ── Paid cards ────────────────────────────────────────────────────────
@@ -259,7 +281,8 @@ class AbacusCustomizationFragment : Fragment() {
 
         for ((cardId, beadType, imageResId) in PAID_BEAD_INFO) {
             val card = v.findViewById<MaterialCardView>(cardId)
-            val owned = ownedBeads.contains(beadType.name)
+            val owned = ((ownedBeads[beadType.name]?.count ?: 0) > 0)
+            val price = getBeadPrice(beadType)
 
             // Build lock overlay
             val overlay = FrameLayout(ctx).apply {
@@ -272,18 +295,34 @@ class AbacusCustomizationFragment : Fragment() {
                 // Ensure overlay sits on top; card is already a FrameLayout internally
             }
 
-            // "300 💎" label inside the overlay
-            val lockLabel = TextView(ctx).apply {
-                text = "$BEAD_PRICE \uD83D\uDC8E"        // 300 💎
-                textSize = 13f
-                setTextColor(0xFFFFFFFF.toInt())
+            // Price label inside the overlay
+            val container = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
                 layoutParams = FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
             }
-            overlay.addView(lockLabel)
+            val lockLabel = TextView(ctx).apply {
+                text = price.toString()
+                textSize = 13f
+                setTextColor(0xFFFFFFFF.toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+            val lockIcon = ImageView(ctx).apply {
+                setImageResource(R.drawable.gold_ic)
+                val size = (20 * resources.displayMetrics.density).toInt()
+                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    marginStart = (4 * resources.displayMetrics.density).toInt()
+                }
+            }
+            container.addView(lockLabel)
+            container.addView(lockIcon)
+            overlay.addView(container)
 
             // Add overlay into the card's internal content view
             // MaterialCardView wraps its children in a FrameLayout
@@ -291,19 +330,18 @@ class AbacusCustomizationFragment : Fragment() {
 
             // Click logic
             card.setOnClickListener {
-                if (ownedBeads.contains(beadType.name)) {
-                    // Already owned → select it
-                    AbacusPreferences.setBeadType(ctx, beadType)
-                    updateSelection()
-                    scheduleBeadRefresh(debounce = false)
+                AbacusPreferences.setBeadType(ctx, beadType)
+                updateSelection()
+                
+                if (((ownedBeads[beadType.name]?.count ?: 0) > 0)) {
+                    // Already owned → show slot selection panel directly
+                    showBeadSlotSelectPanel(beadType)
                 } else {
                     // Not owned → show purchase panel
                     showBeadPurchasePanel(beadType, imageResId) {
-                        // onPurchased callback: hide overlay and select bead
+                        // onPurchased callback: hide overlay, then show slot selection panel
                         overlay.visibility = View.GONE
-                        AbacusPreferences.setBeadType(ctx, beadType)
-                        updateSelection()
-                        scheduleBeadRefresh(debounce = false)
+                        showBeadSlotSelectPanel(beadType)
                     }
                 }
             }
@@ -321,6 +359,9 @@ class AbacusCustomizationFragment : Fragment() {
         imageResId: Int,
         onPurchased: () -> Unit,
     ) {
+        if (isDialogShowing) return
+        isDialogShowing = true
+        
         val ctx = requireContext()
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
@@ -339,42 +380,326 @@ class AbacusCustomizationFragment : Fragment() {
         dialog.findViewById<ImageView>(R.id.beadPurchaseImage)
             .setImageResource(imageResId)
 
+        val price = getBeadPrice(beadType)
+        dialog.findViewById<TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+
         // Buy button
-        dialog.findViewById<MaterialButton>(R.id.beadPurchaseButton).setOnClickListener {
-            val currentKeys = UserWalletFirestore.getCachedKeys(ctx)
-            if (currentKeys < BEAD_PRICE) {
-                Toast.makeText(ctx, "Yetersiz elmas", Toast.LENGTH_SHORT).show()
+        val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
+        val closeBtn = dialog.findViewById<View>(R.id.beadPurchaseClose)
+        
+        purchaseBtn.setOnClickListener {
+            // Disable immediately to prevent double-tap
+            if (!purchaseBtn.isEnabled) return@setOnClickListener
+            purchaseBtn.isEnabled = false
+            closeBtn.isEnabled = false
+            dialog.setCancelable(false)
+
+            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
+            if (currentCurrency < price) {
+                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled = true
+                dialog.setCancelable(true)
                 return@setOnClickListener
             }
-            // Deduct keys
-            UserWalletFirestore.applyKeyDelta(
+            
+            // Deduct currency
+            UserWalletFirestore.applyCurrencyDelta(
                 context = ctx,
                 uid = uid,
-                delta = -BEAD_PRICE,
+                delta = -price,
                 onSuccess = {
                     // Save bead to Firestore
-                    BeadPurchaseFirestore.savePurchasedBead(
+                    val currentCount = (ownedBeads[beadType.name]?.count ?: 0)
+                    val newCount = currentCount + 5
+                    BeadPurchaseFirestore.setBeadCount(
                         uid = uid,
                         beadId = beadType.name,
+                        count = newCount,
                         onSuccess = {
-                            // Update local owned set
-                            ownedBeads = ownedBeads + beadType.name
+                            ownedBeads = ownedBeads + (beadType.name to (ownedBeads[beadType.name]?.copy(count = newCount) ?: BeadData(newCount, false)))
+                            refreshCurrencyUi()
+                            isDialogShowing = false // Reset manually for synchronous execution
                             dialog.dismiss()
                             onPurchased()
                         },
                         onFailure = {
                             Toast.makeText(ctx, "Kayıt hatası. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
-                            // Refund keys on Firestore save failure
-                            UserWalletFirestore.applyKeyDelta(ctx, uid, +BEAD_PRICE)
+                            // Refund currency on Firestore save failure
+                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                            refreshCurrencyUi()
+                            purchaseBtn.isEnabled = true
+                            closeBtn.isEnabled = true
+                            dialog.setCancelable(true)
                         }
                     )
                 },
                 onFailure = {
                     Toast.makeText(ctx, "İşlem başarısız. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                    purchaseBtn.isEnabled = true
+                    closeBtn.isEnabled = true
+                    dialog.setCancelable(true)
                 }
             )
         }
 
+        dialog.setOnDismissListener { isDialogShowing = false }
+        dialog.show()
+    }
+
+    /**
+     * After a successful bead purchase, shows a panel with a full abacus.
+     * The user taps a specific bead to assign the new [beadType] skin to that slot.
+     */
+    private fun showColorFeaturePurchasePanel(
+        beadType: BeadType,
+        imageResId: Int
+    ) {
+        if (isDialogShowing) return
+        isDialogShowing = true
+        
+        val ctx = requireContext()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_bead_purchase)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (ctx.resources.displayMetrics.widthPixels * 0.88f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+
+        // Close
+        val closeBtn = dialog.findViewById<View>(R.id.beadPurchaseClose)
+        closeBtn.setOnClickListener { dialog.dismiss() }
+
+        // Bead image
+        dialog.findViewById<ImageView>(R.id.beadPurchaseImage)
+            .setImageResource(imageResId)
+            
+        dialog.findViewById<ImageView>(R.id.beadPurchaseFeatureIcon)
+            ?.visibility = View.VISIBLE
+
+        val price = 2000 // Color feature is always 2000
+        dialog.findViewById<TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+
+        // Buy button
+        val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
+        
+        purchaseBtn.setOnClickListener {
+            // Disable immediately to prevent double-tap
+            if (!purchaseBtn.isEnabled) return@setOnClickListener
+            purchaseBtn.isEnabled = false
+            closeBtn.isEnabled = false
+            dialog.setCancelable(false)
+
+            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
+            if (currentCurrency < price) {
+                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled = true
+                dialog.setCancelable(true)
+                return@setOnClickListener
+            }
+            
+            // Deduct currency
+            UserWalletFirestore.applyCurrencyDelta(
+                context = ctx,
+                uid = uid,
+                delta = -price,
+                onSuccess = {
+                    BeadPurchaseFirestore.setColorFeatureActive(uid, beadType.name, onSuccess = {
+                        val currentData = ownedBeads[beadType.name] ?: BeadData(0, false)
+                        ownedBeads = ownedBeads + (beadType.name to currentData.copy(colorFeatureActive = true))
+                        refreshCurrencyUi()
+                        
+                        dialog.dismiss()
+                        
+                        // Refresh tab 2 to hide the overlay
+                        if (currentTab == 1) selectTab(1)
+                    }, onFailure = {
+                        Toast.makeText(ctx, "Hata oluştu", Toast.LENGTH_SHORT).show()
+                        purchaseBtn.isEnabled = true
+                        closeBtn.isEnabled = true
+                        dialog.setCancelable(true)
+                    })
+                },
+                onFailure = {
+                    Toast.makeText(ctx, "Hata oluştu", Toast.LENGTH_SHORT).show()
+                    purchaseBtn.isEnabled = true
+                    closeBtn.isEnabled = true
+                    dialog.setCancelable(true)
+                }
+            )
+        }
+
+        dialog.setOnDismissListener { isDialogShowing = false }
+        dialog.show()
+    }
+
+    private fun showBeadSlotSelectPanel(beadType: BeadType) {
+        if (isDialogShowing) return
+        isDialogShowing = true
+        
+        val ctx = requireContext()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_bead_skin_select)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (ctx.resources.displayMetrics.widthPixels * 0.92f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+
+        dialog.findViewById<View>(R.id.beadSlotSelectClose).setOnClickListener { dialog.dismiss() }
+
+        // Build bead IDs lookup: rod -> (topId, [bottom1..4 ids])
+        data class RodBeadIds(val top: Int, val bottoms: List<Int>)
+        val rodIds = listOf(
+            RodBeadIds(R.id.bss_rod0_bead_top, listOf(R.id.bss_rod0_bead_bottom1, R.id.bss_rod0_bead_bottom2, R.id.bss_rod0_bead_bottom3, R.id.bss_rod0_bead_bottom4)),
+            RodBeadIds(R.id.bss_rod1_bead_top, listOf(R.id.bss_rod1_bead_bottom1, R.id.bss_rod1_bead_bottom2, R.id.bss_rod1_bead_bottom3, R.id.bss_rod1_bead_bottom4)),
+            RodBeadIds(R.id.bss_rod2_bead_top, listOf(R.id.bss_rod2_bead_bottom1, R.id.bss_rod2_bead_bottom2, R.id.bss_rod2_bead_bottom3, R.id.bss_rod2_bead_bottom4)),
+            RodBeadIds(R.id.bss_rod3_bead_top, listOf(R.id.bss_rod3_bead_bottom1, R.id.bss_rod3_bead_bottom2, R.id.bss_rod3_bead_bottom3, R.id.bss_rod3_bead_bottom4)),
+            RodBeadIds(R.id.bss_rod4_bead_top, listOf(R.id.bss_rod4_bead_bottom1, R.id.bss_rod4_bead_bottom2, R.id.bss_rod4_bead_bottom3, R.id.bss_rod4_bead_bottom4)),
+        )
+
+        fun refreshUI() {
+            // Render current per-bead skins in the panel's abacus
+            for ((rod, ids) in rodIds.withIndex()) {
+                val topView = dialog.findViewById<ImageView>(ids.top)
+                val topType = AbacusPreferences.getBeadTypeForSlot(ctx, rod, isTop = true)
+                topView.setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, topType, false))
+
+                for ((beadIndex, bottomId) in ids.bottoms.withIndex()) {
+                    val bottomView = dialog.findViewById<ImageView>(bottomId)
+                    val bottomType = AbacusPreferences.getBeadTypeForSlot(ctx, rod, isTop = false, beadIndex = beadIndex)
+                    bottomView.setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, bottomType, false))
+                }
+            }
+
+            // Calculate total owned and placed beads
+            val count = if (beadType == BeadType.SOROBAN) 25 else ((ownedBeads[beadType.name]?.count ?: 0))
+            var placedCount = 0
+            for (r in 0..4) {
+                if (AbacusPreferences.getBeadTypeForSlot(ctx, r, true) == beadType) placedCount++
+                for (i in 0..3) {
+                    if (AbacusPreferences.getBeadTypeForSlot(ctx, r, false, i) == beadType) placedCount++
+                }
+            }
+            
+            // Available is total minus placed
+            val available = count - placedCount
+
+            // Update inventory status UI
+            dialog.findViewById<TextView>(R.id.beadSlotInventoryText).text = "x$available"
+            dialog.findViewById<ImageView>(R.id.beadSlotInventoryImage)
+                .setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, beadType, false))
+
+            // Update buy button
+            val price = getBeadPrice(beadType)
+            val buyBtn = dialog.findViewById<MaterialCardView>(R.id.beadSlotBuyButton)
+            val buyText = dialog.findViewById<TextView>(R.id.beadSlotBuyText)
+            buyText.text = price.toString() // Always show price
+            if (count >= 25) { // Total count is max 25
+                buyBtn.setCardBackgroundColor(Color.parseColor("#BDBDBD")) // gray out
+            } else {
+                buyBtn.setCardBackgroundColor(ContextCompat.getColor(ctx, R.color.button_enabled))
+            }
+        }
+
+        // Buy button logic
+        val slotBuyBtn = dialog.findViewById<MaterialCardView>(R.id.beadSlotBuyButton)
+        slotBuyBtn.setOnClickListener {
+            // Disable immediately to prevent double-tap
+            if (!slotBuyBtn.isEnabled) return@setOnClickListener
+            slotBuyBtn.isEnabled = false
+            dialog.setCancelable(false)
+
+            val price = getBeadPrice(beadType)
+            val count = if (beadType == BeadType.SOROBAN) 25 else ((ownedBeads[beadType.name]?.count ?: 0))
+            if (count >= 25) {
+                Toast.makeText(ctx, "Stokta kalmadı", Toast.LENGTH_SHORT).show()
+                slotBuyBtn.isEnabled = true
+                dialog.setCancelable(true)
+                return@setOnClickListener
+            }
+            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
+            if (currentCurrency < price) {
+                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+                slotBuyBtn.isEnabled = true
+                dialog.setCancelable(true)
+                return@setOnClickListener
+            }
+            
+            UserWalletFirestore.applyCurrencyDelta(
+                context = ctx,
+                uid = uid,
+                delta = -price,
+                onSuccess = {
+                    val newCount = count + 5
+                    BeadPurchaseFirestore.setBeadCount(uid, beadType.name, newCount, onSuccess = {
+                        ownedBeads = ownedBeads + (beadType.name to (ownedBeads[beadType.name]?.copy(count = newCount) ?: BeadData(newCount, false)))
+                        refreshCurrencyUi()
+                        refreshUI()
+                        slotBuyBtn.isEnabled = true
+                        dialog.setCancelable(true)
+                    }, onFailure = {
+                        Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
+                        UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                        refreshCurrencyUi()
+                        slotBuyBtn.isEnabled = true
+                        dialog.setCancelable(true)
+                    })
+                },
+                onFailure = {
+                    Toast.makeText(ctx, "İşlem başarısız", Toast.LENGTH_SHORT).show()
+                    slotBuyBtn.isEnabled = true
+                    dialog.setCancelable(true)
+                }
+            )
+        }
+
+        fun placeBead(rod: Int, isTop: Boolean, beadIndex: Int = 0) {
+            val oldType = AbacusPreferences.getBeadTypeForSlot(ctx, rod, isTop, beadIndex)
+            // Ignore if placing same bead type
+            if (oldType == beadType) return
+
+            val count = if (beadType == BeadType.SOROBAN) 25 else ((ownedBeads[beadType.name]?.count ?: 0))
+            var placedCount = 0
+            for (r in 0..4) {
+                if (AbacusPreferences.getBeadTypeForSlot(ctx, r, true) == beadType) placedCount++
+                for (i in 0..3) {
+                    if (AbacusPreferences.getBeadTypeForSlot(ctx, r, false, i) == beadType) placedCount++
+                }
+            }
+            val available = count - placedCount
+            
+            if (available <= 0) {
+                Toast.makeText(ctx, "Bu boncuktan kalmadı!", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Just save placement locally. Firestore count remains the total purchased.
+            AbacusPreferences.setBeadTypeForSlot(ctx, rod, isTop, beadIndex, beadType)
+            refreshUI()
+            scheduleBeadRefresh(debounce = false)
+        }
+
+        // Click listeners: assign skin to tapped bead slot
+        for ((rod, ids) in rodIds.withIndex()) {
+            dialog.findViewById<ImageView>(ids.top).setOnClickListener {
+                placeBead(rod, isTop = true)
+            }
+            for ((beadIndex, bottomId) in ids.bottoms.withIndex()) {
+                dialog.findViewById<ImageView>(bottomId).setOnClickListener {
+                    placeBead(rod, isTop = false, beadIndex = beadIndex)
+                }
+            }
+        }
+
+        refreshUI()
+        dialog.setOnDismissListener { isDialogShowing = false }
         dialog.show()
     }
 
@@ -625,6 +950,19 @@ class AbacusCustomizationFragment : Fragment() {
 
         buildColorRows(columnNormal, false)
         buildColorRows(columnSelected, true)
+
+        val isColorFeatureActive = ownedBeads[beadType.name]?.colorFeatureActive == true
+        val overlay = v.findViewById<View>(R.id.tab2ColorLockOverlay)
+        if (!isColorFeatureActive) {
+            overlay.visibility = View.VISIBLE
+            overlay.setOnClickListener {
+                val imageResId = PAID_BEAD_INFO.find { it.second == beadType }?.third ?: R.drawable.soroban_bead
+                showColorFeaturePurchasePanel(beadType, imageResId)
+            }
+        } else {
+            overlay.visibility = View.GONE
+        }
+
         return v
     }
 
@@ -850,10 +1188,25 @@ class AbacusCustomizationFragment : Fragment() {
         override fun onStopTrackingTouch(bar: SeekBar) {}
     }
 
+    private fun refreshCurrencyUi() {
+        val ctx = context ?: return
+        currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
+        (activity as? MainActivity)?.refreshWalletUi()
+    }
+
+    private fun getBeadPrice(beadType: BeadType): Int {
+        return when (beadType) {
+            BeadType.SOROBAN -> 0
+            BeadType.SOROBAN2, BeadType.SOROBAN6 -> 2000
+            BeadType.BOWLING, BeadType.BALL1, BeadType.BALL3, BeadType.BALL4, BeadType.BALL5, BeadType.BALL6, BeadType.BALL7 -> 3000
+            BeadType.BALL8, BeadType.BALL9, BeadType.BALL10, BeadType.BALL11, BeadType.BALL12, BeadType.BALL13, BeadType.BALL14 -> 4000
+            BeadType.ANIMAL, BeadType.ANIMAL2, BeadType.ANIMAL3, BeadType.ANIMAL4, BeadType.ANIMAL5, BeadType.ANIMAL6, BeadType.ANIMAL7, BeadType.ANIMAL8, BeadType.ANIMAL9 -> 5000
+        }
+    }
+
     private val Int.dp: Int get() = (this * resources.displayMetrics.density + 0.5f).toInt()
 
     companion object {
-        const val BEAD_PRICE = 300
         fun newInstance() = AbacusCustomizationFragment()
     }
 }

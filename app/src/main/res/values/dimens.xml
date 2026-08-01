@@ -368,6 +368,7 @@
     <dimen name="abacus_fragment_hint_fab_margin_end">-15dp</dimen>
     <dimen name="abacus_fragment_fab_touch_width">60dp</dimen>
     <dimen name="abacus_fragment_fab_touch_margin_bottom">12dp</dimen>
+    <dimen name="abacus_fragment_fab_touch_margin_bottom_negative">-12dp</dimen>
     <dimen name="abacus_fragment_fab_touch_margin_end">-10dp</dimen>
     <dimen name="abacus_fragment_ask_button_margin_top">2dp</dimen>
     <dimen name="abacus_fragment_ask_button_margin_end">-6dp</dimen>

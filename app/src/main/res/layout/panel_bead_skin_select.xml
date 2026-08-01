@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_daily_question_continue"
+    android:clipToOutline="true"
+    android:padding="20dp">
+
+    <ImageView
+        android:id="@+id/beadSlotSelectClose"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@null"
+        android:clickable="true"
+        android:contentDescription="@null"
+        android:defaultFocusHighlightEnabled="false"
+        android:focusable="false"
+        android:padding="8dp"
+        android:src="@drawable/ic_close_black"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/beadSlotSelectTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="48dp"
+        android:layout_marginEnd="48dp"
+        android:text="Hangi boncuğun yerine kullanmak istiyorsun?"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:fontFamily="@font/font_regular"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <FrameLayout
+        android:id="@+id/beadSlotAbacusContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/abacus_frame_bg4"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/beadSlotSelectTitle">
+
+        <LinearLayout
+            android:id="@+id/beadSlotAbacusLinear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Rod 0 -->
+            <FrameLayout android:id="@+id/bss_rod0" android:layout_width="45dp" android:layout_height="@dimen/tutorial_abacus_rod_height">
+                <View android:layout_width="@dimen/tutorial_abacus_line_width" android:layout_height="match_parent" android:layout_gravity="center_horizontal" android:background="#1a1a1a"/>
+                <ImageView android:id="@+id/bss_rod0_bead_bottom4" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod0_bead_bottom3" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod0_bead_bottom2" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod0_bead_bottom1" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <View android:layout_width="match_parent" android:layout_height="16dp" android:layout_gravity="center" android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom" android:background="@drawable/abacus_horizontal_bar"/>
+                <ImageView android:id="@+id/bss_rod0_bead_top" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="top|center_horizontal" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+            </FrameLayout>
+
+            <!-- Rod 1 -->
+            <FrameLayout android:id="@+id/bss_rod1" android:layout_width="45dp" android:layout_height="@dimen/tutorial_abacus_rod_height">
+                <View android:layout_width="@dimen/tutorial_abacus_line_width" android:layout_height="match_parent" android:layout_gravity="center_horizontal" android:background="#1a1a1a"/>
+                <ImageView android:id="@+id/bss_rod1_bead_bottom4" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod1_bead_bottom3" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod1_bead_bottom2" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod1_bead_bottom1" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <View android:layout_width="match_parent" android:layout_height="16dp" android:layout_gravity="center" android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom" android:background="@drawable/abacus_horizontal_bar"/>
+                <ImageView android:id="@+id/bss_rod1_bead_top" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="top|center_horizontal" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+            </FrameLayout>
+
+            <!-- Rod 2 -->
+            <FrameLayout android:id="@+id/bss_rod2" android:layout_width="45dp" android:layout_height="@dimen/tutorial_abacus_rod_height">
+                <View android:layout_width="@dimen/tutorial_abacus_line_width" android:layout_height="match_parent" android:layout_gravity="center_horizontal" android:background="#1a1a1a"/>
+                <ImageView android:id="@+id/bss_rod2_bead_bottom4" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod2_bead_bottom3" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod2_bead_bottom2" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod2_bead_bottom1" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <View android:layout_width="match_parent" android:layout_height="16dp" android:layout_gravity="center" android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom" android:background="@drawable/abacus_horizontal_bar"/>
+                <ImageView android:id="@+id/bss_rod2_bead_top" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="top|center_horizontal" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+            </FrameLayout>
+
+            <!-- Rod 3 -->
+            <FrameLayout android:id="@+id/bss_rod3" android:layout_width="45dp" android:layout_height="@dimen/tutorial_abacus_rod_height">
+                <View android:layout_width="@dimen/tutorial_abacus_line_width" android:layout_height="match_parent" android:layout_gravity="center_horizontal" android:background="#1a1a1a"/>
+                <ImageView android:id="@+id/bss_rod3_bead_bottom4" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod3_bead_bottom3" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod3_bead_bottom2" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod3_bead_bottom1" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <View android:layout_width="match_parent" android:layout_height="16dp" android:layout_gravity="center" android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom" android:background="@drawable/abacus_horizontal_bar"/>
+                <ImageView android:id="@+id/bss_rod3_bead_top" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="top|center_horizontal" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+            </FrameLayout>
+
+            <!-- Rod 4 -->
+            <FrameLayout android:id="@+id/bss_rod4" android:layout_width="45dp" android:layout_height="@dimen/tutorial_abacus_rod_height">
+                <View android:layout_width="@dimen/tutorial_abacus_line_width" android:layout_height="match_parent" android:layout_gravity="center_horizontal" android:background="#1a1a1a"/>
+                <ImageView android:id="@+id/bss_rod4_bead_bottom4" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod4_bead_bottom3" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod4_bead_bottom2" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <ImageView android:id="@+id/bss_rod4_bead_bottom1" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+                <View android:layout_width="match_parent" android:layout_height="16dp" android:layout_gravity="center" android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom" android:background="@drawable/abacus_horizontal_bar"/>
+                <ImageView android:id="@+id/bss_rod4_bead_top" android:layout_width="@dimen/tutorial_abacus_bead_size" android:layout_height="@dimen/tutorial_abacus_bead_size" android:layout_gravity="top|center_horizontal" android:clickable="true" android:focusable="true" android:src="@drawable/soroban_bead"/>
+            </FrameLayout>
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Inventory Status & Purchase -->
+    <LinearLayout
+        android:id="@+id/beadSlotInventoryContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/beadSlotAbacusContainer">
+
+        <ImageView
+            android:id="@+id/beadSlotInventoryImage"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/soroban_bead" />
+
+        <TextView
+            android:id="@+id/beadSlotInventoryText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="x5"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/font_regular" />
+    </LinearLayout>
+
+    <!-- Buy more button -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/beadSlotBuyButton"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/button_enabled"
+        app:cardCornerRadius="15dp"
+        app:cardElevation="0dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/beadSlotInventoryContainer">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:layout_gravity="center"
+            android:minWidth="160dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/beadSlotBuyText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="300"
+                android:textColor="#000000"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="@font/font_regular" />
+
+            <ImageView
+                android:id="@+id/beadSlotBuyIcon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="5dp"
+                android:src="@drawable/gold_ic" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

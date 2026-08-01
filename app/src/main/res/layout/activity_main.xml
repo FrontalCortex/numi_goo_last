@@ -44,17 +44,17 @@
 
         <ImageView
             android:id="@+id/diamondID"
-            android:src="@drawable/diamond"
-            android:layout_width="@dimen/main_diamond_width"
+            android:layout_width="wrap_content"
             android:layout_height="@dimen/main_diamond_height"
-            android:contentDescription="Coin" />
+            android:contentDescription="Coin"
+            android:src="@drawable/gold_ic" />
 
         <TextView
             android:id="@+id/currencyText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0"
-            android:textColor="#00BCD4"
+            android:textColor="#FFEB3B"
             android:textStyle="bold"
             android:textSize="@dimen/main_currency_text_size"/>
 

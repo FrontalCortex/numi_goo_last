@@ -5,9 +5,13 @@
   programmatically in AbacusCustomizationFragment based on the current bead type.
   This layout provides only the scroll container and two header ImageViews.
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -96,6 +100,43 @@
                 android:orientation="vertical"
                 android:layout_marginStart="6dp" />
         </LinearLayout>
-
     </LinearLayout>
-</ScrollView>
+    </ScrollView>
+
+    <!-- Lock overlay for color feature -->
+    <FrameLayout
+        android:id="@+id/tab2ColorLockOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#BB000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_gravity="center">
+
+            <TextView
+                android:id="@+id/tab2ColorLockPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2000"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/gold_ic" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</FrameLayout>

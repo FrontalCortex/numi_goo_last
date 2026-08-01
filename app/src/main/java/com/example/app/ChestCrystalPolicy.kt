@@ -69,6 +69,7 @@ object ChestCrystalPolicy {
             "crystal_purple_purple" -> 300..400
             "crystal_purple_yellow" -> 1000..1500
             else -> 50..100
+            //Yani kullanıcı ortalama 2000 altına 1 adet boncuk serisi alabilmeli.
         }
         val amount = goldRange.random()
         return ChestRewardOutcome(

@@ -3,27 +3,31 @@ package com.example.app
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 
+data class BeadData(val count: Int, val colorFeatureActive: Boolean)
+
 /**
  * Manages the "haveBead" sub-collection in Firestore.
  *
  * Firestore path: users/{uid}/haveBead/{beadId}
- * Document fields: { purchasedAt: Timestamp }
+ * Document fields: { purchasedAt: Timestamp, count: Int, colorFeatureActive: Boolean }
  *
- * "beadId" matches the BeadType enum name (e.g. "SOROBAN2", "BOWLING", "BALL1", "ANIMAL", …)
+ * "beadId" matches the BeadType enum name (e.g. "SOROBAN2", "BOWLING", "BALL1", "ANIMAL", ?)
  */
 object BeadPurchaseFirestore {
 
     private const val COLLECTION_USERS = "users"
     private const val COLLECTION_HAVE_BEAD = "haveBead"
     private const val FIELD_PURCHASED_AT = "purchasedAt"
+    private const val FIELD_COUNT = "count"
+    private const val FIELD_COLOR_FEATURE = "colorFeatureActive"
 
     /**
-     * Loads the set of bead IDs the user already owns.
-     * Returns an empty set on failure so the UI can still show all beads as locked.
+     * Loads the map of bead IDs to their data that the user already owns or customized.
+     * Returns an empty map on failure so the UI can still show all beads as locked.
      */
     fun loadOwnedBeads(
         uid: String,
-        onResult: (Set<String>) -> Unit,
+        onResult: (Map<String, BeadData>) -> Unit,
         onFailure: ((Exception) -> Unit)? = null,
     ) {
         FirebaseFirestore.getInstance()
@@ -32,19 +36,44 @@ object BeadPurchaseFirestore {
             .collection(COLLECTION_HAVE_BEAD)
             .get()
             .addOnSuccessListener { snapshot ->
-                val ids = snapshot.documents.map { it.id }.toSet()
-                onResult(ids)
+                val map = mutableMapOf<String, BeadData>()
+                for (doc in snapshot.documents) {
+                    val count = doc.getLong(FIELD_COUNT)?.toInt() ?: 25 // Default 25 for legacy purchases
+                    val colorFeatureActive = doc.getBoolean(FIELD_COLOR_FEATURE) ?: false
+                    map[doc.id] = BeadData(count, colorFeatureActive)
+                }
+                onResult(map)
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
-                onResult(emptySet())
+                onResult(emptyMap())
             }
     }
 
     /**
-     * Saves a newly purchased bead to Firestore.
+     * Sets or updates the count of a purchased bead in Firestore.
      */
-    fun savePurchasedBead(
+    fun setBeadCount(
+        uid: String,
+        beadId: String,
+        count: Int,
+        onSuccess: (() -> Unit)? = null,
+        onFailure: ((Exception) -> Unit)? = null,
+    ) {
+        FirebaseFirestore.getInstance()
+            .collection(COLLECTION_USERS)
+            .document(uid)
+            .collection(COLLECTION_HAVE_BEAD)
+            .document(beadId)
+            .set(mapOf(FIELD_PURCHASED_AT to Timestamp.now(), FIELD_COUNT to count), com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener { onSuccess?.invoke() }
+            .addOnFailureListener { e -> onFailure?.invoke(e) }
+    }
+
+    /**
+     * Sets colorFeatureActive for a bead in Firestore without modifying the count.
+     */
+    fun setColorFeatureActive(
         uid: String,
         beadId: String,
         onSuccess: (() -> Unit)? = null,
@@ -55,7 +84,7 @@ object BeadPurchaseFirestore {
             .document(uid)
             .collection(COLLECTION_HAVE_BEAD)
             .document(beadId)
-            .set(mapOf(FIELD_PURCHASED_AT to Timestamp.now()))
+            .set(mapOf(FIELD_COLOR_FEATURE to true), com.google.firebase.firestore.SetOptions.merge())
             .addOnSuccessListener { onSuccess?.invoke() }
             .addOnFailureListener { e -> onFailure?.invoke(e) }
     }

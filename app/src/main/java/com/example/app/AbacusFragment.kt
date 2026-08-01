@@ -40,6 +40,7 @@ import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
 import com.example.app.abacus.AbacusBeadController
 import com.example.app.abacus.AbacusBeadMetrics
+import kotlin.math.log
 
 class AbacusFragment : Fragment() {
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
@@ -1265,6 +1266,12 @@ class AbacusFragment : Fragment() {
     }
 
     private fun rulesBookVisibility(){
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            Log.d("lorr","work")
+            rulesPanelButton.visibility = View.GONE
+            rulesBookButton.visibility = View.GONE
+            return
+        }
         if (lessonItem.mapFragmentIndex!! < 12 && globalPartId == 1) {
             rulesPanelButton.visibility = View.GONE
             rulesBookButton.visibility = View.GONE
@@ -3205,6 +3212,10 @@ class AbacusFragment : Fragment() {
             return
         }
         if (globalPartId == 1) {
+            if(mapFragmentStepIndex == 1){
+                binding.abacusModeButton.visibility = View.GONE
+                binding.rulesBookButton.visibility = View.GONE
+            }
             val firstChestIndex = GlobalLessonData.lessonItems.indexOfFirst { it.type == LessonItem.TYPE_CHEST }
             if (firstChestIndex != -1 && mapFragmentStepIndex < firstChestIndex) {
                 binding.abacusModeButton.visibility = View.GONE

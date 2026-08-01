@@ -365,7 +365,14 @@ object AbacusBeadRenderer {
      * Called from [AbacusBeadController.updateBeadAppearance].
      */
     fun buildCurrentBead(context: Context, isSelected: Boolean): Drawable =
-        when (AbacusPreferences.getBeadType(context)) {
+        buildBeadForType(context, AbacusPreferences.getBeadType(context), isSelected)
+
+    /**
+     * Builds a drawable for an explicit [BeadType], respecting saved colours.
+     * Used for per-bead slot rendering.
+     */
+    fun buildBeadForType(context: Context, type: AbacusPreferences.BeadType, isSelected: Boolean): Drawable =
+        when (type) {
             AbacusPreferences.BeadType.SOROBAN -> buildSorobanDrawable(context, isSelected)
             AbacusPreferences.BeadType.ANIMAL -> buildAnimalDrawable(context, isSelected)
             AbacusPreferences.BeadType.ANIMAL2 -> buildAnimal2Drawable(context, isSelected)

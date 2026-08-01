@@ -12,7 +12,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_margin="10dp"
-        android:background="@drawable/fab_background"
+        android:background="@null"
         android:contentDescription="@null"
         android:padding="8dp"
         android:src="@drawable/cross"
@@ -22,19 +22,47 @@
     <!-- ── Title ─────────────────────────────────────────────────────────── -->
     <TextView
         android:id="@+id/customizationTitle"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginEnd="10dp"
-        android:gravity="center"
         android:text="Abaküs Özelleştir"
         android:textColor="@android:color/white"
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/customizationBackButton"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/customizationBackButton"
+        app:layout_constraintEnd_toStartOf="@id/currencyContainer"
         app:layout_constraintTop_toTopOf="@id/customizationBackButton" />
+
+    <!-- ── Currency Container ───────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/currencyContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/customizationBackButton"
+        app:layout_constraintBottom_toBottomOf="@id/customizationBackButton">
+
+        <ImageView
+            android:id="@+id/diamondID"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/gold_ic"
+            android:contentDescription="Coin" />
+
+        <TextView
+            android:id="@+id/currencyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="0"
+            android:textColor="#FFEB3B"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <!-- ── Preview area ─────────────────────────────────────────────────── -->
     <FrameLayout
