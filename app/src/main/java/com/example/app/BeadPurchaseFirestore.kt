@@ -38,7 +38,7 @@ object BeadPurchaseFirestore {
             .addOnSuccessListener { snapshot ->
                 val map = mutableMapOf<String, BeadData>()
                 for (doc in snapshot.documents) {
-                    val count = doc.getLong(FIELD_COUNT)?.toInt() ?: 25 // Default 25 for legacy purchases
+                    val count = doc.getLong(FIELD_COUNT)?.toInt() ?: if (doc.contains(FIELD_PURCHASED_AT)) 25 else 0
                     val colorFeatureActive = doc.getBoolean(FIELD_COLOR_FEATURE) ?: false
                     map[doc.id] = BeadData(count, colorFeatureActive)
                 }

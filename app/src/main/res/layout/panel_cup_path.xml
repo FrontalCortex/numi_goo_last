@@ -26,26 +26,46 @@
             android:layout_marginBottom="12dp"
             android:background="#80FFFFFF" />
 
-        <LinearLayout
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
+            android:layout_height="wrap_content">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Kupa Yolu"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:gravity="center" />
+                android:layout_centerInParent="true" />
 
+            <LinearLayout
+                android:id="@+id/panelCupPathEnergyContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="8dp">
+                
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/heart_ic"
+                    android:contentDescription="Can" />
 
-
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/panelCupPathEnergyText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="0"
+                    android:textColor="#FF5252"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </RelativeLayout>
     </LinearLayout>
 
     <!-- Cards -->
@@ -132,6 +152,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card1CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView
@@ -217,6 +249,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card2CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView
@@ -303,6 +347,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card3CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView
@@ -387,6 +443,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card4CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView
@@ -471,6 +539,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card5CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView
@@ -555,6 +635,18 @@
                             android:textColor="@android:color/white"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/card6CupDeltaText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:includeFontPadding="false"
+                            android:text="+5"
+                            android:textColor="#4CAF50"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                     <com.airbnb.lottie.LottieAnimationView

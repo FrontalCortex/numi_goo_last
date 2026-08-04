@@ -83,11 +83,7 @@
                 android:textStyle="bold"
                 android:fontFamily="@font/font_regular" />
 
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="5dp"
-                android:src="@drawable/gold_ic" />
+            <ImageView android:id="@+id/beadPurchaseCurrencyIcon" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="5dp" android:src="@drawable/gold_ic" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

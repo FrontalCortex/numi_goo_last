@@ -20,19 +20,34 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- ── Title ─────────────────────────────────────────────────────────── -->
-    <TextView
-        android:id="@+id/customizationTitle"
+    <LinearLayout
+        android:id="@+id/shopKeyContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="Abaküs Özelleştir"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="@id/customizationBackButton"
-        app:layout_constraintStart_toEndOf="@id/customizationBackButton"
-        app:layout_constraintEnd_toStartOf="@id/currencyContainer"
-        app:layout_constraintTop_toTopOf="@id/customizationBackButton" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintTop_toTopOf="@id/customizationBackButton">
+        
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/key"
+            android:contentDescription="Anahtar" />
+
+        <TextView
+            android:id="@+id/shopKeyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="0"
+            android:textColor="#AEEA00"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <!-- ── Currency Container ───────────────────────────────────────────── -->
     <LinearLayout
@@ -42,7 +57,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:layout_marginEnd="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/shopKeyContainer"
         app:layout_constraintTop_toTopOf="@id/customizationBackButton"
         app:layout_constraintBottom_toBottomOf="@id/customizationBackButton">
 

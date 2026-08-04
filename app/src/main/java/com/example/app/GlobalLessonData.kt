@@ -676,12 +676,13 @@ object GlobalLessonData {
                     titleUnit = "Sayıları Abaküste Tanıma",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
                     abacusGuideNumber = 6,
-                    finishStepNumber = 1005,
-                    startStepNumber = 1005,
+                    finishStepNumber = 1013, //1005 yapılacak
+                    startStepNumber = 1013,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupPoint1 = 1600,
@@ -757,8 +758,8 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
-                    finishStepNumber = 7, //finish ve start 7 olarak güncellenecek test için 1005
-                    startStepNumber = 7,
+                    finishStepNumber = 1013, //7 yapılacak
+                    startStepNumber = 1013,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupPoint1 = 1300,

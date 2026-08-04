@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="120dp" android:height="140dp" android:viewportWidth="120" android:viewportHeight="140">
+  <group android:translateX="-369.01" android:translateY="-287.21">
+    <path android:pathData="M380.46,379.53h97.11v37.68h-97.11z" android:fillColor="#763528" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M378.4,369.82h101.15v10.14h-101.15z" android:fillColor="#F1CE3E" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M413.71,388.41h30.6v21.11h-30.6z" android:fillColor="#662D25" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M378.4,409.52h101.15v9.29h-101.15z" android:fillColor="#ECB736" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M378.4,379.11h101.15v9.29h-101.15z" android:fillColor="#ECB736" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M427.79,406.4a7.24,7.24 54.2,1 0,2.31 -14.29a7.24,7.24 54.2,1 0,-2.31 14.29z" android:fillColor="#CF9332" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M430.62,397.31c0,-0.91 -0.74,-1.65 -1.65,-1.65c-0.91,0 -1.65,0.74 -1.65,1.65c0,0.61 0.33,1.13 0.82,1.42l-0.82,3.54h0.41h1.24h1.24h0.41l-0.82,-3.54C430.29,398.44 430.62,397.92 430.62,397.31z" android:fillColor="#3F2D1F" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M396.67,340.12c-8.1,0 -12.14,3.51 -14.16,7.01c-0.63,1.09 -1.06,2.17 -1.36,3.15c-0.52,1.71 -0.63,3.1 -0.66,3.63h-0.06v15.92h48.58v-29.7C416.53,340.12 403.62,340.12 396.67,340.12z" android:fillColor="#763528" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M477.08,350.27c-0.33,-1.18 -0.81,-2.23 -1.4,-3.15c-4.28,-6.69 -14.27,-7.01 -14.27,-7.01s-15.81,0 -32.4,0v29.7h48.53v-15.69h0.05C477.59,352.7 477.4,351.43 477.08,350.27z" android:fillColor="#662D25" xmlns:android="http://schemas.android.com/apk/res/android" />
+  </group>
+</vector>

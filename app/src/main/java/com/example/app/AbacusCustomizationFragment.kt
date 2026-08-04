@@ -64,6 +64,7 @@ class AbacusCustomizationFragment : Fragment() {
     private val tabViews = arrayOfNulls<ImageView>(4)
 
     private var currencyText: TextView? = null
+    private var keyText: TextView? = null
     private var previewController: AbacusBeadController? = null
     private var previewAbacusRoot: View? = null
 
@@ -101,6 +102,13 @@ class AbacusCustomizationFragment : Fragment() {
         inflatePreviewAbacus()
 
         currencyText = v.findViewById(R.id.currencyText)
+        keyText = v.findViewById(R.id.shopKeyText)
+        
+        val openShop = View.OnClickListener {
+            (requireActivity() as? MainActivity)?.openShopFragment()
+        }
+        v.findViewById<View>(R.id.currencyContainer)?.setOnClickListener(openShop)
+        v.findViewById<View>(R.id.shopKeyContainer)?.setOnClickListener(openShop)
         refreshCurrencyUi()
 
         // Load owned beads and wallet from Firestore, then refresh tab1 if visible
@@ -108,6 +116,7 @@ class AbacusCustomizationFragment : Fragment() {
         if (uid != null) {
             UserWalletFirestore.loadWallet(requireContext(), uid, onResult = { wallet ->
                 currencyText?.text = wallet.currency.toString()
+                keyText?.text = wallet.keys.toString()
             })
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
                 ownedBeads = owned
@@ -314,7 +323,8 @@ class AbacusCustomizationFragment : Fragment() {
                 )
             }
             val lockIcon = ImageView(ctx).apply {
-                setImageResource(R.drawable.gold_ic)
+                val isKeyCurrency = (beadType == BeadType.ANIMAL3 || beadType == BeadType.ANIMAL8)
+                setImageResource(if (isKeyCurrency) R.drawable.key else R.drawable.gold_ic)
                 val size = (20 * resources.displayMetrics.density).toInt()
                 layoutParams = LinearLayout.LayoutParams(size, size).apply {
                     marginStart = (4 * resources.displayMetrics.density).toInt()
@@ -381,66 +391,79 @@ class AbacusCustomizationFragment : Fragment() {
             .setImageResource(imageResId)
 
         val price = getBeadPrice(beadType)
+        val isKeyCurrency = (beadType == BeadType.ANIMAL3 || beadType == BeadType.ANIMAL8)
         dialog.findViewById<TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+        if (isKeyCurrency) {
+            dialog.findViewById<ImageView>(R.id.beadPurchaseCurrencyIcon)?.setImageResource(R.drawable.key)
+        }
 
         // Buy button
         val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
         val closeBtn = dialog.findViewById<View>(R.id.beadPurchaseClose)
-        
+
         purchaseBtn.setOnClickListener {
-            // Disable immediately to prevent double-tap
             if (!purchaseBtn.isEnabled) return@setOnClickListener
             purchaseBtn.isEnabled = false
             closeBtn.isEnabled = false
             dialog.setCancelable(false)
 
-            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
-            if (currentCurrency < price) {
-                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+            val hasEnough = if (isKeyCurrency) UserWalletFirestore.getCachedKeys(ctx) >= price
+                            else UserWalletFirestore.getCachedCurrency(ctx) >= price
+            if (!hasEnough) {
+                Toast.makeText(ctx, if (isKeyCurrency) "Yetersiz anahtar" else "Yetersiz altın", Toast.LENGTH_SHORT).show()
                 purchaseBtn.isEnabled = true
                 closeBtn.isEnabled = true
                 dialog.setCancelable(true)
                 return@setOnClickListener
             }
-            
-            // Deduct currency
-            UserWalletFirestore.applyCurrencyDelta(
-                context = ctx,
-                uid = uid,
-                delta = -price,
-                onSuccess = {
-                    // Save bead to Firestore
-                    val currentCount = (ownedBeads[beadType.name]?.count ?: 0)
-                    val newCount = currentCount + 5
-                    BeadPurchaseFirestore.setBeadCount(
-                        uid = uid,
-                        beadId = beadType.name,
-                        count = newCount,
-                        onSuccess = {
-                            ownedBeads = ownedBeads + (beadType.name to (ownedBeads[beadType.name]?.copy(count = newCount) ?: BeadData(newCount, false)))
-                            refreshCurrencyUi()
-                            isDialogShowing = false // Reset manually for synchronous execution
-                            dialog.dismiss()
-                            onPurchased()
-                        },
-                        onFailure = {
-                            Toast.makeText(ctx, "Kayıt hatası. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
-                            // Refund currency on Firestore save failure
-                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
-                            refreshCurrencyUi()
-                            purchaseBtn.isEnabled = true
-                            closeBtn.isEnabled = true
-                            dialog.setCancelable(true)
-                        }
-                    )
-                },
-                onFailure = {
-                    Toast.makeText(ctx, "İşlem başarısız. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
-                    purchaseBtn.isEnabled = true
-                    closeBtn.isEnabled = true
-                    dialog.setCancelable(true)
-                }
-            )
+
+            fun onDeltaSuccess() {
+                val currentCount = (ownedBeads[beadType.name]?.count ?: 0)
+                val newCount = currentCount + 5
+                BeadPurchaseFirestore.setBeadCount(
+                    uid = uid,
+                    beadId = beadType.name,
+                    count = newCount,
+                    onSuccess = {
+                        ownedBeads = ownedBeads + (beadType.name to (ownedBeads[beadType.name]?.copy(count = newCount) ?: BeadData(newCount, false)))
+                        refreshCurrencyUi()
+                        isDialogShowing = false
+                        dialog.dismiss()
+                        onPurchased()
+                    },
+                    onFailure = {
+                        Toast.makeText(ctx, "Kayıt hatası. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                        // Geri iade
+                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price)
+                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                        refreshCurrencyUi()
+                        purchaseBtn.isEnabled = true
+                        closeBtn.isEnabled = true
+                        dialog.setCancelable(true)
+                    }
+                )
+            }
+
+            fun onDeltaFailure() {
+                Toast.makeText(ctx, "İşlem başarısız. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled = true
+                dialog.setCancelable(true)
+            }
+
+            if (isKeyCurrency) {
+                UserWalletFirestore.applyKeyDelta(
+                    context = ctx, uid = uid, delta = -price,
+                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    onFailure = { ::onDeltaFailure.invoke() }
+                )
+            } else {
+                UserWalletFirestore.applyCurrencyDelta(
+                    context = ctx, uid = uid, delta = -price,
+                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    onFailure = { ::onDeltaFailure.invoke() }
+                )
+            }
         }
 
         dialog.setOnDismissListener { isDialogShowing = false }
@@ -609,55 +632,75 @@ class AbacusCustomizationFragment : Fragment() {
         }
 
         // Buy button logic
+        val isKeyCurrency = (beadType == BeadType.ANIMAL3 || beadType == BeadType.ANIMAL8)
+        if (isKeyCurrency) {
+            dialog.findViewById<ImageView>(R.id.beadSlotBuyIcon)?.setImageResource(R.drawable.key)
+        }
+
         val slotBuyBtn = dialog.findViewById<MaterialCardView>(R.id.beadSlotBuyButton)
         slotBuyBtn.setOnClickListener {
-            // Disable immediately to prevent double-tap
             if (!slotBuyBtn.isEnabled) return@setOnClickListener
             slotBuyBtn.isEnabled = false
             dialog.setCancelable(false)
 
             val price = getBeadPrice(beadType)
-            val count = if (beadType == BeadType.SOROBAN) 25 else ((ownedBeads[beadType.name]?.count ?: 0))
+            val count = if (beadType == BeadType.SOROBAN) 25 else (ownedBeads[beadType.name]?.count ?: 0)
             if (count >= 25) {
                 Toast.makeText(ctx, "Stokta kalmadı", Toast.LENGTH_SHORT).show()
                 slotBuyBtn.isEnabled = true
                 dialog.setCancelable(true)
                 return@setOnClickListener
             }
-            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
-            if (currentCurrency < price) {
-                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+
+            val hasEnough = if (isKeyCurrency) UserWalletFirestore.getCachedKeys(ctx) >= price
+                            else UserWalletFirestore.getCachedCurrency(ctx) >= price
+            if (!hasEnough) {
+                Toast.makeText(ctx, if (isKeyCurrency) "Yetersiz anahtar" else "Yetersiz altın", Toast.LENGTH_SHORT).show()
                 slotBuyBtn.isEnabled = true
                 dialog.setCancelable(true)
                 return@setOnClickListener
             }
-            
-            UserWalletFirestore.applyCurrencyDelta(
-                context = ctx,
-                uid = uid,
-                delta = -price,
-                onSuccess = {
-                    val newCount = count + 5
-                    BeadPurchaseFirestore.setBeadCount(uid, beadType.name, newCount, onSuccess = {
+
+            fun onDeltaSuccess() {
+                val newCount = count + 5
+                BeadPurchaseFirestore.setBeadCount(uid, beadType.name, newCount,
+                    onSuccess = {
                         ownedBeads = ownedBeads + (beadType.name to (ownedBeads[beadType.name]?.copy(count = newCount) ?: BeadData(newCount, false)))
                         refreshCurrencyUi()
                         refreshUI()
                         slotBuyBtn.isEnabled = true
                         dialog.setCancelable(true)
-                    }, onFailure = {
+                    },
+                    onFailure = {
                         Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
-                        UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price)
+                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
                         refreshCurrencyUi()
                         slotBuyBtn.isEnabled = true
                         dialog.setCancelable(true)
-                    })
-                },
-                onFailure = {
-                    Toast.makeText(ctx, "İşlem başarısız", Toast.LENGTH_SHORT).show()
-                    slotBuyBtn.isEnabled = true
-                    dialog.setCancelable(true)
-                }
-            )
+                    }
+                )
+            }
+
+            fun onDeltaFailure() {
+                Toast.makeText(ctx, "İşlem başarısız", Toast.LENGTH_SHORT).show()
+                slotBuyBtn.isEnabled = true
+                dialog.setCancelable(true)
+            }
+
+            if (isKeyCurrency) {
+                UserWalletFirestore.applyKeyDelta(
+                    context = ctx, uid = uid, delta = -price,
+                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    onFailure = { ::onDeltaFailure.invoke() }
+                )
+            } else {
+                UserWalletFirestore.applyCurrencyDelta(
+                    context = ctx, uid = uid, delta = -price,
+                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    onFailure = { ::onDeltaFailure.invoke() }
+                )
+            }
         }
 
         fun placeBead(rod: Int, isTop: Boolean, beadIndex: Int = 0) {
@@ -1191,6 +1234,7 @@ class AbacusCustomizationFragment : Fragment() {
     private fun refreshCurrencyUi() {
         val ctx = context ?: return
         currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
+        keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
         (activity as? MainActivity)?.refreshWalletUi()
     }
 
@@ -1200,7 +1244,8 @@ class AbacusCustomizationFragment : Fragment() {
             BeadType.SOROBAN2, BeadType.SOROBAN6 -> 2000
             BeadType.BOWLING, BeadType.BALL1, BeadType.BALL3, BeadType.BALL4, BeadType.BALL5, BeadType.BALL6, BeadType.BALL7 -> 3000
             BeadType.BALL8, BeadType.BALL9, BeadType.BALL10, BeadType.BALL11, BeadType.BALL12, BeadType.BALL13, BeadType.BALL14 -> 4000
-            BeadType.ANIMAL, BeadType.ANIMAL2, BeadType.ANIMAL3, BeadType.ANIMAL4, BeadType.ANIMAL5, BeadType.ANIMAL6, BeadType.ANIMAL7, BeadType.ANIMAL8, BeadType.ANIMAL9 -> 5000
+            BeadType.ANIMAL3, BeadType.ANIMAL8 -> 40
+            BeadType.ANIMAL, BeadType.ANIMAL2, BeadType.ANIMAL4, BeadType.ANIMAL5, BeadType.ANIMAL6, BeadType.ANIMAL7, BeadType.ANIMAL9 -> 5000
         }
     }
 

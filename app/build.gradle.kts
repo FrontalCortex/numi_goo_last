@@ -76,8 +76,8 @@ dependencies {
     //gson verilerin kaydedilmesi için
     implementation("com.google.code.gson:gson:2.10.1")
 
-    //reklam için - geçici olarak kaldırıldı
-    //implementation("com.google.android.gms:play-services-ads:22.6.0")
+    //reklam için
+    implementation("com.google.android.gms:play-services-ads:23.1.0")
 
     //bu da bişi ama ne bilmiyom
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")

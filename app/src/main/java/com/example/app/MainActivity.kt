@@ -37,9 +37,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Source
-
-//import com.google.android.gms.ads.MobileAds
-
+import com.google.android.gms.ads.MobileAds
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.example.app.auth.AuthManager
@@ -52,6 +50,32 @@ import java.io.FileOutputStream
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
+    fun checkAndShowInterstitialAdIfAllowed(logContext: String) {
+        Log.d("AdDiag", "$logContext called. shouldShowAdOnReturn=${GlobalValues.shouldShowAdOnReturn}")
+        if (GlobalValues.shouldShowAdOnReturn) {
+            GlobalValues.shouldShowAdOnReturn = false
+            if (!isInfiniteEnergy()) {
+                val now = System.currentTimeMillis()
+                if (now - GlobalValues.lastInterstitialAdShownTime >= 40 * 1000L) {
+                    GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
+                        val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
+                        if (chests.size >= 2 && chests[1].stepIsFinish) {
+                            GlobalValues.lastInterstitialAdShownTime = System.currentTimeMillis()
+                            Log.d("AdDiag", "Showing Interstitial Ad on $logContext")
+                            adManager.showInterstitialAd(this)
+                        } else {
+                            Log.d("AdDiag", "Skipping Ad on $logContext: 2nd chest in part 1 is not finished")
+                        }
+                    }
+                } else {
+                    Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 40 sec cooldown")
+                }
+            } else {
+                Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro")
+            }
+        }
+    }
+
 
     companion object {
         const val EXTRA_FROM_LOGIN = "from_login"
@@ -132,7 +156,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var coin:TextView
     private lateinit var energyManager: EnergyManager
-    private lateinit var adManager: AdManager
+    internal lateinit var adManager: AdManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val authManager by lazy { AuthManager().also { it.initialize(this) } }
@@ -251,6 +275,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this) {}
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -276,6 +301,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             val isRacePanelOpen = coordinator?.findViewWithTag<View>("race_panel") != null
             view.visibility = when {
                 current is AbacusPracticeFragment -> View.GONE
+                current is NewChestFragment -> View.GONE
                 imeVisible -> View.GONE
                 teacherPendingMediaPath != null -> View.GONE
                 isRacePanelOpen -> View.GONE
@@ -375,15 +401,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             binding.energyText.visibility = View.GONE
         }
         
-        // Enerji sistemini başlat
+        // Enerji sistemini başlat — callback ayarlandığında zaten ilk değeri çeker
         energyManager = EnergyManager(this)
         energyManager.setEnergyUpdateCallback { energy ->
             updateEnergyDisplay(energy)
         }
-        updateEnergyDisplay(energyManager.getCurrentEnergy())
         
         // Reklam yöneticisini başlat
         adManager = AdManager(this)
+        adManager.preloadAd()
+        adManager.preloadInterstitialAd()
         
         // Süre takibini initialize et (onResume'da başlatılacak)
         TimeTracker.initialize(this)
@@ -742,8 +769,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         if (currentFragment is ProfileFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(ProfileFragment())
                     R.id.shop ->
-                        if (currentFragment is ShopFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(ShopFragment())
+                        if (currentFragment is AbacusCustomizationFragment) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(AbacusCustomizationFragment())
                     R.id.notification -> {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
                         // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma
@@ -770,15 +797,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             binding.lessonPartBackButton.visibility = View.GONE
         }
         
-        // Enerji paneli tıklama
-        binding.energyText.setOnClickListener {
-            showEnergyRefillDialog()
-        }
-        
-        // Enerji ikonu tıklama
-        binding.energyIcon.setOnClickListener {
-            showEnergyRefillDialog()
-        }
+        // Currency panel tıklamaları — ShopFragment aç
+        val openShop = View.OnClickListener { openShopFragment() }
+        binding.energyText.setOnClickListener(openShop)
+        binding.energyIcon.setOnClickListener(openShop)
+        binding.diamondID.setOnClickListener(openShop)
+        binding.currencyText.setOnClickListener(openShop)
+        binding.keyIcon.setOnClickListener(openShop)
+        binding.keyText.setOnClickListener(openShop)
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
@@ -1420,10 +1446,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     private fun updateCurrencyPanelVisibility() {
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment) View.VISIBLE else View.GONE
+        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment || current is MissionsFragment) View.VISIBLE else View.GONE
         
         // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle
-        if (current !is MapFragment) {
+        if (current !is MapFragment && current !is ShopFragment) {
             binding.lessonPartBackButton.visibility = View.GONE
         }
     }
@@ -1499,8 +1525,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             isFocusable = false
             setOnClickListener(null)
         }
-        findViewById<CoordinatorLayout>(R.id.coordinator_layout)?.findViewWithTag<View>("bottom_sheet")
-            ?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        val coordinator = findViewById<CoordinatorLayout>(R.id.coordinator_layout)
+        coordinator?.findViewWithTag<View>("bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        coordinator?.findViewWithTag<View>("race_panel")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        coordinator?.findViewWithTag<View>("race_lesson_bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
     }
 
     /** [LessonAdapter] geçiş blocker'ı (content üstü tam ekran). */
@@ -1733,6 +1761,11 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         prefs.edit().putInt("currency", value).apply()
     }
 
+    fun saveKeys(context: Context, value: Int) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putInt("keys", value).apply()
+    }
+
     fun getCurrency(context: Context): Int = UserWalletFirestore.getCachedCurrency(context)
 
     private fun refreshWalletFromFirestore() {
@@ -1789,6 +1822,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val currentKeys = binding.keyText.text.toString().toIntOrNull() ?: 0
         val newKeys = currentKeys + amount
         binding.keyText.text = newKeys.toString()
+        saveKeys(this, newKeys)
         auth.currentUser?.uid?.let { uid ->
             UserWalletFirestore.applyKeyDelta(
                 context = this,
@@ -1888,6 +1922,11 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     
     fun getEnergyManager(): EnergyManager {
         return energyManager
+    }
+
+    fun isInfiniteEnergy(): Boolean {
+        if (!::binding.isInitialized) return false
+        return binding.energyText.text.toString() == "∞"
     }
 
     private fun attachSeasonLeaderboardPendingListenerIfLoggedIn() {
@@ -2182,7 +2221,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
-            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment -> overlay
+            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {
@@ -2234,6 +2273,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun completeTasksOverlayDismiss(caller: String) {
+        checkAndShowInterstitialAdIfAllowed("completeTasksOverlayDismiss")
         if (!::binding.isInitialized) return
         forcingAbacusOverlayDismissForSeasonGate = false
         binding.abacusFragmentContainer.visibility = View.GONE
@@ -2329,6 +2369,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      * [MapFragment.notifyVisibleAfterOverlayDismiss] tek kaynak.
      */
     fun notifyMapVisibleAfterLessonClaim(caller: String) {
+        checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim")
         if (!::binding.isInitialized) return
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
         if (map == null || !map.isAdded) {
@@ -2786,57 +2827,19 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
     
-    fun showEnergyRefillDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_energy_refill, null)
-        val dialog = android.app.AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
+    fun openShopFragment() {
+        if (MainActivityChromeBlocker.currentLockDepth() > 0) return
+        val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (current is ShopFragment) return
         
-        val currentEnergyText = dialogView.findViewById<android.widget.TextView>(R.id.currentEnergyText)
-        val timeUntilNextText = dialogView.findViewById<android.widget.TextView>(R.id.timeUntilNextText)
-        val cancelButton = dialogView.findViewById<android.widget.Button>(R.id.cancelButton)
-        val watchAdButton = dialogView.findViewById<android.widget.Button>(R.id.watchAdButton)
+        dismissMapLessonOverlayChrome()
         
-        // Mevcut enerjiyi göster
-        currentEnergyText.text = "${energyManager.getCurrentEnergy()}/${energyManager.getMaxEnergy()}"
-        
-        // Timer için Handler
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        val updateTimer = object : Runnable {
-            override fun run() {
-                val timeUntilNext = energyManager.getTimeUntilNextEnergy()
-                val minutes = (timeUntilNext / 60000).toInt()
-                val seconds = ((timeUntilNext % 60000) / 1000).toInt()
-                timeUntilNextText.text = "Bir sonraki enerji: ${minutes}:${String.format("%02d", seconds)}"
-                
-                // Eğer dialog hala açıksa, 1 saniye sonra tekrar güncelle
-                if (dialog.isShowing) {
-                    handler.postDelayed(this, 1000)
-                }
-            }
-        }
-        
-        // Timer'ı başlat
-        handler.post(updateTimer)
-        
-        cancelButton.setOnClickListener {
-            dialog.dismiss()
-        }
-        
-        watchAdButton.setOnClickListener {
-            if (adManager.isAdReady()) {
-                dialog.dismiss()
-                adManager.showRewardedAd(this) {
-                    // Reklam tamamlandı, 1 enerji ver
-                    energyManager.addEnergy(1)
-                    android.widget.Toast.makeText(this, "Reklam izlendi! +1 Enerji kazandınız!", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                android.widget.Toast.makeText(this, "Reklam yükleniyor, lütfen bekleyin...", android.widget.Toast.LENGTH_SHORT).show()
-                adManager.preloadAd()
-            }
-        }
-        
-        dialog.show()
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
+            .add(R.id.fragmentContainerID, ShopFragment())
+            .addToBackStack(null)
+            .commit()
+        binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
     }
+
 }

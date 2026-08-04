@@ -65,17 +65,18 @@
 
         <ImageView
             android:id="@+id/energyIcon"
-            android:src="@drawable/energy_ic"
             android:layout_width="@dimen/main_energy_icon_size"
             android:layout_height="@dimen/main_energy_icon_size"
+            android:src="@drawable/heart_ic"
             android:contentDescription="Energy" />
 
         <TextView
             android:id="@+id/energyText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
             android:text="5/5"
-            android:textColor="#4CAF50"
+            android:textColor="#F44336"
             android:textStyle="bold"
             android:textSize="@dimen/main_energy_text_size"/>
         <View
@@ -144,11 +145,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:elevation="10dp"/>
 
+    <View
+        android:id="@+id/currencyPanelDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/circleBackground_color"
+        app:layout_constraintTop_toBottomOf="@id/currencyPanel" />
+
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/coordinator_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/currencyPanel"
+        app:layout_constraintTop_toBottomOf="@id/currencyPanelDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigationID">

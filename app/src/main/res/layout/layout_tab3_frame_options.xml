@@ -68,33 +68,59 @@
                 android:layout_height="110dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="#1A262B"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="#1A262B"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="70dp"
+                            android:layout_height="50dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/abacus_frame_bg2" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Kalpli"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                
                 <LinearLayout
+                    android:id="@+id/overlayFrameBg2"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="#BB000000"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="70dp"
-                        android:layout_height="50dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/abacus_frame_bg2" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Kalpli"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp" />
-                </LinearLayout>
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="visible">
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2000"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                            
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/gold_ic" />
+                    </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
@@ -111,33 +137,59 @@
                 android:layout_height="110dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="#1A262B"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="#1A262B"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="70dp"
+                            android:layout_height="50dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/abacus_frame_bg3" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Yıldızlı"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                
                 <LinearLayout
+                    android:id="@+id/overlayFrameBg3"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="#BB000000"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="70dp"
-                        android:layout_height="50dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/abacus_frame_bg3" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Yıldızlı"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp" />
-                </LinearLayout>
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="visible">
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2000"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                            
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/gold_ic" />
+                    </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <!-- frame_bg4 (gradient) -->
@@ -147,33 +199,59 @@
                 android:layout_height="110dp"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="#1A262B"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="#1A262B"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="4dp">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="70dp"
+                            android:layout_height="50dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/abacus_frame_bg4" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Gradyanlı"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                
                 <LinearLayout
+                    android:id="@+id/overlayFrameBg4"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:background="#BB000000"
                     android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="70dp"
-                        android:layout_height="50dp"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/abacus_frame_bg4" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Gradyanlı"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp" />
-                </LinearLayout>
+                    android:orientation="horizontal"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="visible">
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5000"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                            
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/gold_ic" />
+                    </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </LinearLayout>

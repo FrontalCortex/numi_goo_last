@@ -68,7 +68,7 @@ class MissionsFragment : Fragment() {
                 title = getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
-                iconRes = R.drawable.crystal_ic,
+                iconRes = R.drawable.new_chest_close_ic3,
                 window = MissionWindow.WEEKLY,
                 isClaimed = isClaimed,
             )
@@ -94,7 +94,7 @@ class MissionsFragment : Fragment() {
                 title = getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
-                iconRes = R.drawable.crystal_ic,
+                iconRes = R.drawable.new_chest_close_ic2,
                 window = MissionWindow.DAILY,
                 isClaimed = isClaimed,
             )
@@ -135,11 +135,11 @@ class MissionsFragment : Fragment() {
         val pct = ((q.progress.coerceAtMost(q.target) * 100f) / q.target.coerceAtLeast(1)).coerceIn(0f, 100f)
 
         title.text = q.title
-        applyMissionProgressOverlayNow(
+        applyMissionProgressOverlay(
             widthHost = progressTrack,
             fill = progressFill,
             shine = progressShine,
-            percent = pct,
+            percent = pct.toInt(),
             done = done,
             claimed = q.isClaimed,
         )
@@ -187,20 +187,20 @@ class MissionsFragment : Fragment() {
         val done = quest.progress >= quest.target
         if (!done || quest.isClaimed) return
         if (isVideoFlowOpen || !isAdded) return
-        val tag = MissionRewardRevealDialogFragment::class.java.simpleName
-        if (childFragmentManager.findFragmentByTag(tag) != null) return
+
         isVideoFlowOpen = true
-        MissionRewardRevealDialogFragment().show(childFragmentManager, tag)
-        childFragmentManager.executePendingTransactions()
-        (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
-            ?.setOnRewardClaimedCallback {
-                MissionsProgressStore.markMissionRewardClaimed(ctx, quest.window, quest.missionId)
-            }
-        (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
-            ?.setOnDismissCallback {
-                isVideoFlowOpen = false
-                if (isAdded) updateMissionsUI()
-            }
+
+        parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
+            MissionsProgressStore.markMissionRewardClaimed(requireContext(), quest.window, quest.missionId)
+            isVideoFlowOpen = false
+            updateMissionsUI()
+            parentFragmentManager.clearFragmentResultListener("chest_closed")
+        }
+
+        parentFragmentManager.beginTransaction()
+                .add(R.id.fragmentContainerID, NewChestFragment())
+                .addToBackStack("mission_chest")
+                .commit()
     }
 
     private fun formatWeeklyCountdown(ms: Long): String {

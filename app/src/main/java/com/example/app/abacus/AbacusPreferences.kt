@@ -193,7 +193,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL_COLOR_LABELS = arrayOf(
-        "Beyaz alanlar", "Kafa gövdesi", "Detaylar", "Göz/Burun"
+        "Kafa", "Göz çevresi", "Kulak/Dudak", "Göz/Ağız"
     )
 
     /**

@@ -34,6 +34,41 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class TasksFragment : Fragment() {
+    private fun startEnergyUpdateTimer(contentView: View, energyManager: EnergyManager?) {
+        if (energyManager == null) return
+        val energyText = contentView.findViewById<android.widget.TextView>(R.id.panelCupPathEnergyText) ?: return
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        
+        var updateRunnable: Runnable? = null
+        updateRunnable = Runnable {
+            val activity = activity as? MainActivity
+            if (activity != null) {
+                val isInfinite = activity.isInfiniteEnergy()
+                val currentText = if (isInfinite) "∞" else energyManager.getCurrentEnergy().toString()
+                if (energyText.text.toString() != currentText) {
+                    energyText.text = currentText
+                }
+            }
+            handler.postDelayed(updateRunnable!!, 1000)
+        }
+        
+        contentView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) {
+                handler.post(updateRunnable!!)
+            }
+            override fun onViewDetachedFromWindow(v: View) {
+                handler.removeCallbacks(updateRunnable!!)
+            }
+        })
+        
+        // Initial set
+        val activity = activity as? MainActivity
+        if (activity != null) {
+            val isInfinite = activity.isInfiniteEnergy()
+            energyText.text = if (isInfinite) "∞" else energyManager.getCurrentEnergy().toString()
+        }
+    }
+
     private lateinit var binding: FragmentTasksBinding
     private lateinit var bulletinAdapter: BulletinAdapter
     private var part1Sources: List<DailyQuestionSource> = emptyList()
@@ -556,6 +591,7 @@ class TasksFragment : Fragment() {
                         when (row.id) {
                             "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
                             "cup_path" -> showCupPathPanel()
+                            "chest_animation" -> openAbacusContainerFragment(NewChestFragment())
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
@@ -627,6 +663,13 @@ class TasksFragment : Fragment() {
                     subtitle = "Bir sorun mu yaşadınız? Görüşlerinizi ve önerilerinizi bizimle paylaşın.",
                     iconRes = R.drawable.feedback_ic,
                     colorRes = android.R.color.holo_blue_dark
+                ),
+                BulletinRow.Standard(
+                    id = "chest_animation",
+                    title = "Sandık Animasyonu",
+                    subtitle = "Yeni sandık açılış animasyonu yapısı.",
+                    iconRes = R.drawable.gold_ic,
+                    colorRes = android.R.color.holo_orange_dark
                 ),
             ),
         )
@@ -999,6 +1042,15 @@ class TasksFragment : Fragment() {
             .inflate(R.layout.panel_cup_path, null)
         dialog.setContentView(contentView)
 
+        val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
+        startEnergyUpdateTimer(contentView, energyManager)
+        
+        contentView.findViewById<android.view.View>(R.id.panelCupPathEnergyContainer)?.setOnClickListener {
+            dialog.dismiss()
+            GlobalValues.cupPathDialogRef?.get()?.dismiss()
+            (requireActivity() as? MainActivity)?.openShopFragment()
+        }
+
         // Expand the sheet fully on show
         dialog.setOnShowListener {
             val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
@@ -1149,7 +1201,7 @@ class TasksFragment : Fragment() {
         AbacusCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card1CupValue?.text = score.toString()
+                card1CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1158,7 +1210,7 @@ class TasksFragment : Fragment() {
         BlindingAdditionCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card4CupValue?.text = score.toString()
+                card4CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1167,7 +1219,7 @@ class TasksFragment : Fragment() {
         ExtractionCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card2CupValue?.text = score.toString()
+                card2CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1176,7 +1228,7 @@ class TasksFragment : Fragment() {
         BlindingExtractionCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card5CupValue?.text = score.toString()
+                card5CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1185,7 +1237,7 @@ class TasksFragment : Fragment() {
         ImpactCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card3CupValue?.text = score.toString()
+                card3CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1194,7 +1246,7 @@ class TasksFragment : Fragment() {
         BlindingImpactCupRepository.fetchCupScore { score ->
             if (!isAdded) return@fetchCupScore
             requireActivity().runOnUiThread {
-                card6CupValue?.text = score.toString()
+                card6CupValue?.text = score.coerceAtLeast(0).toString()
             }
         }
 
@@ -1312,6 +1364,15 @@ class TasksFragment : Fragment() {
                 }
                 
                 startBtn?.setOnClickListener {
+                    val isInfinite = (requireActivity() as? MainActivity)?.isInfiniteEnergy() == true
+                    val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
+                    if (!isInfinite && (energyManager?.getCurrentEnergy() ?: 0) <= 0) {
+                        dialog.dismiss()
+                        GlobalValues.cupPathDialogRef?.get()?.dismiss()
+                        (requireActivity() as? MainActivity)?.openShopFragment()
+                        return@setOnClickListener
+                    }
+                    
                     addLaunchTouchBlocker()
                     GlobalValues.cupPathDialogRef?.get()?.window?.setFlags(
                         android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
@@ -1400,7 +1461,13 @@ class TasksFragment : Fragment() {
                 // Fragment kapandığında TasksFragment'in haberi olması için result listener ekliyoruz
                 fm.setFragmentResultListener("cupModeResult", viewLifecycleOwner) { _, _ ->
                     activity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.GONE
-                    consumePendingCupDelta(pendingDeltaSetter = pendingDeltaSetter, cardCupValueId = cardCupValueId)
+                    
+                    (activity as? MainActivity)?.checkAndShowInterstitialAdIfAllowed("cupModeResult")
+                    val consumed = consumePendingCupDelta(pendingDeltaSetter = pendingDeltaSetter, cardCupValueId = cardCupValueId)
+                    if (!consumed) {
+                        // Delta yoktu (örn. quit veya ders başlamadan çıkış) — paneli yine de yeniden aç
+                        loadAndShowCupPathDialogAfterCupUpdate()
+                    }
                 }
 
                 fm.beginTransaction()
@@ -1482,7 +1549,7 @@ class TasksFragment : Fragment() {
                                 p
                             )
                         } else {
-                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
+                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
                         }
                     } else {
                         attempts++
@@ -1491,7 +1558,7 @@ class TasksFragment : Fragment() {
                         } else {
                             // Timeout: çok uzun sürdü, es geç
                             releaseLaunchTouchBlocker()
-                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
+                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
                         }
                     }
                 }
@@ -1507,7 +1574,7 @@ class TasksFragment : Fragment() {
                     payloads
                 )
             } else {
-                loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore)
+                loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
             }
         }
 
@@ -1516,7 +1583,31 @@ class TasksFragment : Fragment() {
 
 
     /** Kupa güncellemesinden sonra panel_cup_path'i güncel verilerle açar. */
-    private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, updatedScore: Int? = null) {
+    private fun animateCupScore(
+        textView: android.widget.TextView,
+        deltaTextView: android.widget.TextView,
+        oldScore: Int,
+        newScore: Int,
+        delta: Int
+    ) {
+        deltaTextView.visibility = android.view.View.VISIBLE
+        deltaTextView.text = if (delta > 0) "+" + delta else delta.toString()
+        deltaTextView.setTextColor(if (delta > 0) android.graphics.Color.parseColor("#4CAF50") else android.graphics.Color.parseColor("#F44336"))
+        
+        val animator = android.animation.ValueAnimator.ofInt(oldScore, newScore)
+        animator.duration = 1000
+        animator.addUpdateListener { anim ->
+            textView.text = anim.animatedValue.toString()
+        }
+        animator.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                deltaTextView.visibility = android.view.View.GONE
+            }
+        })
+        animator.start()
+    }
+
+private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, updatedScore: Int? = null, delta: Int? = null) {
         if (!isAdded) return
         val dialog = GlobalValues.cupPathDialogRef?.get()
         if (dialog != null) {
@@ -1525,16 +1616,26 @@ class TasksFragment : Fragment() {
             // Dokunmatik kilidini kaldır (eğer derse girilirken konulmuşsa)
             dialog.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
             // Arka planda verileri çekip dialogu güncelle
-            updateExistingCupPathDialog(dialog, updatedCardId, updatedScore)
+            updateExistingCupPathDialog(dialog, updatedCardId, updatedScore, delta)
         } else {
             // Eğer referans kayıpsa baştan yükle
             showCupPathPanel()
         }
     }
 
-    private fun updateExistingCupPathDialog(dialog: android.app.Dialog, updatedCardId: Int? = null, updatedScore: Int? = null) {
+    private fun updateExistingCupPathDialog(dialog: android.app.Dialog, updatedCardId: Int? = null, updatedScore: Int? = null, delta: Int? = null) {
         val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)
         val contentView = dialog.findViewById<View>(bottomSheetId) ?: return
+        
+        // Enerjiyi guncelle
+        val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
+        startEnergyUpdateTimer(contentView, energyManager)
+        
+        contentView.findViewById<android.view.View>(R.id.panelCupPathEnergyContainer)?.setOnClickListener {
+            dialog.dismiss()
+            GlobalValues.cupPathDialogRef?.get()?.dismiss()
+            (requireActivity() as? MainActivity)?.openShopFragment()
+        }
         val context = requireContext()
 
         // 1. Kilit/Aktif durumlarını güncelle
@@ -1577,55 +1678,145 @@ class TasksFragment : Fragment() {
         // 2. Kupa değerlerini güncelle
         val card1CupValue = contentView.findViewById<android.widget.TextView>(R.id.card1CupValue)
         if (updatedCardId == R.id.card1CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card1CupValue?.text = updatedScore.toString(); card1CupValue?.visibility = View.VISIBLE }
+            val tv = card1CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card1CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             AbacusCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card1CupValue?.text = score.toString(); card1CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card1CupValue?.text = score.coerceAtLeast(0).toString(); card1CupValue?.visibility = View.VISIBLE }
             }
         }
         
         val card4CupValue = contentView.findViewById<android.widget.TextView>(R.id.card4CupValue)
         if (updatedCardId == R.id.card4CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card4CupValue?.text = updatedScore.toString(); card4CupValue?.visibility = View.VISIBLE }
+            val tv = card4CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card4CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             BlindingAdditionCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card4CupValue?.text = score.toString(); card4CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card4CupValue?.text = score.coerceAtLeast(0).toString(); card4CupValue?.visibility = View.VISIBLE }
             }
         }
         
         val card2CupValue = contentView.findViewById<android.widget.TextView>(R.id.card2CupValue)
         if (updatedCardId == R.id.card2CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card2CupValue?.text = updatedScore.toString(); card2CupValue?.visibility = View.VISIBLE }
+            val tv = card2CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card2CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             ExtractionCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card2CupValue?.text = score.toString(); card2CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card2CupValue?.text = score.coerceAtLeast(0).toString(); card2CupValue?.visibility = View.VISIBLE }
             }
         }
         
         val card5CupValue = contentView.findViewById<android.widget.TextView>(R.id.card5CupValue)
         if (updatedCardId == R.id.card5CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card5CupValue?.text = updatedScore.toString(); card5CupValue?.visibility = View.VISIBLE }
+            val tv = card5CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card5CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             BlindingExtractionCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card5CupValue?.text = score.toString(); card5CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card5CupValue?.text = score.coerceAtLeast(0).toString(); card5CupValue?.visibility = View.VISIBLE }
             }
         }
         
         val card3CupValue = contentView.findViewById<android.widget.TextView>(R.id.card3CupValue)
         if (updatedCardId == R.id.card3CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card3CupValue?.text = updatedScore.toString(); card3CupValue?.visibility = View.VISIBLE }
+            val tv = card3CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card3CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             ImpactCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card3CupValue?.text = score.toString(); card3CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card3CupValue?.text = score.coerceAtLeast(0).toString(); card3CupValue?.visibility = View.VISIBLE }
             }
         }
         
         val card6CupValue = contentView.findViewById<android.widget.TextView>(R.id.card6CupValue)
         if (updatedCardId == R.id.card6CupValue && updatedScore != null) {
-            if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card6CupValue?.text = updatedScore.toString(); card6CupValue?.visibility = View.VISIBLE }
+            val tv = card6CupValue
+            if (isAdded && tv != null) {
+                tv.visibility = android.view.View.VISIBLE
+                if (delta != null && delta != 0) {
+                    tv.post {
+                        val deltaTextView = contentView.findViewById<android.widget.TextView>(R.id.card6CupDeltaText)
+                        val oldScore = (updatedScore - delta).coerceAtLeast(0)
+                        tv.text = oldScore.toString()
+                        if (deltaTextView != null) {
+                            animateCupScore(tv, deltaTextView, oldScore, updatedScore.coerceAtLeast(0), delta)
+                        }
+                    }
+                } else {
+                    tv.text = updatedScore.coerceAtLeast(0).toString()
+                }
+            }
         } else {
             BlindingImpactCupRepository.fetchCupScore { score ->
-                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card6CupValue?.text = score.toString(); card6CupValue?.visibility = View.VISIBLE }
+                if (isAdded && dialog.isShowing) requireActivity().runOnUiThread { card6CupValue?.text = score.coerceAtLeast(0).toString(); card6CupValue?.visibility = View.VISIBLE }
             }
         }
     }
@@ -1696,6 +1887,15 @@ class TasksFragment : Fragment() {
         val contentView = LayoutInflater.from(requireContext())
             .inflate(R.layout.panel_cup_path, null)
         dialog.setContentView(contentView)
+        
+        val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
+        startEnergyUpdateTimer(contentView, energyManager)
+        
+        contentView.findViewById<android.view.View>(R.id.panelCupPathEnergyContainer)?.setOnClickListener {
+            dialog.dismiss()
+            GlobalValues.cupPathDialogRef?.get()?.dismiss()
+            (requireActivity() as? MainActivity)?.openShopFragment()
+        }
 
         dialog.setOnShowListener {
             val bottomSheetId = dialog.context.resources.getIdentifier("design_bottom_sheet", "id", dialog.context.packageName)

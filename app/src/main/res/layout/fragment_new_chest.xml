@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/newChestRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Nadirlik adı -->
+    <TextView
+        android:id="@+id/chestRarityLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SIRADAN"
+        android:textColor="#FFB300"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/chestImage"
+        app:layout_constraintVertical_chainStyle="packed"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Sandık Platformu (Arka plan) -->
+    <View
+        android:id="@+id/chestPlatform"
+        android:layout_width="210dp"
+        android:layout_height="140dp"
+        android:layout_marginTop="110dp"
+        android:background="@drawable/bg_chest_platform"
+        app:layout_constraintBottom_toBottomOf="@id/chestImage"
+        app:layout_constraintStart_toStartOf="@id/chestImage"
+        app:layout_constraintEnd_toEndOf="@id/chestImage"
+        app:layout_constraintTop_toTopOf="@id/chestImage" />
+
+    <!-- Sandık görseli -->
+    <ImageView
+        android:id="@+id/chestImage"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:src="@drawable/new_chest_close_ic1"
+        android:scaleType="fitCenter"
+        app:layout_constraintTop_toBottomOf="@id/chestRarityLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/stepsContainer" />
+
+    <!-- Yıldız parçacıklarının ekleneceği katman (Sandığın önünde) -->
+    <FrameLayout
+        android:id="@+id/starContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="10dp"
+        android:clipChildren="false" />
+
+    <!-- 3 adım göstergesi (daireler) -->
+    <LinearLayout
+        android:id="@+id/stepsContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:layout_marginTop="50dp"
+        app:layout_constraintTop_toBottomOf="@id/chestImage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/chestHintText">
+
+        <!-- Adım 1 -->
+        <FrameLayout
+            android:id="@+id/step1"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="12dp">
+            <View
+                android:id="@+id/step1Bg"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_circle_active" />
+        </FrameLayout>
+
+        <!-- Adım 2 -->
+        <FrameLayout
+            android:id="@+id/step2"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="12dp">
+            <View
+                android:id="@+id/step2Bg"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_circle_future" />
+        </FrameLayout>
+
+        <!-- Adım 3 -->
+        <FrameLayout
+            android:id="@+id/step3"
+            android:layout_width="32dp"
+            android:layout_height="32dp">
+            <View
+                android:id="@+id/step3Bg"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/step_circle_future" />
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- Alt ipucu metni -->
+    <TextView
+        android:id="@+id/chestHintText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Daha iyisini alma şansı için dokun!"
+        android:textColor="#FFFFFFFF"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="120dp" />
+
+    <!-- Animasyon Overlay View -->
+    <View
+        android:id="@+id/chestOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background_color"
+        android:visibility="gone"
+        android:alpha="0"
+        android:elevation="20dp" />
+
+    <!-- Açılış Ödül Görseli (Coin vs.) -->
+    <ImageView
+        android:id="@+id/chestRewardCoin"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:src="@drawable/shop_coin_ic1"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:scaleX="0"
+        android:scaleY="0"
+        android:elevation="25dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0.45" />
+
+    <!-- Açılış Ödül Yazısı -->
+    <TextView
+        android:id="@+id/chestRewardText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="1000"
+        android:textColor="#FFFFFF"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:alpha="0"
+        android:elevation="25dp"
+        android:layout_marginTop="160dp"
+        android:drawableStart="@drawable/gold_ic"
+        android:drawablePadding="8dp"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toBottomOf="@id/chestRewardCoin"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="120dp" android:height="140dp" android:viewportWidth="120" android:viewportHeight="140">
+  <group android:translateX="-255.21" android:translateY="-92.7">
+    <path android:pathData="M316.11,152.62" android:fillColor="#C4B99F" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M316.11,152.62" android:fillColor="#9B887B" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M316.11,190L316.11,152.62" android:fillColor="#9B887B" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M316.11,152.62L316.11,143.27" android:fillColor="#9B887B" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.65,185.02h97.11v37.68h-97.11z" android:fillColor="#607690" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.76,147.95l-2.13,-27.24l101.15,0l-1.91,27.24z" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.76,157.29v18.69l-0.11,9.05M266.65,185.02h97.11v-4.37l0.11,-32.71h-8.09h-80.93h-8.09M274.86,157.29h80.93v18.69h-80.93V157.29z" android:fillColor="#6A87B3" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M264.64,110.57h101.15v10.14h-101.15z" android:fillColor="#F1CE3E" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M274.86,152.62h80.93v27.02h-80.93z" android:fillColor="#2F3E48" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M363.65,210.69l-97,0l0,-12.49l97.02,0z" android:fillColor="#6A87B3" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M274.86,147.95l-1.92,-23.36l84.43,0l-1.58,23.36z" android:fillColor="#2F3E48" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M272.93,143.27h87.87v4.67h-87.87z" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.65,185.02h97.11v3.8h-97.11z" android:fillColor="#516376" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.65,186.98h3.8v33.02h-3.8z" android:fillColor="#516376" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M359.96,186.98h3.8v33.02h-3.8z" android:fillColor="#516376" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M266.65,218.9h97.11v3.8h-97.11z" android:fillColor="#516376" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M361.53,103.09c-0.92,-1.28 -2.04,-2.32 -3.26,-3.15c-4.69,-3.2 -10.69,-3.39 -10.69,-3.39s-48.56,0 -64.74,0c-5.18,0 -8.7,1.44 -11.09,3.39c-1.18,0.96 -2.09,2.05 -2.78,3.15c-2.3,3.65 -2.31,7.47 -2.31,7.47h97.11C363.77,107.42 362.88,104.99 361.53,103.09z" android:fillColor="#6A87B3" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M275.12,128.32c0,0 0,4.67 8.09,4.67c8.09,0 8.17,-4.72 8.17,-4.72v-9.26l-16.26,-0.04V128.32zM283.25,122.78c1.73,0 3.12,1.4 3.12,3.12c0,1.73 -1.4,3.12 -3.12,3.12c-1.73,0 -3.12,-1.4 -3.12,-3.12C280.13,124.17 281.52,122.78 283.25,122.78z" android:fillColor="#F1CE3E" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M339.04,119.07v9.34c0,0 0,4.67 8.09,4.67c8.09,0 8.17,-4.72 8.17,-4.72v-9.26L339.04,119.07zM347.17,129.11c-1.73,0 -3.12,-1.4 -3.12,-3.12s1.4,-3.12 3.12,-3.12c1.73,0 3.12,1.4 3.12,3.12S348.89,129.11 347.17,129.11z" android:fillColor="#F1CE3E" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M305.85,185.02h19.09v37.68h-19.09z" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M305.85,96.55h19.09v14.02h-19.09z" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M283.11,135.98h0.27c1.64,0 2.99,-1.34 2.99,-2.99v-7.3c0,-1.64 -1.34,-2.99 -2.99,-2.99h-0.27c-1.64,0 -2.99,1.34 -2.99,2.99v7.3C280.13,134.63 281.47,135.98 283.11,135.98z" android:fillColor="#E58E26" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M347.03,135.98h0.27c1.64,0 2.99,-1.34 2.99,-2.99v-7.3c0,-1.64 -1.34,-2.99 -2.99,-2.99h-0.27c-1.64,0 -2.99,1.34 -2.99,2.99v7.3C344.05,134.63 345.39,135.98 347.03,135.98z" android:fillColor="#E58E26" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M288.88,204.61m-2.96,0a2.96,2.96 0,1 1,5.92 0a2.96,2.96 0,1 1,-5.92 0" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M277.41,204.61m-2.96,0a2.96,2.96 0,1 1,5.92 0a2.96,2.96 0,1 1,-5.92 0" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M299.53,204.61m-2.96,0a2.96,2.96 0,1 1,5.92 0a2.96,2.96 0,1 1,-5.92 0" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M345.69,204.61c0,1.63 -1.33,2.96 -2.96,2.96s-2.96,-1.33 -2.96,-2.96s1.33,-2.96 2.96,-2.96S345.69,202.97 345.69,204.61z" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M331.26,204.61m-2.96,0a2.96,2.96 0,1 1,5.92 0a2.96,2.96 0,1 1,-5.92 0" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M353.38,204.61m-2.96,0a2.96,2.96 0,1 1,5.92 0a2.96,2.96 0,1 1,-5.92 0" android:fillColor="#3C4E6C" xmlns:android="http://schemas.android.com/apk/res/android" />
+    <path android:pathData="M264.64,106.24h101.15v4.32h-101.15z" android:fillColor="#ECB736" xmlns:android="http://schemas.android.com/apk/res/android" />
+  </group>
+</vector>

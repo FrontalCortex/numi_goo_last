@@ -155,6 +155,7 @@ class AbacusFragment : Fragment() {
     private lateinit var runnable: Runnable
     private lateinit var timerTextView: TextView
     private var isTimerStarted = false
+    private var lessonStarted = false
     private lateinit var lessonItem : LessonItem
     private var currentTime: String = "0:00"
     private lateinit var rulesBookButton: ImageView
@@ -205,6 +206,7 @@ class AbacusFragment : Fragment() {
     private var abacusMetricsInitialized = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        GlobalValues.shouldShowAdOnReturn = true
         lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
 
 
@@ -275,16 +277,42 @@ class AbacusFragment : Fragment() {
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
         setupQuitButton()
-        timeStarter()
         rulesBookVisibility()
-        
-        // İlk adımı göster (guide panel olsa da olmasa da)
-        showCurrentOperation()
+        // showCurrentOperation() - startButton ile cagirilicak
+        setupStartButton()
         
         // Guide panel'i kur (eğer varsa)
         setupGuidePanel()
 
         setupAskQuestionButton()
+    }
+
+    
+    private fun setupStartButton() {
+        val startButton = binding.root.findViewById<android.view.View>(R.id.startButton)
+        
+        if (lessonItem.type != 2) {
+            // Chest değilse eski sistem (hemen başlar)
+            startButton?.visibility = android.view.View.GONE
+            binding.kontrolButton.visibility = android.view.View.VISIBLE
+            lessonStarted = true
+            timeStarter()
+            showCurrentOperation()
+            return
+        }
+
+        // Chest ise başlama butonu aktif olur
+        startButton?.visibility = android.view.View.VISIBLE
+        binding.kontrolButton.visibility = android.view.View.INVISIBLE
+        
+        startButton?.setOnClickListener {
+            if (lessonStarted) return@setOnClickListener
+            lessonStarted = true
+            startButton.visibility = android.view.View.INVISIBLE
+            binding.kontrolButton.visibility = android.view.View.VISIBLE
+            timeStarter()
+            showCurrentOperation()
+        }
     }
 
     private fun setupAskQuestionButton() {
@@ -519,7 +547,6 @@ class AbacusFragment : Fragment() {
             disableGuidePanelMode()
             hideGuidePanelWithAnimation()
             setGuideNavButtonsVisibility(View.GONE)
-            showCurrentOperation()
         }
     }
 
@@ -665,9 +692,14 @@ class AbacusFragment : Fragment() {
         // Abaküs ve tüm alt view'lerini tıklanamaz yap
         disableAllClickable(binding.abacusLinear)
         
-        // Kontrol butonunu tıklanamaz yap
+        // Kontrol butonunu ve startButton'u tıklanamaz yap
         binding.kontrolButton.isClickable = false
         binding.kontrolButton.isFocusable = false
+        
+        binding.root.findViewById<android.view.View>(R.id.startButton)?.let { startBtn ->
+            startBtn.isClickable = false
+            startBtn.isFocusable = false
+        }
         // Control button'un listener'ını geçici olarak kaldır
         binding.kontrolButton.setOnTouchListener(null)
         
@@ -710,9 +742,14 @@ class AbacusFragment : Fragment() {
         // Abaküs ve tüm alt view'lerini tekrar tıklanabilir yap
         enableAllClickable(binding.abacusLinear)
         
-        // Kontrol butonunu tekrar tıklanabilir yap
+        // Kontrol butonunu ve startButton'u tekrar tıklanabilir yap
         binding.kontrolButton.isClickable = true
         binding.kontrolButton.isFocusable = true
+        
+        binding.root.findViewById<android.view.View>(R.id.startButton)?.let { startBtn ->
+            startBtn.isClickable = true
+            startBtn.isFocusable = true
+        }
         // Control button'un listener'ını geri yükle
         controlButtonListener?.let { listener ->
             binding.kontrolButton.setOnTouchListener(listener)

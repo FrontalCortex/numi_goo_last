@@ -242,6 +242,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        GlobalValues.shouldShowAdOnReturn = true
         // Bazı açılış senaryolarında (özellikle login sonrası) GlobalLessonData henüz dolmamış olabiliyor.
         // Burada güvenli bir fallback ile crash'i engelleyip doğru item'ı bulmaya çalışıyoruz.
         LessonManager.ensureInitialized(requireContext(), GlobalLessonData.globalPartId)

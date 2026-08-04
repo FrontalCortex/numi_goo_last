@@ -1422,7 +1422,28 @@
     </FrameLayout>
 
 
-    <Button
+        <com.google.android.material.button.MaterialButton
+        android:id="@+id/startButton"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/tutorial_back_button_size"
+        android:layout_marginStart="@dimen/tutorial_control_button_side_margin"
+        android:layout_marginEnd="@dimen/tutorial_control_button_side_margin"
+        android:layout_marginBottom="15dp"
+        android:fontFamily="@font/font_regular"
+        android:text="Başla"
+        android:visibility="gone"
+        android:textAllCaps="false"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:elevation="0dp"
+        android:textColor="#000000"
+        android:backgroundTint="#8CC63F"
+        app:cornerRadius="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+<Button
         android:id="@+id/kontrolButton"
         android:layout_width="0dp"
         android:layout_height="@dimen/tutorial_back_button_size"
@@ -1442,7 +1463,9 @@
         app:cornerRadius="@dimen/tutorial_control_button_corner_radius"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        android:visibility="invisible">
+</Button>
     <View
         android:id="@+id/overlay"
         android:layout_width="match_parent"

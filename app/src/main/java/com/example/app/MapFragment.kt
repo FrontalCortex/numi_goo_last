@@ -100,13 +100,7 @@ class MapFragment : Fragment() {
                 1010 -> MathOperationGenerator.generateRelatedNumbersList(6, 3, 3)
 
                 1013 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(4, 4),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
-                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(1, 1),
                 )
                 7 -> listOf(
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),

@@ -53,8 +53,9 @@ object ChestCrystalPolicy {
     }
 
     private fun resolveKeyAmountForVideo(videoName: String): Int = when (videoName) {
-        "crystal_purple_yellow", "crystal_red_yellow" -> 2
-        "crystal_purple_purple", "crystal_blue_purple", "crystal_red_purple" -> 1
+        "crystal_purple_yellow", "crystal_red_yellow" -> 3
+        "crystal_purple_purple", "crystal_blue_purple", "crystal_red_purple" -> 2
+        "crystal_red_red", "crystal_blue_red" -> 1
         else -> 1
     }
 

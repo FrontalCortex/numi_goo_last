@@ -402,7 +402,7 @@ class LessonAdapter(
                     if (plan == "Free") {
                         if (!energyManager.hasEnoughEnergy(1)) {
                             // Yeterli enerji yok, kullanıcıya uyarı göster
-                            showEnergyWarning(context)
+                            behavior.isHideable = true; behavior.state = BottomSheetBehavior.STATE_HIDDEN; showEnergyWarning(context)
                             return@getCurrentPlan
                         }
                         // Enerjiyi kullan
@@ -539,7 +539,7 @@ class LessonAdapter(
     private fun showEnergyWarning(context: Context) {
         val mainActivity = context as MainActivity
         // Doğrudan enerji yenileme dialog'unu göster
-        mainActivity.showEnergyRefillDialog()
+        mainActivity.openShopFragment()
     }
 
     fun showRacePanel(item: LessonItem, position: Int, isFromPartSelection: Boolean = false) {

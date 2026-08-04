@@ -215,6 +215,7 @@ class BlindingLessonFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        GlobalValues.shouldShowAdOnReturn = true
         isDailyQuestionMode = arguments?.getBoolean(ARG_DAILY_MODE, false) == true
         if (isDailyQuestionMode) {
             dailyQuestionSessionPeriodKey = arguments?.getString(ARG_DAILY_PERIOD_KEY)
@@ -1072,7 +1073,11 @@ class BlindingLessonFragment : Fragment() {
 
     private fun setupQuitButton() {
         binding.quitButton.setOnClickListener {
-            if (globalPartId == 9) {
+            if (isDailyQuestionMode && lessonStarted) {
+                handleDailyQuestionWrongAnswer()
+                return@setOnClickListener
+            }
+            if (globalPartId == 9 && lessonStarted) {
                 val lossDelta = lessonItem.cupLossDelta ?: 30
                 if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
                     GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
@@ -1088,6 +1093,7 @@ class BlindingLessonFragment : Fragment() {
                     GlobalValues.pendingCupDelta = -lossDelta
                 }
                 BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
             }
             closeFragment()
         }
@@ -1103,7 +1109,11 @@ class BlindingLessonFragment : Fragment() {
                         rulesFragment.closeWithAnimation()
                         return
                     }
-                    if (globalPartId == 9) {
+                    if (isDailyQuestionMode && lessonStarted) {
+                        handleDailyQuestionWrongAnswer()
+                        return
+                    }
+                    if (globalPartId == 9 && lessonStarted) {
                         val lossDelta = lessonItem.cupLossDelta ?: 30
                         if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
                             GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
@@ -1119,6 +1129,7 @@ class BlindingLessonFragment : Fragment() {
                             GlobalValues.pendingCupDelta = -lossDelta
                         }
                         BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                        (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
                     }
                     closeFragment()
                 }
@@ -1468,7 +1479,7 @@ class BlindingLessonFragment : Fragment() {
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
                                         correctPanel.visibility = View.GONE
-                                        closeFragment()
+                                        finishLessonAfterLastQuestion()
                                     }
                                     .start()
                                 return@setOnTouchListener true
@@ -1585,7 +1596,7 @@ class BlindingLessonFragment : Fragment() {
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
                                         incorrectPanel.visibility = View.GONE
-                                        closeFragment()
+                                        showLessonResultFalse()
                                     }
                                     .start()
                                 return@setOnTouchListener true
@@ -1955,24 +1966,7 @@ class BlindingLessonFragment : Fragment() {
             isDailyQuestionMode -> handleDailyQuestionLessonComplete()
             // Kupa modu: doğru tamamlandı — +5 delta bırak ve kapat
             globalPartId == 9 -> {
-                if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                    if (GlobalValues.pendingBlindingImpactCupDelta == null) {
-                        GlobalValues.pendingBlindingImpactCupDelta = AbacusCupRepository.CUP_STEP
-                    }
-                } else if (lessonItem.isMultiplication == true) {
-                    if (GlobalValues.pendingImpactCupDelta == null) {
-                        GlobalValues.pendingImpactCupDelta = AbacusCupRepository.CUP_STEP
-                    }
-                } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingExtractionCupDelta = AbacusCupRepository.CUP_STEP
-                } else if (lessonItem.isExtraction == true) {
-                    GlobalValues.pendingExtractionCupDelta = AbacusCupRepository.CUP_STEP
-                } else if (lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingCupDelta = AbacusCupRepository.CUP_STEP
-                } else {
-                    GlobalValues.pendingCupDelta = AbacusCupRepository.CUP_STEP
-                }
-                BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                // Delta ve Firestore yazma işlemi controlButtonListener'da optimistic UI olarak zaten yapıldı.
                 closeFragment()
             }
             isRacePanelLesson() || (lessonItem.type == LessonItem.TYPE_CHEST && globalPartId !in setOf(4, 5)) -> {
@@ -2022,24 +2016,8 @@ class BlindingLessonFragment : Fragment() {
     private fun showLessonResultFalse(isChestFailure: Boolean = false) {
         // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
         if (globalPartId == 9) {
-            if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                if (GlobalValues.pendingBlindingImpactCupDelta == null) {
-                    GlobalValues.pendingBlindingImpactCupDelta = -AbacusCupRepository.CUP_STEP
-                }
-            } else if (lessonItem.isMultiplication == true) {
-                if (GlobalValues.pendingImpactCupDelta == null) {
-                    GlobalValues.pendingImpactCupDelta = -AbacusCupRepository.CUP_STEP
-                }
-            } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                GlobalValues.pendingBlindingExtractionCupDelta = -AbacusCupRepository.CUP_STEP
-            } else if (lessonItem.isExtraction == true) {
-                GlobalValues.pendingExtractionCupDelta = -AbacusCupRepository.CUP_STEP
-            } else if (lessonItem.isBlinding == true) {
-                GlobalValues.pendingBlindingCupDelta = -AbacusCupRepository.CUP_STEP
-            } else {
-                GlobalValues.pendingCupDelta = -AbacusCupRepository.CUP_STEP
-            }
-            BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+            // Delta ve Firestore yazma işlemi controlButtonListener'da optimistic UI olarak zaten yapıldı.
+            (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
             closeFragment()
             return
         }
