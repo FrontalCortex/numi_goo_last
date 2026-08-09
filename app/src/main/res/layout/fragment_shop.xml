@@ -151,7 +151,92 @@
             android:paddingTop="20dp">
 
 
-            <!-- ── Section: Özel Teklifler ──────────────────────────────── -->
+            <!-- 🆕 SUPER CARD -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/shopSuperCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_shop_super_card"
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/superBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_shop_super_badge"
+                    android:text="PRO"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginStart="20dp"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"/>
+
+                <TextView
+                    android:id="@+id/superTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Öğrenmeyi\n hızlandıran \n özellikler"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="8dp"
+                    app:layout_constraintTop_toBottomOf="@id/superBadge"
+                    app:layout_constraintStart_toStartOf="@id/superBadge"
+                    app:layout_constraintEnd_toStartOf="@id/superAnim"/>
+
+                <TextView
+                    android:id="@+id/superSubtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Sınırsız enerji ve reklamsız\n deneyimin"
+                    android:textColor="#E0E0E0"
+                    android:textSize="13sp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="8dp"
+                    app:layout_constraintTop_toBottomOf="@id/superTitle"
+                    app:layout_constraintStart_toStartOf="@id/superBadge"
+                    app:layout_constraintEnd_toStartOf="@id/superAnim"/>
+
+                <TextView
+                    android:id="@+id/superButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_white_rounded_16dp"
+                    android:text="1 HAFTA ÜCRETSİZ DENE"
+                    android:textColor="#000000"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="20dp"
+                    android:layout_marginHorizontal="20dp"
+                    app:layout_constraintTop_toBottomOf="@id/superSubtitle"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"/>
+
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/superAnim"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_marginEnd="10dp"
+                    app:lottie_fileName="trex_anim.json"
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@id/superButton"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- 🎁 Section: Özel Teklifler 🎁 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -187,7 +272,7 @@
                         <ImageView
                             android:layout_width="64dp"
                             android:layout_height="64dp"
-                            android:src="@drawable/crystal_ic"
+                            android:src="@drawable/new_chest_close_ic1"
                             android:contentDescription="Kristal" />
 
                         <LinearLayout
@@ -200,7 +285,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Ücretsiz Kristal"
+                                android:text="Ücretsiz Sandık"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
@@ -209,7 +294,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Bir reklam izleyerek kristal çatlat."
+                                android:text="Bir reklam izleyerek sandık kazan."
                                 android:textColor="#B0BEC5"
                                 android:textSize="13sp" />
 
@@ -241,7 +326,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="KRİSTALİ ÇATLAT"
+                            android:text="SANDIK KAZAN"
                             android:textColor="#29B6F6"
                             android:textSize="13sp"
                             android:textStyle="bold"

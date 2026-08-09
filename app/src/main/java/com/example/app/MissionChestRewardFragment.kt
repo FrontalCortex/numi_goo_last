@@ -7,18 +7,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.animation.DecelerateInterpolator
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.app.databinding.FragmentMissionChestRewardBinding
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/**
- * Sandık ödülünden sonra sadece bu sefer ilerleyen görevleri listeler; çubuklar animasyonla dolar.
- */
 class MissionChestRewardFragment : Fragment() {
 
     private var _binding: FragmentMissionChestRewardBinding? = null
@@ -29,6 +27,27 @@ class MissionChestRewardFragment : Fragment() {
     private lateinit var afterSnapshot: MissionsProgressStore.Snapshot
     private var shouldOpenBadgeAfterContinue: Boolean = false
     private var badgePayloadQueue: ArrayList<String> = arrayListOf()
+
+    private val runningAnimators = mutableListOf<ValueAnimator>()
+
+    private data class AnimatedQuest(
+        val missionId: String,
+        val window: MissionWindow,
+        val isClaimed: Boolean,
+        val title: String,
+        val iconRes: Int,
+        val target: Int,
+        val fromCount: Int,
+        val toCount: Int,
+        val staggerIndex: Int,
+    )
+
+    fun setBadgePayloads(payloads: List<String>) {
+        if (payloads.isNotEmpty()) {
+            shouldOpenBadgeAfterContinue = true
+            badgePayloadQueue.addAll(payloads)
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,6 +60,13 @@ class MissionChestRewardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Hiçbir şey yapma
+            }
+        })
+
         MainActivityChromeBlocker.acquire(requireActivity())
         popBackStackOnContinue = requireArguments().getBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, false)
         shouldOpenBadgeAfterContinue = requireArguments().getBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, false)
@@ -75,11 +101,15 @@ class MissionChestRewardFragment : Fragment() {
             weeklyLearnMinutesCount = args.getInt(ARG_WEEKLY_LEARN_MINUTES_AFTER),
         )
         binding.missionChestRewardTitle.setText(R.string.mission_chest_reward_title)
-        binding.missionChestRewardRecycler.layoutManager = LinearLayoutManager(requireContext())
+        
         renderRewardList()
 
+        binding.missionChestRewardContinue.isEnabled = false
+        binding.missionChestRewardContinue.postDelayed({
+            if (isAdded) binding.missionChestRewardContinue.isEnabled = true
+        }, 500)
+
         binding.missionChestRewardContinue.setOnClickListener {
-            // remove() sonrası isAdded == false olur; kuyruk ve rozet kararını önce al, sonra activity FM ile aç.
             val openBadgeAfter = shouldOpenBadgeAfterContinue && badgePayloadQueue.isNotEmpty()
             val queueCopy = ArrayList(badgePayloadQueue)
             val activityFm = requireActivity().supportFragmentManager
@@ -119,34 +149,244 @@ class MissionChestRewardFragment : Fragment() {
 
     override fun onDestroyView() {
         MainActivityChromeBlocker.release(activity)
-        binding.missionChestRewardRecycler.adapter = null
+        runningAnimators.forEach { it.cancel() }
+        runningAnimators.clear()
         _binding = null
         super.onDestroyView()
     }
 
     private fun renderRewardList() {
         val ctx = context ?: return
-        val items = buildRewardList(ctx, beforeSnapshot, afterSnapshot)
-        binding.missionChestRewardRecycler.adapter = MissionChestRewardAdapter(
-            items = items,
-            onCompletedQuestClick = { quest ->
-                if (isVideoFlowOpen || !isAdded) return@MissionChestRewardAdapter
-                val tag = MissionRewardRevealDialogFragment::class.java.simpleName
-                if (childFragmentManager.findFragmentByTag(tag) != null) return@MissionChestRewardAdapter
+        
+        binding.weeklyQuestsContainer.removeAllViews()
+        binding.dailyQuestsContainer.removeAllViews()
+        runningAnimators.forEach { it.cancel() }
+        runningAnimators.clear()
+
+        var stagger = 0
+        val weeklyQuests = mutableListOf<AnimatedQuest>()
+        MissionsProgressStore.selectedMissionsForWeekly(ctx).forEach { mission ->
+            val beforeCount = minOf(
+                MissionsProgressStore.missionProgress(beforeSnapshot, MissionWindow.WEEKLY, mission),
+                mission.target,
+            )
+            val afterCount = minOf(
+                MissionsProgressStore.missionProgress(afterSnapshot, MissionWindow.WEEKLY, mission),
+                mission.target,
+            )
+            if (beforeCount != afterCount) {
+                val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.WEEKLY, mission.id)
+                weeklyQuests.add(
+                    AnimatedQuest(
+                        missionId = mission.id,
+                        window = MissionWindow.WEEKLY,
+                        isClaimed = claimed,
+                        title = ctx.getString(mission.titleResId),
+                        iconRes = R.drawable.new_chest_close_ic2,
+                        target = mission.target,
+                        fromCount = beforeCount,
+                        toCount = afterCount,
+                        staggerIndex = stagger++,
+                    )
+                )
+            }
+        }
+
+        if (weeklyQuests.isNotEmpty()) {
+            binding.weeklySectionFrame.visibility = View.VISIBLE
+            binding.weeklySectionCountdown.text = formatWeeklyCountdownForReward(ctx, MissionsProgressStore.millisUntilWeeklyReset())
+            
+            weeklyQuests.forEachIndexed { index, quest ->
+                if (index > 0) addDivider(binding.weeklyQuestsContainer)
+                binding.weeklyQuestsContainer.addView(createAnimatedQuestView(binding.weeklyQuestsContainer, quest))
+            }
+        } else {
+            binding.weeklySectionFrame.visibility = View.GONE
+        }
+
+        val dailyQuests = mutableListOf<AnimatedQuest>()
+        MissionsProgressStore.selectedMissionsForDaily(ctx).forEach { mission ->
+            val beforeCount = minOf(
+                MissionsProgressStore.missionProgress(beforeSnapshot, MissionWindow.DAILY, mission),
+                mission.target,
+            )
+            val afterCount = minOf(
+                MissionsProgressStore.missionProgress(afterSnapshot, MissionWindow.DAILY, mission),
+                mission.target,
+            )
+            if (beforeCount != afterCount) {
+                val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.DAILY, mission.id)
+                dailyQuests.add(
+                    AnimatedQuest(
+                        missionId = mission.id,
+                        window = MissionWindow.DAILY,
+                        isClaimed = claimed,
+                        title = ctx.getString(mission.titleResId),
+                        iconRes = R.drawable.new_chest_close_ic1,
+                        target = mission.target,
+                        fromCount = beforeCount,
+                        toCount = afterCount,
+                        staggerIndex = stagger++,
+                    )
+                )
+            }
+        }
+
+        if (dailyQuests.isNotEmpty()) {
+            binding.dailySectionFrame.visibility = View.VISIBLE
+            binding.dailySectionCountdown.text = ctx.getString(R.string.missions_hours_short, MissionsProgressStore.hoursUntilDailyReset())
+            
+            dailyQuests.forEachIndexed { index, quest ->
+                if (index > 0) addDivider(binding.dailyQuestsContainer)
+                binding.dailyQuestsContainer.addView(createAnimatedQuestView(binding.dailyQuestsContainer, quest))
+            }
+        } else {
+            binding.dailySectionFrame.visibility = View.GONE
+        }
+    }
+    
+    private fun addDivider(container: ViewGroup) {
+        val dividerView = View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                1,
+            ).apply {
+                setMargins(0, 6, 0, 6)
+            }
+            setBackgroundColor(0x1AFFFFFF)
+        }
+        container.addView(dividerView)
+    }
+
+    private fun createAnimatedQuestView(parent: ViewGroup, q: AnimatedQuest): View {
+        val ctx = parent.context
+        val view = LayoutInflater.from(ctx).inflate(R.layout.item_mission_quest, parent, false)
+        
+        val title = view.findViewById<TextView>(R.id.missionTitle)!!
+        val progressTrack = view.findViewById<View>(R.id.missionProgressTrack)!!
+        val progressFill = view.findViewById<View>(R.id.missionProgressFill)!!
+        val progressShine = view.findViewById<View>(R.id.missionProgressShine)!!
+        val progressText = view.findViewById<TextView>(R.id.missionProgressText)!!
+        val icon = view.findViewById<ImageView>(R.id.missionRewardIcon)!!
+
+        title.text = q.title
+        icon.setImageResource(q.iconRes)
+
+        val gold = ContextCompat.getColor(ctx, R.color.missions_progress_complete)
+        val titleNormal = ContextCompat.getColor(ctx, R.color.missions_quest_title_normal)
+        val labelDone = ContextCompat.getColor(ctx, R.color.background_color)
+        val labelPending = ContextCompat.getColor(ctx, R.color.button_disabled)
+        val labelClaimed = ContextCompat.getColor(ctx, R.color.black)
+
+        val target = q.target.coerceAtLeast(1)
+        val from = q.fromCount
+        val to = q.toCount
+        val completedAfter = to >= target
+        val startPct = (from.coerceAtMost(target) * 100f) / target
+        val endPct = (to.coerceAtMost(target) * 100f) / target
+
+        val canClaim = completedAfter && !q.isClaimed
+        view.isClickable = canClaim
+        view.isFocusable = canClaim
+        view.setOnClickListener {
+            if (canClaim) {
+                if (isVideoFlowOpen || !isAdded) return@setOnClickListener
                 isVideoFlowOpen = true
-                MissionRewardRevealDialogFragment().show(childFragmentManager, tag)
-                childFragmentManager.executePendingTransactions()
-                (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
-                    ?.setOnRewardClaimedCallback {
-                        MissionsProgressStore.markMissionRewardClaimed(ctx, quest.window, quest.missionId)
+
+                parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
+                    MissionsProgressStore.markMissionRewardClaimed(ctx, q.window, q.missionId)
+                    isVideoFlowOpen = false
+                    if (isAdded && _binding != null) renderRewardList()
+                    parentFragmentManager.clearFragmentResultListener("chest_closed")
+                }
+
+                val startRarity = if (q.window == MissionWindow.WEEKLY) {
+                    NewChestFragment.ChestRarity.RARE
+                } else {
+                    NewChestFragment.ChestRarity.COMMON
+                }
+
+                val containerId = (requireView().parent as View).id
+                parentFragmentManager.beginTransaction()
+                    .add(containerId, NewChestFragment.newInstance(startRarity))
+                    .addToBackStack("mission_chest")
+                    .commit()
+            }
+        }
+
+        fun applyVisualPercent(pct: Float) {
+            val curEst = (target * pct / 100f).roundToInt().coerceIn(0, target)
+            val done = curEst >= target
+            applyMissionProgressOverlayNow(progressTrack, progressFill, progressShine, pct, done, q.isClaimed)
+            if (q.isClaimed) {
+                title.setTextColor(titleNormal)
+                progressText.text = ctx.getString(R.string.mission_reward_claimed_label)
+                progressText.setTextColor(labelClaimed)
+            } else if (done) {
+                title.setTextColor(gold)
+                progressText.text = ctx.getString(R.string.mission_completed_label)
+                progressText.setTextColor(labelDone)
+            } else {
+                title.setTextColor(titleNormal)
+                progressText.text = ctx.getString(
+                    R.string.mission_progress_format,
+                    curEst.coerceAtMost(target),
+                    target,
+                )
+                progressText.setTextColor(labelPending)
+            }
+        }
+
+        var pendingWidthListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+        fun runWhenTrackHasWidth(block: () -> Unit) {
+            if (progressTrack.width > 0) {
+                block()
+                return
+            }
+            val observer = progressTrack.viewTreeObserver
+            val listener = object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    if (progressTrack.width <= 0) return
+                    observer.removeOnGlobalLayoutListener(this)
+                    pendingWidthListener = null
+                    block()
+                }
+            }
+            pendingWidthListener = listener
+            observer.addOnGlobalLayoutListener(listener)
+        }
+
+        progressTrack.post {
+            runWhenTrackHasWidth {
+                applyVisualPercent(startPct)
+                if (abs(endPct - startPct) < 0.01f) return@runWhenTrackHasWidth
+                val delay = q.staggerIndex * 120L
+                progressTrack.postDelayed({
+                    if (!isAdded || _binding == null) return@postDelayed
+                    val animator = ValueAnimator.ofFloat(startPct, endPct).apply {
+                        duration = 2800L
+                        interpolator = DecelerateInterpolator(1.6f)
+                        addUpdateListener { va ->
+                            applyVisualPercent(va.animatedValue as Float)
+                        }
                     }
-                (childFragmentManager.findFragmentByTag(tag) as? MissionRewardRevealDialogFragment)
-                    ?.setOnDismissCallback {
-                        isVideoFlowOpen = false
-                        if (isAdded && _binding != null) renderRewardList()
-                    }
-            },
-        )
+                    runningAnimators.add(animator)
+                    animator.start()
+                }, delay)
+            }
+        }
+
+        return view
+    }
+
+    private fun formatWeeklyCountdownForReward(ctx: android.content.Context, ms: Long): String {
+        val hoursTotal = (ms / (1000 * 60 * 60)).toInt().coerceAtLeast(1)
+        return if (ms >= 24L * 60 * 60 * 1000) {
+            val days = ((ms + 24L * 60 * 60 * 1000 - 1) / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(1)
+            ctx.getString(R.string.missions_days_short, days)
+        } else {
+            ctx.getString(R.string.missions_hours_short, hoursTotal)
+        }
     }
 
     companion object {
@@ -216,282 +456,5 @@ class MissionChestRewardFragment : Fragment() {
                     putStringArrayList(ARG_BADGE_PAYLOAD_QUEUE, ArrayList(badgePayloadQueue))
                 }
             }
-    }
-}
-
-private sealed class MissionChestRewardListItem {
-    data class Header(val title: String, val countdown: String) : MissionChestRewardListItem()
-    data object Divider : MissionChestRewardListItem()
-    data class Quest(
-        val missionId: String,
-        val window: MissionWindow,
-        val isClaimed: Boolean,
-        val title: String,
-        val iconRes: Int,
-        val target: Int,
-        val fromCount: Int,
-        val toCount: Int,
-        val staggerIndex: Int,
-    ) : MissionChestRewardListItem()
-}
-
-private fun buildRewardList(
-    ctx: android.content.Context,
-    before: MissionsProgressStore.Snapshot,
-    after: MissionsProgressStore.Snapshot,
-): List<MissionChestRewardListItem> {
-    val out = mutableListOf<MissionChestRewardListItem>()
-    var stagger = 0
-
-    val weeklyQuests = mutableListOf<MissionChestRewardListItem.Quest>()
-    MissionsProgressStore.selectedMissionsForWeekly(ctx).forEach { mission ->
-        val beforeCount = minOf(
-            MissionsProgressStore.missionProgress(before, MissionWindow.WEEKLY, mission),
-            mission.target,
-        )
-        val afterCount = minOf(
-            MissionsProgressStore.missionProgress(after, MissionWindow.WEEKLY, mission),
-            mission.target,
-        )
-        if (beforeCount != afterCount) {
-            val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.WEEKLY, mission.id)
-            weeklyQuests.add(
-                MissionChestRewardListItem.Quest(
-                    missionId = mission.id,
-                    window = MissionWindow.WEEKLY,
-                    isClaimed = claimed,
-                    title = ctx.getString(mission.titleResId),
-                    iconRes = R.drawable.crystal_ic,
-                    target = mission.target,
-                    fromCount = beforeCount,
-                    toCount = afterCount,
-                    staggerIndex = stagger++,
-                ),
-            )
-        }
-    }
-    if (weeklyQuests.isNotEmpty()) {
-        val weeklyLabel = formatWeeklyCountdownForReward(ctx, MissionsProgressStore.millisUntilWeeklyReset())
-        out.add(MissionChestRewardListItem.Header(ctx.getString(R.string.missions_weekly_title), weeklyLabel))
-        out.addAll(weeklyQuests)
-    }
-
-    val dailyQuests = mutableListOf<MissionChestRewardListItem.Quest>()
-    MissionsProgressStore.selectedMissionsForDaily(ctx).forEach { mission ->
-        val beforeCount = minOf(
-            MissionsProgressStore.missionProgress(before, MissionWindow.DAILY, mission),
-            mission.target,
-        )
-        val afterCount = minOf(
-            MissionsProgressStore.missionProgress(after, MissionWindow.DAILY, mission),
-            mission.target,
-        )
-        if (beforeCount != afterCount) {
-            val claimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.DAILY, mission.id)
-            dailyQuests.add(
-                MissionChestRewardListItem.Quest(
-                    missionId = mission.id,
-                    window = MissionWindow.DAILY,
-                    isClaimed = claimed,
-                    title = ctx.getString(mission.titleResId),
-                    iconRes = R.drawable.crystal_ic,
-                    target = mission.target,
-                    fromCount = beforeCount,
-                    toCount = afterCount,
-                    staggerIndex = stagger++,
-                ),
-            )
-        }
-    }
-    if (dailyQuests.isNotEmpty()) {
-        if (out.isNotEmpty()) out.add(MissionChestRewardListItem.Divider)
-        val dailyLabel = ctx.getString(R.string.missions_hours_short, MissionsProgressStore.hoursUntilDailyReset())
-        out.add(MissionChestRewardListItem.Header(ctx.getString(R.string.missions_daily_title), dailyLabel))
-        out.addAll(dailyQuests)
-    }
-
-    return out
-}
-
-private fun formatWeeklyCountdownForReward(ctx: android.content.Context, ms: Long): String {
-    val hoursTotal = (ms / (1000 * 60 * 60)).toInt().coerceAtLeast(1)
-    return if (ms >= 24L * 60 * 60 * 1000) {
-        val days = ((ms + 24L * 60 * 60 * 1000 - 1) / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(1)
-        ctx.getString(R.string.missions_days_short, days)
-    } else {
-        ctx.getString(R.string.missions_hours_short, hoursTotal)
-    }
-}
-
-private class MissionChestRewardAdapter(
-    private val items: List<MissionChestRewardListItem>,
-    private val onCompletedQuestClick: (MissionChestRewardListItem.Quest) -> Unit,
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    companion object {
-        private const val TYPE_HEADER = 0
-        private const val TYPE_QUEST = 1
-        private const val TYPE_DIVIDER = 2
-        private const val STAGGER_MS = 120L
-        private const val ANIM_DURATION_MS = 2800L
-    }
-
-    override fun getItemViewType(position: Int): Int = when (items[position]) {
-        is MissionChestRewardListItem.Header -> TYPE_HEADER
-        is MissionChestRewardListItem.Quest -> TYPE_QUEST
-        is MissionChestRewardListItem.Divider -> TYPE_DIVIDER
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        return when (viewType) {
-            TYPE_HEADER -> RewardHeaderVH(
-                inflater.inflate(R.layout.item_mission_header, parent, false),
-            )
-            TYPE_QUEST -> RewardQuestVH(
-                inflater.inflate(R.layout.item_mission_quest, parent, false),
-            )
-            TYPE_DIVIDER -> RewardDividerVH(
-                inflater.inflate(R.layout.item_mission_divider, parent, false),
-            )
-            else -> throw IllegalArgumentException("unknown type $viewType")
-        }
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (val item = items[position]) {
-            is MissionChestRewardListItem.Header -> (holder as RewardHeaderVH).bind(item)
-            is MissionChestRewardListItem.Quest -> (holder as RewardQuestVH).bind(item, onCompletedQuestClick)
-            is MissionChestRewardListItem.Divider -> Unit
-        }
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-        if (holder is RewardQuestVH) holder.cancelAnim()
-        super.onViewRecycled(holder)
-    }
-
-    private class RewardHeaderVH(view: View) : RecyclerView.ViewHolder(view) {
-        private val title = view.findViewById<TextView>(R.id.missionSectionTitle)
-        private val countdown = view.findViewById<TextView>(R.id.missionSectionCountdown)
-
-        fun bind(h: MissionChestRewardListItem.Header) {
-            title.text = h.title
-            countdown.text = h.countdown
-        }
-    }
-
-    private class RewardDividerVH(view: View) : RecyclerView.ViewHolder(view)
-
-    private class RewardQuestVH(view: View) : RecyclerView.ViewHolder(view) {
-        private val title = view.findViewById<TextView>(R.id.missionTitle)
-        private val progressTrack = view.findViewById<View>(R.id.missionProgressTrack)
-        private val progressFill = view.findViewById<View>(R.id.missionProgressFill)
-        private val progressShine = view.findViewById<View>(R.id.missionProgressShine)
-        private val progressText = view.findViewById<TextView>(R.id.missionProgressText)
-        private val icon = view.findViewById<android.widget.ImageView>(R.id.missionRewardIcon)
-
-        private var animator: ValueAnimator? = null
-        private var pendingWidthListener: ViewTreeObserver.OnGlobalLayoutListener? = null
-
-        fun cancelAnim() {
-            animator?.cancel()
-            animator = null
-            pendingWidthListener?.let { listener ->
-                if (progressTrack.viewTreeObserver.isAlive) {
-                    progressTrack.viewTreeObserver.removeOnGlobalLayoutListener(listener)
-                }
-                pendingWidthListener = null
-            }
-        }
-
-        fun bind(q: MissionChestRewardListItem.Quest, onCompletedQuestClick: (MissionChestRewardListItem.Quest) -> Unit) {
-            cancelAnim()
-            val ctx = itemView.context
-            title.text = q.title
-            icon.setImageResource(q.iconRes)
-
-            val gold = ContextCompat.getColor(ctx, R.color.missions_progress_complete)
-            val titleNormal = ContextCompat.getColor(ctx, R.color.missions_quest_title_normal)
-            val labelDone = ContextCompat.getColor(ctx, R.color.background_color)
-            val labelPending = ContextCompat.getColor(ctx, R.color.button_disabled)
-            val labelClaimed = ContextCompat.getColor(ctx, R.color.black)
-
-            val target = q.target.coerceAtLeast(1)
-            val from = q.fromCount
-            val to = q.toCount
-            val completedAfter = to >= target
-            val startPct = (from.coerceAtMost(target) * 100f) / target
-            val endPct = (to.coerceAtMost(target) * 100f) / target
-
-            val canClaim = completedAfter && !q.isClaimed
-            itemView.isClickable = canClaim
-            itemView.isFocusable = canClaim
-            itemView.setOnClickListener {
-                if (canClaim) onCompletedQuestClick(q)
-            }
-
-            fun applyVisualPercent(pct: Float) {
-                val curEst = (target * pct / 100f).roundToInt().coerceIn(0, target)
-                val done = curEst >= target
-                applyMissionProgressOverlayNow(progressTrack, progressFill, progressShine, pct, done, q.isClaimed)
-                if (q.isClaimed) {
-                    title.setTextColor(titleNormal)
-                    progressText.text = ctx.getString(R.string.mission_reward_claimed_label)
-                    progressText.setTextColor(labelClaimed)
-                } else if (done) {
-                    title.setTextColor(gold)
-                    progressText.text = ctx.getString(R.string.mission_completed_label)
-                    progressText.setTextColor(labelDone)
-                } else {
-                    title.setTextColor(titleNormal)
-                    progressText.text = ctx.getString(
-                        R.string.mission_progress_format,
-                        curEst.coerceAtMost(target),
-                        target,
-                    )
-                    progressText.setTextColor(labelPending)
-                }
-            }
-
-            fun runWhenTrackHasWidth(block: () -> Unit) {
-                if (progressTrack.width > 0) {
-                    block()
-                    return
-                }
-                val observer = progressTrack.viewTreeObserver
-                val listener = object : ViewTreeObserver.OnGlobalLayoutListener {
-                    override fun onGlobalLayout() {
-                        if (progressTrack.width <= 0) return
-                        observer.removeOnGlobalLayoutListener(this)
-                        pendingWidthListener = null
-                        block()
-                    }
-                }
-                pendingWidthListener = listener
-                observer.addOnGlobalLayoutListener(listener)
-            }
-
-            progressTrack.post {
-                runWhenTrackHasWidth {
-                    applyVisualPercent(startPct)
-                    if (abs(endPct - startPct) < 0.01f) return@runWhenTrackHasWidth
-                    val delay = q.staggerIndex * STAGGER_MS
-                    progressTrack.postDelayed({
-                        if (bindingAdapterPosition == RecyclerView.NO_POSITION) return@postDelayed
-                        animator = ValueAnimator.ofFloat(startPct, endPct).apply {
-                            duration = ANIM_DURATION_MS
-                            interpolator = DecelerateInterpolator(1.6f)
-                            addUpdateListener { va ->
-                                applyVisualPercent(va.animatedValue as Float)
-                            }
-                            start()
-                        }
-                    }, delay)
-                }
-            }
-        }
     }
 }

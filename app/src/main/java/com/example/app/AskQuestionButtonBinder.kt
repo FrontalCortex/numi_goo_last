@@ -72,14 +72,8 @@ object AskQuestionButtonBinder {
         isTeacher: Boolean,
         onAllowedClick: () -> Unit,
     ) {
-        val isPremium = doc.getBoolean("isPremium") == true
-        val plan = doc.getString("plan")
-        
-        val isFreePlan = if (plan.isNullOrEmpty()) {
-            !isPremium
-        } else {
-            plan.equals("Free", ignoreCase = true)
-        }
+        val plan = doc.getString("plan") ?: "Free"
+        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true)
 
         when {
             UserAskQuestionRestriction.isRestricted(doc) -> {
@@ -88,10 +82,9 @@ object AskQuestionButtonBinder {
             isTeacher && doc.getBoolean("teacherApproved") != true -> {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
             }
-            !isTeacher && isFreePlan -> {
-                Toast.makeText(fragment.requireContext(), "Bu özelliği kullanabilmek için planı yükselt", Toast.LENGTH_LONG).show()
-                val intent = Intent(fragment.requireContext(), SubscriptionActivity::class.java)
-                fragment.startActivity(intent)
+            !isTeacher && !hasProPlan -> {
+                Toast.makeText(fragment.requireContext(), "Bu özelliği kullanabilmek için planı Pro'ya yükselt", Toast.LENGTH_LONG).show()
+                ProDiffirentFragment().show(fragment.requireActivity().supportFragmentManager, "ProDiffirent")
             }
             else -> {
                 val main = fragment.activity as? MainActivity

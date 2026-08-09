@@ -90,12 +90,6 @@
             android:exported="false"
             android:theme="@style/Theme.NumiGoo"
             android:screenOrientation="portrait" />
-            
-        <activity
-            android:name=".SubscriptionActivity"
-            android:exported="false"
-            android:theme="@style/Theme.NumiGoo"
-            android:screenOrientation="portrait" />
 
         <service
             android:name=".QuestionUploadForegroundService"

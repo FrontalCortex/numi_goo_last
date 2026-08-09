@@ -68,7 +68,7 @@ class MissionsFragment : Fragment() {
                 title = getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
-                iconRes = R.drawable.new_chest_close_ic3,
+                iconRes = R.drawable.new_chest_close_ic2,
                 window = MissionWindow.WEEKLY,
                 isClaimed = isClaimed,
             )
@@ -94,7 +94,7 @@ class MissionsFragment : Fragment() {
                 title = getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
-                iconRes = R.drawable.new_chest_close_ic2,
+                iconRes = R.drawable.new_chest_close_ic1,
                 window = MissionWindow.DAILY,
                 isClaimed = isClaimed,
             )
@@ -197,9 +197,18 @@ class MissionsFragment : Fragment() {
             parentFragmentManager.clearFragmentResultListener("chest_closed")
         }
 
+        val startRarity = if (quest.window == MissionWindow.WEEKLY) {
+            NewChestFragment.ChestRarity.RARE
+        } else {
+            NewChestFragment.ChestRarity.COMMON
+        }
+
+        val mainActivity = activity as? MainActivity
+        val containerId = mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.id ?: R.id.fragmentContainerID
+        mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = android.view.View.VISIBLE
+
         parentFragmentManager.beginTransaction()
-                .add(R.id.fragmentContainerID, NewChestFragment())
-                .addToBackStack("mission_chest")
+                .add(containerId, NewChestFragment.newInstance(startRarity))
                 .commit()
     }
 

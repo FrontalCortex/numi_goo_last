@@ -45,19 +45,31 @@ class AdManager(private val context: Context) {
         })
     }
 
-    fun showInterstitialAd(activity: Activity) {
+    fun showInterstitialAd(activity: Activity, showAdSkipAfter: Boolean = true, onClosed: () -> Unit = {}) {
         if (interstitialAd != null) {
             interstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     Log.d(TAG, "InterstitialAd was dismissed.")
                     interstitialAd = null
                     preloadInterstitialAd() // Preload the next ad
+                    
+                    GlobalValues.interstitialAdShownCount++
+                    
+                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity && GlobalValues.interstitialAdShownCount % 2 != 0) {
+                        try {
+                            AdSkipFragment().show(activity.supportFragmentManager, "AdSkip")
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    onClosed()
                 }
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     Log.d(TAG, "InterstitialAd failed to show: ${adError.message}")
                     interstitialAd = null
                     preloadInterstitialAd() // Try to reload if it failed to show
+                    onClosed()
                 }
 
                 override fun onAdShowedFullScreenContent() {
@@ -70,6 +82,7 @@ class AdManager(private val context: Context) {
         } else {
             Log.d(TAG, "The interstitial ad wasn't ready yet.")
             preloadInterstitialAd() // Attempt to load it again
+            onClosed()
         }
     }
 
@@ -95,13 +108,21 @@ class AdManager(private val context: Context) {
         return rewardedAd != null
     }
 
-    fun showRewardedAd(activity: Activity, onRewarded: () -> Unit) {
+    fun showRewardedAd(activity: Activity, showAdSkipAfter: Boolean = true, onRewarded: () -> Unit) {
         if (rewardedAd != null) {
             rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     Log.d(TAG, "Ad was dismissed.")
                     rewardedAd = null
                     preloadAd() // Preload the next ad
+                    
+                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity) {
+                        try {
+                            AdSkipFragment().show(activity.supportFragmentManager, "AdSkip")
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 }
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {

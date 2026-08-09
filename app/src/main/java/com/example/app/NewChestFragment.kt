@@ -72,6 +72,18 @@ class NewChestFragment : Fragment() {
         ),
     }
 
+    companion object {
+        private const val ARG_START_RARITY = "start_rarity"
+
+        fun newInstance(startRarity: ChestRarity = ChestRarity.COMMON): NewChestFragment {
+            return NewChestFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_START_RARITY, startRarity.name)
+                }
+            }
+        }
+    }
+
     // Oyun durumu
     private var canClose = false
     private var currentRarity = ChestRarity.COMMON
@@ -93,6 +105,9 @@ class NewChestFragment : Fragment() {
         }
     }
 
+    private var originalStatusBarColor: Int? = null
+    private var originalNavigationBarColor: Int? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -103,6 +118,16 @@ class NewChestFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        originalStatusBarColor = requireActivity().window.statusBarColor
+        originalNavigationBarColor = requireActivity().window.navigationBarColor
+
+        val startRarityName = arguments?.getString(ARG_START_RARITY) ?: ChestRarity.COMMON.name
+        currentRarity = try {
+            ChestRarity.valueOf(startRarityName)
+        } catch (e: Exception) {
+            ChestRarity.COMMON
+        }
 
         // Başlangıç durumunu uygula
         applyRarity(currentRarity, animate = false)
@@ -168,6 +193,7 @@ class NewChestFragment : Fragment() {
             4 -> {
                 // Açıldıktan sonra kapat
                 if (canClose) {
+                    tapCount++
                     closeFragment()
                 }
             }
@@ -205,6 +231,11 @@ class NewChestFragment : Fragment() {
         binding.newChestRoot.setBackgroundColor(rarity.theme.bgColor)
         binding.chestPlatform.backgroundTintList = android.content.res.ColorStateList.valueOf(rarity.theme.platformColor)
         
+        activity?.window?.let { w ->
+            w.statusBarColor = rarity.theme.bgColor
+            w.navigationBarColor = rarity.theme.bgColor
+        }
+
         binding.chestRarityLabel.text = rarity.label
         binding.chestRarityLabel.setTextColor(rarity.labelColor)
 
@@ -414,6 +445,17 @@ class NewChestFragment : Fragment() {
         binding.chestOverlay.post {
             val overlayAlpha = android.animation.ObjectAnimator.ofFloat(binding.chestOverlay, "alpha", 0f, 1f)
             hideAnims.add(overlayAlpha)
+
+            val bgColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.background_color)
+            activity?.window?.let { w ->
+                val colorAnim = android.animation.ValueAnimator.ofArgb(w.statusBarColor, bgColor)
+                colorAnim.addUpdateListener { animator ->
+                    val color = animator.animatedValue as Int
+                    w.statusBarColor = color
+                    w.navigationBarColor = color
+                }
+                hideAnims.add(colorAnim)
+            }
             
             val phase1 = android.animation.AnimatorSet().apply {
                 playTogether(hideAnims)
@@ -532,10 +574,10 @@ class NewChestFragment : Fragment() {
     private fun closeFragment() {
         parentFragmentManager.setFragmentResult("chest_closed", android.os.Bundle())
         val fm = parentFragmentManager
-        val hasMissionChest = fm.backStackEntryCount > 0 &&
-            fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name == "mission_chest"
-        if (hasMissionChest) {
-            fm.popBackStack("mission_chest", androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        val topName = if (fm.backStackEntryCount > 0) fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name else null
+        
+        if (topName == "mission_chest" || topName == "map_chest" || topName == "shop_chest") {
+            fm.popBackStack(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         } else {
             val main = activity as? MainActivity
             if (main != null) {
@@ -548,6 +590,10 @@ class NewChestFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        activity?.window?.let { w ->
+            originalStatusBarColor?.let { w.statusBarColor = it }
+            originalNavigationBarColor?.let { w.navigationBarColor = it }
+        }
         hintHandler.removeCallbacks(hintRunnable)
         starHandler.removeCallbacks(starSpawner)
         stopIdleAnimation()

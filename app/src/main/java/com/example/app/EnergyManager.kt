@@ -22,9 +22,7 @@ class EnergyManager(private val context: Context) {
 
     companion object {
         private const val PREFS_NAME = "energy_prefs"
-        const val MAX_ENERGY = 5
-        private const val ENERGY_REFRESH_MINUTES = 15
-        const val ENERGY_REFRESH_MILLIS = 15 * 60 * 1000L // 15 dakika
+        private const val KEY_USER_PLAN = "user_plan"
 
         private const val KEY_ENERGY_FULL_TIME = "energy_full_time"
         private const val FIELD_ENERGY_FULL_TIME = "energy_full_time"
@@ -67,6 +65,26 @@ class EnergyManager(private val context: Context) {
     // Genel API
     // ─────────────────────────────────────────────────────────────────────────
 
+    fun getUserPlan(): String = prefs.getString(KEY_USER_PLAN, "Free") ?: "Free"
+
+    fun setUserPlan(plan: String) {
+        prefs.edit().putString(KEY_USER_PLAN, plan).apply()
+        energyUpdateCallback?.invoke(getCurrentEnergy())
+        scheduleNextTick()
+    }
+
+    fun getMaxEnergy(): Int {
+        return if (getUserPlan() == "Lite") 10 else 5
+    }
+
+    fun getEnergyRefreshMinutes(): Int {
+        return if (getUserPlan() == "Lite") 10 else 15
+    }
+
+    fun getEnergyRefreshMillis(): Long {
+        return getEnergyRefreshMinutes() * 60 * 1000L
+    }
+
     /**
      * Matematiksel hesap: fullTime'dan şimdiye kadar kaç 30 saniyelik dilim geçmiş?
      * Geçen dilim sayısı = şimdiye kadar dolmuş enerji miktarı.
@@ -86,13 +104,13 @@ class EnergyManager(private val context: Context) {
         val now = System.currentTimeMillis()
         val fullTime = getFullTime()
 
-        if (fullTime <= now) return MAX_ENERGY
+        if (fullTime <= now) return getMaxEnergy()
 
         val timeUntilFull = fullTime - now
         // Kaç slot hâlâ dolmamış? Her slot = ENERGY_REFRESH_MILLIS
         // Slot sayısı: timeUntilFull / REFRESH → TAM SAYIYA YUVARLANMIŞ (ceiling)
-        val missingSlots = ((timeUntilFull + ENERGY_REFRESH_MILLIS - 1) / ENERGY_REFRESH_MILLIS).toInt()
-        return maxOf(0, MAX_ENERGY - missingSlots)
+        val missingSlots = ((timeUntilFull + getEnergyRefreshMillis() - 1) / getEnergyRefreshMillis()).toInt()
+        return maxOf(0, getMaxEnergy() - missingSlots)
     }
 
     /**
@@ -110,7 +128,7 @@ class EnergyManager(private val context: Context) {
 
         // Eğer enerji zaten dolu (fullTime geçmişte), sayacı şimdiden başlat.
         val baseTime = maxOf(currentFullTime, now)
-        val newFullTime = baseTime + amount * ENERGY_REFRESH_MILLIS
+        val newFullTime = baseTime + amount * getEnergyRefreshMillis()
 
         persistFullTime(newFullTime)
         return true
@@ -132,17 +150,13 @@ class EnergyManager(private val context: Context) {
 
         // Kazanılan her enerji, dolum hedefini ENERGY_REFRESH_MILLIS kadar geri (geçmişe) çeker.
         // Böylece kalan saniyeler/dakikalar sıfırlanmaz, korunur.
-        val timeToSubtract = amount * ENERGY_REFRESH_MILLIS
+        val timeToSubtract = amount * getEnergyRefreshMillis()
         val newFullTime = maxOf(now, currentFullTime - timeToSubtract)
 
         persistFullTime(newFullTime)
     }
 
     fun hasEnoughEnergy(amount: Int = 1) = getCurrentEnergy() >= amount
-
-    fun getMaxEnergy(): Int = MAX_ENERGY
-
-    fun getEnergyRefreshMinutes(): Int = ENERGY_REFRESH_MINUTES
 
     fun setEnergyUpdateCallback(callback: (Int) -> Unit) {
         energyUpdateCallback = callback
@@ -161,8 +175,8 @@ class EnergyManager(private val context: Context) {
         val timeUntilFull = fullTime - now
         // Bir sonraki artış için kalan süre = timeUntilFull mod REFRESH
         // Eğer tam bölünüyorsa (tam sınırda) → REFRESH milisaniye daha bekle.
-        val remainder = timeUntilFull % ENERGY_REFRESH_MILLIS
-        return if (remainder == 0L) ENERGY_REFRESH_MILLIS else remainder
+        val remainder = timeUntilFull % getEnergyRefreshMillis()
+        return if (remainder == 0L) getEnergyRefreshMillis() else remainder
     }
 
     fun destroy() {
@@ -176,7 +190,7 @@ class EnergyManager(private val context: Context) {
     private fun getFullTime(): Long {
         val saved = prefs.getLong(KEY_ENERGY_FULL_TIME, System.currentTimeMillis())
         val now = System.currentTimeMillis()
-        val maxAllowed = now + MAX_ENERGY * ENERGY_REFRESH_MILLIS
+        val maxAllowed = now + getMaxEnergy() * getEnergyRefreshMillis()
         if (saved > maxAllowed) {
             persistFullTime(maxAllowed)
             return maxAllowed
@@ -259,15 +273,15 @@ class EnergyManager(private val context: Context) {
 
         val lastUpdate = legacyLastUpdate ?: now
         val elapsed = now - lastUpdate
-        val gained = (elapsed / ENERGY_REFRESH_MILLIS).toInt()
-        val energy = minOf(legacyEnergy + gained, MAX_ENERGY)
-        val missing = MAX_ENERGY - energy
+        val gained = (elapsed / getEnergyRefreshMillis()).toInt()
+        val energy = minOf(legacyEnergy + gained, getMaxEnergy())
+        val missing = getMaxEnergy() - energy
 
         return if (missing == 0) now
         else {
-            val remainder = elapsed % ENERGY_REFRESH_MILLIS
-            val untilNextTick = ENERGY_REFRESH_MILLIS - remainder
-            now + untilNextTick + (missing - 1) * ENERGY_REFRESH_MILLIS
+            val remainder = elapsed % getEnergyRefreshMillis()
+            val untilNextTick = getEnergyRefreshMillis() - remainder
+            now + untilNextTick + (missing - 1) * getEnergyRefreshMillis()
         }
     }
 

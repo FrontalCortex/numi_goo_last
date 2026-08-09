@@ -103,8 +103,8 @@
                     android:background="#BB000000"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:clickable="true"
-                    android:focusable="true"
+                    android:clickable="false"
+                    android:focusable="false"
                     android:visibility="visible">
                         
                         <TextView
@@ -172,8 +172,8 @@
                     android:background="#BB000000"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:clickable="true"
-                    android:focusable="true"
+                    android:clickable="false"
+                    android:focusable="false"
                     android:visibility="visible">
                         
                         <TextView
@@ -234,8 +234,8 @@
                     android:background="#BB000000"
                     android:gravity="center"
                     android:orientation="horizontal"
-                    android:clickable="true"
-                    android:focusable="true"
+                    android:clickable="false"
+                    android:focusable="false"
                     android:visibility="visible">
                         
                         <TextView

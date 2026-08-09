@@ -17,6 +17,7 @@
     <color name="lesson_completed">#8FD14F</color>
     <color name="lesson_locked">#505D66</color>
     <color name="background_color">#141F23</color>
+    <color name="bright_background_color">#203137</color>
     <color name="circleBackground_color">#383535</color>
     <color name="badge_piece_row_divider">#40A7B4C3</color>
     <color name="circleForeground_color">#8A7E18</color>

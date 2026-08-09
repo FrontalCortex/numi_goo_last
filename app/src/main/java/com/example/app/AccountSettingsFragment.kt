@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAccountSettingsBinding
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AccountSettingsFragment : Fragment() {
 
@@ -31,6 +33,29 @@ class AccountSettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         authManager = AuthManager().apply { initialize(requireContext()) }
         setupClickListeners()
+        loadUserPlan()
+    }
+
+    private fun loadUserPlan() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        
+        // Önce gizleyelim, yükleme süresince görünmesin
+        binding.tvPaymentsHeader.visibility = View.GONE
+        binding.paymentsCard.visibility = View.GONE
+        
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (isAdded) {
+                    val plan = doc.getString("plan") ?: "Free"
+                    if (plan.equals("Free", ignoreCase = true)) {
+                        binding.tvPaymentsHeader.visibility = View.GONE
+                        binding.paymentsCard.visibility = View.GONE
+                    } else {
+                        binding.tvPaymentsHeader.visibility = View.VISIBLE
+                        binding.paymentsCard.visibility = View.VISIBLE
+                    }
+                }
+            }
     }
 
     private fun setupClickListeners() {
@@ -45,6 +70,16 @@ class AccountSettingsFragment : Fragment() {
         binding.btnPrivacySettings.setOnClickListener {
             Toast.makeText(requireContext(), "Gizlilik ayarları yakında eklenecek", Toast.LENGTH_SHORT).show()
         }
+        
+        binding.btnCancelSubscription.setOnClickListener {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/account/subscriptions"))
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Play Store açılamadı", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
         binding.btnHelpCenter.setOnClickListener {
             Toast.makeText(requireContext(), "Yardım Merkezi yakında eklenecek", Toast.LENGTH_SHORT).show()
         }

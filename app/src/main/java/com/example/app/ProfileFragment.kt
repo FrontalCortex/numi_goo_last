@@ -17,7 +17,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.bumptech.glide.Glide
+import androidx.fragment.app.setFragmentResultListener
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentProfileBinding
 import com.airbnb.lottie.LottieAnimationView
@@ -119,16 +121,7 @@ class ProfileFragment : Fragment() {
         }
     }
     
-    private val subscriptionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            // Plan değişti, kullanıcı bilgilerini yeniden yükle
-            isDataLoaded = false // Verileri yeniden yükle
-            showLoadingState() // Loading state göster
-            loadUserData() // Verileri yükle
-        }
-    }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -137,11 +130,18 @@ class ProfileFragment : Fragment() {
         authManager.initialize(requireContext())
         
         // Önce widget'ları gizle (veriler yüklenene kadar)
-        // Layout'ta visibility="gone" olarak ayarlandı, burada da emin olalım
         showLoadingState()
         binding.profileBadgesCard.visibility = View.GONE
         
         setupClickListeners()
+        
+        // AvatarPickerFragment'tan seçim sonucunu dinle
+        setFragmentResultListener(AvatarPickerFragment.REQUEST_KEY) { _, bundle ->
+            val avatarIndex = bundle.getInt(AvatarPickerFragment.KEY_AVATAR_INDEX, 0)
+            if (avatarIndex in 1..12) {
+                updateAvatarImage(avatarIndex)
+            }
+        }
         
         // Verileri yükle
         loadUserData()
@@ -149,50 +149,32 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        // İlk yükleme yapılmadıysa veya e-posta doğrulama kontrolü gerekiyorsa yeniden yükle
         if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
-        } else {
-            // Sadece e-posta doğrulama durumunu kontrol et (hızlı kontrol)
-            val currentUser = auth.currentUser
-            if (currentUser != null) {
-                currentUser.reload()
-                    .addOnSuccessListener {
-                        // E-posta doğrulama durumunu kontrol et
-                        if (currentUser.isEmailVerified) {
-                            firestore.collection("users").document(currentUser.uid)
-                                .get()
-                                .addOnSuccessListener { doc ->
-                                    val verified = doc.getBoolean("verified") ?: false
-                                    if (!verified) {
-                                        // E-posta doğrulanmış ama Firestore'da güncellenmemiş
-                                        firestore.collection("users").document(currentUser.uid)
-                                            .update("verified", true)
-                                            .addOnSuccessListener {
-                                                binding.cardEmailVerification.visibility = View.GONE
-                                            }
-                                    }
-                                }
-                        }
-                    }
-            }
         }
     }
     
     private fun showLoadingState() {
-        // Widget'ları gizle veya loading göster
-        binding.tvMembershipStatus.visibility = View.GONE
         binding.tvCompletedLessons.visibility = View.GONE
         binding.tvTotalTime.visibility = View.GONE
         binding.tvSubscriptionInfo.visibility = View.GONE
     }
     
     private fun hideLoadingState() {
-        // Widget'ları göster
-        binding.tvMembershipStatus.visibility = View.VISIBLE
         binding.tvCompletedLessons.visibility = View.VISIBLE
         binding.tvTotalTime.visibility = View.VISIBLE
         binding.tvSubscriptionInfo.visibility = View.VISIBLE
+    }
+
+    /** Verilen avatar indeksine göre (1-12) imgProfilePhoto'yu günceller. */
+    private fun updateAvatarImage(index: Int) {
+        if (!isAdded || view == null) return
+        val resId = resources.getIdentifier("avatar_ic$index", "drawable", requireContext().packageName)
+        if (resId != 0) {
+            binding.imgProfilePhoto.setImageResource(resId)
+        } else {
+            binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+        }
     }
     
     private fun reloadUserData() {
@@ -216,35 +198,18 @@ class ProfileFragment : Fragment() {
         isUserDataLoading = true
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            // Kullanıcı giriş yapmamış
             isUserDataLoading = false
             return
         }
 
-         // Fragment veya view artık bağlı değilse Glide ile yükleme yapma
         if (!isAdded || view == null) {
             isUserDataLoading = false
             return
         }
-        
-        // Profil fotoğrafı yükle (Google hesabı avatarı)
-        val photoUrl = currentUser.photoUrl
-        if (photoUrl != null) {
-            Glide.with(requireContext())
-                .load(photoUrl)
-                .circleCrop()
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .error(android.R.drawable.ic_menu_gallery)
-                .into(binding.imgProfilePhoto)
-        } else {
-            // Profil fotoğrafı yoksa varsayılan avatar göster
-            binding.imgProfilePhoto.setImageResource(android.R.drawable.ic_menu_gallery)
-        }
-        
-        // Kullanıcı adı ve e-posta (isim boşsa varsayılan "Kullanıcı")
-        binding.tvUserName.text = currentUser.displayName.takeIf { !it.isNullOrBlank() } ?: "Kullanıcı"
-        binding.tvUserEmail.text = currentUser.email ?: ""
-        
+
+        // Varsayılan olarak non_user göster
+        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+
         // Firestore'dan kullanıcı bilgilerini yükle
         firestore.collection("users").document(currentUser.uid)
             .get()
@@ -255,114 +220,50 @@ class ProfileFragment : Fragment() {
                 }
                 if (doc.exists()) {
                     loadBadgeProgressFromFirestore(currentUser.uid)
+                    loadCupPathScores()
 
-                    // Kullanıcı ID'sini göster
-                    val userId = doc.getString("userId") ?: ""
-                    if (userId.isNotEmpty()) {
-                        // userId'yi email'in altında göster (eğer layout'ta bir TextView varsa)
-                        // Şimdilik log'a yazıyoruz, layout'a ekleyebiliriz
-                        android.util.Log.d("ProfileFragment", "User ID: $userId")
-                    }
-                    
-                    // E-posta doğrulama durumu - Firebase Auth ve Firestore'u senkronize et
-                    val firestoreVerified = doc.getBoolean("verified") ?: false
-                    val firebaseAuthVerified = currentUser.isEmailVerified
-                    
-                    // Firebase Auth'da doğrulanmış ama Firestore'da değilse güncelle
-                    if (firebaseAuthVerified && !firestoreVerified) {
-                        firestore.collection("users").document(currentUser.uid)
-                            .update("verified", true)
-                            .addOnSuccessListener {
-                                if (!isAdded) return@addOnSuccessListener
-                                binding.cardEmailVerification.visibility = View.GONE
-                            }
-                    } else if (!firebaseAuthVerified && !firestoreVerified) {
-                        // E-posta doğrulanmamış - uyarı göster
-                        binding.cardEmailVerification.visibility = View.VISIBLE
+                    // Avatar seçimini Firestore'dan oku
+                    val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
+                    if (selectedAvatar in 1..12) {
+                        updateAvatarImage(selectedAvatar)
                     } else {
-                        binding.cardEmailVerification.visibility = View.GONE
+                        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
                     }
-                    
-                    // Üyelik durumu - plan alanını kontrol et
-                    val plan = doc.getString("plan") ?: "Free"
-                    val isPremium = doc.getBoolean("isPremium") ?: false
-                    val subscriptionEndDate = doc.getTimestamp("subscriptionEndDate")
-                    
-                    // Plan adını göster
-                    when (plan) {
-                        "Pro" -> {
-                            if (subscriptionEndDate != null) {
-                                val dateFormat = SimpleDateFormat("d MMMM", Locale("tr", "TR"))
-                                binding.tvMembershipStatus.text = "Pro Plan"
-                            } else {
-                                binding.tvMembershipStatus.text = "Pro Plan"
-                            }
-                            binding.tvMembershipStatus.setTextColor(requireContext().getColor(R.color.background_color))
-                        }
-                        "Premium" -> {
-                            if (subscriptionEndDate != null) {
-                                val dateFormat = SimpleDateFormat("d MMMM", Locale("tr", "TR"))
-                                binding.tvMembershipStatus.text = "Premium Plan"
-                            } else {
-                                binding.tvMembershipStatus.text = "Premium Plan"
-                            }
-                            binding.tvMembershipStatus.setTextColor(requireContext().getColor(R.color.background_color))
-                        }
-                        else -> {
-                            // Free plan veya plan belirtilmemiş
-                            binding.tvMembershipStatus.text = "Free Plan"
-                            binding.tvMembershipStatus.setTextColor(requireContext().getColor(R.color.background_color))
+
+                    // Tamamlanan ders yüzdesi
+                    binding.tvCompletedLessons.text = "Hesaplanıyor..."
+                    GlobalLessonData.calculateGlobalCompletionPercentage { percentage ->
+                        if (isAdded) {
+                            binding.tvCompletedLessons.text = "%$percentage tamamlandı"
                         }
                     }
-                    
-                    // Kayıt tarihi
-                    val createdAt = doc.getTimestamp("createdAt")
-                    if (createdAt != null) {
-                        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr", "TR"))
-                        val createdDateStr = dateFormat.format(createdAt.toDate())
-                        // Kayıt tarihini aktivite bilgilerine ekleyebiliriz
-                    }
-                    
-                    // Tamamlanan ders sayısı - GlobalLessonData'dan stepIsFinish kontrolü ile hesapla
-                    val completedCount = calculateCompletedLessons()
-                    binding.tvCompletedLessons.text = "📚 $completedCount Ders"
-                    
-                    // Toplam geçirilen süre - TimeTracker'dan al (güncel değer)
-                    val totalTimeSpent = TimeTracker.getTotalTimeSeconds()
-                    updateTotalTimeDisplay(totalTimeSpent)
-                    
-                    // Firestore'daki değerle senkronize et (eğer farklıysa)
+
+                    // Toplam geçirilen süreyi Firestore'dan alıp canlı olarak lokaldeki ile topla
                     val firestoreTimeSpent = doc.getLong("totalTimeSpent") ?: 0L
-                    if (totalTimeSpent != firestoreTimeSpent) {
-                        // TimeTracker'daki değer daha güncel, Firestore'u güncelle
-                        firestore.collection("users").document(currentUser.uid)
-                            .update("totalTimeSpent", totalTimeSpent)
-                            .addOnFailureListener { e ->
-                                Log.e("ProfileFragment", "Firestore'a süre güncellenemedi", e)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        TimeTracker.unsyncedTimeFlow.collect { unsynced ->
+                            if (isAdded) {
+                                updateTotalTimeDisplay(firestoreTimeSpent + unsynced)
                             }
+                        }
                     }
-                    
-                    // Abonelik bitiş tarihi
-                    if (subscriptionEndDate != null) {
-                        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr", "TR"))
-                        val endDateStr = dateFormat.format(subscriptionEndDate.toDate())
-                        binding.tvSubscriptionInfo.text = "⏳ Abonelik: Aktif (Son gün: $endDateStr)"
-                    } else {
-                        binding.tvSubscriptionInfo.text = "⏳ Abonelik: Aktif değil"
+
+                    // Abonelik bilgisi metni
+                    val plan = doc.getString("plan") ?: "Free"
+                    when (plan.lowercase()) {
+                        "pro" -> binding.tvSubscriptionInfo.text = "PRO"
+                        "lite" -> binding.tvSubscriptionInfo.text = "Lite"
+                        else -> binding.tvSubscriptionInfo.text = "Free"
                     }
-                    
-                    // Veriler yüklendi, widget'ları göster
+
                     hideLoadingState()
                     isDataLoaded = true
                     isUserDataLoading = false
                 } else {
                     BadgeProgressRepository.update(UserBadgeProgress())
                     bindRandomProfileBadges()
-                    // Firestore'da kayıt yok
-                    binding.tvMembershipStatus.text = "Free Üye"
-                    binding.tvSubscriptionInfo.text = "⏳ Abonelik: Aktif değil"
-                    
-                    // Veriler yüklendi (varsayılan değerlerle), widget'ları göster
+                    binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+                    binding.tvSubscriptionInfo.text = "Free"
                     hideLoadingState()
                     isDataLoaded = true
                     isUserDataLoading = false
@@ -376,7 +277,6 @@ class ProfileFragment : Fragment() {
                 BadgeProgressRepository.update(UserBadgeProgress())
                 bindRandomProfileBadges()
                 Log.e("ProfileFragment", "Firestore'dan kullanıcı bilgileri yüklenemedi", e)
-                // Hata durumunda da widget'ları göster (varsayılan değerlerle)
                 hideLoadingState()
                 isDataLoaded = true
                 isUserDataLoading = false
@@ -428,9 +328,9 @@ class ProfileFragment : Fragment() {
         val minutes = (totalSeconds % 3600) / 60
         
         val timeText = when {
-            days > 0 -> "🔥 $days Gün $hours saat $minutes dakika"
-            hours > 0 -> "🔥 $hours saat $minutes dakika"
-            else -> "🔥 $minutes dakika"
+            days > 0 -> "$days Gün $hours saat $minutes dakika"
+            hours > 0 -> "$hours saat $minutes dakika"
+            else -> "$minutes dakika"
         }
         binding.tvTotalTime.text = timeText
     }
@@ -873,6 +773,10 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
+        binding.btnAddFriend.setOnClickListener {
+            Toast.makeText(requireContext(), "eklenecek", Toast.LENGTH_SHORT).show()
+        }
+        
         binding.btnAccountSettings.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -894,15 +798,9 @@ class ProfileFragment : Fragment() {
             openBadgeDetailFragment()
         }
 
-        // Üyelik Durumu - Abonelik sayfasına git
-        binding.tvMembershipStatus.setOnClickListener {
-            val intent = Intent(requireContext(), SubscriptionActivity::class.java)
-            subscriptionLauncher.launch(intent)
-        }
-
-        // E-posta Doğrula
-        binding.btnVerifyEmail.setOnClickListener {
-            verifyEmail()
+        // Avatar tıklandığında AvatarPickerFragment'i aç
+        binding.imgProfilePhoto.setOnClickListener {
+            AvatarPickerFragment().show(requireActivity().supportFragmentManager, AvatarPickerFragment.TAG)
         }
     }
 
@@ -1019,7 +917,7 @@ class ProfileFragment : Fragment() {
         
         currentUser.updateProfile(profileUpdates)
             .addOnSuccessListener {
-                binding.tvUserName.text = newName
+                // Kullanıcı adı Firebase Auth'da güncellendi
                 
                 // Firestore'da da güncelle
                 firestore.collection("users").document(currentUser.uid)
@@ -1111,39 +1009,6 @@ class ProfileFragment : Fragment() {
             }
             .setNegativeButton("İptal", null)
             .show()
-    }
-    
-    private fun calculateCompletedLessons(): Int {
-        // GlobalLessonData'dan stepIsFinish değeri true olan dersleri say
-        // Her bir LessonItem'ı kontrol et, stepIsFinish == true ise sayacı 1 artır
-        // 0'dan başlayarak her biten ders için 1 artır
-        return try {
-            var completedCount = 0
-            
-            // GlobalLessonData'yı initialize et (eğer initialize edilmemişse)
-            try {
-                GlobalLessonData.initialize(requireContext(), GlobalLessonData.globalPartId) {
-                    // Count is calculated immediately below; async init is only to avoid
-                    // default-overwrite risk and keep future reads in sync.
-                }
-            } catch (e: Exception) {
-                Log.e("ProfileFragment", "GlobalLessonData initialize edilemedi", e)
-            }
-            
-            // Tüm lessonItems'ı kontrol et (createLessonItems içerisindeki tüm item'ler)
-            for (item in GlobalLessonData.lessonItems) {
-                // stepIsFinish değeri true ise tamamlanmış say
-                if (item.stepIsFinish == true) {
-                    completedCount++
-                }
-            }
-            
-            Log.d("ProfileFragment", "Tamamlanan ders sayısı: $completedCount (toplam item: ${GlobalLessonData.lessonItems.size}, stepIsFinish=true olanlar)")
-            completedCount
-        } catch (e: Exception) {
-            Log.e("ProfileFragment", "Tamamlanan ders sayısı hesaplanamadı", e)
-            0
-        }
     }
     
     private fun deleteAccount() {
@@ -1272,5 +1137,37 @@ class ProfileFragment : Fragment() {
                 Toast.makeText(context, "Kullanıcı verileri silinemedi: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
-    
+
+    private fun loadCupPathScores() {
+        setupCupCard(R.id.cupCard1, "Toplama", "dinosaur_anim.json", false, AbacusCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard2, "Çıkarma", "crocodile_anim.json", false, ExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard3, "Çarpma", "goat_anim.json", false, ImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, BlindingAdditionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, BlindingExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, BlindingImpactCupRepository::fetchCupScore)
+    }
+
+    private fun setupCupCard(
+        cardId: Int,
+        title: String,
+        animFile: String,
+        showForbiddenIcon: Boolean,
+        scoreProvider: ((Int) -> Unit) -> Unit
+    ) {
+        val cardView = binding.root.findViewById<View>(cardId)
+        val titleView = cardView.findViewById<TextView>(R.id.cardTitle)
+        val iconView = cardView.findViewById<android.widget.ImageView>(R.id.cardIcon)
+        val lottieView = cardView.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.cardLottie)
+        val scoreView = cardView.findViewById<TextView>(R.id.cardScore)
+
+        titleView.text = title
+        iconView.visibility = if (showForbiddenIcon) View.VISIBLE else View.GONE
+        lottieView.setAnimation(animFile)
+
+        scoreProvider { score ->
+            if (isAdded) {
+                scoreView.text = score.toString()
+            }
+        }
+    }
 }

@@ -14,6 +14,7 @@ object GlobalValues {
     var tutorialIsWorked = false
     var shouldShowAdOnReturn = false
     var lastInterstitialAdShownTime: Long = 0L
+    var interstitialAdShownCount: Int = 0
     var scrollPosition = 0  // Scroll pozisyonunu global olarak tutacak değişken
     /** Tutorial 1 akışındayken 1; login gösterildikten veya başka tutorial'a geçildikten sonra 0. */
     var currentTutorialNumber: Int = 0

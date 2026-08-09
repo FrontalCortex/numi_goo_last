@@ -84,24 +84,35 @@ class ShopFragment : Fragment() {
             }
         }
 
+        // --- SUPER CARD ---
+        val superCard = v.findViewById<View>(R.id.shopSuperCard)
+        superCard?.setOnClickListener {
+            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+        }
+
         // --- Özel Teklifler ---
         // Kristal reklam butonu
         val watchAdButton = v.findViewById<View>(R.id.shopWatchAdButton)
         watchAdButton.setOnClickListener {
             val activity = activity as? MainActivity ?: return@setOnClickListener
-            activity.adManager.showRewardedAd(activity) {
-                val rewardDialog = MissionRewardRevealDialogFragment()
-                rewardDialog.setOnRewardClaimedCallback {
+            activity.adManager.showRewardedAd(activity, showAdSkipAfter = false) {
+                val mainActivity = activity as? MainActivity
+                mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = android.view.View.VISIBLE
+                
+                parentFragmentManager.beginTransaction()
+                    .add(R.id.abacusFragmentContainer, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
+                    .commit()
+
+                parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
                     refreshCurrencyUi()
                 }
-                rewardDialog.show(parentFragmentManager, "ShopCrystalReward")
             }
         }
 
         val watchAdButton2 = v.findViewById<View>(R.id.shopWatchAdButton2)
         watchAdButton2.setOnClickListener {
             val activity = activity as? MainActivity ?: return@setOnClickListener
-            activity.adManager.showRewardedAd(activity) {
+            activity.adManager.showRewardedAd(activity, showAdSkipAfter = false) {
                 activity.getEnergyManager().addEnergy(1)
                 playHeartFlyAnimation(watchAdButton2)
                 updateEnergyUi()

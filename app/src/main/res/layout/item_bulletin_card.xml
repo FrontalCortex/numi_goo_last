@@ -33,7 +33,7 @@
                 android:adjustViewBounds="true"
                 android:contentDescription="@null"
                 android:scaleType="fitCenter"
-                android:src="@drawable/mini_abacus_ic"
+                android:src="@drawable/abacus_svg_ic"
                 android:visibility="gone" />
 
             <TextView

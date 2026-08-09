@@ -77,6 +77,50 @@ object GlobalLessonData {
         } catch (_: Exception) {
         }
     }
+    fun calculateGlobalCompletionPercentage(callback: (Int) -> Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return callback(0)
+        
+        var totalValidItems = 0
+        for (part in 1..6) {
+            val items = createLessonItems(part)
+            totalValidItems += items.count { it.type == LessonItem.TYPE_LESSON || it.type == LessonItem.TYPE_CHEST }
+        }
+        
+        if (totalValidItems == 0) return callback(0)
+        
+        var completedValidItems = 0
+        var partsProcessed = 0
+        
+        for (partId in 1..6) {
+            firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
+                .document(partId.toString())
+                .get()
+                .addOnSuccessListener { doc ->
+                    val json = doc.getString("items")
+                    if (!json.isNullOrBlank()) {
+                        try {
+                            val parsedItems = parseLessonItemsWithMigration(json, partId)
+                            completedValidItems += parsedItems.count { 
+                                (it.type == LessonItem.TYPE_LESSON || it.type == LessonItem.TYPE_CHEST) && it.stepIsFinish 
+                            }
+                        } catch (e: Exception) {
+                            Log.e(LOG_TAG, "Global progress parse error for part $partId", e)
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e(LOG_TAG, "Global progress fetch failed for part $partId")
+                }
+                .addOnCompleteListener {
+                    partsProcessed++
+                    if (partsProcessed == 6) {
+                        val percentage = ((completedValidItems.toFloat() / totalValidItems.toFloat()) * 100).toInt()
+                        callback(percentage)
+                    }
+                }
+        }
+    }
+
 
     fun initialize(context: Context, partId: Int, onReady: (() -> Unit)? = null) {
         globalPartId = partId
@@ -755,6 +799,7 @@ object GlobalLessonData {
                     titleUnit = "Kuralsız Toplama",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -1060,8 +1105,8 @@ object GlobalLessonData {
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 32,
-                    startStepNumber = 65,
-                    finishStepNumber = 65,
+                    startStepNumber = 1013, //65 ile değiştirilecek
+                    finishStepNumber = 1013,
                     cupPoint1 = 1350,
                     cupPoint2 = 1000,
                     worstCupTime = 180,
@@ -1322,7 +1367,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 20,
-                    finishStepNumber = 117,
+                    finishStepNumber = 117, //117 ile değişecek
                     startStepNumber = 117,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
@@ -1581,7 +1626,6 @@ object GlobalLessonData {
                     title = "Ünite Maratonu",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 20,
@@ -1936,7 +1980,7 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 25,
-                    finishStepNumber = 29,
+                    finishStepNumber = 29, //29 ile değişecek
                     startStepNumber = 29,
                     isBlinding = true,
                     tutorialIsFinish = true,

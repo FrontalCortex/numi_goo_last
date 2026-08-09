@@ -67,7 +67,7 @@ enum class BadgeKind(
     TORNADO(BadgeFragment.BadgeAnimMode.TORNADO, "Kasırga", "0 / 1"),
     VOLCANO(BadgeFragment.BadgeAnimMode.VOLCANO, "Yanardağ", "0 / 1"),
     DINO(BadgeFragment.BadgeAnimMode.DINO, "Dino", "0 / 500"),
-    CROCODILE(BadgeFragment.BadgeAnimMode.CROCODILE, "Timsah", "0 / 500"),
+    CROCODILE(BadgeFragment.BadgeAnimMode.CROCODILE, "Timo", "0 / 500"),
     GOAT(BadgeFragment.BadgeAnimMode.GOAT, "Keçi", "0 / 500"),
     EAGLE(BadgeFragment.BadgeAnimMode.EAGLE, "Şaho", "0 / 500"),
     FLY(BadgeFragment.BadgeAnimMode.FLY, "Sino", "0 / 500"),

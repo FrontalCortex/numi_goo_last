@@ -757,9 +757,9 @@ object AbacusPreferences {
     }
 
     fun getFrameType(context: Context): FrameType {
-        val name = prefs(context).getString(KEY_FRAME_TYPE, FrameType.FRAME_BG2.name)
-            ?: FrameType.FRAME_BG2.name
-        return try { FrameType.valueOf(name) } catch (_: Exception) { FrameType.FRAME_BG2 }
+        val name = prefs(context).getString(KEY_FRAME_TYPE, FrameType.FRAME_BG.name)
+            ?: FrameType.FRAME_BG.name
+        return try { FrameType.valueOf(name) } catch (_: Exception) { FrameType.FRAME_BG }
     }
 
     fun setFrameType(context: Context, type: FrameType) {

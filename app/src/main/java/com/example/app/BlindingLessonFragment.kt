@@ -264,6 +264,7 @@ class BlindingLessonFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        abacusMetricsInitialized = false
 
         findsId()
         if (isDailyQuestionMode) {
@@ -286,8 +287,8 @@ class BlindingLessonFragment : Fragment() {
         initializeGuideSystem()
         resetClickListener()
         blindingOrRace()
-        setupAbacusController()
         setupAbacusSettingsPanel()
+        setupAbacusController()
         setupKeyboardVisibilityListener()
         abacusModeVisibility()
         cupWay()
@@ -1785,6 +1786,11 @@ class BlindingLessonFragment : Fragment() {
             animationDurationMs = if (lessonItem.type == 2) 50L else 300L,
         )
         abacusController.setup()
+        val density = resources.displayMetrics.density
+        abacusController.setBeadMarginOffsets(
+            savedBeadMarginBottomDp * density,
+            savedBeadMarginTopDp * density,
+        )
         ensureAbacusMetricsIfVisible()
         syncAbacusTouchEnabled()
     }

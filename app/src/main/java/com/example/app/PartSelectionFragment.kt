@@ -63,7 +63,7 @@ class PartSelectionFragment : Fragment() {
     private fun finalizeSetup(view: View, plan: String, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
         if (!isAdded) return
         
-        val isPremium = plan != "Free"
+        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true)
         
         val getPartState = { partId: Int ->
             when (partId) {
@@ -74,14 +74,14 @@ class PartSelectionFragment : Fragment() {
                 5 -> PartState(5, visualActive = part2ChestComplete, functionalActive = part2ChestComplete, inactiveMessage = "Abaküste Çıkarma kısmını bitir.")
                 6 -> PartState(6, visualActive = part3ChestComplete, functionalActive = part3ChestComplete, inactiveMessage = "Abaküste Çarpma kısmını bitir.")
                 7 -> {
-                    val functional = isPremium && part1ChestComplete
-                    val msg = if (!isPremium) "Bu kısmı açmak için planı yükselt." else "Abaküste Toplama kısmını bitir."
-                    PartState(7, visualActive = isPremium, functionalActive = functional, inactiveMessage = msg)
+                    val functional = hasProPlan && part1ChestComplete
+                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Toplama kısmını bitir."
+                    PartState(7, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 8 -> {
-                    val functional = isPremium && part2ChestComplete
-                    val msg = if (!isPremium) "Bu kısımı açmak için planı yükselt." else "Abaküste Çıkarma kısmını bitir."
-                    PartState(8, visualActive = isPremium, functionalActive = functional, inactiveMessage = msg)
+                    val functional = hasProPlan && part2ChestComplete
+                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Çıkarma kısmını bitir."
+                    PartState(8, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 else -> PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
             }

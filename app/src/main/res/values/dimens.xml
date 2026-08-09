@@ -397,7 +397,7 @@
     <!-- Missions: track + fill aynı köşe yarıçapı (32dp bar → kapsül) -->
     <dimen name="daily_question_progress_width">200dp</dimen>
     <dimen name="daily_question_progress_height">28dp</dimen>
-    <dimen name="daily_question_progress_crystal_size">36dp</dimen>
+    <dimen name="daily_question_progress_crystal_size">48dp</dimen>
     <dimen name="mission_progress_bar_corner_radius">16dp</dimen>
     <!-- Missions: parlak çizgi overlay (clip ile kesilmez; sağda ilerleme sınırından içeride biter) -->
     <dimen name="mission_progress_shine_inset_start">14dp</dimen>

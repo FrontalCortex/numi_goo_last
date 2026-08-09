@@ -592,6 +592,7 @@ class TasksFragment : Fragment() {
                             "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
                             "cup_path" -> showCupPathPanel()
                             "chest_animation" -> openAbacusContainerFragment(NewChestFragment())
+                            "test_ad_skip_card" -> AdSkipFragment().show(requireActivity().supportFragmentManager, "AdSkip")
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
@@ -647,7 +648,7 @@ class TasksFragment : Fragment() {
                     id = "daily_card",
                     title = "Abaküs",
                     subtitle = "Abaküste pratik yaparak kendini geliştir.",
-                    iconRes = R.drawable.mini_abacus_ic,
+                    iconRes = R.drawable.abacus_svg_ic,
                 ),
                 BulletinRow.DailyQuestion(dailyCardState),
                 BulletinRow.Standard(
@@ -670,6 +671,13 @@ class TasksFragment : Fragment() {
                     subtitle = "Yeni sandık açılış animasyonu yapısı.",
                     iconRes = R.drawable.gold_ic,
                     colorRes = android.R.color.holo_orange_dark
+                ),
+                BulletinRow.Standard(
+                    id = "test_ad_skip_card",
+                    title = "Test Ad Skip",
+                    subtitle = "AdSkipFragment'i test etmek için tıkla.",
+                    iconRes = R.drawable.gold_ic,
+                    colorRes = android.R.color.holo_purple
                 ),
             ),
         )
@@ -878,8 +886,30 @@ class TasksFragment : Fragment() {
                 return@incrementBadgeProgressAndDetectLevelUp
             }
             val badgeQueue = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
+            
+            DailyQuestionRepository.markRewardClaimed(requireContext(), periodKey) { _ -> }
+            
+            parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
+                releaseLaunchTouchBlocker()
+                parentFragmentManager.clearFragmentResultListener("chest_closed")
+                if (badgeQueue.isNotEmpty() && isAdded) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.slide_out_left,
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_right,
+                        )
+                        .replace(
+                            R.id.badgeFragmentContainter,
+                            BadgeFragment.newLevelUpSequenceInstance(ArrayList(badgeQueue), 0),
+                        )
+                        .commit()
+                }
+            }
+            
             openAbacusContainerFragment(
-                DailyQuestionRewardFragment.newInstance(badgeQueue, periodKey),
+                NewChestFragment.newInstance(NewChestFragment.ChestRarity.RARE)
             )
         }
     }

@@ -204,14 +204,8 @@ class LessonAdapter(
                     // GuidePanel'in son adımında animasyon başlatma işlemi MapFragment'te yapılıyor
                     // Burada animasyon başlatmıyoruz çünkü kontrol ve başlatma MapFragment'te setOnLastStepReachedListener içinde yapılıyor
 
-                    getCurrentPlan { plan ->
-                        if (plan == "Free") {
-                            actionButton.text = "Tekrar etmek için planı yükselt"
-                        } else {
-                            actionButton.text = "Tekrar dene"
-                        }
-                        actionButton.isEnabled = true // Plan kontrolü tamamlandı, butonu aktif et
-                    }
+                    actionButton.text = "Tekrar dene"
+                    actionButton.isEnabled = true
                 }
                 else{
                     actionButton.text = "Gözden geçir"
@@ -384,22 +378,11 @@ class LessonAdapter(
             blockAllTouchesForActionTransition()
             if (item.isCompleted) {
                 getCurrentPlan { plan ->
-                    // Eğer type == 2 ve Free plan ise, abonelik sayfasına yönlendir
-                    if (item.type == 2 && item.stepIsFinish && plan == "Free") {
-                        // Abonelik sayfasına yönlendir
-                        val intent = Intent(context, SubscriptionActivity::class.java)
-                        context.startActivity(intent)
-                        // Bottom sheet'i kapat
-                        behavior.isHideable = true
-                        behavior.state = BottomSheetBehavior.STATE_HIDDEN
-                        return@getCurrentPlan
-                    }
-                    
                     // Enerji kontrolü (sadece Free plan için)
                     val mainActivity = context as MainActivity
                     val energyManager = mainActivity.getEnergyManager()
                     
-                    if (plan == "Free") {
+                    if (plan == "Free" || plan == "Lite") {
                         if (!energyManager.hasEnoughEnergy(1)) {
                             // Yeterli enerji yok, kullanıcıya uyarı göster
                             behavior.isHideable = true; behavior.state = BottomSheetBehavior.STATE_HIDDEN; showEnergyWarning(context)

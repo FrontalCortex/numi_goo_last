@@ -348,6 +348,13 @@ class ChestFragment : Fragment() {
                         ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
                     }
                 }
+                val safeFm = parentFragmentManager
+                val safeHostContainerId = (requireView().parent as View).id
+                val safeActivityFm = activity?.supportFragmentManager
+
+                // Seçenek 1 (Fire and Forget) - UI'ı hemen ilerlet
+                proceedWithResult(emptyList())
+
                 val shouldIncrementTornado = globalPartId == 7
                 val shouldIncrementVolcano = globalPartId == 8
                 if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons || shouldIncrementTornado || shouldIncrementVolcano) {
@@ -359,10 +366,17 @@ class ChestFragment : Fragment() {
                         incrementGolf = false,
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
-                        onDone = proceedWithResult,
+                        onDone = { payloads ->
+                            if (payloads.isNotEmpty()) {
+                                val missionFragment = safeFm.findFragmentById(safeHostContainerId) as? MissionChestRewardFragment
+                                if (missionFragment != null && missionFragment.isAdded) {
+                                    missionFragment.setBadgePayloads(payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) })
+                                } else if (safeActivityFm != null) {
+                                    BadgeProgressFirestore.openBadgeCelebration(safeActivityFm, payloads)
+                                }
+                            }
+                        },
                     )
-                } else {
-                    proceedWithResult(emptyList())
                 }
             } catch (e: IllegalStateException) {
                 Log.e("ChestFragment", "Ödül fragment işlemi başarısız", e)
@@ -400,18 +414,21 @@ class ChestFragment : Fragment() {
 
     private fun showCrystalBreakAtStart() {
         if (isChestRevealReady || isVideoFlowOpen || !isAdded) return
-        val tag = CrystalBreakVideoFragment::class.java.simpleName
-        if (childFragmentManager.findFragmentByTag(tag) != null) return
 
         isVideoFlowOpen = true
-        CrystalBreakVideoFragment.newInstance(selectedVideoName).show(childFragmentManager, tag)
-        childFragmentManager.executePendingTransactions()
-        (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
-            ?.setOnDismissCallback {
-                isVideoFlowOpen = false
-                if (!isAdded || _binding == null) return@setOnDismissCallback
-                revealChestRewardUi()
-            }
+        
+        parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
+            parentFragmentManager.clearFragmentResultListener("chest_closed")
+            isVideoFlowOpen = false
+            if (!isAdded || _binding == null) return@setFragmentResultListener
+            binding.claimRewardButton.performClick()
+        }
+
+        val containerId = (requireView().parent as View).id
+        parentFragmentManager.beginTransaction()
+            .add(containerId, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
+            .addToBackStack("map_chest")
+            .commit()
     }
 
     private fun revealChestRewardUi() {

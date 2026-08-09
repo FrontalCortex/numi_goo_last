@@ -283,17 +283,16 @@
 
             android:layout_height="@dimen/daily_question_progress_crystal_size"
 
-            android:layout_marginEnd="-6dp"
+            android:layout_marginEnd="-8dp"
 
             android:contentDescription="@null"
 
             android:elevation="6dp"
-
-            android:layout_marginBottom="4dp"
+            android:layout_marginBottom="16dp"
 
             android:scaleType="fitCenter"
 
-            android:src="@drawable/crystal_ic"
+            android:src="@drawable/new_chest_close_ic2"
 
             app:layout_constraintBottom_toBottomOf="@id/dailyQuestionProgressZone"
 

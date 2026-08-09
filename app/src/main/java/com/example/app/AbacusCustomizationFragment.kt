@@ -77,6 +77,10 @@ class AbacusCustomizationFragment : Fragment() {
     /** Bead IDs the current user owns (loaded from Firestore on fragment creation). */
     private var ownedBeads: Map<String, BeadData> = emptyMap()
 
+    // ── Frame ownership ───────────────────────────────────────────────────────
+    /** Frame IDs the current user owns (e.g. "FRAME_BG2", "FRAME_BG3", "FRAME_BG4"). */
+    private var ownedFrames: Map<String, FrameData> = emptyMap()
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCreateView(
@@ -121,6 +125,11 @@ class AbacusCustomizationFragment : Fragment() {
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
                 ownedBeads = owned
                 if (currentTab == 0) selectTab(0)
+            })
+            FramePurchaseFirestore.loadOwnedFrames(uid, onResult = { owned ->
+                ownedFrames = owned
+                if (currentTab == 2) selectTab(2)
+                if (currentTab == 3) selectTab(3)
             })
         }
 
@@ -1014,10 +1023,19 @@ class AbacusCustomizationFragment : Fragment() {
     private fun inflateTab3(): View {
         val v = LayoutInflater.from(requireContext())
             .inflate(R.layout.layout_tab3_frame_options, tabContent, false)
-        val cardBg = v.findViewById<MaterialCardView>(R.id.cardFrameBg)
+        val cardBg  = v.findViewById<MaterialCardView>(R.id.cardFrameBg)
         val cardBg2 = v.findViewById<MaterialCardView>(R.id.cardFrameBg2)
         val cardBg3 = v.findViewById<MaterialCardView>(R.id.cardFrameBg3)
         val cardBg4 = v.findViewById<MaterialCardView>(R.id.cardFrameBg4)
+        val overlayBg2 = v.findViewById<View>(R.id.overlayFrameBg2)
+        val overlayBg3 = v.findViewById<View>(R.id.overlayFrameBg3)
+        val overlayBg4 = v.findViewById<View>(R.id.overlayFrameBg4)
+
+        fun updateOverlays() {
+            overlayBg2.visibility = if (ownedFrames[FrameType.FRAME_BG2.name]?.owned == true) View.GONE else View.VISIBLE
+            overlayBg3.visibility = if (ownedFrames[FrameType.FRAME_BG3.name]?.owned == true) View.GONE else View.VISIBLE
+            overlayBg4.visibility = if (ownedFrames[FrameType.FRAME_BG4.name]?.owned == true) View.GONE else View.VISIBLE
+        }
 
         fun updateSelection() {
             val type = AbacusPreferences.getFrameType(requireContext())
@@ -1032,12 +1050,246 @@ class AbacusCustomizationFragment : Fragment() {
             cardBg4.strokeWidth = if (type == FrameType.FRAME_BG4) 6 else 0
         }
         updateSelection()
+        updateOverlays()
 
-        cardBg.setOnClickListener  { AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG);  updateSelection(); refreshPreviewFrameBackground() }
-        cardBg2.setOnClickListener { AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG2); updateSelection(); refreshPreviewFrameBackground() }
-        cardBg3.setOnClickListener { AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG3); updateSelection(); refreshPreviewFrameBackground() }
-        cardBg4.setOnClickListener { AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG4); updateSelection(); refreshPreviewFrameBackground() }
+        // Ahşap — her zaman ücretsiz
+        cardBg.setOnClickListener {
+            AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG)
+            updateSelection()
+            refreshPreviewFrameBackground()
+        }
+
+        // Kalpli — 2000 altın
+        cardBg2.setOnClickListener {
+            if (ownedFrames[FrameType.FRAME_BG2.name]?.owned == true) {
+                AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG2)
+                updateSelection()
+                refreshPreviewFrameBackground()
+            } else {
+                showFramePurchasePanel(
+                    frameType  = FrameType.FRAME_BG2,
+                    imageResId = R.drawable.abacus_frame_bg2,
+                    price      = 2000,
+                    overlayView = overlayBg2,
+                    onPurchased = {
+                        updateSelection()
+                        updateOverlays()
+                        refreshPreviewFrameBackground()
+                    }
+                )
+            }
+        }
+
+        // Yıldızlı — 2000 altın
+        cardBg3.setOnClickListener {
+            if (ownedFrames[FrameType.FRAME_BG3.name]?.owned == true) {
+                AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG3)
+                updateSelection()
+                refreshPreviewFrameBackground()
+            } else {
+                showFramePurchasePanel(
+                    frameType  = FrameType.FRAME_BG3,
+                    imageResId = R.drawable.abacus_frame_bg3,
+                    price      = 2000,
+                    overlayView = overlayBg3,
+                    onPurchased = {
+                        updateSelection()
+                        updateOverlays()
+                        refreshPreviewFrameBackground()
+                    }
+                )
+            }
+        }
+
+        // Gradyanlı — 5000 altın
+        cardBg4.setOnClickListener {
+            if (ownedFrames[FrameType.FRAME_BG4.name]?.owned == true) {
+                AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG4)
+                updateSelection()
+                refreshPreviewFrameBackground()
+            } else {
+                showFramePurchasePanel(
+                    frameType  = FrameType.FRAME_BG4,
+                    imageResId = R.drawable.abacus_frame_bg4,
+                    price      = 5000,
+                    overlayView = overlayBg4,
+                    onPurchased = {
+                        updateSelection()
+                        updateOverlays()
+                        refreshPreviewFrameBackground()
+                    }
+                )
+            }
+        }
+
         return v
+    }
+
+    private fun showFramePurchasePanel(
+        frameType: FrameType,
+        imageResId: Int,
+        price: Int,
+        overlayView: View,
+        onPurchased: () -> Unit,
+    ) {
+        if (isDialogShowing) return
+        isDialogShowing = true
+
+        val ctx = requireContext()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+            isDialogShowing = false
+            return
+        }
+
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_bead_purchase)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (ctx.resources.displayMetrics.widthPixels * 0.88f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.setOnDismissListener { isDialogShowing = false }
+
+        dialog.findViewById<View>(R.id.beadPurchaseClose).setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<android.widget.ImageView>(R.id.beadPurchaseImage).setImageResource(imageResId)
+        dialog.findViewById<android.widget.TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+
+        val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
+        val closeBtn    = dialog.findViewById<View>(R.id.beadPurchaseClose)
+
+        purchaseBtn.setOnClickListener {
+            if (!purchaseBtn.isEnabled) return@setOnClickListener
+            purchaseBtn.isEnabled = false
+            closeBtn.isEnabled    = false
+            dialog.setCancelable(false)
+
+            if (UserWalletFirestore.getCachedCurrency(ctx) < price) {
+                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled    = true
+                dialog.setCancelable(true)
+                return@setOnClickListener
+            }
+
+            UserWalletFirestore.applyCurrencyDelta(
+                context = ctx,
+                uid     = uid,
+                delta   = -price,
+                onSuccess = {
+                    FramePurchaseFirestore.markFrameOwned(uid, frameType,
+                        onSuccess = {
+                            val currentData = ownedFrames[frameType.name] ?: FrameData(owned = false, colorFeatureActive = false)
+                            ownedFrames = ownedFrames + (frameType.name to currentData.copy(owned = true))
+                            AbacusPreferences.setFrameType(ctx, frameType)
+                            refreshCurrencyUi()
+                            overlayView.visibility = View.GONE
+                            onPurchased()
+                            dialog.dismiss()
+                        },
+                        onFailure = {
+                            // Firestore kaydı başarısız — parayı iade et
+                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                            Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
+                            purchaseBtn.isEnabled = true
+                            closeBtn.isEnabled    = true
+                            dialog.setCancelable(true)
+                        }
+                    )
+                },
+                onFailure = {
+                    Toast.makeText(ctx, "Ödeme hatası", Toast.LENGTH_SHORT).show()
+                    purchaseBtn.isEnabled = true
+                    closeBtn.isEnabled    = true
+                    dialog.setCancelable(true)
+                }
+            )
+        }
+
+        dialog.show()
+    }
+
+    private fun showFrameColorFeaturePurchasePanel(
+        frameType: FrameType,
+        imageResId: Int,
+        overlayView: View,
+        onPurchased: () -> Unit,
+    ) {
+        if (isDialogShowing) return
+        isDialogShowing = true
+
+        val ctx = requireContext()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+            isDialogShowing = false
+            return
+        }
+
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_bead_purchase)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (ctx.resources.displayMetrics.widthPixels * 0.88f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.setOnDismissListener { isDialogShowing = false }
+
+        dialog.findViewById<View>(R.id.beadPurchaseClose).setOnClickListener { dialog.dismiss() }
+        
+        dialog.findViewById<android.widget.ImageView>(R.id.beadPurchaseImage).setImageResource(imageResId)
+        dialog.findViewById<android.widget.ImageView>(R.id.beadPurchaseFeatureIcon)?.visibility = View.VISIBLE
+        
+        val price = 2000
+        dialog.findViewById<android.widget.TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+
+        val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
+        val closeBtn    = dialog.findViewById<View>(R.id.beadPurchaseClose)
+
+        purchaseBtn.setOnClickListener {
+            if (!purchaseBtn.isEnabled) return@setOnClickListener
+            purchaseBtn.isEnabled = false
+            closeBtn.isEnabled    = false
+            dialog.setCancelable(false)
+
+            if (UserWalletFirestore.getCachedCurrency(ctx) < price) {
+                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled    = true
+                dialog.setCancelable(true)
+                return@setOnClickListener
+            }
+
+            UserWalletFirestore.applyCurrencyDelta(
+                context = ctx,
+                uid     = uid,
+                delta   = -price,
+                onSuccess = {
+                    FramePurchaseFirestore.setColorFeatureActive(uid, frameType,
+                        onSuccess = {
+                            val currentData = ownedFrames[frameType.name] ?: FrameData(owned = false, colorFeatureActive = false)
+                            ownedFrames = ownedFrames + (frameType.name to currentData.copy(colorFeatureActive = true))
+                            refreshCurrencyUi()
+                            overlayView.visibility = View.GONE
+                            onPurchased()
+                            dialog.dismiss()
+                        },
+                        onFailure = {
+                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                            Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
+                            purchaseBtn.isEnabled = true
+                            closeBtn.isEnabled    = true
+                            dialog.setCancelable(true)
+                        }
+                    )
+                },
+                onFailure = {
+                    Toast.makeText(ctx, "Ödeme hatası", Toast.LENGTH_SHORT).show()
+                    purchaseBtn.isEnabled = true
+                    closeBtn.isEnabled    = true
+                    dialog.setCancelable(true)
+                }
+            )
+        }
+
+        dialog.show()
     }
 
     // ── Tab 4: Frame colour ───────────────────────────────────────────────────
@@ -1175,6 +1427,35 @@ class AbacusCustomizationFragment : Fragment() {
             buildRows()
             refreshPreviewFrameBackground()
         }
+
+        // Tab 4 kilit overlay: seçili çerçeve satın alınmamışsa veya renk özelliği yoksa kilit
+        val frameColorLockOverlay = v.findViewById<View>(R.id.tab4ColorLockOverlay)
+        val currentFrameType = AbacusPreferences.getFrameType(ctx)
+        val isFrameColorUnlocked = currentFrameType == com.example.app.abacus.AbacusPreferences.FrameType.FRAME_BG
+            || ownedFrames[currentFrameType.name]?.colorFeatureActive == true
+        if (isFrameColorUnlocked) {
+            frameColorLockOverlay?.visibility = View.GONE
+        } else {
+            frameColorLockOverlay?.visibility = View.VISIBLE
+            frameColorLockOverlay?.setOnClickListener {
+                val imgRes = when (currentFrameType) {
+                    com.example.app.abacus.AbacusPreferences.FrameType.FRAME_BG2 -> R.drawable.abacus_frame_bg2
+                    com.example.app.abacus.AbacusPreferences.FrameType.FRAME_BG3 -> R.drawable.abacus_frame_bg3
+                    com.example.app.abacus.AbacusPreferences.FrameType.FRAME_BG4 -> R.drawable.abacus_frame_bg4
+                    else -> return@setOnClickListener
+                }
+                showFrameColorFeaturePurchasePanel(
+                    frameType   = currentFrameType,
+                    imageResId  = imgRes,
+                    overlayView = frameColorLockOverlay,
+                    onPurchased = {
+                        buildRows()
+                        refreshPreviewFrameBackground()
+                    }
+                )
+            }
+        }
+
         return v
     }
 

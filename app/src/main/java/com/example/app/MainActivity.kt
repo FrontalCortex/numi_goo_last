@@ -50,7 +50,13 @@ import java.io.FileOutputStream
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity(), GoldUpdateListener {
-    fun checkAndShowInterstitialAdIfAllowed(logContext: String) {
+    fun checkAndShowInterstitialAdIfAllowed(logContext: String, onDone: () -> Unit = {}) {
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            Log.d("AdDiag", "Skipping Ad on $logContext: User is not logged in")
+            onDone()
+            return
+        }
+
         Log.d("AdDiag", "$logContext called. shouldShowAdOnReturn=${GlobalValues.shouldShowAdOnReturn}")
         if (GlobalValues.shouldShowAdOnReturn) {
             GlobalValues.shouldShowAdOnReturn = false
@@ -62,11 +68,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                         if (chests.size >= 2 && chests[1].stepIsFinish) {
                             GlobalValues.lastInterstitialAdShownTime = System.currentTimeMillis()
                             Log.d("AdDiag", "Showing Interstitial Ad on $logContext")
-                            adManager.showInterstitialAd(this)
+                            val shouldShowSkip = GlobalValues.pendingCupPathRevealPartId == null
+                            adManager.showInterstitialAd(this, shouldShowSkip) {
+                                onDone()
+                            }
                         } else {
                             Log.d("AdDiag", "Skipping Ad on $logContext: 2nd chest in part 1 is not finished")
+                            onDone()
                         }
                     }
+                    return
                 } else {
                     Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 40 sec cooldown")
                 }
@@ -74,6 +85,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro")
             }
         }
+        onDone()
     }
 
 
@@ -1680,9 +1692,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // resetlenmiş local state'i doğrudan cloud'a overwrite et.
         MissionsProgressStore.forceUploadStateToCloud(context)
         // Kullanıcıya özel lesson verilerini local'den temizler.
-        GlobalLessonData.clearCurrentUserLessonData(context)
+        //GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
-        deleteLessonProgressFromFirestoreWithAuthWait()
+        //deleteLessonProgressFromFirestoreWithAuthWait()
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
         //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
         //guidePanelPrefs.edit().clear().apply()
@@ -1881,7 +1893,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         checkSubscriptionAndUpdateEnergy()
     }
     
-    private fun checkSubscriptionAndUpdateEnergy() {
+    fun checkSubscriptionAndUpdateEnergy() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış, normal gösterim
@@ -1896,10 +1908,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val plan = doc.getString("plan") ?: "Free"
-                    val isPremium = doc.getBoolean("isPremium") ?: false
+                    energyManager.setUserPlan(plan)
                     
                     // Pro veya Premium ise sonsuz işareti göster
-                    if (plan == "Pro" || plan == "Premium" || isPremium) {
+                    if (plan == "Pro" || plan == "Premium") {
                         binding.energyText.text = "∞"
                     } else {
                         // Free plan - normal gösterim
@@ -2019,6 +2031,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         is ChestResult,
         is MissionChestRewardFragment,
         is ChestFragment,
+        is NewChestFragment,
         is RecordFragment,
         is DailyQuestionRewardFragment,
         is CreateQuestionFragment,
@@ -2273,15 +2286,16 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun completeTasksOverlayDismiss(caller: String) {
-        checkAndShowInterstitialAdIfAllowed("completeTasksOverlayDismiss")
-        if (!::binding.isInitialized) return
-        forcingAbacusOverlayDismissForSeasonGate = false
-        binding.abacusFragmentContainer.visibility = View.GONE
-        dismissMapLessonOverlayChrome()
-        releasePracticeTouchBlocker()
-        releaseLessonActionTouchBlocker()
-        ensureChromeUnlockedAfterOverlayDismiss(caller)
-        logTouchDiag("completeTasksOverlayDismiss:$caller")
+        checkAndShowInterstitialAdIfAllowed("completeTasksOverlayDismiss") {
+            if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
+            forcingAbacusOverlayDismissForSeasonGate = false
+            binding.abacusFragmentContainer.visibility = View.GONE
+            dismissMapLessonOverlayChrome()
+            releasePracticeTouchBlocker()
+            releaseLessonActionTouchBlocker()
+            ensureChromeUnlockedAfterOverlayDismiss(caller)
+            logTouchDiag("completeTasksOverlayDismiss:$caller")
+        }
     }
 
     /** [TasksFragment.onResume] için: FM transaction bitince [reconcileAbacusOverlayWhenTasksIsBase] (Map [view.post] ile aynı mantık). */
@@ -2369,23 +2383,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      * [MapFragment.notifyVisibleAfterOverlayDismiss] tek kaynak.
      */
     fun notifyMapVisibleAfterLessonClaim(caller: String) {
-        checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim")
-        if (!::binding.isInitialized) return
-        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-        if (map == null || !map.isAdded) {
-            LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")
-            return
-        }
-        LessonProgressDiag.log("MainActivity.notifyMapVisible", "SCHEDULE caller=$caller")
-        val runNotify = Runnable {
-            if (!map.isAdded) {
-                LessonProgressDiag.log("MainActivity.notifyMapVisible", "ABORT caller=$caller map detached")
-                return@Runnable
+        checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim") {
+            if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
+            val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+            if (map == null || !map.isAdded) {
+                LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")
+                return@checkAndShowInterstitialAdIfAllowed
             }
-            LessonProgressDiag.log("MainActivity.notifyMapVisible", "RUN caller=$caller")
-            map.notifyVisibleAfterOverlayDismiss()
+            LessonProgressDiag.log("MainActivity.notifyMapVisible", "SCHEDULE caller=$caller")
+            val runNotify = Runnable {
+                if (!map.isAdded) {
+                    LessonProgressDiag.log("MainActivity.notifyMapVisible", "ABORT caller=$caller map detached")
+                    return@Runnable
+                }
+                LessonProgressDiag.log("MainActivity.notifyMapVisible", "RUN caller=$caller")
+                map.notifyVisibleAfterOverlayDismiss()
+            }
+            map.view?.post(runNotify) ?: runNotify.run()
         }
-        map.view?.post(runNotify) ?: runNotify.run()
     }
 
     /** Harita tabanı görünür; ders/sandık/görev/rozet/sezon kapısı overlay'i yok. */
