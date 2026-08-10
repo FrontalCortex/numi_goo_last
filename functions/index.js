@@ -587,3 +587,18 @@ exports.onQuestionUpdated = functions.firestore
   });
 
 
+
+// Auth 'onDelete' trigger to recursively delete user data in Firestore
+exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
+  const uid = user.uid;
+  console.log(`User deleted from Auth: ${uid}. Starting recursive delete of users/${uid}`);
+  
+  try {
+    const userRef = db.collection('users').doc(uid);
+    await db.recursiveDelete(userRef);
+    console.log(`Successfully deleted users/${uid} and all subcollections.`);
+  } catch (error) {
+    console.error(`Error deleting user data for ${uid}:`, error);
+  }
+});
+
