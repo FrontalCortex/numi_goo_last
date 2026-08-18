@@ -234,8 +234,7 @@ class EnergyManager(private val context: Context) {
         firestore.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (!doc.exists()) {
-                    // Kullanıcı dökümanı henüz oluşmamış → mevcut halimizi yaz
-                    saveToFirestore(getFullTime())
+                    // Kullanıcı dökümanı yoksa veya silinmişse yeni belge yaratma.
                     scheduleNextTick()
                     return@addOnSuccessListener
                 }

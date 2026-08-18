@@ -20135,12 +20135,16 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
     }
     private fun playCorretSound(soundResId: Int) {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
         mediaPlayer?.start()
     }
     // Ses çalma fonksiyonu
     private fun playSound(soundResource: Int?) {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("tutorial_sound_enabled", true)) return
         soundResource?.let { resourceId ->
             try {
                 // Önceki ses varsa durdur

@@ -161,10 +161,12 @@ class CrystalBreakVideoFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        val soundEnabled = prefs.getBoolean("sound_enabled", true)
         setupClickSound()
         exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
             binding.crystalPlayerView.player = player
-            player.volume = 0.5f
+            player.volume = if (soundEnabled) 0.5f else 0f
             player.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
@@ -442,6 +444,8 @@ class CrystalBreakVideoFragment : DialogFragment() {
     }
 
     private fun playClickSound() {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         if (!clickSoundLoaded || clickSoundId == 0) return
         clickSoundPool?.play(clickSoundId, 0.5f, 0.5f, 1, 0, 1f)
     }

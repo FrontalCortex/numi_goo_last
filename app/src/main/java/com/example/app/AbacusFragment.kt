@@ -2821,6 +2821,8 @@ class AbacusFragment : Fragment() {
     }
 
     private fun playSound(soundResId: Int) {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
         mediaPlayer?.start()

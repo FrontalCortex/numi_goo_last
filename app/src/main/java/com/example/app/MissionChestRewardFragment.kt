@@ -129,21 +129,11 @@ class MissionChestRewardFragment : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("MissionChestReward.continue")
-            if (openBadgeAfter) {
-                activityFm.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_left,
-                        R.anim.slide_in_left,
-                        R.anim.slide_out_right,
-                    )
-                    .replace(
-                        R.id.badgeFragmentContainter,
-                        BadgeFragment.newLevelUpSequenceInstance(queueCopy, 0),
-                    )
-                    .commit()
-            }
+            android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
+            main?.finalizeMapReturnAfterLessonClaim(
+                caller = "MissionChestReward.continue",
+                badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
+            )
         }
     }
 

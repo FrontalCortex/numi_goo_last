@@ -103,7 +103,7 @@ enum class BadgeLevelTone {
 object BadgeProgressEngine {
     private val dartLevel = listOf(3, 10, 20, 30, 50)
     private val golfLevel = listOf(5, 10, 20, 50, 100)
-    private val rocketLevel = listOf(3, 5, 10, 15, 25)
+    private val rocketLevel = listOf(3, 10, 15, 25, 30)
     private val bowlingLevel = listOf(5, 10, 20, 50, 100)
     private val fishingLevel = listOf(3, 5, 15, 25, 50)
     private val tornadoLevel = listOf(1, 3, 5, 10, 15)

@@ -105,4 +105,8 @@ dependencies {
 
     // Foreground Service için (yükleme bildirimi + kota yok)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // In-App Review API
+    implementation("com.google.android.play:review:2.0.1")
+    implementation("com.google.android.play:review-ktx:2.0.1")
 }

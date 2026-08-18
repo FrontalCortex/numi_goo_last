@@ -84,6 +84,8 @@ object BadgeProgressFirestore {
         payloads: List<BadgeLevelUpPayload>,
         seasonLeaderboardAckAfterQueue: Int? = null,
     ) {
+        android.util.Log.d("DEBUG_BADGE", "BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
+        android.util.Log.d("DEBUG_BADGE", "Trace:", java.lang.Exception("Stack trace"))
         if (payloads.isEmpty()) return
         fm.beginTransaction()
             .setCustomAnimations(

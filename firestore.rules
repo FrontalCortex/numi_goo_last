@@ -1,20 +1,39 @@
 rules_version = '2';
+// Update account deletion rules
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // Kullanıcılar: giriş yapmış kullanıcı sadece kendi dokümanını okuyup yazabilir (fcmToken, fcmTokenUpdatedAt dahil)
-    // Email kontrolü için: unauthenticated kullanıcılar users collection'ında where query yapabilir (list izni)
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Email kontrolü için: unauthenticated kullanıcılar where query yapabilir
-      allow read: if request.auth == null;
+      allow read: if true; // Herkes (girişli/girişsiz) okuyabilir
+      allow create, delete: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        request.auth.uid == userId || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount'])
+      );
+    }
+
+    match /friendRequests/{requestId} {
+      allow read, write: if request.auth != null; // Giriş yapmış herkes istek okuyup yazabilir
     }
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     // sadece ilgili kullanıcı tarafından okunup yazılabilir.
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rozet, Kupa Yolu ve Ders İlerlemesi verileri: giriş yapmış herkes okuyabilir (başkasının profilini görüntülemek için)
+    match /users/{userId}/badgeProgress/{doc} {
+      allow read: if request.auth != null;
+    }
+    match /users/{userId}/cupWayProgress/{doc} {
+      allow read: if request.auth != null;
+    }
+    match /users/{userId}/lessonProgress/{doc} {
+      allow read: if request.auth != null;
     }
 
     // Öğretmen davet kodları: giriş yapmış kullanıcı okuyabilir; kayıt sırasında update (used) için yazma
@@ -112,9 +131,28 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Geri bildirimler
+    match /feedback/{feedbackId} {
+      allow create: if request.auth != null;
+    }
+
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // Takip sistemi: takipçi alt koleksiyonu
+    // Bir kullanıcıyı takip etmek = o kullanıcının followers/ koleksiyonuna kendi UID'ini yazma
+    match /users/{targetUserId}/followers/{followerUid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == followerUid;
+    }
+
+    // Takip sistemi: takip edilenler alt koleksiyonu
+    // Birini takip etmek = kendi following/ koleksiyonuna hedef UID'i yazma
+    match /users/{ownerUserId}/following/{followingUid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == ownerUserId || request.auth.uid == followingUid);
     }
   }
 }

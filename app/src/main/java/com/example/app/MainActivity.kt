@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             GlobalValues.shouldShowAdOnReturn = false
             if (!isInfiniteEnergy()) {
                 val now = System.currentTimeMillis()
-                if (now - GlobalValues.lastInterstitialAdShownTime >= 40 * 1000L) {
+                if (now - GlobalValues.lastInterstitialAdShownTime >= 1 * 1000L) {
                     GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
                         val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
                         if (chests.size >= 2 && chests[1].stepIsFinish) {
@@ -258,6 +258,15 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     /** [scheduleSeasonGateAfterAbacusOverlayDismissed] birleştirme; lesson sheet overlay açılmadan önce iptal edilir. */
     private var pendingSeasonGateReconcileRunnable: Runnable? = null
+
+    /** Reklam gösterilirken/sonrasında açılacak rozet payloads (BadgeLevelUpPayload listesi). */
+    private var pendingBadgePayloadsForAd: List<com.example.app.BadgeLevelUpPayload> = emptyList()
+    /** Reklam gösterilirken/sonrasında açılacak rozet payloads (String listesi). */
+    private var pendingBadgeStringPayloadsForAd: List<String> = emptyList()
+    /** Reklam kontrolü zaten uçuştayken ikinci çağrının onDone'ını tetiklemesini önler. */
+    private var adCheckForBadgeInProgress = false
+    /** Sandık türü ders ilk kez tamamlandığında rating dialog tetiklenmesi için bayrak. */
+    var justFinishedChestForRating = false
 
     /**
      * [prepareMapReturnAfterLessonClaim] claim yolunda set edilir;
@@ -1692,12 +1701,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // resetlenmiş local state'i doğrudan cloud'a overwrite et.
         MissionsProgressStore.forceUploadStateToCloud(context)
         // Kullanıcıya özel lesson verilerini local'den temizler.
-        //GlobalLessonData.clearCurrentUserLessonData(context)
+        GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
-        //deleteLessonProgressFromFirestoreWithAuthWait()
+        deleteLessonProgressFromFirestoreWithAuthWait()
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
-        //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
-        //guidePanelPrefs.edit().clear().apply()
+        val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
+        guidePanelPrefs.edit().clear().apply()
         
         // İlk tutorial flag'ini de temizle (test için)
         val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -2364,8 +2373,51 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         }
     }
 
+    /**
+     * Asenkron gelen rozet payloads'larını sıraya ekler.
+     * Reklam açıksa reklam kapandıktan sonra açar, reklam yoksa anında açar.
+     */
+    fun enqueuePendingBadgePayloads(
+        badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
+        badgeStringPayloads: List<String> = emptyList()
+    ) {
+        if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
+        if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
+        if (!adCheckForBadgeInProgress) {
+            val resolvedBadgePayloads = pendingBadgePayloadsForAd
+            val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
+            pendingBadgePayloadsForAd = emptyList()
+            pendingBadgeStringPayloadsForAd = emptyList()
+            if (resolvedBadgePayloads.isNotEmpty()) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
+                }
+            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.slide_out_left,
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_right,
+                        )
+                        .replace(
+                            R.id.badgeFragmentContainter,
+                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
+                        )
+                        .commit()
+                }
+            }
+        }
+    }
+
     /** [prepareMapReturnAfterLessonClaim] sonrası: chrome + sezon reconcile (tek kaynak). */
-    fun finalizeMapReturnAfterLessonClaim(caller: String) {
+    fun finalizeMapReturnAfterLessonClaim(
+        caller: String,
+        badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
+        badgeStringPayloads: List<String> = emptyList(),
+    ) {
+        android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
         ensureChromeUnlockedAfterMapReturn(caller)
@@ -2373,7 +2425,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
-            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller")
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads)
             tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
         }
     }
@@ -2382,9 +2434,69 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
      * Reconcile atlanırsa bile harita listesini ve progress animasyon tüketimini günceller.
      * [MapFragment.notifyVisibleAfterOverlayDismiss] tek kaynak.
      */
-    fun notifyMapVisibleAfterLessonClaim(caller: String) {
+    fun notifyMapVisibleAfterLessonClaim(
+        caller: String,
+        badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
+        badgeStringPayloads: List<String> = emptyList()
+    ) {
+        android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
+        // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
+        if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
+        if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
+        // Eğer reklam kontrolü zaten uçuştaysa ikinci çağrı sadece payload biriktirir, onDone tekrar tetiklenmez.
+        if (adCheckForBadgeInProgress) {
+            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
+            return
+        }
+        adCheckForBadgeInProgress = true
         checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim") {
+            adCheckForBadgeInProgress = false
             if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
+            // Biriktirilen payloads'ı oku ve temizle
+            val resolvedBadgePayloads = pendingBadgePayloadsForAd
+            val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
+            pendingBadgePayloadsForAd = emptyList()
+            pendingBadgeStringPayloadsForAd = emptyList()
+            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
+            if (resolvedBadgePayloads.isNotEmpty()) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
+                }
+            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    android.util.Log.d("DEBUG_BADGE", "MainActivity successfully opening BadgeFragment with STRING payloads: ${resolvedBadgeStringPayloads.size}")
+                    supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(
+                            R.anim.slide_in_right,
+                            R.anim.slide_out_left,
+                            R.anim.slide_in_left,
+                            R.anim.slide_out_right,
+                        )
+                        .replace(
+                            R.id.badgeFragmentContainter,
+                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
+                        )
+                        .commit()
+                }
+            } else if (justFinishedChestForRating) {
+                val isAdSkipShowing = supportFragmentManager.findFragmentByTag("AdSkip") != null
+                val isTasksRedirectionPending = GlobalValues.pendingCupPathRevealPartId != null
+                if (isAdSkipShowing || isTasksRedirectionPending) {
+                    justFinishedChestForRating = false
+                } else {
+                    val mapFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                    val isGuideActiveOrPending = MarathonGuideStore.isPending(this@MainActivity) ||
+                        (mapFragment != null && mapFragment.isAdded && mapFragment.view != null &&
+                            (mapFragment.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE))
+
+                    if (!isGuideActiveOrPending) {
+                        justFinishedChestForRating = false
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            AppRatingManager.checkAndShowRatingPrompt(this@MainActivity, 1)
+                        }
+                    }
+                }
+            }
             val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
             if (map == null || !map.isAdded) {
                 LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")

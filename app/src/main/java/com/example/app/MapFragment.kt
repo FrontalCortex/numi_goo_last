@@ -1179,6 +1179,11 @@ class MapFragment : Fragment() {
                     "Panel kapandı ama enableMapFragmentViews henüz çağrılmamış olabilir",
                 )
             }
+            val act = activity as? MainActivity
+            if (act != null && act.justFinishedChestForRating) {
+                act.justFinishedChestForRating = false
+                AppRatingManager.checkAndShowRatingPrompt(act, 1)
+            }
         }
         
         // GuidePanel'in son adımına gelindiğinde recordLayout animasyonunu başlat
@@ -1282,7 +1287,13 @@ class MapFragment : Fragment() {
         
         // Panel gizlendiğinde overlay'i ve kilitleri kaldır
         binding.guidePanel.setOnPanelHideListener {
+            enableMainActivityViews()
             enableMapTouchRouting()
+            val act = activity as? MainActivity
+            if (act != null && act.justFinishedChestForRating) {
+                act.justFinishedChestForRating = false
+                AppRatingManager.checkAndShowRatingPrompt(act, 1)
+            }
         }
         
         // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır

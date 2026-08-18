@@ -175,8 +175,10 @@ class ChestFragment : Fragment() {
                     MissionsProgressStore.recordChestStarGainProgress(requireContext(), pendingChestStarGainAmount)
                     pendingChestStarGainAmount = 0
                 }
-                // updateMapProgress() bu tıklamada stepIsFinish=true yapar; dart artışı için önceki durumu oku.
                 val lessonBeforeClaim = LessonManager.getLessonItem(mapFragmentStepIndex)
+                if (lessonBeforeClaim?.type == LessonItem.TYPE_CHEST && lessonBeforeClaim.stepIsFinish != true) {
+                    (activity as? MainActivity)?.justFinishedChestForRating = true
+                }
                 LessonProgressDiag.logItem(
                     "ChestFragment.claim",
                     globalPartId,
@@ -287,6 +289,7 @@ class ChestFragment : Fragment() {
                                 "missionSnapLocalOnly=true",
                         )
                         if (hasMissionProgress) {
+                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing to MissionChestRewardFragment with levelUpPayloads=${levelUpPayloads.size}")
                             LessonProgressDiag.recordClaim(
                                 mapIdx = mapFragmentStepIndex,
                                 partId = globalPartId,
@@ -338,12 +341,12 @@ class ChestFragment : Fragment() {
                                     .remove(this@ChestFragment)
                                     .commitNowAllowingStateLoss()
                             }
+                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
                             main?.prepareMapReturnAfterLessonClaim()
-                            val activityFm = requireActivity().supportFragmentManager
-                            main?.finalizeMapReturnAfterLessonClaim("ChestFragment.claimAfterRemove")
-                            if (levelUpPayloads.isNotEmpty()) {
-                                BadgeProgressFirestore.openBadgeCelebration(activityFm, levelUpPayloads)
-                            }
+                            main?.finalizeMapReturnAfterLessonClaim(
+                                caller = "ChestFragment.claimAfterRemove",
+                                badgePayloads = levelUpPayloads
+                            )
                         }
                         ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
                     }
@@ -352,12 +355,13 @@ class ChestFragment : Fragment() {
                 val safeHostContainerId = (requireView().parent as View).id
                 val safeActivityFm = activity?.supportFragmentManager
 
-                // Seçenek 1 (Fire and Forget) - UI'ı hemen ilerlet
+                // Arayüzü anında ilerlet (0ms gecikme)
                 proceedWithResult(emptyList())
 
                 val shouldIncrementTornado = globalPartId == 7
                 val shouldIncrementVolcano = globalPartId == 8
                 if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons || shouldIncrementTornado || shouldIncrementVolcano) {
+                    GlobalValues.pendingBadgeFirestoreOperation = true
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = shouldIncrementDartProgress,
                         incrementBowlingBy = completedMissionCount,
@@ -367,12 +371,20 @@ class ChestFragment : Fragment() {
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
+                            GlobalValues.pendingBadgeFirestoreOperation = false
+                            android.util.Log.d("DEBUG_BADGE", "ChestFragment onDone finished with payloads=${payloads.size}")
                             if (payloads.isNotEmpty()) {
+                                val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(safeHostContainerId) as? MissionChestRewardFragment
                                 if (missionFragment != null && missionFragment.isAdded) {
-                                    missionFragment.setBadgePayloads(payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) })
-                                } else if (safeActivityFm != null) {
-                                    BadgeProgressFirestore.openBadgeCelebration(safeActivityFm, payloads)
+                                    android.util.Log.d("DEBUG_BADGE", "ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
+                                    missionFragment.setBadgePayloads(stringPayloads)
+                                } else {
+                                    val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
+                                    if (main != null) {
+                                        android.util.Log.d("DEBUG_BADGE", "ChestFragment routing badge payloads directly to MainActivity queue")
+                                        main.enqueuePendingBadgePayloads(payloads, stringPayloads)
+                                    }
                                 }
                             }
                         },

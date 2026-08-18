@@ -36,12 +36,11 @@ object SessionDeviceManager {
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
-            .set(
+            .update(
                 mapOf(
                     "activeDeviceId" to deviceId,
                     "activeSessionUpdatedAt" to Timestamp.now(),
-                ),
-                SetOptions.merge(),
+                )
             )
     }
 
@@ -71,12 +70,11 @@ object SessionDeviceManager {
             .addOnSuccessListener { doc ->
                 val activeDeviceId = doc.getString("activeDeviceId")
                 if (activeDeviceId == deviceId) {
-                    userRef.set(
+                    userRef.update(
                         mapOf(
                             "activeDeviceId" to null,
                             "activeSessionUpdatedAt" to Timestamp.now(),
-                        ),
-                        SetOptions.merge(),
+                        )
                     )
                 }
             }
@@ -97,6 +95,12 @@ object SessionDeviceManager {
             .document(user.uid)
             .get()
             .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    FirebaseAuth.getInstance().signOut()
+                    redirectToLogin(activity)
+                    return@addOnSuccessListener
+                }
+                
                 val activeDeviceId = doc.getString("activeDeviceId")
                 val lastUpdated = doc.getTimestamp("activeSessionUpdatedAt")
                 val nowMs = System.currentTimeMillis()

@@ -128,7 +128,18 @@ class SplashActivity : AppCompatActivity() {
             .document(uid)
             .get()
             .addOnSuccessListener { doc ->
-                val firestoreRaw = if (doc.exists()) doc.getBoolean("first_tutorial_shown") else null
+                if (!doc.exists()) {
+                    // Hesap Authentication'da varsa ama Firestore'da silinmişse, oturumu kapat ve girişe at.
+                    FirebaseAuth.getInstance().signOut()
+                    val intent = Intent(this@SplashActivity, LoginStartActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    startActivity(intent)
+                    finish()
+                    return@addOnSuccessListener
+                }
+                
+                val firestoreRaw = doc.getBoolean("first_tutorial_shown")
                 val firstTutorialShown = FirstTutorialShownStore.resolveShown(
                     this@SplashActivity,
                     firestoreRaw,
@@ -178,9 +189,9 @@ class SplashActivity : AppCompatActivity() {
             launchMain(questionId, recipientUid, startDestination)
             return
         }
-        logFirstTutorial("Splash.prepareTutorialData", "GlobalLessonData.initialize partId=4")
-        GlobalLessonData.globalPartId = 4
-        GlobalLessonData.initialize(this, 4) {
+        logFirstTutorial("Splash.prepareTutorialData", "GlobalLessonData.initialize partId=1")
+        GlobalLessonData.globalPartId = 1
+        GlobalLessonData.initialize(this, 1) {
             logFirstTutorial(
                 "Splash.prepareTutorialData",
                 "init done lessonItems=${GlobalLessonData.lessonItems.size} item1=${GlobalLessonData.getLessonItem(1)?.tutorialNumber}",

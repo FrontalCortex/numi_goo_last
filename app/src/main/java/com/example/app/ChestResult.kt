@@ -138,12 +138,15 @@ class ChestResult : Fragment() {
             Log.d(
                 MarathonGuideStore.LOG_TAG,
                 "ChestResult.continue | shouldSkipChest=$shouldSkipChest " +
-                    "(ChestFragment atlanır, scheduleIfEligible çağrılmaz)",
+                    "(ChestFragment atlan─▒r, scheduleIfEligible ├ğa─şr─▒lmaz)",
             )
 
             if (shouldSkipChest) {
                 val idx = mapFragmentStepIndex
                 val chestItemBefore = LessonManager.getLessonItem(idx)
+                if (chestItemBefore?.type == LessonItem.TYPE_CHEST && chestItemBefore.stepIsFinish != true) {
+                    (activity as? MainActivity)?.justFinishedChestForRating = true
+                }
                 var gainedStars = 0
                 val shouldIncrementKarate = if (chestItemBefore != null && chestItemBefore.type == LessonItem.TYPE_CHEST) {
                     val karateFlag = ChestTypeProgressHelper.shouldIncrementKarateForFirstThreeStars(chestItemBefore, toplamPuan)
@@ -210,17 +213,22 @@ class ChestResult : Fragment() {
                         main?.let {
                             it.logTouchDiag("ChestResult.claimAfterRemove.beforeFinalize")
                             MainActivityChromeBlocker.release(it)
-                            it.finalizeMapReturnAfterLessonClaim("ChestResult.claimAfterRemove")
-                        }
-                        if (payloads.isNotEmpty()) {
-                            BadgeProgressFirestore.openBadgeCelebration(requireActivity().supportFragmentManager, payloads)
+                            it.finalizeMapReturnAfterLessonClaim(
+                                caller = "ChestResult.claimAfterRemove",
+                                badgePayloads = payloads,
+                            )
                         }
                     }
                 }
 
+                // Arayüzü anında ilerlet (0ms gecikme)
+                navigateAfterKaratePayloads(emptyList())
+
                 val shouldIncrementTornado = globalPartId == 4
                 val shouldIncrementVolcano = globalPartId == 8
                 if (shouldIncrementKarate || shouldIncrementTornado || shouldIncrementVolcano) {
+                    val safeFm = parentFragmentManager
+                    val safeActivity = activity as? MainActivity
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,
@@ -229,10 +237,18 @@ class ChestResult : Fragment() {
                         incrementGolf = false,
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
-                        onDone = { navigateAfterKaratePayloads(it) },
+                        onDone = { payloads ->
+                            if (payloads.isNotEmpty()) {
+                                val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
+                                val missionFragment = safeFm.findFragmentById(R.id.abacusFragmentContainer) as? MissionChestRewardFragment
+                                if (missionFragment != null && missionFragment.isAdded) {
+                                    missionFragment.setBadgePayloads(stringPayloads)
+                                } else if (safeActivity != null) {
+                                    safeActivity.enqueuePendingBadgePayloads(payloads, stringPayloads)
+                                }
+                            }
+                        },
                     )
-                } else {
-                    navigateAfterKaratePayloads(emptyList())
                 }
             } else {
                 parentFragmentManager.beginTransaction()
@@ -586,7 +602,7 @@ class ChestResult : Fragment() {
         val safeThreshold = threshold.coerceIn(0, scoreCap)
         val ratio = (safeThreshold.toFloat() / scoreCap.toFloat()).coerceIn(0f, 1f)
         val centerX = ratio * zoneWidth
-        // Clamp yok: yıldızların progress bar sınırları dışına taşmasına izin ver.
+        // Clamp yok: y─▒ld─▒zlar─▒n progress bar s─▒n─▒rlar─▒ d─▒┼ş─▒na ta┼şmas─▒na izin ver.
         val x = centerX - marker.width / 2f
         val barCenterY = binding.scoreProgressBarContainer.y + (binding.scoreProgressBarContainer.height / 2f)
         val y = barCenterY - (marker.height / 2f)

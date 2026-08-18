@@ -179,7 +179,7 @@ class AuthManager {
         val uid = auth.currentUser?.uid ?: ""
         if (uid.isNotEmpty()) {
             firestore.collection("users").document(uid)
-                .set(mapOf("skip_step_tutorial_shown" to true), SetOptions.merge())
+                .update("skip_step_tutorial_shown", true)
         }
     }
 
@@ -188,14 +188,15 @@ class AuthManager {
      * Firestore'da benzersizlik kontrolü yapar
      */
     private fun generateUniqueUserId(role: String, callback: (String) -> Unit) {
-        val prefix = if (role == ROLE_TEACHER) "ogretmen" else "ogrenci"
+        val letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         var attempts = 0
-        val maxAttempts = 10
+        val maxAttempts = 15
 
         fun tryGenerate() {
             attempts++
-            val randomNum = (10000..99999).random()
-            val userId = "${prefix}_${randomNum}"
+            val randomNum = (100000..999999).random()
+            val suffix = "${letters.random()}${letters.random()}"
+            val userId = "${randomNum}${suffix}"
 
             // Firestore'da bu userId'nin kullanılıp kullanılmadığını kontrol et
             firestore.collection("users")
@@ -211,16 +212,18 @@ class AuthManager {
                         if (attempts < maxAttempts) {
                             tryGenerate()
                         } else {
-                            // Max deneme sayısına ulaşıldı, timestamp ekleyerek benzersiz yap
-                            val timestamp = System.currentTimeMillis() % 100000
-                            callback("${prefix}_${timestamp}")
+                            // Max deneme sayısına ulaşıldı, timestamp + random suffix ile benzersiz yap
+                            val timestamp = System.currentTimeMillis() % 1000000
+                            val fallbackSuffix = "${letters.random()}${letters.random()}"
+                            callback("${timestamp}${fallbackSuffix}")
                         }
                     }
                 }
                 .addOnFailureListener {
-                    // Hata durumunda timestamp ile benzersiz ID oluştur
-                    val timestamp = System.currentTimeMillis() % 100000
-                    callback("${prefix}_${timestamp}")
+                    // Hata durumunda timestamp + random suffix ile benzersiz ID oluştur
+                    val timestamp = System.currentTimeMillis() % 1000000
+                    val fallbackSuffix = "${letters.random()}${letters.random()}"
+                    callback("${timestamp}${fallbackSuffix}")
                 }
         }
 
@@ -1137,14 +1140,15 @@ class AuthManager {
 
                                     fun completeRegistration(user: com.google.firebase.auth.FirebaseUser, roleForUser: String) {
                                         android.util.Log.d("AuthManager", "verifyStudentCode - completeRegistration çağrıldı, uid: ${user.uid}, role: $roleForUser")
-                                        val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(name).build()
-                                        user.updateProfile(profileUpdates)
                                         generateUniqueUserId(roleForUser) { userId ->
+                                            val finalName = if (name.isBlank()) userId else name
+                                            val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(finalName).build()
+                                            user.updateProfile(profileUpdates)
                                             val baseData = mutableMapOf<String, Any>(
                                                 "uid" to user.uid,
                                                 "userId" to userId,
                                                 "email" to email,
-                                                "name" to name,
+                                                "name" to finalName,
                                                 "role" to roleForUser,
                                                 "first_tutorial_shown" to currentLocalFirstTutorialShown(),
                                                 "createdAt" to com.google.firebase.Timestamp.now()

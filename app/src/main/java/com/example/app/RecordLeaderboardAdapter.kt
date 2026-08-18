@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
 import com.example.app.databinding.ItemRecordLeaderboardRowBinding
 import com.example.app.LessonLeaderboardRepository.LeaderboardEntry
 
@@ -30,13 +31,14 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
 
         fun bind(entry: LeaderboardEntry) {
             val ctx = binding.root.context
-            val isSecond = entry.displayRank == 2
-            val cardColor = if (isSecond) R.color.white else R.color.panel_background
+            val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+            val isCurrentUser = !currentUid.isNullOrBlank() && entry.userId == currentUid
+            val cardColor = if (isCurrentUser) R.color.white else R.color.panel_background
             binding.root.setCardBackgroundColor(ContextCompat.getColor(ctx, cardColor))
 
-            val nameColor = if (isSecond) ContextCompat.getColor(ctx, R.color.black)
+            val nameColor = if (isCurrentUser) ContextCompat.getColor(ctx, R.color.black)
             else ContextCompat.getColor(ctx, R.color.white)
-            val timeColor = if (isSecond) ContextCompat.getColor(ctx, R.color.gray)
+            val timeColor = if (isCurrentUser) ContextCompat.getColor(ctx, R.color.gray)
             else ContextCompat.getColor(ctx, R.color.button_disabled)
 
             binding.rowName.setTextColor(nameColor)

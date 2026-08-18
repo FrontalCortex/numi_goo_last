@@ -59,16 +59,39 @@ class AccountSettingsFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        binding.btnAccountSettingsDone.setOnClickListener {
-            // "BİTTİ" geri dönüşü: Hesap Ayarları önceki fragmana (ProfileFragment) gelsin.
+        binding.btnBack.setOnClickListener {
+            // Geri tuşu: Hesap Ayarları önceki fragmana (ProfileFragment) gelsin.
             parentFragmentManager.popBackStack()
         }
 
         binding.btnProfileSettings.setOnClickListener {
-            Toast.makeText(requireContext(), "Profil ayarları yakında eklenecek", Toast.LENGTH_SHORT).show()
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, EditProfileFragment())
+                .addToBackStack(null)
+                .commit()
         }
         binding.btnPrivacySettings.setOnClickListener {
-            Toast.makeText(requireContext(), "Gizlilik ayarları yakında eklenecek", Toast.LENGTH_SHORT).show()
+            val main = activity as? MainActivity
+            if (main != null) {
+                main.showAbacusOverlayFragment(SoundSettingsFragment())
+            } else {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
+                    )
+                    .replace(R.id.fragmentContainerID, SoundSettingsFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
         }
         
         binding.btnCancelSubscription.setOnClickListener {
@@ -80,11 +103,23 @@ class AccountSettingsFragment : Fragment() {
             }
         }
         
-        binding.btnHelpCenter.setOnClickListener {
-            Toast.makeText(requireContext(), "Yardım Merkezi yakında eklenecek", Toast.LENGTH_SHORT).show()
-        }
+
         binding.btnFeedback.setOnClickListener {
-            Toast.makeText(requireContext(), "Geri bildirim ekranı yakında eklenecek", Toast.LENGTH_SHORT).show()
+            val main = activity as? MainActivity
+            if (main != null) {
+                main.showAbacusOverlayFragment(FeedbackFragment())
+            } else {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
+                    )
+                    .replace(R.id.fragmentContainerID, FeedbackFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
         }
         binding.btnAccountSettingsLogout.setOnClickListener {
             MyFirebaseMessagingService.clearCurrentTokenFromFirestore()

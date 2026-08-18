@@ -63,12 +63,12 @@ class ShopFragment : Fragment() {
             val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
             
             val currentKey = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
-            if (currentKey >= 1) {
+            if (currentKey >= 3) {
                 // Anlık (optimistic) UI güncellemesi
-                keyText?.text = (currentKey - 1).toString()
+                keyText?.text = (currentKey - 3).toString()
                 
                 // Bakiyeyi düşür
-                UserWalletFirestore.applyKeyDelta(ctx, currentUid, -1) {
+                UserWalletFirestore.applyKeyDelta(ctx, currentUid, -3) {
                     refreshCurrencyUi()
                 }
                 

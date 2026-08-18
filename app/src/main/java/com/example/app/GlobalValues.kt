@@ -96,6 +96,19 @@ object GlobalValues {
     var pendingCupPathRevealPartId: Int? = null
 
     /**
+     * Badge Firestore işlemi (incrementBadgeProgressAndDetectLevelUp) devam ederken true.
+     * Bu flag true iken tryShowPendingMarathonGuideOnMap kupa yolu navigasyonunu başlatmaz;
+     * işlem bitince (onDone callback) flag sıfırlanır ve kupa yolu yeniden denenir.
+     */
+    var pendingBadgeFirestoreOperation: Boolean = false
+
+    /**
+     * Reklam vs. yüzünden ekrana hemen basılamayan rozet payload'larını sıraya alır.
+     * MainActivity.onResume'da işlenir.
+     */
+    var pendingBadgePayloads: List<com.example.app.BadgeLevelUpPayload>? = null
+
+    /**
      * Kupa modu dersi (globalPartId == 9) tamamlandığında burada delta bırakılır.
      * +[AbacusCupRepository.CUP_STEP] (doğru) veya -[AbacusCupRepository.CUP_STEP] (yanlış).
      * TasksFragment onResume / onHiddenChanged'de tüketilir.

@@ -1683,6 +1683,7 @@ class BadgeFragment : Fragment() {
         if (ackSeason != null && !hasNextCelebrationInQueue()) {
             (activity as? MainActivity)?.onSeasonLeaderboardBadgeCelebrationFinished(ackSeason)
         }
+        val mainRef = activity as? MainActivity
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 R.anim.slide_in_left,
@@ -1690,7 +1691,11 @@ class BadgeFragment : Fragment() {
             )
             .remove(this@BadgeFragment)
             .commit()
-        (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("BadgeFragment.closeCelebration")
+        // slide_out_right animasyonu 300ms. Animasyon bitmeden kupa yolu açılmasın diye
+        // 350ms bekleyip tetikliyoruz. onDestroyView da çağırır, bu ikincil bir güvencedir.
+        view?.postDelayed({
+            mainRef?.tryShowPendingMarathonGuideOnMap("BadgeFragment.closeCelebration.afterSlide")
+        }, 350L)
     }
 
     private fun hasNextCelebrationInQueue(): Boolean {

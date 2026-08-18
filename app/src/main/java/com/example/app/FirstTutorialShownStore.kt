@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
+
 
 /**
  * İlk tutorial tamamlandı bayrağı: yerel [AppPrefs] + Firestore `users/{uid}.first_tutorial_shown`.
@@ -72,7 +72,7 @@ object FirstTutorialShownStore {
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
-            .set(mapOf(KEY to true), SetOptions.merge())
+            .update(KEY, true)
             .addOnSuccessListener {
                 Log.d(
                     MainActivity.FIRST_TUTORIAL_LOG_TAG,
@@ -94,7 +94,7 @@ object FirstTutorialShownStore {
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
-            .set(mapOf(KEY to true), SetOptions.merge())
+            .update(KEY, true)
             .addOnSuccessListener {
                 Log.d(
                     MainActivity.FIRST_TUTORIAL_LOG_TAG,

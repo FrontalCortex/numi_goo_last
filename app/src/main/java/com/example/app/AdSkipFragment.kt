@@ -66,6 +66,8 @@ class AdSkipFragment : DialogFragment() {
     }
 
     private fun playSounds() {
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         // İlk confetti_pop_sound hemen oynatılsın
         pop1 = MediaPlayer.create(requireContext(), R.raw.confetti_pop_sound)
         pop1?.start()

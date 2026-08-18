@@ -77,8 +77,8 @@ object GlobalLessonData {
         } catch (_: Exception) {
         }
     }
-    fun calculateGlobalCompletionPercentage(callback: (Int) -> Unit) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return callback(0)
+    fun calculateGlobalCompletionPercentage(targetUid: String? = null, callback: (Int) -> Unit) {
+        val uid = targetUid ?: FirebaseAuth.getInstance().currentUser?.uid ?: return callback(0)
         
         var totalValidItems = 0
         for (part in 1..6) {
@@ -720,7 +720,6 @@ object GlobalLessonData {
                     titleUnit = "Sayıları Abaküste Tanıma",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
@@ -799,7 +798,6 @@ object GlobalLessonData {
                     titleUnit = "Kuralsız Toplama",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -873,8 +871,8 @@ object GlobalLessonData {
                     currentStep = 1,
                     tutorialIsFinish = true,
                     mapFragmentIndex = 15,
-                    startStepNumber = 19,
-                    finishStepNumber = 19,
+                    startStepNumber = 1013, //19 yapılacak
+                    finishStepNumber = 1013,
                     cupPoint1 = 1400,
                     cupPoint2 = 1200,
                     worstCupTime = 180,
@@ -1100,7 +1098,6 @@ object GlobalLessonData {
                     titleUnit = "Boncuk Kuralı",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,

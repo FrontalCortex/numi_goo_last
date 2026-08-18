@@ -55,7 +55,7 @@ class AdManager(private val context: Context) {
                     
                     GlobalValues.interstitialAdShownCount++
                     
-                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity && GlobalValues.interstitialAdShownCount % 2 != 0) {
+                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity && GlobalValues.interstitialAdShownCount % 3 == 1) {
                         try {
                             AdSkipFragment().show(activity.supportFragmentManager, "AdSkip")
                         } catch (e: Exception) {

@@ -84,6 +84,16 @@
                 android:fontFamily="@font/font_regular"
                 android:layout_marginBottom="32dp" />
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Size mail adresinizden ulaşacağız."
+                android:gravity="center"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="14sp">
+
+            </TextView>
+
             <!-- Boşluk -->
             <View
                 android:layout_width="match_parent"
@@ -106,8 +116,10 @@
                     android:textAllCaps="false"
                     android:textSize="15sp"
                     android:textColor="@color/dark_text_secondary"
-                    android:backgroundTint="@android:color/transparent"
-                    android:layout_marginEnd="8dp"
+
+                    app:backgroundTint="@color/background_color"
+                    app:strokeColor="#4A5A67"
+                    app:strokeWidth="2dp"                    android:layout_marginEnd="8dp"
                     android:fontFamily="@font/font_regular" />
 
                 <Button

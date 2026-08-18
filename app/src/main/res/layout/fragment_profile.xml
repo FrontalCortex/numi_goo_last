@@ -65,6 +65,7 @@
 
                     <!-- Takip edilen -->
                     <LinearLayout
+                        android:id="@+id/followingCount"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -75,7 +76,7 @@
                             android:id="@+id/tvFollowingCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="2"
+                            android:text="-"
                             android:textColor="@android:color/white"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -92,6 +93,7 @@
 
                     <!-- Takipçi -->
                     <LinearLayout
+                        android:id="@+id/followersCount"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -102,7 +104,7 @@
                             android:id="@+id/tvFollowersCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="2"
+                            android:text="-"
                             android:textColor="@android:color/white"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -142,13 +144,21 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tvTopLeftName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:text="Kullanıcı Adı"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
                 <ImageButton
                     android:id="@+id/btnAccountSettings"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_gravity="top|end"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginEnd="12dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Ayarlar"
                     android:padding="8dp"

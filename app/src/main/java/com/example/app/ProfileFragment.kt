@@ -38,12 +38,31 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 class ProfileFragment : Fragment() {
+
+    companion object {
+        private const val ARG_TARGET_UID = "target_uid"
+
+        /** Kendi profiliniz için: ProfileFragment() */
+        /** Başkasının profili için: ProfileFragment.newInstance(uid) */
+        fun newInstance(targetUid: String): ProfileFragment {
+            return ProfileFragment().apply {
+                arguments = android.os.Bundle().apply {
+                    putString(ARG_TARGET_UID, targetUid)
+                }
+            }
+        }
+    }
+
     private lateinit var binding: FragmentProfileBinding
     private lateinit var authManager: AuthManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private var isDataLoaded = false
     private var isUserDataLoading = false
+
+    /** Başkasının profilini gösterirken set edilir. Null = kendi profili */
+    private var targetUid: String? = null
+    private val isOtherUser get() = targetUid != null && targetUid != auth.currentUser?.uid
     private val lockedBaseColor: Int
         get() = ContextCompat.getColor(requireContext(), R.color.badge_locked_base)
     private val lockedTopColor: Int
@@ -125,21 +144,26 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
+        // Argümandan hedef UID oku
+        targetUid = arguments?.getString(ARG_TARGET_UID)?.takeIf { it.isNotEmpty() }
+
         authManager = AuthManager()
         authManager.initialize(requireContext())
         
         // Önce widget'ları gizle (veriler yüklenene kadar)
         showLoadingState()
         binding.profileBadgesCard.visibility = View.GONE
-        
+
         setupClickListeners()
-        
-        // AvatarPickerFragment'tan seçim sonucunu dinle
-        setFragmentResultListener(AvatarPickerFragment.REQUEST_KEY) { _, bundle ->
-            val avatarIndex = bundle.getInt(AvatarPickerFragment.KEY_AVATAR_INDEX, 0)
-            if (avatarIndex in 1..12) {
-                updateAvatarImage(avatarIndex)
+
+        // AvatarPickerFragment sadece kendi profilimizde aktif
+        if (!isOtherUser) {
+            setFragmentResultListener(AvatarPickerFragment.REQUEST_KEY) { _, bundle ->
+                val avatarIndex = bundle.getInt(AvatarPickerFragment.KEY_AVATAR_INDEX, 0)
+                if (avatarIndex in 1..12) {
+                    updateAvatarImage(avatarIndex)
+                }
             }
         }
         
@@ -196,13 +220,14 @@ class ProfileFragment : Fragment() {
     private fun loadUserData() {
         if (isUserDataLoading) return
         isUserDataLoading = true
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
+
+        if (!isAdded || view == null) {
             isUserDataLoading = false
             return
         }
 
-        if (!isAdded || view == null) {
+        val uid = targetUid ?: auth.currentUser?.uid
+        if (uid == null) {
             isUserDataLoading = false
             return
         }
@@ -210,8 +235,7 @@ class ProfileFragment : Fragment() {
         // Varsayılan olarak non_user göster
         binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
 
-        // Firestore'dan kullanıcı bilgilerini yükle
-        firestore.collection("users").document(currentUser.uid)
+        firestore.collection("users").document(uid)
             .get()
             .addOnSuccessListener { doc ->
                 if (!isAdded) {
@@ -219,8 +243,8 @@ class ProfileFragment : Fragment() {
                     return@addOnSuccessListener
                 }
                 if (doc.exists()) {
-                    loadBadgeProgressFromFirestore(currentUser.uid)
-                    loadCupPathScores()
+                    loadBadgeProgressFromFirestore(uid)
+                    if (!isOtherUser) loadCupPathScores() else loadCupPathScoresForUser(uid)
 
                     // Avatar seçimini Firestore'dan oku
                     val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
@@ -230,30 +254,69 @@ class ProfileFragment : Fragment() {
                         binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
                     }
 
+                    // Kullanıcı Adı (Sol üstte büyük)
+                    val docName = doc.getString("name")
+                    val displayName = if (!docName.isNullOrBlank()) {
+                        docName
+                    } else if (!isOtherUser && !auth.currentUser?.displayName.isNullOrBlank()) {
+                        auth.currentUser?.displayName
+                    } else {
+                        "Kullanıcı"
+                    }
+                    binding.tvTopLeftName.text = displayName
+
+                    // Kullanıcı ID ve Katılım Yılı
+                    // Katılım yılı: kendi profilimizde auth metadata, başkasında Firestore'daki createdAt
+                    val year = if (!isOtherUser) {
+                        val ts = auth.currentUser?.metadata?.creationTimestamp ?: System.currentTimeMillis()
+                        java.util.Calendar.getInstance().apply { timeInMillis = ts }.get(java.util.Calendar.YEAR)
+                    } else {
+                        val ts = doc.getTimestamp("createdAt")?.toDate()?.time ?: System.currentTimeMillis()
+                        java.util.Calendar.getInstance().apply { timeInMillis = ts }.get(java.util.Calendar.YEAR)
+                    }
+                    val userId = doc.getString("userId") ?: ""
+                    if (userId.isNotEmpty()) {
+                        binding.tvUsernameAndDate.text = "@$userId • $year YILINDA KATILDI"
+                    } else {
+                        binding.tvUsernameAndDate.text = "$year YILINDA KATILDI"
+                    }
+
                     // Tamamlanan ders yüzdesi
                     binding.tvCompletedLessons.text = "Hesaplanıyor..."
-                    GlobalLessonData.calculateGlobalCompletionPercentage { percentage ->
-                        if (isAdded) {
-                            binding.tvCompletedLessons.text = "%$percentage tamamlandı"
-                        }
+                    GlobalLessonData.calculateGlobalCompletionPercentage(uid) { percentage ->
+                        if (isAdded) binding.tvCompletedLessons.text = "%$percentage tamamlandı"
                     }
 
-                    // Toplam geçirilen süreyi Firestore'dan alıp canlı olarak lokaldeki ile topla
-                    val firestoreTimeSpent = doc.getLong("totalTimeSpent") ?: 0L
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        TimeTracker.unsyncedTimeFlow.collect { unsynced ->
-                            if (isAdded) {
-                                updateTotalTimeDisplay(firestoreTimeSpent + unsynced)
+                    // Toplam geçirilen süre
+                    if (!isOtherUser) {
+                        val firestoreTimeSpent = doc.getLong("totalTimeSpent") ?: 0L
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            TimeTracker.unsyncedTimeFlow.collect { unsynced ->
+                                if (isAdded) updateTotalTimeDisplay(firestoreTimeSpent + unsynced)
                             }
                         }
+                    } else {
+                        val totalTime = doc.getLong("totalTimeSpent") ?: 0L
+                        updateTotalTimeDisplay(totalTime)
                     }
 
-                    // Abonelik bilgisi metni
+                    // Abonelik bilgisi
                     val plan = doc.getString("plan") ?: "Free"
                     when (plan.lowercase()) {
                         "pro" -> binding.tvSubscriptionInfo.text = "PRO"
                         "lite" -> binding.tvSubscriptionInfo.text = "Lite"
                         else -> binding.tvSubscriptionInfo.text = "Free"
+                    }
+
+                    // Takipçi / Takip edilen sayaçları
+                    val followersCount = doc.getLong("followersCount") ?: 0L
+                    val followingCount = doc.getLong("followingCount") ?: 0L
+                    binding.tvFollowersCount.text = followersCount.toString()
+                    binding.tvFollowingCount.text = followingCount.toString()
+
+                    // Takip Et butonu durumu (diğer kullanıcı modunda)
+                    if (isOtherUser) {
+                        updateFollowButtonState(uid)
                     }
 
                     hideLoadingState()
@@ -283,6 +346,86 @@ class ProfileFragment : Fragment() {
             }
     }
 
+    /** Hedef kullanıcıyı takip edip etmediğimizi kontrol ederek TAKİP ET butonunu günceller */
+    private fun updateFollowButtonState(targetUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+        firestore.collection("users").document(targetUid)
+            .collection("followers").document(myUid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!isAdded) return@addOnSuccessListener
+                if (doc.exists()) {
+                    binding.btnAddFriend.text = "TAKİP EDİLİYOR"
+                    binding.btnAddFriend.isEnabled = false
+                    binding.btnAddFriend.alpha = 0.5f
+                } else {
+                    binding.btnAddFriend.text = "TAKİP ET"
+                    binding.btnAddFriend.isEnabled = true
+                    binding.btnAddFriend.alpha = 1f
+                }
+            }
+    }
+
+    /** Başkasını takip etme işlemi */
+    private fun followTargetUser(targetUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+        val myUserId = authManager.getCurrentUserId()
+        val myName = authManager.getCurrentUserName()
+
+        val batch = firestore.batch()
+        val followerRef = firestore.collection("users").document(targetUid)
+            .collection("followers").document(myUid)
+        val followingRef = firestore.collection("users").document(myUid)
+            .collection("following").document(targetUid)
+        val targetDocRef = firestore.collection("users").document(targetUid)
+        val myDocRef = firestore.collection("users").document(myUid)
+
+        // Hedefin adını ve userId'sini zaten doc'tan biliriz (tvTopLeftName / tvUsernameAndDate)
+        val targetName = binding.tvTopLeftName.text.toString()
+        val targetUserIdRaw = binding.tvUsernameAndDate.text.toString()
+            .removePrefix("@").substringBefore(" •")
+
+        batch.set(followerRef, mapOf(
+            "userId" to myUserId,
+            "name" to myName,
+            "followedAt" to com.google.firebase.Timestamp.now()
+        ))
+        batch.set(followingRef, mapOf(
+            "userId" to targetUserIdRaw,
+            "name" to targetName,
+            "followedAt" to com.google.firebase.Timestamp.now()
+        ))
+        batch.update(targetDocRef, "followersCount", com.google.firebase.firestore.FieldValue.increment(1))
+        batch.update(myDocRef, "followingCount", com.google.firebase.firestore.FieldValue.increment(1))
+
+        binding.btnAddFriend.isEnabled = false
+        batch.commit()
+            .addOnSuccessListener {
+                if (!isAdded) return@addOnSuccessListener
+                binding.btnAddFriend.text = "TAKİP EDİLİYOR"
+                binding.btnAddFriend.alpha = 0.5f
+                Toast.makeText(requireContext(), "Takip edildi!", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                binding.btnAddFriend.isEnabled = true
+                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun openFollowScreen(startTab: Int) {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right
+            )
+            .replace(R.id.fragmentContainerID, FollowersFollowingFragment.newInstance(startTab))
+            .addToBackStack(null)
+            .commit()
+    }
+
     private fun badgeProgressDoc(uid: String) = firestore.collection("users")
         .document(uid)
         .collection(badgeProgressCollection)
@@ -305,14 +448,20 @@ class ProfileFragment : Fragment() {
         badgeProgressDoc(uid).get()
             .addOnSuccessListener { badgeDoc ->
                 if (!isAdded) return@addOnSuccessListener
-                val missing = defaults.filterKeys { key -> !badgeDoc.contains(key) }
-                if (missing.isNotEmpty()) {
-                    badgeProgressDoc(uid).set(missing, SetOptions.merge())
+                // Eksik alanları sadece kendi profilimizde yazıyoruz.
+                // Başkasının profilinde yazma yetkimiz yok.
+                if (!isOtherUser) {
+                    val missing = defaults.filterKeys { key -> !badgeDoc.contains(key) }
+                    if (missing.isNotEmpty()) {
+                        badgeProgressDoc(uid).set(missing, SetOptions.merge())
+                    }
                 }
                 BadgeProgressRepository.update(BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc))
                 bindRandomProfileBadges()
                 binding.profileBadgesCard.visibility = View.VISIBLE
-                (activity as? MainActivity)?.requestSeasonLeaderboardRewardGateIfPending()
+                if (!isOtherUser) {
+                    (activity as? MainActivity)?.requestSeasonLeaderboardRewardGateIfPending()
+                }
             }
             .addOnFailureListener {
                 if (!isAdded) return@addOnFailureListener
@@ -773,21 +922,68 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        binding.btnAddFriend.setOnClickListener {
-            Toast.makeText(requireContext(), "eklenecek", Toast.LENGTH_SHORT).show()
-        }
-        
-        binding.btnAccountSettings.setOnClickListener {
-            requireActivity().supportFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left,
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right,
-                )
-                .replace(R.id.fragmentContainerID, AccountSettingsFragment())
-                .addToBackStack(null)
-                .commit()
+        if (isOtherUser) {
+            // --- Başkasının profili ---
+            // Ayarlar gizli
+            binding.btnAccountSettings.visibility = View.GONE
+            // tvTopLeftName'in solundaki alanda settings ikonu olmayacak, üstüne yazma ihtiyacı yok
+
+            // Avatar tıklanamaz
+            binding.imgProfilePhoto.isClickable = false
+
+            // Arkadaş Ekle butonu → TAKİP ET (ilk render; asıl durum loadUserData içinde güncellenir)
+            binding.btnAddFriend.text = "TAKİP ET"
+            binding.btnAddFriend.setOnClickListener {
+                val uid = targetUid ?: return@setOnClickListener
+                followTargetUser(uid)
+            }
+
+            // Takipçi / Takip edilen sayaçlara basmak bu modda bir şey açmayacak
+            binding.followingCount.setOnClickListener(null)
+            binding.followersCount.setOnClickListener(null)
+
+        } else {
+            // --- Kendi profili ---
+            binding.btnAccountSettings.visibility = View.VISIBLE
+
+            binding.btnAddFriend.setOnClickListener {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
+                    )
+                    .replace(R.id.fragmentContainerID, AddFriendFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
+
+            binding.followingCount.setOnClickListener {
+                openFollowScreen(FollowersFollowingFragment.TAB_FOLLOWING)
+            }
+
+            binding.followersCount.setOnClickListener {
+                openFollowScreen(FollowersFollowingFragment.TAB_FOLLOWERS)
+            }
+
+            binding.btnAccountSettings.setOnClickListener {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right,
+                    )
+                    .replace(R.id.fragmentContainerID, AccountSettingsFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
+
+            // Avatar tıklandığında AvatarPickerFragment'i aç
+            binding.imgProfilePhoto.setOnClickListener {
+                AvatarPickerFragment().show(requireActivity().supportFragmentManager, AvatarPickerFragment.TAG)
+            }
         }
 
         binding.profileBadgesCard.setOnClickListener {
@@ -796,11 +992,6 @@ class ProfileFragment : Fragment() {
 
         binding.btnProfileBadgesArrow.setOnClickListener {
             openBadgeDetailFragment()
-        }
-
-        // Avatar tıklandığında AvatarPickerFragment'i aç
-        binding.imgProfilePhoto.setOnClickListener {
-            AvatarPickerFragment().show(requireActivity().supportFragmentManager, AvatarPickerFragment.TAG)
         }
     }
 
@@ -1110,32 +1301,38 @@ class ProfileFragment : Fragment() {
     }
     
     private fun performAccountDeletion() {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
-            return
+        val progressDialog = android.app.ProgressDialog(requireContext()).apply {
+            setMessage("Hesabınız ve ilişkili verileriniz siliniyor...")
+            setCancelable(false)
+            show()
         }
-        
-        // Firestore'dan kullanıcı verilerini sil
-        firestore.collection("users").document(currentUser.uid)
-            .delete()
-            .addOnSuccessListener {
-                // Firebase Auth'dan kullanıcıyı sil
-                currentUser.delete()
-                    .addOnSuccessListener {
-                        Toast.makeText(context, "Hesap başarıyla silindi", Toast.LENGTH_SHORT).show()
-                        val intent = Intent(requireContext(), LoginActivity::class.java)
-                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        requireActivity().finish()
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(context, "Hesap silinemedi: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(context, "Kullanıcı verileri silinemedi: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            AccountDeletionHelper.performCompleteAccountDeletion(
+                auth = auth,
+                firestore = firestore,
+                onSuccess = {
+                    progressDialog.dismiss()
+                    Toast.makeText(context, "Hesap başarıyla silindi", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(requireContext(), LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    requireActivity().finish()
+                },
+                onRequiresRecentLogin = {
+                    progressDialog.dismiss()
+                    Toast.makeText(context, "Güvenlik nedeniyle hesabı silmek için lütfen tekrar giriş yapıp hemen silmeyi deneyin.", Toast.LENGTH_LONG).show()
+                    val intent = Intent(requireContext(), LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    requireActivity().finish()
+                },
+                onFailure = { e ->
+                    progressDialog.dismiss()
+                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
     }
 
     private fun loadCupPathScores() {
@@ -1145,6 +1342,45 @@ class ProfileFragment : Fragment() {
         setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, BlindingAdditionCupRepository::fetchCupScore)
         setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, BlindingExtractionCupRepository::fetchCupScore)
         setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, BlindingImpactCupRepository::fetchCupScore)
+    }
+
+    /**
+     * Başkasının profili için kupa skorlarını doğrudan Firestore'dan okur.
+     * Repository'ler her zaman currentUser UID'ini kullandığından, burada ayrı bir fonksiyon kullanıyoruz.
+     */
+    private fun loadCupPathScoresForUser(uid: String) {
+        val fields = listOf(
+            Triple(R.id.cupCard1, "addition_abacus_cup", false),
+            Triple(R.id.cupCard2, "extraction_abacus_cup", false),
+            Triple(R.id.cupCard3, "impact_abacus_cup", false),
+            Triple(R.id.cupCard4, "blinding_addition_abacus_cup", true),
+            Triple(R.id.cupCard5, "blinding_extraction_abacus_cup", true),
+            Triple(R.id.cupCard6, "blinding_impact_abacus_cup", true),
+        )
+        val titles = listOf("Toplama", "Çıkarma", "Çarpma", "Toplama", "Çıkarma", "Çarpma")
+        val anims = listOf("dinosaur_anim.json", "crocodile_anim.json", "goat_anim.json", "eagle_anim.json", "fly_anim.json", "turtle_anim.json")
+
+        firestore.collection("users").document(uid)
+            .collection("cupWayProgress").document("progress")
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!isAdded) return@addOnSuccessListener
+                fields.forEachIndexed { index, (cardId, fieldName, showForbidden) ->
+                    setupCupCard(cardId, titles[index], anims[index], showForbidden) { onResult ->
+                        val score = (doc?.get(fieldName) as? Number)?.toInt() ?: 200
+                        onResult(score)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                if (!isAdded) return@addOnFailureListener
+                // Hata durumunda varsayılan 200 göster
+                fields.forEachIndexed { index, (cardId, _, showForbidden) ->
+                    setupCupCard(cardId, titles[index], anims[index], showForbidden) { onResult ->
+                        onResult(200)
+                    }
+                }
+            }
     }
 
     private fun setupCupCard(

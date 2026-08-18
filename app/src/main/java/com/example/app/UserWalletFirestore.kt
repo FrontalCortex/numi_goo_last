@@ -51,7 +51,7 @@ object UserWalletFirestore {
                     FirebaseFirestore.getInstance()
                         .collection("users")
                         .document(uid)
-                        .set(patch, SetOptions.merge())
+                        .update(patch)
                 }
                 cacheLocally(context, keys, currency)
                 onResult(UserWallet(keys = keys, currency = currency))

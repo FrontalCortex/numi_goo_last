@@ -57,6 +57,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
+        val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
+        if (!notificationsEnabled) {
+            Log.d(TAG, "onMessageReceived: skipping (notifications_enabled is false)")
+            return
+        }
+
         if (shouldSkipNotification(questionId)) {
             Log.d(TAG, "onMessageReceived: skipping (user already on this chat)")
             return
