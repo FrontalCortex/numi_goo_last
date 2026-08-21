@@ -894,6 +894,11 @@ class MapFragment : Fragment() {
                 )
                 34 -> listOf(
                     MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
+                    MathOperationGenerator.generateSequenceExtraction(3),
                 )
                 39 -> listOf(
                     MathOperationGenerator.generateSequenceExtractionFiveRules(3),

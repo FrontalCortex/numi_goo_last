@@ -698,8 +698,8 @@ class TasksFragment : Fragment() {
     }
 
     private fun refreshDailyQuestionCard() {
-        loadPart1Sources { sources ->
-            if (!isAdded) return@loadPart1Sources
+        loadDailyQuestionSources { sources ->
+            if (!isAdded) return@loadDailyQuestionSources
             part1Sources = sources
             DailyQuestionRepository.loadChallengeForCard(requireContext(), sources) { state ->
                 if (!isAdded) return@loadChallengeForCard
@@ -739,11 +739,11 @@ class TasksFragment : Fragment() {
                     releaseLaunchTouchBlocker()
             return
         }
-        loadPart1Sources { sources ->
-            if (!isAdded) return@loadPart1Sources
+        loadDailyQuestionSources { sources ->
+            if (!isAdded) return@loadDailyQuestionSources
             if (sources.isEmpty()) {
                 showDailyQuestionPoolEmptyMessage()
-                return@loadPart1Sources
+                return@loadDailyQuestionSources
             }
             DailyQuestionRepository.loadOrCreateChallenge(requireContext(), sources) { challenge ->
                 if (!isAdded) return@loadOrCreateChallenge
@@ -915,10 +915,16 @@ class TasksFragment : Fragment() {
         }
     }
 
-    private fun loadPart1Sources(onResult: (List<DailyQuestionSource>) -> Unit) {
-        GlobalLessonData.loadLessonItemsForPart(requireContext(), partId = 1) { items ->
+    private fun loadDailyQuestionSources(onResult: (List<DailyQuestionSource>) -> Unit) {
+        GlobalLessonData.loadLessonItemsForPart(requireContext(), partId = 1) { part1Items ->
             if (!isAdded) return@loadLessonItemsForPart
-            onResult(DailyQuestionPoolBuilder.buildPart1Sources(items))
+            val part1Sources = DailyQuestionPoolBuilder.buildSourcesForPart(part1Items, 1)
+            GlobalLessonData.loadLessonItemsForPart(requireContext(), partId = 2) { part2Items ->
+                if (!isAdded) return@loadLessonItemsForPart
+                val part2Sources = DailyQuestionPoolBuilder.buildSourcesForPart(part2Items, 2)
+                val allSources = part1Sources + part2Sources
+                onResult(allSources)
+            }
         }
     }
 

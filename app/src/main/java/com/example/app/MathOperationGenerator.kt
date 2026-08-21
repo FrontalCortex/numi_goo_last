@@ -1718,9 +1718,6 @@ object MathOperationGenerator {
     fun generateSequenceExtraction(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
-        // İlk sayıyı oluştur (iki basamaklı olabilir)
-        // Onlar basamağı: 0,1,2 değerlerini alabilir
-        // Birler basamağı: 1,2 değerlerini alabilir
         val firstTensDigit = (8..9).random()
         val firstOnesDigit = (8..9).random()
         val firstNumber = firstTensDigit * 10 + firstOnesDigit
@@ -1776,6 +1773,85 @@ object MathOperationGenerator {
 
         return numbers
     }
+    //buraya
+    fun generateSequenceExtractionThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        // İlk sayıyı oluştur (üç basamaklı)
+        val firstHundredsDigit = (8..9).random()
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (8..9).random()
+        val firstNumber = firstHundredsDigit * 100 + firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        // Kalan sayıları oluştur
+        for (i in 1 until count) {
+            // Önceki sayıların toplamını hesapla
+            val totalSum = numbers.sum()
+
+            // Toplam değerin basamaklarını al
+            val totalStr = totalSum.toString()
+            val hundredsDigit = if (totalStr.length > 2) totalStr[totalStr.length - 3].toString().toInt() else 0
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            // Yüzler basamağı için olası değerleri belirle (Onlar basamağındaki mantıkla aynı)
+            val possibleHundredsDigits = when (hundredsDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(5)
+                6 -> listOf(1,5)
+                7 -> listOf(1,5)
+                8 -> listOf(1,2,5)
+                9 -> listOf(1,2,3,5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Onlar basamağı için olası değerleri belirle
+            val possibleTensDigits = when (tensDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(5)
+                6 -> listOf(1,5)
+                7 -> listOf(1,5)
+                8 -> listOf(1,2,5)
+                9 -> listOf(1,2,3,5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Birler basamağı için olası değerleri belirle
+            val possibleOnesDigits = when (onesDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(5)
+                6 -> listOf(1,5)
+                7 -> listOf(1,2,5)
+                8 -> listOf(1,2,3,5)
+                9 -> listOf(1,2,3,5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            // Yeni sayıyı oluştur
+            val newHundredsDigit = -possibleHundredsDigits.random()
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newHundredsDigit * 100 + newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
     fun generateSequenceExtractionFiveRules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
@@ -1837,6 +1913,77 @@ object MathOperationGenerator {
 
         return numbers
     }
+
+    fun generateSequenceExtractionFiveRulesThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstHundredsDigit = (8..9).random()
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (8..9).random()
+        val firstNumber = firstHundredsDigit * 100 + firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        for (i in 1 until count) {
+            val totalSum = numbers.sum()
+
+            val totalStr = totalSum.toString()
+            val hundredsDigit = if (totalStr.length > 2) totalStr[totalStr.length - 3].toString().toInt() else 0
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            val possibleHundredsDigits = when (hundredsDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleTensDigits = when (tensDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleOnesDigits = when (onesDigit) {
+                0 -> listOf(0)
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2)
+                7 -> listOf(4,3)
+                8 -> listOf(4)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val newHundredsDigit = -possibleHundredsDigits.random()
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newHundredsDigit * 100 + newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
     fun generateSequenceExtractionTenRules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
@@ -1895,6 +2042,74 @@ object MathOperationGenerator {
 
         return numbers
     }
+
+    fun generateSequenceExtractionTenRulesThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstThousandsDigit = (1..4).random()
+        val firstHundredsDigit = (8..9).random()
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (5..8).random()
+        val firstNumber = firstThousandsDigit * 1000 + firstHundredsDigit * 100 + firstTensDigit * 10 + firstOnesDigit
+        numbers.add(firstNumber)
+
+        for (i in 1 until count) {
+            val totalSum = numbers.sum()
+
+            val totalStr = totalSum.toString()
+            val hundredsDigit = if (totalStr.length > 2) totalStr[totalStr.length - 3].toString().toInt() else 0
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            val possibleHundredsDigits = when (hundredsDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2,1,5)
+                7 -> listOf(4,3,5,2,1)
+                8 -> listOf(4,3,5,2,1)
+                9 -> listOf(1,2,5,6)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleTensDigits = when (tensDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2,3)
+                5 -> listOf(4,3,2,1)
+                6 -> listOf(4,3,2,1,5)
+                7 -> listOf(4,3,5,2,1)
+                8 -> listOf(4,3,5,2,1)
+                9 -> listOf(1,2,5,6)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleOnesDigits = when (onesDigit) {
+                1 -> listOf(2,3,4,5,7,8,9)
+                2 -> listOf(3,4,5,8,9)
+                3 -> listOf(4,5,9)
+                4 -> listOf(5)
+                5 -> listOf(9,8,7,6)
+                6 -> listOf(9,8,7)
+                7 -> listOf(9,8)
+                8 -> listOf(9)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val newHundredsDigit = -possibleHundredsDigits.random()
+            val newTensDigit = -possibleTensDigits.random()
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newHundredsDigit * 100 + newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
     fun generateSequenceExtractionBeadRules(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
@@ -1958,6 +2173,81 @@ object MathOperationGenerator {
 
         return numbers
     }
+
+    fun generateSequenceExtractionBeadRulesThreeDigits(count: Int): List<Int> {
+        val numbers = mutableListOf<Int>()
+
+        val firstThousandsDigit = (1..4).random()
+        val firstHundredsDigit = (8..9).random()
+        val firstTensDigit = (8..9).random()
+        val firstOnesDigit = (1..4).random()
+        val firstNumber = firstThousandsDigit * 1000 + firstHundredsDigit * 100 + firstTensDigit * 10 + firstOnesDigit
+        var control = true
+        numbers.add(firstNumber)
+
+        for (i in 1 until count) {
+            val totalSum = numbers.sum()
+
+            val totalStr = totalSum.toString()
+            val hundredsDigit = if (totalStr.length > 2) totalStr[totalStr.length - 3].toString().toInt() else 0
+            val tensDigit = if (totalStr.length > 1) totalStr[totalStr.length - 2].toString().toInt() else 0
+            val onesDigit = totalStr[totalStr.length - 1].toString().toInt()
+
+            val possibleHundredsDigits = when (hundredsDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2)
+                5 -> listOf(1,2,3,4)
+                6 -> listOf(1,5)
+                7 -> listOf(1)
+                8 -> listOf(1,2)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleTensDigits = when (tensDigit) {
+                1 -> listOf(1)
+                2 -> listOf(1)
+                3 -> listOf(1,2)
+                4 -> listOf(1,2)
+                5 -> listOf(1,2,3,4)
+                6 -> listOf(1,5)
+                7 -> listOf(1)
+                8 -> listOf(1,2)
+                9 -> listOf(1,2)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val possibleOnesDigits = when (onesDigit) {
+                1 -> listOf(6)
+                2 -> listOf(6,7)
+                3 -> listOf(6,7,8)
+                4 -> listOf(6,7,8,9)
+                5 -> listOf(1,2,3,4)
+                6 -> listOf(2,3,4)
+                7 -> listOf(3,4)
+                8 -> listOf(4)
+                9 -> listOf(5)
+                else -> listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+            }
+
+            val newHundredsDigit = -possibleHundredsDigits.random()
+            val newTensDigit = if (control) {
+                -possibleTensDigits.random()
+            } else {
+                control = true
+                0
+            }
+            val newOnesDigit = -possibleOnesDigits.random()
+            val newNumber = newHundredsDigit * 100 + newTensDigit * 10 + newOnesDigit
+
+            numbers.add(newNumber)
+        }
+
+        return numbers
+    }
+
     fun generalCollectionOneDigits(count: Int): List<Int> {
         val numbers = mutableListOf<Int>()
 
