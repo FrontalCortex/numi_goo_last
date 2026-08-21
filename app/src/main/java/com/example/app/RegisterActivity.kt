@@ -8,6 +8,15 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import android.graphics.Color
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.text.style.StyleSpan
+import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.ActivityRegisterBinding
@@ -25,12 +34,16 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private var isGoogleFlowInProgress: Boolean = false
     
     companion object {
+        const val EXTRA_ACQUISITION_SOURCE = "extra_acquisition_source"
         private const val RC_GOOGLE_SIGN_IN = 9001
         const val EXTRA_FORCE_TEACHER = "extra_force_teacher"
         const val EXTRA_FORCE_STUDENT = "extra_force_student"
+        const val EXTRA_BIRTH_YEAR = "extra_birth_year"
     }
 
     private var currentForcedRole: ForcedRole = ForcedRole.STUDENT
+    private var birthYear: Int? = null
+    private var acquisitionSource: String? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +59,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             else -> ForcedRole.STUDENT // Varsayılan öğrenci
         }
 
+        birthYear = intent.getIntExtra(EXTRA_BIRTH_YEAR, -1).takeIf { it > 0 }
+        acquisitionSource = intent.getStringExtra(EXTRA_ACQUISITION_SOURCE)
+
         // Eğer Google Sign-In'den geldiyse veya girişte "kayıtlı değil" ile yönlendirildiyse email'i doldur
         val googleEmail = intent.getStringExtra("google_email")
         val prefillEmail = intent.getStringExtra("prefill_email")
@@ -56,9 +72,6 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
         if (emailToFill != null) {
             binding.etEmail.setText(emailToFill)
-            if (!prefillEmail.isNullOrEmpty()) {
-                Snackbar.make(binding.root, "Bu e-posta adresi kayıtlı değil. Kayıt sayfasına yönlendirildin.", Snackbar.LENGTH_LONG).show()
-            }
         }
         
         setupUI()
@@ -168,6 +181,75 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 }
             }
         }
+
+        setupTermsAndPrivacyText()
+    }
+
+    private fun setupTermsAndPrivacyText() {
+        val fullText = "Hesap oluşturarak Kullanım Şartlarını ve Gizlilik Politikasını kabul etmiş olursunuz."
+        val spannable = SpannableStringBuilder(fullText)
+
+        val termsText = "Kullanım Şartlarını"
+        val privacyText = "Gizlilik Politikasını"
+        val policyUrl = "https://sites.google.com/view/numigo-policy"
+
+        val termsStart = fullText.indexOf(termsText)
+        if (termsStart != -1) {
+            val termsEnd = termsStart + termsText.length
+            spannable.setSpan(
+                StyleSpan(Typeface.BOLD),
+                termsStart,
+                termsEnd,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            spannable.setSpan(
+                object : ClickableSpan() {
+                    override fun onClick(widget: View) {
+                        val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(policyUrl))
+                        startActivity(browserIntent)
+                    }
+                    override fun updateDrawState(ds: TextPaint) {
+                        super.updateDrawState(ds)
+                        ds.color = ContextCompat.getColor(this@RegisterActivity, R.color.dark_text)
+                        ds.isUnderlineText = false
+                    }
+                },
+                termsStart,
+                termsEnd,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        val privacyStart = fullText.indexOf(privacyText)
+        if (privacyStart != -1) {
+            val privacyEnd = privacyStart + privacyText.length
+            spannable.setSpan(
+                StyleSpan(Typeface.BOLD),
+                privacyStart,
+                privacyEnd,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            spannable.setSpan(
+                object : ClickableSpan() {
+                    override fun onClick(widget: View) {
+                        val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(policyUrl))
+                        startActivity(browserIntent)
+                    }
+                    override fun updateDrawState(ds: TextPaint) {
+                        super.updateDrawState(ds)
+                        ds.color = ContextCompat.getColor(this@RegisterActivity, R.color.dark_text)
+                        ds.isUnderlineText = false
+                    }
+                },
+                privacyStart,
+                privacyEnd,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+
+        binding.tvTermsAndPrivacy.text = spannable
+        binding.tvTermsAndPrivacy.movementMethod = LinkMovementMethod.getInstance()
+        binding.tvTermsAndPrivacy.highlightColor = Color.TRANSPARENT
     }
 
     override fun onOtpVerifyStarted() {
@@ -201,9 +283,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private fun showEmailStep() {
         binding.emailStepContainer.visibility = android.view.View.VISIBLE
         binding.fragmentContainer.visibility = android.view.View.GONE
-        binding.ivLogo.visibility = android.view.View.VISIBLE
         binding.tvTitle.visibility = android.view.View.VISIBLE
         binding.tvSubtitle.visibility = android.view.View.VISIBLE
+        binding.tvTermsAndPrivacy.visibility = android.view.View.VISIBLE
         updateContinueButtonForResendCooldown()
     }
 
@@ -211,9 +293,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         binding.emailStepContainer.visibility = android.view.View.GONE
         binding.cardTeacherForm.visibility = android.view.View.VISIBLE
         binding.fragmentContainer.visibility = android.view.View.GONE
-        binding.ivLogo.visibility = android.view.View.VISIBLE
         binding.tvTitle.visibility = android.view.View.VISIBLE
         binding.tvSubtitle.visibility = android.view.View.VISIBLE
+        binding.tvTermsAndPrivacy.visibility = android.view.View.VISIBLE
     }
 
     private fun updateContinueButtonForResendCooldown() {
@@ -245,8 +327,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         // Sadece OTP fragment'i göster, diğer tüm kayıt formlarını gizle
         binding.emailStepContainer.visibility = android.view.View.GONE
         binding.cardTeacherForm.visibility = android.view.View.GONE
+        binding.btnGoogleSignIn.visibility = android.view.View.GONE
+        binding.tvTermsAndPrivacy.visibility = android.view.View.GONE
         binding.fragmentContainer.visibility = android.view.View.VISIBLE
-        binding.ivLogo.visibility = android.view.View.GONE
         binding.tvTitle.visibility = android.view.View.GONE
         binding.tvSubtitle.visibility = android.view.View.GONE
     }
@@ -317,19 +400,19 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         showError(createError ?: "İşlem başarısız")
                         return@createPendingRegistrationForOTP
                     }
-                    authManager.resendStudentVerificationCode(email) { success, error ->
+                    authManager.resendStudentVerificationCode(email, isRegistration = true) { success, error ->
                         reenableBackAndContinue()
-                if (success) {
+                        if (success) {
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
                             hideKeyboard()
                             showCodeStep()
                             supportFragmentManager.beginTransaction()
                                 .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true))
+                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
                                 .addToBackStack("otp")
                                 .commit()
-                } else {
-                    showError(error ?: "Kod gönderilemedi")
+                        } else {
+                            showError(error ?: "Kod gönderilemedi")
                         }
                     }
                 }
@@ -380,14 +463,19 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             // autoRegister = true parametresi ile çağır (kayıt ekranından çağrıldığı için)
-            authManager.handleGoogleSignInResult(task, autoRegister = true) { success, error ->
+            authManager.handleGoogleSignInResult(
+                task = task,
+                autoRegister = true,
+                birthYear = birthYear,
+                acquisitionSource = acquisitionSource
+            ) { success, error ->
                 // Google akışı bu callback'te tamamlanıyor: burada kilidi kaldır.
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
 
                 if (success) {
-                    // Google Sign-In ile gelen kullanıcılar otomatik öğrenci olarak kaydedilir
-                    android.util.Log.d("RegisterActivity", "Google ile kayıt başarılı, MainActivity'ye yönlendiriliyor")
+                    // Google Sign-In ile gelen kullanıcılar otomatik öğrenci olarak kaydedilir/giriş yapar
+                    android.util.Log.d("RegisterActivity", "Google ile işlem başarılı, MainActivity'ye yönlendiriliyor")
                     setResult(RESULT_OK)
                     startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                     finish()
@@ -400,7 +488,6 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
     }
-    
     
     private fun registerTeacherWithOtp() {
         val name = binding.etName.text.toString().trim()
@@ -434,7 +521,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     showError("Bu e-posta başka bir hesapta kullanılıyor.")
                 }
                 return@isEmailRegistered
-        }
+            }
 
             binding.btnBack.isEnabled = false
             binding.btnRegister.isEnabled = false
@@ -446,7 +533,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     showError(error ?: "İşlem başarısız")
                     return@createPendingTeacherRegistrationForOTP
                 }
-                authManager.resendStudentVerificationCode(email) { codeSuccess, codeError ->
+                authManager.resendStudentVerificationCode(email, isRegistration = true) { codeSuccess, codeError ->
                     binding.btnBack.isEnabled = true
                     binding.btnRegister.isEnabled = true
                     if (codeSuccess) {
@@ -454,10 +541,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         showCodeStep()
                         supportFragmentManager.beginTransaction()
                             .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true))
+                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
                             .addToBackStack("otp")
                             .commit()
-            } else {
+                    } else {
                         showError(codeError ?: "Kod gönderilemedi")
                     }
                 }

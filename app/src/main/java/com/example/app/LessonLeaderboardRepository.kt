@@ -3,12 +3,13 @@ package com.example.app
 import android.util.Log
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.functions.FirebaseFunctions
 
 /**
  * Firestore: `lessonLeaderboards/{boardDocId}` (meta) + `entries/{uid}`.
@@ -92,14 +93,15 @@ object LessonLeaderboardRepository {
     }
 
     /**
-     * Mevcut kayıttan daha iyi (yüksek) puan ise Firestore'a yazar.
+     * Mevcut kayıttan daha iyi (yüksek) puan ise Cloud Function üzerinden Firestore'a yazar.
+     * Sezon belirleme SUNUCU tarafında yapılır; cihaz saati manipülasyonuna karşı koruma.
      * [onComplete] işlem bitince (veya atlanınca) ana thread üzerinde çağrılır.
      */
     fun submitBestIfNeeded(
         partId: Int,
         lessonIndex: Int,
         recordScore: Int,
-        season: Int = SeasonClock.currentSeason(),
+        @Suppress("UNUSED_PARAMETER") season: Int = SeasonClock.currentSeason(), // Artık sunucu belirliyor, parametre geriye dönük uyumluluk için tutuldu
         titleUnit: String? = null,
         onComplete: (() -> Unit)? = null,
     ) {
@@ -112,55 +114,32 @@ object LessonLeaderboardRepository {
             onComplete?.invoke()
             return
         }
-        val db = FirebaseFirestore.getInstance()
-        val boardId = leaderboardDocumentId(partId, lessonIndex, season)
-        val boardRef = db.collection(COLLECTION).document(boardId)
-        val entryRef = boardRef.collection(ENTRIES).document(user.uid)
+
+        val data = hashMapOf<String, Any>(
+            "partId" to partId,
+            "lessonIndex" to lessonIndex,
+            "recordScore" to recordScore,
+            "displayName" to (user.displayName?.trim()?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
+            "photoUrl" to (user.photoUrl?.toString() ?: ""),
+        )
         val titleTrimmed = titleUnit?.trim()?.take(127)?.takeIf { it.isNotEmpty() }
-
-        db.runTransaction { transaction ->
-            transaction.get(boardRef)
-            val snapshot = transaction.get(entryRef)
-            val previousBest = snapshot.getLong(F_SCORE)?.toInt()
-            if (previousBest != null && recordScore <= previousBest) {
-                return@runTransaction null
-            }
-            val data = hashMapOf<String, Any>(
-                F_SCORE to recordScore,
-                F_LABEL to recordScore.toString(),
-                F_NAME to (user.displayName?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
-                F_UPDATED to FieldValue.serverTimestamp(),
-                F_PHOTO to (user.photoUrl?.toString() ?: ""),
-            )
-            if (titleTrimmed != null) {
-                data[F_TITLE_UNIT] = titleTrimmed
-            }
-            transaction.set(entryRef, data, SetOptions.merge())
-
-            val boardMeta = hashMapOf<String, Any>(
-                META_PART_ID to partId,
-                META_LESSON_INDEX to lessonIndex,
-                META_SEASON to season,
-                F_UPDATED to FieldValue.serverTimestamp(),
-            )
-            if (titleTrimmed != null) {
-                boardMeta[F_TITLE_UNIT] = titleTrimmed
-            }
-            transaction.set(boardRef, boardMeta, SetOptions.merge())
-            null
+        if (titleTrimmed != null) {
+            data["titleUnit"] = titleTrimmed
         }
+
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("submitLeaderboardScore")
+            .call(data)
             .addOnSuccessListener {
-                Log.d(
-                    TAG,
-                    "submitBestIfNeeded OK doc=$boardId uid=${user.uid.take(8)} score=$recordScore",
-                )
+                Log.d(TAG, "submitBestIfNeeded CF OK part=$partId lesson=$lessonIndex score=$recordScore")
                 onComplete?.invoke()
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "submitBestIfNeeded failed part=$partId lesson=$lessonIndex", e)
+                Log.e(TAG, "submitBestIfNeeded CF failed part=$partId lesson=$lessonIndex", e)
                 onComplete?.invoke()
             }
     }
+
 
     /**
      * İlk [topLimit] içindeki ödül sırası (beraberlikte paylaşılan en iyi sıra; sezon sonu rozet ile uyumlu).

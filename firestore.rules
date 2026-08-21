@@ -4,12 +4,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Kullanıcılar: giriş yapmış kullanıcı sadece kendi dokümanını okuyup yazabilir (fcmToken, fcmTokenUpdatedAt dahil)
+    // Helper: İstek atan kişinin öğretmen onaylı olup olmadığını kontrol eder
+    function isTeacher() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teacherApproved == true;
+    }
+
+    // Kullanıcılar: sadece giriş yapmış kullanıcılar okuyabilir; yazma/silme sadece kendi dokümanına
     match /users/{userId} {
-      allow read: if true; // Herkes (girişli/girişsiz) okuyabilir
+      allow read: if request.auth != null; // Yalnızca giriş yapmış kullanıcılar okuyabilir (GDPR/KVKK koruması) 
       allow create, delete: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && (
-        request.auth.uid == userId || 
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keys', 'currency', 'role', 'teacherApproved', 'plan', 'userId', 'uid', 'email', 'createdAt'])) || 
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount']) ||
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount'])
       );
@@ -21,7 +26,7 @@ service cloud.firestore {
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     // sadece ilgili kullanıcı tarafından okunup yazılabilir.
-    match /users/{userId}/{document=**} {
+    match /users/{userId}/{subcollection}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
@@ -36,19 +41,22 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
-    // Öğretmen davet kodları: giriş yapmış kullanıcı okuyabilir; kayıt sırasında update (used) için yazma
+    // Öğretmen davet kodları: kayıt sırasında doğrulama için okuma ve işaretleme için update açık.
+    // Oluşturma sadece admin (Cloud Function) tarafından yapılır. Silme tamamen kapalı.
     match /teacherInvites/{code} {
-      allow read, write: if request.auth != null;
+      allow read, update: if request.auth != null;
+      allow create, delete: if false;
     }
 
     // Öğrenci doğrulama kodları: unauthenticated kullanıcılar OTP doğrulama için okuyup update edebilir
     match /studentVerificationCodes/{code} {
-      allow read, write: if true; // OTP doğrulama için herkes okuyup yazabilir
+      allow read, write: if false; // Sadece Cloud Functions erişebilir
     }
 
     // Bekleyen kayıtlar (e-posta doğrulama): unauthenticated kullanıcılar kayıt için okuyup yazabilir
     match /pendingRegistrations/{docId} {
-      allow read, write: if true; // Kayıt akışı için herkes okuyup yazabilir
+      allow write: if true; // Kayıt başlatılırken ve tekrar denendiğinde istemci yazabilsin
+      allow read: if false; // Sadece Cloud Functions okuyabilir (şifre güvenliği)
     }
 
     // OTP rate limit ve yanlış deneme sayacı: sadece Cloud Functions (Admin SDK) yazar, istemci erişemez
@@ -59,13 +67,25 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Sorular: giriş yapmış kullanıcı okuyup yazabilir (deletedForUids arrayUnion dahil). Kalıcı silme sadece soru sahibi (öğrenci).
+    // Sorular: Sadece sorunun sahibi ve onaylı öğretmenler okuyup güncelleyebilir
     match /questions/{questionId} {
-      allow read, create, update: if request.auth != null;
+      // Okuma ve Güncelleme: Soruyu soran öğrenci VEYA öğretmen
+      allow read, update: if request.auth != null && (resource.data.studentUid == request.auth.uid || isTeacher());
+      // Oluşturma: Herkes
+      allow create: if request.auth != null;
+      // Silme: Sadece sorunun sahibi
       allow delete: if request.auth != null && resource.data.studentUid == request.auth.uid;
-    }
-    match /questions/{questionId}/messages/{messageId} {
-      allow read, create, update, delete: if request.auth != null;
+      
+      // Mesajlar Alt Koleksiyonu
+      match /messages/{messageId} {
+        // Okuma, Yazma, Güncelleme: Ana sorunun sahibi öğrenci VEYA öğretmenler
+        allow read, create, update: if request.auth != null && (
+          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid || 
+          isTeacher()
+        );
+        // Silme: SADECE mesajı bizzat gönderen kişi
+        allow delete: if request.auth != null && resource.data.senderUid == request.auth.uid;
+      }
     }
 
     // Bildirilen mesajlar: giriş yapmış kullanıcı rapor ekleyebilir; kendi raporunu veya öğretmen tümünü okuyabilir
@@ -93,47 +113,41 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Ders liderlik tablosu: giriş yapmış herkes okur; her kullanıcı yalnızca kendi entry dokümanını yazar.
-    // İstemci [LessonLeaderboardRepository]: recordScore (puan), recordLabel, displayName, updatedAt, photoUrl.
-    // Tahta doküman id: `part_{partId}_lesson_{i}_season_{n}` (sezon başına ayrı tahta). Kurallar burada
-    // {leaderboardId} ile herhangi bir string id'ye izin verir; ayrıca id kalıbını kısıtlamak isterseniz
-    // `leaderboardId.matches('part_.*_lesson_.*_season_.*')` gibi bir koşul eklenebilir.
+    // Ders liderlik tablosu girişleri: giriş yapmış herkes okur.
+    // Yazma işlemleri YALNIZCA sunucu taraflı `submitLeaderboardScore` Cloud Function üzerinden yapılır.
+    // (Admin SDK kuralları bypass ettiğinden direkt CF yazımı çalışır.)
+    // İstemciden doğrudan yazma kapalıdır → cihaz saati manipülasyonuna karşı koruma.
     match /lessonLeaderboards/{leaderboardId}/entries/{userId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId
-        && ('recordScore' in request.resource.data)
-        && request.resource.data.recordScore is number
-        && request.resource.data.recordScore >= 1
-        && request.resource.data.recordScore <= 2000000000
-        && ('recordLabel' in request.resource.data)
-        && request.resource.data.recordLabel is string
-        && request.resource.data.recordLabel.size() < 128
-        && ('displayName' in request.resource.data)
-        && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() < 128
-        && ('updatedAt' in request.resource.data)
-        && request.resource.data.updatedAt is timestamp
-        && (!('photoUrl' in request.resource.data)
-            || (request.resource.data.photoUrl is string
-                && request.resource.data.photoUrl.size() < 512))
-        && (!('titleUnit' in request.resource.data)
-            || (request.resource.data.titleUnit is string
-                && request.resource.data.titleUnit.size() < 200));
-      allow delete: if false;
+      allow write: if false;
     }
 
     // Anket panelleri (Ders sonu ve Tutorial sonu)
     match /questionPanel/{document=**} {
-      allow read, write: if request.auth != null;
+      // Güvenlik: Okuma ve silme yasak! Sadece yeni oy/cevap ekleme (create) ve sayacı artırma (update) serbest.
+      allow create, update: if request.auth != null;
+      allow read, delete: if false;
     }
     match /questionPanelTutorial/{document=**} {
-      allow read, write: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow read, delete: if false;
     }
 
     // Geri bildirimler
     match /feedback/{feedbackId} {
       allow create: if request.auth != null;
+    }
+    match /ratingFeedback/{ratingId} {
+      // Sadece kendi UID'si ile eşleşen dokümana yazabilir (Spam Koruması: 1 Kullanıcı = 1 Yorum)
+      allow create, update: if request.auth != null && request.auth.uid == ratingId;
+      allow read, delete: if false;
+    }
+
+    // Uygulama istatistikleri (Nereden duydunuz sayaçları)
+    // Okuma kapalı → istemciler istatistik verisini göremez. Yazma sadece giriş yapmış kullanıcılara açık.
+    match /appStatistics/{docId} {
+      allow create, update: if request.auth != null;
+      allow read, delete: if false;
     }
 
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)

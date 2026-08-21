@@ -12,6 +12,12 @@ object GlobalValues {
     var mapFragmentStepIndex: Int = 1
     var stepIndex = 0
     var tutorialIsWorked = false
+    /**
+     * Kullanıcının öğretmen tarafından onaylanıp onaylanmadığını tutar.
+     * True ise kullanıcının karşısına ders aralarında geçiş (interstitial) reklamı çıkarılmaz.
+     */
+    var isTeacherApproved: Boolean = false
+
     var shouldShowAdOnReturn = false
     var lastInterstitialAdShownTime: Long = 0L
     var interstitialAdShownCount: Int = 0

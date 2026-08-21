@@ -90,14 +90,22 @@ object UserWalletFirestore {
         onFailure: ((Exception) -> Unit)? = null,
     ) {
         if (delta == 0) return
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(uid)
-            .update(FIELD_KEYS, FieldValue.increment(delta.toLong()))
-            .addOnSuccessListener {
-                val cachedKeys = getCachedKeys(context)
-                val cachedCurrency = getCachedCurrency(context)
-                onSuccess?.invoke(UserWallet(keys = cachedKeys, currency = cachedCurrency))
+        val functions = com.google.firebase.functions.FirebaseFunctions.getInstance()
+        val data = hashMapOf(
+            "keys" to delta,
+            "currency" to 0,
+            "reason" to "client_request"
+        )
+        
+        functions.getHttpsCallable("updateUserWallet")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val resultData = result.data as? Map<*, *>
+                val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
+                val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
+                
+                cacheLocally(context, keys, currency)
+                onSuccess?.invoke(UserWallet(keys = keys, currency = currency))
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
@@ -112,14 +120,22 @@ object UserWalletFirestore {
         onFailure: ((Exception) -> Unit)? = null,
     ) {
         if (delta == 0) return
-        FirebaseFirestore.getInstance()
-            .collection("users")
-            .document(uid)
-            .update(FIELD_CURRENCY, FieldValue.increment(delta.toLong()))
-            .addOnSuccessListener {
-                val cachedKeys = getCachedKeys(context)
-                val cachedCurrency = getCachedCurrency(context)
-                onSuccess?.invoke(UserWallet(keys = cachedKeys, currency = cachedCurrency))
+        val functions = com.google.firebase.functions.FirebaseFunctions.getInstance()
+        val data = hashMapOf(
+            "keys" to 0,
+            "currency" to delta,
+            "reason" to "client_request"
+        )
+        
+        functions.getHttpsCallable("updateUserWallet")
+            .call(data)
+            .addOnSuccessListener { result ->
+                val resultData = result.data as? Map<*, *>
+                val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
+                val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
+                
+                cacheLocally(context, keys, currency)
+                onSuccess?.invoke(UserWallet(keys = keys, currency = currency))
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)

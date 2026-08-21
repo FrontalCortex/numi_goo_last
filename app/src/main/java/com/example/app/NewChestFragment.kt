@@ -205,18 +205,18 @@ class NewChestFragment : Fragment() {
         val rand = (1..100).random()
         return when (current) {
             ChestRarity.COMMON -> when {
-                rand <= 10 -> ChestRarity.EPIC   // %10
-                rand <= 40 -> ChestRarity.RARE   // %30
-                else -> ChestRarity.COMMON       // %60
+                rand <= 5 -> ChestRarity.EPIC   // %5
+                rand <= 20 -> ChestRarity.RARE   // %15
+                else -> ChestRarity.COMMON       // %80
             }
             ChestRarity.RARE -> when {
                 rand <= 5 -> ChestRarity.LEGENDARY // %5
-                rand <= 40 -> ChestRarity.EPIC      // %35
-                else -> ChestRarity.RARE            // %60
+                rand <= 20 -> ChestRarity.EPIC      // %15
+                else -> ChestRarity.RARE            // %80
             }
             ChestRarity.EPIC -> when {
-                rand <= 20 -> ChestRarity.LEGENDARY // %20
-                else -> ChestRarity.EPIC            // %80
+                rand <= 5 -> ChestRarity.LEGENDARY // %5
+                else -> ChestRarity.EPIC            // %95
             }
             ChestRarity.LEGENDARY -> ChestRarity.LEGENDARY // %100 aynı kalır
         }
@@ -490,18 +490,12 @@ class NewChestFragment : Fragment() {
                 textDrawable = R.drawable.gold_ic
             }
             ChestRarity.RARE -> {
-                if (rand <= 50) {
-                    val amount = (150..200).random()
-                    earnedGold = amount
-                    textValue = "$amount"
-                    coinDrawable = R.drawable.shop_coin_ic1
-                    textDrawable = R.drawable.gold_ic
-                } else {
-                    earnedKey = 1
-                    textValue = "1"
-                    coinDrawable = R.drawable.key
-                    textDrawable = R.drawable.key
-                }
+                val amount = (150..200).random()
+                earnedGold = amount
+                textValue = "$amount"
+                coinDrawable = R.drawable.shop_coin_ic1
+                textDrawable = R.drawable.gold_ic
+
             }
             ChestRarity.EPIC -> {
                 if (rand <= 50) {
@@ -511,8 +505,8 @@ class NewChestFragment : Fragment() {
                     coinDrawable = R.drawable.shop_coin_ic2
                     textDrawable = R.drawable.gold_ic
                 } else {
-                    earnedKey = 2
-                    textValue = "2"
+                    earnedKey = 1
+                    textValue = "1"
                     coinDrawable = R.drawable.key
                     textDrawable = R.drawable.key
                 }

@@ -13,6 +13,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentOtpVerificationBinding
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 /** Öğretmen şifre sıfırlama akışında OTP doğrulandığında activity'ye bildirim. */
 interface OnTeacherOtpVerifiedForResetListener {
@@ -35,11 +37,20 @@ class OtpVerificationFragment : Fragment() {
     private val email: String by lazy { requireArguments().getString(ARG_EMAIL).orEmpty() }
     private val isRegistration: Boolean by lazy { requireArguments().getBoolean(ARG_IS_REGISTRATION, false) }
     private val forPasswordReset: Boolean by lazy { requireArguments().getBoolean(ARG_FOR_PASSWORD_RESET, false) }
+    private val birthYear: Int? by lazy {
+        val value = requireArguments().getInt(ARG_BIRTH_YEAR, -1)
+        if (value > 0) value else null
+    }
+    private val acquisitionSource: String? by lazy {
+        requireArguments().getString(ARG_ACQUISITION_SOURCE)
+    }
 
     companion object {
         private const val ARG_EMAIL = "arg_email"
         private const val ARG_IS_REGISTRATION = "arg_is_registration"
         private const val ARG_FOR_PASSWORD_RESET = "arg_for_password_reset"
+        private const val ARG_BIRTH_YEAR = "arg_birth_year"
+        private const val ARG_ACQUISITION_SOURCE = "arg_acquisition_source"
         private const val RESEND_COOLDOWN_MS = 45_000L   // 45 saniye
         private const val MAX_WRONG_ATTEMPTS = 5
         private const val WRONG_ATTEMPT_COOLDOWN_MS = 15 * 60 * 1000L // 15 dk
@@ -81,12 +92,20 @@ class OtpVerificationFragment : Fragment() {
             return remainingMin
         }
 
-        fun newInstance(email: String, isRegistration: Boolean, forPasswordReset: Boolean = false): OtpVerificationFragment {
+        fun newInstance(
+            email: String,
+            isRegistration: Boolean,
+            forPasswordReset: Boolean = false,
+            birthYear: Int? = null,
+            acquisitionSource: String? = null
+        ): OtpVerificationFragment {
             return OtpVerificationFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_EMAIL, email)
                     putBoolean(ARG_IS_REGISTRATION, isRegistration)
                     putBoolean(ARG_FOR_PASSWORD_RESET, forPasswordReset)
+                    birthYear?.let { putInt(ARG_BIRTH_YEAR, it) }
+                    acquisitionSource?.let { putString(ARG_ACQUISITION_SOURCE, it) }
                 }
             }
         }
@@ -205,7 +224,7 @@ class OtpVerificationFragment : Fragment() {
         if (forPasswordReset) {
             authManager.sendTeacherPasswordResetCode(email, sendCode)
         } else {
-            authManager.resendStudentVerificationCode(email, sendCode)
+            authManager.resendStudentVerificationCode(email, isRegistration, sendCode)
         }
     }
 
@@ -262,6 +281,7 @@ class OtpVerificationFragment : Fragment() {
             isRegistration -> {
                 authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
                     if (success) {
+                        saveExtraUserDataIfPresent()
                         requireActivity().setResult(Activity.RESULT_OK)
                         startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                         requireActivity().finish()
@@ -284,6 +304,29 @@ class OtpVerificationFragment : Fragment() {
         }
     }
 
+    /**
+     * OTP kayıt başarılı olduğunda, eğer birthYear veya acquisitionSource argümanı varsa,
+     * mevcut Firebase Auth kullanıcısının Firestore dokümanına yazılır.
+     * Bu işlem asenkron yapılır; sonucu beklenmeden MainActivity açılır.
+     */
+    private fun saveExtraUserDataIfPresent() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val updates = mutableMapOf<String, Any>()
+        birthYear?.let { updates["birthYear"] = it }
+        acquisitionSource?.let { src ->
+            updates["acquisitionSource"] = src
+            AppStatisticsManager.incrementAcquisitionSource(src)
+        }
+
+        if (updates.isNotEmpty()) {
+            FirebaseFirestore.getInstance().collection("users").document(uid)
+                .update(updates)
+                .addOnFailureListener { e ->
+                    android.util.Log.w("OtpVerificationFragment", "Ekstra veriler yazılamadı", e)
+                }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         resendCooldownTimer?.cancel()
@@ -293,3 +336,4 @@ class OtpVerificationFragment : Fragment() {
         _binding = null
     }
 }
+

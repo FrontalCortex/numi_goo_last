@@ -6,6 +6,7 @@ data class DailyQuestionSlot(
     val itemIndex: Int,
     val titleUnit: String,
     val difficulty: String,
+    val displayIntervalMs: Long? = null,
 )
 
 data class DailyQuestionChallenge(

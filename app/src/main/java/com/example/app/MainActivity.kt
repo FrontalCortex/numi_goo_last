@@ -60,9 +60,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         Log.d("AdDiag", "$logContext called. shouldShowAdOnReturn=${GlobalValues.shouldShowAdOnReturn}")
         if (GlobalValues.shouldShowAdOnReturn) {
             GlobalValues.shouldShowAdOnReturn = false
-            if (!isInfiniteEnergy()) {
+            if (!isInfiniteEnergy() && !GlobalValues.isTeacherApproved) {
                 val now = System.currentTimeMillis()
-                if (now - GlobalValues.lastInterstitialAdShownTime >= 1 * 1000L) {
+                // Reklam gösterim aralığı: 5 dakika (5 * 60 * 1000 ms)
+                if (now - GlobalValues.lastInterstitialAdShownTime >= 5 * 60 * 1000L) {
                     GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
                         val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
                         if (chests.size >= 2 && chests[1].stepIsFinish) {
@@ -82,7 +83,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                     Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 40 sec cooldown")
                 }
             } else {
-                Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro")
+                Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro or Teacher Approved")
             }
         }
         onDone()
@@ -296,7 +297,19 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MobileAds.initialize(this) {}
+        
+        // adManager'ı burada init et; AgeConsentManager'ın asenkron callback'i
+        // herhangi bir anda tetiklenebileceğinden lateinit crash riskine karşı önce atanmalı.
+        adManager = AdManager(this)
+        
+        // Yaşa ve ülkeye göre reklam muamelesi (TFAT) altyapısıyla AdMob'u başlat.
+        // adManager preload işlemleri bu callback'in içinde yapılır;
+        // böylece Firestore'dan birthYear gelmeden reklam isteği atılmaz (Claude planı).
+        AgeConsentManager.initializeAdMobWithAgeConsent(this) {
+            adManager.preloadAd()
+            adManager.preloadInterstitialAd()
+        }
+        
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -427,11 +440,6 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         energyManager.setEnergyUpdateCallback { energy ->
             updateEnergyDisplay(energy)
         }
-        
-        // Reklam yöneticisini başlat
-        adManager = AdManager(this)
-        adManager.preloadAd()
-        adManager.preloadInterstitialAd()
         
         // Süre takibini initialize et (onResume'da başlatılacak)
         TimeTracker.initialize(this)
@@ -1917,6 +1925,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val plan = doc.getString("plan") ?: "Free"
+                    GlobalValues.isTeacherApproved = doc.getBoolean("teacherApproved") == true
                     energyManager.setUserPlan(plan)
                     
                     // Pro veya Premium ise sonsuz işareti göster

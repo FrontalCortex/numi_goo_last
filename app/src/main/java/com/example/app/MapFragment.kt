@@ -29,6 +29,12 @@ class MapFragment : Fragment() {
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
     private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
 
+    private val guidePanelBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            // Panel açıkken veya beklenirken geri tuşunu yut, hiçbir şey yapma
+        }
+    }
+
     companion object {
         const val ARG_SHOW_GUIDE = "show_guide"
         
@@ -1138,6 +1144,9 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Geri tuşunu engelleme callback'ini kaydet (başlangıçta isEnabled = false)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, guidePanelBackCallback)
 
         // Veriyi yükle (lokal → yoksa Firestore → yoksa varsayılan); hazır olunca listeyi kur
         GlobalLessonData.initialize(requireContext(), globalPartId) {
@@ -1467,7 +1476,9 @@ class MapFragment : Fragment() {
     }
 
     private fun disableMapFragmentViews() {
+        if (mapTransparentTouchBlockActive) return // Zaten aktifse tekrar ekleme yapma
         mapTransparentTouchBlockActive = true
+        guidePanelBackCallback.isEnabled = true
         MapTouchDiagnostics.reportFromFragment(
             this,
             "MapFragment.disableMapFragmentViews",
@@ -1488,6 +1499,8 @@ class MapFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            elevation = 100f
+            translationZ = 100f
             setOnTouchListener { _, _ -> true } // Tüm touch event'leri consume et
         }
         // Overlay'i root view'a ekle
@@ -1498,6 +1511,7 @@ class MapFragment : Fragment() {
         android.util.Log.d("GuideDebug", "enableMapFragmentViews called, releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
         val hadBlock = mapTransparentTouchBlockActive || (overlayView?.parent != null)
         mapTransparentTouchBlockActive = false
+        guidePanelBackCallback.isEnabled = false
         MainActivityChromeBlocker.release(activity)
         if (hadBlock) {
             MapTouchDiagnostics.reportFromFragment(
@@ -1720,6 +1734,13 @@ class MapFragment : Fragment() {
     /** Ders overlay (Abacus quit, ChestResult vb.) kapandıktan sonra liste ve dokunuşları yenile. */
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
+        
+        // EAGER LOCK: Eğer rehber açılacaksa haritanın animasyonunu/rötarını beklemeden kalkanı hemen aç!
+        if (MarathonGuideStore.isPending(requireContext())) {
+            disableMainActivityViews()
+            disableMapFragmentViews()
+        }
+        
         val chestIdx = MarathonGuideStore.firstMarathonLessonIndex()
         val claimMapIdx = GlobalValues.mapFragmentStepIndex
         LessonProgressDiag.logClaimVsMapAtNotify(

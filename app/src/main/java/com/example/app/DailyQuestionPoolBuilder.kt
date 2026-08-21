@@ -55,7 +55,9 @@ object DailyQuestionPoolBuilder {
 
     private fun generateSlot(source: DailyQuestionSource): DailyQuestionSlot? {
         val generator = generatorForFinishedChest(source.finishedChestIndex, source.item) ?: return null
-        val sequence = generator()
+        val result = generator()
+        val sequence = result.first
+        val displayIntervalMs = result.second
         if (sequence.isEmpty()) return null
         val titleUnit = source.item.titleUnit?.takeIf { it.isNotBlank() }
             ?: source.item.title
@@ -65,6 +67,7 @@ object DailyQuestionPoolBuilder {
             itemIndex = source.listIndex,
             titleUnit = titleUnit,
             difficulty = difficultyLabel(source.item),
+            displayIntervalMs = displayIntervalMs,
         )
     }
 
@@ -82,16 +85,16 @@ object DailyQuestionPoolBuilder {
     private fun generatorForFinishedChest(
         finishedChestIndex: Int,
         item: LessonItem,
-    ): (() -> List<Int>)? {
+    ): (() -> Pair<List<Int>, Long>)? {
         return when (finishedChestIndex) {
             1 -> null
             2 -> {
                 {
                     dailyQuestionFromRecord(
                         item,
-                        hard = { MathOperationGenerator.generateSequence1Digits(2, 1) },//test için ileride 4 4
-                        medium = { MathOperationGenerator.generateSequence1Digits(4, 3) },
-                        easy = { MathOperationGenerator.generateSequence1Digits(3, 2) },
+                        hard = { Pair(MathOperationGenerator.generateSequence1Digits(4, 4), 1000L) },
+                        medium = { Pair(MathOperationGenerator.generateSequence1Digits(4, 3), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateSequence1Digits(3, 2), 3000L) },
                     )
                 }
             }
@@ -99,30 +102,51 @@ object DailyQuestionPoolBuilder {
                 {
                     dailyQuestionFromRecord(
                         item,
-                        hard = { MathOperationGenerator.generateRelatedNumbers2Blinding(2, 1) },//test için ileride 4 4
-                        medium = { MathOperationGenerator.generateRelatedNumbers2Blinding(4, 3) },
-                        easy = { MathOperationGenerator.generateRelatedNumbers2Blinding(4, 2) },
+                        hard = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(3, 4), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(3, 3), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 2), 3000L) },
                     )
                 }
             }
-            4, 5, 6 -> null
+            5 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(5), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(4), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(3), 3000L) },
+                    )
+                }
+            }
+            6 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.generateSequenceBeadRules(5), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateSequenceBeadRules(4), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateSequenceBeadRules(3), 3000L) },
+                    )
+                }
+            }
+
+            4 -> null
             else -> null
         }
     }
 
     private fun dailyQuestionFromRecord(
         item: LessonItem,
-        hard: () -> List<Int>,
-        medium: () -> List<Int>,
-        easy: () -> List<Int>,
-    ): List<Int> {
+        hard: () -> Pair<List<Int>, Long>,
+        medium: () -> Pair<List<Int>, Long>,
+        easy: () -> Pair<List<Int>, Long>,
+    ): Pair<List<Int>, Long> {
         val record = item.record
         val cupPoint1 = item.cupPoint1
         val cupPoint2 = item.cupPoint2
         return when {
-            record != null && cupPoint1 != null && record >= cupPoint1 -> hard()
-            record != null && cupPoint2 != null && record >= cupPoint2 -> medium()
-            else -> easy()
+            //record != null && cupPoint1 != null && record >= cupPoint1 -> hard()
+            //record != null && cupPoint2 != null && record >= cupPoint2 -> medium()
+            else -> hard()
         }
     }
 

@@ -68,14 +68,16 @@ class AdSkipFragment : DialogFragment() {
     private fun playSounds() {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return
-        // İlk confetti_pop_sound hemen oynatılsın
+        // İlk confetti_pop_sound hemen oynatılsın (Sesi azaltıldı -> 0.05f)
         pop1 = MediaPlayer.create(requireContext(), R.raw.confetti_pop_sound)
+        pop1?.setVolume(0.05f, 0.05f)
         pop1?.start()
 
         // 0.2 saniye (200ms) sonra ikinci confetti_pop_sound
         handler.postDelayed({
             if (_binding != null) { // Fragment hala aktifse
                 pop2 = MediaPlayer.create(requireContext(), R.raw.confetti_pop_sound)
+                pop2?.setVolume(0.05f, 0.05f)
                 pop2?.start()
             }
         }, 200)
@@ -85,6 +87,9 @@ class AdSkipFragment : DialogFragment() {
             if (_binding != null) {
                 energicMusic = MediaPlayer.create(requireContext(), R.raw.energic_music)
                 crowdCheer = MediaPlayer.create(requireContext(), R.raw.crowd_cheer_sound)
+                
+                energicMusic?.setVolume(0.05f, 0.05f)
+                crowdCheer?.setVolume(0.05f, 0.05f)
                 
                 energicMusic?.start()
                 crowdCheer?.start()

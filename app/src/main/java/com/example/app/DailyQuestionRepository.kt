@@ -301,12 +301,14 @@ object DailyQuestionRepository {
         val itemIndex = (map[FIELD_ITEM_INDEX] as? Number)?.toInt() ?: return null
         val titleUnit = map[FIELD_TITLE_UNIT] as? String ?: return null
         val difficulty = map[FIELD_DIFFICULTY] as? String ?: return null
+        val displayIntervalMs = (map[FIELD_DISPLAY_INTERVAL] as? Number)?.toLong()
         return DailyQuestionSlot(
             sequence = sequence,
             partId = partId,
             itemIndex = itemIndex,
             titleUnit = titleUnit,
             difficulty = difficulty,
+            displayIntervalMs = displayIntervalMs,
         )
     }
 
@@ -315,13 +317,15 @@ object DailyQuestionRepository {
             FIELD_SOLVED_COUNT to challenge.solvedCount,
             FIELD_REWARD_CLAIMED to challenge.rewardClaimed,
             FIELD_QUESTIONS to challenge.questions.map { slot ->
-                mapOf(
+                val slotMap = mutableMapOf<String, Any>(
                     FIELD_SEQUENCE to slot.sequence.joinToString(","),
                     FIELD_PART_ID to slot.partId,
                     FIELD_ITEM_INDEX to slot.itemIndex,
                     FIELD_TITLE_UNIT to slot.titleUnit,
                     FIELD_DIFFICULTY to slot.difficulty,
                 )
+                slot.displayIntervalMs?.let { slotMap[FIELD_DISPLAY_INTERVAL] = it }
+                slotMap
             },
         )
         challenge.pendingContinueSlotIndex?.let { map[FIELD_PENDING_CONTINUE_SLOT] = it }
@@ -352,4 +356,5 @@ object DailyQuestionRepository {
     private const val FIELD_ITEM_INDEX = "itemIndex"
     private const val FIELD_TITLE_UNIT = "titleUnit"
     private const val FIELD_DIFFICULTY = "difficulty"
+    private const val FIELD_DISPLAY_INTERVAL = "displayIntervalMs"
 }

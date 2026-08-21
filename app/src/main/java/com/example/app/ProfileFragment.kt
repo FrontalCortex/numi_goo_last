@@ -173,8 +173,18 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
+        resumeCupAnimations()
         if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
+        }
+    }
+
+    private fun resumeCupAnimations() {
+        if (!::binding.isInitialized) return
+        val cupIds = listOf(R.id.cupCard1, R.id.cupCard2, R.id.cupCard3, R.id.cupCard4, R.id.cupCard5, R.id.cupCard6)
+        cupIds.forEach { id ->
+            val lottie = binding.root.findViewById<View>(id)?.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.cardLottie)
+            lottie?.resumeAnimation()
         }
     }
     
@@ -1399,6 +1409,7 @@ class ProfileFragment : Fragment() {
         titleView.text = title
         iconView.visibility = if (showForbiddenIcon) View.VISIBLE else View.GONE
         lottieView.setAnimation(animFile)
+        lottieView.playAnimation()
 
         scoreProvider { score ->
             if (isAdded) {

@@ -18,6 +18,10 @@ class SplashActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Navigation bar rengini background_color yap
+        window.navigationBarColor = androidx.core.content.ContextCompat.getColor(this, R.color.background_color)
+        
         setContentView(R.layout.activity_splash)
 
         // Daha önce indirilmiş medya dosyalarının cache'ini belleğe yükle

@@ -790,6 +790,7 @@ class TasksFragment : Fragment() {
                 operations = listOf(slot.sequence),
                 periodKey = challenge.periodKey,
                 slotIndex = slotIndex,
+                displayIntervalMs = slot.displayIntervalMs,
             ),
         )
     }

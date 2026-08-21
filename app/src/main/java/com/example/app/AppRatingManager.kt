@@ -23,15 +23,19 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 object AppRatingManager {
     private const val PREFS_NAME = "AppRatingPrefs"
-    private const val KEY_HAS_RATED = "has_rated"
     
     private var lastPromptAttemptTime = 0L
+
+    private fun getHasRatedKey(): String {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: "anonymous"
+        return "has_rated_$uid"
+    }
 
     fun checkAndShowRatingPrompt(activity: FragmentActivity, completedLessonCount: Int): Boolean {
         val prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         
-        // 1. If already rated, never show again
-        if (prefs.getBoolean(KEY_HAS_RATED, false)) {
+        // 1. If already rated by this account, never show again
+        if (prefs.getBoolean(getHasRatedKey(), false)) {
             return false
         }
 
@@ -74,7 +78,7 @@ object AppRatingManager {
 
     fun markAsRated(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_HAS_RATED, true).apply()
+        prefs.edit().putBoolean(getHasRatedKey(), true).apply()
     }
 }
 
@@ -189,7 +193,7 @@ class RatingDialogFragment : DialogFragment() {
         )
         android.util.Log.d("AppRatingManager", "Submitting feedback for UID: $uid")
         FirebaseFirestore.getInstance().collection("ratingFeedback")
-            .add(feedbackData)
+            .document(uid).set(feedbackData, com.google.firebase.firestore.SetOptions.merge())
             .addOnSuccessListener {
                 android.util.Log.d("AppRatingManager", "Feedback successfully written to Firestore!")
             }

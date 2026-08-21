@@ -23,10 +23,48 @@ function generateCode(length = 6) {
   return code;
 }
 
-// createTeacherInvite geçici olarak devre dışı (deploy hatası nedeniyle). İhtiyaç olursa tekrar açılabilir.
-// exports.createTeacherInvite = functions.https.onCall(async (data, context) => { ... });
+// E-posta kayıtlı mı kontrolü (Giriş / Kayıt öncesi güvenli kontrol)
+exports.checkEmailRegistered = functions.https.onCall(async (data, context) => {
+  const email = (data && data.email) ? String(data.email).trim().toLowerCase() : '';
+  if (!email) {
+    throw new functions.https.HttpsError('invalid-argument', 'email required');
+  }
 
-// checkEmailRegistered fonksiyonu kaldırıldı - silme işlemi için
+  const usersSnap = await db.collection('users')
+    .where('email', '==', email)
+    .limit(1)
+    .get();
+
+  if (usersSnap.empty) {
+    return { registered: false, uid: null, role: null };
+  }
+
+  const doc = usersSnap.docs[0];
+  const uid = doc.get('uid') || doc.id;
+  const role = doc.get('role') || 'STUDENT';
+
+  return { registered: true, uid, role };
+});
+
+// Öğretmen kullanıcı ID'si ile e-posta bulma (Öğretmen girişi için)
+exports.findTeacherEmailByUserId = functions.https.onCall(async (data, context) => {
+  const userId = (data && data.userId) ? String(data.userId).trim() : '';
+  if (!userId) {
+    return { email: null };
+  }
+
+  const usersSnap = await db.collection('users')
+    .where('userId', '==', userId)
+    .where('role', '==', 'TEACHER')
+    .limit(1)
+    .get();
+
+  if (usersSnap.empty) {
+    return { email: null };
+  }
+
+  return { email: usersSnap.docs[0].get('email') || null };
+});
 
 const OTP_EMAIL_PER_HOUR = 5;
 const OTP_EMAIL_PER_DAY = 20;
@@ -46,78 +84,98 @@ function getWindowStart(nowMs, windowMs) {
 }
 
 async function checkOtpRateLimits(email, ip) {
-  const now = admin.firestore.Timestamp.now();
-  const nowMs = now.toMillis();
   const normalizedEmail = (email || '').trim().toLowerCase();
   if (!normalizedEmail) return { ok: true };
 
   const emailDocId = 'email:' + normalizedEmail.replace(/\//g, '_');
   const emailRef = db.collection('otpRateLimits').doc(emailDocId);
 
-  const batch = db.batch();
-  const emailSnap = await emailRef.get();
-  const emailData = emailSnap.exists ? emailSnap.data() : {};
-  const hourStart = getWindowStart(nowMs, HOUR_MS);
-  const dayStart = getWindowStart(nowMs, DAY_MS);
-
-  let emailHourCount = (emailData.lastHourStart === hourStart ? emailData.hourCount : 0) || 0;
-  let emailDayCount = (emailData.lastDayStart === dayStart ? emailData.dayCount : 0) || 0;
-
-  if (emailHourCount >= OTP_EMAIL_PER_HOUR) {
-    const nextHourMs = hourStart + HOUR_MS;
-    const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
-    throw new functions.https.HttpsError(
-      'resource-exhausted',
-      `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin} dakika sonra tekrar deneyin.`
-    );
-  }
-  if (emailDayCount >= OTP_EMAIL_PER_DAY) {
-    const nextDayMs = dayStart + DAY_MS;
-    const waitMin = Math.ceil((nextDayMs - nowMs) / 60000);
-    throw new functions.https.HttpsError(
-      'resource-exhausted',
-      `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin / 60)} saat sonra tekrar deneyin.`
-    );
-  }
-
-  batch.set(emailRef, {
-    lastHourStart: hourStart,
-    hourCount: emailHourCount + 1,
-    lastDayStart: dayStart,
-    dayCount: emailDayCount + 1,
-    updatedAt: now
-  }, { merge: true });
-
+  let ipRef = null;
   if (ip) {
     const safeIp = String(ip).replace(/[^a-fA-F0-9.:]/g, '_').slice(0, 64);
     const ipDocId = 'ip:' + safeIp;
-    const ipRef = db.collection('otpRateLimits').doc(ipDocId);
-    const ipSnap = await ipRef.get();
-    const ipData = ipSnap.exists ? ipSnap.data() : {};
-    const ipHourStart = getWindowStart(nowMs, HOUR_MS);
-    let ipHourCount = (ipData.lastHourStart === ipHourStart ? ipData.hourCount : 0) || 0;
+    ipRef = db.collection('otpRateLimits').doc(ipDocId);
+  }
 
-    if (ipHourCount >= OTP_IP_PER_HOUR) {
-      const nextHourMs = ipHourStart + HOUR_MS;
+  // Tüm okuma ve yazma işlemlerini tek bir Atomik Transaction (İşlem) içine alıyoruz.
+  // Bu, aynı anda gelen yüzlerce isteğin (Race Condition) sistemi delmesini imkansız hale getirir.
+  await db.runTransaction(async (transaction) => {
+    // 1. Transaction Kuralları: Önce tüm OKUMA (get) işlemleri yapılmalı
+    const emailSnap = await transaction.get(emailRef);
+    let ipSnap = null;
+    if (ipRef) {
+      ipSnap = await transaction.get(ipRef);
+    }
+
+    const now = admin.firestore.Timestamp.now();
+    const nowMs = now.toMillis();
+    const hourStart = getWindowStart(nowMs, HOUR_MS);
+    const dayStart = getWindowStart(nowMs, DAY_MS);
+
+    // 2. E-posta limitlerini kontrol et
+    const emailData = emailSnap.exists ? emailSnap.data() : {};
+    let emailHourCount = (emailData.lastHourStart === hourStart ? emailData.hourCount : 0) || 0;
+    let emailDayCount = (emailData.lastDayStart === dayStart ? emailData.dayCount : 0) || 0;
+
+    if (emailHourCount >= OTP_EMAIL_PER_HOUR) {
+      const nextHourMs = hourStart + HOUR_MS;
       const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
       throw new functions.https.HttpsError(
         'resource-exhausted',
-        `Bu cihazdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin} dakika sonra tekrar deneyin.`
+        `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin} dakika sonra tekrar deneyin.`
       );
     }
-    batch.set(ipRef, {
-      lastHourStart: ipHourStart,
-      hourCount: ipHourCount + 1,
+    if (emailDayCount >= OTP_EMAIL_PER_DAY) {
+      const nextDayMs = dayStart + DAY_MS;
+      const waitMin = Math.ceil((nextDayMs - nowMs) / 60000);
+      throw new functions.https.HttpsError(
+        'resource-exhausted',
+        `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin / 60)} saat sonra tekrar deneyin.`
+      );
+    }
+
+    // 3. IP limitlerini kontrol et
+    let ipHourCount = 0;
+    const ipHourStart = getWindowStart(nowMs, HOUR_MS);
+    
+    if (ipSnap) {
+      const ipData = ipSnap.exists ? ipSnap.data() : {};
+      ipHourCount = (ipData.lastHourStart === ipHourStart ? ipData.hourCount : 0) || 0;
+
+      if (ipHourCount >= OTP_IP_PER_HOUR) {
+        const nextHourMs = ipHourStart + HOUR_MS;
+        const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
+        throw new functions.https.HttpsError(
+          'resource-exhausted',
+          `Bu cihazdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin} dakika sonra tekrar deneyin.`
+        );
+      }
+    }
+
+    // 4. Transaction Kuralları: Okumalar ve kontroller bittikten sonra YAZMA (set) işlemleri
+    transaction.set(emailRef, {
+      lastHourStart: hourStart,
+      hourCount: emailHourCount + 1,
+      lastDayStart: dayStart,
+      dayCount: emailDayCount + 1,
       updatedAt: now
     }, { merge: true });
-  }
 
-  await batch.commit();
+    if (ipRef) {
+      transaction.set(ipRef, {
+        lastHourStart: ipHourStart,
+        hourCount: ipHourCount + 1,
+        updatedAt: now
+      }, { merge: true });
+    }
+  });
+
   return { ok: true };
 }
 
 exports.sendStudentVerificationCode = functions.https.onCall(async (data, context) => {
-  const email = (data && data.email) || '';
+  const rawEmail = (data && data.email) || '';
+  const email = String(rawEmail).trim().toLowerCase();
   const uid = (data && data.uid) || '';
   
   if (!email || !uid) {
@@ -129,7 +187,7 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
 
   const code = generateCode(6);
   const now = admin.firestore.Timestamp.now();
-  const expiresAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + 5 * 60 * 1000); // 5 dk
+  const expiresAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + 2 * 60 * 1000); // 2 dk
 
   // Firestore'a kodu kaydet
   await db.collection('studentVerificationCodes').doc(code).set({
@@ -171,11 +229,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
       <p>Merhaba,</p>
       <p>NumiGoo hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
       <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
-        <p>Bu kod 5 dakika içinde geçerlidir.</p>
+        <p>Bu kod 2 dakika içinde geçerlidir.</p>
       <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
       <p>İyi çalışmalar,<br>NumiGoo Ekibi</p>
     `,
-      text: `NumiGoo E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 5 dakika içinde geçerlidir.`
+      text: `NumiGoo E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 2 dakika içinde geçerlidir.`
   };
 
     console.log('Attempting to send email to:', email);
@@ -223,24 +281,42 @@ async function checkWrongAttemptCooldown(email) {
 async function recordWrongAttempt(email) {
   const normalizedEmail = (email || '').trim().toLowerCase();
   if (!normalizedEmail) return;
-  const now = admin.firestore.Timestamp.now();
-  const nowMs = now.toMillis();
   const docId = 'wrong:' + normalizedEmail.replace(/\//g, '_');
   const ref = db.collection('otpWrongAttempts').doc(docId);
-  const snap = await ref.get();
-  let count = 0;
-  let windowStart = nowMs;
-  if (snap.exists) {
-    const d = snap.data();
-    const prevStart = d.windowStart && d.windowStart.toMillis ? d.windowStart.toMillis() : 0;
-    if (nowMs - prevStart < WRONG_ATTEMPT_COOLDOWN_MS) {
-      count = (d.count || 0) + 1;
-      windowStart = prevStart;
+
+  // Yanlış deneme (Brute-Force) sayacını güvenli hale getirmek için Transaction kullanıyoruz
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    
+    const now = admin.firestore.Timestamp.now();
+    const nowMs = now.toMillis();
+    
+    let count = 0;
+    let windowStart = nowMs;
+    
+    if (snap.exists) {
+      const d = snap.data();
+      const prevStart = d.windowStart && d.windowStart.toMillis ? d.windowStart.toMillis() : 0;
+      
+      // Eğer hala bekleme (cooldown) süresi içindeysek, sayacı 1 artır
+      if (nowMs - prevStart < WRONG_ATTEMPT_COOLDOWN_MS) {
+        count = (d.count || 0) + 1;
+        windowStart = prevStart;
+      } else {
+        // Süre dolmuşsa, bu yeni bir döngünün ilk yanlış denemesidir
+        count = 1;
+      }
+    } else {
+      // Daha önce hiç yanlış girilmediyse sayacı 1 yap
+      count = 1;
     }
-  } else {
-    count = 1;
-  }
-  await ref.set({ count, windowStart: admin.firestore.Timestamp.fromMillis(windowStart), updatedAt: now });
+    
+    transaction.set(ref, { 
+      count, 
+      windowStart: admin.firestore.Timestamp.fromMillis(windowStart), 
+      updatedAt: now 
+    }, { merge: true });
+  });
 }
 
 async function clearWrongAttempts(email) {
@@ -252,7 +328,8 @@ async function clearWrongAttempts(email) {
 
 // OTP ile giriş: kodu doğrula ve custom token döndür
 exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
-  const email = (data && data.email) || '';
+  const rawEmail = (data && data.email) || '';
+  const email = String(rawEmail).trim().toLowerCase();
   const code = (data && data.code) || '';
 
   if (!email || !code) {
@@ -331,6 +408,130 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
         'permission-denied',
         'Bu hesap öğretmen hesabı. Öğrenci giriş ekranından giriş yapılamaz.'
       );
+    }
+  }
+
+  const token = await admin.auth().createCustomToken(tokenUid);
+  return { token };
+});
+
+// OTP ile kayıt: kodu doğrula, hesabı oluştur/onayla ve custom token döndür
+exports.verifyRegistrationCode = functions.https.onCall(async (data, context) => {
+  const rawEmail = (data && data.email) || '';
+  const email = String(rawEmail).trim().toLowerCase();
+  const code = (data && data.code) || '';
+
+  if (!email || !code) {
+    throw new functions.https.HttpsError('invalid-argument', 'email and code required');
+  }
+
+  await checkWrongAttemptCooldown(email);
+
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  const codeDoc = await codeRef.get();
+
+  if (!codeDoc.exists) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kod');
+  }
+
+  const d = codeDoc.data();
+  const used = d.used === true;
+  const expiresAt = d.expiresAt && d.expiresAt.toMillis ? d.expiresAt.toMillis() : 0;
+  const docEmail = d.email || '';
+  const docUid = d.uid || '';
+
+  if (used || expiresAt < Date.now() || docEmail !== email) {
+    await recordWrongAttempt(email);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+  }
+
+  await clearWrongAttempts(email);
+
+  await codeRef.update({
+    used: true,
+    verifiedAt: admin.firestore.Timestamp.now()
+  });
+
+  let tokenUid = docUid;
+
+  if (docUid.startsWith('pending_')) {
+    const pendingRef = db.collection('pendingRegistrations').doc(email);
+    const pendingDoc = await pendingRef.get();
+    
+    if (!pendingDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kayıt bilgileri bulunamadı');
+    }
+    
+    const pendingData = pendingDoc.data();
+    const name = pendingData.name || '';
+    const password = pendingData.password || '';
+    const roleForUser = pendingData.role || 'STUDENT';
+
+    let userRecord;
+    try {
+      userRecord = await admin.auth().createUser({
+        email: email,
+        password: password,
+        displayName: name,
+        emailVerified: true
+      });
+    } catch (err) {
+      if (err.code === 'auth/email-already-exists' || err.code === 'auth/email-already-in-use') {
+        userRecord = await admin.auth().getUserByEmail(email);
+        try {
+          await admin.auth().updateUser(userRecord.uid, { password: password });
+        } catch(e) { }
+      } else {
+        throw new functions.https.HttpsError('internal', 'Kullanıcı oluşturulamadı: ' + err.message);
+      }
+    }
+
+    tokenUid = userRecord.uid;
+    const userRef = db.collection('users').doc(tokenUid);
+    const userDocSnap = await userRef.get();
+
+    if (!userDocSnap.exists) {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const randomNum = Math.floor(100000 + Math.random() * 900000);
+      const suffix = letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)];
+      const userId = `${randomNum}${suffix}`;
+
+      const finalName = name.trim() ? name : userId;
+      
+      try {
+        await admin.auth().updateUser(tokenUid, { displayName: finalName });
+      } catch (e) {
+        console.error('Error updating display name:', e);
+      }
+
+      const baseData = {
+        uid: tokenUid,
+        userId: userId,
+        email: email,
+        name: finalName,
+        role: roleForUser,
+        first_tutorial_shown: false,
+        createdAt: admin.firestore.Timestamp.now(),
+        keys: 1,
+        currency: 0
+      };
+
+      if (roleForUser === 'STUDENT') {
+        baseData.verified = true;
+      } else if (roleForUser === 'TEACHER') {
+        baseData.teacherApproved = false;
+      }
+
+      await userRef.set(baseData);
+    }
+    
+    await pendingRef.delete();
+  } else {
+    const userRef = db.collection('users').doc(docUid);
+    const userDocSnap = await userRef.get();
+    if (userDocSnap.exists) {
+      await userRef.update({ verified: true });
     }
   }
 
@@ -601,4 +802,127 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
     console.error(`Error deleting user data for ${uid}:`, error);
   }
 });
+// C�zdan G�ncelleme Fonksiyonu
+exports.updateUserWallet = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Oturum a�man�z gerekiyor.");
+  }
 
+  const uid = context.auth.uid;
+  const deltaKeys = parseInt(data.keys) || 0;
+  const deltaCurrency = parseInt(data.currency) || 0;
+  const reason = data.reason || "unknown";
+
+  if (deltaKeys === 0 && deltaCurrency === 0) {
+    return { success: true, keys: 0, currency: 0 };
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(userRef);
+      if (!doc.exists) {
+        throw new functions.https.HttpsError("not-found", "Kullan�c� bulunamad�.");
+      }
+
+      const userData = doc.data();
+      const currentKeys = parseInt(userData.keys) || 0;
+      const currentCurrency = parseInt(userData.currency) || 0;
+
+      const newKeys = currentKeys + deltaKeys;
+      const newCurrency = currentCurrency + deltaCurrency;
+
+      if (newKeys < 0) {
+        throw new functions.https.HttpsError("failed-precondition", "Yetersiz anahtar bakiyesi.");
+      }
+      if (newCurrency < 0) {
+        throw new functions.https.HttpsError("failed-precondition", "Yetersiz elmas/enerji bakiyesi.");
+      }
+
+      transaction.update(userRef, {
+        keys: newKeys,
+        currency: newCurrency
+      });
+
+      return { keys: newKeys, currency: newCurrency };
+    });
+
+    return { success: true, keys: result.keys, currency: result.currency };
+  } catch (error) {
+    console.error("Wallet update failed:", error);
+    throw new functions.https.HttpsError("internal", error.message || "C�zdan g�ncellenemedi.");
+  }
+});
+
+// Liderlik Tablosu Skor Gönderme Fonksiyonu
+// İstemciden gelen season parametresi tamamen görmezden gelinir.
+// Sunucu kendi saat/tarihine göre doğru sezonu hesaplar → cihaz saati manipülasyonuna karşı koruma.
+exports.submitLeaderboardScore = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+
+  const uid = context.auth.uid;
+  const partId = parseInt(data.partId);
+  const lessonIndex = parseInt(data.lessonIndex);
+  const recordScore = parseInt(data.recordScore);
+  const displayName = typeof data.displayName === 'string' ? data.displayName.trim().slice(0, 127) || 'Kullanıcı' : 'Kullanıcı';
+  const photoUrl = typeof data.photoUrl === 'string' ? data.photoUrl.slice(0, 511) : '';
+  const titleUnit = typeof data.titleUnit === 'string' ? data.titleUnit.trim().slice(0, 127) || null : null;
+
+  if (!Number.isFinite(partId) || !Number.isFinite(lessonIndex)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz partId veya lessonIndex.');
+  }
+  if (!Number.isFinite(recordScore) || recordScore <= 0 || recordScore > 2000) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz recordScore (1-2000 aralığında olmalı).');
+  }
+
+  // Sezonu SUNUCU saatine göre hesapla — istemciye güvenilmez.
+  const { currentSeason } = require('./seasonCalendar');
+  const season = currentSeason(Date.now());
+  const boardId = `part_${partId}_lesson_${lessonIndex}_season_${season}`;
+
+  const boardRef = db.collection('lessonLeaderboards').doc(boardId);
+  const entryRef = boardRef.collection('entries').doc(uid);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      const boardSnap = await transaction.get(boardRef);
+      const entrySnap = await transaction.get(entryRef);
+
+      const previousBest = entrySnap.exists ? (entrySnap.data().recordScore || 0) : 0;
+      if (recordScore <= previousBest) {
+        // Rekor kırılmadı, hiçbir şey yazma
+        return;
+      }
+
+      const entryData = {
+        recordScore,
+        recordLabel: String(recordScore),
+        displayName,
+        photoUrl,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      if (titleUnit) entryData.titleUnit = titleUnit;
+      transaction.set(entryRef, entryData, { merge: true });
+
+      // Tahta meta dokümanını sadece yoksa oluştur (create-only → hotspot yok)
+      if (!boardSnap.exists) {
+        const boardMeta = {
+          partId,
+          lessonIndex,
+          season,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (titleUnit) boardMeta.titleUnit = titleUnit;
+        transaction.set(boardRef, boardMeta);
+      }
+    });
+
+    return { success: true, season, boardId };
+  } catch (error) {
+    console.error('submitLeaderboardScore failed:', error);
+    throw new functions.https.HttpsError('internal', error.message || 'Skor kaydedilemedi.');
+  }
+});

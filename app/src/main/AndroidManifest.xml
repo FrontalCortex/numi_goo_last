@@ -65,18 +65,21 @@
             android:name=".LoginStartActivity"
             android:exported="false"
             android:theme="@style/Theme.NumiGoo"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
             
         <activity
             android:name=".LoginActivity"
             android:exported="false"
             android:theme="@style/Theme.NumiGoo"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
             
         <activity
             android:name=".RegisterActivity"
             android:exported="false"
             android:theme="@style/Theme.NumiGoo"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait" />
             
         <activity

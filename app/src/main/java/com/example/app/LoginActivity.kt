@@ -22,6 +22,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     
     companion object {
         private const val RC_GOOGLE_SIGN_IN = 9001
+        private const val TAG_USER_INFO = "user_info"
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +68,18 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
 
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                if (binding.userInfoFragmentContainer.visibility == View.VISIBLE) {
+                    binding.userInfoFragmentContainer.visibility = View.GONE
+                    binding.emailStepContainer.visibility = View.VISIBLE
+                    binding.btnGoogleSignIn.visibility = View.VISIBLE
+                    binding.btnBack.visibility = View.VISIBLE
+                    updateContinueButtonForResendCooldown()
+                }
+            }
+        }
+
         binding.btnContinue.setOnClickListener {
             requireOnlineOrShowOffline {
                 if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline
@@ -104,8 +117,11 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     }
 
     private fun showEmailStep() {
+        binding.userInfoFragmentContainer.visibility = android.view.View.GONE
         binding.emailStepContainer.visibility = android.view.View.VISIBLE
         binding.fragmentContainer.visibility = android.view.View.GONE
+        binding.btnGoogleSignIn.visibility = android.view.View.VISIBLE
+        binding.btnBack.visibility = android.view.View.VISIBLE
         updateContinueButtonForResendCooldown()
     }
 
@@ -137,6 +153,46 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private fun showCodeStep() {
         binding.emailStepContainer.visibility = android.view.View.GONE
         binding.fragmentContainer.visibility = android.view.View.VISIBLE
+    }
+
+    private fun showUserInfoFragment(
+        prefillEmail: String? = null,
+        googleSignIn: Boolean = false,
+        googleEmail: String? = null,
+        googleName: String? = null
+    ) {
+        hideKeyboard()
+        binding.emailStepContainer.visibility = View.GONE
+        binding.fragmentContainer.visibility = View.GONE
+        binding.btnGoogleSignIn.visibility = View.GONE
+        binding.btnBack.visibility = View.GONE
+
+        binding.userInfoFragmentContainer.visibility = View.VISIBLE
+        binding.userInfoFragmentContainer.layoutParams =
+            (binding.userInfoFragmentContainer.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams).also {
+                it.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                it.height = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+            }
+
+        val fragment = UserInfoFragment.newInstance(
+            forceTeacher = false,
+            forceStudent = true,
+            prefillEmail = prefillEmail,
+            googleSignIn = googleSignIn,
+            googleEmail = googleEmail,
+            googleName = googleName
+        )
+
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right,
+                android.R.anim.slide_in_left,
+                android.R.anim.slide_out_right
+            )
+            .replace(R.id.userInfoFragmentContainer, fragment, TAG_USER_INFO)
+            .addToBackStack(TAG_USER_INFO)
+            .commit()
     }
 
     private fun hideKeyboard() {
@@ -181,10 +237,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     .commit()
             } else {
                 if (error == "Kullanıcı bulunamadı") {
-                    val intent = Intent(this, RegisterActivity::class.java)
-                    intent.putExtra("prefill_email", email)
-                    startActivity(intent)
-                    finish()
+                    showUserInfoFragment(prefillEmail = email)
                 } else {
                     showError(error ?: "Kod gönderilemedi")
                 }
@@ -214,6 +267,12 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == LoginStartActivity.RC_REGISTER && resultCode == RESULT_OK) {
+            setResult(RESULT_OK)
+            finish()
+            return
+        }
         
         if (requestCode == RC_GOOGLE_SIGN_IN) {
             // Kullanıcı hesap seçim ekranından geri döndüyse ve iptal ettiyse:
@@ -236,17 +295,20 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     finish()
                 } else {
                     if (error == "ACCOUNT_NOT_REGISTERED") {
-                        val intent = Intent(this, RegisterActivity::class.java)
-                        intent.putExtra("google_sign_in", true)
+                        var googleEmail: String? = null
+                        var googleName: String? = null
                         try {
                             val account = task.result
                             if (account != null) {
-                                intent.putExtra("google_email", account.email)
-                                intent.putExtra("google_name", account.displayName)
+                                googleEmail = account.email
+                                googleName = account.displayName
                             }
                         } catch (_: Exception) { }
-                        startActivity(intent)
-                        finish()
+                        showUserInfoFragment(
+                            googleSignIn = true,
+                            googleEmail = googleEmail,
+                            googleName = googleName
+                        )
                     } else if (error != "Kullanıcı girişi iptal edildi") {
                         showError(error ?: "Google girişi başarısız")
                     }

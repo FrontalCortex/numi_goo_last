@@ -48,12 +48,14 @@ class BlindingLessonFragment : Fragment() {
         private const val ARG_DAILY_MODE = "daily_mode"
         private const val ARG_DAILY_PERIOD_KEY = "daily_period_key"
         private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
+        private const val ARG_DAILY_INTERVAL_MS = "daily_interval_ms"
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
 
         fun newDailyQuestionInstance(
             operations: List<Any>,
             periodKey: String,
             slotIndex: Int,
+            displayIntervalMs: Long?,
         ): BlindingLessonFragment {
             return BlindingLessonFragment().apply {
                 arguments = Bundle().apply {
@@ -61,6 +63,7 @@ class BlindingLessonFragment : Fragment() {
                     putSerializable("operations", ArrayList(operations))
                     putString(ARG_DAILY_PERIOD_KEY, periodKey)
                     putInt(ARG_DAILY_SLOT_INDEX, slotIndex)
+                    displayIntervalMs?.let { putLong(ARG_DAILY_INTERVAL_MS, it) }
                 }
             }
         }
@@ -217,6 +220,11 @@ class BlindingLessonFragment : Fragment() {
         super.onCreate(savedInstanceState)
         GlobalValues.shouldShowAdOnReturn = true
         isDailyQuestionMode = arguments?.getBoolean(ARG_DAILY_MODE, false) == true
+        val intervalMs = if (arguments?.containsKey(ARG_DAILY_INTERVAL_MS) == true) {
+            arguments?.getLong(ARG_DAILY_INTERVAL_MS)
+        } else {
+            null
+        }
         if (isDailyQuestionMode) {
             dailyQuestionSessionPeriodKey = arguments?.getString(ARG_DAILY_PERIOD_KEY)
                 ?: DailyQuestionPeriod.currentPeriodKey()
@@ -231,7 +239,7 @@ class BlindingLessonFragment : Fragment() {
                 stepCount = 1,
                 isBlinding = null,
                 blindingMultiplication = false,
-                timePeriod = 2000L,
+                timePeriod = intervalMs,
             )
         } else if (globalPartId == 9) {
             arguments?.getSerializable("cup_lesson_item") as? LessonItem 
@@ -357,6 +365,7 @@ class BlindingLessonFragment : Fragment() {
             binding.overlay.alpha = 0.01f
             binding.overlay.setOnClickListener { }
             Handler(Looper.getMainLooper()).postDelayed({
+                if (!isAdded) return@postDelayed
                 enableGuidePanelMode()
                 showGuidePanelWithAnimation()
                 if (guideNumber == 5) {
