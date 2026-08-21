@@ -230,7 +230,12 @@ class BlindingLessonFragment : Fragment() {
                 ?: DailyQuestionPeriod.currentPeriodKey()
             dailyQuestionSlotIndex = arguments?.getInt(ARG_DAILY_SLOT_INDEX, 0)?.coerceIn(0, 2) ?: 0
         }
+        
+        // Initialize operations first so we can check it
+        operations = arguments?.getSerializable("operations") as? List<Any> ?: emptyList()
+        
         lessonItem = if (isDailyQuestionMode) {
+            val hasMathOperation = operations.firstOrNull() is MathOperation
             LessonItem(
                 type = LessonItem.TYPE_LESSON,
                 title = "Günlük Soru",
@@ -238,7 +243,8 @@ class BlindingLessonFragment : Fragment() {
                 isCompleted = false,
                 stepCount = 1,
                 isBlinding = null,
-                blindingMultiplication = false,
+                blindingMultiplication = hasMathOperation,
+                isMultiplication = hasMathOperation,
                 timePeriod = intervalMs,
             )
         } else if (globalPartId == 9) {

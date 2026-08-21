@@ -785,9 +785,14 @@ class TasksFragment : Fragment() {
         slot: DailyQuestionSlot,
     ) {
         val slotIndex = challenge.playSlotIndex()
+        val operationsList = if (slot.mathOperation != null) {
+            listOf(slot.mathOperation)
+        } else {
+            listOf(slot.sequence)
+        }
         openAbacusContainerFragment(
             BlindingLessonFragment.newDailyQuestionInstance(
-                operations = listOf(slot.sequence),
+                operations = operationsList,
                 periodKey = challenge.periodKey,
                 slotIndex = slotIndex,
                 displayIntervalMs = slot.displayIntervalMs,
@@ -922,8 +927,12 @@ class TasksFragment : Fragment() {
             GlobalLessonData.loadLessonItemsForPart(requireContext(), partId = 2) { part2Items ->
                 if (!isAdded) return@loadLessonItemsForPart
                 val part2Sources = DailyQuestionPoolBuilder.buildSourcesForPart(part2Items, 2)
-                val allSources = part1Sources + part2Sources
-                onResult(allSources)
+                GlobalLessonData.loadLessonItemsForPart(requireContext(), partId = 3) { part3Items ->
+                    if (!isAdded) return@loadLessonItemsForPart
+                    val part3Sources = DailyQuestionPoolBuilder.buildSourcesForPart(part3Items, 3)
+                    val allSources = part1Sources + part2Sources + part3Sources
+                    onResult(allSources)
+                }
             }
         }
     }

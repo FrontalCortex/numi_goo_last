@@ -58,13 +58,27 @@ object DailyQuestionPoolBuilder {
     private fun generateSlot(source: DailyQuestionSource): DailyQuestionSlot? {
         val generator = generatorForFinishedChest(source.partId, source.finishedChestIndex, source.item) ?: return null
         val result = generator()
-        val sequence = result.first
+        val data = result.first
         val displayIntervalMs = result.second
-        if (sequence.isEmpty()) return null
-        val titleUnit = source.item.titleUnit?.takeIf { it.isNotBlank() }
-            ?: source.item.title
+
+        var sequence: List<Int> = emptyList()
+        var mathOperation: MathOperation? = null
+
+        if (data is List<*>) {
+            @Suppress("UNCHECKED_CAST")
+            sequence = data as List<Int>
+            if (sequence.isEmpty()) return null
+        } else if (data is MathOperation) {
+            mathOperation = data
+        } else {
+            return null
+        }
+
+        val titleUnit = source.item.titleUnit?.takeIf { it.isNotBlank() } ?: source.item.title
+
         return DailyQuestionSlot(
             sequence = sequence,
+            mathOperation = mathOperation,
             partId = source.partId,
             itemIndex = source.listIndex,
             titleUnit = titleUnit,
@@ -88,10 +102,11 @@ object DailyQuestionPoolBuilder {
         partId: Int,
         finishedChestIndex: Int,
         item: LessonItem,
-    ): (() -> Pair<List<Int>, Long>)? {
+    ): (() -> Pair<Any, Long>)? {
         return when (partId) {
             1 -> generatorForPart1Chest(finishedChestIndex, item)
             2 -> generatorForPart2Chest(finishedChestIndex, item)
+            3 -> generatorForPart3Chest(finishedChestIndex, item)
             else -> null
         }
     }
@@ -99,15 +114,15 @@ object DailyQuestionPoolBuilder {
     private fun generatorForPart1Chest(
         finishedChestIndex: Int,
         item: LessonItem,
-    ): (() -> Pair<List<Int>, Long>)? {
+    ): (() -> Pair<Any, Long>)? {
         return when (finishedChestIndex) {
             1 -> null
             2 -> {
                 {
                     dailyQuestionFromRecord(
                         item,
-                        hard = { Pair(MathOperationGenerator.generateSequence1Digits(4, 4), 1000L) },
-                        medium = { Pair(MathOperationGenerator.generateSequence1Digits(4, 3), 2000L) },
+                        hard = { Pair(MathOperationGenerator.generateSequence1Digits(4, 4), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateSequence1Digits(4, 3), 2500L) },
                         easy = { Pair(MathOperationGenerator.generateSequence1Digits(3, 2), 3000L) },
                     )
                 }
@@ -116,9 +131,9 @@ object DailyQuestionPoolBuilder {
                 {
                     dailyQuestionFromRecord(
                         item,
-                        hard = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 4), 1000L) },
-                        medium = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 3), 2000L) },
-                        easy = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 2), 3000L) },
+                        hard = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 4), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(4, 3), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateRelatedNumbers2Blinding(3, 2), 3000L) },
                     )
                 }
             }
@@ -126,8 +141,8 @@ object DailyQuestionPoolBuilder {
                 {
                     dailyQuestionFromRecord(
                         item,
-                        hard = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(5), 1000L) },
-                        medium = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(4), 2000L) },
+                        hard = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(5), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(4), 2500L) },
                         easy = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(3), 3000L) },
                     )
                 }
@@ -151,7 +166,7 @@ object DailyQuestionPoolBuilder {
     private fun generatorForPart2Chest(
         finishedChestIndex: Int,
         item: LessonItem,
-    ): (() -> Pair<List<Int>, Long>)? {
+    ): (() -> Pair<Any, Long>)? {
 
         return when (finishedChestIndex) {
             1 -> {
@@ -198,19 +213,68 @@ object DailyQuestionPoolBuilder {
         }
     }
 
+    private fun generatorForPart3Chest(
+        finishedChestIndex: Int,
+        item: LessonItem,
+    ): (() -> Pair<Any, Long>)? {
+        return when (finishedChestIndex) {
+            1 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.multiplicationLessFiveFull(),4000L) },
+                        medium = { Pair(MathOperationGenerator.multiplicationFull(), 2500L) },
+                        easy = { Pair(MathOperationGenerator.multiplicationLessFive(), 3000L) },
+                    )
+                }
+            }
+            2 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.multiplicationTwoFull(),4000L) },
+                        medium = { Pair(MathOperationGenerator.multiplicationTwo(), 2500L) },
+                        easy = { Pair(MathOperationGenerator.multiplicationTwo(), 3000L) },
+                    )
+                }
+            }
+            3 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.multiplicationThreeFull(),4000L) },
+                        medium = { Pair(MathOperationGenerator.multiplicationThreeFull(), 2500L) },
+                        easy = { Pair(MathOperationGenerator.multiplicationThreeFull(), 3000L) },
+                    )
+                }
+            }
+            4 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.multiplicationThreeTwoFull(),4000L) },
+                        medium = { Pair(MathOperationGenerator.multiplicationThreeTwoFive(), 2500L) },
+                        easy = { Pair(MathOperationGenerator.multiplicationThreeTwoFive(), 3000L) },
+                    )
+                }
+            }
+            else -> null
+        }
+    }
+
     private fun dailyQuestionFromRecord(
         item: LessonItem,
-        hard: () -> Pair<List<Int>, Long>,
-        medium: () -> Pair<List<Int>, Long>,
-        easy: () -> Pair<List<Int>, Long>,
-    ): Pair<List<Int>, Long> {
+        hard: () -> Pair<Any, Long>,
+        medium: () -> Pair<Any, Long>,
+        easy: () -> Pair<Any, Long>,
+    ): Pair<Any, Long> {
         val record = item.record
         val cupPoint1 = item.cupPoint1
         val cupPoint2 = item.cupPoint2
         return when {
-            //record != null && cupPoint1 != null && record >= cupPoint1 -> hard()
-            //record != null && cupPoint2 != null && record >= cupPoint2 -> medium()
-            else -> medium()
+            record != null && cupPoint1 != null && record >= cupPoint1 -> hard()
+            record != null && cupPoint2 != null && record >= cupPoint2 -> medium()
+            else -> easy()
         }
     }
 

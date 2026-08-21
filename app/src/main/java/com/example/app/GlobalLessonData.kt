@@ -1441,8 +1441,10 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
+                    titleUnit = "2'ye 1 Çarpma",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 5,
@@ -1505,8 +1507,10 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
+                    titleUnit = "2'ye 2 Çarpma",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -1569,8 +1573,10 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
+                    titleUnit = "3'e 1 Çarpma",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 15,
@@ -1633,8 +1639,10 @@ object GlobalLessonData {
                 LessonItem(
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
+                    titleUnit = "3'e 2 Çarpma",
                     offset = 0,
                     isCompleted = true,
+                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 20,

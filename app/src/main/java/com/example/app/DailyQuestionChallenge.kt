@@ -1,12 +1,13 @@
 package com.example.app
 
 data class DailyQuestionSlot(
-    val sequence: List<Int>,
+    val sequence: List<Int> = emptyList(),
     val partId: Int,
     val itemIndex: Int,
     val titleUnit: String,
     val difficulty: String,
     val displayIntervalMs: Long? = null,
+    val mathOperation: MathOperation? = null,
 )
 
 data class DailyQuestionChallenge(

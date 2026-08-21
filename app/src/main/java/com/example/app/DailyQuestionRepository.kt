@@ -293,10 +293,18 @@ object DailyQuestionRepository {
     }
 
     private fun parseSlot(map: Map<String, Any>): DailyQuestionSlot? {
-        val sequenceCsv = map[FIELD_SEQUENCE] as? String ?: return null
-        val sequence = sequenceCsv.split(",")
-            .mapNotNull { it.trim().toIntOrNull() }
-        if (sequence.isEmpty()) return null
+        val sequenceCsv = map[FIELD_SEQUENCE] as? String
+        val sequence = sequenceCsv?.split(",")?.mapNotNull { it.trim().toIntOrNull() } ?: emptyList()
+
+        val mathFirst = (map[FIELD_MATH_FIRST] as? Number)?.toInt()
+        val mathOperator = map[FIELD_MATH_OPERATOR] as? String
+        val mathSecond = (map[FIELD_MATH_SECOND] as? Number)?.toInt()
+        val mathOperation = if (mathFirst != null && mathOperator != null && mathSecond != null) {
+            MathOperation(mathFirst, mathOperator, mathSecond)
+        } else null
+
+        if (sequence.isEmpty() && mathOperation == null) return null
+
         val partId = (map[FIELD_PART_ID] as? Number)?.toInt() ?: 1
         val itemIndex = (map[FIELD_ITEM_INDEX] as? Number)?.toInt() ?: return null
         val titleUnit = map[FIELD_TITLE_UNIT] as? String ?: return null
@@ -304,6 +312,7 @@ object DailyQuestionRepository {
         val displayIntervalMs = (map[FIELD_DISPLAY_INTERVAL] as? Number)?.toLong()
         return DailyQuestionSlot(
             sequence = sequence,
+            mathOperation = mathOperation,
             partId = partId,
             itemIndex = itemIndex,
             titleUnit = titleUnit,
@@ -318,12 +327,19 @@ object DailyQuestionRepository {
             FIELD_REWARD_CLAIMED to challenge.rewardClaimed,
             FIELD_QUESTIONS to challenge.questions.map { slot ->
                 val slotMap = mutableMapOf<String, Any>(
-                    FIELD_SEQUENCE to slot.sequence.joinToString(","),
                     FIELD_PART_ID to slot.partId,
                     FIELD_ITEM_INDEX to slot.itemIndex,
                     FIELD_TITLE_UNIT to slot.titleUnit,
                     FIELD_DIFFICULTY to slot.difficulty,
                 )
+                if (slot.sequence.isNotEmpty()) {
+                    slotMap[FIELD_SEQUENCE] = slot.sequence.joinToString(",")
+                }
+                if (slot.mathOperation != null) {
+                    slot.mathOperation.firstNumber?.let { slotMap[FIELD_MATH_FIRST] = it }
+                    slot.mathOperation.operator?.let { slotMap[FIELD_MATH_OPERATOR] = it }
+                    slot.mathOperation.secondNumber?.let { slotMap[FIELD_MATH_SECOND] = it }
+                }
                 slot.displayIntervalMs?.let { slotMap[FIELD_DISPLAY_INTERVAL] = it }
                 slotMap
             },
@@ -352,6 +368,9 @@ object DailyQuestionRepository {
     private const val FIELD_PENDING_CONTINUE_SLOT = "pendingContinueSlotIndex"
     private const val FIELD_QUESTIONS = "questions"
     private const val FIELD_SEQUENCE = "sequence"
+    private const val FIELD_MATH_FIRST = "mathFirst"
+    private const val FIELD_MATH_OPERATOR = "mathOperator"
+    private const val FIELD_MATH_SECOND = "mathSecond"
     private const val FIELD_PART_ID = "partId"
     private const val FIELD_ITEM_INDEX = "itemIndex"
     private const val FIELD_TITLE_UNIT = "titleUnit"
