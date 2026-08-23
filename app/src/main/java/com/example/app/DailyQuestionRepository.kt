@@ -24,13 +24,13 @@ object DailyQuestionRepository {
         }
         val periodKey = DailyQuestionPeriod.currentPeriodKey()
         val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
-        val cacheKey = challengeCacheKey(uid, periodKey)
+        val cacheKey = challengeCacheKey(uid)
 
         val docRef = FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .collection(DailyQuestionPeriod.FIRESTORE_COLLECTION)
-            .document(periodKey)
+            .document("current")
 
         docRef.get()
             .addOnSuccessListener { doc ->
@@ -74,7 +74,42 @@ object DailyQuestionRepository {
                 )
                 return@loadOrCreateChallenge
             }
-            onResult(challenge.toCardUiState(poolAvailable = sources.isNotEmpty()))
+
+            val slot = challenge.slotForPlay()
+            if (slot == null) {
+                onResult(challenge.toCardUiState(poolAvailable = sources.isNotEmpty()))
+                return@loadOrCreateChallenge
+            }
+
+            val difficultyKey = when (slot.difficulty.lowercase(java.util.Locale.ROOT)) {
+                "kolay" -> "easy"
+                "orta" -> "medium"
+                "zor" -> "hard"
+                else -> {
+                    onResult(challenge.toCardUiState(poolAvailable = sources.isNotEmpty()))
+                    return@loadOrCreateChallenge
+                }
+            }
+
+            val partCollectionName = "generatorForPart${slot.partId}Chest"
+
+            FirebaseFirestore.getInstance()
+                .collection("successRate")
+                .document("dailyQuestionSuccessRate")
+                .collection(partCollectionName)
+                .document(slot.titleUnit.replace("/", "-"))
+                .get()
+                .addOnSuccessListener { doc ->
+                    var rate: Int? = null
+                    if (doc.exists()) {
+                        rate = doc.getLong("${difficultyKey}_rate")?.toInt()
+                    }
+                    val state = challenge.toCardUiState(poolAvailable = sources.isNotEmpty())
+                    onResult(state.copy(globalSuccessRate = rate))
+                }
+                .addOnFailureListener {
+                    onResult(challenge.toCardUiState(poolAvailable = sources.isNotEmpty()))
+                }
         }
     }
 
@@ -89,12 +124,12 @@ object DailyQuestionRepository {
             return
         }
         val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
-        val cacheKey = challengeCacheKey(uid, periodKey)
+        val cacheKey = challengeCacheKey(uid)
         val docRef = FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .collection(DailyQuestionPeriod.FIRESTORE_COLLECTION)
-            .document(periodKey)
+            .document("current")
 
         docRef.set(mapOf(FIELD_REWARD_CLAIMED to true), SetOptions.merge())
             .addOnSuccessListener {
@@ -126,12 +161,12 @@ object DailyQuestionRepository {
         }
         val safeSlot = slotIndex.coerceIn(0, DailyQuestionPeriod.QUESTIONS_PER_PERIOD - 1)
         val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
-        val cacheKey = challengeCacheKey(uid, periodKey)
+        val cacheKey = challengeCacheKey(uid)
         val docRef = FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .collection(DailyQuestionPeriod.FIRESTORE_COLLECTION)
-            .document(periodKey)
+            .document("current")
 
         docRef.set(mapOf(FIELD_PENDING_CONTINUE_SLOT to safeSlot), SetOptions.merge())
             .addOnSuccessListener {
@@ -155,12 +190,12 @@ object DailyQuestionRepository {
             return
         }
         val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
-        val cacheKey = challengeCacheKey(uid, periodKey)
+        val cacheKey = challengeCacheKey(uid)
         val docRef = FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .collection(DailyQuestionPeriod.FIRESTORE_COLLECTION)
-            .document(periodKey)
+            .document("current")
 
         docRef.update(FIELD_PENDING_CONTINUE_SLOT, FieldValue.delete())
             .addOnSuccessListener {
@@ -185,6 +220,52 @@ object DailyQuestionRepository {
         }
     }
 
+    fun recordQuestionResult(
+        context: Context,
+        periodKey: String,
+        slotIndex: Int,
+        isSuccess: Boolean
+    ) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
+        val cacheKey = challengeCacheKey(uid)
+
+        val challenge = readChallengeFromPrefs(prefs, cacheKey, periodKey) ?: return
+        val slot = challenge.questions.getOrNull(slotIndex) ?: return
+
+        val difficultyKey = when (slot.difficulty.lowercase(java.util.Locale.ROOT)) {
+            "kolay" -> "easy"
+            "orta" -> "medium"
+            "zor" -> "hard"
+            else -> return
+        }
+
+        val partCollectionName = "generatorForPart${slot.partId}Chest"
+
+        val globalRef = FirebaseFirestore.getInstance()
+            .collection("successRate")
+            .document("dailyQuestionSuccessRate")
+            .collection(partCollectionName)
+            .document(slot.titleUnit.replace("/", "-"))
+
+        globalRef.firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(globalRef)
+            val currentTotal = snapshot.getLong("${difficultyKey}_total") ?: 0L
+            val currentSuccess = snapshot.getLong("${difficultyKey}_success") ?: 0L
+
+            val newTotal = currentTotal + 1
+            val newSuccess = if (isSuccess) currentSuccess + 1 else currentSuccess
+            val newRate = ((newSuccess.toFloat() / newTotal.toFloat()) * 100).toInt()
+
+            val updates = mapOf(
+                "${difficultyKey}_total" to newTotal,
+                "${difficultyKey}_success" to newSuccess,
+                "${difficultyKey}_rate" to newRate
+            )
+            transaction.set(globalRef, updates, SetOptions.merge())
+        }
+    }
+
     fun incrementSolvedCount(
         context: Context,
         periodKey: String,
@@ -199,7 +280,7 @@ object DailyQuestionRepository {
             .collection("users")
             .document(uid)
             .collection(DailyQuestionPeriod.FIRESTORE_COLLECTION)
-            .document(periodKey)
+            .document("current")
 
         FirebaseFirestore.getInstance().runTransaction { transaction ->
             val snapshot = transaction.get(docRef)
@@ -215,7 +296,7 @@ object DailyQuestionRepository {
             newCount
         }.addOnSuccessListener { newCount ->
             val prefs = context.getSharedPreferences(DailyQuestionPeriod.PREFS_NAME, Context.MODE_PRIVATE)
-            val cacheKey = challengeCacheKey(uid, periodKey)
+            val cacheKey = challengeCacheKey(uid)
             readChallengeFromPrefs(prefs, cacheKey, periodKey)?.let { cached ->
                 val updated = cached.copy(
                     solvedCount = newCount,
@@ -247,13 +328,13 @@ object DailyQuestionRepository {
             return
         }
         prefs.edit().putString(cacheKey, gson.toJson(challenge)).apply()
-        docRef.set(challengeToFirestoreMap(challenge), SetOptions.merge())
+        docRef.set(challengeToFirestoreMap(challenge))
             .addOnSuccessListener { onResult(challenge) }
             .addOnFailureListener { onResult(challenge) }
     }
 
-    private fun challengeCacheKey(uid: String, periodKey: String): String =
-        "daily_challenge_${uid}_$periodKey"
+    private fun challengeCacheKey(uid: String): String =
+        "daily_challenge_${uid}_current"
 
     private fun readChallengeFromPrefs(
         prefs: android.content.SharedPreferences,
@@ -275,6 +356,9 @@ object DailyQuestionRepository {
         periodKey: String,
     ): DailyQuestionChallenge? {
         if (data == null) return null
+        val docPeriodKey = data[FIELD_PERIOD_KEY] as? String
+        if (docPeriodKey != periodKey) return null
+        
         val solvedCount = (data[FIELD_SOLVED_COUNT] as? Number)?.toInt() ?: 0
         val rewardClaimed = data[FIELD_REWARD_CLAIMED] as? Boolean == true
         val pendingContinueSlotIndex = (data[FIELD_PENDING_CONTINUE_SLOT] as? Number)?.toInt()
@@ -323,6 +407,7 @@ object DailyQuestionRepository {
 
     private fun challengeToFirestoreMap(challenge: DailyQuestionChallenge): Map<String, Any> {
         val map = mutableMapOf<String, Any>(
+            FIELD_PERIOD_KEY to challenge.periodKey,
             FIELD_SOLVED_COUNT to challenge.solvedCount,
             FIELD_REWARD_CLAIMED to challenge.rewardClaimed,
             FIELD_QUESTIONS to challenge.questions.map { slot ->
@@ -363,6 +448,7 @@ object DailyQuestionRepository {
         )
     }
 
+    private const val FIELD_PERIOD_KEY = "periodKey"
     private const val FIELD_SOLVED_COUNT = "solvedCount"
     private const val FIELD_REWARD_CLAIMED = "rewardClaimed"
     private const val FIELD_PENDING_CONTINUE_SLOT = "pendingContinueSlotIndex"
@@ -377,3 +463,6 @@ object DailyQuestionRepository {
     private const val FIELD_DIFFICULTY = "difficulty"
     private const val FIELD_DISPLAY_INTERVAL = "displayIntervalMs"
 }
+
+
+

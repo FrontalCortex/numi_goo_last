@@ -98,8 +98,13 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_edit_profile_input"
+                android:clickable="false"
+                android:cursorVisible="false"
                 android:enabled="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
                 android:hint="Kullanıcı ID"
+                android:longClickable="false"
                 android:paddingHorizontal="16dp"
                 android:textColor="@color/gray"
                 android:textSize="16sp" />
@@ -120,9 +125,14 @@
                 android:layout_height="56dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_edit_profile_input"
+                android:clickable="false"
+                android:cursorVisible="false"
                 android:enabled="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
                 android:hint="email@example.com"
                 android:inputType="textEmailAddress"
+                android:longClickable="false"
                 android:paddingHorizontal="16dp"
                 android:textColor="@color/gray"
                 android:textSize="16sp" />
@@ -175,8 +185,8 @@
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="#131F24"
-                app:strokeColor="#37464F"
+                app:backgroundTint="@color/outline_button_bg"
+                app:strokeColor="@color/outline_button_stroke"
                 app:strokeWidth="1dp" />
 
 
@@ -190,8 +200,8 @@
                 android:textColor="@color/red"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="#131F24"
-                app:strokeColor="#37464F"
+                app:backgroundTint="@color/outline_button_bg"
+                app:strokeColor="@color/outline_button_stroke"
                 app:strokeWidth="1dp" />
 
         </LinearLayout>

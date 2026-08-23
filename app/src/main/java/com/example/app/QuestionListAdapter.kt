@@ -3,13 +3,19 @@ package com.example.app
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.app.model.StudentQuestion
 import com.google.firebase.Timestamp
 import java.util.concurrent.TimeUnit
@@ -53,9 +59,11 @@ class QuestionListAdapter(
         private val onItemClick: (StudentQuestion) -> Unit,
         private val onLongClick: ((StudentQuestion) -> Unit)?
     ) : RecyclerView.ViewHolder(itemView) {
+        private val thumbnailFrame: FrameLayout = itemView.findViewById(R.id.questionThumbnailFrame)
         private val thumbnail: ImageView = itemView.findViewById(R.id.questionThumbnail)
         private val preview: TextView = itemView.findViewById(R.id.questionPreview)
         private val timeAgo: TextView = itemView.findViewById(R.id.questionTimeAgo)
+        private val statusChip: LinearLayout = itemView.findViewById(R.id.questionStatusChip)
         private val statusIcon: ImageView = itemView.findViewById(R.id.questionStatusIcon)
         private val status: TextView = itemView.findViewById(R.id.questionStatus)
         private val unreadBadge: TextView = itemView.findViewById(R.id.questionUnreadBadge)
@@ -68,10 +76,16 @@ class QuestionListAdapter(
             selectedQuestionId: String? = null
         ) {
             if (q.screenshotUrl.isNotEmpty()) {
-                Glide.with(itemView).load(q.screenshotUrl).centerCrop().into(thumbnail)
+                thumbnailFrame.visibility = View.VISIBLE
+                Glide.with(itemView).load(q.screenshotUrl)
+                    .transform(CenterCrop(), RoundedCorners(24))
+                    .into(thumbnail)
+            } else {
+                thumbnailFrame.visibility = View.GONE
             }
             preview.text = q.previewText.ifEmpty { q.message.take(80) }
             timeAgo.text = formatTimeAgo(q.createdAt)
+            val context = itemView.context
             status.text = when (q.status) {
                 StudentQuestion.STATUS_PENDING -> "Cevaplanmadı"
                 StudentQuestion.STATUS_CLAIMED -> "Cevaplanıyor"
@@ -79,21 +93,26 @@ class QuestionListAdapter(
                 else -> ""
             }
             val hasStatus = status.text.isNotEmpty()
-            status.visibility = if (hasStatus) View.VISIBLE else View.GONE
+            statusChip.visibility = if (hasStatus) View.VISIBLE else View.GONE
             if (hasStatus) {
-                when (q.status) {
-                    StudentQuestion.STATUS_RESOLVED -> {
-                        statusIcon.visibility = View.VISIBLE
-                        statusIcon.setImageResource(R.drawable.solved)
-                    }
-                    StudentQuestion.STATUS_CLAIMED -> {
-                        statusIcon.visibility = View.VISIBLE
-                        statusIcon.setImageResource(R.drawable.clock_ic)
-                    }
-                    else -> statusIcon.visibility = View.GONE
+                val (chipBg, textColor, iconRes) = when (q.status) {
+                    StudentQuestion.STATUS_RESOLVED ->
+                        Triple(R.drawable.bg_status_chip_success, R.color.dark_success, R.drawable.solved)
+                    StudentQuestion.STATUS_CLAIMED ->
+                        Triple(R.drawable.bg_status_chip_info, R.color.dark_primary, R.drawable.clock_ic)
+                    else ->
+                        Triple(R.drawable.bg_status_chip_warning, R.color.dark_warning, null)
                 }
-            } else {
-                statusIcon.visibility = View.GONE
+                statusChip.setBackgroundResource(chipBg)
+                val color = ContextCompat.getColor(context, textColor)
+                status.setTextColor(color)
+                if (iconRes != null) {
+                    statusIcon.visibility = View.VISIBLE
+                    statusIcon.setImageResource(iconRes)
+                    ImageViewCompat.setImageTintList(statusIcon, android.content.res.ColorStateList.valueOf(color))
+                } else {
+                    statusIcon.visibility = View.GONE
+                }
             }
             val unreadCount = unreadCountByQuestionId[q.id] ?: 0
             if (unreadCount > 0) {

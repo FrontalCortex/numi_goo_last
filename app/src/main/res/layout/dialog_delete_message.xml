@@ -1,69 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="20dp"
-    android:background="@drawable/hint_background">
+    android:background="@drawable/bg_action_dialog">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Başlık -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Mesaj silinsin mi?"
-        android:textSize="16sp"
-        android:textColor="@android:color/white"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-    <TextView
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_reason_chip_error">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/dark_error"
+                android:contentDescription="Sil" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mesaj silinsin mi?"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bu işlem geri alınamaz"
+                android:textSize="12sp"
+                android:textColor="@color/dark_text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/deleteMessageClose"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="7dp"
+            android:background="@drawable/bg_report_action_row"
+            android:src="@drawable/ic_close_black"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Kapat" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="4dp"
+        android:background="@color/outline_button_stroke" />
+
+    <LinearLayout
         android:id="@+id/deleteForEveryone"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:text="Herkesten sil"
-        android:textSize="15sp"
-        android:textColor="@color/lesson_header_green"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:background="?attr/selectableItemBackground" />
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_report_action_destructive_button">
 
-    <TextView
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/dark_error"
+            android:contentDescription="Herkesten sil" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Herkesten sil"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_error" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/deleteForMe"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Benden sil"
-        android:textSize="15sp"
-        android:textColor="@color/lesson_header_green"
+        android:layout_height="52dp"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:background="?attr/selectableItemBackground" />
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row">
 
-    <TextView
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/lock_ic"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Benden sil" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Benden sil"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/reportMessage"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Bildir"
-        android:textSize="15sp"
-        android:textColor="@color/lesson_header_green"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:background="?attr/selectableItemBackground"
-        android:visibility="gone" />
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_flag_outline"
+            app:tint="@color/dark_primary"
+            android:contentDescription="Bildir" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Bildir"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/deleteCancel"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
         android:text="İptal"
-        android:textSize="15sp"
-        android:textColor="@color/lesson_header_green"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:background="?attr/selectableItemBackground"
-        android:layout_marginTop="8dp" />
+        android:textSize="14sp"
+        android:textColor="@color/dark_text_secondary"
+        android:background="?attr/selectableItemBackground" />
 </LinearLayout>
-

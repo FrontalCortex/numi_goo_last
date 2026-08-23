@@ -36,7 +36,6 @@ class EditProfileFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        checkProviderAndSetupUI()
         loadUserData()
         setupTextValidation()
 
@@ -54,38 +53,30 @@ class EditProfileFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
-                val text = s?.toString()?.trim() ?: ""
-                if (text.length < 1) {
-                    binding.tvNameError.text = "Ad boş bırakılamaz."
-                    binding.tvNameError.visibility = View.VISIBLE
-                } else if (text.length > 25) {
-                    binding.tvNameError.text = "Ad en fazla 25 karakter olabilir."
-                    binding.tvNameError.visibility = View.VISIBLE
-                } else {
-                    binding.tvNameError.visibility = View.GONE
-                }
+                val error = validateName(s?.toString()?.trim() ?: "")
+                binding.tvNameError.text = error ?: ""
+                binding.tvNameError.visibility = if (error != null) View.VISIBLE else View.GONE
             }
         })
     }
 
-    private fun checkProviderAndSetupUI() {
-        val user = auth.currentUser ?: return
-        val providers = user.providerData.map { it.providerId }
-        
-        val hasPassword = providers.contains("password")
-        val hasGoogle = providers.contains("google.com")
-
-        // Sadece google.com varsa ve password yoksa şifre alanını gizle
-        if (hasGoogle && !hasPassword) {
-            binding.passwordContainer.visibility = View.GONE
-        } else {
-            binding.passwordContainer.visibility = View.VISIBLE
+    private fun validateName(name: String): String? {
+        return when {
+            name.length < 1 -> "Ad boş bırakılamaz."
+            name.length > 25 -> "Ad en fazla 25 karakter olabilir."
+            else -> null
         }
     }
 
     private fun loadUserData() {
         val user = auth.currentUser ?: return
         binding.etEmail.setText(user.email ?: "")
+
+        // Google ile giriş yapılmış ve parola sağlayıcısı eklenmemişse şifre değiştirilemez
+        val providers = user.providerData.map { it.providerId }
+        val hasPassword = providers.contains("password")
+        val hasGoogle = providers.contains("google.com")
+        val providerAllowsPasswordChange = hasPassword || !hasGoogle
 
         val uid = user.uid
         firestore.collection("users").document(uid).get()
@@ -96,11 +87,15 @@ class EditProfileFragment : Fragment() {
                     val role = doc.getString("role") ?: ""
                     binding.etName.setText(name)
                     binding.etUsername.setText("@$userId")
-                    
-                    // Öğrenci ise hiçbir zaman şifre değiştirme alanını gösterme
-                    if (role == "STUDENT") {
-                        binding.passwordContainer.visibility = View.GONE
-                    }
+
+                    // Görünürlük tek bir yerde, provider ve rol bilgisi birlikte değerlendirilerek karara bağlanıyor
+                    val showPasswordField = providerAllowsPasswordChange && role != "STUDENT"
+                    binding.passwordContainer.visibility = if (showPasswordField) View.VISIBLE else View.GONE
+                }
+            }
+            .addOnFailureListener {
+                if (isAdded) {
+                    binding.passwordContainer.visibility = if (providerAllowsPasswordChange) View.VISIBLE else View.GONE
                 }
             }
     }
@@ -110,13 +105,9 @@ class EditProfileFragment : Fragment() {
         val newName = binding.etName.text.toString().trim()
         val newPassword = binding.etPassword.text.toString()
 
-        if (newName.length < 1) {
-            Toast.makeText(requireContext(), "Ad boş bırakılamaz.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (newName.length > 25) {
-            Toast.makeText(requireContext(), "Ad en fazla 25 karakter olabilir.", Toast.LENGTH_SHORT).show()
+        val nameError = validateName(newName)
+        if (nameError != null) {
+            Toast.makeText(requireContext(), nameError, Toast.LENGTH_SHORT).show()
             return
         }
 

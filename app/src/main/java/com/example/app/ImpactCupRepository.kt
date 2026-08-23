@@ -55,6 +55,7 @@ object ImpactCupRepository {
             val current = (snapshot.getLong(FIELD) ?: DEFAULT_CUP_SCORE.toLong()).toInt()
             val updated = (current + delta).coerceAtLeast(0)
             tx.set(ref, mapOf(FIELD to updated), SetOptions.merge())
+            CupHistoryRepository.recordSnapshot(tx, uid, FIELD, updated)
             Pair(current, updated)
         }.addOnSuccessListener { (oldScore, newScore) ->
             onDone?.invoke(oldScore, newScore)

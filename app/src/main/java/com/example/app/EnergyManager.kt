@@ -23,6 +23,8 @@ class EnergyManager(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "energy_prefs"
         private const val KEY_USER_PLAN = "user_plan"
+        private const val KEY_USER_ROLE = "user_role"
+        private const val KEY_TEACHER_APPROVED = "teacher_approved"
 
         private const val KEY_ENERGY_FULL_TIME = "energy_full_time"
         private const val FIELD_ENERGY_FULL_TIME = "energy_full_time"
@@ -73,6 +75,33 @@ class EnergyManager(private val context: Context) {
         scheduleNextTick()
     }
 
+    fun getUserRole(): String = prefs.getString(KEY_USER_ROLE, "") ?: ""
+
+    fun isTeacherApproved(): Boolean = prefs.getBoolean(KEY_TEACHER_APPROVED, false)
+
+    /**
+     * Firestore'daki role/teacherApproved verisini yerel olarak günceller.
+     * Onaysız öğretmen (role=TEACHER, teacherApproved=false) hesaplar için enerji her zaman 0'dır;
+     * teacherApproved=true olan hesaplar için (plan'dan bağımsız) enerji sonsuzdur.
+     */
+    fun setUserRoleApproval(role: String, teacherApproved: Boolean) {
+        prefs.edit()
+            .putString(KEY_USER_ROLE, role)
+            .putBoolean(KEY_TEACHER_APPROVED, teacherApproved)
+            .apply()
+        energyUpdateCallback?.invoke(getCurrentEnergy())
+        scheduleNextTick()
+    }
+
+    /** Onaylanmamış öğretmen hesabı: enerji her zaman 0, plan ne olursa olsun. */
+    fun isEnergyBlocked(): Boolean = getUserRole() == "TEACHER" && !isTeacherApproved()
+
+    /** teacherApproved=true veya plan Pro/Premium ise enerji sonsuzdur (onaysız öğretmen hariç). */
+    fun isInfiniteEnergy(): Boolean {
+        if (isEnergyBlocked()) return false
+        return isTeacherApproved() || getUserPlan() == "Pro" || getUserPlan() == "Premium"
+    }
+
     fun getMaxEnergy(): Int {
         return if (getUserPlan() == "Lite") 10 else 5
     }
@@ -101,6 +130,8 @@ class EnergyManager(private val context: Context) {
      *   timeUntilFull = 60s → missing = 2
      */
     fun getCurrentEnergy(): Int {
+        if (isEnergyBlocked()) return 0
+
         val now = System.currentTimeMillis()
         val fullTime = getFullTime()
 
@@ -119,6 +150,8 @@ class EnergyManager(private val context: Context) {
      */
     fun useEnergy(amount: Int = 1): Boolean {
         if (amount <= 0) return true
+        if (isEnergyBlocked()) return false
+        if (isInfiniteEnergy()) return true
 
         val currentEnergy = getCurrentEnergy()
         if (currentEnergy < amount) return false
@@ -139,6 +172,7 @@ class EnergyManager(private val context: Context) {
      */
     fun addEnergy(amount: Int) {
         if (amount <= 0) return
+        if (isEnergyBlocked() || isInfiniteEnergy()) return
 
         val now = System.currentTimeMillis()
         val currentFullTime = getFullTime()
@@ -156,7 +190,11 @@ class EnergyManager(private val context: Context) {
         persistFullTime(newFullTime)
     }
 
-    fun hasEnoughEnergy(amount: Int = 1) = getCurrentEnergy() >= amount
+    fun hasEnoughEnergy(amount: Int = 1): Boolean {
+        if (isEnergyBlocked()) return false
+        if (isInfiniteEnergy()) return true
+        return getCurrentEnergy() >= amount
+    }
 
     fun setEnergyUpdateCallback(callback: (Int) -> Unit) {
         energyUpdateCallback = callback

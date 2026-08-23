@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_action_dialog">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Başlık -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_reason_chip">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/lock_ic"
+                    app:tint="@color/dark_primary"
+                    android:contentDescription="Kısıtlama" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kısıtlama Detayı"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kısıtlama nedeni ve içeriği"
+                    android:textSize="12sp"
+                    android:textColor="@color/dark_text_secondary"
+                    android:layout_marginTop="1dp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/restrictionDialogClose"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="7dp"
+                android:background="@drawable/bg_report_action_row"
+                android:src="@drawable/ic_close_black"
+                app:tint="@color/dark_text_secondary"
+                android:contentDescription="Kapat" />
+        </LinearLayout>
+
+        <!-- Kullanıcı ve durum -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_report_context_card"
+            android:padding="12dp"
+            android:layout_marginTop="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/restrictionDialogUserName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/dark_text"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="Kullanıcı adı" />
+
+                <TextView
+                    android:id="@+id/restrictionDialogStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="Kalıcı ban" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/restrictionDialogReason"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_reason_chip"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_primary"
+                tools:text="Spam" />
+
+            <TextView
+                android:id="@+id/restrictionDialogMessagePreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="13sp"
+                android:textColor="@color/dark_text_secondary"
+                android:maxLines="3"
+                android:ellipsize="end"
+                tools:text="Bildirilen mesajın önizlemesi burada görünecek." />
+
+            <!-- Fotoğraf / video önizlemesi -->
+            <FrameLayout
+                android:id="@+id/reportDialogMediaContainer"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="10dp"
+                android:background="@color/dark_background"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/reportDialogMediaThumb"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Bildirilen medya" />
+
+                <ImageView
+                    android:id="@+id/reportDialogPlayOverlay"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="center"
+                    android:padding="14dp"
+                    android:background="@drawable/bg_play_overlay_circle"
+                    android:src="@drawable/play_video_ic"
+                    app:tint="@android:color/white"
+                    android:visibility="gone"
+                    android:contentDescription="Videoyu oynat" />
+            </FrameLayout>
+
+            <!-- Ses kaydı çalar -->
+            <LinearLayout
+                android:id="@+id/reportDialogAudioRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="10dp"
+                android:background="@drawable/bg_report_action_outline_button"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/reportDialogAudioPlayPause"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="4dp"
+                    android:src="@android:drawable/ic_media_play"
+                    app:tint="@color/dark_primary"
+                    android:contentDescription="Sesi oynat" />
+
+                <TextView
+                    android:id="@+id/reportDialogAudioTime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:text="Ses kaydını dinlemek için oynat"
+                    android:textSize="13sp"
+                    android:textColor="@color/dark_text_secondary" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/restrictionDialogMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textSize="11sp"
+                android:textColor="@color/dark_text_secondary"
+                tools:text="12 Ağu 2026, 15:30 tarihinde Ayşe Öğretmen tarafından kısıtlandı" />
+        </LinearLayout>
+
+        <!-- Aksiyonlar -->
+        <LinearLayout
+            android:id="@+id/restrictionDialogRemove"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="@drawable/bg_unban_button">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/unlock_ic"
+                app:tint="@color/dark_primary"
+                android:contentDescription="Kaldır" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Kısıtlamayı Kaldır"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_primary" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/restrictionDialogCloseText"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="Kapat"
+            android:textSize="14sp"
+            android:textColor="@color/dark_text_secondary"
+            android:background="?attr/selectableItemBackground" />
+    </LinearLayout>
+</ScrollView>

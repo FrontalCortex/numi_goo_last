@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@drawable/bg_action_dialog">
+
+    <!-- Başlık -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_reason_chip">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_flag_outline"
+                app:tint="@color/dark_primary"
+                android:contentDescription="Bildir" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mesajı bildir"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bu mesajı neden bildiriyorsun?"
+                android:textSize="12sp"
+                android:textColor="@color/dark_text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/reportReasonClose"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="7dp"
+            android:background="@drawable/bg_report_action_row"
+            android:src="@drawable/ic_close_black"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Kapat" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="4dp"
+        android:background="@color/outline_button_stroke" />
+
+    <LinearLayout
+        android:id="@+id/reportReasonHarassment"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/forbidden_ic"
+            app:tint="@color/dark_error"
+            android:contentDescription="Taciz veya zorbalık" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Taciz veya zorbalık"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/reportReasonSpam"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/spam_ic"
+            android:contentDescription="Spam" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Spam"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/reportReasonInappropriate"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/info_ic"
+            app:tint="@color/dark_primary"
+            android:contentDescription="Uygunsuz içerik" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Uygunsuz içerik"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/reportReasonOther"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_report_action_row">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_flag_outline"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Diğer" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:text="Diğer"
+            android:textSize="15sp"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/reportReasonCancel"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="İptal"
+        android:textSize="14sp"
+        android:textColor="@color/dark_text_secondary"
+        android:background="?attr/selectableItemBackground" />
+</LinearLayout>

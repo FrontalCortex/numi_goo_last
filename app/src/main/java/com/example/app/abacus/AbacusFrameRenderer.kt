@@ -37,20 +37,24 @@ object AbacusFrameRenderer {
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    fun buildFrameDrawable(context: Context): Drawable =
-        when (AbacusPreferences.getFrameType(context)) {
-            AbacusPreferences.FrameType.FRAME_BG  -> buildFrameBgDrawable(context)
-            AbacusPreferences.FrameType.FRAME_BG2 -> buildFrameBg2Drawable(context)
-            AbacusPreferences.FrameType.FRAME_BG3 -> buildFrameBg3Drawable(context)
-            AbacusPreferences.FrameType.FRAME_BG4 -> buildFrameBg4Drawable(context)
+    fun buildFrameDrawable(
+        context: Context,
+        frameTypeOverride: AbacusPreferences.FrameType? = null,
+        colorsOverride: IntArray? = null,
+    ): Drawable =
+        when (frameTypeOverride ?: AbacusPreferences.getFrameType(context)) {
+            AbacusPreferences.FrameType.FRAME_BG  -> buildFrameBgDrawable(context, colorsOverride)
+            AbacusPreferences.FrameType.FRAME_BG2 -> buildFrameBg2Drawable(context, colorsOverride)
+            AbacusPreferences.FrameType.FRAME_BG3 -> buildFrameBg3Drawable(context, colorsOverride)
+            AbacusPreferences.FrameType.FRAME_BG4 -> buildFrameBg4Drawable(context, colorsOverride)
         }
 
     // ── FRAME_BG ─────────────────────────────────────────────────────────────
 
-    private fun buildFrameBgDrawable(context: Context): Drawable {
+    private fun buildFrameBgDrawable(context: Context, colorsOverride: IntArray? = null): Drawable {
         val original = ContextCompat.getDrawable(context, R.drawable.abacus_frame_bg)!!
         val layerDrawable = (original.mutate() as? LayerDrawable) ?: return original
-        val woodColor = AbacusPreferences.getFrameBgWoodColor(context)
+        val woodColor = colorsOverride?.getOrNull(0) ?: AbacusPreferences.getFrameBgWoodColor(context)
         val woodLayer = layerDrawable.getDrawable(1).mutate()
         if (woodLayer is android.graphics.drawable.GradientDrawable) {
             woodLayer.setColor(woodColor)
@@ -77,7 +81,7 @@ object AbacusFrameRenderer {
      * are blended proportionally between the new heart colour and new wood colour,
      * preserving the smooth edge appearance of the VectorDrawable.
      */
-    private fun buildFrameBg2Drawable(context: Context): Drawable {
+    private fun buildFrameBg2Drawable(context: Context, colorsOverride: IntArray? = null): Drawable {
         val src = ContextCompat.getDrawable(context, R.drawable.abacus_frame_bg2)!!
 
         // Fixed 400 px render — good enough for sharp hearts with the interpolation
@@ -96,8 +100,8 @@ object AbacusFrameRenderer {
         bitmap.density = context.resources.displayMetrics.densityDpi
 
         // Build the "new colours" array — same order as ALL_ORIG
-        val woodNew  = AbacusPreferences.getFrameBg2WoodColor(context)
-        val heartNew = AbacusPreferences.getFrameBg2HeartColor(context)
+        val woodNew  = colorsOverride?.getOrNull(0) ?: AbacusPreferences.getFrameBg2WoodColor(context)
+        val heartNew = colorsOverride?.getOrNull(1) ?: AbacusPreferences.getFrameBg2HeartColor(context)
         val newColors = intArrayOf(woodNew, heartNew, ORIG_BLACK, ORIG_DARK) // black/dark unchanged
 
         val rOrig = IntArray(4); val gOrig = IntArray(4); val bOrig = IntArray(4)
@@ -171,7 +175,7 @@ object AbacusFrameRenderer {
         return res
     }
 
-    private fun buildFrameBg3Drawable(context: Context): Drawable {
+    private fun buildFrameBg3Drawable(context: Context, colorsOverride: IntArray? = null): Drawable {
         val src = ContextCompat.getDrawable(context, R.drawable.abacus_frame_bg3)!!
 
         val size = 400
@@ -181,8 +185,8 @@ object AbacusFrameRenderer {
 
         bitmap.density = context.resources.displayMetrics.densityDpi
 
-        val woodNew  = AbacusPreferences.getFrameBg3WoodColor(context)
-        val starNew  = AbacusPreferences.getFrameBg3StarColor(context)
+        val woodNew  = colorsOverride?.getOrNull(0) ?: AbacusPreferences.getFrameBg3WoodColor(context)
+        val starNew  = colorsOverride?.getOrNull(1) ?: AbacusPreferences.getFrameBg3StarColor(context)
         val newColors = intArrayOf(woodNew, starNew, ORIG_BLACK, ORIG_DARK)
         
         val origColors = intArrayOf(ORIG_WOOD, ORIG_STAR, ORIG_BLACK, ORIG_DARK)
@@ -262,11 +266,11 @@ object AbacusFrameRenderer {
 
     // ── FRAME_BG4 ────────────────────────────────────────────────────────────
 
-    private fun buildFrameBg4Drawable(context: Context): Drawable {
+    private fun buildFrameBg4Drawable(context: Context, colorsOverride: IntArray? = null): Drawable {
         val size = 400f
         val bitmap = Bitmap.createBitmap(size.toInt(), size.toInt(), Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
-        val colors = AbacusPreferences.getFrameBg4Colors(context)
+        val colors = colorsOverride ?: AbacusPreferences.getFrameBg4Colors(context)
 
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 

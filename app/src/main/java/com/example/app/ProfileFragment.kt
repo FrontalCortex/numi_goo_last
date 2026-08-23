@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.ColorFilter
@@ -10,7 +11,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,7 +22,15 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusBeadRenderer
+import com.example.app.abacus.AbacusFrameRenderer
+import com.example.app.abacus.AbacusPreferences
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentProfileBinding
 import com.airbnb.lottie.LottieAnimationView
@@ -254,6 +265,7 @@ class ProfileFragment : Fragment() {
                 }
                 if (doc.exists()) {
                     loadBadgeProgressFromFirestore(uid)
+                    loadAbacusPreview(uid)
                     if (!isOtherUser) loadCupPathScores() else loadCupPathScoresForUser(uid)
 
                     // Avatar seçimini Firestore'dan oku
@@ -274,6 +286,7 @@ class ProfileFragment : Fragment() {
                         "Kullanıcı"
                     }
                     binding.tvTopLeftName.text = displayName
+                    if (isOtherUser) binding.tvOtherUserProfileName.text = displayName
 
                     // Kullanıcı ID ve Katılım Yılı
                     // Katılım yılı: kendi profilimizde auth metadata, başkasında Firestore'daki createdAt
@@ -440,6 +453,208 @@ class ProfileFragment : Fragment() {
         .document(uid)
         .collection(badgeProgressCollection)
         .document(badgeProgressStateDoc)
+
+    /**
+     * Profildeki "Kullanıcı Abaküsü" kartına [uid]'nin seçtiği boncuğu (kendi rengiyle) koyar —
+     * [AbacusCustomizationSnapshot.previewBeadType] henüz seçilmediyse (eski/yeni kullanıcı),
+     * kullanılan tiplerden rastgele biri gösterilir. Tıklanınca gerçek boyutlu, sürüklenebilir bir
+     * panel açılır — kendi profilimizde [showOwnAbacusPanel] (+ boncuk seçici), başkasının
+     * profilinde [showOtherUserAbacusPanel] (ikisi de sürüklenebilir; sadece boncuk skin verisinin
+     * kaynağı farklı).
+     */
+    /**
+     * [loadAbacusPreview]'de yüklenen, [setupPreviewBeadSelector]'da kullanıcı her seçim
+     * değiştirdiğinde güncellenen "şu anki" önizleme boncuğu. Tıklama dinleyicisi bunu her
+     * tıklamada okuyarak paneli açar — sabit bir `val` yerine bu alan kullanılmasının sebebi:
+     * panel açıp seçim değiştirip kapatınca, ProfileFragment'ten hiç çıkmadan tekrar panel
+     * açıldığında da GÜNCEL değeri görmek (eskiden ilk yüklemede yakalanan eski değer kalıyordu).
+     */
+    private var currentPreviewBeadType: AbacusPreferences.BeadType? = null
+
+    private fun loadAbacusPreview(uid: String) {
+        AbacusCustomizationFirestore.loadCustomization(uid, onResult = { snapshot ->
+            if (!isAdded) return@loadCustomization
+            val usedTypes = (snapshot.slots.values + snapshot.beadType).toList()
+            val previewType = snapshot.previewBeadType ?: usedTypes.random()
+            currentPreviewBeadType = previewType
+            binding.abacusPreviewCardImage.setImageDrawable(
+                AbacusBeadRenderer.buildBeadForType(requireContext(), previewType, false, snapshot.colorsFor(previewType, false))
+            )
+
+            binding.abacusPreviewCard.isClickable = true
+            binding.abacusPreviewCard.setOnClickListener {
+                if (isOtherUser) showOtherUserAbacusPanel(snapshot) else showOwnAbacusPanel(uid, currentPreviewBeadType ?: previewType)
+            }
+        })
+    }
+
+    /**
+     * Gerçek boyutlu, sürüklenebilir abaküs paneli (kendi profilimiz) — [AbacusCustomizationFragment]'in
+     * önizlemesiyle (inflatePreviewAbacus) aynı mekanizma: [layout_customization_preview] + [AbacusBeadController],
+     * boncuk skin'i cihazın LOKAL [AbacusPreferences]'ından okunur (varsayılan davranış).
+     * Boncuk çizimleri (ANIMAL, BOWLING, BALL gibi bazı tipler) pahalı piksel-bazlı bitmap işlemi
+     * gerektirebildiğinden, panel her açıldığında önce arka planda ısıtılır (bkz.
+     * [AbacusBeadRenderer.prewarmAllSlotDrawables]) — aksi halde ana thread donabilir.
+     * Altında ayrıca [setupPreviewBeadSelector] ile profil kartındaki boncuğu seçme UI'ı kurulur.
+     */
+    private fun showOwnAbacusPanel(uid: String, initialPreviewType: AbacusPreferences.BeadType) {
+        val ctx = requireContext()
+        val dialog = openAbacusPanelDialog(ctx)
+        val preview = inflateAbacusPanelPreview(ctx, dialog)
+        preview.findViewById<View>(R.id.abacusContainer)?.background = AbacusFrameRenderer.buildFrameDrawable(ctx)
+
+        val controller = AbacusBeadController(ctx, preview, 300L)
+        controller.setup()
+        preview.post { controller.computeMovementDistancesFromLayout(ratio = 1.0f, force = true) }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.Default) {
+                AbacusBeadRenderer.prewarmAllSlotDrawables(ctx.applicationContext)
+            }
+            if (isAdded && dialog.isShowing) controller.refreshAll()
+        }
+
+        dialog.findViewById<View>(R.id.previewBeadSelectorRow).visibility = View.VISIBLE
+        setupPreviewBeadSelector(dialog, uid, initialPreviewType)
+
+        dialog.show()
+    }
+
+    /**
+     * Panelin altındaki < [previewBeadCard] > seçicisi: kullanıcının SAHİP OLDUĞU (satın aldığı +
+     * her zaman ücretsiz SOROBAN) boncuk tipleri arasında gezinip profil kartında ([abacusPreviewCardImage])
+     * gösterilecek boncuğu seçmesini sağlar. Renkler her zaman cihazın güncel lokal tercihinden
+     * okunur (sahip olunan ama hiç slota takılmamış bir tip için Firestore'da renk kaydı olmayabilir).
+     * Seçim, aralıksız ok tıklamalarında Firestore'u yormamak için debounce'lu kaydedilir
+     * ([AbacusCustomizationFirestore.setPreviewBeadType]).
+     */
+    private fun setupPreviewBeadSelector(dialog: Dialog, uid: String, initialType: AbacusPreferences.BeadType) {
+        val ctx = requireContext()
+        val cardImage = dialog.findViewById<ImageView>(R.id.previewBeadCardImage)
+        val prevBtn = dialog.findViewById<View>(R.id.previewBeadPrev)
+        val nextBtn = dialog.findViewById<View>(R.id.previewBeadNext)
+
+        // Sahip olunan tipler listesi ağdan gelene kadar (ve o gelince de en doğrusu) kartta
+        // her zaman profildeki abacusPreviewCardImage'te gösterilen boncuk olsun — hiçbir
+        // durumda ara/varsayılan bir tip (ör. soroban) yanıp sönmesin.
+        cardImage.setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, initialType, false))
+
+        BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
+            if (!isAdded || !dialog.isShowing) return@loadOwnedBeads
+            val ownedTypes = AbacusPreferences.BeadType.values().filter { type ->
+                type == AbacusPreferences.BeadType.SOROBAN || (owned[type.name]?.count ?: 0) > 0
+            }.toMutableList()
+            // initialType her zaman listede olmalı — aksi halde indexOf altta -1 döner ve
+            // seçici "0. sıra" (=SOROBAN) ile başlamış gibi davranır, halbuki kartta hâlâ
+            // initialType görünüyor olurdu; bu tutarsızlığı önlüyoruz.
+            if (!ownedTypes.contains(initialType)) ownedTypes.add(0, initialType)
+
+            var index = ownedTypes.indexOf(initialType)
+
+            fun display(type: AbacusPreferences.BeadType) {
+                cardImage.setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, type, false))
+            }
+            display(ownedTypes[index])
+
+            fun select(newIndex: Int) {
+                index = newIndex
+                val type = ownedTypes[index]
+                display(type)
+                currentPreviewBeadType = type
+                binding.abacusPreviewCardImage.setImageDrawable(AbacusBeadRenderer.buildBeadForType(ctx, type, false))
+                schedulePreviewBeadTypeSync(uid, type)
+            }
+
+            fun goPrev() {
+                if (ownedTypes.size == 1) {
+                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                select((index - 1 + ownedTypes.size) % ownedTypes.size)
+            }
+            fun goNext() {
+                if (ownedTypes.size == 1) {
+                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                select((index + 1) % ownedTypes.size)
+            }
+
+            prevBtn.setOnClickListener { goPrev() }
+            nextBtn.setOnClickListener { goNext() }
+        })
+    }
+
+    private var previewBeadSyncJob: Job? = null
+
+    private fun schedulePreviewBeadTypeSync(uid: String, type: AbacusPreferences.BeadType) {
+        previewBeadSyncJob?.cancel()
+        previewBeadSyncJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(500)
+            AbacusCustomizationFirestore.setPreviewBeadType(uid, type)
+        }
+    }
+
+    /**
+     * Aynı sürüklenebilir panel, ama başka bir kullanıcının profili için: boncuk skin'i cihazın lokal
+     * verisinden değil, [snapshot]'tan (o kullanıcının Firestore'a kayıtlı özelleştirmesi) okunur.
+     * [AbacusBeadController] normalde her zaman lokal [AbacusPreferences]'ı okuduğundan, burada
+     * `beadDrawableProvider` ile skin kaynağı override ediliyor — sürükleme/animasyon davranışı
+     * (kontrolcünün geri kalanı) değişmiyor, sadece "hangi görsel çizilecek" [snapshot]'tan geliyor.
+     * Sürükleme hiçbir yere kaydedilmez, sadece bu oturumda görsel/geçici.
+     */
+    private fun showOtherUserAbacusPanel(snapshot: AbacusCustomizationSnapshot) {
+        val ctx = requireContext()
+        val dialog = openAbacusPanelDialog(ctx)
+        // Boncuk seçici sadece kendi profilimizde (bkz. showOwnAbacusPanel) — burada XML
+        // varsayılanına güvenmek yerine açıkça gizliyoruz, ileride yanlışlıkla tekrar
+        // görünür kalmasın diye.
+        dialog.findViewById<View>(R.id.previewBeadSelectorRow).visibility = View.GONE
+        val preview = inflateAbacusPanelPreview(ctx, dialog)
+        preview.findViewById<View>(R.id.abacusContainer)?.background =
+            AbacusFrameRenderer.buildFrameDrawable(ctx, snapshot.frameType, snapshot.frameColorArray())
+
+        val controller = AbacusBeadController(ctx, preview, 300L) { rod, isTop, beadIndex, isSelected ->
+            val type = snapshot.beadTypeForSlot(rod, isTop, beadIndex)
+            AbacusBeadRenderer.buildBeadForType(ctx, type, isSelected, snapshot.colorsFor(type, isSelected))
+        }
+        controller.setup()
+        preview.post { controller.computeMovementDistancesFromLayout(ratio = 1.0f, force = true) }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.Default) {
+                val usedTypes = (snapshot.slots.values + snapshot.beadType).toSet()
+                for (type in usedTypes) {
+                    AbacusBeadRenderer.buildBeadForType(ctx.applicationContext, type, false, snapshot.colorsFor(type, false))
+                    AbacusBeadRenderer.buildBeadForType(ctx.applicationContext, type, true, snapshot.colorsFor(type, true))
+                }
+            }
+            if (isAdded && dialog.isShowing) controller.refreshAll()
+        }
+
+        dialog.show()
+    }
+
+    /** Ortak panel Dialog kurulumu: [panel_profile_abacus], X kapatma, %92 genişlik. */
+    private fun openAbacusPanelDialog(ctx: android.content.Context): Dialog {
+        val dialog = Dialog(ctx)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.panel_profile_abacus)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        val width = (ctx.resources.displayMetrics.widthPixels * 0.92f).toInt()
+        dialog.window?.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.findViewById<View>(R.id.profileAbacusPanelClose).setOnClickListener { dialog.dismiss() }
+        return dialog
+    }
+
+    /** [layout_customization_preview]'i panelin konteynerine inflate eder. */
+    private fun inflateAbacusPanelPreview(ctx: android.content.Context, dialog: Dialog): View {
+        val container = dialog.findViewById<ViewGroup>(R.id.profileAbacusPanelContainer)
+        val preview = LayoutInflater.from(ctx).inflate(R.layout.layout_customization_preview, container, false)
+        container.addView(preview)
+        return preview
+    }
 
     private fun loadBadgeProgressFromFirestore(uid: String) {
         binding.profileBadgesCard.visibility = View.GONE
@@ -938,6 +1153,12 @@ class ProfileFragment : Fragment() {
             binding.btnAccountSettings.visibility = View.GONE
             // tvTopLeftName'in solundaki alanda settings ikonu olmayacak, üstüne yazma ihtiyacı yok
 
+            // Üst panel: geri butonu + bakılan kullanıcının adı (fragment_followers_following'teki toolbar ile aynı görünüm)
+            binding.otherUserProfileTopBar.visibility = View.VISIBLE
+            binding.btnOtherUserProfileBack.setOnClickListener {
+                requireActivity().onBackPressedDispatcher.onBackPressed()
+            }
+
             // Avatar tıklanamaz
             binding.imgProfilePhoto.isClickable = false
 
@@ -1346,12 +1567,13 @@ class ProfileFragment : Fragment() {
     }
 
     private fun loadCupPathScores() {
-        setupCupCard(R.id.cupCard1, "Toplama", "dinosaur_anim.json", false, AbacusCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard2, "Çıkarma", "crocodile_anim.json", false, ExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard3, "Çarpma", "goat_anim.json", false, ImpactCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, BlindingAdditionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, BlindingExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, BlindingImpactCupRepository::fetchCupScore)
+        val uid = auth.currentUser?.uid ?: return
+        setupCupCard(R.id.cupCard1, "Toplama", "dinosaur_anim.json", false, uid, "addition_abacus_cup", AbacusCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard2, "Çıkarma", "crocodile_anim.json", false, uid, "extraction_abacus_cup", ExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard3, "Çarpma", "goat_anim.json", false, uid, "impact_abacus_cup", ImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, uid, "blinding_addition_abacus_cup", BlindingAdditionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, uid, "blinding_extraction_abacus_cup", BlindingExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, uid, "blinding_impact_abacus_cup", BlindingImpactCupRepository::fetchCupScore)
     }
 
     /**
@@ -1376,7 +1598,7 @@ class ProfileFragment : Fragment() {
             .addOnSuccessListener { doc ->
                 if (!isAdded) return@addOnSuccessListener
                 fields.forEachIndexed { index, (cardId, fieldName, showForbidden) ->
-                    setupCupCard(cardId, titles[index], anims[index], showForbidden) { onResult ->
+                    setupCupCard(cardId, titles[index], anims[index], showForbidden, uid, fieldName) { onResult ->
                         val score = (doc?.get(fieldName) as? Number)?.toInt() ?: 200
                         onResult(score)
                     }
@@ -1385,8 +1607,8 @@ class ProfileFragment : Fragment() {
             .addOnFailureListener {
                 if (!isAdded) return@addOnFailureListener
                 // Hata durumunda varsayılan 200 göster
-                fields.forEachIndexed { index, (cardId, _, showForbidden) ->
-                    setupCupCard(cardId, titles[index], anims[index], showForbidden) { onResult ->
+                fields.forEachIndexed { index, (cardId, fieldName, showForbidden) ->
+                    setupCupCard(cardId, titles[index], anims[index], showForbidden, uid, fieldName) { onResult ->
                         onResult(200)
                     }
                 }
@@ -1398,6 +1620,8 @@ class ProfileFragment : Fragment() {
         title: String,
         animFile: String,
         showForbiddenIcon: Boolean,
+        uid: String,
+        field: String,
         scoreProvider: ((Int) -> Unit) -> Unit
     ) {
         val cardView = binding.root.findViewById<View>(cardId)
@@ -1411,10 +1635,27 @@ class ProfileFragment : Fragment() {
         lottieView.setAnimation(animFile)
         lottieView.playAnimation()
 
+        cardView.setOnClickListener {
+            openCupHistoryFragment(uid, field, title, animFile)
+        }
+
         scoreProvider { score ->
             if (isAdded) {
                 scoreView.text = score.toString()
             }
         }
+    }
+
+    private fun openCupHistoryFragment(uid: String, field: String, title: String, animFile: String) {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.slide_in_right,
+                R.anim.slide_out_left,
+                R.anim.slide_in_left,
+                R.anim.slide_out_right,
+            )
+            .replace(R.id.fragmentContainerID, CupHistoryFragment.newInstance(uid, field, title, animFile))
+            .addToBackStack(null)
+            .commit()
     }
 }

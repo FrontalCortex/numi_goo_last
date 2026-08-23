@@ -137,13 +137,23 @@ object DailyQuestionPoolBuilder {
                     )
                 }
             }
-            5 -> {
+            4 -> {
                 {
                     dailyQuestionFromRecord(
                         item,
                         hard = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(5), 1500L) },
                         medium = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(4), 2500L) },
                         easy = { Pair(MathOperationGenerator.generateSequence10RulesEasyNew(3), 3000L) },
+                    )
+                }
+            }
+            5 -> {
+                {
+                    dailyQuestionFromRecord(
+                        item,
+                        hard = { Pair(MathOperationGenerator.generateSequence10RulesEasyOld(5), 1500L) },
+                        medium = { Pair(MathOperationGenerator.generateSequence10RulesEasyOld(4), 2500L) },
+                        easy = { Pair(MathOperationGenerator.generateSequence10RulesEasyOld(3), 3000L) },
                     )
                 }
             }
@@ -157,8 +167,6 @@ object DailyQuestionPoolBuilder {
                     )
                 }
             }
-
-            4 -> null
             else -> null
         }
     }

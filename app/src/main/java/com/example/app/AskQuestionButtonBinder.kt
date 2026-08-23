@@ -77,7 +77,7 @@ object AskQuestionButtonBinder {
 
         when {
             UserAskQuestionRestriction.isRestricted(doc) -> {
-                showMessage(fragment, R.string.ask_question_account_restricted)
+                showRestrictedDialog(fragment, doc)
             }
             isTeacher && doc.getBoolean("teacherApproved") != true -> {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
@@ -98,6 +98,30 @@ object AskQuestionButtonBinder {
         AlertDialog.Builder(fragment.requireContext())
             .setMessage(messageResId)
             .setPositiveButton(R.string.ask_question_alert_ok, null)
+            .show()
+    }
+
+    private fun showRestrictedDialog(fragment: Fragment, doc: DocumentSnapshot) {
+        val banned = doc.getBoolean("banned") == true
+        val restrictedUntil = doc.getTimestamp("restrictedUntil")
+        val message = when {
+            banned -> "Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır."
+            restrictedUntil != null -> {
+                val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedUntil.toDate())
+                "Hesabınız kural ihlali nedeniyle $dateText tarihine kadar kısıtlanmıştır."
+            }
+            else -> fragment.getString(R.string.ask_question_account_restricted)
+        }
+        AlertDialog.Builder(fragment.requireContext())
+            .setMessage(message)
+            .setPositiveButton(R.string.ask_question_alert_ok, null)
+            .setNegativeButton("İtiraz Et") { _, _ ->
+                SupportContactHelper.openSupportEmail(
+                    fragment,
+                    subject = "Hesap kısıtlaması itirazı",
+                    body = "Merhaba,\n\nHesabımın kısıtlanmasına itiraz etmek istiyorum.\n\nKullanıcı ID: ${doc.id}\n\n"
+                )
+            }
             .show()
     }
 }

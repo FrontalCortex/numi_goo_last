@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -8,12 +9,70 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 
 class SplashActivity : AppCompatActivity() {
+
+    companion object {
+        // Splash animasyonunun minimum süresi (mevcut davranış).
+        private const val SPLASH_ANIMATION_MS = 2000L
+        // Remote Config fetch'i bu süreden uzun sürerse, daha fazla bekletmeden devam edilir
+        // (uygulama zaten internetsiz çalışmadığı için burada güncel veriyi garantilemek adına
+        // yüksek bir üst sınır tutuluyor; süre dolunca yine de pes edip devam eder, sonsuza kadar beklemez).
+        private const val SPLASH_MAX_EXTRA_WAIT_MS = 8000L
+    }
+
+    private var splashTimerDone = false
+    private var remoteConfigFetchDone = false
+    private var proceededPastSplash = false
 
     private fun logFirstTutorial(event: String, details: String = "") {
         val msg = if (details.isEmpty()) event else "$event | $details"
         Log.d(MainActivity.FIRST_TUTORIAL_LOG_TAG, msg)
+    }
+
+    // Tutorial içeriği artık Remote Config'ten geliyor (bkz. TutorialFragment.createTutorialSteps1).
+    // Kullanıcı map'ten bir tutorial'a girdiğinde (LessonAdapter, MainActivity) güncel veriyi ilk
+    // seferde görebilsin diye, uygulama açılışında (burada, tek merkezi yerde) bir kez fetch
+    // ediyoruz. fetchAndActivate() session boyunca cache'lendiği için, buradan sonraki her okuma
+    // (hangi ekrandan olursa olsun) zaten güncel değeri kullanır.
+    private fun startTutorialRemoteConfigFetch() {
+        try {
+            val remoteConfig = FirebaseRemoteConfig.getInstance()
+            val isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            // setConfigSettingsAsync() de asenkron - fetchAndActivate()'i onun bitmesini BEKLEMEDEN
+            // çağırmak (eskiden burada bir race vardı), o anki fetch'in hangi throttle ayarıyla
+            // çalışacağını belirsizleştiriyordu. Şimdi sıraya koyuyoruz: önce ayar, o bitince fetch.
+            remoteConfig.setConfigSettingsAsync(
+                FirebaseRemoteConfigSettings.Builder()
+                    .setMinimumFetchIntervalInSeconds(if (isDebuggable) 0L else 3600L)
+                    .build()
+            ).addOnCompleteListener {
+                remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
+                    logFirstTutorial(
+                        "Splash.remoteConfig",
+                        "fetch tamamlandı başarılı=${task.isSuccessful} sonuç=${task.result} " +
+                            "lastFetchStatus=${remoteConfig.info.lastFetchStatus} " +
+                            "fetchTimeMillis=${remoteConfig.info.fetchTimeMillis}",
+                    )
+                    remoteConfigFetchDone = true
+                    maybeProceedPastSplash()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(MainActivity.FIRST_TUTORIAL_LOG_TAG, "Splash Remote Config başlatılamadı", e)
+            remoteConfigFetchDone = true
+            maybeProceedPastSplash()
+        }
+    }
+
+    private fun maybeProceedPastSplash() {
+        if (proceededPastSplash) return
+        if (splashTimerDone && remoteConfigFetchDone) {
+            proceededPastSplash = true
+            checkLoginStatus()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,10 +93,22 @@ class SplashActivity : AppCompatActivity() {
         if (hasDeepLinkQuestion) {
             checkLoginStatus()
         } else {
-            // Normal açılış: kısa bir splash animasyonu için 2 saniye bekle
+            // Tutorial Remote Config fetch'i, splash animasyonuyla paralel başlatılır.
+            startTutorialRemoteConfigFetch()
+
+            // Normal açılış: kısa bir splash animasyonu için minimum bekleme
             Handler(Looper.getMainLooper()).postDelayed({
-                checkLoginStatus()
-            }, 2000)
+                splashTimerDone = true
+                maybeProceedPastSplash()
+            }, SPLASH_ANIMATION_MS)
+
+            // Güvenlik ağı: fetch bu süreye kadar bitmezse (yavaş/yok internet), daha fazla
+            // bekletmeden devam et.
+            Handler(Looper.getMainLooper()).postDelayed({
+                splashTimerDone = true
+                remoteConfigFetchDone = true
+                maybeProceedPastSplash()
+            }, SPLASH_ANIMATION_MS + SPLASH_MAX_EXTRA_WAIT_MS)
         }
     }
     

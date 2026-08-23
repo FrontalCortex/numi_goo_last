@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_action_dialog">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+    <!-- Başlık -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_reason_chip">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_flag_outline"
+                app:tint="@color/dark_primary"
+                android:contentDescription="Rapor" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rapor İncele"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bu kullanıcı için bir işlem seç"
+                android:textSize="12sp"
+                android:textColor="@color/dark_text_secondary"
+                android:layout_marginTop="1dp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/reportDialogClose"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="7dp"
+            android:background="@drawable/bg_report_action_row"
+            android:src="@drawable/ic_close_black"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Kapat" />
+    </LinearLayout>
+
+    <!-- Rapor bağlamı -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_report_context_card"
+        android:padding="12dp"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/reportDialogUserName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Kullanıcı adı" />
+
+            <TextView
+                android:id="@+id/reportDialogReason"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_reason_chip"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_primary"
+                tools:text="Spam" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/reportDialogMessagePreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="13sp"
+            android:textColor="@color/dark_text_secondary"
+            android:maxLines="2"
+            android:ellipsize="end"
+            tools:text="Bildirilen mesajın önizlemesi burada görünecek." />
+
+        <!-- Fotoğraf / video önizlemesi -->
+        <FrameLayout
+            android:id="@+id/reportDialogMediaContainer"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:layout_marginTop="10dp"
+            android:background="@color/dark_background"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/reportDialogMediaThumb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Bildirilen medya" />
+
+            <ImageView
+                android:id="@+id/reportDialogPlayOverlay"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:layout_gravity="center"
+                android:padding="14dp"
+                android:background="@drawable/bg_play_overlay_circle"
+                android:src="@drawable/play_video_ic"
+                app:tint="@android:color/white"
+                android:visibility="gone"
+                android:contentDescription="Videoyu oynat" />
+        </FrameLayout>
+
+        <!-- Ses kaydı çalar -->
+        <LinearLayout
+            android:id="@+id/reportDialogAudioRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:background="@drawable/bg_report_action_outline_button"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/reportDialogAudioPlayPause"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="4dp"
+                android:src="@android:drawable/ic_media_play"
+                app:tint="@color/dark_primary"
+                android:contentDescription="Sesi oynat" />
+
+            <TextView
+                android:id="@+id/reportDialogAudioTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="Ses kaydını dinlemek için oynat"
+                android:textSize="13sp"
+                android:textColor="@color/dark_text_secondary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Kısıtlama süresi -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:layout_width="13dp"
+            android:layout_height="13dp"
+            android:src="@drawable/ic_schedule_clock"
+            app:tint="@color/dark_text_secondary"
+            android:contentDescription="Süre" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="KISITLAMA SÜRESİ"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.06"
+            android:textColor="@color/dark_text_secondary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="3">
+
+        <TextView
+            android:id="@+id/reportRestrict1Day"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:gravity="center"
+            android:text="1 gün"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_text"
+            android:background="@drawable/bg_report_action_outline_button" />
+
+        <TextView
+            android:id="@+id/reportRestrict3Days"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp"
+            android:gravity="center"
+            android:text="3 gün"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_text"
+            android:background="@drawable/bg_report_action_outline_button" />
+
+        <TextView
+            android:id="@+id/reportRestrict7Days"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:gravity="center"
+            android:text="7 gün"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_text"
+            android:background="@drawable/bg_report_action_outline_button" />
+    </LinearLayout>
+
+    <!-- Kalıcı yaptırım -->
+    <LinearLayout
+        android:id="@+id/reportBanPermanent"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_report_action_destructive_button">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/lock_ic"
+            app:tint="@color/dark_error"
+            android:contentDescription="Banla" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Kalıcı olarak banla"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_error" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/outline_button_stroke" />
+
+    <!-- Zararsız bulundu -->
+    <LinearLayout
+        android:id="@+id/reportDismiss"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_report_action_row">
+
+        <ImageView
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:src="@drawable/ic_done"
+            app:tint="@color/dark_success"
+            android:contentDescription="Yoksay" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Yoksay (reddet)"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/dark_text" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/reportCancel"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="2dp"
+        android:gravity="center"
+        android:text="İptal"
+        android:textSize="14sp"
+        android:textColor="@color/dark_text_secondary"
+        android:background="?attr/selectableItemBackground" />
+    </LinearLayout>
+</ScrollView>

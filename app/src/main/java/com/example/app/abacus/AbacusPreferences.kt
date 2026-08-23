@@ -611,8 +611,19 @@ object AbacusPreferences {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Hesap başına AYRI bir SharedPreferences dosyası döner (`abacus_customization_{uid}`).
+     *
+     * ÖNEMLİ — geçmişte burada TEK, hesap-bağımsız bir dosya (`abacus_customization`) kullanılıyordu.
+     * `getBeadType`/`getBeadTypeForSlot` gibi bazı fonksiyonlar anahtar adının İÇİNE elle uid ekleyerek
+     * (`"${uid}_bead_type"`) bu sorunu kendi başlarına çözmüştü, ama çerçeve tipi/rengi ve tüm boncuk
+     * renkleri bunu yapmıyordu — yani aynı cihazda hesap değiştirince (X çıkış, Y giriş) Y'nin çerçeve/
+     * renk tercihleri X'in en son bıraktığı DEĞERLERİ okuyordu (aynı dosya, aynı anahtar). Artık dosyanın
+     * kendisi hesaba göre ayrıldığı için TÜM anahtarlar (eski uid-önekli olanlar dahil, önek artık
+     * fazladan ama zararsız) otomatik olarak izole oluyor.
+     */
     private fun prefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences("${PREF_NAME}_${getUidPrefix()}", Context.MODE_PRIVATE)
 
     private fun getPrefs(context: Context): SharedPreferences = prefs(context)
 

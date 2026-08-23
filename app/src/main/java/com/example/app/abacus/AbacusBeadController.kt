@@ -1,6 +1,7 @@
 package com.example.app.abacus
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -24,7 +25,14 @@ import kotlin.math.roundToInt
 class AbacusBeadController(
     private val context: Context,
     private val root: View,
-    private val animationDurationMs: Long = 300L
+    private val animationDurationMs: Long = 300L,
+    /**
+     * Optional override for bead skin lookup — when null (default), appearance is read from the
+     * device's local [AbacusPreferences] exactly as before. Pass a provider to render an explicit
+     * customization instead (e.g. another user's saved abacus in [com.example.app.ProfileFragment])
+     * while still getting full click/drag interaction.
+     */
+    private val beadDrawableProvider: ((rod: Int, isTop: Boolean, beadIndex: Int, isSelected: Boolean) -> Drawable)? = null,
 ) {
     private val animatingBeads = mutableSetOf<ImageView>()
     private var touchEnabled: Boolean = true
@@ -976,8 +984,11 @@ class AbacusBeadController(
     }
 
     private fun updateBeadAppearance(bead: ImageView, isSelected: Boolean, rod: Int, isTop: Boolean, beadIndex: Int) {
-        val type = AbacusPreferences.getBeadTypeForSlot(context, rod, isTop, beadIndex)
-        bead.setImageDrawable(AbacusBeadRenderer.buildBeadForType(context, type, isSelected))
+        val drawable = beadDrawableProvider?.invoke(rod, isTop, beadIndex, isSelected) ?: run {
+            val type = AbacusPreferences.getBeadTypeForSlot(context, rod, isTop, beadIndex)
+            AbacusBeadRenderer.buildBeadForType(context, type, isSelected)
+        }
+        bead.setImageDrawable(drawable)
     }
 
     private fun commitBottomTranslationToMargin(bead: ImageView) {

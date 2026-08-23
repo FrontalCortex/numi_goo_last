@@ -97,6 +97,7 @@ dependencies {
     implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Video oynatma (ağ / galeri formatları için) — aynı sürüm kullanılmalı
@@ -109,4 +110,7 @@ dependencies {
     // In-App Review API
     implementation("com.google.android.play:review:2.0.1")
     implementation("com.google.android.play:review-ktx:2.0.1")
+
+    // Kupa geçmişi grafiği için
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

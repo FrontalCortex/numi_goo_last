@@ -32,6 +32,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -240,6 +241,8 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private var teacherPendingMediaType: String? = null
     private var teacherPendingMediaPath: String? = null
     private var teacherPendingDescription: String? = null
+    // Seçim/gönder barı açılmadan önce abacusFragmentContainer görünür müydü? (iptalde geri yüklemek için)
+    private var teacherPendingAbacusContainerWasVisible: Boolean = false
     private var teacherSelectedQuestionId: String? = null
     private var teacherSelectedQuestionTitle: String? = null
     private var notificationPermissionRequestInFlight = false
@@ -297,7 +300,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
+        Log.d("ScreenDebug", "screenHeightDp=${resources.configuration.screenHeightDp} screenWidthDp=${resources.configuration.screenWidthDp}")
+
         // adManager'ı burada init et; AgeConsentManager'ın asenkron callback'i
         // herhangi bir anda tetiklenebileceğinden lateinit crash riskine karşı önce atanmalı.
         adManager = AdManager(this)
@@ -577,10 +582,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 }
 
                 // 2) Öğretmen CreateQuestion'dan gelip soru seçme modundaysa (NotificationFragment + pending medya),
-                //    sistem geri tuşu bottom bar'daki teacherSendBackButton ile aynı davranışı göstersin.
+                //    sistem geri tuşu hiçbir şey yapmasın; çıkış sadece bar'daki teacherSendBackButton ile olsun.
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 if (teacherPendingMediaPath != null && currentFragment is NotificationFragment) {
-                    onTeacherSelectionBackFromNotification()
                     return
                 }
 
@@ -878,6 +882,12 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
     fun isQuestionRecordingInProgress(): Boolean = isQuestionRecordingInProgress
 
+    /** Öğretmen, CreateQuestion'dan Gönder ile NotificationFragment'te soru seçme modundaysa true.
+     *  abacusFragmentContainer bu sürede gizlense de içindeki fragment (Abacus/AbacusPractice) canlı
+     *  kalıp kendi geri tuşu callback'ini tetikleyebiliyor; bu callback'ler geri tuşunu yutmak için
+     *  bunu kontrol ediyor. */
+    fun isTeacherSelectingQuestionToSend(): Boolean = teacherPendingMediaPath != null
+
     fun startQuestionFlow(containerId: Int, viewToCapture: () -> View?) {
         if (isQuestionRecordingInProgress) return
         if (supportFragmentManager.findFragmentByTag(QuestionMediaPickerDialogFragment.TAG) != null) return
@@ -945,8 +955,14 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
 
         // 2) Alt panel + geri butonu; soru seçilirken alt navigasyon gizlensin
         binding.teacherSendToQuestionBar.visibility = View.VISIBLE
+        binding.teacherSendTopBar.visibility = View.VISIBLE
         binding.teacherSendBackButton.visibility = View.VISIBLE
         binding.bottomNavigationID.visibility = View.GONE
+
+        // Abaküs/ders pratik ekranı (abacusFragmentContainer) tüm ekranı kaplayıp tıklamaları yuttuğu için,
+        // altta açılacak NotificationFragment + seçim barını görünmez kılıyordu. Geçici olarak kapat.
+        teacherPendingAbacusContainerWasVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
+        binding.abacusFragmentContainer.visibility = View.GONE
         binding.teacherSendQuestionTitle.text = ""
         binding.teacherSendButton.isEnabled = false
         binding.teacherSendButton.alpha = 0.5f
@@ -999,6 +1015,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             ?.exitTeacherSelectionMode()
 
         binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendTopBar.visibility = View.GONE
         binding.teacherSendBackButton.visibility = View.GONE
         binding.bottomNavigationID.visibility = View.VISIBLE
         teacherSelectedQuestionId = null
@@ -1023,8 +1040,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
         binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendTopBar.visibility = View.GONE
         binding.teacherSendBackButton.visibility = View.GONE
         binding.bottomNavigationID.visibility = View.VISIBLE
+        if (teacherPendingAbacusContainerWasVisible) {
+            binding.abacusFragmentContainer.visibility = View.VISIBLE
+        }
+        teacherPendingAbacusContainerWasVisible = false
         (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? NotificationFragment)?.exitTeacherSelectionMode()
     }
 
@@ -1043,12 +1065,38 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             return
         }
         val role = authManager.getCurrentUserType()
+        val messageType = if (mediaType == StudentQuestion.MEDIA_TYPE_VIDEO) QuestionMessage.TYPE_VIDEO else QuestionMessage.TYPE_IMAGE
 
-        // 1) Medya mesajını (varsa açıklama ile tek mesaj olarak) kuyruğa al
+        // 1) Medya mesajını (varsa açıklama ile tek mesaj olarak) kuyruğa al.
         val mediaClientId = "pending_${System.currentTimeMillis()}"
+
+        // QuestionChatFragment bu upload'ı kendisi başlatmadığı için (fragment henüz açık değil),
+        // retry meta'sını ve optimistic pending mesajı burada, QuestionChatFragment.startUploadService()
+        // ile aynı şekilde kaydediyoruz. Aksi halde: (a) servisin ACTION_UPLOAD_STARTED broadcast'i
+        // fragment receiver'ı register olmadan gelirse mesaj sohbette hiç görünmez, (b) upload
+        // başarısız olursa ne kullanıcı fark eder ne de "tekrar gönder" seçeneği çalışır.
+        GlobalValues.uploadMetaByClientId[mediaClientId] = PendingUploadMeta(
+            questionId = questionId,
+            type = messageType,
+            filePath = mediaPath,
+            textContent = null,
+            caption = description
+        )
+        GlobalValues.activeUploadIdsByQuestion.getOrPut(questionId) { mutableSetOf() }.add(mediaClientId)
+        GlobalValues.pendingQuestionMessages.getOrPut(questionId) { mutableListOf() }.add(
+            QuestionMessage(
+                id = mediaClientId,
+                senderUid = uid,
+                senderRole = role,
+                type = messageType,
+                textContent = description,
+                createdAt = Timestamp.now()
+            )
+        )
+
         Intent(this, QuestionUploadForegroundService::class.java).apply {
             putExtra(QuestionUploadForegroundService.KEY_QUESTION_ID, questionId)
-            putExtra(QuestionUploadForegroundService.KEY_TYPE, if (mediaType == StudentQuestion.MEDIA_TYPE_VIDEO) QuestionMessage.TYPE_VIDEO else QuestionMessage.TYPE_IMAGE)
+            putExtra(QuestionUploadForegroundService.KEY_TYPE, messageType)
             putExtra(QuestionUploadForegroundService.KEY_CLIENT_ID, mediaClientId)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_UID, uid)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_ROLE, role)
@@ -1060,13 +1108,27 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             QuestionUploadForegroundService.start(applicationContext, it)
         }
 
+        // 2) Sohbetin son mesaj zamanını güncelle; aksi halde sohbet listeleri (lastMessageAt'e göre
+        // sıralanıyor) bu yeni mesajı yansıtmak için üste taşınmaz.
+        firestore.collection("questions").document(questionId)
+            .update("lastMessageAt", Timestamp.now())
+
         // Temizlik: overlay, bar, geri butonu, alt nav tekrar göster, geçici state (dosyayı servis silecek)
         supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
             supportFragmentManager.popBackStack()
         }
+        // NotificationFragment az sonra QuestionChatFragment ile replace edilecek; oradan geri
+        // dönüldüğünde (popBackStack) view'ı yeniden oluşturulunca seçim moduna tekrar girmesin
+        // diye burada, henüz view'ı yok edilmeden seçim modundan çıkarıyoruz.
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? NotificationFragment)
+            ?.exitTeacherSelectionMode()
         binding.teacherSendToQuestionBar.visibility = View.GONE
+        binding.teacherSendTopBar.visibility = View.GONE
         binding.teacherSendBackButton.visibility = View.GONE
         binding.bottomNavigationID.visibility = View.VISIBLE
+        // abacusFragmentContainer kasıtlı olarak GONE bırakılıyor: kullanıcı artık sohbet ekranına gidiyor,
+        // pratik ekranı geri gelirse chat'i (elevation'ı düşük olduğu için) tamamen kaplar.
+        teacherPendingAbacusContainerWasVisible = false
         teacherPendingMediaType = null
         teacherPendingMediaPath = null
         teacherPendingDescription = null
@@ -1906,8 +1968,17 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     private fun updateEnergyDisplay(energy: Int) {
-        // Abonelik durumunu kontrol et
-        checkSubscriptionAndUpdateEnergy()
+        // NOT: Burada checkSubscriptionAndUpdateEnergy() ÇAĞIRMA — o fonksiyon Firestore'dan
+        // veri çekip energyManager.setUserPlan()/setUserRoleApproval() çağırıyor, onlar da bu
+        // callback'i (energyUpdateCallback) tekrar tetikliyor. Böyle bir çağrı sonsuz (ve her
+        // adımda dallanan) bir Firestore fetch döngüsüne yol açıp uygulamayı kilitliyordu.
+        // Burada sadece zaten bilinen yerel duruma göre UI'ı güncelliyoruz.
+        if (!::binding.isInitialized) return
+        binding.energyText.text = when {
+            energyManager.isEnergyBlocked() -> "0/${energyManager.getMaxEnergy()}"
+            energyManager.isInfiniteEnergy() -> "∞"
+            else -> "$energy/${energyManager.getMaxEnergy()}"
+        }
     }
     
     fun checkSubscriptionAndUpdateEnergy() {
@@ -1925,16 +1996,25 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     val plan = doc.getString("plan") ?: "Free"
-                    GlobalValues.isTeacherApproved = doc.getBoolean("teacherApproved") == true
+                    val role = doc.getString("role") ?: ""
+                    val teacherApproved = doc.getBoolean("teacherApproved") == true
+                    GlobalValues.isTeacherApproved = teacherApproved
                     energyManager.setUserPlan(plan)
-                    
-                    // Pro veya Premium ise sonsuz işareti göster
-                    if (plan == "Pro" || plan == "Premium") {
-                        binding.energyText.text = "∞"
-                    } else {
-                        // Free plan - normal gösterim
-                        val energy = energyManager.getCurrentEnergy()
-                        binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    energyManager.setUserRoleApproval(role, teacherApproved)
+
+                    when {
+                        // Onaysız öğretmen: plan ne olursa olsun enerji her zaman 0
+                        energyManager.isEnergyBlocked() -> {
+                            binding.energyText.text = "0/${energyManager.getMaxEnergy()}"
+                        }
+                        // teacherApproved=true veya Pro/Premium plan: sonsuz enerji
+                        energyManager.isInfiniteEnergy() -> {
+                            binding.energyText.text = "∞"
+                        }
+                        else -> {
+                            val energy = energyManager.getCurrentEnergy()
+                            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                        }
                     }
                 } else {
                     // Firestore'da kayıt yok, normal gösterim
@@ -1955,8 +2035,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
     fun isInfiniteEnergy(): Boolean {
-        if (!::binding.isInitialized) return false
-        return binding.energyText.text.toString() == "∞"
+        return energyManager.isInfiniteEnergy()
     }
 
     private fun attachSeasonLeaderboardPendingListenerIfLoggedIn() {

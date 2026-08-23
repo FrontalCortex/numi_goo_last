@@ -368,47 +368,71 @@ object AbacusBeadRenderer {
         buildBeadForType(context, AbacusPreferences.getBeadType(context), isSelected)
 
     /**
+     * Pre-builds (and caches in [bitmapCache]) every distinct [BeadType] currently assigned to
+     * one of the 25 slots (both selected/unselected variants). Several bead types
+     * (ANIMAL*, BOWLING, BALL*) render via per-pixel bitmap colour replacement, which is
+     * expensive — cheap SOROBAN-only setups cost nothing here, but a device that just hydrated
+     * many distinct custom bead types from Firestore for the first time (cold, empty
+     * [bitmapCache]) can otherwise stall the main thread for seconds if rendered synchronously.
+     * Call this from a background dispatcher (e.g. [kotlinx.coroutines.Dispatchers.Default])
+     * before the first [AbacusBeadController.refreshAll] on a freshly hydrated device.
+     */
+    fun prewarmAllSlotDrawables(context: Context) {
+        val types = mutableSetOf(AbacusPreferences.getBeadType(context))
+        for (rod in 0..4) {
+            types.add(AbacusPreferences.getBeadTypeForSlot(context, rod, isTop = true))
+            for (i in 0..3) {
+                types.add(AbacusPreferences.getBeadTypeForSlot(context, rod, isTop = false, beadIndex = i))
+            }
+        }
+        for (type in types) {
+            buildBeadForType(context, type, isSelected = false)
+            buildBeadForType(context, type, isSelected = true)
+        }
+    }
+
+    /**
      * Builds a drawable for an explicit [BeadType], respecting saved colours.
      * Used for per-bead slot rendering.
      */
-    fun buildBeadForType(context: Context, type: AbacusPreferences.BeadType, isSelected: Boolean): Drawable =
+    fun buildBeadForType(context: Context, type: AbacusPreferences.BeadType, isSelected: Boolean, colorsOverride: IntArray? = null): Drawable =
         when (type) {
-            AbacusPreferences.BeadType.SOROBAN -> buildSorobanDrawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL -> buildAnimalDrawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL2 -> buildAnimal2Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL3 -> buildAnimal3Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL4 -> buildAnimal4Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL5 -> buildAnimal5Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL6 -> buildAnimal6Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL7 -> buildAnimal7Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL8 -> buildAnimal8Drawable(context, isSelected)
-            AbacusPreferences.BeadType.ANIMAL9 -> buildAnimal9Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BOWLING -> buildBowlingDrawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL1 -> buildBall1Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL3 -> buildBall3Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL4 -> buildBall4Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL5 -> buildBall5Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL6 -> buildBall6Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL7 -> buildBall7Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL8 -> buildBall8Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL9 -> buildBall9Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL10 -> buildBall10Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL11 -> buildBall11Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL12 -> buildBall12Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL13 -> buildBall13Drawable(context, isSelected)
-            AbacusPreferences.BeadType.BALL14 -> buildBall14Drawable(context, isSelected)
-            AbacusPreferences.BeadType.SOROBAN2 -> buildSoroban2Drawable(context, isSelected)
-            AbacusPreferences.BeadType.SOROBAN6 -> buildSoroban6Drawable(context, isSelected)
+            AbacusPreferences.BeadType.SOROBAN -> buildSorobanDrawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL -> buildAnimalDrawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL2 -> buildAnimal2Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL3 -> buildAnimal3Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL4 -> buildAnimal4Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL5 -> buildAnimal5Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL6 -> buildAnimal6Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL7 -> buildAnimal7Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL8 -> buildAnimal8Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.ANIMAL9 -> buildAnimal9Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BOWLING -> buildBowlingDrawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL1 -> buildBall1Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL3 -> buildBall3Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL4 -> buildBall4Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL5 -> buildBall5Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL6 -> buildBall6Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL7 -> buildBall7Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL8 -> buildBall8Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL9 -> buildBall9Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL10 -> buildBall10Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL11 -> buildBall11Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL12 -> buildBall12Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL13 -> buildBall13Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.BALL14 -> buildBall14Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.SOROBAN2 -> buildSoroban2Drawable(context, isSelected, colorsOverride)
+            AbacusPreferences.BeadType.SOROBAN6 -> buildSoroban6Drawable(context, isSelected, colorsOverride)
 
-            else -> buildSorobanDrawable(context, isSelected)
+            else -> buildSorobanDrawable(context, isSelected, colorsOverride)
         }
 
     /**
      * Builds a soroban bead [LayerDrawable] with per-path tinting.
      * Layer order mirrors soroban_bead.xml: outer shell → inner fill → right highlight.
      */
-    fun buildSorobanDrawable(context: Context, selected: Boolean): Drawable {
-        val colors = AbacusPreferences.getSorobanColors(context, selected)
+    fun buildSorobanDrawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val colors = colorsOverride ?: AbacusPreferences.getSorobanColors(context, selected)
         val resIds = if (selected) {
             intArrayOf(
                 R.drawable.soroban_bead_selected_layer1,
@@ -436,170 +460,170 @@ object AbacusBeadRenderer {
     /**
      * Builds an animal head bead drawable using bitmap pixel-colour replacement.
      */
-    fun buildAnimalDrawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimalColors(context, selected)
+    fun buildAnimalDrawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimalColors(context, selected)
         val map = if (selected) ANIMAL_SEL_ORIGINAL_MAP else ANIMAL_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic1 else R.drawable.animal_head_ic1
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal2Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal2Colors(context, selected)
+    fun buildAnimal2Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal2Colors(context, selected)
         val map = if (selected) ANIMAL2_SEL_ORIGINAL_MAP else ANIMAL2_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic2 else R.drawable.animal_head_ic2
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal3Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal3Colors(context, selected)
+    fun buildAnimal3Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal3Colors(context, selected)
         val map = if (selected) ANIMAL3_SEL_ORIGINAL_MAP else ANIMAL3_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic3 else R.drawable.animal_head_ic3
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal4Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal4Colors(context, selected)
+    fun buildAnimal4Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal4Colors(context, selected)
         val map = if (selected) ANIMAL4_SEL_ORIGINAL_MAP else ANIMAL4_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic4 else R.drawable.animal_head_ic4
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal5Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal5Colors(context, selected)
+    fun buildAnimal5Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal5Colors(context, selected)
         val map = if (selected) ANIMAL5_SEL_ORIGINAL_MAP else ANIMAL5_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic5 else R.drawable.animal_head_ic5
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal6Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal6Colors(context, selected)
+    fun buildAnimal6Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal6Colors(context, selected)
         val map = if (selected) ANIMAL6_SEL_ORIGINAL_MAP else ANIMAL6_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic6 else R.drawable.animal_head_ic6
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal7Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal7Colors(context, selected)
+    fun buildAnimal7Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal7Colors(context, selected)
         val map = if (selected) ANIMAL7_SEL_ORIGINAL_MAP else ANIMAL7_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic7 else R.drawable.animal_head_ic7
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal8Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal8Colors(context, selected)
+    fun buildAnimal8Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal8Colors(context, selected)
         val map = if (selected) ANIMAL8_SEL_ORIGINAL_MAP else ANIMAL8_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic8 else R.drawable.animal_head_ic8
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildAnimal9Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getAnimal9Colors(context, selected)
+    fun buildAnimal9Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getAnimal9Colors(context, selected)
         val map = if (selected) ANIMAL9_SEL_ORIGINAL_MAP else ANIMAL9_ORIGINAL_MAP
         val res = if (selected) R.drawable.animal_head_selected_ic9 else R.drawable.animal_head_ic9
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBowlingDrawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBowlingColors(context, selected)
+    fun buildBowlingDrawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBowlingColors(context, selected)
         val map = if (selected) BOWLING_SEL_ORIGINAL_MAP else BOWLING_ORIGINAL_MAP
         val res = if (selected) R.drawable.bowling_ball_selected_ic else R.drawable.bowling_ball_ic
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall1Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall1Colors(context, selected)
+    fun buildBall1Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall1Colors(context, selected)
         val map = if (selected) BALL1_SEL_ORIGINAL_MAP else BALL1_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball1 else R.drawable.abacus_bead_ball1
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall3Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall3Colors(context, selected)
+    fun buildBall3Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall3Colors(context, selected)
         val map = if (selected) BALL3_SEL_ORIGINAL_MAP else BALL3_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball3 else R.drawable.abacus_bead_ball3
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall4Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall4Colors(context, selected)
+    fun buildBall4Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall4Colors(context, selected)
         val map = if (selected) BALL4_SEL_ORIGINAL_MAP else BALL4_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball4 else R.drawable.abacus_bead_ball4
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall5Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall5Colors(context, selected)
+    fun buildBall5Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall5Colors(context, selected)
         val map = if (selected) BALL5_SEL_ORIGINAL_MAP else BALL5_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball5 else R.drawable.abacus_bead_ball5
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall6Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall6Colors(context, selected)
+    fun buildBall6Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall6Colors(context, selected)
         val map = if (selected) BALL6_SEL_ORIGINAL_MAP else BALL6_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball6 else R.drawable.abacus_bead_ball6
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall7Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall7Colors(context, selected)
+    fun buildBall7Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall7Colors(context, selected)
         val map = if (selected) BALL7_SEL_ORIGINAL_MAP else BALL7_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball7 else R.drawable.abacus_bead_ball7
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall8Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall8Colors(context, selected)
+    fun buildBall8Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall8Colors(context, selected)
         val map = if (selected) BALL8_SEL_ORIGINAL_MAP else BALL8_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball8 else R.drawable.abacus_bead_ball8
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall9Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall9Colors(context, selected)
+    fun buildBall9Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall9Colors(context, selected)
         val map = if (selected) BALL9_SEL_ORIGINAL_MAP else BALL9_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball9 else R.drawable.abacus_bead_ball9
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall10Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall10Colors(context, selected)
+    fun buildBall10Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall10Colors(context, selected)
         val map = if (selected) BALL10_SEL_ORIGINAL_MAP else BALL10_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball10 else R.drawable.abacus_bead_ball10
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall11Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall11Colors(context, selected)
+    fun buildBall11Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall11Colors(context, selected)
         val map = if (selected) BALL11_SEL_ORIGINAL_MAP else BALL11_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball11 else R.drawable.abacus_bead_ball11
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall12Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall12Colors(context, selected)
+    fun buildBall12Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall12Colors(context, selected)
         val map = if (selected) BALL12_SEL_ORIGINAL_MAP else BALL12_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball12 else R.drawable.abacus_bead_ball12
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall13Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall13Colors(context, selected)
+    fun buildBall13Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall13Colors(context, selected)
         val map = if (selected) BALL13_SEL_ORIGINAL_MAP else BALL13_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball13 else R.drawable.abacus_bead_ball13
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    fun buildBall14Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getBall14Colors(context, selected)
+    fun buildBall14Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getBall14Colors(context, selected)
         val map = if (selected) BALL14_SEL_ORIGINAL_MAP else BALL14_ORIGINAL_MAP
         val res = if (selected) R.drawable.abacus_bead_selected_ball14 else R.drawable.abacus_bead_ball14
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
 
-    fun buildSoroban2Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getSoroban2Colors(context, selected)
+    fun buildSoroban2Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getSoroban2Colors(context, selected)
         var cacheKey = if (selected) 2 else 1
         for (c in newColors) {
             cacheKey = 31 * cacheKey + c
@@ -650,14 +674,25 @@ object AbacusBeadRenderer {
         return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
     }
 
-    fun buildSoroban6Drawable(context: Context, selected: Boolean): Drawable {
-        val newColors = AbacusPreferences.getSoroban6Colors(context, selected)
+    fun buildSoroban6Drawable(context: Context, selected: Boolean, colorsOverride: IntArray? = null): Drawable {
+        val newColors = colorsOverride ?: AbacusPreferences.getSoroban6Colors(context, selected)
         val map = if (selected) SOROBAN6_SEL_ORIGINAL_MAP else SOROBAN6_ORIGINAL_MAP
         val res = if (selected) R.drawable.soroban_bead6_selected else R.drawable.soroban_bead6
         return buildReplacedBitmapDrawable(context, res, map, newColors)
     }
 
-    private val bitmapCache = mutableMapOf<Int, Bitmap>()
+    /**
+     * LRU-bounded: artık sadece cihazın kendi lokal renk seçimlerini değil, gezilen diğer
+     * kullanıcıların profillerindeki (kartlar + abaküs paneli) rastgele boncuk/renk kombinasyonlarını
+     * da önbelleğe alıyor — bunlar kullanıcı kontrolünde olmadığından sayısı pratikte sınırsız
+     * olabilir. Sabit boyutlu bir Map bu durumda süresiz büyür (her biri yüzlerce KB'lık Bitmap'ler
+     * biriktirerek); en az kullanılanları atarak büyümeyi sınırlıyoruz.
+     */
+    private const val MAX_BITMAP_CACHE_ENTRIES = 48
+    private val bitmapCache = object : LinkedHashMap<Int, Bitmap>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Bitmap>?): Boolean =
+            size > MAX_BITMAP_CACHE_ENTRIES
+    }
 
     private fun buildReplacedBitmapDrawable(
         context: Context,

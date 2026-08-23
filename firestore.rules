@@ -14,9 +14,14 @@ service cloud.firestore {
       allow read: if request.auth != null; // Yalnızca giriş yapmış kullanıcılar okuyabilir (GDPR/KVKK koruması) 
       allow create, delete: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && (
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keys', 'currency', 'role', 'teacherApproved', 'plan', 'userId', 'uid', 'email', 'createdAt'])) || 
+        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keys', 'currency', 'role', 'teacherApproved', 'plan', 'userId', 'uid', 'email', 'createdAt'])) ||
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount']) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount']) ||
+        (isTeacher() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
+          'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
+          'restrictedAt', 'restrictedByUid'
+        ]))
       );
     }
 
@@ -37,7 +42,13 @@ service cloud.firestore {
     match /users/{userId}/cupWayProgress/{doc} {
       allow read: if request.auth != null;
     }
+    match /users/{userId}/cupHistory/{doc} {
+      allow read: if request.auth != null;
+    }
     match /users/{userId}/lessonProgress/{doc} {
+      allow read: if request.auth != null;
+    }
+    match /users/{userId}/abacusCustomization/{doc} {
       allow read: if request.auth != null;
     }
 
@@ -88,14 +99,23 @@ service cloud.firestore {
       }
     }
 
-    // Bildirilen mesajlar: giriş yapmış kullanıcı rapor ekleyebilir; kendi raporunu veya öğretmen tümünü okuyabilir
+    // Bildirilen mesajlar: giriş yapmış kullanıcı rapor ekleyebilir; kendi raporunu veya onaylı öğretmen tümünü okuyabilir/işleyebilir
     match /messageReports/{reportId} {
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reportedByUid == request.auth.uid;
       allow read: if request.auth != null && (
         resource.data.reportedByUid == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'TEACHER'
+        isTeacher()
       );
-      allow update, delete: if false;
+      // Onaylı öğretmen: sadece pending -> dismissed/action_taken geçişi, sadece işlem alanlarını değiştirebilir.
+      allow update: if request.auth != null && isTeacher()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['dismissed', 'action_taken']
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'handledByUid', 'handledAt'])
+        && request.resource.data.handledByUid == request.auth.uid;
+      allow delete: if false;
     }
 
     // Tahta üst dokümanı (meta): sezon sonu CF sorgusu için partId / lessonIndex / season (+ isteğe bağlı titleUnit).
@@ -148,6 +168,12 @@ service cloud.firestore {
     match /appStatistics/{docId} {
       allow create, update: if request.auth != null;
       allow read, delete: if false;
+    }
+
+    // Günlük Soru Başarı Oranları
+    match /successRate/{document=**} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if false;
     }
 
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)

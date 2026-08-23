@@ -80,4 +80,7 @@
     <color name="badge_tone_silver_filter">#434343</color>
     <color name="badge_tone_red_filter">#00FF8C</color>
     <color name="badge_tone_purple_filter">#00FF84</color>
+
+    <color name="outline_button_bg">#131F24</color>
+    <color name="outline_button_stroke">#37464F</color>
 </resources>

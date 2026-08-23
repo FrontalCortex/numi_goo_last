@@ -17,8 +17,14 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.app.databinding.FragmentAbacusPracticeBinding
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusBeadRenderer
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AbacusPracticeFragment : Fragment() {
 
@@ -83,6 +89,20 @@ class AbacusPracticeFragment : Fragment() {
         )
         abacusController.setup()
         ensureAbacusMetricsIfVisible()
+        FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+            val ctx = requireContext().applicationContext
+            AbacusCustomizationFirestore.ensureHydrated(requireContext(), uid) {
+                if (!isAdded) return@ensureHydrated
+                // Pahalı (bitmap tabanlı) boncuk tiplerini ana thread'i kilitlemeden önce
+                // arka planda ısıt — bkz. AbacusBeadRenderer.prewarmAllSlotDrawables.
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.Default) {
+                        AbacusBeadRenderer.prewarmAllSlotDrawables(ctx)
+                    }
+                    if (isAdded) abacusController.refreshAll()
+                }
+            }
+        }
 
         binding.correctPanel.visibility = View.GONE
         binding.incorrectPanel.visibility = View.GONE
@@ -97,6 +117,8 @@ class AbacusPracticeFragment : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
+                    if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+
                     if (parentFragmentManager.findFragmentByTag(OperatorPickerBottomSheetFragment.TAG) != null) {
                         parentFragmentManager.popBackStack()
                         return

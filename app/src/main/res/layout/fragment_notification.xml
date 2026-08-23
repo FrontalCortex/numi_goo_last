@@ -31,11 +31,13 @@
 
         <LinearLayout
             android:id="@+id/teacherTabContainer"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:visibility="gone"
-            android:gravity="start">
+            android:padding="3dp"
+            android:layout_marginTop="@dimen/notification_student_tabs_margin_top"
+            android:background="@drawable/bg_segment_control">
 
             <TextView
                 android:id="@+id/tabPool"
@@ -47,7 +49,7 @@
                 android:text="Soru havuzu"
                 android:textSize="@dimen/notification_tab_text_size"
                 android:textStyle="bold"
-                android:background="@drawable/hint_background"
+                android:background="@drawable/bg_segment_selected"
                 android:textColor="@android:color/white" />
 
             <TextView
@@ -56,21 +58,68 @@
                 android:layout_height="@dimen/notification_tab_height"
                 android:paddingStart="@dimen/notification_tab_padding_h"
                 android:paddingEnd="@dimen/notification_tab_padding_h"
-                android:layout_marginStart="@dimen/notification_tab_spacing"
                 android:gravity="center"
                 android:text="Sohbetler"
                 android:textSize="@dimen/notification_tab_text_size"
-                android:textColor="#AAAAAA" />
+                android:textStyle="bold"
+                android:textColor="@color/dark_text_secondary" />
+
+            <TextView
+                android:id="@+id/tabReports"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/notification_tab_height"
+                android:paddingStart="@dimen/notification_tab_padding_h"
+                android:paddingEnd="@dimen/notification_tab_padding_h"
+                android:gravity="center"
+                android:text="Raporlar"
+                android:textSize="@dimen/notification_tab_text_size"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/reportsSubTabContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:padding="3dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_segment_control">
+
+            <TextView
+                android:id="@+id/subTabReportsList"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:minWidth="130dp"
+                android:gravity="center"
+                android:text="Bildirilen Mesajlar"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_segment_selected" />
+
+            <TextView
+                android:id="@+id/subTabRestrictedUsers"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:minWidth="130dp"
+                android:gravity="center"
+                android:text="Kısıtlı Kullanıcılar"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/dark_text_secondary" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/studentTabContainer"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:visibility="gone"
-            android:gravity="start"
-            android:layout_marginTop="@dimen/notification_student_tabs_margin_top">
+            android:padding="3dp"
+            android:layout_marginTop="@dimen/notification_student_tabs_margin_top"
+            android:background="@drawable/bg_segment_control">
 
             <TextView
                 android:id="@+id/tabBekleyen"
@@ -82,7 +131,7 @@
                 android:text="Bekleyen"
                 android:textSize="@dimen/notification_tab_text_size"
                 android:textStyle="bold"
-                android:background="@drawable/hint_background"
+                android:background="@drawable/bg_segment_selected"
                 android:textColor="@android:color/white" />
 
             <TextView
@@ -91,11 +140,11 @@
                 android:layout_height="@dimen/notification_tab_height"
                 android:paddingStart="@dimen/notification_tab_padding_h"
                 android:paddingEnd="@dimen/notification_tab_padding_h"
-                android:layout_marginStart="@dimen/notification_tab_spacing"
                 android:gravity="center"
                 android:text="Çözülen"
                 android:textSize="@dimen/notification_tab_text_size"
-                android:textColor="#AAAAAA" />
+                android:textStyle="bold"
+                android:textColor="@color/dark_text_secondary" />
         </LinearLayout>
     </LinearLayout>
 

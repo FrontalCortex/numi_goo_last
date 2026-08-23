@@ -13,6 +13,13 @@ service firebase.storage {
     match /question_media/{questionId}/{fileName} {
       allow read, write: if request.auth != null;
     }
+    // Tutorial sesleri (Remote Config'ten "soundUrl" ile referans verilir): statik eğitim
+    // içeriği, hassas veri değil. Misafir kullanıcılar (ilk açılışta) kimliksiz olduğu için
+    // okuma herkese açık olmalı. Yazma sadece Firebase Console/Admin SDK üzerinden yapılır.
+    match /tutorial_audio/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
 

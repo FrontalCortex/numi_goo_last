@@ -49,6 +49,7 @@ class BlindingLessonFragment : Fragment() {
         private const val ARG_DAILY_PERIOD_KEY = "daily_period_key"
         private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
         private const val ARG_DAILY_INTERVAL_MS = "daily_interval_ms"
+        private const val ARG_DAILY_PART_ID = "daily_part_id"
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
 
         fun newDailyQuestionInstance(
@@ -56,6 +57,7 @@ class BlindingLessonFragment : Fragment() {
             periodKey: String,
             slotIndex: Int,
             displayIntervalMs: Long?,
+            partId: Int,
         ): BlindingLessonFragment {
             return BlindingLessonFragment().apply {
                 arguments = Bundle().apply {
@@ -63,6 +65,7 @@ class BlindingLessonFragment : Fragment() {
                     putSerializable("operations", ArrayList(operations))
                     putString(ARG_DAILY_PERIOD_KEY, periodKey)
                     putInt(ARG_DAILY_SLOT_INDEX, slotIndex)
+                    putInt(ARG_DAILY_PART_ID, partId)
                     displayIntervalMs?.let { putLong(ARG_DAILY_INTERVAL_MS, it) }
                 }
             }
@@ -123,7 +126,7 @@ class BlindingLessonFragment : Fragment() {
         else -> R.layout.multiplication_table_1
     }
 
-    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..9
+    private fun usesRulesTablePicker(): Boolean = globalPartId in 4..9 || isDailyQuestionMode
     private var resultDialog: Dialog? = null
 
     private var seconds = 0
@@ -163,6 +166,7 @@ class BlindingLessonFragment : Fragment() {
     private var dailyQuestionSessionPeriodKey: String? = null
     /** Bu oturumdaki soru indeksi (0..2). */
     private var dailyQuestionSlotIndex: Int = 0
+    private var dailyQuestionPartId: Int = -1
     private var lessonStarted = false
 
     private var isShowingSequence = false
@@ -229,6 +233,7 @@ class BlindingLessonFragment : Fragment() {
             dailyQuestionSessionPeriodKey = arguments?.getString(ARG_DAILY_PERIOD_KEY)
                 ?: DailyQuestionPeriod.currentPeriodKey()
             dailyQuestionSlotIndex = arguments?.getInt(ARG_DAILY_SLOT_INDEX, 0)?.coerceIn(0, 2) ?: 0
+            dailyQuestionPartId = arguments?.getInt(ARG_DAILY_PART_ID, -1) ?: -1
         }
         
         // Initialize operations first so we can check it
@@ -1120,6 +1125,8 @@ class BlindingLessonFragment : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
+                    if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+
                     val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment")
                     if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
                         rulesFragment.closeWithAnimation()
@@ -1367,13 +1374,13 @@ class BlindingLessonFragment : Fragment() {
         if (!usesRulesTablePicker()) {
             updateActiveRulesPanelTable()
         }
-        if(globalPartId == 5 || globalPartId == 8){
+        if(globalPartId == 5 || globalPartId == 8 || (isDailyQuestionMode && dailyQuestionPartId == 2)){
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.EXTRACTION)
             rulesFragment?.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
             rulesFragment?.updateBeadRuleExtractionTableLayout(View.VISIBLE)
         }
-        if(globalPartId == 6){
+        if(globalPartId == 6 || (isDailyQuestionMode && (dailyQuestionPartId == 1 || dailyQuestionPartId == 3))){
             rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
             rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
             rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
@@ -2151,6 +2158,9 @@ class BlindingLessonFragment : Fragment() {
             closeFragment()
             return
         }
+        
+        DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = false)
+        
         DailyQuestionRepository.markPendingDiamondContinue(
             requireContext(),
             periodKey,
@@ -2172,6 +2182,9 @@ class BlindingLessonFragment : Fragment() {
             closeFragment()
             return
         }
+        
+        DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = true)
+        
         DailyQuestionRepository.incrementSolvedCount(requireContext(), periodKey) { _ ->
             if (!isAdded) return@incrementSolvedCount
             DailyQuestionBrokenHeartStore.clearBrokenHold116(requireContext(), periodKey)

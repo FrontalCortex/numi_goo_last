@@ -413,9 +413,10 @@ class TasksFragment : Fragment() {
                     focusLabel.visibility = View.GONE
                 } else {
                     focusLabel.visibility = View.VISIBLE
+                    val rateText = state.globalSuccessRate?.let { " - Başarı: %$it" } ?: ""
                     focusLabel.text = ctx.getString(
                         R.string.daily_question_focus_format,
-                        state.difficulty,
+                        state.difficulty + rateText,
                     )
                 }
 
@@ -796,6 +797,7 @@ class TasksFragment : Fragment() {
                 periodKey = challenge.periodKey,
                 slotIndex = slotIndex,
                 displayIntervalMs = slot.displayIntervalMs,
+                partId = slot.partId,
             ),
         )
     }

@@ -59,6 +59,7 @@ data class DailyQuestionCardUiState(
     val rewardClaimed: Boolean,
     val poolAvailable: Boolean,
     val pendingContinueSlotIndex: Int? = null,
+    val globalSuccessRate: Int? = null,
     /** Firestore/prefs kart verisi yüklendiyse true; placeholder bind animasyonu tetiklemez. */
     val isLoaded: Boolean = false,
 ) {

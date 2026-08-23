@@ -39,12 +39,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentQuestionChatBinding
+import com.example.app.model.MessageReport
 import com.example.app.model.QuestionMessage
 import com.example.app.model.StudentQuestion
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
@@ -477,6 +479,21 @@ class QuestionChatFragment : Fragment() {
                         this@QuestionChatFragment.isUserRestrictedOrBanned = true
                         binding.inputBar.visibility = View.GONE
                         binding.restrictionMessage.visibility = View.VISIBLE
+                        binding.restrictionMessageText.text = when {
+                            banned -> "Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır. Mesaj gönderemezsiniz."
+                            restrictedUntil != null -> {
+                                val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedUntil.toDate())
+                                "Hesabınız kural ihlali nedeniyle $dateText tarihine kadar kısıtlanmıştır. Mesaj gönderemezsiniz."
+                            }
+                            else -> "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
+                        }
+                        binding.restrictionAppealButton.setOnClickListener {
+                            SupportContactHelper.openSupportEmail(
+                                this@QuestionChatFragment,
+                                subject = "Hesap kısıtlaması itirazı",
+                                body = "Merhaba,\n\nHesabımın kısıtlanmasına itiraz etmek istiyorum.\n\nKullanıcı ID: $currentUidForRestriction\n\n"
+                            )
+                        }
                     }
                 }
         }
@@ -776,6 +793,8 @@ class QuestionChatFragment : Fragment() {
         val dialog = AlertDialog.Builder(requireContext())
             .setView(view)
             .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        view.findViewById<View>(R.id.deleteMessageClose).setOnClickListener { dialog.dismiss() }
         val deleteForEveryoneBtn = view.findViewById<View>(R.id.deleteForEveryone)
         val reportMessageBtn = view.findViewById<View>(R.id.reportMessage)
         val currentUid = auth.currentUser?.uid
@@ -792,8 +811,7 @@ class QuestionChatFragment : Fragment() {
         }
         reportMessageBtn.setOnClickListener {
             dialog.dismiss()
-            reportMessageToFirestore(message)
-            Toast.makeText(requireContext(), "Bildiriminiz alındı.", Toast.LENGTH_SHORT).show()
+            showReportReasonDialog(message)
         }
         view.findViewById<View>(R.id.deleteCancel).setOnClickListener { dialog.dismiss() }
         dialog.show()
@@ -825,7 +843,34 @@ class QuestionChatFragment : Fragment() {
             .addOnFailureListener { e -> Toast.makeText(requireContext(), "Silinemedi: ${e.message}", Toast.LENGTH_SHORT).show() }
     }
 
-    private fun reportMessageToFirestore(message: QuestionMessage) {
+    private fun showReportReasonDialog(message: QuestionMessage) {
+        val view = layoutInflater.inflate(R.layout.dialog_report_reason, null)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(view)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        view.findViewById<View>(R.id.reportReasonClose).setOnClickListener { dialog.dismiss() }
+        view.findViewById<View>(R.id.reportReasonHarassment).setOnClickListener {
+            dialog.dismiss()
+            reportMessageToFirestore(message, MessageReport.REASON_HARASSMENT)
+        }
+        view.findViewById<View>(R.id.reportReasonSpam).setOnClickListener {
+            dialog.dismiss()
+            reportMessageToFirestore(message, MessageReport.REASON_SPAM)
+        }
+        view.findViewById<View>(R.id.reportReasonInappropriate).setOnClickListener {
+            dialog.dismiss()
+            reportMessageToFirestore(message, MessageReport.REASON_INAPPROPRIATE)
+        }
+        view.findViewById<View>(R.id.reportReasonOther).setOnClickListener {
+            dialog.dismiss()
+            reportMessageToFirestore(message, MessageReport.REASON_OTHER)
+        }
+        view.findViewById<View>(R.id.reportReasonCancel).setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun reportMessageToFirestore(message: QuestionMessage, reason: String) {
         val reportedByUid = auth.currentUser?.uid ?: return
         val messagePreview = when (message.type) {
             QuestionMessage.TYPE_TEXT -> (message.textContent?.take(100) ?: "").ifEmpty { "-" }
@@ -840,10 +885,24 @@ class QuestionChatFragment : Fragment() {
             "reportedByUid" to reportedByUid,
             "reportedUserUid" to message.senderUid,
             "messagePreview" to messagePreview,
+            "reason" to reason,
+            "type" to message.type,
+            "mediaUrl" to message.mediaUrl,
+            "thumbnailUrl" to message.thumbnailUrl,
             "reportedAt" to Timestamp.now(),
             "status" to "pending"
         )
-        firestore.collection("messageReports").add(report)
+        // Aynı kullanıcı aynı mesajı tekrar bildiremesin diye deterministik doküman ID'si kullanılıyor.
+        val reportId = "${reportedByUid}_${message.id}"
+        firestore.collection("messageReports").document(reportId).set(report)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Bildiriminiz alındı.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                val alreadyReported = (e as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
+                val text = if (alreadyReported) "Bu mesajı zaten bildirdiniz." else "Bildirim gönderilemedi: ${e.message}"
+                Toast.makeText(requireContext(), text, Toast.LENGTH_SHORT).show()
+            }
     }
 
     private var pendingMediaUri: Uri? = null
@@ -1385,7 +1444,8 @@ class QuestionChatFragment : Fragment() {
                 binding.teacherClaimButton.visibility = View.GONE
                 binding.inputBar.visibility = View.GONE
                 binding.restrictionMessage.visibility = View.VISIBLE
-                binding.restrictionMessage.text = "Bu soru başka bir öğretmen tarafından sahiplenildi."
+                binding.restrictionMessageText.text = "Bu soru başka bir öğretmen tarafından sahiplenildi."
+                binding.restrictionAppealButton.visibility = View.GONE
                 binding.resolveButton.visibility = View.GONE
             }
             questionStatus == StudentQuestion.STATUS_RESOLVED && isClaimedByMe -> {

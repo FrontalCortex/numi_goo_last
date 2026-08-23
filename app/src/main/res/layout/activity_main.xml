@@ -9,6 +9,35 @@
     tools:context=".MainActivity"
     android:fitsSystemWindows="true">
 
+    <!-- Öğretmen soru-gönder seçim modu üst barı: currencyPanel ile aynı görünüm, ama görünürlüğü
+         currencyPanel'den tamamen bağımsız (updateCurrencyPanelVisibility()'nin sabit fragment
+         allow-list'ine bağlı değil; NotificationFragment o listede olmadığı için currencyPanel
+         gizlenince bu bar da onunla beraber kaybolmasın diye ayrı tutuluyor). -->
+    <LinearLayout
+        android:id="@+id/teacherSendTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/background_color"
+        android:paddingVertical="@dimen/main_currency_panel_padding_v"
+        android:paddingHorizontal="@dimen/main_currency_panel_padding_h"
+        android:gravity="center_vertical"
+        android:elevation="4dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/teacherSendBackButton"
+            android:layout_width="@dimen/main_toolbar_icon_back"
+            android:layout_height="@dimen/main_toolbar_icon_back"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back_arrow"
+            android:contentDescription="@string/notification_download_cancel"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
     <LinearLayout
         android:id="@+id/currencyPanel"
         android:layout_width="match_parent"
@@ -23,15 +52,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageButton
-            android:id="@+id/teacherSendBackButton"
-            android:layout_width="@dimen/main_toolbar_icon_back"
-            android:layout_height="@dimen/main_toolbar_icon_back"
-            android:background="@android:color/transparent"
-            android:src="@drawable/ic_back_arrow"
-            android:contentDescription="@string/notification_download_cancel"
-            android:visibility="gone"
-            app:tint="@android:color/white" />
         <ImageButton
             android:id="@+id/lessonPartBackButton"
             android:layout_width="@dimen/main_toolbar_icon_back"
@@ -103,6 +123,18 @@
 
     </LinearLayout>
 
+    <!-- currencyPanel ve teacherSendTopBar aynı üst konumu paylaşıyor ama karşılıklı olarak
+         GONE/VISIBLE oluyorlar; coordinator_layout'un o an hangisi görünürse onun altından
+         başlaması için ikisinden görünür olanın alt kenarını takip eden bir barrier kullanılıyor
+         (barrierAllowsGoneWidgets=false: GONE olan taraf hesaba katılmaz). -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/topBarBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:barrierAllowsGoneWidgets="false"
+        app:constraint_referenced_ids="currencyPanel,teacherSendTopBar" />
+
     <!-- Ders / Record overlay — harita üstünde; varsayılan GONE (alt barı kilitlemesin) -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/abacusFragmentContainer"
@@ -150,7 +182,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/circleBackground_color"
-        app:layout_constraintTop_toBottomOf="@id/currencyPanel" />
+        app:layout_constraintTop_toBottomOf="@id/topBarBarrier" />
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/coordinator_layout"

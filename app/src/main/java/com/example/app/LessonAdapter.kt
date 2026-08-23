@@ -377,12 +377,12 @@ class LessonAdapter(
             // Tıklamanın ilk anından itibaren 0.4 sn tüm ekranı kilitle.
             blockAllTouchesForActionTransition()
             if (item.isCompleted) {
-                getCurrentPlan { plan ->
-                    // Enerji kontrolü (sadece Free plan için)
+                getCurrentPlan { _ ->
+                    // Enerji kontrolü (sonsuz enerji durumu hariç: Pro/Premium plan veya onaylı öğretmen)
                     val mainActivity = context as MainActivity
                     val energyManager = mainActivity.getEnergyManager()
-                    
-                    if (plan == "Free" || plan == "Lite") {
+
+                    if (!energyManager.isInfiniteEnergy()) {
                         if (!energyManager.hasEnoughEnergy(1)) {
                             // Yeterli enerji yok, kullanıcıya uyarı göster
                             behavior.isHideable = true; behavior.state = BottomSheetBehavior.STATE_HIDDEN; showEnergyWarning(context)

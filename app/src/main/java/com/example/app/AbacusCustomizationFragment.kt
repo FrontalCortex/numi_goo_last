@@ -73,6 +73,9 @@ class AbacusCustomizationFragment : Fragment() {
     // Debounce job for async rabbit rendering
     private var renderJob: Job? = null
 
+    // Debounce job for pushing the local customization to Firestore
+    private var syncJob: Job? = null
+
     // ── Bead ownership ────────────────────────────────────────────────────────
     /** Bead IDs the current user owns (loaded from Firestore on fragment creation). */
     private var ownedBeads: Map<String, BeadData> = emptyMap()
@@ -131,6 +134,23 @@ class AbacusCustomizationFragment : Fragment() {
                 if (currentTab == 2) selectTab(2)
                 if (currentTab == 3) selectTab(3)
             })
+            // Başka bir cihazda kaydedilmiş özelleştirme varsa (ve bu cihaz henüz hydrate
+            // edilmediyse) lokale uygula, sonra önizlemeyi/aktif sekmeyi yenile.
+            val ctx = requireContext().applicationContext
+            AbacusCustomizationFirestore.ensureHydrated(requireContext(), uid) {
+                if (!isAdded) return@ensureHydrated
+                // Pahalı (bitmap tabanlı) boncuk tiplerini ana thread'i kilitlemeden önce
+                // arka planda ısıt — bkz. AbacusBeadRenderer.prewarmAllSlotDrawables.
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.Default) {
+                        AbacusBeadRenderer.prewarmAllSlotDrawables(ctx)
+                    }
+                    if (!isAdded) return@launch
+                    refreshPreviewFrameBackground()
+                    previewController?.refreshAll()
+                    selectTab(currentTab)
+                }
+            }
         }
 
         selectTab(0)
@@ -141,8 +161,23 @@ class AbacusCustomizationFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         renderJob?.cancel()
+        syncJob?.cancel()
         previewController = null
         previewAbacusRoot = null
+    }
+
+    /** Değişiklikleri debounce'lu şekilde Firestore'a yazar (users/{uid}/abacusCustomization/state). */
+    private fun scheduleFirestoreSync() {
+        val ctx = requireContext().applicationContext
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        syncJob?.cancel()
+        syncJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(1000)
+            val snapshot = withContext(Dispatchers.Default) {
+                AbacusCustomizationFirestore.buildSnapshotFromLocalPreferences(ctx)
+            }
+            AbacusCustomizationFirestore.saveCustomization(uid, snapshot)
+        }
     }
 
     // ── Preview Abacus ────────────────────────────────────────────────────────
@@ -291,6 +326,7 @@ class AbacusCustomizationFragment : Fragment() {
         cardSoroban.setOnClickListener {
             AbacusPreferences.setBeadType(ctx, BeadType.SOROBAN)
             updateSelection()
+            scheduleFirestoreSync()
             showBeadSlotSelectPanel(BeadType.SOROBAN)
         }
 
@@ -351,7 +387,8 @@ class AbacusCustomizationFragment : Fragment() {
             card.setOnClickListener {
                 AbacusPreferences.setBeadType(ctx, beadType)
                 updateSelection()
-                
+                scheduleFirestoreSync()
+
                 if (((ownedBeads[beadType.name]?.count ?: 0) > 0)) {
                     // Already owned → show slot selection panel directly
                     showBeadSlotSelectPanel(beadType)
@@ -736,6 +773,7 @@ class AbacusCustomizationFragment : Fragment() {
             AbacusPreferences.setBeadTypeForSlot(ctx, rod, isTop, beadIndex, beadType)
             refreshUI()
             scheduleBeadRefresh(debounce = false)
+            scheduleFirestoreSync()
         }
 
         // Click listeners: assign skin to tapped bead slot
@@ -945,6 +983,7 @@ class AbacusCustomizationFragment : Fragment() {
                     }
                     refreshHeaders()
                     scheduleBeadRefresh(debounce = true)
+                    scheduleFirestoreSync()
                 }
 
                 hueBar.setOnSeekBarChangeListener(simpleSeekListener { onAnyChange() })
@@ -996,6 +1035,7 @@ class AbacusCustomizationFragment : Fragment() {
                 buildColorRows(parent, isSelected)
                 refreshHeaders()
                 scheduleBeadRefresh(debounce = false)
+                scheduleFirestoreSync()
             }
             parent.addView(resetBtn)
         }
@@ -1057,6 +1097,7 @@ class AbacusCustomizationFragment : Fragment() {
             AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG)
             updateSelection()
             refreshPreviewFrameBackground()
+            scheduleFirestoreSync()
         }
 
         // Kalpli — 2000 altın
@@ -1065,6 +1106,7 @@ class AbacusCustomizationFragment : Fragment() {
                 AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG2)
                 updateSelection()
                 refreshPreviewFrameBackground()
+                scheduleFirestoreSync()
             } else {
                 showFramePurchasePanel(
                     frameType  = FrameType.FRAME_BG2,
@@ -1086,6 +1128,7 @@ class AbacusCustomizationFragment : Fragment() {
                 AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG3)
                 updateSelection()
                 refreshPreviewFrameBackground()
+                scheduleFirestoreSync()
             } else {
                 showFramePurchasePanel(
                     frameType  = FrameType.FRAME_BG3,
@@ -1107,6 +1150,7 @@ class AbacusCustomizationFragment : Fragment() {
                 AbacusPreferences.setFrameType(requireContext(), FrameType.FRAME_BG4)
                 updateSelection()
                 refreshPreviewFrameBackground()
+                scheduleFirestoreSync()
             } else {
                 showFramePurchasePanel(
                     frameType  = FrameType.FRAME_BG4,
@@ -1181,6 +1225,7 @@ class AbacusCustomizationFragment : Fragment() {
                             val currentData = ownedFrames[frameType.name] ?: FrameData(owned = false, colorFeatureActive = false)
                             ownedFrames = ownedFrames + (frameType.name to currentData.copy(owned = true))
                             AbacusPreferences.setFrameType(ctx, frameType)
+                            scheduleFirestoreSync()
                             refreshCurrencyUi()
                             overlayView.visibility = View.GONE
                             onPurchased()
@@ -1410,6 +1455,7 @@ class AbacusCustomizationFragment : Fragment() {
                     briBar.thumb = roundThumb(newColor)
                     briBar.progressDrawable = lightnessGradientDrawable(hue)
                     onChanged(newColor)
+                    scheduleFirestoreSync()
                 }
 
                 hueBar.setOnSeekBarChangeListener(simpleSeekListener { onAnyChange() })
@@ -1426,6 +1472,7 @@ class AbacusCustomizationFragment : Fragment() {
             AbacusPreferences.resetAllFrameColors(ctx)
             buildRows()
             refreshPreviewFrameBackground()
+            scheduleFirestoreSync()
         }
 
         // Tab 4 kilit overlay: seçili çerçeve satın alınmamışsa veya renk özelliği yoksa kilit

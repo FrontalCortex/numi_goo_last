@@ -28,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.airbnb.lottie.LottieAnimationView
 import com.example.app.GlobalLessonData.globalPartId
 import com.example.app.GlobalValues.lessonStep
@@ -38,8 +39,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.app.model.LessonItem
 import com.example.app.model.RulesFragment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.app.abacus.AbacusBeadController
 import com.example.app.abacus.AbacusBeadMetrics
+import com.example.app.abacus.AbacusBeadRenderer
 import kotlin.math.log
 
 class AbacusFragment : Fragment() {
@@ -261,11 +266,28 @@ class AbacusFragment : Fragment() {
         )
         abacusController.setup()
         ensureAbacusMetricsIfVisible()
+        FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+            val ctx = requireContext().applicationContext
+            AbacusCustomizationFirestore.ensureHydrated(requireContext(), uid) {
+                if (!isAdded) return@ensureHydrated
+                // Bazı boncuk tipleri (ANIMAL*, BOWLING, BALL*) piksel bazlı bitmap işleme ile
+                // render edildiği için pahalı; yeni cihazda hydrate edilen çok sayıda farklı tip
+                // ana thread'de bir anda render edilirse donmaya yol açar. Önce arka planda ısıt.
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.Default) {
+                        AbacusBeadRenderer.prewarmAllSlotDrawables(ctx)
+                    }
+                    if (isAdded) abacusController.refreshAll()
+                }
+            }
+        }
 
         // Donanım geri tuşu: önce kurallar kitabı paneli (RulesFragment) açıksa,
         // paneldeki çarpı butonuna basılmış gibi kayarak kapat (ve scroll konumunu koru)
         val backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+
                 val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment")
                 if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
                     rulesFragment.closeWithAnimation()
@@ -1208,6 +1230,7 @@ class AbacusFragment : Fragment() {
             index > 22 && globalPartId == 1 -> RulesPanelTableType.TEN
             index > 16 && globalPartId == 1 -> RulesPanelTableType.TEN_FIVE
             index >= 12 && globalPartId == 1 -> RulesPanelTableType.FIVE
+            index > 15 && globalPartId == 2 -> RulesPanelTableType.BEAD_EXTRACTION
             index > 10 && globalPartId == 2 -> RulesPanelTableType.TEN_EXTRACTION
             index > 5 && globalPartId == 2 -> RulesPanelTableType.FIVE
             else -> RulesPanelTableType.NONE

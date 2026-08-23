@@ -74,16 +74,35 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
+        <LinearLayout
             android:id="@+id/restrictionMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
             android:padding="@dimen/question_chat_restriction_padding"
             android:visibility="gone"
-            android:text="Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
-            android:textColor="@android:color/white"
-            android:gravity="center"
-            android:background="#2C2C2C" />
+            android:background="#2C2C2C">
+
+            <TextView
+                android:id="@+id/restrictionMessageText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
+                android:textColor="@android:color/white"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/restrictionAppealButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:padding="6dp"
+                android:text="İtiraz Et"
+                android:textStyle="bold"
+                android:textColor="@color/dark_primary"
+                android:background="?attr/selectableItemBackground" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/teacherClaimButton"

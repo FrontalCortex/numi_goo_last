@@ -37,7 +37,13 @@ import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentTutorialBinding
 import com.example.app.abacus.AbacusBeadController
 import com.example.app.abacus.AbacusBeadMetrics
+import com.example.app.abacus.AbacusBeadRenderer
+import com.example.app.abacus.AbacusPreferences
 import com.example.app.model.BeadAnimation
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
+import org.json.JSONArray
+import org.json.JSONObject
 import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
 import kotlin.math.roundToInt
@@ -99,6 +105,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     // Typewriter effect için
     private var typewriterRunnable: Runnable? = null
+    /** showTextWithTypewriter()'daki textView.post{} kurulum bloğu - hızlı art arda adım
+     * geçişlerinde önceki çağrının kurulum bloğunu iptal edebilmek için saklanır. */
+    private var typewriterSetupRunnable: Runnable? = null
     /** Arka plana geçince duraklatıldıysa true; onResume'da kaldığı yerden devam etmek için. */
     private var typewriterPausedByLifecycle = false
     private var typewriterText: String? = null
@@ -317,6 +326,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             R.id.BeadRuleTable,
             R.id.extractionFiveRuleTable,
             R.id.tenRuleExtractionTableLayout,
+            R.id.BeadRuleExtractionTable
         ).forEach { id ->
             binding.root.findViewById<View>(id)?.apply {
                 post {
@@ -336,6 +346,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         applyTutorialViewScaling()
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
                 closeFragment()
             }
         })
@@ -357,6 +368,37 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         optionsRecyclerView.adapter = optionsAdapter
         optionsCheckButton.setOnClickListener { checkOptionsAnswer() }
         optionsPanel.visibility = View.GONE
+        try {
+            val remoteConfig = FirebaseRemoteConfig.getInstance()
+            // Debug (test) derlemede fetch'i hemen zorla (varsayılan 12 saatlik throttle testi imkansız yapar).
+            // Release'de gereksiz ağ trafiğine yol açmamak için 1 saatlik makul bir aralık kullanılır.
+            val isDebuggable = (requireContext().applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            val minFetchIntervalSeconds = if (isDebuggable) 0L else 3600L
+            remoteConfig.setConfigSettingsAsync(
+                FirebaseRemoteConfigSettings.Builder()
+                    .setMinimumFetchIntervalInSeconds(minFetchIntervalSeconds)
+                    .build()
+            )
+            remoteConfig.setDefaultsAsync(
+                mapOf(
+                    "tutorial_step_1" to DEFAULT_TUTORIAL_STEP_1_JSON,
+                    "tutorial_step_100" to DEFAULT_TUTORIAL_STEP_100_JSON,
+                    "tutorial_step_101" to DEFAULT_TUTORIAL_STEP_101_JSON,
+                    "tutorial_step_2" to DEFAULT_TUTORIAL_STEP_2_JSON,
+                    "tutorial_step_102" to DEFAULT_TUTORIAL_STEP_102_JSON,
+                    "tutorial_step_103" to DEFAULT_TUTORIAL_STEP_103_JSON,
+                    "tutorial_step_3" to DEFAULT_TUTORIAL_STEP_3_JSON,
+                    "tutorial_step_4" to DEFAULT_TUTORIAL_STEP_4_JSON,
+                    "tutorial_step_5" to DEFAULT_TUTORIAL_STEP_5_JSON,
+                )
+            )
+            remoteConfig.fetchAndActivate()
+                .addOnCompleteListener { task ->
+                    Log.d("Tutorial", "Remote Config fetch tamamlandı, başarılı=${task.isSuccessful}, lastFetchStatus=${remoteConfig.info.lastFetchStatus}")
+                }
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config başlatılamadı", e)
+        }
         createTutorialSteps()
         currentTutorialSteps = when (tutorialNumber) {
             1 -> tutorialSteps
@@ -437,9 +479,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     /** Root veya abacusTapBlocker: typewriter / seçenekler / sonraki adım (setupTutorial ile aynı kurallar). */
     private fun handleTutorialTapToAdvance() {
         if (isAnyAnimationRunning()) return
-        if (typewriterRunnable != null) {
+        // typewriterRunnable henüz null olabilir ama showTextWithTypewriter()'ın textView.post{}
+        // kurulum bloğu (typewriterSetupRunnable) hâlâ kuyrukta olabilir - bu durumda da "yazma
+        // animasyonunu atla, tam metni göster" davranışı uygulanmalı. Aksi halde bu dar zaman
+        // aralığında gelen bir tıklama, henüz başlamamış bir adımı atlayıp ilerletebiliyor ya da
+        // (nextStepAvailable=false ise) hiçbir şey yapmıyor - iki durumda da metin hiç yazılmadan
+        // kayboluyor.
+        if (typewriterRunnable != null || typewriterSetupRunnable != null) {
             typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
             typewriterRunnable = null
+            typewriterSetupRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+            typewriterSetupRunnable = null
             val step = getCurrentStep()
             binding.tutorialText.text = step.text
             binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
@@ -511,7 +561,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.questionText.visibility = step.questionTextVisibility
         
         // Ses dosyasını çal
-        playSound(step.soundResource)
+        playSound(step.soundResource, step.soundStoragePath)
         if (step.questionText != null) {
 
             // Renklendirme varsa uygula
@@ -537,6 +587,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             12 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
             13 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
             14 -> binding.tenRuleExtractionTableLayout.visibility = step.rulesPanelVisibility
+            17 -> binding.BeadRuleExtractionTable.visibility = step.rulesPanelVisibility
             105 ->binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             else -> View.GONE
         }
@@ -1552,4063 +1603,841 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         createTutorialSteps26()
     }
     
+    // Bu JSON, Firebase Remote Config'te "tutorial_step_1" parametresi hiç tanımlanmamışsa
+    // veya internet yoksa kullanılan yerel yedek (default) içeriktir. İçerik olarak
+    // eski hardcoded createTutorialSteps1() ile birebir aynıdır.
+    private val DEFAULT_TUTORIAL_STEP_1_JSON = """
+    {
+      "steps": [
+        {"text":"Numigo'ya hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.","sound":"tutorial1_1","typewriterSpeed":40,"actions":[{"op":"hide","target":"abacusLinear"},{"op":"hide","target":"abacusContainer"},{"op":"hide","target":"backButton"},{"op":"show","target":"skipTutorialButton"}]},
+        {"text":"Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.","sound":"tutorial1_2","typewriterSpeed":40,"actions":[{"op":"show","target":"backButton"}]},
+        {"text":"Şimdi başlayalım.","sound":"tutorial1_4","typewriterSpeed":40,"actions":[{"op":"show","target":"abacusLinear"},{"op":"show","target":"abacusContainer"}]},
+        {"text":"Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.","sound":"tutorial1_5","typewriterSpeed":40},
+        {"text":"Her sütun bir basamağı temsil eder. Basamaklar sağdan sola doğru artarak ilerler.","sound":"tutorial1_6","typewriterSpeed":40},
+        {"text":"Birler","sound":"tutorial1_7","typewriterSpeed":40,"actions":[{"op":"showFocus"},{"op":"focusToColumn","column":0}]},
+        {"text":"Onlar","sound":"tutorial1_8","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":1}]},
+        {"text":"Yüzler","sound":"tutorial1_9","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":2}]},
+        {"text":"Binler","sound":"tutorial1_10","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":3}]},
+        {"text":"Ve on binler.","sound":"tutorial1_11","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":4}]},
+        {"text":"Her sütunda 5 boncuk vardır.","sound":"tutorial1_12","typewriterSpeed":40,"actions":[{"op":"focusMarginLiteral","value":1},{"op":"focusSizeTo","target":"columnHighlight"}],"recordSizeHistory":true},
+        {"text":"Üstteki boncuklar beşlik değere sahipken,","sound":"tutorial1_13","typewriterSpeed":40,"actions":[{"op":"focusChangeMargin","marginRight":1,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline","clearBottom":true},{"op":"focusSizeTo","target":"topBand"}],"recordSizeHistory":true},
+        {"text":"Alttaki boncuklar birlik değere sahiptir.","sound":"tutorial1_14","typewriterSpeed":40,"actions":[{"op":"focusMarginLiteral","value":1},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusSizeTo","target":"bottomBand"}],"recordSizeHistory":true},
+        {"text":"Örneğin 1 sayısı abaküste bu şekilde gösterilir.","sound":"tutorial1_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}],"actions":[{"op":"hideFocus"}],"recordSizeHistory":true},
+        {"text":"2 yazmak için birler basamağındaki birlik boncuklardan 2 tane kullanılır.","sound":"tutorial1_100","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1}]},
+        {"text":"3 için 3 tane,","sound":"tutorial1_101","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1}]},
+        {"text":"4 için 4 tane birlik boncuk kullanılır.","sound":"tutorial1_102","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1}]},
+        {"text":"Üstteki boncuklar beşlik değere sahiptir. Yani kullanıldığında sayımıza 5 ekler.","sound":"tutorial1_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
+        {"text":"5 sayısı böyle gösterilir.","sound":"tutorial1_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}]},
+        {"text":"6 sayısı için üstteki boncuk ve bir alttaki boncuk kullanılır.","sound":"tutorial1_17","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}]},
+        {"text":"7 böyle gösterilir.","sound":"tutorial1_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1}]},
+        {"text":"8 böyle,","sound":"tutorial1_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1}]},
+        {"text":"9 böyle gösterilir.","sound":"tutorial1_107","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1}]},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"abacusReset":true},
+        {"text":"Aşağıdaki sayıyı abaküse yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial1_109","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1","answerNumber":1,"requestText":"En sağdaki birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Şimdi de bu sayıyı yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial1_110","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"2","answerNumber":2,"requestText":"En sağdaki birlik boncuklardan 2 adet kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Şimdi de bu sayıyı yazalım.","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"5","answerNumber":5,"requestText":"En sağ üstteki beşlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Bu sayıyı yazalım.","sound":"tutorial1_112","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"6","answerNumber":6,"requestText":"1 adet beşlik ve 1 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Son olarak bu sayıyı yazalım.","sound":"tutorial1_113","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"8","answerNumber":8,"requestText":"1 adet beşlik ve 3 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Şimdi tahtaya yazacağım sayıları, abaküste göstermeye çalış.","sound":"tutorial1_21","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
+    // "tutorial_step_1" gibi bir Remote Config JSON'unu gerçek TutorialStep listesine çevirir.
+    // Buradaki "op" kodları (hide/show/focusToColumn vb.) sabit bir sözlüktür: JSON sadece
+    // hangi aksiyonun hangi parametreyle çalışacağını söyler, gerçek View mantığı burada kalır.
+    private fun parseTutorialStepsFromJson(json: String): List<TutorialStep> {
+        fun resolveView(name: String): View = when (name) {
+            "abacusLinear" -> binding.abacusLinear
+            "abacusContainer" -> binding.abacusContainer
+            "backButton" -> binding.backButton
+            "skipTutorialButton" -> binding.skipTutorialButton
+            "focusView" -> focusView
+            else -> throw IllegalArgumentException("Bilinmeyen view anahtarı: $name")
+        }
+        fun resolveSound(name: String?): Int? {
+            if (name.isNullOrEmpty()) return null
+            val id = resources.getIdentifier(name, "raw", requireContext().packageName)
+            if (id == 0) {
+                Log.w("Tutorial", "Ses kaynağı bulunamadı: $name")
+                return null
+            }
+            return id
+        }
+        // rulesStepTextTopToBottomOf / widgetVisibilityMap gibi "bir view'e bağlan" alanları için
+        // genel isimden-id'ye çözümleyici (BeadAnimation'daki resources.getIdentifier tekniğiyle aynı).
+        fun resolveIdByName(name: String): Int {
+            val id = resources.getIdentifier(name, "id", requireContext().packageName)
+            if (id == 0) throw IllegalArgumentException("Bilinmeyen view id: $name")
+            return id
+        }
+        fun parseVisibility(value: String): Int = when (value) {
+            "visible" -> View.VISIBLE
+            "invisible" -> View.INVISIBLE
+            "gone" -> View.GONE
+            else -> throw IllegalArgumentException("Bilinmeyen visibility değeri: $value")
+        }
+        // [{"position":0,"color":"#00BFFF"}, ...] -> List<Pair<Int, Int>> (questionTextColorPositions/rulesStepTextColorPositions formatı)
+        fun parseColorPositions(arr: JSONArray?): List<Pair<Int, Int>>? {
+            arr ?: return null
+            return (0 until arr.length()).map { idx ->
+                val posJson = arr.getJSONObject(idx)
+                posJson.getInt("position") to Color.parseColor(posJson.getString("color"))
+            }
+        }
+        val recordSizeHistoryStep: (View) -> Unit = { view ->
+            sizeHistory.add(Pair(view.width, view.height))
+            Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
+        }
+        // onStepComplete rastgele kod olamayacağı için (onStep'teki recordSizeHistory gibi),
+        // kod tabanında bugüne kadar kullanılan tek sabit davranış adlandırılmış bir aksiyon olarak sunuluyor.
+        fun resolveOnStepComplete(name: String?): (() -> Unit)? = when {
+            name.isNullOrEmpty() -> null
+            name == "resetAbacus" -> ({ resetAbacus("onStepComplete_callback") })
+            else -> throw IllegalArgumentException("Bilinmeyen onStepComplete: $name")
+        }
+
+        val root = JSONObject(json)
+        val stepsArray = root.getJSONArray("steps")
+        val result = mutableListOf<TutorialStep>()
+
+        for (i in 0 until stepsArray.length()) {
+            val stepJson = stepsArray.getJSONObject(i)
+
+            val beadAnimations: List<BeadAnimation>? = stepJson.optJSONArray("beadAnimations")?.let { arr ->
+                (0 until arr.length()).map { idx ->
+                    val beadJson = arr.getJSONObject(idx)
+                    BeadAnimation(this, beadJson.getString("beadId"), beadJson.getInt("type"))
+                }
+            }
+
+            val widgetOperations: List<() -> WidgetOperation>? = stepJson.optJSONArray("actions")?.let { arr ->
+                (0 until arr.length()).map { idx ->
+                    val actionJson = arr.getJSONObject(idx)
+                    when (actionJson.getString("op")) {
+                        "hide" -> {
+                            val target = resolveView(actionJson.getString("target"))
+                            ({ WidgetOperation.ChangeVisibility(target, View.INVISIBLE) })
+                        }
+                        "show" -> {
+                            val target = resolveView(actionJson.getString("target"))
+                            ({ WidgetOperation.ChangeVisibility(target, View.VISIBLE) })
+                        }
+                        "showFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) })
+                        "hideFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.GONE) })
+                        "focusToColumn" -> {
+                            val column = actionJson.getInt("column")
+                            ({
+                                WidgetOperation.AnimateMargin(
+                                    view = focusView,
+                                    fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                                    toMarginRight = focusMarginRightPx(column),
+                                    fromMarginLeft = 0,
+                                    toMarginLeft = 0,
+                                    duration = 200
+                                )
+                            })
+                        }
+                        "focusMarginLiteral" -> {
+                            val value = actionJson.getInt("value")
+                            ({
+                                WidgetOperation.AnimateMargin(
+                                    view = focusView,
+                                    fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                                    toMarginRight = value,
+                                    fromMarginLeft = 0,
+                                    toMarginLeft = 0,
+                                    duration = 200
+                                )
+                            })
+                        }
+                        "focusChangeMargin" -> {
+                            // marginRight ya sabit bir sayı (marginRight) ya da sütun bazlı hesaplanan
+                            // bir değer (marginRightColumn -> focusMarginRightPx) olabilir.
+                            val marginRight = if (actionJson.has("marginRightColumn")) {
+                                focusMarginRightPx(actionJson.getInt("marginRightColumn"))
+                            } else {
+                                actionJson.getInt("marginRight")
+                            }
+                            val marginLeft = actionJson.getInt("marginLeft")
+                            val marginTop = if (actionJson.has("marginTopDp")) dpToPx(actionJson.getInt("marginTopDp")) else null
+                            ({ WidgetOperation.ChangeMargin(focusView, marginRight, marginLeft, marginTop) })
+                        }
+                        "focusSizeToDp" -> {
+                            val widthDp = actionJson.getInt("widthDp")
+                            val heightDp = actionJson.getInt("heightDp")
+                            ({
+                                WidgetOperation.AnimateSize(
+                                    view = focusView,
+                                    fromWidth = focusView.width,
+                                    toWidth = dpToPx(widthDp),
+                                    fromHeight = focusView.height,
+                                    toHeight = dpToPx(heightDp),
+                                    duration = 400
+                                )
+                            })
+                        }
+                        "focusConstraintTop" -> {
+                            val targetId = when (actionJson.getString("target")) {
+                                "guideline" -> R.id.guideline
+                                "guideline2" -> R.id.guideline2
+                                else -> throw IllegalArgumentException("Bilinmeyen constraint hedefi: ${actionJson.getString("target")}")
+                            }
+                            val clearBottom = actionJson.optBoolean("clearBottom", false)
+                            ({
+                                if (clearBottom) {
+                                    WidgetOperation.ChangeConstraints(
+                                        view = focusView,
+                                        topToTop = targetId,
+                                        bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                                    )
+                                } else {
+                                    WidgetOperation.ChangeConstraints(view = focusView, topToTop = targetId)
+                                }
+                            })
+                        }
+                        "focusSizeTo" -> {
+                            val toHeightDimen = when (actionJson.getString("target")) {
+                                "columnHighlight" -> R.dimen.tutorial_focus_column_highlight_height
+                                "topBand" -> R.dimen.tutorial_focus_top_bead_band_height
+                                "bottomBand" -> R.dimen.tutorial_focus_bottom_bead_band_height
+                                else -> throw IllegalArgumentException("Bilinmeyen boyut hedefi: ${actionJson.getString("target")}")
+                            }
+                            ({
+                                WidgetOperation.AnimateSize(
+                                    view = focusView,
+                                    fromWidth = focusView.width,
+                                    toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
+                                    fromHeight = focusView.height,
+                                    toHeight = focusDimenPx(toHeightDimen),
+                                    duration = 400
+                                )
+                            })
+                        }
+                        else -> throw IllegalArgumentException("Bilinmeyen aksiyon: ${actionJson.getString("op")}")
+                    }
+                }
+            }
+
+            val questionJson = stepJson.optJSONObject("question")
+
+            // Çoktan seçmeli soru (options/correctOptionIndex/multipleChoice/optionText) - "question"
+            // (sayı yazma) bloğundan ayrı, çünkü kod tabanında ikisi hiç birlikte kullanılmıyor.
+            val choiceQuestionJson = stepJson.optJSONObject("choiceQuestion")
+            val options: List<String>? = choiceQuestionJson?.optJSONArray("options")?.let { arr ->
+                (0 until arr.length()).map { arr.getString(it) }
+            }
+            val correctOptionIndex: List<Int>? = choiceQuestionJson?.optJSONArray("correctOptionIndex")?.let { arr ->
+                (0 until arr.length()).map { arr.getInt(it) }
+            }
+            // updateOptionsPanelForStep() içinde "step.multipleChoice!!" ile null kontrolsüz kullanılıyor,
+            // bu yüzden choiceQuestion varsa multipleChoice'ı asla null bırakmıyoruz (crash'i önlemek için).
+            val multipleChoice: Boolean? = choiceQuestionJson?.optBoolean("multipleChoice", false)
+
+            val rulesStepTextJson = stepJson.optJSONObject("rulesStepText")
+
+            // Gömülü olmayan (yeni eklenen) sesler için Firebase Storage yolu. Adım kullanılmaya
+            // başlamadan önce indirilebilsin diye aşağıda tüm adımlar toplandıktan sonra prefetch edilir.
+            val soundStoragePath: String? = stepJson.optString("soundUrl").takeIf { it.isNotEmpty() }
+
+            val widgetVisibilityMap: Map<Int, Int>? = stepJson.optJSONObject("widgetVisibilityMap")?.let { obj ->
+                val map = mutableMapOf<Int, Int>()
+                val keysIterator = obj.keys()
+                while (keysIterator.hasNext()) {
+                    val key = keysIterator.next() as String
+                    map[resolveIdByName(key)] = parseVisibility(obj.getString(key))
+                }
+                map
+            }
+
+            result.add(
+                TutorialStep(
+                    text = stepJson.getString("text"),
+                    animation = beadAnimations,
+                    widgetOperations = widgetOperations,
+                    onStep = if (stepJson.optBoolean("recordSizeHistory", false)) recordSizeHistoryStep else null,
+                    questionText = questionJson?.optString("questionText"),
+                    questionTextVisibility = if (questionJson != null) View.VISIBLE else View.INVISIBLE,
+                    // Varsayılanlar TutorialStep'in kendi varsayılanlarıyla aynı olmalı (true/false) -
+                    // "question" bloğu her zaman etkileşimli demek değil, bazı adımlar sadece
+                    // ekranda sayı gösterir (örn. tutorial100'deki ara adımlar), cevap istemez.
+                    nextStepAvailable = questionJson?.optBoolean("nextStepAvailable", true) ?: true,
+                    abacusClickable = questionJson?.optBoolean("abacusClickable", false) ?: false,
+                    answerNumber = if (questionJson?.has("answerNumber") == true) questionJson.getInt("answerNumber") else null,
+                    onStepComplete = resolveOnStepComplete(stepJson.optString("onStepComplete", "")),
+                    rulesPanelVisibility = parseVisibility(stepJson.optString("rulesPanelVisibility", "visible")),
+                    rulesStepTextVisibility = rulesStepTextJson?.optString("visibility")?.let { parseVisibility(it) },
+                    rulesStepTextTopToBottomOf = rulesStepTextJson?.optString("topToBottomOf")
+                        ?.takeIf { it.isNotEmpty() }?.let { resolveIdByName(it) },
+                    rulesStepTextContent = rulesStepTextJson?.optString("content"),
+                    rulesStepTextColorPositions = parseColorPositions(rulesStepTextJson?.optJSONArray("colorPositions")),
+                    questionTextColorPositions = parseColorPositions(stepJson.optJSONArray("questionTextColorPositions")),
+                    soundResource = resolveSound(stepJson.optString("sound")),
+                    soundStoragePath = soundStoragePath,
+                    // Orijinal kodda "useTypewriterEffect" belirtilmeyen adımlarda kural netti (1256
+                    // adımdan 1255'i): ses varsa true, ses yoksa false. JSON'da alan hiç yazılmazsa
+                    // bu kurala göre varsayılır - tek tek her adıma yazmaya gerek kalmaz.
+                    useTypewriterEffect = stepJson.optBoolean(
+                        "useTypewriterEffect",
+                        stepJson.optString("sound").isNotEmpty()
+                    ),
+                    typewriterSpeed = stepJson.optLong("typewriterSpeed", 40L),
+                    abacusReset = if (stepJson.has("abacusReset")) stepJson.getBoolean("abacusReset") else null,
+                    // requestText'teki gibi: yazar üst seviyeye de, "question" içine de koymuş olabilir - ikisini de kabul et.
+                    nextStepAbacusReset = when {
+                        stepJson.has("nextStepAbacusReset") -> stepJson.getBoolean("nextStepAbacusReset")
+                        questionJson?.has("nextStepAbacusReset") == true -> questionJson.getBoolean("nextStepAbacusReset")
+                        else -> null
+                    },
+                    // requestText, "question" ile ilişkili olmayabilir (örn. sadece anlatım + ipucu
+                    // metni). Yeni JSON'lar üst seviyeye yazsın; tutorial1'in zaten yayınlanmış
+                    // JSON'unda "question" içinde kaldığı için oradan da okunur (geriye dönük uyum).
+                    requestText = stepJson.optString("requestText").takeIf { it.isNotEmpty() }
+                        ?: questionJson?.optString("requestText"),
+                    backAnimationOff = if (stepJson.has("backAnimationOff")) stepJson.getBoolean("backAnimationOff") else null,
+                    resetAndWaith = if (stepJson.has("resetAndWaith")) stepJson.getBoolean("resetAndWaith") else null,
+                    backAnswerNumber = if (stepJson.has("backAnswerNumber")) stepJson.getInt("backAnswerNumber") else null,
+                    widgetVisibilityMap = widgetVisibilityMap,
+                    options = options,
+                    correctOptionIndex = correctOptionIndex,
+                    multipleChoice = multipleChoice,
+                    optionText = choiceQuestionJson?.optString("optionText")
+                )
+            )
+        }
+        // Uzaktan sesleri, kullanıcı o adıma gelmeden önce arka planda indirmeye başla.
+        result.mapNotNull { it.soundStoragePath }.distinct().forEach { path ->
+            RemoteAudioCache.prefetch(requireContext(), path)
+        }
+
+        return result
+    }
+
     private fun createTutorialSteps1(){
-        tutorialSteps = listOf(
-            TutorialStep(
-                "Numigo'ya hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.",
-                null,
-                listOf(
-                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.INVISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.INVISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.backButton, View.INVISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.skipTutorialButton, View.VISIBLE) },//sonradan INV yapılacak
-                    ),
-                soundResource = R.raw.tutorial1_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.",
-                null,
-                listOf(
-                    { WidgetOperation.ChangeVisibility(binding.backButton, View.VISIBLE) },
-
-                    ),
-                soundResource = R.raw.tutorial1_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Şimdi başlayalım.",
-                null,
-                listOf(
-                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.VISIBLE) },
-                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.VISIBLE) },
-                    ),
-                soundResource = R.raw.tutorial1_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.",
-                null,
-                soundResource = R.raw.tutorial1_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Her sütun bir basamağı temsil eder. Basamaklar sağdan sola doğru artarak ilerler.",
-                null,
-                soundResource = R.raw.tutorial1_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Birler",
-                null,
-                listOf(
-                    { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                    {
-                        WidgetOperation.AnimateMargin(
-                            view = focusView,
-                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                            toMarginRight = focusMarginRightPx(0),
-                            fromMarginLeft = 0,
-                            toMarginLeft = 0,
-                            duration = 200
-                        )
-                    }
-                ),
-                soundResource = R.raw.tutorial1_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Onlar",
-                null,
-                listOf {
-                    WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = focusMarginRightPx(1),
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    )
-                },
-                soundResource = R.raw.tutorial1_8,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Yüzler",
-                null,listOf {
-                    WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = focusMarginRightPx(2),
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    )
-                },
-                soundResource = R.raw.tutorial1_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Binler",
-                null,listOf {
-                    WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = focusMarginRightPx(3),
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    )
-                },
-                soundResource = R.raw.tutorial1_10,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Ve on binler.",
-                null,listOf {
-                    WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = focusMarginRightPx(4),
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    )
-                },
-                soundResource = R.raw.tutorial1_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Her sütunda 5 boncuk vardır.",
-                null,listOf(
-                    { WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 1,
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    ) },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
-                            fromHeight = focusView.height,
-                            toHeight = focusDimenPx(R.dimen.tutorial_focus_column_highlight_height),
-                            duration = 400
-                        )
-                    }
-                ),
-                onStep = { view ->
-                    sizeHistory.add(Pair(view.width, view.height))
-                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                },
-                soundResource = R.raw.tutorial1_12,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ), TutorialStep(
-                "Üstteki boncuklar beşlik değere sahipken,",
-                null,
-                listOf(
-                    { WidgetOperation.ChangeMargin(focusView, 1, 0) },
-                    {
-                        WidgetOperation.ChangeConstraints(
-                            view = focusView,
-                            topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
-                            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
-                        )
-                    },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
-                            fromHeight = focusView.height,
-                            toHeight = focusDimenPx(R.dimen.tutorial_focus_top_bead_band_height),
-                            duration = 400
-                        )
-                    }
-                ),
-                onStep = { view ->
-                    sizeHistory.add(Pair(view.width, view.height))
-                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                },
-                soundResource = R.raw.tutorial1_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Alttaki boncuklar birlik değere sahiptir.",
-                null,
-                listOf(
-                    { WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 1,
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    ) },
-                    {
-                        WidgetOperation.ChangeConstraints(
-                            view = focusView,
-                            topToTop = R.id.guideline2
-                            // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
-                        )
-                    },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
-                            fromHeight = focusView.height,
-                            toHeight = focusDimenPx(R.dimen.tutorial_focus_bottom_bead_band_height),
-                            duration = 400
-                        )
-                    }
-                ),
-                onStep = { view ->
-                    sizeHistory.add(Pair(view.width, view.height))
-                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                },
-                soundResource = R.raw.tutorial1_14,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Örneğin 1 sayısı abaküste bu şekilde gösterilir.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom1", 1)),
-                listOf { WidgetOperation.ChangeVisibility(focusView, View.GONE) },
-                onStep = { view ->
-                    sizeHistory.add(Pair(view.width, view.height))
-                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                },
-                soundResource = R.raw.tutorial1_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "2 yazmak için birler basamağındaki birlik boncuklardan 2 tane kullanılır.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom2", 1)),
-                soundResource = R.raw.tutorial1_100,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "3 için 3 tane,",
-                listOf(BeadAnimation(this, "rod4_bead_bottom3", 1)),
-                soundResource = R.raw.tutorial1_101,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "4 için 4 tane birlik boncuk kullanılır.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                soundResource = R.raw.tutorial1_102,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Üstteki boncuklar beşlik değere sahiptir. Yani kullanıldığında sayımıza 5 ekler.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial1_103,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "5 sayısı böyle gösterilir.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)
-                ),
-                soundResource = R.raw.tutorial1_104,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "6 sayısı için üstteki boncuk ve bir alttaki boncuk kullanılır.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom1", 1)),
-                soundResource = R.raw.tutorial1_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "7 böyle gösterilir.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom2", 1)),
-                soundResource = R.raw.tutorial1_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "8 böyle,",
-                listOf(BeadAnimation(this, "rod4_bead_bottom3", 1)),
-                soundResource = R.raw.tutorial1_106,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "9 böyle gösterilir.",
-                listOf(BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                soundResource = R.raw.tutorial1_107,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial1_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-
-            ),TutorialStep(
-                "Aşağıdaki sayıyı abaküse yazıp ‘Kontrol Et’ butonuna basalım.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "1",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 1,
-                soundResource = R.raw.tutorial1_109,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "En sağdaki birlik boncuğu kullan."
-            ),TutorialStep(
-                "Şimdi de bu sayıyı yazıp ‘Kontrol Et’ butonuna basalım.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "2",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 2,
-                soundResource = R.raw.tutorial1_110,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "En sağdaki birlik boncuklardan 2 adet kullan."
-
-
-            ),TutorialStep(
-                "Şimdi de bu sayıyı yazalım.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "5",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 5,
-                soundResource = R.raw.tutorial1_111,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "En sağ üstteki beşlik boncuğu kullan."
-            ),TutorialStep(
-                "Bu sayıyı yazalım.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "6",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 6,
-                soundResource = R.raw.tutorial1_112,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "1 adet beşlik ve 1 adet birlik boncuğu kullan."
-            ),TutorialStep(
-                "Son olarak bu sayıyı yazalım.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "8",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 8,
-                soundResource = R.raw.tutorial1_113,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "1 adet beşlik ve 3 adet birlik boncuğu kullan."
-            ),
-
-            TutorialStep(
-                "Şimdi tahtaya yazacağım sayıları, abaküste göstermeye çalış.",
-                null,
-                soundResource = R.raw.tutorial1_21,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        val remoteJson = try {
+            remoteConfig.getString("tutorial_step_1")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        // Teşhis logu: gerçekten Remote Config'ten mi geldi, yoksa yerel varsayılana mı düşüldü?
+        val usedDefault = remoteJson.isEmpty()
+        Log.d(
+            "Tutorial",
+            "createTutorialSteps1 kaynak=${if (usedDefault) "DEFAULT" else "REMOTE"} " +
+                "remoteJsonUzunluk=${remoteJson.length} " +
+                "lastFetchStatus=${remoteConfig.info.lastFetchStatus} " +
+                "fetchTimeMillis=${remoteConfig.info.fetchTimeMillis}"
         )
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_1_JSON }
+        tutorialSteps = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_1 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_1_JSON)
+        }
     }
+    private val DEFAULT_TUTORIAL_STEP_100_JSON = """
+    {
+      "steps": [
+        {"text":"Bu derste iki basamaklı sayıları göreceğiz.","sound":"tutorial3_100","typewriterSpeed":40},
+        {"text":"Eğer konuyu biliyorsan. Sağ alttaki eğitimi atla butonuna tıklayarak direkt teste geçebilirsin.","sound":"tutorial1_3","typewriterSpeed":40},
+        {"text":"Abaküste basamaklar normal sayılardaki gibi sola doğru artarak ilerler.","sound":"tutorial3_101","typewriterSpeed":40},
+        {"text":"10 yazmak için onlar basamağındaki boncuklardan 1 adet birlik boncuk kullanılır.","sound":"tutorial3_102","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}]},
+        {"text":"20 yazmak için 2 adet birlik boncuk kullanılır.","sound":"tutorial3_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom2","type":1}]},
+        {"text":"30 böyle gösterilir.","sound":"tutorial3_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}]},
+        {"text":"40 böyle,","sound":"tutorial3_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}]},
+        {"text":"50 yazmak istediğimizde ise yukarıdaki beşlik boncuk kullanılır.","sound":"tutorial3_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":3}]},
+        {"text":"60 böyle gösterilir.","sound":"tutorial3_107","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}]},
+        {"text":"70 böyle,","sound":"tutorial3_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom2","type":1}]},
+        {"text":"80 böyle,","sound":"tutorial3_109","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}]},
+        {"text":"90 ise böyle gösterilir.","sound":"tutorial3_110","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}]},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4}],"abacusReset":true,"resetAndWaith":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle."},
+        {"text":"Bu sayıyı yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial3_111","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle.","question":{"questionText":"70","nextStepAvailable":false,"abacusClickable":true,"answerNumber":70,"nextStepAbacusReset":true}},
+        {"text":"Birden fazla basamaklı sayılar yazılırken her zaman en büyük basamaktan başlanır.","sound":"tutorial3_112","typewriterSpeed":40,"abacusReset":true},
+        {"text":"Yani 12 sayısını yazarken önce onlar basamağındaki 10 sayısı yazılır.","sound":"tutorial3_113","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"12"}},
+        {"text":"Sonra ise 2 sayısı yazılır ve 12 böyle gösterilir.","sound":"tutorial3_114","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"question":{"questionText":"12"}},
+        {"text":"24 sayısını yazalım.","sound":"tutorial3_115","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2}],"question":{"questionText":"24"}},
+        {"text":"Önce 20'yi onlar basamağına yazıyorum.","sound":"tutorial3_116","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1}],"question":{"questionText":"24"}},
+        {"text":"Sonrada birler basamağındaki 4'ü yazıyorum ve işlem bitiyor.","sound":"tutorial3_117","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"question":{"questionText":"24"}},
+        {"text":"Bu sayıyı beraber yazalım.","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"abacusReset":true,"question":{"questionText":"32"}},
+        {"text":"Önce onlar basamağındaki 30'u yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_119","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 3 adet birlik boncuk ekle.","question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":30}},
+        {"text":"Sonrasında birler basamağındaki 2'yi yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_120","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 2 adet birlik boncuk ekle.","backAnswerNumber":30,"question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":32,"nextStepAbacusReset":true}},
+        {"text":"78'i yazarken aynı şekilde önce büyük basamaktan başlanır.","sound":"tutorial3_121","typewriterSpeed":40,"question":{"questionText":"78"}},
+        {"text":"Önce 70'i yazıyorum.","sound":"tutorial3_122","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_top","type":3}],"question":{"questionText":"78"}},
+        {"text":"Sonrada 8'i yazıyorum.","sound":"tutorial3_123","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_top","type":3},{"beadId":"rod4_bead_bottom3","type":1}],"question":{"questionText":"78"}},
+        {"text":"Son olarak bu sayıyı beraber yazıp test'e geçelim.","sound":"tutorial3_124","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_top","type":4}],"abacusReset":true,"question":{"questionText":"94"}},
+        {"text":"Önce onlar basamağındaki sayıyı yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_125","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik, 4 adet birlik boncuk ekle.","question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":90}},
+        {"text":"Sonra da birler basamağındaki 4'ü yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_126","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 4 adet birlik boncuk ekle.","backAnswerNumber":90,"question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94,"nextStepAbacusReset":true}},
+        {"text":"Çok hızlı öğrendin. Şimdi test zamanı.","sound":"tutorial3_127","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
     private fun createTutorialSteps100(){
-        tutorialSteps100 = listOf(
-            TutorialStep(
-                "Bu derste iki basamaklı sayıları göreceğiz.",
-                soundResource = R.raw.tutorial3_100,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Eğer konuyu biliyorsan. Sağ alttaki eğitimi atla butonuna tıklayarak direkt teste geçebilirsin.",
-                null,
-                soundResource = R.raw.tutorial1_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Abaküste basamaklar normal sayılardaki gibi sola doğru artarak ilerler.",
-                soundResource = R.raw.tutorial3_101,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 yazmak için onlar basamağındaki boncuklardan 1 adet birlik boncuk kullanılır.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_102,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "20 yazmak için 2 adet birlik boncuk kullanılır.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom2", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_103,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "30 böyle gösterilir.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom3", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_104,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "40 böyle,",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom4", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "50 yazmak istediğimizde ise yukarıdaki beşlik boncuk kullanılır.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_top", 3),
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_106,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "60 böyle gösterilir.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_107,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "70 böyle,",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom2", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "80 böyle,",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom3", 1)
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial3_109,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "90 ise böyle gösterilir.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom4", 1)
-                ),
-                soundResource = R.raw.tutorial3_110,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    // İhtiyaca göre daha fazla animasyon eklenebilir
-                ),
-                soundResource = R.raw.tutorial1_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                resetAndWaith = true,
-                requestText = "Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle."
-            ),
-            TutorialStep(
-                "Bu sayıyı yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial3_111,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "70",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 70,
-                abacusReset = true,
-                nextStepAbacusReset = true,
-                requestText = "Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle."
-            ),TutorialStep(
-                "Birden fazla basamaklı sayılar yazılırken her zaman en büyük basamaktan başlanır.",
-                soundResource = R.raw.tutorial3_112,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-
-            ),TutorialStep(
-                "Yani 12 sayısını yazarken önce onlar basamağındaki 10 sayısı yazılır.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1)
-                ),
-                soundResource = R.raw.tutorial3_113,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "12",
-            ),TutorialStep(
-                "Sonra ise 2 sayısı yazılır ve 12 böyle gösterilir.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                ),
-                soundResource = R.raw.tutorial3_114,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "12",
-            ),TutorialStep(
-                "24 sayısını yazalım.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                ),
-                soundResource = R.raw.tutorial3_115,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "24",
-            ),TutorialStep(
-                "Önce 20'yi onlar basamağına yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                ),
-                soundResource = R.raw.tutorial3_116,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "24",
-            ),TutorialStep(
-                "Sonrada birler basamağındaki 4'ü yazıyorum ve işlem bitiyor.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                ),
-                soundResource = R.raw.tutorial3_117,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "24",
-            ),TutorialStep(
-                "Bu sayıyı beraber yazalım.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                ),
-                soundResource = R.raw.tutorial3_118,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "32",
-                abacusReset = true
-            ),TutorialStep(
-                "Önce onlar basamağındaki 30’u yazıp ‘Kontrol Et’ butonuna basalım.",
-                null,
-                soundResource = R.raw.tutorial3_119,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "32",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 30,
-                abacusReset = true,
-                requestText = "Sağdan 2. sütundaki boncukları kullan. 3 adet birlik boncuk ekle."
-            ),TutorialStep(
-                "Sonrasında birler basamağındaki 2'yi yazıp ‘Kontrol Et’ butonuna basalım.",
-                null,
-                soundResource = R.raw.tutorial3_120,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,questionTextVisibility = View.VISIBLE,
-                questionText = "32",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 32,
-                nextStepAbacusReset = true,
-                requestText = "En sağ sütundaki boncukları kullan. 2 adet birlik boncuk ekle.",
-                backAnswerNumber = 30,
-            ),TutorialStep(
-                "78'i yazarken aynı şekilde önce büyük basamaktan başlanır.",
-                null,
-                soundResource = R.raw.tutorial3_121,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "78",
-            ),TutorialStep(
-                "Önce 70'i yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_top", 3)
-                ),
-                soundResource = R.raw.tutorial3_122,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "78",
-            ),TutorialStep(
-                "Sonrada 8'i yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                ),
-                soundResource = R.raw.tutorial3_123,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "78",
-            ),TutorialStep(
-                "Son olarak bu sayıyı beraber yazıp test'e geçelim.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4)
-                ),
-                soundResource = R.raw.tutorial3_124,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "94",
-                abacusReset = true
-            ),TutorialStep(
-                "Önce onlar basamağındaki sayıyı yazıp ‘Kontrol Et’ butonuna basalım.",
-                null,
-                soundResource = R.raw.tutorial3_125,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "94",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 90,
-                abacusReset = true,
-                requestText = "Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik, 4 adet birlik boncuk ekle."
-            ),TutorialStep(
-                "Sonra da birler basamağındaki 4'ü yazıp ‘Kontrol Et’ butonuna basalım.",
-                null,
-                soundResource = R.raw.tutorial3_126,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "94",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 94,
-                requestText = "En sağ sütundaki boncukları kullan. 4 adet birlik boncuk ekle.",
-                backAnswerNumber = 90,
-                nextStepAbacusReset = true
-
-            ),TutorialStep(
-                "Çok hızlı öğrendin. Şimdi test zamanı.",
-                null,
-                soundResource = R.raw.tutorial3_127,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_100")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_100_JSON }
+        tutorialSteps100 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_100 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_100_JSON)
+        }
     }
+
+    private val DEFAULT_TUTORIAL_STEP_101_JSON = """
+    {
+      "steps": [
+        {"text":"Bu derste 3-4-5 basamaklı sayıları göreceğiz.","sound":"tutorial4_100","typewriterSpeed":40},
+        {"text":"3 basamaklı sayıları yazarken, iki basamaklı sayılarda olduğu gibi en büyük basamaktan başlıyoruz.","sound":"tutorial4_101","typewriterSpeed":40},
+        {"text":"Örneğin bu sayıyı yazarken.","sound":"tutorial4_102","typewriterSpeed":40,"question":{"questionText":"154"}},
+        {"text":"İlk olarak yüzler basamağını abaküsteki yüzler basamağına yazıyorum.","sound":"tutorial4_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"154"}},
+        {"text":"Sonrasında onlar basamağını,","sound":"tutorial4_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"154"}},
+        {"text":"Ve son olarakta birler basamağını yazıyorum.","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"154"}},
+        {"text":"Bu sayıyı beraber yazalım.","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"abacusReset":true,"question":{"questionText":"687"}},
+        {"text":"Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_107","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"1 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":600}},
+        {"text":"Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_108","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":600,"requestText":"3 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":680}},
+        {"text":"Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":680,"requestText":"2 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":687,"nextStepAbacusReset":true}},
+        {"text":"Bu sayıyı yazarken ise...","sound":"tutorial4_3000","typewriterSpeed":40,"question":{"questionText":"7319"}},
+        {"text":"İlk olarak binler basamağını abaküsteki binler basamağına yazıyorum.","sound":"tutorial4_3001","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod1_bead_bottom1","type":1},{"beadId":"rod1_bead_bottom2","type":1},{"beadId":"rod1_bead_top","type":3}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
+        {"text":"Sonrasında yüzler basamağını,","sound":"tutorial4_3002","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
+        {"text":"Onlar basamağını,","sound":"tutorial4_2008","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
+        {"text":"Ve son olarakta birler basamağını yazıyorum.","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
+        {"text":"Bu sayıyı beraber yazalım.","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod1_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom2","type":2},{"beadId":"rod1_bead_top","type":4}],"abacusReset":true,"question":{"questionText":"4813"}},
+        {"text":"Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_3003","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"4 adet birlik boncuk kullan.","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4000}},
+        {"text":"Sonrasında yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_3004","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":4000,"requestText":"3 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4800}},
+        {"text":"Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_108","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":4800,"requestText":"1 adet birlik boncuk kullan.","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4810}},
+        {"text":"Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"backAnswerNumber":4810,"nextStepAbacusReset":true,"requestText":"3 adet birlik boncuk kullan.","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4813}},
+        {"text":"Abaküse sayıları hangi basamaktan başlayarak yazarız?","sound":"tutorial101_0","typewriterSpeed":40,"requestText":"İleride kuralları doğru uygulayabilmemiz için en büyük basamaktan başlayarak yazarız.","choiceQuestion":{"options":["En küçük basamaktan.","Basamağın önemi yok. İstediğimizden başlayabiliriz.","En büyük basamaktan."],"correctOptionIndex":[2],"multipleChoice":false,"optionText":"Abaküse sayıları hangi basamaktan başlayarak yazarız?"}},
+        {"text":"Bu sayıyı yazarken ise...","sound":"tutorial4_3000","typewriterSpeed":40,"question":{"questionText":"39125"}},
+        {"text":"İlk olarak on binler basamağını abaküsteki on binler basamağına yazıyorum.","sound":"tutorial4_3005","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod0_bead_bottom1","type":1},{"beadId":"rod0_bead_bottom2","type":1},{"beadId":"rod0_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
+        {"text":"Sonrasında binler basamağını,","sound":"tutorial4_2006","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod1_bead_bottom1","type":1},{"beadId":"rod1_bead_bottom2","type":1},{"beadId":"rod1_bead_bottom3","type":1},{"beadId":"rod1_bead_bottom4","type":1},{"beadId":"rod1_bead_top","type":3}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
+        {"text":"Yüzler basamağını,","sound":"tutorial4_2007","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
+        {"text":"Onlar basamağını,","sound":"tutorial4_2008","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
+        {"text":"Ve son olarakta birler basamağını yazıyorum.","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
+        {"text":"Bu sayıyı beraber yazalım.","sound":"tutorial4_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom2","type":2},{"beadId":"rod1_bead_bottom3","type":2},{"beadId":"rod1_bead_bottom4","type":2},{"beadId":"rod1_bead_top","type":4},{"beadId":"rod0_bead_bottom1","type":2},{"beadId":"rod0_bead_bottom2","type":2},{"beadId":"rod0_bead_bottom3","type":2}],"abacusReset":true,"question":{"questionText":"84192"}},
+        {"text":"On binler basamağını sağdan 5. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_2009","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"3 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":80000}},
+        {"text":"Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_3003","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":80000,"requestText":"4 adet birlik boncuk kullan.","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84000}},
+        {"text":"Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_107","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":84000,"requestText":"1 adet birlik boncuk kullan.","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84100}},
+        {"text":"Onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_2010","typewriterSpeed":40,"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"backAnswerNumber":84100,"requestText":"4 adet birlik ve 1 adet beşlik boncuk kullan.","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84190}},
+        {"text":"Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"backAnswerNumber":84190,"nextStepAbacusReset":true,"requestText":"2 adet birlik boncuk kullan.","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84192}},
+        {"text":"İşte bu kadar basit.","sound":"tutorial4_110","typewriterSpeed":40},
+        {"text":"Teste geç.","sound":"tutorial15_27","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
 
     private fun createTutorialSteps101(){
-        tutorialSteps101 = listOf(
-            TutorialStep(
-                "Bu derste 3-4-5 basamaklı sayıları göreceğiz.",
-                soundResource = R.raw.tutorial4_100,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "3 basamaklı sayıları yazarken, iki basamaklı sayılarda olduğu gibi en büyük basamaktan başlıyoruz.",
-                soundResource = R.raw.tutorial4_101,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Örneğin bu sayıyı yazarken.",
-                soundResource = R.raw.tutorial4_102,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "154",
-            ),TutorialStep(
-                "İlk olarak yüzler basamağını abaküsteki yüzler basamağına yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 1)
-                ),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                soundResource = R.raw.tutorial4_103,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "154",
-            ),TutorialStep(
-                "Sonrasında onlar basamağını,",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                soundResource = R.raw.tutorial4_104,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "154",
-            ),TutorialStep(
-                "Ve son olarakta birler basamağını yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                ),
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                soundResource = R.raw.tutorial4_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "154",
-            ),TutorialStep(
-                "Bu sayıyı beraber yazalım.",
-                listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                ),
-                soundResource = R.raw.tutorial3_118,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "687",
-                abacusReset = true
-            ),TutorialStep(
-                "Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_107,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                questionText = "687",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 600,
-                abacusReset = true,
-                requestText = "1 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),TutorialStep(
-                "Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                questionText = "687",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 680,
-                backAnswerNumber = 600,
-                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),TutorialStep(
-                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_109,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "687",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 687,
-                backAnswerNumber = 680,
-                nextStepAbacusReset = true,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                ),
-                requestText = "2 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),
-
-            TutorialStep(
-                "Bu sayıyı yazarken ise...",
-                soundResource = R.raw.tutorial4_3000,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "7319",
-            ),TutorialStep(
-                "İlk olarak binler basamağını abaküsteki binler basamağına yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod1_bead_bottom1", 1),
-                    BeadAnimation(this, "rod1_bead_bottom2", 1),
-                    BeadAnimation(this, "rod1_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_3001,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "7319",
-            ),TutorialStep(
-                "Sonrasında yüzler basamağını,",
-                listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 1),
-                    BeadAnimation(this, "rod2_bead_bottom2", 1),
-                    BeadAnimation(this, "rod2_bead_bottom3", 1)
-                ),
-                soundResource = R.raw.tutorial4_3002,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionText = "7319",
-            ),TutorialStep(
-                "Onlar basamağını,", //sese dokunma
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                ),
-                soundResource = R.raw.tutorial4_2008,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "7319",
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),
-                ),
-            ),TutorialStep(
-                "Ve son olarakta birler basamağını yazıyorum.", //sese dokunma
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    3 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "7319",
-            ),TutorialStep(
-                "Bu sayıyı beraber yazalım.", //dokunma
-                listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod2_bead_bottom2", 2),
-                    BeadAnimation(this, "rod2_bead_bottom3", 2),
-                    BeadAnimation(this, "rod1_bead_bottom1", 2),
-                    BeadAnimation(this, "rod1_bead_bottom2", 2),
-                    BeadAnimation(this, "rod1_bead_top", 4),
-                    ),
-                soundResource = R.raw.tutorial3_118,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4813",
-                abacusReset = true
-            ),TutorialStep(
-                "Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_3003,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4813",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 4000,
-                abacusReset = true,
-                requestText = "4 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "Sonrasında yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_3004,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4813",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 4800,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                backAnswerNumber = 4000,
-                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),TutorialStep(
-                "Sonrasında onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
-                soundResource = R.raw.tutorial4_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4813",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 4810,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),
-                ),
-                backAnswerNumber = 4800,
-                requestText = "1 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
-                soundResource = R.raw.tutorial4_109,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4813",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 4813,
-                backAnswerNumber = 4810,
-                questionTextColorPositions = listOf(
-                    3 to Color.parseColor("#00BFFF"),
-                ),
-                nextStepAbacusReset = true,
-                requestText = "3 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "Abaküse sayıları hangi basamaktan başlayarak yazarız?",
-                soundResource = R.raw.tutorial101_0,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                options = listOf("En küçük basamaktan.","Basamağın önemi yok. İstediğimizden başlayabiliriz.","En büyük basamaktan."),
-                correctOptionIndex = listOf(2),
-                multipleChoice = false,
-                optionText = "Abaküse sayıları hangi basamaktan başlayarak yazarız?",
-                requestText = "İleride kuralları doğru uygulayabilmemiz için en büyük basamaktan başlayarak yazarız."
-            ),TutorialStep(
-                "Bu sayıyı yazarken ise...", //aynısını kullan
-                soundResource = R.raw.tutorial4_3000,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "İlk olarak on binler basamağını abaküsteki on binler basamağına yazıyorum.",
-                listOf(
-                    BeadAnimation(this, "rod0_bead_bottom1", 1),
-                    BeadAnimation(this, "rod0_bead_bottom2", 1),
-                    BeadAnimation(this, "rod0_bead_bottom3", 1),
-                ),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_3005,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "Sonrasında binler basamağını,",
-                listOf(
-                    BeadAnimation(this, "rod1_bead_bottom1", 1),
-                    BeadAnimation(this, "rod1_bead_bottom2", 1),
-                    BeadAnimation(this, "rod1_bead_bottom3", 1),
-                    BeadAnimation(this, "rod1_bead_bottom4", 1),
-                    BeadAnimation(this, "rod1_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_2006,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "Yüzler basamağını,",
-                listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 1),
-                ),
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_2007,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "Onlar basamağını,",
-                listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1)
-                ),
-                questionTextColorPositions = listOf(
-                    3 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_2008,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "Ve son olarakta birler basamağını yazıyorum.", //sese dokunma
-                listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial4_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "39125",
-            ),TutorialStep(
-                "Bu sayıyı beraber yazalım.", //sese dokunma
-                listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod1_bead_bottom1", 2),
-                    BeadAnimation(this, "rod1_bead_bottom2", 2),
-                    BeadAnimation(this, "rod1_bead_bottom3", 2),
-                    BeadAnimation(this, "rod1_bead_bottom4", 2),
-                    BeadAnimation(this, "rod1_bead_top", 4),
-                    BeadAnimation(this, "rod0_bead_bottom1", 2),
-                    BeadAnimation(this, "rod0_bead_bottom2", 2),
-                    BeadAnimation(this, "rod0_bead_bottom3", 2),
-                    ),
-                soundResource = R.raw.tutorial4_106,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                abacusReset = true
-            ),TutorialStep(
-                "On binler basamağını sağdan 5. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_2009,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 80000,
-                abacusReset = true,
-                requestText = "3 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),TutorialStep(
-                "Binler basamağını sağdan 4. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //aynısını yaz
-                soundResource = R.raw.tutorial4_3003,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 84000,
-                backAnswerNumber = 80000,
-                requestText = "4 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "Yüzler basamağını sağdan 3. sütuna yazıp 'Kontrol Et' butonuna tıkla.", //sese dokunma
-                soundResource = R.raw.tutorial4_107,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    2 to Color.parseColor("#00BFFF"),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 84100,
-                backAnswerNumber = 84000,
-                requestText = "1 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "Onlar basamağını 2. sütuna yazıp 'Kontrol Et' butonuna tıkla.",
-                soundResource = R.raw.tutorial4_2010,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    3 to Color.parseColor("#00BFFF"),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 84190,
-                backAnswerNumber = 84100,
-                requestText = "4 adet birlik ve 1 adet beşlik boncuk kullan."
-            ),TutorialStep(
-                "Ve son olarak birler basamağını en sağdaki sütuna yazıp 'Kontrol Et' butonuna tıkla.",//sese dokunma
-                soundResource = R.raw.tutorial4_109,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionText = "84192",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 84192,
-                backAnswerNumber = 84190,
-                nextStepAbacusReset = true,
-                requestText = "2 adet birlik boncuk kullan."
-            ),TutorialStep(
-                "İşte bu kadar basit.",
-                soundResource = R.raw.tutorial4_110,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Teste geç.",
-                soundResource = R.raw.tutorial15_27,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_101")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_101_JSON }
+        tutorialSteps101 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_101 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_101_JSON)
+        }
     }
-    
+
+    private val DEFAULT_TUTORIAL_STEP_2_JSON = """
+    {
+      "steps": [
+        {"text":"Bu ünitede, çok büyük sayıları bile ne kadar kolay toplayabileceğini öğreneceksin.","sound":"tutorial2_1","typewriterSpeed":40},
+        {"text":"Bu işlemle başlayalım.","sound":"tutorial2_3","typewriterSpeed":40,"question":{"questionText":"3 + 5"}},
+        {"text":"İlk önce abaküse 3 yazıyoruz.","sound":"tutorial2_4","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 5"}},
+        {"text":"Sonrasında toplamak için 5'i ekleriz.","sound":"tutorial2_5","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 5"}},
+        {"text":"Cevap 8.","sound":"tutorial2_6","typewriterSpeed":40,"question":{"questionText":"3 + 5"}},
+        {"text":"Bu işlemde ise...","sound":"tutorial12_9","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"question":{"questionText":"1 + 7"}},
+        {"text":"Önce abaküse ilk sayıyı yazıyorum.","sound":"tutorial2_101","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
+        {"text":"Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.","sound":"tutorial2_102","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
+        {"text":"Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
+        {"text":"Cevap 8.","sound":"tutorial2_6","typewriterSpeed":40,"question":{"questionText":"1 + 7"}},
+        {"text":"Şimdi bu örneği beraber yapalım.","sound":"tutorial2_7","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"abacusReset":true,"question":{"questionText":"2 + 6"}},
+        {"text":"İlk önce abaküse 2 yazıp Kontrol Et'e tıkla.","sound":"tutorial2_8","typewriterSpeed":40,"abacusReset":true,"requestText":"En sağdaki sütundan 2 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"2 + 6","nextStepAvailable":false,"abacusClickable":true,"answerNumber":2}},
+        {"text":"Şimdi de 6'yı ekleyip Kontrol Et'e tıkla.","sound":"tutorial2_9","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":2,"requestText":"En sağdaki sütuna 1 tane beşlik, 1 tane birlik boncuk ekle.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 6","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
+        {"text":"Son olarak bu örneği beraber yapalım.","sound":"tutorial2_103","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1 + 8"}},
+        {"text":"İlk önce abaküse 1 yazıp Kontrol Et'e tıkla.","sound":"tutorial2_104","typewriterSpeed":40,"abacusReset":true,"requestText":"En sağdaki sütundan 1 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"1 + 8","nextStepAvailable":false,"abacusClickable":true,"answerNumber":1}},
+        {"text":"Şimdi de 8'i ekleyip Kontrol Et'e tıkla.","sound":"tutorial2_105","typewriterSpeed":40,"backAnswerNumber":1,"nextStepAbacusReset":true,"requestText":"En sağdaki sütundan 1 adet beşlik 3 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 8","nextStepAvailable":false,"abacusClickable":true,"answerNumber":9}},
+        {"text":"Teste geç.","sound":"tutorial15_27","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
     private fun createTutorialSteps2(){
-        tutorialSteps2 = listOf(
-            TutorialStep(
-            "Bu ünitede, çok büyük sayıları bile ne kadar kolay toplayabileceğini öğreneceksin.",
-            null,
-                soundResource = R.raw.tutorial2_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                text = "Bu işlemle başlayalım.",
-                questionText = "3 + 5",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "İlk önce abaküse 3 yazıyoruz.",
-                questionText = "3 + 5",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
-                soundResource = R.raw.tutorial2_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                )
-
-            ),
-            TutorialStep(
-                "Sonrasında toplamak için 5'i ekleriz.",
-                questionText = "3 + 5",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                soundResource = R.raw.tutorial2_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),  // "24" içindeki "4" (1. pozisyon)
-                )
-
-            ),
-            TutorialStep(
-                "Cevap 8.",
-                soundResource = R.raw.tutorial2_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "3 + 5",
-                questionTextVisibility = View.VISIBLE,
-            ),
-            TutorialStep(
-                "Bu işlemde ise...",
-                soundResource = R.raw.tutorial12_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "1 + 7",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2)),
-            ),
-            TutorialStep(
-                "Önce abaküse ilk sayıyı yazıyorum.",
-                soundResource = R.raw.tutorial2_101,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "1 + 7",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),
-            TutorialStep(
-                "Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.",
-                soundResource = R.raw.tutorial2_102,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "1 + 7",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),
-            TutorialStep(
-                "Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.",
-                questionText = "1 + 7",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    ),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),
-            TutorialStep(
-                "Cevap 8.",
-                soundResource = R.raw.tutorial2_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "1 + 7",
-                questionTextVisibility = View.VISIBLE,
-            ),
-            TutorialStep(
-                "Şimdi bu örneği beraber yapalım.",
-                questionText = "2 + 6",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2)),
-                soundResource = R.raw.tutorial2_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-
-            ),
-            TutorialStep(
-                "İlk önce abaküse 2 yazıp Kontrol Et'e tıkla.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "2 + 6",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 2,
-                soundResource = R.raw.tutorial2_8,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "En sağdaki sütundan 2 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Şimdi de 6'yı ekleyip Kontrol Et'e tıkla.",
-                questionText = "2 + 6",
-                questionTextVisibility = View.VISIBLE,
-                answerNumber = 8,
-                abacusClickable = true,
-                nextStepAvailable = false,
-                soundResource = R.raw.tutorial2_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                nextStepAbacusReset = true,
-                backAnswerNumber = 2,
-                requestText = "En sağdaki sütuna 1 tane beşlik, 1 tane birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),
-            TutorialStep(
-                "Son olarak bu örneği beraber yapalım.",
-                soundResource = R.raw.tutorial2_103,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "1 + 8",
-                questionTextVisibility = View.VISIBLE,
-                abacusReset = true
-            ),
-            TutorialStep(
-                "İlk önce abaküse 1 yazıp Kontrol Et'e tıkla.",
-                questionTextVisibility = View.VISIBLE,
-                questionText = "1 + 8",
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 1,
-                soundResource = R.raw.tutorial2_104,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "En sağdaki sütundan 1 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Şimdi de 8'i ekleyip Kontrol Et'e tıkla.",
-                questionText = "1 + 8",
-                questionTextVisibility = View.VISIBLE,
-                answerNumber = 9,
-                abacusClickable = true,
-                nextStepAvailable = false,
-                soundResource = R.raw.tutorial2_105,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 1,
-                nextStepAbacusReset = true,
-                requestText = "En sağdaki sütundan 1 adet beşlik 3 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Teste geç.",
-                soundResource = R.raw.tutorial15_27,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_2")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_2_JSON }
+        tutorialSteps2 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_2 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_2_JSON)
+        }
     }
+
+    private val DEFAULT_TUTORIAL_STEP_102_JSON = """
+    {
+      "steps": [
+        {"text":"İki basamaklı sayılar toplanırken, sayılar en büyük basamaktan başlanarak toplanır.","sound":"tutorial2_11","typewriterSpeed":40},
+        {"text":"Mesela bu işleme bakalım.","sound":"tutorial2_12","typewriterSpeed":40,"question":{"questionText":"21 + 13"}},
+        {"text":"İlk önce 21 yazıyoruz.","sound":"tutorial2_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
+        {"text":"İlk önce 21 yazıyoruz.","useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
+        {"text":"Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.","sound":"tutorial2_14","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
+        {"text":"Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
+        {"text":"Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
+        {"text":"Cevap 34.","sound":"tutorial2_15","typewriterSpeed":40,"question":{"questionText":"21 + 13"}},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial2_16","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
+        {"text":"Bu işlemi ele alalım.","sound":"tutorial2_17","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"16 + 21"}},
+        {"text":"İlk önce 16 yazıp Kontrol Et'e tıkla.","sound":"tutorial2_18","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağından 1 adet birlik, birler basamağından 1 adet beşlik ve 1 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":16}},
+        {"text":"Sonrasında, 21'i eklemek için önce 20'yi onlar basamağına ekle.","sound":"tutorial2_19","typewriterSpeed":40,"backAnswerNumber":16,"requestText":"Onlar basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":36}},
+        {"text":"Son olarak 1'i birler basamağına ekle.","sound":"tutorial2_20","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":36,"requestText":"Birler basamağına 1 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":37}},
+        {"text":"Bu işleme bakalım.","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"36 + 63"}},
+        {"text":"İlk önce 36 yazıyorum.","sound":"tutorial102_0","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
+        {"text":"İlk önce 36 yazıyorum.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
+        {"text":"Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.","sound":"tutorial102_1","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
+        {"text":"Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1},{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
+        {"text":"Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
+        {"text":"Cevap 99.","sound":"tutorial102_2","typewriterSpeed":40},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}]},
+        {"text":"Bu işlemi ele alalım.","sound":"tutorial2_17","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"23 + 71"}},
+        {"text":"Önce ilk sayıyı yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial102_3","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağından 2 adet birlik, birler basamağından 3 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":23}},
+        {"text":"Sonrasında, 71'i eklemek için önce 70'i onlar basamağına ekle.","sound":"tutorial102_4","typewriterSpeed":40,"backAnswerNumber":23,"requestText":"Onlar basamağına 1 adet beşlik, 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":93}},
+        {"text":"Sonra da 1'i birler basamağına ekle.","sound":"tutorial102_5","typewriterSpeed":40,"backAnswerNumber":93,"requestText":"Birler basamağına 1 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94}},
+        {"text":"Harika! Şimdi teste geç.","sound":"tutorial102_6","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
 
     private fun createTutorialSteps102(){
-        tutorialSteps102 = listOf(
-            TutorialStep(
-                "İki basamaklı sayılar toplanırken, sayılar en büyük basamaktan başlanarak toplanır.",
-                soundResource = R.raw.tutorial2_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Mesela bu işleme bakalım.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_12,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "İlk önce 21 yazıyoruz.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "İlk önce 21 yazıyoruz.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom1", 1)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_14,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(BeadAnimation(this, "rod3_bead_bottom3", 1)),
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 13'ü eklemek için önce 10'unu onlar basamağına, sonra da 3'ünü birler basamağına ekliyoruz.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE ,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ), TutorialStep(
-                "Cevap 34.",
-                questionText = "21 + 13",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial2_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
-                soundResource = R.raw.tutorial2_16,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işlemi ele alalım.",
-                questionText = "16 + 21",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "İlk önce 16 yazıp Kontrol Et'e tıkla.",
-                questionText = "16 + 21",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 16,
-                soundResource = R.raw.tutorial2_18,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Onlar basamağından 1 adet birlik, birler basamağından 1 adet beşlik ve 1 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 21'i eklemek için önce 20'yi onlar basamağına ekle.",
-                questionText = "16 + 21",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 36,
-                soundResource = R.raw.tutorial2_19,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 16,
-                requestText = "Onlar basamağına 2 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Son olarak 1'i birler basamağına ekle.",
-                questionText = "16 + 21",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 37,
-                soundResource = R.raw.tutorial2_20,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                nextStepAbacusReset = true,
-                backAnswerNumber = 36,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),
-            TutorialStep(
-                "Bu işleme bakalım.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial10_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-            ),TutorialStep(
-                "İlk önce 36 yazıyorum.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial102_0,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "İlk önce 36 yazıyorum.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial102_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom4", 1),
-                    BeadAnimation(this, "rod3_bead_top", 3),
-                    ),
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 63'ü eklemek için önce 60'ı onlar basamağına, sonra da 3'ü birler basamağına ekliyorum.",
-                questionText = "36 + 63",
-                questionTextVisibility = View.VISIBLE ,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                ),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ), TutorialStep(
-                "Cevap 99.",
-                soundResource = R.raw.tutorial102_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4)
-                ),
-                soundResource = R.raw.tutorial1_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işlemi ele alalım.",
-                questionText = "23 + 71",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial2_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "Önce ilk sayıyı yazıp ‘Kontrol Et’ butonuna tıkla.",
-                questionText = "23 + 71",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 23,
-                soundResource = R.raw.tutorial102_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Onlar basamağından 2 adet birlik, birler basamağından 3 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 71'i eklemek için önce 70'i onlar basamağına ekle.",
-                questionText = "23 + 71",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 93,
-                soundResource = R.raw.tutorial102_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 23,
-                requestText = "Onlar basamağına 1 adet beşlik, 2 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonra da 1'i birler basamağına ekle.",
-                questionText = "23 + 71",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 94,
-                soundResource = R.raw.tutorial102_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 93,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Harika! Şimdi teste geç.",
-                soundResource = R.raw.tutorial102_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_102")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_102_JSON }
+        tutorialSteps102 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_102 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_102_JSON)
+        }
     }
+    private val DEFAULT_TUTORIAL_STEP_103_JSON = """
+    {
+      "steps": [
+        {"text":"Üç basamaklı sayılar toplanırkende toplamaya en büyük basamaktan başlayacağız.","sound":"tutorial103_0","typewriterSpeed":40},
+        {"text":"Bu bütün toplama işlemlerinde böyle her zaman en büyük basamaktan başlayarak toplanır.","sound":"tutorial103_1","typewriterSpeed":40},
+        {"text":"Bu işleme bakalım.","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"241 + 153"}},
+        {"text":"İlk önce 241 yazıyoruz.","sound":"tutorial103_2","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"İlk önce 241 yazıyoruz.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod3_bead_bottom4","type":1},{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"Sonrasında 153'ü en büyük basamağından başlayarak ekliyoruz.","sound":"tutorial103_3","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"100","sound":"tutorial103_4","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"50","sound":"tutorial103_5","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"3","sound":"tutorial103_6","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
+        {"text":"Cevap 394.","sound":"tutorial103_7","typewriterSpeed":40,"question":{"questionText":"241 + 153"}},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
+        {"text":"İlk önce 222 yazıp kontrol ete tıkla.","sound":"tutorial103_8","typewriterSpeed":40,"abacusReset":true,"requestText":"Yüzler, onlar ve birler basamaklarına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":222}},
+        {"text":"Sonrasında, 126'yı en büyük basamağından başlayarak ekle.","sound":"tutorial103_9","typewriterSpeed":40,"backAnswerNumber":222,"requestText":"Onlar basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"222 + 126"}},
+        {"text":"100","sound":"tutorial103_4","typewriterSpeed":40,"backAnswerNumber":222,"requestText":"Yüzler basamağına 1 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":322}},
+        {"text":"20","sound":"tutorial103_10","typewriterSpeed":40,"backAnswerNumber":322,"requestText":"Onlar basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":342}},
+        {"text":"6","sound":"tutorial103_11","typewriterSpeed":40,"backAnswerNumber":342,"requestText":"Birler basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":348}},
+        {"text":"Cevap 348.","sound":"tutorial103_348","typewriterSpeed":40,"nextStepAbacusReset":true,"question":{"questionText":"222 + 126"}},
+        {"text":"Bu işleme bakalım.","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"582 + 316"}},
+        {"text":"İlk önce 582 yazıyoruz.","sound":"tutorial103_12","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"İlk önce 582 yazıyoruz.","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod2_bead_top","type":3},{"beadId":"rod3_bead_top","type":3},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"Sonrasında 316'yı en büyük basamağından başlayarak ekliyoruz.","sound":"tutorial103_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"300","sound":"tutorial103_14","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"10","sound":"tutorial103_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"6","sound":"tutorial103_11","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
+        {"text":"Cevap 898.","sound":"tutorial103_17","typewriterSpeed":40,"question":{"questionText":"582 + 316"}},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod2_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_top","type":4}]},
+        {"text":"İlk önce 723 yazıp kontrol ete tıkla.","sound":"tutorial103_18","typewriterSpeed":40,"abacusReset":true,"requestText":"Yüzler basamağına 1 adet beşlik ve 2 adet birlik, onlar basamağına 2 adet birlik ve birler basamağına 3 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":723}},
+        {"text":"Sonrasında, 266'yı en büyük basamağından başlayarak ekle.","sound":"tutorial103_19","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"Onlar basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"723 + 266"}},
+        {"text":"200","sound":"tutorial103_20","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"Yüzler basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":923}},
+        {"text":"60","sound":"tutorial103_21","typewriterSpeed":40,"backAnswerNumber":923,"requestText":"Onlar basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":983}},
+        {"text":"6","sound":"tutorial103_11","typewriterSpeed":40,"backAnswerNumber":983,"requestText":"Birler basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":989}},
+        {"text":"Cevap 989.","sound":"tutorial103_22","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":989,"requestText":"Birler basamağına 1 adet birlik boncuk ekle.","question":{"questionText":"723 + 266"}},
+        {"text":"Harika! Şimdi teste geç.","sound":"tutorial102_6","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
     private fun createTutorialSteps103(){
-        tutorialSteps103 = listOf(
-            TutorialStep(
-                "Üç basamaklı sayılar toplanırkende toplamaya en büyük basamaktan başlayacağız.",
-                soundResource = R.raw.tutorial103_0,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu bütün toplama işlemlerinde böyle her zaman en büyük basamaktan başlayarak toplanır.",
-                soundResource = R.raw.tutorial103_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işleme bakalım.", //sese dokunma
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial10_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "İlk önce 241 yazıyoruz.",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "İlk önce 241 yazıyoruz.",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 1),
-                    BeadAnimation(this, "rod2_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1),
-                    BeadAnimation(this, "rod3_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_bottom1", 1)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında 153'ü en büyük basamağından başlayarak ekliyoruz.",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                    7 to Color.parseColor("#00BFFF"),
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "100",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(BeadAnimation(this, "rod2_bead_bottom3", 1)),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "50",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE ,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial103_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ), TutorialStep(
-                "3",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial103_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                ),
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ), TutorialStep(
-                "Cevap 394.",
-                questionText = "241 + 153",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial103_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.", //sese dokunma
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod2_bead_bottom2", 2),
-                    BeadAnimation(this, "rod2_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
-                soundResource = R.raw.tutorial1_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "İlk önce 222 yazıp kontrol ete tıkla.",
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 222,
-                soundResource = R.raw.tutorial103_8,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Onlar basamağından 1 adet birlik, birler basamağından 1 adet beşlik ve 1 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 126'yı en büyük basamağından başlayarak ekle.",
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 222,
-                requestText = "Onlar basamağına 2 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                    7 to Color.parseColor("#00BFFF"),
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "100", //yukardaki ses
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 322,
-                soundResource = R.raw.tutorial103_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 222,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "20",
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 342,
-                soundResource = R.raw.tutorial103_10,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 322,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "6",
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 348,
-                soundResource = R.raw.tutorial103_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 342,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 348.",
-                questionText = "222 + 126",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_348,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                nextStepAbacusReset = true,
-            ),
-            TutorialStep(
-                "Bu işleme bakalım.", //sese dokunma
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial10_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "İlk önce 582 yazıyoruz.",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_12,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "İlk önce 582 yazıyoruz.",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_top", 3),
-                    BeadAnimation(this, "rod3_bead_top", 3),
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında 316'yı en büyük basamağından başlayarak ekliyoruz.",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                    7 to Color.parseColor("#00BFFF"),
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "300",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_14,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 1),
-                    BeadAnimation(this, "rod2_bead_bottom2", 1),
-                    BeadAnimation(this, "rod2_bead_bottom3", 1),
-                    ),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "10",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial103_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom4", 1)),
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ), TutorialStep(
-                "6",//yukardakini ekle
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial103_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                    ),
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ), TutorialStep(
-                "Cevap 898.",
-                questionText = "582 + 316",
-                questionTextVisibility = View.VISIBLE ,
-                soundResource = R.raw.tutorial103_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.", //sese dokunma
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod2_bead_bottom2", 2),
-                    BeadAnimation(this, "rod2_bead_bottom3", 2),
-                    BeadAnimation(this, "rod2_bead_top", 4),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod3_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4)
-                ),
-                soundResource = R.raw.tutorial1_108,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "İlk önce 723 yazıp kontrol ete tıkla.",
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 723,
-                soundResource = R.raw.tutorial103_18,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Onlar basamağından 1 adet birlik, birler basamağından 1 adet beşlik ve 1 adet birlik boncuk kullan.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında, 266'yı en büyük basamağından başlayarak ekle.",
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_19,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 723,
-                requestText = "Onlar basamağına 2 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                    7 to Color.parseColor("#00BFFF"),
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "200",
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 923,
-                soundResource = R.raw.tutorial103_20,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 723,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "60",
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 983,
-                soundResource = R.raw.tutorial103_21,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 923,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "6", //yukardaki ses
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                answerNumber = 989,
-                soundResource = R.raw.tutorial103_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 983,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 989.",
-                questionText = "723 + 266",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial103_22,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                nextStepAbacusReset = true,
-                backAnswerNumber = 989,
-                requestText = "Birler basamağına 1 adet birlik boncuk ekle."
-            ),TutorialStep(
-                "Harika! Şimdi teste geç.", //sese dokunma
-                null,
-                soundResource = R.raw.tutorial102_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_103")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_103_JSON }
+        tutorialSteps103 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_103 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_103_JSON)
+        }
     }
+
+    private val DEFAULT_TUTORIAL_STEP_3_JSON = """
+    {
+      "steps": [
+        {"text":"Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin.","sound":"tutorial3_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"5'lik toplamayı, sayıları doğrudan ekleyemediğimiz zaman kullanırız.","sound":"tutorial3000_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"Örneğin bu işlemde 4'ü abaküse yazıyorum.","sound":"tutorial3000_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"1'i eklemek istediğimde doğrudan ekleyemiyorum. Aşağıda eklenecek boncuk yok.","sound":"tutorial3000_3","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"İşte böyle zamanlarda 5'lik toplama kuralını uygulayacağız.","sound":"tutorial3000_4","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
+        {"text":"5'lik toplama kuralında ekleyeceğimiz sayıların 5'e tamamlayan kardeşleri vardır.","sound":"tutorial3_2","typewriterSpeed":40},
+        {"text":"1'in kardeşi 4'tür.","sound":"tutorial3_3","typewriterSpeed":40},
+        {"text":"2'nin kardeşi 3","sound":"tutorial3_4","typewriterSpeed":40},
+        {"text":"3'ün kardeşi 2","sound":"tutorial3_5","typewriterSpeed":40},
+        {"text":"4'ün kardeşi 1'dir.","sound":"tutorial3_6","typewriterSpeed":40},
+        {"text":"Bu kuralı, sayıyı ekleyemediğimiz zaman  ‘5 gelir, kardeşi gider’ şeklinde uygulayacağız.","sound":"tutorial3000_5","typewriterSpeed":40},
+        {"text":"Örneğin bu işlemi yapmaya çalışalım.","sound":"tutorial3_7","typewriterSpeed":40,"question":{"questionText":"4 + 1"}},
+        {"text":"İlk olarak abaküse ilk sayıyı yazıyoruz.","sound":"tutorial3_8","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.","sound":"tutorial3_9","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"Ama 1'i doğrudan ekleyemiyoruz.","sound":"tutorial3_10","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"O yüzden burada 5'lik toplama kuralını uygulayacağız.","sound":"tutorial3_11","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"1'in kardeşi 4'tür.","sound":"tutorial3_12","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"5 gelir.","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"Kardeşi 4 gider.","sound":"tutorial3_14","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"Kardeşi 4 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
+        {"text":"Cevap 5.","sound":"tutorial3_15","typewriterSpeed":40,"question":{"questionText":"4 + 1"}},
+        {"text":"Bu işlemi ele alalım.","sound":"tutorial3_16","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"4 + 2"}},
+        {"text":"Önce abaküse 4 yazıyoruz.","sound":"tutorial3_17","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"Sonrasında 2'yi ekleyeceğiz. Ama 2'yi doğrudan ekleyemiyoruz.","sound":"tutorial3_18","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial3_19","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"2'nin kardeşi 3'tür.","sound":"tutorial3_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"5 gelir.","sound":"tutorial3_21","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"Kardeşi 3 gider.","sound":"tutorial3_22","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"Kardeşi 3 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
+        {"text":"Cevap 6.","sound":"tutorial3_23","typewriterSpeed":40},
+        {"text":"Bu işlemi ele alalım.","sound":"tutorial3_24","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}],"question":{"questionText":"3 + 3"}},
+        {"text":"Önce abaküse  3'ü yazıyoruz.","sound":"tutorial3_25","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"Sonrasında 3'ü ekleyeceğiz. Ama 3'ü doğrudan ekleyemiyoruz.","sound":"tutorial3_26","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial3_27","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"3'ün kardeşi 2'dir.","sound":"tutorial3_28","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"5 gelir.","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"Kardeşi 2 gider.","sound":"tutorial3_30","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"Kardeşi 2 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
+        {"text":"Cevap 6.","sound":"tutorial3_31","typewriterSpeed":40},
+        {"text":"Cevap 6.","typewriterSpeed":40,"requestText":"5 gelir. Kardeş gider.","choiceQuestion":{"options":["5 gelir. Kardeş gider.","5 gider. Kardeş gelir.","5 gelir. Kardeş gelir."],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"5'lik kuralın uygulanma adımları nedir?"}},
+        {"text":"Son olarak bu işlemi ele alalım.","sound":"tutorial3_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}],"question":{"questionText":"2 + 4"}},
+        {"text":"Önce abaküse 2'yi yazıyoruz.","sound":"tutorial3_33","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"Sonrasında 4'ü ekleyeceğiz. Ama 4'ü doğrudan ekleyemiyoruz.","sound":"tutorial3_34","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial3_35","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"4'ün kardeşi 1'dir.","sound":"tutorial3_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"5 gelir.","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"Kardeşi 1 gider.","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"Kardeşi 1 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
+        {"text":"Cevap 6.","sound":"tutorial3_38","typewriterSpeed":40,"question":{"questionText":"2 + 4"}},
+        {"text":"Cevap 6.","typewriterSpeed":40,"requestText":"Abaküsteki sayıya doğrudan ekleyemediğimiz 2. sayının kardeşine bakarız.","question":{"questionText":"2 + 4"},"choiceQuestion":{"options":["Abaküse yazdığımız ilk sayının kardeşine.","Doğrudan ekleyemediğimiz sayının kardeşine.","Sayının önemi yok. Rastgele belirleriz."],"correctOptionIndex":[1],"multipleChoice":false,"optionText":"5'lik kuralı uygularken hangi sayının kardeşine bakarız?"}},
+        {"text":"Bu kural her basamak için aynıdır.","sound":"tutorial3_39","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}]},
+        {"text":"Bu işlemde de aynı kuralı uygularız.","sound":"tutorial3_40","typewriterSpeed":40,"question":{"questionText":"30 + 40"}},
+        {"text":"30'u abaküse yazıyoruz.","sound":"tutorial3_41","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"40'ı doğrudan ekleyemiyoruz.","sound":"tutorial3_42","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial3_43","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"4'ün kardeşi 1'dir.","sound":"tutorial3_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"5 gelir.","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"Kardeşi 1 gider.","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"Kardeşi 1 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":2}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
+        {"text":"Cevap 70.","sound":"tutorial3_44","typewriterSpeed":40,"question":{"questionText":"30 + 40"}},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial3_45","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_top","type":4}]},
+        {"text":"Önce abaküse ilk sayıyı yaz.","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"Birler basamağına 4 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4}},
+        {"text":"Sonrasında 4'ü ekleyeceğiz.","sound":"tutorial3_47","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
+        {"text":"Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.","sound":"tutorial3_48","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
+        {"text":"4'ün kardeşi 1'dir.","sound":"tutorial3_36","typewriterSpeed":40,"backAnswerNumber":4,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
+        {"text":"5 gelir.","sound":"tutorial3_13","typewriterSpeed":40,"backAnswerNumber":4,"requestText":"Birler basamağındaki beşlik boncuğu ekle.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":9}},
+        {"text":"Kardeşi 1 gider.","sound":"tutorial3_37","typewriterSpeed":40,"backAnswerNumber":9,"requestText":"Birler basamağından 1 adet birlik boncuk çıkar.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
+        {"text":"Ve cevap 8.","sound":"tutorial3_49","typewriterSpeed":40,"backAnswerNumber":8,"nextStepAbacusReset":true,"question":{"questionText":"4 + 4"}},
+        {"text":"Son olarak bu soruyu yapalım.","sound":"tutorial3000_6","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"3 + 2"}},
+        {"text":"Önce abaküse ilk sayıyı yaz.","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"Birler basamağına 3 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":3}},
+        {"text":"Sonrasında 2'yi ekleyeceğiz.","sound":"tutorial3000_7","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
+        {"text":"Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.","sound":"tutorial3_48","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
+        {"text":"2'nin kardeşi 3'tür.","sound":"tutorial3_20","typewriterSpeed":40,"backAnswerNumber":3,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
+        {"text":"5 gelir.","sound":"tutorial3_13","typewriterSpeed":40,"backAnswerNumber":3,"requestText":"Birler basamağındaki beşlik boncuğu ekle.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
+        {"text":"Kardeşi 3 gider.","sound":"tutorial3_22","typewriterSpeed":40,"backAnswerNumber":8,"requestText":"Birler basamağından 3 adet birlik boncuk çıkar.","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":5}},
+        {"text":"Cevap 5.","sound":"tutorial3_15","typewriterSpeed":40,"question":{"questionText":"3 + 2"}},
+        {"text":"Şimdi öğrendiklerini uygulama zamanı.","sound":"tutorial3_50","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
 
     private fun createTutorialSteps3(){
-        tutorialSteps3 = listOf(
-            TutorialStep(
-                "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial3_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "5'lik toplamayı, sayıları doğrudan ekleyemediğimiz zaman kullanırız.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial3000_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Örneğin bu işlemde 4'ü abaküse yazıyorum.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial3000_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4 + 1",
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "1'i eklemek istediğimde doğrudan ekleyemiyorum. Aşağıda eklenecek boncuk yok.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial3000_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextVisibility = View.VISIBLE,
-                questionText = "4 + 1",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "İşte böyle zamanlarda 5'lik toplama kuralını uygulayacağız.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial3000_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2))
-            ),TutorialStep(
-                "5’lik toplama kuralında ekleyeceğimiz sayıların 5’e tamamlayan kardeşleri vardır.",
-                soundResource = R.raw.tutorial3_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "1’in kardeşi 4’tür.",
-                soundResource = R.raw.tutorial3_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "2’nin kardeşi 3",
-                soundResource = R.raw.tutorial3_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "3’ün kardeşi 2",
-                soundResource = R.raw.tutorial3_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "4’ün kardeşi 1’dir.",
-                soundResource = R.raw.tutorial3_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu kuralı, sayıyı ekleyemediğimiz zaman  ‘5 gelir, kardeşi gider’ şeklinde uygulayacağız.",
-                soundResource = R.raw.tutorial3000_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Örneğin bu işlemi yapmaya çalışalım.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "İlk olarak abaküse ilk sayıyı yazıyoruz.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                soundResource = R.raw.tutorial3_8,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Ama 1'i doğrudan ekleyemiyoruz.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_10,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "O yüzden burada 5'lik toplama kuralını uygulayacağız.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "1'in kardeşi 4'tür.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_12,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 4 gider.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_14,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 4 gider.",
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 5.",
-                soundResource = R.raw.tutorial3_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionText = "4 + 1",
-                questionTextVisibility = View.VISIBLE,
-            ),TutorialStep(
-                "Bu işlemi ele alalım.",
-                questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4)),
-                soundResource = R.raw.tutorial3_16,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Önce abaküse 4 yazıyoruz.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1)),
-                soundResource = R.raw.tutorial3_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında 2'yi ekleyeceğiz. Ama 2'yi doğrudan ekleyemiyoruz.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_18,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_19,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "2'nin kardeşi 3'tür.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_20,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_21,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Kardeşi 3 gider.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_22,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Kardeşi 3 gider.",questionText = "4 + 2",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 6.",
-                soundResource = R.raw.tutorial3_23,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işlemi ele alalım.",
-                questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial3_24,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "Önce abaküse  3'ü yazıyoruz.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
-                soundResource = R.raw.tutorial3_25,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Sonrasında 3'ü ekleyeceğiz. Ama 3'ü doğrudan ekleyemiyoruz.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_26,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_27,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "3'ün kardeşi 2'dir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_28,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_29,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "5 gelir.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 2 gider.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_30,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 2 gider.",questionText = "3 + 3",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 6.",
-                soundResource = R.raw.tutorial3_31,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Cevap 6.",
-                options = listOf("5 gelir. Kardeş gider.","5 gider. Kardeş gelir.","5 gelir. Kardeş gelir."),
-                correctOptionIndex = listOf(0),
-                multipleChoice = false,
-                optionText = "5'lik kuralın uygulanma adımları nedir?",
-                requestText = "5 gelir. Kardeş gider."
-            ),TutorialStep(
-                "Son olarak bu işlemi ele alalım.",
-                questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial3_32,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Önce abaküse 2'yi yazıyoruz.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1)),
-                soundResource = R.raw.tutorial3_33,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında 4'ü ekleyeceğiz. Ama 4'ü doğrudan ekleyemiyoruz.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_34,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_35,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "4'ün kardeşi 1'dir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_36,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_29,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_37,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 2)),
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 6.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_38,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Cevap 6.",questionText = "2 + 4",
-                questionTextVisibility = View.VISIBLE,
-                options = listOf("Abaküse yazdığımız ilk sayının kardeşine.","Doğrudan ekleyemediğimiz sayının kardeşine.","Sayının önemi yok. Rastgele belirleriz."),
-                correctOptionIndex = listOf(1),
-                multipleChoice = false,
-                optionText = "5'lik kuralı uygularken hangi sayının kardeşine bakarız?",
-                requestText = "Abaküsteki sayıya doğrudan ekleyemediğimiz 2. sayının kardeşine bakarız."
-            ),TutorialStep(
-                "Bu kural her basamak için aynıdır.",
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial3_39,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işlemde de aynı kuralı uygularız.",
-                questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_40,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "30'u abaküse yazıyoruz.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1)),
-                soundResource = R.raw.tutorial3_41,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "40'ı doğrudan ekleyemiyoruz.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_42,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Bu yüzden 5'lik kuralı uygulayacağız.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_43,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "4'ün kardeşi 1'dir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_36,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_29,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_37,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom3", 2)),
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 70.",questionText = "30 + 40",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_44,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),
-            TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_top", 4)),
-                soundResource = R.raw.tutorial3_45,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                ),
-            TutorialStep(
-                "Önce abaküse ilk sayıyı yaz.",
-                questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 4,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_46,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Birler basamağına 4 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-                ),TutorialStep(
-                "Sonrasında 4'ü ekleyeceğiz.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_47,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_48,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "4'ün kardeşi 1'dir.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_36,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 4,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 9,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 4,
-                requestText = "Birler basamağındaki beşlik boncuğu ekle.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-                ),TutorialStep(
-                "Kardeşi 1 gider.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 8,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_37,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 9,
-                requestText = "Birler basamağından 1 adet birlik boncuk çıkar.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Ve cevap 8.",questionText = "4 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_49,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 8,
-                nextStepAbacusReset = true
-            ),
-            TutorialStep(
-                "Son olarak bu soruyu yapalım.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3000_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "Önce abaküse ilk sayıyı yaz.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 3,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_46,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Birler basamağına 3 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Sonrasında 2'yi ekleyeceğiz.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3000_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Doğrudan ekleyemediğimiz için 5'lik kural uygulayacağız.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_48,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "2'nin kardeşi 3'tür.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_20,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 3,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 8,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 3,
-                requestText = "Birler basamağındaki beşlik boncuğu ekle.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Kardeşi 3 gider.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 5,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_22,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 8,
-                requestText = "Birler basamağından 3 adet birlik boncuk çıkar.",
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Cevap 5.",
-                questionText = "3 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Şimdi öğrendiklerini uygulama zamanı.",
-                soundResource = R.raw.tutorial3_50,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_3")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_3_JSON }
+        tutorialSteps3 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_3 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_3_JSON)
+        }
     }
     
+    private val DEFAULT_TUTORIAL_STEP_4_JSON = """
+    {
+      "steps": [
+        {"text":"Üç basamaklı sayılarda 5'lik toplama.","sound":"tutorial4_1000","typewriterSpeed":40,"rulesPanelVisibility":"visible"},
+        {"text":"Bu örneğe bakalım.","sound":"tutorial4_2","typewriterSpeed":40,"question":{"questionText":"243 + 346"}},
+        {"text":"İlk sayıyı abaküse yazıyoruz.","sound":"tutorial4_3","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod3_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Sonrasında 346 sayısını en büyük basamağından başlayarak ekliyoruz.","sound":"tutorial4_1001","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"300'ü doğrudan ekleyemiyoruz. Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial4_1010","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"5 gelir.","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_top","type":3}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"3'ün kardeşi 2 gider.","sound":"tutorial4_1002","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"3'ün kardeşi 2 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Şimdi sıra onlar basamağında.","sound":"tutorial4_1003","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"40'ı doğrudan ekleyemiyoruz. Bu yüzden 5'lik kuralı uygulayacağız.","sound":"tutorial4_2000","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"5 gelir.","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"5 gelir.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Kardeşi 1 gider.","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Kardeşi 1 gider.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Son olarak birler basamağına 6 ekliyor ve işlemi bitiriyoruz.","sound":"tutorial4_2001","typewriterSpeed":40,"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Son olarak birler basamağına 6 ekliyor ve işlemi bitiriyoruz.","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
+        {"text":"Cevap 589.","sound":"tutorial4_2002","typewriterSpeed":40,"question":{"questionText":"243 + 346"}},
+        {"text":"Cevap 589.","typewriterSpeed":40,"requestText":"Sayıyı kuralsız, doğrudan ekleyebiliyorsak önceliğimiz kuralsız eklemedir. Eğer kuralsız toplama yapamıyorsak 5'lik kurala başvururuz.","question":{"questionText":"243 + 346"},"choiceQuestion":{"options":["Kuralsız toplama yapamadığımız zaman.","Kuralsız toplama yapabildiğimiz zaman."],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"5'lik toplama kuralını ne zaman uygularız?"}},
+        {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial3_45","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod2_bead_top","type":4},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_top","type":4}]},
+        {"text":"Önce abaküse ilk sayıyı yaz.","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"Yüzler basamağına 4 adet birlik, onlar basamağına 2 adet birlik, birler basamağına 3 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":423}},
+        {"text":"Toplamaya yüzler basamağından başlıyoruz.","sound":"tutorial4_1005","typewriterSpeed":40,"backAnswerNumber":423,"question":{"questionText":"423 + 322"}},
+        {"text":"300'ü ekleyip 'Kontrol et' butonuna tıkla.","sound":"tutorial4_1006","typewriterSpeed":40,"backAnswerNumber":423,"requestText":"Yüzler basamağına 1 adet beşlik boncuk ekle. 2 adet birlik boncuk çıkar.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":723}},
+        {"text":"20'yi ekleyip 'Kontrol et' butonuna tıkla.","sound":"tutorial4_2003","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"Onlar basamağına 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":743}},
+        {"text":"2'yi ekleyip 'Kontrol et' butonuna tıkla.","sound":"tutorial4_2004","typewriterSpeed":40,"backAnswerNumber":743,"requestText":"Birler basamağına 1 adet beşlik boncuk ekle. 3 adet birlik boncuk çıkar.","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":745}},
+        {"text":"Cevap 745.","sound":"tutorial4_2005","typewriterSpeed":40,"requestText":"Birler basamağından 1 adet birlik boncuk çıkar.","question":{"questionText":"423 + 322"}},
+        {"text":"Teste geç.","sound":"tutorial15_27","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
     private fun createTutorialSteps4(){
-        tutorialSteps4 = listOf(
-            TutorialStep(
-                "Üç basamaklı sayılarda 5'lik toplama.",
-                soundResource = R.raw.tutorial4_1000,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                rulesPanelVisibility = View.VISIBLE
-            ),TutorialStep(
-                "Bu örneğe bakalım.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "İlk sayıyı abaküse yazıyoruz.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod2_bead_bottom1", 1),
-                    BeadAnimation(this, "rod2_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                    BeadAnimation(this, "rod3_bead_bottom2", 1),
-                    BeadAnimation(this, "rod3_bead_bottom3", 1),
-                    BeadAnimation(this, "rod3_bead_bottom4", 1)),
-                soundResource = R.raw.tutorial4_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Sonrasında 346 sayısını en büyük basamağından başlayarak ekliyoruz.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_1001,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF")
-                )
-            ),TutorialStep(
-                "300'ü doğrudan ekleyemiyoruz. Bu yüzden 5'lik kuralı uygulayacağız.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial4_1010,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-
-                ),
-            TutorialStep(
-                "5 gelir.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial3_13,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_top", 3)),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "3'ün kardeşi 2 gider.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial4_1002,
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-
-                ),TutorialStep(
-                "3'ün kardeşi 2 gider.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod2_bead_bottom1", 2),
-                    BeadAnimation(this, "rod2_bead_bottom2", 2),
-                ),
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Şimdi sıra onlar basamağında.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial4_1003,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-
-                ),TutorialStep(
-                "40'ı doğrudan ekleyemiyoruz. Bu yüzden 5'lik kuralı uygulayacağız.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial4_2000,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "5 gelir.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial3_13,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-                ),TutorialStep(
-                "5 gelir.",
-                questionText = "243 + 346",
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_top", 3),
-                ),
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3_37,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Kardeşi 1 gider.",
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom4", 2)),
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Son olarak birler basamağına 6 ekliyor ve işlemi bitiriyoruz.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_2001,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Son olarak birler basamağına 6 ekliyor ve işlemi bitiriyoruz.",
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3)
-                ),
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Cevap 589.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_2002,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Cevap 589.",
-                questionText = "243 + 346",
-                questionTextVisibility = View.VISIBLE,
-                options = listOf("Kuralsız toplama yapamadığımız zaman.","Kuralsız toplama yapabildiğimiz zaman."),
-                correctOptionIndex = listOf(0),
-                multipleChoice = false,
-                optionText = "5'lik toplama kuralını ne zaman uygularız?",
-                requestText = "Sayıyı kuralsız, doğrudan ekleyebiliyorsak önceliğimiz kuralsız eklemedir. Eğer kuralsız toplama yapamıyorsak 5'lik kurala başvururuz."
-            ),TutorialStep(
-                "Beraber örnek yaparak pekiştirelim.",
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom3", 2),
-                    BeadAnimation(this, "rod2_bead_top", 4),
-                    BeadAnimation(this, "rod3_bead_top", 4),
-                    BeadAnimation(this, "rod4_bead_top", 4)),
-                soundResource = R.raw.tutorial3_45,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-
-                ),TutorialStep(
-                "Önce abaküse ilk sayıyı yaz.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 423,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial3_46,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Yüzler basamağına 4 adet birlik, onlar basamağına 2 adet birlik, birler basamağına 1 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                    2 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "Toplamaya yüzler basamağından başlıyoruz.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_1005,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 423
-
-            ),TutorialStep(
-                "300'ü ekleyip ‘Kontrol et’ butonuna tıkla.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                abacusClickable = true,
-                nextStepAvailable = false,
-                soundResource = R.raw.tutorial4_1006,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                answerNumber = 723,
-                backAnswerNumber = 423,
-                requestText = "Yüzler basamağına 1 adet beşlik boncuk ekle. 2 adet birlik boncuk çıkar.",
-                questionTextColorPositions = listOf(
-                    6 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "20'yi ekleyip ‘Kontrol et’ butonuna tıkla.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                abacusClickable = true,
-                nextStepAvailable = false,
-                soundResource = R.raw.tutorial4_2003,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 723,
-                answerNumber = 743,
-                requestText = "Onlar basamağına 2 adet birlik boncuk ekle.",
-                questionTextColorPositions = listOf(
-                    7 to Color.parseColor("#00BFFF"),
-                )
-            ),TutorialStep(
-                "2'yi ekleyip ‘Kontrol et’ butonuna tıkla.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial4_2004,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 743,
-                requestText = "Birler basamağına 1 adet beşlik boncuk ekle. 3 adet birlik boncuk çıkar.",
-                answerNumber = 745,
-                questionTextColorPositions = listOf(
-                    8 to Color.parseColor("#00BFFF"),
-                )
-
-            ),TutorialStep(
-                "Cevap 745.",
-                questionText = "423 + 322",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial4_2005,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                requestText = "Birler basamağından 1 adet birlik boncuk çıkar."
-            ),TutorialStep(
-                "Teste geç.",
-                soundResource = R.raw.tutorial15_27,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_4")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_4_JSON }
+        tutorialSteps4 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_4 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_4_JSON)
+        }
     }
     
+    private val DEFAULT_TUTORIAL_STEP_5_JSON = """
+    {
+      "steps": [
+        {"text":"Bu derste 10'luk toplamayı öğreneceğiz.","sound":"tutorial5_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"10'luk toplamayı, 5'lik kuraldaki 5 gelir adımını uygulayamadığımız zaman kullanacağız.","sound":"tutorial5_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"Örneğin bu işlemde.","sound":"tutorial5_3","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 1"}},
+        {"text":"9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.","sound":"tutorial5_4","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"showFocus"},{"op":"focusToColumn","column":0},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusChangeMargin","marginRightColumn":0,"marginLeft":0,"marginTopDp":-10},{"op":"focusSizeToDp","widthDp":55,"heightDp":200}],"question":{"questionText":"9 + 1"}},
+        {"text":"Hem de 5'lik kuralı uygulamak için ekleyeceğim 5'lik boncuk yok.","sound":"tutorial5_5","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"focusChangeMargin","marginRight":0,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline"},{"op":"focusSizeToDp","widthDp":55,"heightDp":100}],"question":{"questionText":"9 + 1"}},
+        {"text":"Yani 5'lik kuralı uygulamaya çalışsaydık, '5 gelir, 1'in kardeşi 4 gider' adımlarını uygulamamız gerekirdi.","sound":"tutorial5_6","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"Ama yukarıda zaten 5'lik boncuk olduğu için 5'lik kuraldaki 5 gelir adımını yapamam.","sound":"tutorial5_7","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"Bu durumda 10'luk kuralı uygulamamız gerekiyor.","sound":"tutorial5000_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"actions":[{"op":"hideFocus"}]},
+        {"text":"10'luk kuralda sayıların büyük kardeşleri vardır.","sound":"tutorial5_8","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"10 gelir, büyük kardeş gider.","sound":"tutorial5_9","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
+        {"text":"1'in büyük kardeşi 9'dur.","sound":"tutorial5_10","typewriterSpeed":40},
+        {"text":"2'nin büyük kardeşi 8'dir.","sound":"tutorial5_11","typewriterSpeed":40},
+        {"text":"3'ün büyük kardeşi 7'dir.","sound":"tutorial5_12","typewriterSpeed":40},
+        {"text":"4'ün büyük kardeşi 6'dır.","sound":"tutorial5_13","typewriterSpeed":40},
+        {"text":"5'in büyük kardeşi 5'tir.","sound":"tutorial5_14","typewriterSpeed":40},
+        {"text":"Bu işleme tekrar bakalım.","sound":"tutorial5_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 1"}},
+        {"text":"Şimdi 1 eklemek istiyorum.","sound":"tutorial5_16","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"Önce, doğrudan ekleyebilir miyim diye bakıyorum, ama aşağıda ekstra boncuk yok.","sound":"tutorial5_17","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"recordSizeHistory":true,"actions":[{"op":"showFocus"},{"op":"focusMarginLiteral","value":0},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusSizeToDp","widthDp":55,"heightDp":200},{"op":"focusChangeMargin","marginRight":0,"marginLeft":0,"marginTopDp":-10}],"question":{"questionText":"9 + 1"}},
+        {"text":"5'lik kuralı uygulamak için yukarı bakıyorum ama yukarıda da ekleyebileceğim boncuk yok.","sound":"tutorial5_18","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"focusChangeMargin","marginRight":0,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline"},{"op":"focusSizeToDp","widthDp":55,"heightDp":100}],"question":{"questionText":"9 + 1"}},
+        {"text":"O zaman son seçenek olan 10'luk kurala geçiyorum.","sound":"tutorial5_19","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"hideFocus"}],"question":{"questionText":"9 + 1"}},
+        {"text":"10 gelir.","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"10 gelir.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"9 + 1"}},
+        {"text":"1'in büyük kardeşi olan 9 gider.","sound":"tutorial5_21","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"1'in büyük kardeşi olan 9 gider.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"9 + 1"}},
+        {"text":"Cevap 10.","sound":"tutorial5_22","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
+        {"text":"Yani sayıyı eklerken önce doğrudan eklemeyi, bu mümkün olmazsa 5'lik kuralı, o da mümkün olmazsa 10'luk kuralı uygulamayı deniyoruz.","sound":"tutorial5000_1","typewriterSpeed":40,"question":{"questionText":"9 + 1"}},
+        {"text":"Aynısını bu işlem için yapacak olsaydık...","sound":"tutorial5_23","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"8 + 2"}},
+        {"text":"8 abaküse yazılır.","sound":"tutorial5_24","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"8 + 2"}},
+        {"text":"2'yi doğrudan veya 5'lik kural ile ekleyebilir miyim? Diye kontrol edilir.","sound":"tutorial5_25","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
+        {"text":"İkisi de yapılamadığı için 10'luk kural uygulanır.","sound":"tutorial5_26","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
+        {"text":"10 gelir.","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
+        {"text":"10 gelir.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"8 + 2"}},
+        {"text":"2'nin büyük kardeşi 8 gider.","sound":"tutorial5_27","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
+        {"text":"2'nin büyük kardeşi 8 gider.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"8 + 2"}},
+        {"text":"Cevap 10.","sound":"tutorial5_22","typewriterSpeed":40,"question":{"questionText":"8 + 2"}},
+        {"text":"Bu işlem için...","sound":"tutorial5_28","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"9 + 3"}},
+        {"text":"9 abaküse yazılır.","sound":"tutorial5_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 3"}},
+        {"text":"10 gelir.","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 3"}},
+        {"text":"10 gelir.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"9 + 3"}},
+        {"text":"3'ün büyük kardeşi 7 gider.","sound":"tutorial5_30","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 3"}},
+        {"text":"3'ün büyük kardeşi 7 gider.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"9 + 3"}},
+        {"text":"Cevap 12.","sound":"tutorial5_31","typewriterSpeed":40,"question":{"questionText":"9 + 3"}},
+        {"text":"Bu işlem için...","sound":"tutorial5_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"7 + 4"}},
+        {"text":"7 abaküse yazılır.","sound":"tutorial5_33","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"7 + 4"}},
+        {"text":"10 gelir.","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
+        {"text":"10 gelir.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"7 + 4"}},
+        {"text":"4'ün büyük kardeşi 6 gider.","sound":"tutorial5_34","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
+        {"text":"4'ün büyük kardeşi 6 gider.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"7 + 4"}},
+        {"text":"Cevap 11.","sound":"tutorial5_35","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
+        {"text":"Bu işlem için...","sound":"tutorial5_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"6 + 5"}},
+        {"text":"6 abaküse yazılır.","sound":"tutorial5_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"6 + 5"}},
+        {"text":"10 gelir.","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"6 + 5"}},
+        {"text":"10 gelir.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"6 + 5"}},
+        {"text":"5'in büyük kardeşi 5 gider.","sound":"tutorial5_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"6 + 5"}},
+        {"text":"5'in büyük kardeşi 5 gider.","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"6 + 5"}},
+        {"text":"Ve cevap 11.","sound":"tutorial5_38","typewriterSpeed":40,"question":{"questionText":"6 + 5"}},
+        {"text":"10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?","sound":"tutorial5_46","typewriterSpeed":40,"requestText":"Kuralsız ve 5'lik toplama kuralını uygulayamadığımız zaman 10'luk kuralı uygularız.","choiceQuestion":{"options":["Kuralsız toplama","5'lik kural","10'luk kural"],"correctOptionIndex":[0,1],"multipleChoice":true,"optionText":"10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?"}},
+        {"text":"Bu örneği beraber yapalım.","sound":"tutorial5_39","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"18 + 4"}},
+        {"text":"İlk sayıyı abaküse yazalım.","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":18}},
+        {"text":"Şimdi ise, 4'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğimize karar verelim.","sound":"tutorial5_41","typewriterSpeed":40,"backAnswerNumber":18,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4"}},
+        {"text":"Ve ekleyelim.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":18,"nextStepAbacusReset":true,"requestText":"10 gelir 4'ün büyük kardeşi 6 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":22}},
+        {"text":"5'lik kuraldan tek farkı. 5 gelir, kardeş gider değil. 10 gelir, kardeş gider diyoruz.","sound":"tutorial5_43","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"18 + 4"}},
+        {"text":"Son olarak bu soruyu yapalım.","sound":"tutorial3000_6","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"17 + 3"}},
+        {"text":"İlk sayıyı abaküse yazalım.","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 2 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":17}},
+        {"text":"Şimdi ise, 3'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğimize karar verelim.","sound":"tutorial5000_3","typewriterSpeed":40,"backAnswerNumber":17,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3"}},
+        {"text":"Ve ekleyelim.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":17,"requestText":"10 gelir 3'ün büyük kardeşi 7 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":20}},
+        {"text":"10'luk kuralı nasıl uygularız?","sound":"tutorial5_45","typewriterSpeed":40,"requestText":"10 gelir. Ekleyeceğimiz sayının kardeşi gider.","choiceQuestion":{"options":["10 gelir. Ekleyeceğimiz sayının kardeşi gider.","10 gelir. Abaküste yazan sayının kardeşi gider.","10 gider. Ekleyeceğimiz sayının kardeşi gelir."],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"10'luk kuralı nasıl uygularız?"}},
+        {"text":"Şimdi kendini ispatlama zamanı.","sound":"tutorial5_44","typewriterSpeed":40}
+      ]
+    }
+    """.trimIndent()
+
     private fun createTutorialSteps5(){
-        tutorialSteps5 = listOf(
-            TutorialStep(
-                "Bu derste 10'luk toplamayı öğreneceğiz.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10’luk toplamayı, 5'lik kuraldaki 5 gelir adımını uygulayamadığımız zaman kullanacağız.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Örneğin bu işlemde.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                rulesPanelVisibility = View.INVISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                soundResource = R.raw.tutorial5_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),
-            TutorialStep(
-                "9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_4,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                widgetOperations = listOf( { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-                    
-                    { WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = focusMarginRightPx(0),
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    ) },
-                    {
-                        WidgetOperation.ChangeConstraints(
-                            view = focusView,
-                            topToTop = R.id.guideline2,
-                            // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
-                        )
-                    },
-                    {
-                        WidgetOperation.ChangeMargin(
-                            view = focusView,
-                            marginRight = focusMarginRightPx(0),
-                            marginLeft = 0,
-                            marginTop = -dpToPx(10) // 10dp yukarı taşı
-                        )
-                    },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = dpToPx(55),
-                            fromHeight = focusView.height,
-                            toHeight = dpToPx(200),
-                            duration = 400
-                        )
-                    })
-
-
-                ),TutorialStep(
-                "Hem de 5’lik kuralı uygulamak için ekleyeceğim 5’lik boncuk yok.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_5,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                widgetOperations = listOf({ WidgetOperation.ChangeMargin(focusView, 0, 0) },
-                    {
-                        WidgetOperation.ChangeConstraints(
-                            view = focusView,
-                            topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
-                        )
-                    },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = dpToPx(55),
-                            fromHeight = focusView.height,
-                            toHeight = dpToPx(100),
-                            duration = 400
-                        )
-                    }),
-                ),TutorialStep(
-                "Yani 5'lik kuralı uygulamaya çalışsaydık, '5 gelir, 1'in kardeşi 4 gider' adımlarını uygulamamız gerekirdi.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                ),TutorialStep(
-                "Ama yukarıda zaten 5'lik boncuk olduğu için 5'lik kuraldaki 5 gelir adımını yapamam.",
-                rulesPanelVisibility = View.INVISIBLE,
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_7,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-            ),TutorialStep(
-                "Bu durumda 10'luk kuralı uygulamamız gerekiyor.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5000_2,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                ),
-                widgetOperations = listOf { WidgetOperation.ChangeVisibility(focusView, View.GONE) }
-
-            ),TutorialStep(
-                "10'luk kuralda sayıların büyük kardeşleri vardır.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_8,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-            ),TutorialStep(
-                "10 gelir, büyük kardeş gider.",
-                rulesPanelVisibility = View.INVISIBLE,
-                soundResource = R.raw.tutorial5_9,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "1’in büyük kardeşi 9’dur.",
-                soundResource = R.raw.tutorial5_10,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "2’nin büyük kardeşi 8’dir.",
-                soundResource = R.raw.tutorial5_11,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "3’ün büyük kardeşi 7’dir.",
-                soundResource = R.raw.tutorial5_12,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "4’ün büyük kardeşi 6’dır.",
-                soundResource = R.raw.tutorial5_13,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "5’in büyük kardeşi 5’tir.",
-                soundResource = R.raw.tutorial5_14,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işleme tekrar bakalım.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_15,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                )
-            ),TutorialStep(
-                "Şimdi 1 eklemek istiyorum.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_16,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Önce, doğrudan ekleyebilir miyim diye bakıyorum, ama aşağıda ekstra boncuk yok.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                widgetOperations = listOf( { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
-
-                    { WidgetOperation.AnimateMargin(
-                        view = focusView,
-                        fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                        toMarginRight = 0,
-                        fromMarginLeft = 0,
-                        toMarginLeft = 0,
-                        duration = 200
-                    ) },
-                    {
-                        WidgetOperation.ChangeConstraints(
-                            view = focusView,
-                            topToTop = R.id.guideline2
-                            // Diğer constraint parametreleri varsayılan olarak UNSET kalacak
-                        )
-                    },
-                    {
-                        WidgetOperation.AnimateSize(
-                            view = focusView,
-                            fromWidth = focusView.width,
-                            toWidth = dpToPx(55),
-                            fromHeight = focusView.height,
-                            toHeight = dpToPx(200),
-                            duration = 400
-                        )
-                    },
-                    {
-                        WidgetOperation.ChangeMargin(
-                            view = focusView,
-                            marginRight = 0,
-                            marginLeft = 0,
-                            marginTop = -dpToPx(10) // 10dp yukarı taşı
-                        )
-                    },
-                ),
-                onStep = { view ->
-                    sizeHistory.add(Pair(view.width, view.height))
-                    Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-                },
-                soundResource = R.raw.tutorial5_17,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "5'lik kuralı uygulamak için yukarı bakıyorum ama yukarıda da ekleyebileceğim boncuk yok.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                widgetOperations = listOf({ WidgetOperation.ChangeMargin(focusView, 0, 0) },
-                {
-                    WidgetOperation.ChangeConstraints(
-                        view = focusView,
-                        topToTop = R.id.guideline,  // Başka bir view'e bağlamak için
-                        bottomToBottom = ConstraintLayout.LayoutParams.UNSET
-                    )
-                },
-                {
-                    WidgetOperation.AnimateSize(
-                        view = focusView,
-                        fromWidth = focusView.width,
-                        toWidth = dpToPx(55),
-                        fromHeight = focusView.height,
-                        toHeight = dpToPx(100),
-                        duration = 400
-                    )
-                }),
-                soundResource = R.raw.tutorial5_18,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "O zaman son seçenek olan 10'luk kurala geçiyorum.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                widgetOperations = listOf { WidgetOperation.ChangeVisibility(focusView, View.GONE) },
-                soundResource = R.raw.tutorial5_19,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-
-                ),TutorialStep(
-                "10 gelir.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_20,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-
-                ),TutorialStep(
-                "10 gelir.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                        BeadAnimation(this, "rod3_bead_bottom1", 1))
-            ),TutorialStep(
-                "1’in büyük kardeşi olan 9 gider.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_21,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "1’in büyük kardeşi olan 9 gider.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                )
-            ),TutorialStep(
-                "Cevap 10.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_22,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Yani sayıyı eklerken önce doğrudan eklemeyi, bu mümkün olmazsa 5'lik kuralı, o da mümkün olmazsa 10'luk kuralı uygulamayı deniyoruz.",
-                questionText = "9 + 1",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5000_1,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Aynısını bu işlem için yapacak olsaydık...",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2)),
-                soundResource = R.raw.tutorial5_23,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "8 abaküse yazılır.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                soundResource = R.raw.tutorial5_24,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "2'yi doğrudan veya 5'lik kural ile ekleyebilir miyim? Diye kontrol edilir.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_25,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "İkisi de yapılamadığı için 10'luk kural uygulanır.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_26,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_20,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1))
-
-            ),TutorialStep(
-                "2’nin büyük kardeşi 8 gider.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_27,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "2’nin büyük kardeşi 8 gider.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                )
-            ),TutorialStep(
-                "Cevap 10.",
-                questionText = "8 + 2",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_22,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "Bu işlem için...",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 2)),
-                soundResource = R.raw.tutorial5_28,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "9 abaküse yazılır.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_bottom3", 1),
-                    BeadAnimation(this, "rod4_bead_bottom4", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                soundResource = R.raw.tutorial5_29,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_20,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1))
-            ),TutorialStep(
-                "3’ün büyük kardeşi 7 gider.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_30,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "3’ün büyük kardeşi 7 gider.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom3", 2),
-                    BeadAnimation(this, "rod4_bead_bottom4", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                )
-            ),TutorialStep(
-                "Cevap 12.",
-                questionText = "9 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_31,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "Bu işlem için...",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial5_32,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "7 abaküse yazılır.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_bottom2", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                soundResource = R.raw.tutorial5_33,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_20,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                )
-            ),TutorialStep(
-                "4’ün büyük kardeşi 6 gider.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_34,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "4’ün büyük kardeşi 6 gider.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom2", 2),
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                )
-            ),TutorialStep(
-                "Cevap 11.",
-                questionText = "7 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_35,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-
-                )
-            ,TutorialStep(
-                "Bu işlem için...",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial5_32,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "6 abaküse yazılır.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 1),
-                    BeadAnimation(this, "rod4_bead_top", 3),
-                ),
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                ),
-                soundResource = R.raw.tutorial5_36,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_20,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "10 gelir.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod3_bead_bottom1", 1),
-                )
-            ),TutorialStep(
-                "5’in büyük kardeşi 5 gider.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_37,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L
-            ),TutorialStep(
-                "5’in büyük kardeşi 5 gider.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                questionTextColorPositions = listOf(
-                    4 to Color.parseColor("#00BFFF"),
-                ),
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_top", 4),
-                )
-            ),TutorialStep(
-                "Ve cevap 11.",
-                questionText = "6 + 5",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_38,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-
-            ),TutorialStep(
-                "10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?",
-                soundResource = R.raw.tutorial5_46,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                options = listOf("Kuralsız toplama","5'lik kural","10'luk kural"),
-                correctOptionIndex = listOf(0,1),
-                multipleChoice = true,
-                optionText = "10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?",
-                requestText = "Kuralsız ve 5'lik toplama kuralını uygulayamadığımız zaman 10'luk kuralı uygularız."
-
-            ),TutorialStep(
-                "Bu örneği beraber yapalım.",
-                questionText = "18 + 4",
-                questionTextVisibility = View.VISIBLE,
-                animation = listOf(
-                    BeadAnimation(this, "rod4_bead_bottom1", 2),
-                    BeadAnimation(this, "rod3_bead_bottom1", 2),
-                ),
-                soundResource = R.raw.tutorial5_39,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "İlk sayıyı abaküse yazalım.",
-                questionText = "18 + 4",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                answerNumber = 18,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial5_40,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                requestText = "Onlar basamağına 1 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle."
-
-            ),TutorialStep(
-                "Şimdi ise, 4’ü doğrudan mı, 5’lik kuralla mı, yoksa 10’luk kuralla mı ekleyeceğimize karar verelim.",
-                questionText = "18 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_41,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                ),
-                backAnswerNumber = 18
-
-                ),TutorialStep(
-                "Ve ekleyelim.",
-                questionText = "18 + 4",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 22,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                ),
-                abacusClickable = true,
-                soundResource = R.raw.tutorial5_42,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                backAnswerNumber = 18,
-                nextStepAbacusReset = true,
-                requestText = "10 gelir 4'ün büyük kardeşi 6 gider."
-            ),TutorialStep(
-                "5'lik kuraldan tek farkı. 5 gelir, kardeş gider değil. 10 gelir, kardeş gider diyoruz.",
-                questionText = "18 + 4",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5_43,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-
-            ),TutorialStep(
-                "Son olarak bu soruyu yapalım.",
-                questionText = "17 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial3000_6,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true
-            ),TutorialStep(
-                "İlk sayıyı abaküse yazalım.",
-                questionText = "17 + 3",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 17,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial5_40,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                abacusReset = true,
-                questionTextColorPositions = listOf(
-                    0 to Color.parseColor("#00BFFF"),
-                    1 to Color.parseColor("#00BFFF"),
-                ),
-                requestText = "Onlar basamağına 1 adet birlik, basamağına 2 adet birlik, 1 adet beşlik boncuk ekle."
-
-            ),TutorialStep(
-                "Şimdi ise, 3’ü doğrudan mı, 5’lik kuralla mı, yoksa 10’luk kuralla mı ekleyeceğimize karar verelim.",
-                questionText = "17 + 3",
-                questionTextVisibility = View.VISIBLE,
-                soundResource = R.raw.tutorial5000_3,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                ),
-                backAnswerNumber = 17
-
-            ),TutorialStep(
-                "Ve ekleyelim.",
-                questionText = "17 + 3",
-                questionTextVisibility = View.VISIBLE,
-                nextStepAvailable = false,
-                answerNumber = 20,
-                abacusClickable = true,
-                soundResource = R.raw.tutorial5_42,
-                useTypewriterEffect = true,
-                questionTextColorPositions = listOf(
-                    5 to Color.parseColor("#00BFFF"),
-                ),
-                typewriterSpeed = 40L,
-                backAnswerNumber = 17,
-                requestText = "10 gelir 3'ün büyük kardeşi 7 gider."
-
-            ),TutorialStep(
-                "10'luk kuralı nasıl uygularız?",
-                soundResource = R.raw.tutorial5_45,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L,
-                options = listOf("10 gelir. Ekleyeceğimiz sayının kardeşi gider.","10 gelir. Abaküste yazan sayının kardeşi gider.","10 gider. Ekleyeceğimiz sayının kardeşi gelir."),
-                correctOptionIndex = listOf(0),
-                multipleChoice = false,
-                optionText = "10'luk kuralı nasıl uygularız?",
-                requestText = "10 gelir. Ekleyeceğimiz sayının kardeşi gider."
-
-            ),TutorialStep(
-                "Şimdi kendini ispatlama zamanı.",
-                soundResource = R.raw.tutorial5_44,
-                useTypewriterEffect = true,
-                typewriterSpeed = 40L
-            )
-        )
+        val remoteJson = try {
+            FirebaseRemoteConfig.getInstance().getString("tutorial_step_5")
+        } catch (e: Exception) {
+            Log.e("Tutorial", "Remote Config okunamadı, varsayılana dönülüyor", e)
+            ""
+        }
+        val effectiveJson = remoteJson.ifEmpty { DEFAULT_TUTORIAL_STEP_5_JSON }
+        tutorialSteps5 = try {
+            parseTutorialStepsFromJson(effectiveJson)
+        } catch (e: Exception) {
+            Log.e("Tutorial", "tutorial_step_5 JSON parse hatası, varsayılana dönülüyor", e)
+            parseTutorialStepsFromJson(DEFAULT_TUTORIAL_STEP_5_JSON)
+        }
     }
-    
     private fun createTutorialSteps6(){
         tutorialSteps6 = listOf(
             TutorialStep(
@@ -14586,7 +11415,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 questionTextVisibility = View.VISIBLE,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
-                soundResource = R.raw.tutorial10_6
+                soundResource = R.raw.tutorial10_6,
+                rulesPanelVisibility = View.GONE
                 ),
             TutorialStep(
                 "İlk sayıyı abaküse yazıyorum.",
@@ -18174,6 +15004,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val rulesStepTextColorPositions: List<Pair<Int, Int>>? = null,
         val questionTextColorPositions: List<Pair<Int, Int>>? = null,
         val soundResource: Int? = null,  // Ses dosyası resource ID'si
+        val soundStoragePath: String? = null,  // Gömülü değilse: Firebase Storage'daki yolu (RemoteAudioCache ile indirilip çalınır)
         val useTypewriterEffect: Boolean = false,  // Typewriter effect kullanılsın mı?
         val typewriterSpeed: Long = 50L,  // Harf başına milisaniye (varsayılan 50ms)
         val abacusReset: Boolean? = null, //Aktif olan adımda yanlış yapılıp tekrar'a basılırsa abaküsü sıfırlar, Aktif olan adıma geri dönülürse sıfırlar. Yani bu adımda abaküsü sıfırla
@@ -19109,11 +15940,19 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.abacusLinear.isFocusable = true
 
         // Tap/drag etkileşimi artık ortak controller'da.
+        // Öğreticide boncuk teması her zaman varsayılan soroban görünümünde kalır;
+        // kullanıcının kişisel özelleştirmesi (AbacusPreferences) burada yok sayılır.
         val controller = abacusController ?: AbacusBeadController(
             requireContext(),
             binding.root,
             animationDurationMs = 300L
-        ).also { abacusController = it }
+        ) { _, _, _, isSelected ->
+            AbacusBeadRenderer.buildSorobanDrawable(
+                requireContext(),
+                isSelected,
+                if (isSelected) AbacusPreferences.SOROBAN_SEL_DEFAULT_COLORS else AbacusPreferences.SOROBAN_DEFAULT_COLORS
+            )
+        }.also { abacusController = it }
 
         controller.setExternalBeadAnimationInProgress {
             currentAnimations.any { it.isAnimating() }
@@ -20078,9 +16917,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
         } catch (_: Exception) { }
         // Typewriter'ı duraklat (geri dönünce kaldığı yerden devam edebilsin)
-        if (typewriterRunnable != null) {
-            binding.tutorialText.removeCallbacks(typewriterRunnable!!)
+        if (typewriterRunnable != null || typewriterSetupRunnable != null) {
+            typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
             typewriterRunnable = null
+            typewriterSetupRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+            typewriterSetupRunnable = null
             typewriterPausedByLifecycle = true
         }
     }
@@ -20115,6 +16956,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         mediaPlayer = null
         typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
         typewriterRunnable = null
+        typewriterSetupRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+        typewriterSetupRunnable = null
         typewriterText = null
         typewriterPausedByLifecycle = false
     }
@@ -20141,32 +16984,52 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
         mediaPlayer?.start()
     }
-    // Ses çalma fonksiyonu
-    private fun playSound(soundResource: Int?) {
+    // Ses çalma fonksiyonu. soundResource: gömülü (res/raw) ses. soundStoragePath doluysa ve
+    // soundResource yoksa: Remote Config ile eklenmiş, Firebase Storage'dan RemoteAudioCache
+    // tarafından indirilmiş sesi çalar. Dosya henüz inmemişse (ilk sefer/internet yok) sessizce
+    // atlanır ve indirme tekrar tetiklenir - hiçbir zaman çökme veya bekleme olmaz.
+    private fun playSound(soundResource: Int?, soundStoragePath: String? = null) {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("tutorial_sound_enabled", true)) return
-        soundResource?.let { resourceId ->
-            try {
-                // Önceki ses varsa durdur
-                mediaPlayer?.release()
+        if (soundResource == null && soundStoragePath == null) return
+        try {
+            // Önceki ses varsa durdur
+            mediaPlayer?.release()
 
-                // Yeni ses dosyasını çal
-                mediaPlayer = MediaPlayer.create(requireContext(), resourceId)
-                mediaPlayer?.setOnCompletionListener {
-                    mediaPlayer?.release()
+            if (soundResource != null) {
+                // MediaPlayer.create() zaten hazırlanmış (prepared) döner.
+                mediaPlayer = MediaPlayer.create(requireContext(), soundResource)
+            } else {
+                val localFile = RemoteAudioCache.localFile(requireContext(), soundStoragePath!!)
+                if (!localFile.exists()) {
+                    Log.w("TutorialFragment", "Uzak ses henüz inmedi, atlanıyor: $soundStoragePath")
+                    RemoteAudioCache.prefetch(requireContext(), soundStoragePath)
                     mediaPlayer = null
+                } else {
+                    // Yerel dosyadan manuel oluşturma senkron prepare() ister.
+                    mediaPlayer = MediaPlayer().apply {
+                        setDataSource(localFile.absolutePath)
+                        prepare()
+                    }
                 }
-                mediaPlayer?.start()
-            } catch (e: Exception) {
-                Log.e("TutorialFragment", "Ses çalma hatası: ${e.message}")
             }
+            mediaPlayer?.setOnCompletionListener {
+                mediaPlayer?.release()
+                mediaPlayer = null
+            }
+            mediaPlayer?.start()
+        } catch (e: Exception) {
+            Log.e("TutorialFragment", "Ses çalma hatası: ${e.message}")
         }
     }
 
 
     // Typewriter effect fonksiyonu (durum sınıf değişkenlerinde tutulur; arka plana geçince duraklatılıp geri dönünce devam edebilir)
     private fun showTextWithTypewriter(text: String, textView: TextView, speed: Long) {
+        // Hem harf-yazma döngüsünü hem de aşağıdaki kurulum bloğunu iptal et - hızlı art arda
+        // adım geçişlerinde önceki çağrıdan kalan hiçbir şey çalışmaya devam etmesin.
         typewriterRunnable?.let { textView.removeCallbacks(it) }
+        typewriterSetupRunnable?.let { textView.removeCallbacks(it) }
         typewriterText = text
         typewriterCurrentIndex = 0
         typewriterSpeed = speed
@@ -20174,7 +17037,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
         textView.visibility = View.INVISIBLE
         textView.text = text
-        textView.post {
+        typewriterSetupRunnable = Runnable {
             textView.text = ""
             typewriterRunnable = object : Runnable {
                 override fun run() {
@@ -20195,6 +17058,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             }
             textView.post(typewriterRunnable!!)
         }
+        textView.post(typewriterSetupRunnable!!)
     }
 
     private fun resumeTypewriter() {
@@ -20234,5 +17098,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             binding.tutorialText.removeCallbacks(it)
         }
         typewriterRunnable = null
+        typewriterSetupRunnable?.let {
+            binding.tutorialText.removeCallbacks(it)
+        }
+        typewriterSetupRunnable = null
     }
 } 
