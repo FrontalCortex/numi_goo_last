@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.Timestamp
 import java.util.UUID
@@ -16,10 +17,11 @@ import java.util.UUID
 object SessionDeviceManager {
     private const val PREFS_DEVICE = "device_prefs"
     private const val KEY_DEVICE_ID = "device_id"
-    private const val HEARTBEAT_INTERVAL_MS = 15_000L
-    private const val SESSION_STALE_MS = 45_000L
+    private const val HEARTBEAT_INTERVAL_MS = 60_000L
+    private const val SESSION_STALE_MS = 150_000L
     private val heartbeatHandler = Handler(Looper.getMainLooper())
     private var heartbeatRunnable: Runnable? = null
+    private var sessionListener: ListenerRegistration? = null
 
     private fun getOrCreateDeviceId(context: Context): String {
         val prefs = context.applicationContext.getSharedPreferences(PREFS_DEVICE, Context.MODE_PRIVATE)
@@ -55,11 +57,38 @@ object SessionDeviceManager {
         }.also {
             it.run() // immediate claim
         }
+        attachActiveSessionListener(appContext)
     }
 
     fun stopSessionHeartbeat() {
         heartbeatRunnable?.let { heartbeatHandler.removeCallbacks(it) }
         heartbeatRunnable = null
+        sessionListener?.remove()
+        sessionListener = null
+    }
+
+    /**
+     * Uygulama ön plandayken activeDeviceId alanını canlı dinler.
+     * Başka bir cihaz oturumu ele geçirdiği an (heartbeat/stale beklemeden)
+     * bu cihazı anında oturumdan düşürür.
+     */
+    private fun attachActiveSessionListener(context: Context) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val deviceId = getOrCreateDeviceId(context)
+        sessionListener?.remove()
+        sessionListener = FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+                val activeDeviceId = snapshot.getString("activeDeviceId")
+                if (!activeDeviceId.isNullOrBlank() && activeDeviceId != deviceId) {
+                    stopSessionHeartbeat()
+                    FirebaseAuth.getInstance().signOut()
+                    Toast.makeText(context, "Bu hesap başka bir cihazda aktif.", Toast.LENGTH_SHORT).show()
+                    redirectToLogin(context)
+                }
+            }
     }
 
     fun releaseActiveSessionIfOwned(context: Context) {
@@ -132,11 +161,11 @@ object SessionDeviceManager {
         requireLoggedInAndSingleDevice(act, onAllowed)
     }
 
-    private fun redirectToLogin(activity: AppCompatActivity) {
-        val intent = Intent(activity, LoginStartActivity::class.java).apply {
+    private fun redirectToLogin(context: Context) {
+        val intent = Intent(context, LoginStartActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        activity.startActivity(intent)
+        context.startActivity(intent)
     }
 }
 

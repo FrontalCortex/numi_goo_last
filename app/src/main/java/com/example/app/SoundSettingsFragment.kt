@@ -67,6 +67,10 @@ class SoundSettingsFragment : Fragment() {
     }
 
     private fun closeFragment() {
+        if (arguments?.getBoolean("fromAccountSettings") == true) {
+            parentFragmentManager.popBackStack()
+            return
+        }
         val main = activity as? MainActivity
         if (main != null) {
             main.finishTasksOverlayAnimated("SoundSettingsFragment.close")

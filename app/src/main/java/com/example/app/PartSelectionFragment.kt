@@ -43,16 +43,17 @@ class PartSelectionFragment : Fragment() {
                     
                     val currentUser = auth.currentUser
                     if (currentUser == null) {
-                        finalizeSetup(view, "Free", part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
                     } else {
                         firestore.collection("users").document(currentUser.uid)
                             .get()
                             .addOnSuccessListener { doc ->
                                 val plan = if (doc.exists()) doc.getString("plan") ?: "Free" else "Free"
-                                finalizeSetup(view, plan, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                val teacherApproved = doc.getBoolean("teacherApproved") == true
+                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, part3ChestComplete)
                             }
                             .addOnFailureListener {
-                                finalizeSetup(view, "Free", part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
                             }
                     }
                 }
@@ -60,10 +61,10 @@ class PartSelectionFragment : Fragment() {
         }
     }
     
-    private fun finalizeSetup(view: View, plan: String, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
+    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
         if (!isAdded) return
-        
-        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true)
+
+        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true) || teacherApproved
         
         val getPartState = { partId: Int ->
             when (partId) {

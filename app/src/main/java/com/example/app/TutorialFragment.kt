@@ -591,6 +591,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             105 ->binding.tenRuleTableLinearLayout.visibility = step.rulesPanelVisibility
             else -> View.GONE
         }
+        updateTutorialTextAnchor()
 
         // Seçenek paneli yönetimi tamamen updateOptionsPanelForStep içinde yapılır
         updateOptionsPanelForStep(step)
@@ -14834,6 +14835,34 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
 
         rulesTextView.visibility = step.rulesStepTextVisibility ?: View.GONE
+    }
+
+    /**
+     * tutorialText'i, o an gerçekten görünen kural içeriğinin (rulesStepText görünürse onun,
+     * yoksa görünen 7 tablodan hangisiyse onun) altına zincirler. Barrier bu senaryoda
+     * (referans view'ların constraint'i runtime'da elle değiştiriliyor) güvenilir çalışmadığı
+     * için pozisyon burada da imperatif olarak, showStep içindeki görünürlük güncellemesinden
+     * SONRA hesaplanıyor.
+     */
+    private fun updateTutorialTextAnchor() {
+        val tutorialTextParams = binding.tutorialText.layoutParams as ConstraintLayout.LayoutParams
+        val visibleTableId = listOf(
+            R.id.fiveRuleTable to binding.fiveRuleTable,
+            R.id.extractionFiveRuleTable to binding.extractionFiveRuleTable,
+            R.id.tenRuleTable to binding.tenRuleTable,
+            R.id.tenRuleTableLinearLayout to binding.tenRuleTableLinearLayout,
+            R.id.BeadRuleTable to binding.BeadRuleTable,
+            R.id.tenRuleExtractionTableLayout to binding.tenRuleExtractionTableLayout,
+            R.id.BeadRuleExtractionTable to binding.BeadRuleExtractionTable
+        ).firstOrNull { (_, view) -> view.visibility == View.VISIBLE }?.first
+
+        tutorialTextParams.topToTop = ConstraintLayout.LayoutParams.UNSET
+        tutorialTextParams.topToBottom = when {
+            binding.rulesStepText.visibility == View.VISIBLE -> R.id.rulesStepText
+            visibleTableId != null -> visibleTableId
+            else -> ConstraintLayout.LayoutParams.UNSET
+        }
+        binding.tutorialText.layoutParams = tutorialTextParams
     }
 
     private fun applyWidgetOperations(operations: List<WidgetOperation>) {

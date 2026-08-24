@@ -421,10 +421,23 @@
         android:background="@drawable/table_cell_border"
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_text_size"
-        app:layout_constraintTop_toBottomOf="@id/tenRuleTable"
+        app:layout_constraintTop_toBottomOf="@id/tablesBottomBarrier"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/tablesBottomBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="fiveRuleTable,extractionFiveRuleTable,tenRuleTable,tenRuleTableLinearLayout,BeadRuleTable,tenRuleExtractionTableLayout,BeadRuleExtractionTable" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/rulesBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="fiveRuleTable,extractionFiveRuleTable,tenRuleTable,tenRuleTableLinearLayout,BeadRuleTable,tenRuleExtractionTableLayout,BeadRuleExtractionTable,rulesStepText" />
 
     <LinearLayout
         android:id="@+id/tenRuleTableLinearLayout"
@@ -1019,7 +1032,9 @@
         android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_text_size"
+        app:layout_constraintTop_toBottomOf="@id/rulesBarrier"
         app:layout_constraintBottom_toTopOf="@id/questionText"
+        app:layout_constraintVertical_bias="1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 

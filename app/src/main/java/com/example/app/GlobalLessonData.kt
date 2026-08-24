@@ -31,6 +31,8 @@ object GlobalLessonData {
 
     private val firestore by lazy { FirebaseFirestore.getInstance() }
     private const val FIRESTORE_LESSON_PROGRESS = "lessonProgress"
+    /** [FIRESTORE_LESSON_PROGRESS]/{partId} altındaki alt koleksiyon: her item'ın progress alanları {position} dokümanında. */
+    private const val FIRESTORE_LESSON_ITEMS = "items"
     /** [createLessonItems] ile tanımlı tüm part id'leri; seed ve çapraz-part okumalar için. */
     private val SEED_PART_IDS = intArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
     private const val AUTH_WAIT_TIMEOUT_MS = 1500L
@@ -92,32 +94,20 @@ object GlobalLessonData {
         var partsProcessed = 0
         
         for (partId in 1..6) {
-            firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-                .document(partId.toString())
-                .get()
-                .addOnSuccessListener { doc ->
-                    val json = doc.getString("items")
-                    if (!json.isNullOrBlank()) {
-                        try {
-                            val parsedItems = parseLessonItemsWithMigration(json, partId)
-                            completedValidItems += parsedItems.count { 
-                                (it.type == LessonItem.TYPE_LESSON || it.type == LessonItem.TYPE_CHEST) && it.stepIsFinish 
-                            }
-                        } catch (e: Exception) {
-                            Log.e(LOG_TAG, "Global progress parse error for part $partId", e)
-                        }
+            readLessonItemsFromFirestore(uid, partId) { items, error ->
+                if (error != null) {
+                    Log.e(LOG_TAG, "Global progress fetch failed for part $partId", error)
+                } else if (items != null) {
+                    completedValidItems += items.count {
+                        (it.type == LessonItem.TYPE_LESSON || it.type == LessonItem.TYPE_CHEST) && it.stepIsFinish
                     }
                 }
-                .addOnFailureListener {
-                    Log.e(LOG_TAG, "Global progress fetch failed for part $partId")
+                partsProcessed++
+                if (partsProcessed == 6) {
+                    val percentage = ((completedValidItems.toFloat() / totalValidItems.toFloat()) * 100).toInt()
+                    callback(percentage)
                 }
-                .addOnCompleteListener {
-                    partsProcessed++
-                    if (partsProcessed == 6) {
-                        val percentage = ((completedValidItems.toFloat() / totalValidItems.toFloat()) * 100).toInt()
-                        callback(percentage)
-                    }
-                }
+            }
         }
     }
 
@@ -258,10 +248,7 @@ object GlobalLessonData {
             _lessonItems = mutableListOf()
         }
 
-        lessonRealtimeListener = firestore.collection("users")
-            .document(uid)
-            .collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
+        lessonRealtimeListener = itemsCollectionRef(uid, partId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     return@addSnapshotListener
@@ -270,13 +257,18 @@ object GlobalLessonData {
                     Log.w(LOG_TAG, "ensureLessonRealtimeSync: Snapshot for partId=$partId ignored because globalPartId is $globalPartId")
                     return@addSnapshotListener
                 }
-                val fromCache = snapshot?.metadata?.isFromCache == true
-                val json = snapshot?.getString("items")
-                if (json.isNullOrBlank()) return@addSnapshotListener
+                if (snapshot == null || snapshot.isEmpty) return@addSnapshotListener
                 try {
-                    val parsed = parseLessonItemsWithMigration(json, partId)
+                    val template = createLessonItems(partId)
+                    val byIndex = snapshot.documents.mapNotNull { d ->
+                        d.id.toIntOrNull()?.let { it to d.data }
+                    }.toMap()
+                    val parsed = template.mapIndexed { index, item ->
+                        val data = byIndex[index] ?: return@mapIndexed item
+                        applyProgressFields(item, data)
+                    }
                     val merged = if (_lessonItems.isEmpty()) {
-                        parsed
+                        parsed.toMutableList()
                     } else {
                         LessonProgressMerge.mergeListsPreferMoreProgress(_lessonItems, parsed)
                     }
@@ -342,7 +334,6 @@ object GlobalLessonData {
             return
         }
         val appCtx = context.applicationContext
-        val gson = Gson()
         var idx = 0
         fun processNext() {
             if (idx >= SEED_PART_IDS.size) {
@@ -357,23 +348,19 @@ object GlobalLessonData {
                 processNext()
                 return
             }
-            val ref = firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-                .document(partId.toString())
-            ref.get()
+            itemsCollectionRef(uid, partId).limit(1).get()
                 .addOnSuccessListener { snap ->
-                    val existing = snap.getString("items")
-                    if (snap.exists() && !existing.isNullOrBlank()) {
+                    if (!snap.isEmpty) {
                         processNext()
                         return@addOnSuccessListener
                     }
-                    val json = gson.toJson(items)
                     Log.d(LOG_TAG, "seedAllLessonProgressIfMissing writing partId=$partId items=${items.size}")
-                    ref.set(mapOf("items" to json))
-                        .addOnSuccessListener { processNext() }
-                        .addOnFailureListener { e ->
+                    writeAllItemsToFirestore(uid, partId, items) { e ->
+                        if (e != null) {
                             Log.e(LOG_TAG, "seedAllLessonProgressIfMissing write failed partId=$partId", e)
-                            processNext()
                         }
+                        processNext()
+                    }
                 }
                 .addOnFailureListener { e ->
                     Log.e(LOG_TAG, "seedAllLessonProgressIfMissing read failed partId=$partId", e)
@@ -389,8 +376,15 @@ object GlobalLessonData {
         }
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem
-            Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to local+Firestore")
-            saveToPreferences(context)
+            Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to Firestore")
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (uid != null) {
+                writeSingleItemToFirestore(uid, globalPartId, position, newItem) { e ->
+                    if (e != null) {
+                        Log.e(LOG_TAG, "updateLessonItem Firestore write failed position=$position", e)
+                    }
+                }
+            }
             // Kupa dersi tamamlandığında liderlik senkronu: [record] tüm zamanların en iyisi (UI);
             // Firestore tahtasına yalnızca [leaderboardSeasonBest] (mevcut sezon) yazılır.
             // Not: globalPartId 4 ve 5 liderlik tablosunu desteklemiyor; bu partlar için submit atlanır.
@@ -436,39 +430,28 @@ object GlobalLessonData {
             onResult(templateFirstChestLessonIndexOrNull(partId))
             return
         }
-        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
-            .get()
-            .addOnSuccessListener { doc ->
-                val cloudJson = doc.getString("items")
-                val (source, items) = when {
-                    cloudJson.isNullOrBlank() ->
-                        "template(empty_cloud)" to createLessonItems(partId)
-                    else -> try {
-                        "cloud_json" to parseLessonItemsWithMigration(cloudJson, partId)
-                    } catch (e: Exception) {
-                        Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser parse error partId=$partId", e)
-                        "template(parse_error)" to createLessonItems(partId)
-                    }
-                }
-                val templateChest = templateFirstChestLessonIndexOrNull(partId)
-                var idx = items.indexOfFirst { it.type == LessonItem.TYPE_CHEST }
-                val usedFallback = idx < 0
-                if (usedFallback) {
-                    idx = templateChest ?: -1
-                }
-                Log.d(
-                    LOG_TAG,
-                    "resolveFirstChest uid=${uid.take(8)} part=$partId docExists=${doc.exists()} source=$source " +
-                        "itemCount=${items.size} templateChestIdx=$templateChest resolvedChestIdx=${idx.takeIf { it >= 0 }} " +
-                        "fallback=$usedFallback",
-                )
-                onResult(idx.takeIf { it >= 0 })
+        readLessonItemsFromFirestore(uid, partId) { cloudItems, error ->
+            val templateChest = templateFirstChestLessonIndexOrNull(partId)
+            if (error != null) {
+                Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser load failed partId=$partId", error)
+                onResult(templateChest)
+                return@readLessonItemsFromFirestore
             }
-            .addOnFailureListener { e ->
-                Log.e(LOG_TAG, "resolveFirstChestLessonIndexForUser load failed partId=$partId", e)
-                onResult(templateFirstChestLessonIndexOrNull(partId))
+            val source = if (cloudItems == null) "template(empty_cloud)" else "cloud_items"
+            val items = cloudItems ?: createLessonItems(partId)
+            var idx = items.indexOfFirst { it.type == LessonItem.TYPE_CHEST }
+            val usedFallback = idx < 0
+            if (usedFallback) {
+                idx = templateChest ?: -1
             }
+            Log.d(
+                LOG_TAG,
+                "resolveFirstChest uid=${uid.take(8)} part=$partId source=$source " +
+                    "itemCount=${items.size} templateChestIdx=$templateChest resolvedChestIdx=${idx.takeIf { it >= 0 }} " +
+                    "fallback=$usedFallback",
+            )
+            onResult(idx.takeIf { it >= 0 })
+        }
     }
 
     /**
@@ -488,54 +471,45 @@ object GlobalLessonData {
             onDone()
             return
         }
-        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
-            .get()
-            .addOnSuccessListener { doc ->
-                val json = doc.getString("items")
-                if (json.isNullOrBlank()) {
-                    Log.d(LOG_TAG, "backfillLeaderboard: no items json part=$partId")
-                    onDone()
-                    return@addOnSuccessListener
-                }
-                try {
-                    val items = parseLessonItemsWithMigration(json, partId)
-                    val item = items.getOrNull(chestIndex)
-                    if (item == null || item.type != LessonItem.TYPE_CHEST) {
-                        Log.d(LOG_TAG, "backfillLeaderboard: no chest at idx=$chestIndex part=$partId")
-                        onDone()
-                        return@addOnSuccessListener
-                    }
-                    if (!item.stepIsFinish) {
-                        Log.d(LOG_TAG, "backfillLeaderboard: chest not finished idx=$chestIndex")
-                        onDone()
-                        return@addOnSuccessListener
-                    }
-                    val seasonNow = SeasonClock.currentSeason()
-                    val r = item.leaderboardSubmitScore(seasonNow)
-                    if (r == null || r <= 0) {
-                        Log.d(LOG_TAG, "backfillLeaderboard: no seasonal leaderboard score idx=$chestIndex part=$partId")
-                        onDone()
-                        return@addOnSuccessListener
-                    }
-                    Log.d(LOG_TAG, "backfillLeaderboard: submitBest part=$partId idx=$chestIndex seasonalScore=$r")
-                    LessonLeaderboardRepository.submitBestIfNeeded(
-                        partId,
-                        chestIndex,
-                        r,
-                        season = seasonNow,
-                        titleUnit = item.titleUnit?.trim()?.take(127),
-                        onComplete = onDone,
-                    )
-                } catch (e: Exception) {
-                    Log.e(LOG_TAG, "backfillLeaderboard parse/error part=$partId", e)
-                    onDone()
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e(LOG_TAG, "backfillLeaderboard load failed part=$partId", e)
+        readLessonItemsFromFirestore(uid, partId) { items, error ->
+            if (error != null) {
+                Log.e(LOG_TAG, "backfillLeaderboard load failed part=$partId", error)
                 onDone()
+                return@readLessonItemsFromFirestore
             }
+            if (items == null) {
+                Log.d(LOG_TAG, "backfillLeaderboard: no items part=$partId")
+                onDone()
+                return@readLessonItemsFromFirestore
+            }
+            val item = items.getOrNull(chestIndex)
+            if (item == null || item.type != LessonItem.TYPE_CHEST) {
+                Log.d(LOG_TAG, "backfillLeaderboard: no chest at idx=$chestIndex part=$partId")
+                onDone()
+                return@readLessonItemsFromFirestore
+            }
+            if (!item.stepIsFinish) {
+                Log.d(LOG_TAG, "backfillLeaderboard: chest not finished idx=$chestIndex")
+                onDone()
+                return@readLessonItemsFromFirestore
+            }
+            val seasonNow = SeasonClock.currentSeason()
+            val r = item.leaderboardSubmitScore(seasonNow)
+            if (r == null || r <= 0) {
+                Log.d(LOG_TAG, "backfillLeaderboard: no seasonal leaderboard score idx=$chestIndex part=$partId")
+                onDone()
+                return@readLessonItemsFromFirestore
+            }
+            Log.d(LOG_TAG, "backfillLeaderboard: submitBest part=$partId idx=$chestIndex seasonalScore=$r")
+            LessonLeaderboardRepository.submitBestIfNeeded(
+                partId,
+                chestIndex,
+                r,
+                season = seasonNow,
+                titleUnit = item.titleUnit?.trim()?.take(127),
+                onComplete = onDone,
+            )
+        }
     }
 
     /**
@@ -554,30 +528,12 @@ object GlobalLessonData {
             return
         }
 
-        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
-            .get()
-            .addOnSuccessListener { doc ->
-                val cloudJson = doc.getString("items")
-                if (cloudJson.isNullOrBlank()) {
-                    onResult(createLessonItems(partId).getOrNull(index))
-                    return@addOnSuccessListener
-                }
-                try {
-                    val cloudItems = parseLessonItemsWithMigration(cloudJson, partId)
-                    if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
-                        backfillChestTitleUnitFromLocal(partId, cloudItems)
-                    }
-                    onResult(cloudItems.getOrNull(index))
-                } catch (e: Exception) {
-                    Log.e(LOG_TAG, "getLessonItemForPart cloud parse error", e)
-                    onResult(createLessonItems(partId).getOrNull(index))
-                }
+        readLessonItemsFromFirestore(uid, partId) { items, error ->
+            if (error != null) {
+                Log.e(LOG_TAG, "getLessonItemForPart cloud load failed", error)
             }
-            .addOnFailureListener { e ->
-                Log.e(LOG_TAG, "getLessonItemForPart cloud load failed", e)
-                onResult(createLessonItems(partId).getOrNull(index))
-            }
+            onResult((items ?: createLessonItems(partId)).getOrNull(index))
+        }
     }
 
     /**
@@ -635,31 +591,134 @@ object GlobalLessonData {
             onResult(createLessonItems(partId))
             return
         }
+        readLessonItemsFromFirestore(uid, partId) { items, error ->
+            if (error != null) {
+                Log.e(LOG_TAG, "getLessonItemsForPart cloud load failed", error)
+            }
+            onResult(items ?: createLessonItems(partId))
+        }
+    }
 
-        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
-            .get()
-            .addOnSuccessListener { doc ->
-                val cloudJson = doc.getString("items")
-                if (cloudJson.isNullOrBlank()) {
-                    onResult(createLessonItems(partId))
+    private fun itemsCollectionRef(uid: String, partId: Int) =
+        firestore.collection("users").document(uid)
+            .collection(FIRESTORE_LESSON_PROGRESS).document(partId.toString())
+            .collection(FIRESTORE_LESSON_ITEMS)
+
+    /** Bir [LessonItem]'ın yalnızca mutasyona uğrayan (ilerleme) alanları — title/type/stepCount gibi statik alanlar hariç. */
+    /** null değerli alanlar hiç yazılmaz (ör. chest olmayan item'larda cupPoint1/record hep null kalır) — doküman boyutu israf edilmez. */
+    private fun progressFieldsOf(item: LessonItem): Map<String, Any?> = mapOf(
+        "stepIsFinish" to item.stepIsFinish,
+        "currentStep" to item.currentStep,
+        "stepCompletionStatus" to item.stepCompletionStatus,
+        "isCompleted" to item.isCompleted,
+        "finalGoldVisualUnlocked" to item.finalGoldVisualUnlocked,
+        "tutorialIsFinish" to item.tutorialIsFinish,
+        "tutorialNumber" to item.tutorialNumber,
+        "raceBusyLevel" to item.raceBusyLevel,
+        "record" to item.record,
+        "leaderboardSeasonId" to item.leaderboardSeasonId,
+        "leaderboardSeasonBest" to item.leaderboardSeasonBest,
+        "stepCupIcon" to item.stepCupIcon,
+        "cupDifficultyLevel" to item.cupDifficultyLevel,
+        "cupWinDelta" to item.cupWinDelta,
+        "cupLossDelta" to item.cupLossDelta,
+        "worstCupTime" to item.worstCupTime,
+        "cupPoint1" to item.cupPoint1,
+        "cupPoint2" to item.cupPoint2,
+        "progressBarLevel" to item.progressBarLevel,
+    ).filterValues { it != null }
+
+    /** [template] üzerine Firestore'dan gelen progress alanlarını uygular; alan yoksa template değeri korunur. */
+    private fun applyProgressFields(template: LessonItem, data: Map<String, Any?>): LessonItem {
+        if (data.isEmpty()) return template
+        fun int(key: String) = (data[key] as? Number)?.toInt()
+        fun bool(key: String, default: Boolean) = data[key] as? Boolean ?: default
+        return template.copy(
+            stepIsFinish = bool("stepIsFinish", template.stepIsFinish),
+            currentStep = int("currentStep") ?: template.currentStep,
+            stepCompletionStatus = (data["stepCompletionStatus"] as? List<*>)
+                ?.map { it as? Boolean ?: false }
+                ?: template.stepCompletionStatus,
+            isCompleted = bool("isCompleted", template.isCompleted),
+            finalGoldVisualUnlocked = bool("finalGoldVisualUnlocked", template.finalGoldVisualUnlocked),
+            tutorialIsFinish = bool("tutorialIsFinish", template.tutorialIsFinish),
+            tutorialNumber = int("tutorialNumber") ?: template.tutorialNumber,
+            raceBusyLevel = int("raceBusyLevel") ?: template.raceBusyLevel,
+            record = int("record") ?: template.record,
+            leaderboardSeasonId = int("leaderboardSeasonId") ?: template.leaderboardSeasonId,
+            leaderboardSeasonBest = int("leaderboardSeasonBest") ?: template.leaderboardSeasonBest,
+            stepCupIcon = int("stepCupIcon") ?: template.stepCupIcon,
+            cupDifficultyLevel = int("cupDifficultyLevel") ?: template.cupDifficultyLevel,
+            cupWinDelta = int("cupWinDelta") ?: template.cupWinDelta,
+            cupLossDelta = int("cupLossDelta") ?: template.cupLossDelta,
+            worstCupTime = int("worstCupTime") ?: template.worstCupTime,
+            cupPoint1 = int("cupPoint1") ?: template.cupPoint1,
+            cupPoint2 = int("cupPoint2") ?: template.cupPoint2,
+            progressBarLevel = int("progressBarLevel") ?: template.progressBarLevel,
+        )
+    }
+
+    /**
+     * [partId] altındaki `items/` alt koleksiyonunu okuyup local template ([createLessonItems]) ile birleştirir.
+     * Koleksiyon boşsa (kullanıcı bu part'ı hiç oynamamış) items=null, error=null döner.
+     */
+    private fun readLessonItemsFromFirestore(
+        uid: String,
+        partId: Int,
+        onResult: (items: List<LessonItem>?, error: Exception?) -> Unit,
+    ) {
+        itemsCollectionRef(uid, partId).get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    onResult(null, null)
                     return@addOnSuccessListener
                 }
                 try {
-                    val cloudItems = parseLessonItemsWithMigration(cloudJson, partId)
-                    if (cloudItems.any { it.type == LessonItem.TYPE_CHEST && it.titleUnit.isNullOrBlank() }) {
-                        backfillChestTitleUnitFromLocal(partId, cloudItems)
+                    val template = createLessonItems(partId)
+                    val byIndex = snapshot.documents.mapNotNull { d ->
+                        d.id.toIntOrNull()?.let { it to d.data }
+                    }.toMap()
+                    val merged = template.mapIndexed { index, item ->
+                        val data = byIndex[index] ?: return@mapIndexed item
+                        applyProgressFields(item, data)
                     }
-                    onResult(cloudItems)
+                    onResult(merged, null)
                 } catch (e: Exception) {
-                    Log.e(LOG_TAG, "getLessonItemsForPart cloud parse error", e)
-                    onResult(createLessonItems(partId))
+                    onResult(null, e)
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e(LOG_TAG, "getLessonItemsForPart cloud load failed", e)
-                onResult(createLessonItems(partId))
-            }
+            .addOnFailureListener { e -> onResult(null, e) }
+    }
+
+    /** [items] listesindeki her item'ın progress alanlarını `items/{position}` dokümanına toplu (batch) yazar. */
+    private fun writeAllItemsToFirestore(
+        uid: String,
+        partId: Int,
+        items: List<LessonItem>,
+        onComplete: ((Exception?) -> Unit)? = null,
+    ) {
+        val col = itemsCollectionRef(uid, partId)
+        val batch = firestore.batch()
+        items.forEachIndexed { index, item ->
+            batch.set(col.document(index.toString()), progressFieldsOf(item))
+        }
+        batch.commit()
+            .addOnSuccessListener { onComplete?.invoke(null) }
+            .addOnFailureListener { e -> onComplete?.invoke(e) }
+    }
+
+    /** Tek bir item'ın progress alanlarını `items/{position}` dokümanına yazar — tüm part'ı yeniden yazmaz. */
+    private fun writeSingleItemToFirestore(
+        uid: String,
+        partId: Int,
+        position: Int,
+        item: LessonItem,
+        onComplete: ((Exception?) -> Unit)? = null,
+    ) {
+        itemsCollectionRef(uid, partId).document(position.toString())
+            .set(progressFieldsOf(item))
+            .addOnSuccessListener { onComplete?.invoke(null) }
+            .addOnFailureListener { e -> onComplete?.invoke(e) }
     }
 
 
@@ -720,7 +779,6 @@ object GlobalLessonData {
                     titleUnit = "Sayıları Abaküste Tanıma",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 4,
@@ -799,7 +857,6 @@ object GlobalLessonData {
                     titleUnit = "Kuralsız Toplama",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     mapFragmentIndex = 10,
@@ -1103,7 +1160,6 @@ object GlobalLessonData {
                     titleUnit = "Boncuk Kuralı",
                     offset = 0,
                     isCompleted = true,
-                    stepIsFinish = true,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
@@ -3095,8 +3151,6 @@ object GlobalLessonData {
     }
 
     fun saveToPreferences(context: Context, saveRemote: Boolean = true) {
-        val gson = Gson()
-        val json = gson.toJson(_lessonItems)
         Log.d(LOG_TAG, "saveToPreferences partId=$globalPartId cloud-only (items=${_lessonItems.size})")
 
         // Giriş yapmış kullanıcı için Firestore'a da kaydet (uygulama silinse bile geri yüklensin)
@@ -3115,11 +3169,9 @@ object GlobalLessonData {
         )
         // #endregion
         if (saveRemote && uid != null) {
-            Log.d(LOG_TAG, "saveToPreferences -> Firestore users/${uid.take(8)}.../lessonProgress/$globalPartId")
-            firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-                .document(globalPartId.toString())
-                .set(mapOf("items" to json))
-                .addOnSuccessListener {
+            Log.d(LOG_TAG, "saveToPreferences -> Firestore users/${uid.take(8)}.../lessonProgress/$globalPartId/items")
+            writeAllItemsToFirestore(uid, globalPartId, _lessonItems) { e ->
+                if (e == null) {
                     Log.d(LOG_TAG, "saveToPreferences Firestore SUCCESS")
                     // #region agent log
                     debugLog(
@@ -3129,8 +3181,7 @@ object GlobalLessonData {
                         data = mapOf("partId" to globalPartId),
                     )
                     // #endregion
-                }
-                .addOnFailureListener { e ->
+                } else {
                     Log.e(LOG_TAG, "saveToPreferences Firestore FAILED", e)
                     // #region agent log
                     debugLog(
@@ -3145,6 +3196,7 @@ object GlobalLessonData {
                     )
                     // #endregion
                 }
+            }
         } else {
             if (!saveRemote) Log.d(LOG_TAG, "saveToPreferences skip Firestore (saveRemote=false)")
             else if (uid == null) Log.d(LOG_TAG, "saveToPreferences skip Firestore (uid=null)")
@@ -3194,61 +3246,15 @@ object GlobalLessonData {
         uid: String,
         callback: (FirestoreLoadStatus) -> Unit
     ) {
-        firestore.collection("users").document(uid).collection(FIRESTORE_LESSON_PROGRESS)
-            .document(partId.toString())
-            .get()
-            .addOnSuccessListener { doc ->
-                val json = doc.getString("items")
-                Log.d(LOG_TAG, "loadFromFirestore partId=$partId doc.exists=${doc.exists()} itemsFieldNull=${json == null} itemsBlank=${json.isNullOrBlank()}")
-                if (partId != globalPartId) {
-                    Log.w(LOG_TAG, "loadFromFirestore: Success callback for partId=$partId ignored because globalPartId is $globalPartId")
-                    // We call the callback so the caller doesn't hang, but we don't overwrite _lessonItems
-                    callback(FirestoreLoadStatus.ERROR)
-                    return@addOnSuccessListener
-                }
-                // #region agent log
-                debugLog(
-                    hypothesisId = "H3",
-                    location = "GlobalLessonData.kt:loadFromFirestore:success",
-                    message = "cloud lesson fetch result",
-                    data = mapOf(
-                        "partId" to partId,
-                        "docExists" to doc.exists(),
-                        "hasItemsField" to !json.isNullOrBlank(),
-                    ),
-                )
-                // #endregion
-                if (!json.isNullOrBlank()) {
-                    try {
-                        _lessonItems = parseLessonItemsWithMigration(json, partId)
-                        val completedCount = _lessonItems.count { it.stepIsFinish }
-                        val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
-                        Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD")
-                        // #region agent log
-                        debugLog(
-                            hypothesisId = "H3",
-                            location = "GlobalLessonData.kt:loadFromFirestore:loadedStats",
-                            message = "cloud lesson payload stats",
-                            data = mapOf(
-                                "partId" to partId,
-                                "itemCount" to _lessonItems.size,
-                                "completedCount" to completedCount,
-                                "chestCompletedCount" to chestCompletedCount,
-                            ),
-                        )
-                        // #endregion
-                        callback(FirestoreLoadStatus.LOADED)
-                    } catch (e: Exception) {
-                        Log.e(LOG_TAG, "loadFromFirestore parse error", e)
-                        callback(FirestoreLoadStatus.ERROR)
-                    }
-                } else {
-                    Log.d(LOG_TAG, "loadFromFirestore NOT_FOUND (no items field or empty)")
-                    callback(FirestoreLoadStatus.NOT_FOUND)
-                }
+        readLessonItemsFromFirestore(uid, partId) { items, error ->
+            if (partId != globalPartId) {
+                Log.w(LOG_TAG, "loadFromFirestore: Success callback for partId=$partId ignored because globalPartId is $globalPartId")
+                // We call the callback so the caller doesn't hang, but we don't overwrite _lessonItems
+                callback(FirestoreLoadStatus.ERROR)
+                return@readLessonItemsFromFirestore
             }
-            .addOnFailureListener { e ->
-                Log.e(LOG_TAG, "loadFromFirestore FAILED", e)
+            if (error != null) {
+                Log.e(LOG_TAG, "loadFromFirestore FAILED", error)
                 // #region agent log
                 debugLog(
                     hypothesisId = "H3",
@@ -3256,13 +3262,50 @@ object GlobalLessonData {
                     message = "cloud lesson fetch failed",
                     data = mapOf(
                         "partId" to partId,
-                        "errorType" to e.javaClass.simpleName,
-                        "errorMessage" to (e.message ?: "null"),
+                        "errorType" to error.javaClass.simpleName,
+                        "errorMessage" to (error.message ?: "null"),
                     ),
                 )
                 // #endregion
                 callback(FirestoreLoadStatus.ERROR)
+                return@readLessonItemsFromFirestore
             }
+            Log.d(LOG_TAG, "loadFromFirestore partId=$partId hasItems=${items != null}")
+            // #region agent log
+            debugLog(
+                hypothesisId = "H3",
+                location = "GlobalLessonData.kt:loadFromFirestore:success",
+                message = "cloud lesson fetch result",
+                data = mapOf(
+                    "partId" to partId,
+                    "hasItems" to (items != null),
+                ),
+            )
+            // #endregion
+            if (items != null) {
+                _lessonItems = items.toMutableList()
+                val completedCount = _lessonItems.count { it.stepIsFinish }
+                val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
+                Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD")
+                // #region agent log
+                debugLog(
+                    hypothesisId = "H3",
+                    location = "GlobalLessonData.kt:loadFromFirestore:loadedStats",
+                    message = "cloud lesson payload stats",
+                    data = mapOf(
+                        "partId" to partId,
+                        "itemCount" to _lessonItems.size,
+                        "completedCount" to completedCount,
+                        "chestCompletedCount" to chestCompletedCount,
+                    ),
+                )
+                // #endregion
+                callback(FirestoreLoadStatus.LOADED)
+            } else {
+                Log.d(LOG_TAG, "loadFromFirestore NOT_FOUND (no items)")
+                callback(FirestoreLoadStatus.NOT_FOUND)
+            }
+        }
     }
 
     private fun parseLessonItemsWithMigration(rawJson: String, partId: Int): MutableList<LessonItem> {
@@ -3278,24 +3321,6 @@ object GlobalLessonData {
         return list
     }
 
-    /**
-     * Firestore'da bazı eski kullanıcı kayıtlarında chest satırları için `titleUnit` alanı eksik olabiliyor.
-     * Parça listesini hesaplamak için (badge piece senkronu) titleUnit değerini local template'ten geri doldur.
-     */
-    private fun backfillChestTitleUnitFromLocal(partId: Int, cloudItems: MutableList<LessonItem>) {
-        val localItems = createLessonItems(partId)
-        cloudItems.forEachIndexed { idx, item ->
-            if (item.type != LessonItem.TYPE_CHEST) return@forEachIndexed
-            val raw = item.titleUnit?.trim()
-            val isMissing = raw.isNullOrBlank() || raw.equals("null", ignoreCase = true)
-            if (!isMissing) return@forEachIndexed
-            val fallback = localItems.getOrNull(idx)
-            val fallbackRaw = fallback?.titleUnit?.trim()
-            if (!fallbackRaw.isNullOrBlank() && !fallbackRaw.equals("null", ignoreCase = true)) {
-                item.titleUnit = fallback.titleUnit
-            }
-        }
-    }
 
     private fun migrateLegacyRecordField(rawJson: String): String {
         val root = JsonParser.parseString(rawJson)

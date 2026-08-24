@@ -111,6 +111,11 @@ class FeedbackFragment : Fragment() {
             imm.hideSoftInputFromWindow(view?.windowToken, 0)
         } catch (e: Exception) {}
 
+        if (arguments?.getBoolean("fromAccountSettings") == true) {
+            parentFragmentManager.popBackStack()
+            return
+        }
+
         val main = activity as? MainActivity
         if (main != null) {
             main.finishTasksOverlayAnimated("FeedbackFragment.close")

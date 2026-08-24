@@ -144,6 +144,7 @@ class ChestResult : Fragment() {
             if (shouldSkipChest) {
                 val idx = mapFragmentStepIndex
                 val chestItemBefore = LessonManager.getLessonItem(idx)
+                LessonSuccessRateRepository.recordItemReplay(globalPartId, idx)
                 if (chestItemBefore?.type == LessonItem.TYPE_CHEST && chestItemBefore.stepIsFinish != true) {
                     (activity as? MainActivity)?.justFinishedChestForRating = true
                 }
@@ -683,7 +684,7 @@ class ChestResult : Fragment() {
             3 -> 1.12f // daha ince
             else -> 1.0f
         }
-        starSoundPool?.play(starSoundId, 1f, 1f, 1, 0, rate)
+        starSoundPool?.play(starSoundId, 0.1f, 0.1f, 1, 0, rate)
     }
 
     private fun parseTimeToSeconds(value: String): Int? {

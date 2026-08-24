@@ -77,21 +77,19 @@ class AccountSettingsFragment : Fragment() {
                 .commit()
         }
         binding.btnPrivacySettings.setOnClickListener {
-            val main = activity as? MainActivity
-            if (main != null) {
-                main.showAbacusOverlayFragment(SoundSettingsFragment())
-            } else {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_left,
-                        R.anim.slide_in_left,
-                        R.anim.slide_out_right
-                    )
-                    .replace(R.id.fragmentContainerID, SoundSettingsFragment())
-                    .addToBackStack(null)
-                    .commit()
+            val fragment = SoundSettingsFragment().apply {
+                arguments = Bundle().apply { putBoolean("fromAccountSettings", true) }
             }
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, fragment)
+                .addToBackStack(null)
+                .commit()
         }
         
         binding.btnCancelSubscription.setOnClickListener {
@@ -105,21 +103,19 @@ class AccountSettingsFragment : Fragment() {
         
 
         binding.btnFeedback.setOnClickListener {
-            val main = activity as? MainActivity
-            if (main != null) {
-                main.showAbacusOverlayFragment(FeedbackFragment())
-            } else {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_left,
-                        R.anim.slide_in_left,
-                        R.anim.slide_out_right
-                    )
-                    .replace(R.id.fragmentContainerID, FeedbackFragment())
-                    .addToBackStack(null)
-                    .commit()
+            val fragment = FeedbackFragment().apply {
+                arguments = Bundle().apply { putBoolean("fromAccountSettings", true) }
             }
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, fragment)
+                .addToBackStack(null)
+                .commit()
         }
         binding.btnAccountSettingsLogout.setOnClickListener {
             MyFirebaseMessagingService.clearCurrentTokenFromFirestore()

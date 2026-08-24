@@ -11,7 +11,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentLessonResultFalseBinding
+import com.example.app.GlobalLessonData
 import com.example.app.GlobalValues
+import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -38,6 +40,7 @@ class LessonResultFalse : Fragment() {
     private var lessonStep: Int = 0
     private var lessonScore: Int = 0
     private var isChestFailure: Boolean = false
+    private var failRecorded: Boolean = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
@@ -82,6 +85,18 @@ class LessonResultFalse : Fragment() {
             Log.d("mesi","$succsessRate")
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
+        }
+
+        if (!failRecorded) {
+            failRecorded = true
+            val item = LessonManager.getLessonItem(GlobalValues.mapFragmentStepIndex)
+            if (item?.type == LessonItem.TYPE_LESSON || item?.type == LessonItem.TYPE_CHEST) {
+                LessonSuccessRateRepository.recordFail(
+                    GlobalLessonData.globalPartId,
+                    GlobalValues.mapFragmentStepIndex,
+                    item.currentStep,
+                )
+            }
         }
 
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)

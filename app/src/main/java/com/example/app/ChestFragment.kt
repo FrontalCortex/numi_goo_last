@@ -386,6 +386,10 @@ class ChestFragment : Fragment() {
                                         main.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                     }
                                 }
+                            } else {
+                                // Rozet yok: kupa yolu / maraton rehberi bu işlem yüzünden bekletilmiş olabilir, tekrar dene.
+                                val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
+                                main?.tryShowPendingMarathonGuideOnMap("ChestFragment.badgeFirestoreOnDone.noPayloads")
                             }
                         },
                     )
@@ -590,6 +594,17 @@ class ChestFragment : Fragment() {
                             shouldIncrementPerfectStepCountMission = true
                         }
                     }
+                    if (!item.stepIsFinish && updatedItem.stepIsFinish &&
+                        (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
+                    ) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                        val chestStars = if (updatedItem.type == LessonItem.TYPE_CHEST) {
+                            ChestTypeProgressHelper.starCountForChestIcon(updatedItem.stepCupIcon)
+                        } else {
+                            null
+                        }
+                        LessonSuccessRateRepository.recordItemFirstFinish(globalPartId, mapFragmentStepIndex, chestStars)
+                    }
                     val beforeFilled = item.stepCompletionStatus.count { it }
                     val afterFilled = updatedItem.stepCompletionStatus.count { it }
                     if (afterFilled > beforeFilled) {
@@ -622,6 +637,9 @@ class ChestFragment : Fragment() {
                         "ChestFragment.updateMapProgress",
                         "BRANCH INTERMEDIATE currentStep ${item.currentStep}→${item.currentStep + 1} (stepIsFinish stays false)",
                     )
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                    }
                     val updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,
                         currentStep = item.currentStep + 1,

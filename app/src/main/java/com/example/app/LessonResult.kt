@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.databinding.FragmentLessonResultBinding
+import com.example.app.model.LessonItem
 
 
 class LessonResult : Fragment() {
@@ -32,6 +33,10 @@ class LessonResult : Fragment() {
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
+
+    // --- Teşhis: fragment_lesson_result'tan beklenmedik şekilde MapFragment'e dönme sorunu ---
+    private var viewCreatedAtMs: Long = 0L
+    private var claimHandled = false
 
     /** [abacusFragmentContainer] üzerinde harita dokunuşunu geçirmemek için ([ChestFragment] ile aynı mantık). */
     private var lessonResultHostView: View? = null
@@ -74,6 +79,15 @@ class LessonResult : Fragment() {
         GlobalValues.lessonStep++
         GlobalValues.tutorialIsWorked=true
 
+        viewCreatedAtMs = System.currentTimeMillis()
+        LessonProgressDiag.logItem(
+            "LessonResult.onViewCreated",
+            GlobalLessonData.globalPartId,
+            mapFragmentStepIndex,
+            LessonManager.getLessonItem(mapFragmentStepIndex),
+            label = "ENTER",
+        )
+
 // Başka bir sınıfta (örneğin LessonResult'ta)
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
@@ -87,8 +101,25 @@ class LessonResult : Fragment() {
             updateUI()
         }
         binding.claimButton.setOnClickListener {
+            val clickAtMs = System.currentTimeMillis()
+            if (claimHandled) {
+                LessonProgressDiag.log(
+                    "LessonResult.claimButton",
+                    "IGNORED duplicate/rapid click | msSinceViewCreated=${clickAtMs - viewCreatedAtMs} " +
+                        "isAdded=$isAdded mapIdx=$mapFragmentStepIndex part=${GlobalLessonData.globalPartId}",
+                )
+                return@setOnClickListener
+            }
+            claimHandled = true
 
             val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+            LessonProgressDiag.logItem(
+                "LessonResult.claimButton",
+                GlobalLessonData.globalPartId,
+                mapFragmentStepIndex,
+                lessonItem,
+                label = "CLICK msSinceViewCreated=${clickAtMs - viewCreatedAtMs}",
+            )
             lessonItem?.tutorialIsFinish = true
             val chestFragment = ChestFragment()
             val args = Bundle().apply {
@@ -96,6 +127,15 @@ class LessonResult : Fragment() {
                 putInt("dersPuani", lessonScore)
             }
             if (lessonItem?.stepIsFinish == true) {
+                LessonProgressDiag.log(
+                    "LessonResult.claimButton",
+                    "BRANCH=SKIP_TO_MAP (stepIsFinish already true, ChestFragment atlanıyor) " +
+                        "mapIdx=$mapFragmentStepIndex part=${GlobalLessonData.globalPartId} " +
+                        "currentStep=${lessonItem.currentStep}/${lessonItem.stepCount}",
+                )
+                if (lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST) {
+                    LessonSuccessRateRepository.recordItemReplay(GlobalLessonData.globalPartId, mapFragmentStepIndex)
+                }
                 val main = activity as? MainActivity
                 if (isAdded) {
                     requireActivity().supportFragmentManager.beginTransaction()
@@ -105,6 +145,11 @@ class LessonResult : Fragment() {
                 main?.prepareMapReturnAfterLessonClaim()
                 main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
             } else {
+                LessonProgressDiag.log(
+                    "LessonResult.claimButton",
+                    "BRANCH=GO_TO_CHEST mapIdx=$mapFragmentStepIndex part=${GlobalLessonData.globalPartId} " +
+                        "currentStep=${lessonItem?.currentStep}/${lessonItem?.stepCount}",
+                )
                 chestFragment.arguments = args
                 (activity as? MainActivity)?.showResultOverlayHost()
                 parentFragmentManager.beginTransaction()
@@ -122,6 +167,12 @@ class LessonResult : Fragment() {
     }
 
     override fun onDestroyView() {
+        LessonProgressDiag.log(
+            "LessonResult.onDestroyView",
+            "claimHandled=$claimHandled msAlive=${System.currentTimeMillis() - viewCreatedAtMs} " +
+                "mapIdx=$mapFragmentStepIndex part=${GlobalLessonData.globalPartId} " +
+                if (!claimHandled) "-> DESTROYED WITHOUT CLAIM CLICK (geri tuşu / dış transaction şüphesi)" else "",
+        )
         restoreLessonResultOverlayElevation()
         MainActivityChromeBlocker.release(activity)
         super.onDestroyView()

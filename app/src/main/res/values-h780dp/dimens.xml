@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TutorialFragment tutorialText: 700-780dp aralığında (ör. Pixel 3, 737dp) kural tablosu
+         görünürken 26sp taşıyordu (bkz. updateTutorialTextAnchor). ≥780dp'de (Redmi Note 11 Pro
+         ve üstü, doğrulandı) orijinal büyük boyut güvenle sığıyor. -->
+    <dimen name="tutorial_text_size">26sp</dimen>
+</resources>

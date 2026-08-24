@@ -66,7 +66,7 @@
 
     <!-- TutorialFragment ölçekleri (uzun/büyük ekran) -->
     <dimen name="tutorial_quit_button_size">40dp</dimen>
-    <dimen name="tutorial_text_size">26sp</dimen>
+    <dimen name="tutorial_text_size">20sp</dimen>
     <dimen name="tutorial_question_width">190dp</dimen>
     <dimen name="tutorial_question_margin_bottom">2dp</dimen>
     <dimen name="tutorial_focus_width">54dp</dimen>

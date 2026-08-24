@@ -48,6 +48,11 @@ service cloud.firestore {
     match /users/{userId}/lessonProgress/{doc} {
       allow read: if request.auth != null;
     }
+    // Ders ilerlemesi artık partId dokümanının altında items/{position} alt koleksiyonunda tutulur
+    // (tek bir JSON-string yerine her item ayrı doküman). Görünürlük üstteki lessonProgress/{doc} ile aynı.
+    match /users/{userId}/lessonProgress/{partId}/items/{itemId} {
+      allow read: if request.auth != null;
+    }
     match /users/{userId}/abacusCustomization/{doc} {
       allow read: if request.auth != null;
     }

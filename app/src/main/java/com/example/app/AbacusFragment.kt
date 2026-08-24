@@ -71,6 +71,11 @@ class AbacusFragment : Fragment() {
     private var totalQuestions = 0
     private var lastClickTime = 0L
     private var isResultPanelAnimating = false
+
+    // --- Teşhis: fragment_lesson_result'a giden akışın hızlı çoklu tıklamayla iki kez tetiklenip
+    // tetiklenmediğini görmek için ---
+    private var questionPanelShown = false
+    private var lessonResultShown = false
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
     private lateinit var secondNumberText: TextView
@@ -3064,6 +3069,13 @@ class AbacusFragment : Fragment() {
     }
 
     private fun showLessonResult() {
+        LessonProgressDiag.log(
+            "AbacusFragment.showLessonResult",
+            "CALLED alreadyShown=$lessonResultShown mapIdx=$mapFragmentStepIndex " +
+                "part=${GlobalLessonData.globalPartId} correctAnswer=$correctAnswer totalQuestions=$totalQuestions" +
+                if (lessonResultShown) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
+        )
+        lessonResultShown = true
         val lessonResultFragment = LessonResult()
         val lessonResultFalse = LessonResultFalse()
 
@@ -3112,6 +3124,13 @@ class AbacusFragment : Fragment() {
 
     /** Ders sonu soru panelini açar; geçiş mantığı FragmentResult API ile AbacusFragment'e geri döner. */
     private fun showQuestionPanel() {
+        LessonProgressDiag.log(
+            "AbacusFragment.showQuestionPanel",
+            "CALLED alreadyShown=$questionPanelShown mapIdx=$mapFragmentStepIndex " +
+                "part=${GlobalLessonData.globalPartId} currentIndex=$currentIndex totalQuestions=$totalQuestions" +
+                if (questionPanelShown) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
+        )
+        questionPanelShown = true
         stopTimer() // Soru panelindeyken timer çalışmasın diye durduruyoruz.
         val successRate = currentSuccessRate()
         val dersPuani = (successRate * 5f).toInt()

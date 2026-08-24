@@ -107,7 +107,7 @@ class EnergyManager(private val context: Context) {
     }
 
     fun getEnergyRefreshMinutes(): Int {
-        return if (getUserPlan() == "Lite") 10 else 15
+        return if (getUserPlan() == "Lite") 7 else 10
     }
 
     fun getEnergyRefreshMillis(): Long {

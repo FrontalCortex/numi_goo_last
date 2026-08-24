@@ -39,6 +39,14 @@ class QuestionPanelFragment : Fragment() {
     /** Gönderim devam ederken true — geri tuşu ve overlay tıklaması bloklanır. */
     private var isSending = false
 
+    /**
+     * [proceedToResult] birden fazla kez çalışmasın diye koruma.
+     * Not: `.remove(this).commit()` asenkron olduğu için, koruma olmadan hızlı çift tıklama
+     * `isAdded` hâlâ true iken ikinci çağrıyı tetikleyip `questionPanelResult`'ı iki kez
+     * yayınlayabilir (AbacusFragment'teki dinleyiciyi iki kez çalıştırır).
+     */
+    private var resultProceeded = false
+
     // Seçili seçenek indexleri (null = seçilmedi, 1–5 arası)
     private var q1SelectedChoice: Int? = null
     private var q2SelectedChoice: Int? = null
@@ -321,10 +329,18 @@ class QuestionPanelFragment : Fragment() {
 
     private fun proceedToResult() {
         if (!isAdded) return
-        
+        if (resultProceeded) {
+            LessonProgressDiag.log(
+                "QuestionPanelFragment.proceedToResult",
+                "IGNORED duplicate/rapid call (muhtemelen hızlı çift tıklama)",
+            )
+            return
+        }
+        resultProceeded = true
+
         // İşimiz bittiğinde AbacusFragment'teki listener'a sinyal gönderiyoruz
         parentFragmentManager.setFragmentResult("questionPanelResult", Bundle())
-        
+
         // QuestionPanelFragment'ı kendi kendini kapattırıyoruz
         parentFragmentManager.beginTransaction()
             .remove(this)

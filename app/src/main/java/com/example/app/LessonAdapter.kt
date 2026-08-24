@@ -218,14 +218,13 @@ class LessonAdapter(
 
                 //tutorial olanlarda ve tutorialIsFinish olanlarda çıkacak.
                 actionButton.apply {
-                    text = "-1                           BAŞLAT"
-                    textAlignment = View.TEXT_ALIGNMENT_TEXT_START  // veya
+                    text = "BAŞLAT"
+                    actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     // Beyaz, köşeleri yuvarlatılmış
                     actionButton.setBackgroundColor(context.getColor(R.color.lesson_completed))
                     setTextColor(ContextCompat.getColor(context, R.color.panel_background))
                     isEnabled = true
                     // İkon ekle (solda)
-                    setCompoundDrawablesWithIntrinsicBounds(R.drawable.lighting__1_, 0, 0, 0)
                 }
             }
         } else {
@@ -784,14 +783,14 @@ class LessonAdapter(
                     actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
                 }
                 else -> {
-                    actionButton.text = "                           BAŞLAT"
+                    actionButton.text = "BAŞLAT"
                     actionButton.isAllCaps = true
-                    actionButton.textAlignment = View.TEXT_ALIGNMENT_TEXT_START
+                    actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     actionButton.backgroundTintList =
                         ContextCompat.getColorStateList(context, R.color.lesson_completed)
                     actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
                     actionButton.icon = ContextCompat.getDrawable(context, R.drawable.lighting__1_)
-                    actionButton.iconGravity = MaterialButton.ICON_GRAVITY_START
+                    actionButton.iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
                     actionButton.iconPadding = (8 * context.resources.displayMetrics.density).toInt()
                     actionButton.iconTint = null
                 }

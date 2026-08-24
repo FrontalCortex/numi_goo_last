@@ -1759,24 +1759,24 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         */
 
         // Offline kullanılmayacağı için görev local cache'ini temizle. Bu kod hep kalacak.
-        MissionsProgressStore.clearLocalCache(context)
+        //MissionsProgressStore.clearLocalCache(context)
         // 1) Mevcut görev ilerlemesini sıfırla (daily/weekly counters + claimed flags)
-        MissionsProgressStore.resetAllProgress(context)
+        //MissionsProgressStore.resetAllProgress(context)
         // 2) Günlük/haftalık görev kombinasyonunu yeniden seçtir
-        MissionsProgressStore.forceReselectMissions(context)
+        //MissionsProgressStore.forceReselectMissions(context)
         // 3) Seçilen yeni görevleri hemen üretip state'e yazdır (isteğe bağlı ama önerilir)
-        MissionsProgressStore.selectedMissionsForDaily(context)
-        MissionsProgressStore.selectedMissionsForWeekly(context)
+        //MissionsProgressStore.selectedMissionsForDaily(context)
+        //MissionsProgressStore.selectedMissionsForWeekly(context)
         // Cloud'daki eski mission state'in geri hydrate edilmesini engellemek için
         // resetlenmiş local state'i doğrudan cloud'a overwrite et.
-        MissionsProgressStore.forceUploadStateToCloud(context)
+        //MissionsProgressStore.forceUploadStateToCloud(context)
         // Kullanıcıya özel lesson verilerini local'den temizler.
-        GlobalLessonData.clearCurrentUserLessonData(context)
+        //GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
-        deleteLessonProgressFromFirestoreWithAuthWait()
+        //deleteLessonProgressFromFirestoreWithAuthWait()
         // GuidePanel animasyon flag'lerini temizle (test için) Yönlendirme paneli
-        val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
-        guidePanelPrefs.edit().clear().apply()
+        //val guidePanelPrefs = context.getSharedPreferences("GuidePanelPrefs", Context.MODE_PRIVATE)
+        //guidePanelPrefs.edit().clear().apply()
         
         // İlk tutorial flag'ini de temizle (test için)
         val appPrefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -2629,6 +2629,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             return "badge_overlay:${badge.javaClass.simpleName}"
         }
 
+        if (GlobalValues.pendingBadgeFirestoreOperation) {
+            return "badge_firestore_pending"
+        }
+
         val gateVisible = binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE
         val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
         if (gateVisible && gate != null) {
@@ -2802,6 +2806,29 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             logMapTouchDiag("reconcile", "SKIP_LESSON_SHEET_DEPTH", "depth=$lessonSheetOverlayNavigationDepth")
             logFirstTutorial("reconcile.skip", "lessonSheetOverlayNavigationDepth>0")
             return
+        }
+        // BUG FIX: LessonResult.claimButton'ın GO_TO_CHEST dalı, ChestFragment'i resultFragmentContainer'a
+        // ekleyip LessonResult'ı abacusFragmentContainer'dan kaldırıyor (senkron commit). Bu kaldırma bazen
+        // MapFragment.onResume()'u (→ bu fonksiyonu) tetikliyor; o anda abacusFragmentContainer boş olduğu için
+        // aşağıdaki activeOverlay kontrolü hiçbir şey yakalamıyordu ve henüz kullanıcı görmeden/tıklamadan
+        // resultFragmentContainer (ChestFragment) GONE yapılıp direkt haritaya dönülüyordu — ders ilerlemesi
+        // hiç kaydedilmeden. resultFragmentContainer'ı da abacusFragmentContainer ile aynı şekilde kontrol et.
+        if (!forcingAbacusOverlayDismissForSeasonGate) {
+            val resultOverlay = fm.findFragmentById(R.id.resultFragmentContainer)
+            val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
+            if (resultOverlay != null && resultHostVisible && fragmentBlocksSeasonLeaderboardGate(resultOverlay)) {
+                logMapTouchDiag(
+                    "reconcile",
+                    "SKIP_BLOCKING_OVERLAY",
+                    "active=${resultOverlay.javaClass.simpleName} (resultFragmentContainer) hostVisible=true → notifyVisible YOK",
+                )
+                LessonProgressDiag.log(
+                    "MainActivity.reconcile",
+                    "SKIP_BLOCKING_OVERLAY active=${resultOverlay.javaClass.simpleName} (resultFragmentContainer) forcingDismiss=$forcingAbacusOverlayDismissForSeasonGate",
+                )
+                tryShowSeasonLeaderboardRewardGateIfNeeded()
+                return
+            }
         }
         val activeOverlay = fm.findFragmentById(R.id.abacusFragmentContainer)
         if (activeOverlay is RecordFragment &&
