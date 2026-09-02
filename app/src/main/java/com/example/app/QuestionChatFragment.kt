@@ -189,6 +189,11 @@ class QuestionChatFragment : Fragment() {
                     if (qId != questionId) return
                     val messageId = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_MESSAGE_ID) ?: return
                     val wasCompleted = intent.action == QuestionDownloadForegroundService.ACTION_DOWNLOAD_COMPLETED
+                    // TEŞHİS: indirme başarısızsa gerçek hatayı ekranda göster.
+                    if (intent.action == QuestionDownloadForegroundService.ACTION_DOWNLOAD_FAILED && isAdded) {
+                        val err = intent.getStringExtra(QuestionDownloadForegroundService.EXTRA_ERROR)
+                        android.widget.Toast.makeText(requireContext(), "İndirme HATASI: $err", android.widget.Toast.LENGTH_LONG).show()
+                    }
                     Handler(Looper.getMainLooper()).post {
                         if (_binding == null || !isAdded) return@post
                         activeDownloadIds.remove(messageId)
@@ -266,6 +271,12 @@ class QuestionChatFragment : Fragment() {
 
     private fun startDownloadForMessage(message: QuestionMessage) {
         if (!isAdded) return
+        // TEŞHİS: indirme tıklaması hiç tetiklenmiyor sorunu için geçici Toast.
+        android.widget.Toast.makeText(
+            requireContext(),
+            "İndirme tıklandı: id=${message.id}, path=${message.mediaStoragePath}",
+            android.widget.Toast.LENGTH_LONG
+        ).show()
         // Eğer bu mesaj için daha önce indirilmiş bir dosya varsa, tekrar Firebase'den indirme.
         val existingPath = GlobalValues.downloadedMediaByMessageId[message.id]
         if (!existingPath.isNullOrBlank() && java.io.File(existingPath).exists()) {
