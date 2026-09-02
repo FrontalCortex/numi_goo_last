@@ -2,6 +2,11 @@ name: Backfill Public Profiles
 
 on:
   workflow_dispatch: {}
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - '.github/workflows/backfill-public-profiles.yml'
 
 jobs:
   backfill:
