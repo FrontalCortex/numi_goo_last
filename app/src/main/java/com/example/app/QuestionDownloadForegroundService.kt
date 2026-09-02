@@ -180,15 +180,12 @@ class QuestionDownloadForegroundService : Service() {
                     })
                 }
             }
-            .addOnFailureListener { e ->
-                // TEŞHİS: indirme neden başarısız oluyor sorunu için geçici log.
-                android.util.Log.e("QuestionDownloadDebug", "getFile hata, path=$path", e)
+            .addOnFailureListener {
                 activeTasks.remove(item.messageId)
                 if (!canceledMessageIds.contains(item.messageId)) {
                     sendBroadcast(Intent(ACTION_DOWNLOAD_FAILED).apply {
                         putExtra(EXTRA_MESSAGE_ID, item.messageId)
                         putExtra(EXTRA_QUESTION_ID, item.questionId)
-                        putExtra(EXTRA_ERROR, e.message)
                     })
                 }
             }
@@ -296,7 +293,6 @@ class QuestionDownloadForegroundService : Service() {
         const val EXTRA_QUESTION_ID = "extra_question_id"
         const val EXTRA_MEDIA_STORAGE_PATH = "extra_media_storage_path"
         const val EXTRA_PROGRESS = "extra_progress"
-        const val EXTRA_ERROR = "extra_error"
 
         fun startDownload(
             context: Context,
