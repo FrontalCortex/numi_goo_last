@@ -235,9 +235,6 @@ class AddFriendFragment : Fragment() {
         
         nameQuery.get()
             .addOnSuccessListener { snapshot ->
-                // TEŞHİS: arama sonuç vermiyor sorunu için geçici log.
-                android.util.Log.d("AddFriendDebug", "nameQuery('$query'..'$queryEnd') -> ${snapshot.size()} sonuç")
-                if (isAdded) Toast.makeText(requireContext(), "İsim sorgusu: ${snapshot.size()} sonuç", Toast.LENGTH_SHORT).show()
                 if (!snapshot.isEmpty) {
                     lastVisibleName = snapshot.documents[snapshot.size() - 1]
                     batchResults.addAll(parseSnapshot(snapshot))
@@ -251,10 +248,7 @@ class AddFriendFragment : Fragment() {
                     onBothComplete()
                 }
             }
-            .addOnFailureListener { e ->
-                // TEŞHİS: gerçek hatayı gizlemeden ekranda göster.
-                android.util.Log.e("AddFriendDebug", "nameQuery hata", e)
-                if (isAdded) Toast.makeText(requireContext(), "İsim sorgusu HATA: ${e.message}", Toast.LENGTH_LONG).show()
+            .addOnFailureListener {
                 completedQueries++
                 if (completedQueries == totalQueries) onBothComplete()
             }
@@ -271,9 +265,6 @@ class AddFriendFragment : Fragment() {
         
         idQuery.get()
             .addOnSuccessListener { snapshot ->
-                // TEŞHİS: arama sonuç vermiyor sorunu için geçici log.
-                android.util.Log.d("AddFriendDebug", "idQuery('$query'..'$queryEnd') -> ${snapshot.size()} sonuç")
-                if (isAdded) Toast.makeText(requireContext(), "userId sorgusu: ${snapshot.size()} sonuç", Toast.LENGTH_SHORT).show()
                 if (!snapshot.isEmpty) {
                     lastVisibleUserId = snapshot.documents[snapshot.size() - 1]
                     batchResults.addAll(parseSnapshot(snapshot))
@@ -284,10 +275,7 @@ class AddFriendFragment : Fragment() {
                     onBothComplete()
                 }
             }
-            .addOnFailureListener { e ->
-                // TEŞHİS: gerçek hatayı gizlemeden ekranda göster.
-                android.util.Log.e("AddFriendDebug", "idQuery hata", e)
-                if (isAdded) Toast.makeText(requireContext(), "userId sorgusu HATA: ${e.message}", Toast.LENGTH_LONG).show()
+            .addOnFailureListener {
                 completedQueries++
                 if (completedQueries == totalQueries) onBothComplete()
             }
