@@ -176,7 +176,10 @@ class ScreenRecordingService : Service() {
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
         if (withAudio) recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
         recorder.setVideoSize(1280, 720)
-        recorder.setVideoFrameRate(30)
+        // Ders ekranları büyük ölçüde durağan (akıcı hareket yerine dokunma/geçiş);
+        // 30'dan 20 fps'e düşürmek aynı bitrate'i daha az kareye bölüp kare başına
+        // netliği artırıyor, dosya boyutunu BÜYÜTMÜYOR (bkz. bitrate açıklaması altta).
+        recorder.setVideoFrameRate(20)
         // 2.5 Mbps'te ekran içeriği (ince metin, ikon kenarları) gözle görülür şekilde
         // pikselleşiyordu; 4 Mbps'e çıkarıldı (bkz. storage.rules'daki 150 MB üst sınırı —
         // 180 sn * 4 Mbps + ses ~93 MB, hâlâ rahat bir payla altında).
