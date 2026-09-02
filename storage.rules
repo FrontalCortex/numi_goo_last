@@ -18,10 +18,12 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Onaylı öğretmen mi? (Firestore'daki users dokümanına bakar.)
+    // Onaylı öğretmen mi? Firestore'a cross-service firestore.get() ile bakmak
+    // güvenilir çalışmadı (öğretmenler kendi onayını doğrulatamıyordu); bunun yerine
+    // Cloud Functions'ın (syncTeacherClaim) Firestore'daki teacherApproved alanıyla
+    // senkron tuttuğu ID token custom claim'i okunuyor.
     function isTeacher() {
-      return isSignedIn()
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.teacherApproved == true;
+      return isSignedIn() && request.auth.token.teacherApproved == true;
     }
 
     // Dosya adı `{uid}_...` biçiminde mi — yani çağıranın kendi dosyası mı?

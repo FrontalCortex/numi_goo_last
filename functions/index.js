@@ -941,6 +941,25 @@ exports.mirrorPublicProfile = functions.firestore
     return null;
   });
 
+// Storage Rules, öğretmen kontrolü için Firestore'a cross-service `firestore.get()` ile
+// bakıyordu; bu servisler-arası çağrı güvenilir çalışmadı (öğretmen kendi onaylı
+// olduğunu doğrulayamıyor, başka öğrencinin soru medyasını indiremiyordu). Storage
+// Rules'ın doğrudan ve güvenilir okuyabildiği tek yer ID token'ın kendisi olduğu için
+// `teacherApproved`'ı buraya bir custom claim olarak da yazıyoruz.
+exports.syncTeacherClaim = functions.firestore
+  .document('users/{uid}')
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    if (!change.after.exists) return null;
+
+    const before = change.before.exists ? change.before.data().teacherApproved === true : null;
+    const after = change.after.data().teacherApproved === true;
+    if (before === after) return null;
+
+    await admin.auth().setCustomUserClaims(uid, { teacherApproved: after });
+    return null;
+  });
+
 // ─── Takip sayaçları ────────────────────────────────────────────────────────
 //
 // `followersCount` / `followingCount` artık İSTEMCİ TARAFINDAN YAZILMIYOR. Eskiden
