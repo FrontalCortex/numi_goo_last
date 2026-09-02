@@ -2522,6 +2522,15 @@ class MainActivity : AppCompatActivity() {
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
+        // Rozet veya rehber gösterileceği burada zaten kesinse (payload'lar dolu / rehber
+        // pending), asıl gösterim reklam kontrolü gibi asenkron bir gecikme yüzünden hemen
+        // gelmeyebilir — o gecikme boyunca harita tıklanabilir kalmasın diye erkenden kilitle.
+        // notifyMapVisibleAfterLessonClaim → enableMapTouchRouting bu kilidi gösterim
+        // netleştiğinde (ya da gösterilmeyecekse hemen) kaldırır.
+        if (badgePayloads.isNotEmpty() || badgeStringPayloads.isNotEmpty() || MarathonGuideStore.isPending(this)) {
+            (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                ?.lockTouchForPendingOverlay()
+        }
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
