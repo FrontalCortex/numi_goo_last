@@ -52,6 +52,18 @@ android {
                 keyPassword = keystoreProperties.getProperty("keyPassword")
             }
         }
+        // CI runner'larda ~/.android/debug.keystore varsayılan konumu ortam kurulumuna göre
+        // değişebiliyor (AGP her seferinde farklı, kayıtsız bir sertifika üretebiliyor →
+        // Google Sign-In DEVELOPER_ERROR). CI_DEBUG_KEYSTORE_PATH ortam değişkeni verildiğinde
+        // konumu varsaymadan doğrudan o dosyayı kullan; yoksa AGP'nin normal varsayılanı geçerli.
+        System.getenv("CI_DEBUG_KEYSTORE_PATH")?.let { ciDebugKeystorePath ->
+            getByName("debug") {
+                storeFile = file(ciDebugKeystorePath)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
     }
 
     buildTypes {

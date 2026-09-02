@@ -30,15 +30,18 @@ jobs:
 
       - name: Install fixed debug keystore
         # CI runner'ları her seferinde sıfırdan başladığı için Android Gradle Plugin,
-        # ~/.android/debug.keystore yoksa RASTGELE bir sertifika üretir. Bu sertifika
-        # Firebase/Google'da kayıtlı olmadığından Google Sign-In DEVELOPER_ERROR (10)
-        # verir. Burada, SHA-1'i Firebase konsoluna kayıtlı SABİT bir debug keystore
-        # kuruyoruz ki her build aynı imzayla çıksın.
+        # keystore yoksa RASTGELE bir sertifika üretir. Bu sertifika Firebase/Google'da
+        # kayıtlı olmadığından Google Sign-In DEVELOPER_ERROR (10) verir. ~/.android/
+        # varsayılan konumuna güvenmiyoruz (setup-android action'ı ANDROID_USER_HOME'u
+        # değiştirebiliyor, AGP o zaman farklı bir yerden okuyup yine rastgele üretiyor);
+        # bunun yerine dosyayı workspace içinde sabit bir yola koyup build.gradle.kts'e
+        # CI_DEBUG_KEYSTORE_PATH ile açıkça söylüyoruz.
         run: |
-          mkdir -p ~/.android
-          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > "${{ github.workspace }}/ci-debug.keystore"
 
       - name: Build debug APK
+        env:
+          CI_DEBUG_KEYSTORE_PATH: ${{ github.workspace }}/ci-debug.keystore
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
