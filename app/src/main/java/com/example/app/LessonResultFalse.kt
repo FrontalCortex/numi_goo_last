@@ -96,6 +96,7 @@ class LessonResultFalse : Fragment() {
                     GlobalLessonData.globalPartId,
                     GlobalValues.mapFragmentStepIndex,
                     item.currentStep,
+                    succsessRate,
                 )
             }
         }

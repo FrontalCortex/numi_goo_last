@@ -26,6 +26,8 @@ class ChestFragment : Fragment() {
     private lateinit var lessonItem : LessonItem
     private var recordScore: Int = 0
     private var lessonSuccessRate: Float = 0f
+    /** BlindingLessonFragment'ta soru ekranına giriş anından bu yana geçen süre — lessonSuccessRate finish-time bucket'ı için. */
+    private var questionElapsedMs: Long? = null
     private var pendingChestRecordBreakMission: Boolean = false
     private var pendingChestStarGainAmount: Int = 0
     /** Aynı anda yalnızca bir ödül akışı (çift tıklama engeli) */
@@ -147,6 +149,7 @@ class ChestFragment : Fragment() {
         lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
         recordScore = arguments?.getInt("toplamPuan", arguments?.getInt("dersPuani", 0) ?: 0) ?: 0
         lessonSuccessRate = arguments?.getFloat("successRate", 0f) ?: 0f
+        questionElapsedMs = arguments?.getLong("questionElapsedMs", -1L)?.takeIf { it >= 0L }
         pendingChestRecordBreakMission =
             arguments?.getBoolean(ChestResult.ARG_PENDING_CHEST_RECORD_BREAK_MISSION, false) == true
         //record()
@@ -546,6 +549,10 @@ class ChestFragment : Fragment() {
                         "BRANCH raceBusyLevel==1 (race update; finish uses snapshot raceBusy=${item.raceBusyLevel})",
                     )
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
+                        LessonSuccessRateRepository.recordItemFirstFinish(globalPartId, mapFragmentStepIndex, null)
+                    }
                     LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
                     unlockNextRaceItemSkippingCompleted(mapFragmentStepIndex)
                 }
@@ -555,6 +562,10 @@ class ChestFragment : Fragment() {
                         "BRANCH raceBusyLevel==2 (fast-forward; only self → TAMAMLANDI, next unchanged)",
                     )
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
+                        LessonSuccessRateRepository.recordItemFirstFinish(globalPartId, mapFragmentStepIndex, null)
+                    }
                     LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
                 }
             }
@@ -612,7 +623,7 @@ class ChestFragment : Fragment() {
                     if (!item.stepIsFinish && updatedItem.stepIsFinish &&
                         (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
                     ) {
-                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
                         val chestStars = if (updatedItem.type == LessonItem.TYPE_CHEST) {
                             ChestTypeProgressHelper.starCountForChestIcon(updatedItem.stepCupIcon)
                         } else {
@@ -653,7 +664,7 @@ class ChestFragment : Fragment() {
                         "BRANCH INTERMEDIATE currentStep ${item.currentStep}→${item.currentStep + 1} (stepIsFinish stays false)",
                     )
                     if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
-                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
                     }
                     val updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,
