@@ -1732,11 +1732,13 @@ class MapFragment : Fragment() {
         if (!isAdded || view == null) return
 
         // Rehber henüz gösterilmedi ama gösterilecek (isPending) — kilidi burada açıp
-        // 1.2-2.8 sn'lik retry penceresinde haritayı tıklanabilir bırakmayalım.
+        // 1.2-2.8 sn'lik retry penceresinde haritayı tıklanabilir bırakmayalım. Rozet
+        // Firestore kontrolü sürüyorsa da aynı sebeple kilit açılmasın (bkz.
+        // ChestFragment/ChestResult — GlobalValues.pendingBadgeFirestoreOperation).
         if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE ||
-            MarathonGuideStore.isPending(requireContext())
+            MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation
         ) {
-            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible or pending")
+            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending or badge check in flight")
             return
         }
 

@@ -237,6 +237,11 @@ class ChestResult : Fragment() {
                 if (shouldIncrementKarate || shouldIncrementTornado || shouldIncrementVolcano) {
                     val safeFm = parentFragmentManager
                     val safeActivity = activity as? MainActivity
+                    GlobalValues.pendingBadgeFirestoreOperation = true
+                    // Rozet kontrolü asenkron (Firestore round-trip) — sonucu netleşene kadar
+                    // haritayı erkenden kilitle (bkz. ChestFragment'teki aynı düzeltme).
+                    (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                        ?.lockTouchForPendingOverlay()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,
@@ -246,6 +251,9 @@ class ChestResult : Fragment() {
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
+                            GlobalValues.pendingBadgeFirestoreOperation = false
+                            (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                                ?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(R.id.abacusFragmentContainer) as? MissionChestRewardFragment
@@ -254,6 +262,8 @@ class ChestResult : Fragment() {
                                 } else if (safeActivity != null) {
                                     safeActivity.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
+                            } else {
+                                safeActivity?.tryShowPendingMarathonGuideOnMap("ChestResult.badgeFirestoreOnDone.noPayloads")
                             }
                         },
                     )

@@ -382,6 +382,14 @@ class ChestFragment : Fragment() {
                 val shouldIncrementVolcano = globalPartId == 8
                 if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons || shouldIncrementTornado || shouldIncrementVolcano) {
                     GlobalValues.pendingBadgeFirestoreOperation = true
+                    // Rozet kontrolü asenkron (Firestore round-trip) — sonucu netleşene kadar
+                    // haritayı erkenden kilitle; yoksa görev ilerlemesi animasyonu yoksa harita
+                    // rozet/rehber gösterilene kadar birkaç saniye tıklanabilir kalıyordu.
+                    fun findMain(): MainActivity? =
+                        (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
+                    fun findMap(main: MainActivity?): MapFragment? =
+                        main?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                    findMap(findMain())?.lockTouchForPendingOverlay()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = shouldIncrementDartProgress,
                         incrementBowlingBy = completedMissionCount,
@@ -393,22 +401,20 @@ class ChestFragment : Fragment() {
                         onDone = { payloads ->
                             GlobalValues.pendingBadgeFirestoreOperation = false
                             android.util.Log.d("DEBUG_BADGE", "ChestFragment onDone finished with payloads=${payloads.size}")
+                            val main = findMain()
+                            findMap(main)?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(safeHostContainerId) as? MissionChestRewardFragment
                                 if (missionFragment != null && missionFragment.isAdded) {
                                     android.util.Log.d("DEBUG_BADGE", "ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
                                     missionFragment.setBadgePayloads(stringPayloads)
-                                } else {
-                                    val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
-                                    if (main != null) {
-                                        android.util.Log.d("DEBUG_BADGE", "ChestFragment routing badge payloads directly to MainActivity queue")
-                                        main.enqueuePendingBadgePayloads(payloads, stringPayloads)
-                                    }
+                                } else if (main != null) {
+                                    android.util.Log.d("DEBUG_BADGE", "ChestFragment routing badge payloads directly to MainActivity queue")
+                                    main.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
                             } else {
                                 // Rozet yok: kupa yolu / maraton rehberi bu işlem yüzünden bekletilmiş olabilir, tekrar dene.
-                                val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
                                 main?.tryShowPendingMarathonGuideOnMap("ChestFragment.badgeFirestoreOnDone.noPayloads")
                             }
                         },
