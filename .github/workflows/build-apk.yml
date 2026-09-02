@@ -28,6 +28,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Install fixed debug keystore
+        # CI runner'ları her seferinde sıfırdan başladığı için Android Gradle Plugin,
+        # ~/.android/debug.keystore yoksa RASTGELE bir sertifika üretir. Bu sertifika
+        # Firebase/Google'da kayıtlı olmadığından Google Sign-In DEVELOPER_ERROR (10)
+        # verir. Burada, SHA-1'i Firebase konsoluna kayıtlı SABİT bir debug keystore
+        # kuruyoruz ki her build aynı imzayla çıksın.
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 
