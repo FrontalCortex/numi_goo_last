@@ -59,6 +59,14 @@
           }
         },
         {
+          "client_id": "1056334163260-4u912j5t993pfuijj26dbqivnk4nn65e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "9644234983005570c956dbb4cca1cd9d46d966a9"
+          }
+        },
+        {
           "client_id": "1056334163260-abse1l7m8g6evnvmi79nhah7sjs3st2d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
