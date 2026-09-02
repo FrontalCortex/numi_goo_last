@@ -210,7 +210,8 @@ class AbacusFragment : Fragment() {
     private var controlButtonListener: View.OnTouchListener? = null // Control button listener'ını saklamak için
     private var fabHintTouchAreaListener: View.OnClickListener? = null // Hint touch area listener'ını saklamak için
 
-    private lateinit var binding: FragmentAbacusBinding
+    private var _binding: FragmentAbacusBinding? = null
+    private val binding get() = _binding!!
     private var resultDialog: Dialog? = null
     private lateinit var abacusController: AbacusBeadController
     private var abacusMetricsInitialized = false
@@ -228,7 +229,7 @@ class AbacusFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentAbacusBinding.inflate(inflater, container, false)
+        _binding = FragmentAbacusBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -375,8 +376,15 @@ class AbacusFragment : Fragment() {
 
         if(lessonItem.abacusGuideNumber != null){
             if(lessonItem.currentStep == 1){
+                val guideNumber = lessonItem.abacusGuideNumber!!
+                if (guideNumber == 6 && !GuideShowTracker.canShow(requireContext(), guideNumber)) {
+                    // Bu rehber daha önce yeterince gösterildi, bir daha gösterilmesin.
+                    panelContent.visibility = View.GONE
+                    setGuideNavButtonsVisibility(View.GONE)
+                    return
+                }
                 val guideContents = SharedGuideHelper.getGuideContentsForNumber(
-                    guideNumber = lessonItem.abacusGuideNumber!!,
+                    guideNumber = guideNumber,
                     firstNumberText = firstNumberText,
                     secondNumberText = secondNumberText,
                     kontrolButton = controlButton,
@@ -396,13 +404,17 @@ class AbacusFragment : Fragment() {
                     binding.overlay.alpha = 0.01f // Neredeyse görünmez ama tıklanabilir
                     // Overlay'e tıklandığında hiçbir şey yapma (panel gelene kadar)
                     binding.overlay.setOnClickListener { /* Panel gelene kadar tıklamayı engelle */ }
-                    // Fragment açıldıktan 0.5 saniye sonra panel'i soldan kayarak göster
-                    Handler(Looper.getMainLooper()).postDelayed({
+                    // Fragment açıldıktan 0.5 saniye sonra panel'i soldan kayarak göster.
+                    // postDelayedSafely: view yok edilmişse geri çağrı sessizce atlanır.
+                    postDelayedSafely(500) {
                         // İlk adım gösterildikten sonra guide panel modunu aktif et
                         enableGuidePanelMode()
                         setGuideContents(guideContents)
                         showGuidePanelWithAnimation()
-                    }, 500)
+                        if (guideNumber == 6) {
+                            GuideShowTracker.recordShown(requireContext(), guideNumber)
+                        }
+                    }
 
                 }
             }
@@ -2831,7 +2843,7 @@ class AbacusFragment : Fragment() {
      * when the user navigates back to this fragment.
      */
     private fun applyCustomization() {
-        if (!::binding.isInitialized) return
+        if (_binding == null) return
         val ctx = requireContext()
         binding.abacusContainer.background =
             com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(ctx)
@@ -2846,13 +2858,19 @@ class AbacusFragment : Fragment() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+        // Bu fragment'in kendi handler'ına planlanmış tüm gecikmeli işleri iptal et;
+        // aksi halde view yok edildikten sonra tetiklenirler.
+        handler.removeCallbacksAndMessages(null)
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 
-    private fun playSound(soundResId: Int) {
+    private fun playSound(soundResId: Int, volume: Float = 1f) {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.setVolume(volume, volume)
         mediaPlayer?.start()
     }
 
@@ -2866,7 +2884,7 @@ class AbacusFragment : Fragment() {
 
         if (isCorrect) {
             // Doğru cevap durumu
-            playSound(R.raw.correct_answer_sound)
+            playSound(R.raw.correct_answer_sound, volume = 0.3f)
 
             correctAnswer++
 

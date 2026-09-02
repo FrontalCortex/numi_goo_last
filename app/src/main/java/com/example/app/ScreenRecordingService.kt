@@ -1,11 +1,14 @@
 package com.example.app
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.MediaRecorder
@@ -18,6 +21,8 @@ import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.IOException
 
@@ -75,14 +80,36 @@ class ScreenRecordingService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(NOTIFICATION_ID, createNotification())
+        // API 29+ tipli ön plan servisi. Android 14'ten itibaren mikrofon tipini yalnızca
+        // RECORD_AUDIO gerçekten verilmişse bildirebiliriz; aksi halde startForeground
+        // SecurityException atar. İzin yoksa sadece mediaProjection tipiyle başlıyoruz
+        // (setupMediaRecorder de bu durumda sesi devre dışı bırakıyor).
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+                if (hasAudioPermission()) {
+                    type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                }
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, createNotification(), type)
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification())
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "startForeground başarısız", e)
+            sendBroadcast(Intent(ACTION_RECORDING_FAILED))
+            stopSelf()
+            return START_NOT_STICKY
+        }
         maxDurationMs = intent.getLongExtra(EXTRA_MAX_DURATION_MS, MAX_DURATION_MS)
         val outDir = File(cacheDir, "question_videos").apply { mkdirs() }
         val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: "anon"
         val file = File(outDir, "${uid}_${System.currentTimeMillis()}.mp4")
         outputPath = file.absolutePath
         try {
+            // API 36'dan itibaren null dönebilir (kullanıcı izni geri çekerse); aşağıdaki
+            // catch bloğu kayıt başlatılamadı akışını zaten yürütüyor.
             val projection = (getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager).getMediaProjection(resultCode, data)
+                ?: throw IllegalStateException("MediaProjection alınamadı")
             mediaProjection = projection
             projectionCallback = object : MediaProjection.Callback() {
                 override fun onStop() {
@@ -126,6 +153,15 @@ class ScreenRecordingService : Service() {
         )
     }
 
+    /**
+     * RECORD_AUDIO verilmiş mi? Android 14'ten (API 34) itibaren mikrofonlu ön plan servisi
+     * yalnızca izin verilmişse başlatılabilir; verilmemişse sessiz kayda düşüyoruz ki
+     * özellik tamamen çökmek yerine çalışmaya devam etsin.
+     */
+    private fun hasAudioPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+
     private fun setupMediaRecorder(path: String) {
         val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder(this)
@@ -133,17 +169,22 @@ class ScreenRecordingService : Service() {
             @Suppress("DEPRECATION")
             MediaRecorder()
         }
+        val withAudio = hasAudioPermission()
         recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+        if (withAudio) recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+        if (withAudio) recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
         recorder.setVideoSize(1280, 720)
         recorder.setVideoFrameRate(30)
         recorder.setVideoEncodingBitRate(2_500_000)
-        recorder.setAudioChannels(1)
-        recorder.setAudioSamplingRate(44100)
-        recorder.setAudioEncodingBitRate(128000)
+        if (withAudio) {
+            recorder.setAudioChannels(1)
+            recorder.setAudioSamplingRate(44100)
+            recorder.setAudioEncodingBitRate(128000)
+        } else {
+            Log.w(TAG, "RECORD_AUDIO verilmedi; ekran kaydı sessiz yapılacak.")
+        }
         recorder.setOutputFile(path)
         try {
             recorder.prepare()

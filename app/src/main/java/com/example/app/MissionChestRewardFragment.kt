@@ -60,7 +60,7 @@ class MissionChestRewardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Hiçbir şey yapma
@@ -119,21 +119,36 @@ class MissionChestRewardFragment : Fragment() {
                 "CLAIM_MAP_RETURN",
                 "removeThenPrepare+finalize",
             )
-            if (isAdded) {
-                activityFm.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_right,
+            // FragmentTransaction'ın setCustomAnimations'ı burada güvenilir oynamıyor
+            // (resultFragmentContainer prepareMapReturnAfterLessonClaim içinde GONE'a alınıyor);
+            // bu yüzden view'ı elle kaydırıp animasyon bitince kaldırıyoruz.
+            var mapReturnHandled = false
+            val completeMapReturn: () -> Unit = {
+                if (!mapReturnHandled) {
+                    mapReturnHandled = true
+                    if (isAdded) {
+                        activityFm.beginTransaction()
+                            .remove(this@MissionChestRewardFragment)
+                            .commitNowAllowingStateLoss()
+                    }
+                    main?.prepareMapReturnAfterLessonClaim()
+                    android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
+                    main?.finalizeMapReturnAfterLessonClaim(
+                        caller = "MissionChestReward.continue",
+                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
                     )
-                    .remove(this@MissionChestRewardFragment)
-                    .commitNowAllowingStateLoss()
+                }
             }
-            main?.prepareMapReturnAfterLessonClaim()
-            android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
-            main?.finalizeMapReturnAfterLessonClaim(
-                caller = "MissionChestReward.continue",
-                badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
-            )
+            val rootView = binding.root
+            rootView.animate()
+                .translationX(rootView.width.toFloat())
+                .setDuration(300L)
+                .withEndAction { completeMapReturn() }
+                .start()
+            // Animasyon kesintiye uğrar da withEndAction hiç çalışmazsa (arka plana alma,
+            // view'ın penceresinden kopması vb.) haritaya dönüşü garantiye alan yedek.
+            android.os.Handler(android.os.Looper.getMainLooper())
+                .postDelayed({ completeMapReturn() }, 600L)
         }
     }
 
@@ -184,7 +199,7 @@ class MissionChestRewardFragment : Fragment() {
 
         if (weeklyQuests.isNotEmpty()) {
             binding.weeklySectionFrame.visibility = View.VISIBLE
-            binding.weeklySectionCountdown.text = formatWeeklyCountdownForReward(ctx, MissionsProgressStore.millisUntilWeeklyReset())
+            binding.weeklySectionCountdown.text = formatWeeklyCountdownForReward(ctx, MissionsProgressStore.millisUntilWeeklyReset(ctx))
             
             weeklyQuests.forEachIndexed { index, quest ->
                 if (index > 0) addDivider(binding.weeklyQuestsContainer)
@@ -224,7 +239,7 @@ class MissionChestRewardFragment : Fragment() {
 
         if (dailyQuests.isNotEmpty()) {
             binding.dailySectionFrame.visibility = View.VISIBLE
-            binding.dailySectionCountdown.text = ctx.getString(R.string.missions_hours_short, MissionsProgressStore.hoursUntilDailyReset())
+            binding.dailySectionCountdown.text = ctx.getString(R.string.missions_hours_short, MissionsProgressStore.hoursUntilDailyReset(ctx))
             
             dailyQuests.forEachIndexed { index, quest ->
                 if (index > 0) addDivider(binding.dailyQuestsContainer)
@@ -295,6 +310,9 @@ class MissionChestRewardFragment : Fragment() {
                 } else {
                     NewChestFragment.ChestRarity.COMMON
                 }
+
+                // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
+                ServerRewards.prefetchChest(startRarity.name)
 
                 val containerId = (requireView().parent as View).id
                 parentFragmentManager.beginTransaction()

@@ -163,14 +163,21 @@ class EnergyManager(private val context: Context) {
         val baseTime = maxOf(currentFullTime, now)
         val newFullTime = baseTime + amount * getEnergyRefreshMillis()
 
+        // İyimser yerel güncelleme (ders anında başlasın), ardından sunucu yetkili değeri yazar.
         persistFullTime(newFullTime)
+        requestSpendOnServer(amount)
         return true
     }
 
     /**
-     * Enerji ekle (örn. reklam sonrası bonus, refill).
+     * Can ekler.
+     *
+     * DİKKAT: Bunu doğrudan çağırmayın. Can kazanmanın tek meşru yolları sunucudadır:
+     * reklam için `claimAdEnergy` (AdMob SSV ile doğrulanır), anahtar karşılığı için
+     * `buyEnergyWithKeys`. Bu metot yalnızca sunucudan dönen sonucu yerel olarak
+     * yansıtmak için kullanılır; `energy_full_time` zaten istemci yazımına kapalıdır.
      */
-    fun addEnergy(amount: Int) {
+    private fun addEnergy(amount: Int) {
         if (amount <= 0) return
         if (isEnergyBlocked() || isInfiniteEnergy()) return
 
@@ -240,18 +247,40 @@ class EnergyManager(private val context: Context) {
         prefs.edit().putLong(KEY_ENERGY_FULL_TIME, timestamp).apply()
     }
 
-    /** Hem yerel hem Firestore'a yazar; UI ve timer'ı günceller. */
+    /** Yalnızca YEREL yazar ve UI'ı günceller. Sunucu yazımı ayrı CF çağrısıyla yapılır. */
     private fun persistFullTime(newFullTime: Long) {
         setFullTimeLocally(newFullTime)
-        saveToFirestore(newFullTime)
         energyUpdateCallback?.invoke(getCurrentEnergy())
         scheduleNextTick()
     }
 
-    private fun saveToFirestore(fullTime: Long) {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("users").document(uid)
-            .set(mapOf(FIELD_ENERGY_FULL_TIME to fullTime), SetOptions.merge())
+    /**
+     * Sunucudan dönen yetkili can durumunu yerel olarak benimser.
+     *
+     * `energy_full_time` firestore.rules ile istemci yazımına KAPALIDIR; can yalnızca
+     * spendEnergy / claimAdEnergy / buyEnergyWithKeys fonksiyonlarıyla değişir.
+     */
+    fun adoptServerFullTime(fullTime: Long) {
+        setFullTimeLocally(fullTime)
+        energyUpdateCallback?.invoke(getCurrentEnergy())
+        scheduleNextTick()
+    }
+
+    /** Sunucuya can harcamasını bildirir; sunucu yetkili değeri döndürür. */
+    private fun requestSpendOnServer(amount: Int) {
+        if (auth.currentUser == null) return
+        com.google.firebase.functions.FirebaseFunctions.getInstance()
+            .getHttpsCallable("spendEnergy")
+            .call(hashMapOf("amount" to amount))
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *> ?: return@addOnSuccessListener
+                (data["energyFullTime"] as? Number)?.let { adoptServerFullTime(it.toLong()) }
+            }
+            .addOnFailureListener { e ->
+                // Sunucu reddettiyse (ör. gerçekte can yokmuş) yerel iyimser değeri düzelt.
+                android.util.Log.w("EnergyManager", "spendEnergy başarısız", e)
+                syncFromFirestore()
+            }
     }
 
     private fun scheduleNextTick() {
@@ -289,8 +318,9 @@ class EnergyManager(private val context: Context) {
                     val serverLastUpdate = doc.getLong(LEGACY_FIELD_LAST_UPDATE)
 
                     val derivedFullTime = deriveFullTimeFromLegacy(serverEnergy, serverLastUpdate)
+                    // energy_full_time artık istemci yazımına kapalı; yerelde tut, sunucu
+                    // tarafı ilk spendEnergy/claimAdEnergy çağrısında yeni formata geçecek.
                     setFullTimeLocally(derivedFullTime)
-                    saveToFirestore(derivedFullTime) // Yeni formata geçir
                     energyUpdateCallback?.invoke(getCurrentEnergy())
                     scheduleNextTick()
                 }

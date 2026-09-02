@@ -16,7 +16,6 @@ import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAddFriendBinding
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 class AddFriendFragment : Fragment() {
@@ -225,7 +224,7 @@ class AddFriendFragment : Fragment() {
         }
 
         // Query 1: search by name
-        var nameQuery = firestore.collection("users")
+        var nameQuery = firestore.collection("publicProfiles")
             .whereGreaterThanOrEqualTo("name", query)
             .whereLessThanOrEqualTo("name", queryEnd)
             .limit(limitSize)
@@ -255,7 +254,7 @@ class AddFriendFragment : Fragment() {
             }
 
         // Query 2: search by userId code
-        var idQuery = firestore.collection("users")
+        var idQuery = firestore.collection("publicProfiles")
             .whereGreaterThanOrEqualTo("userId", query)
             .whereLessThanOrEqualTo("userId", queryEnd)
             .limit(limitSize)
@@ -302,15 +301,17 @@ class AddFriendFragment : Fragment() {
                     return@addOnSuccessListener
                 }
 
-                // Batch: write to both subcollections + increment counters
+                // Sadece takip kayıtlarını yaz. followersCount / followingCount artık
+                // istemciden yazılmıyor; sunucudaki onFollowerCreated / onFollowingCreated
+                // trigger'ları bu kayıtlara bakıp sayaçları güncelliyor. (Eskiden istemci
+                // doğrudan yazabildiği için herkes başkasının takipçi sayısını
+                // değiştirebiliyordu.)
                 val batch = firestore.batch()
 
                 val followerRef = firestore.collection("users").document(targetUid)
                     .collection("followers").document(myFirebaseUid)
                 val followingRef = firestore.collection("users").document(myFirebaseUid)
                     .collection("following").document(targetUid)
-                val targetDocRef = firestore.collection("users").document(targetUid)
-                val myDocRef = firestore.collection("users").document(myFirebaseUid)
 
                 batch.set(followerRef, mapOf(
                     "userId" to currentUserId,
@@ -322,8 +323,6 @@ class AddFriendFragment : Fragment() {
                     "name" to result.name,
                     "followedAt" to Timestamp.now()
                 ))
-                batch.update(targetDocRef, "followersCount", FieldValue.increment(1))
-                batch.update(myDocRef, "followingCount", FieldValue.increment(1))
 
                 batch.commit()
                     .addOnSuccessListener {

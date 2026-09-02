@@ -25,7 +25,8 @@ import com.example.app.model.GuidePanelData
 import com.example.app.model.LessonItem
 
 class MapFragment : Fragment() {
-    private lateinit var binding: FragmentMapBinding
+    private var _binding: FragmentMapBinding? = null
+    private val binding get() = _binding!!
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
     private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
 
@@ -1143,7 +1144,7 @@ class MapFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentMapBinding.inflate(inflater, container, false)
+        _binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -1383,24 +1384,30 @@ class MapFragment : Fragment() {
         }
 
         marathonGuidePresentationScheduled = true
-        Log.i(MarathonGuideStore.LOG_TAG, "show SCHEDULED | caller=$caller delay=1000ms")
+        Log.i(MarathonGuideStore.LOG_TAG, "show SCHEDULED | caller=$caller")
         disableMainActivityViews()
         disableMapFragmentViews()
-        view?.postDelayed({
+        // Önceden burada 1000ms sabit bir bekleme vardı; asıl amacı reklam/rozet gibi başka
+        // overlay'lerle çakışmayı önlemekti ama marathonGuideMapBlockReason() reklam kontrolünü
+        // (adCheckForBadgeInProgress) hesaba katmıyordu. O kontrol artık eklendi (bkz.
+        // MainActivity.marathonGuideMapBlockReason) ve reklam akışı bittiğinde zaten kendi retry'ını
+        // (notifyVisibleAfterOverlayDismiss → maybeShowPendingMarathonGuide) tetikliyor; bu yüzden
+        // burada yapay bir süre beklemeye gerek kalmadı.
+        view?.post {
             marathonGuidePresentationScheduled = false
             if (!isAdded || view == null) {
                 Log.w(
                     MarathonGuideStore.LOG_TAG,
                     "show ABORT | caller=$caller reason=fragment_gone_after_delay",
                 )
-                return@postDelayed
+                return@post
             }
             if (!MarathonGuideStore.isPending(ctx)) {
                 Log.w(
                     MarathonGuideStore.LOG_TAG,
                     "show ABORT | caller=$caller reason=pending_cleared_during_delay",
                 )
-                return@postDelayed
+                return@post
             }
             val blockAfterDelay = main.marathonGuideMapBlockReason()
             if (blockAfterDelay != null) {
@@ -1408,7 +1415,7 @@ class MapFragment : Fragment() {
                     MarathonGuideStore.LOG_TAG,
                     "show ABORT | caller=$caller reason=map_blocked_after_delay block=$blockAfterDelay",
                 )
-                return@postDelayed
+                return@post
             }
             LessonProgressDiag.logItem(
                 "MapFragment.maybeShowGuide",
@@ -1420,7 +1427,7 @@ class MapFragment : Fragment() {
             Log.i(MarathonGuideStore.LOG_TAG, "show NOW | caller=$caller → showGuidePanel()")
             showGuidePanel()
             MarathonGuideStore.markShown(ctx)
-        }, 1000)
+        }
     }
     
     private fun disableMainActivityViews() {
@@ -1619,6 +1626,8 @@ class MapFragment : Fragment() {
         super.onDestroyView()
         // Verileri kaydet
         GlobalLessonData.saveToPreferences(requireContext())
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 
     private fun setupRecyclerView() {

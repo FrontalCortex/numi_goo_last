@@ -14,7 +14,8 @@ import com.example.app.databinding.FragmentCupBinding
 import com.example.app.model.LessonItem
 
 class CupFragment : Fragment() {
-    private lateinit var binding: FragmentCupBinding
+    private var _binding: FragmentCupBinding? = null
+    private val binding get() = _binding!!
     private var targetTime: String = ""
     private var dersPuani: Int = 0
     private var toplamPuan: Int = 0
@@ -30,7 +31,7 @@ class CupFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentCupBinding.inflate(inflater, container, false)
+        _binding = FragmentCupBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -170,4 +171,10 @@ class CupFragment : Fragment() {
         alphaAnimator.start()
     }
 
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
+    }
 }

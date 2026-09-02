@@ -277,6 +277,13 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         if (requestCode == RC_GOOGLE_SIGN_IN) {
             // Kullanıcı hesap seçim ekranından geri döndüyse ve iptal ettiyse:
             if (resultCode != RESULT_OK || data == null) {
+                // Play Services, imza/paket uyuşmazlığında da "iptal" gibi döner. Gerçek nedeni
+                // ApiException'ın durum kodundan oku: 10 = DEVELOPER_ERROR (SHA-1 eşleşmiyor),
+                // 12501 = kullanıcı gerçekten iptal etti, 7 = ağ hatası.
+                android.util.Log.w(
+                    "LoginActivity",
+                    "Google Sign-In tamamlanmadı: ${googleSignInFailureReason(data)}"
+                )
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
                 return

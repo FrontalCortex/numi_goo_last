@@ -246,6 +246,9 @@ class BadgeFragment : Fragment() {
             sharedState?.value ?: defaultRewardAmountForMode(initialMode)
         }
         isCelebrationFlow = arguments?.getBoolean(ARG_CELEBRATE_LEVEL_UP, false) == true
+        if (isCelebrationFlow) {
+            BadgeSoundPlayer.preload(requireContext())
+        }
         configureBackPressBehavior()
 
         if (isCelebrationFlow) {
@@ -1648,6 +1651,7 @@ class BadgeFragment : Fragment() {
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     Log.d(TAG, "celebration progress finished -> applying new colors and starting animations")
+                    BadgeSoundPlayer.play(requireContext())
                     val doneText = b.badgeLockedProgressText
                     doneText.text = "Tamamlandı !"
                     applyMissionProgressOverlay(

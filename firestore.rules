@@ -1,81 +1,186 @@
 rules_version = '2';
-// Update account deletion rules
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: İstek atan kişinin öğretmen onaylı olup olmadığını kontrol eder
-    function isTeacher() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teacherApproved == true;
+    // ── Yardımcılar ────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Kullanıcılar: sadece giriş yapmış kullanıcılar okuyabilir; yazma/silme sadece kendi dokümanına
+    function isSelf(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // İstek atan kişi onaylı bir öğretmen mi?
+    // NOT: Öğretmen yetkilerinin kendisi (soruları okuma, kısıtlama koyma) doğrudur ve
+    // korunmuştur. Kapatılan şey, sıradan bir kullanıcının kendini öğretmen İLAN EDEBİLMESİYDİ:
+    // `teacherApproved` artık istemci tarafından ne create ne update ile yazılabiliyor.
+    function isTeacher() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teacherApproved == true;
+    }
+
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // ── Kullanıcılar ───────────────────────────────────────────────────────
+    //
+    // OKUMA: Yalnızca kişinin kendisi ve onaylı öğretmenler.
+    //   Eskiden `if request.auth != null` idi — yani ücretsiz açılan tek bir hesapla tüm
+    //   users koleksiyonu (çocukların e-postaları, doğum yılları, FCM token'ları, bakiyeleri)
+    //   dökülebiliyordu. Sosyal özelliklerin ihtiyacı olan herkese açık alanlar artık
+    //   ayrı `publicProfiles` koleksiyonunda tutuluyor.
+    //
+    // OLUŞTURMA: Alan beyaz listesi + sabit başlangıç bakiyesi.
+    //   Eskiden create'te HİÇBİR alan kısıtlaması yoktu; kullanıcı kendi dokümanını silip
+    //   `currency: 99999999, teacherApproved: true, plan: "Premium"` ile yeniden yaratarak
+    //   updateUserWallet'taki tüm sunucu tarafı ekonomi korumasını atlayabiliyordu.
+    //
+    // SİLME: Hesap silme akışı (AccountDeletionHelper) buna ihtiyaç duyduğu için açık.
+    //   Artık zararsız: silip yeniden oluşturmak bakiyeyi sıfırlar, yükseltmez.
     match /users/{userId} {
-      allow read: if request.auth != null; // Yalnızca giriş yapmış kullanıcılar okuyabilir (GDPR/KVKK koruması) 
-      allow create, delete: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (
-        (request.auth.uid == userId && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keys', 'currency', 'role', 'teacherApproved', 'plan', 'userId', 'uid', 'email', 'createdAt'])) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount']) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount']) ||
-        (isTeacher() && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+
+      // Bu alanlara istemci HİÇBİR ZAMAN (ne create ne update) dokunamaz.
+      function serverOnlyFields() {
+        return [
+          'keys', 'currency',            // cüzdan → yalnız updateUserWallet / satın alma CF'leri
+          'walletGuard', 'rewardGuard',  // ödül tavanı sayaçları
+          'energy_full_time',            // can → yalnız spendEnergy/claimAdEnergy/buyEnergyWithKeys
+          'teacherApproved',             // öğretmen onayı → yalnız admin
+          'plan', 'planExpiresAt', 'planProductId', // yalnız doğrulanmış Play aboneliği
+          'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
           'restrictedAt', 'restrictedByUid'
-        ]))
-      );
+        ];
+      }
+
+      allow read: if isSelf(userId) || isTeacher();
+
+      allow create: if isSelf(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.role in ['STUDENT', 'TEACHER']
+        // Başlangıç bakiyesi sabittir (UserWalletFirestore.registrationWalletFields).
+        && request.resource.data.keys == 1
+        && request.resource.data.currency == 0
+        // keys/currency yukarıda değeriyle sabitlendi; geri kalan sunucu alanları yasak.
+        && !request.resource.data.keys().hasAny([
+             'walletGuard', 'rewardGuard', 'energy_full_time', 'teacherApproved',
+             'plan', 'planExpiresAt', 'planProductId',
+             'followersCount', 'followingCount',
+             'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
+             'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
+             'restrictedAt', 'restrictedByUid'
+           ])
+        // birthYear yalnızca KAYIT ANINDA yazılabilir (reklam yaş koruması bu alana bakıyor);
+        // sonradan değiştirilemez, bkz. aşağıdaki update kuralı.
+        && (!('birthYear' in request.resource.data)
+            || (request.resource.data.birthYear is int
+                && request.resource.data.birthYear > 1900
+                && request.resource.data.birthYear < 2100));
+
+      // birthYear reklam yaş korumasını (TFCD/TFUA) belirlediği için BİR KEZ yazılabilir,
+      // sonra DEĞİŞTİRİLEMEZ. Aksi halde çocuk, doğum yılını büyüterek çocuk korumasından
+      // çıkabilirdi. (UserInfoFragment, Google ile giren kullanıcı için bunu kayıt öncesi
+      // bir kez yazıyor; OTP akışında ise sunucu yazıyor.)
+      function birthYearSetOnce() {
+        return !changed().hasAny(['birthYear'])
+          || (!('birthYear' in resource.data)
+              && request.resource.data.birthYear is int
+              && request.resource.data.birthYear > 1900
+              && request.resource.data.birthYear < 2100);
+      }
+
+      allow update: if
+        // Kullanıcının kendisi: sunucuya ait alanlara dokunamaz.
+        (isSelf(userId)
+          && !changed().hasAny(serverOnlyFields())
+          && !changed().hasAny(['userId', 'uid', 'email', 'createdAt', 'role'])
+          && birthYearSetOnce())
+        // Onaylı öğretmen: yalnızca kısıtlama/yasaklama alanları.
+        || (isTeacher() && changed().hasOnly([
+             'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
+             'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
+             'restrictedAt', 'restrictedByUid'
+           ]));
+
+      allow delete: if isSelf(userId);
     }
 
-    match /friendRequests/{requestId} {
-      allow read, write: if request.auth != null; // Giriş yapmış herkes istek okuyup yazabilir
+    // ── Herkese açık profiller ─────────────────────────────────────────────
+    // Arkadaş arama, profil görüntüleme ve takipçi listeleri bu koleksiyonu okur.
+    // İçeriği yalnızca `mirrorPublicProfile` Cloud Function trigger'ı yazar (Admin SDK
+    // kuralları atlar); istemci yazımı tamamen kapalıdır. Böylece `users` dokümanındaki
+    // hassas alanlar hiçbir zaman başkasına görünmez.
+    match /publicProfiles/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
-    // sadece ilgili kullanıcı tarafından okunup yazılabilir.
     match /users/{userId}/{subcollection}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isSelf(userId);
     }
 
-    // Rozet, Kupa Yolu ve Ders İlerlemesi verileri: giriş yapmış herkes okuyabilir (başkasının profilini görüntülemek için)
+    // Rozet, Kupa Yolu ve Ders İlerlemesi: başkasının profilini görüntülemek için okunabilir.
+    // Bu dokümanlar kişisel veri içermez (yalnızca ilerleme sayaçları).
     match /users/{userId}/badgeProgress/{doc} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
     match /users/{userId}/cupWayProgress/{doc} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
     match /users/{userId}/cupHistory/{doc} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
     match /users/{userId}/lessonProgress/{doc} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
-    // Ders ilerlemesi artık partId dokümanının altında items/{position} alt koleksiyonunda tutulur
-    // (tek bir JSON-string yerine her item ayrı doküman). Görünürlük üstteki lessonProgress/{doc} ile aynı.
     match /users/{userId}/lessonProgress/{partId}/items/{itemId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
     match /users/{userId}/abacusCustomization/{doc} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
     }
 
-    // Öğretmen davet kodları: kayıt sırasında doğrulama için okuma ve işaretleme için update açık.
-    // Oluşturma sadece admin (Cloud Function) tarafından yapılır. Silme tamamen kapalı.
+    // ── Takip sistemi ──────────────────────────────────────────────────────
+    // Sayaçlar (followersCount / followingCount) artık İSTEMCİ TARAFINDAN YAZILMIYOR.
+    // Eskiden `users` update kuralında uid kontrolü olmayan iki dal vardı ve giriş yapan
+    // herkes başkasının takipçi sayısını istediği değere çekebiliyordu. Şimdi sayaçları
+    // yalnızca bu alt koleksiyonlara bağlı Cloud Function trigger'ları güncelliyor.
+    match /users/{targetUserId}/followers/{followerUid} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(followerUid);
+    }
+
+    match /users/{ownerUserId}/following/{followingUid} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(ownerUserId) || isSelf(followingUid);
+    }
+
+    // ── Kayıt / doğrulama ──────────────────────────────────────────────────
+    // Öğretmen davet kodları (mevcut davranış korundu).
     match /teacherInvites/{code} {
-      allow read, update: if request.auth != null;
+      allow read, update: if isSignedIn();
       allow create, delete: if false;
     }
 
-    // Öğrenci doğrulama kodları: unauthenticated kullanıcılar OTP doğrulama için okuyup update edebilir
     match /studentVerificationCodes/{code} {
-      allow read, write: if false; // Sadece Cloud Functions erişebilir
+      allow read, write: if false; // Sadece Cloud Functions
     }
 
-    // Bekleyen kayıtlar (e-posta doğrulama): unauthenticated kullanıcılar kayıt için okuyup yazabilir
+    // Bekleyen kayıtlar: TAMAMEN KAPALI.
+    //   Eskiden `allow write: if true` idi ve istemci buraya DÜZ METİN ŞİFRE yazıyordu.
+    //   Kimliği doğrulanmamış herkes başkasının kayıt dokümanını kendi şifresiyle ezip
+    //   hesabı devralabiliyor, ayrıca sınırsız doküman yazıp maliyet çıkarabiliyordu.
+    //   Kayıt bilgileri artık verifyRegistrationCode çağrısının gövdesinde gidiyor ve
+    //   hiçbir yere yazılmıyor.
     match /pendingRegistrations/{docId} {
-      allow write: if true; // Kayıt başlatılırken ve tekrar denendiğinde istemci yazabilsin
-      allow read: if false; // Sadece Cloud Functions okuyabilir (şifre güvenliği)
+      allow read, write: if false;
     }
 
-    // OTP rate limit ve yanlış deneme sayacı: sadece Cloud Functions (Admin SDK) yazar, istemci erişemez
     match /otpRateLimits/{docId} {
       allow read, write: if false;
     }
@@ -83,51 +188,48 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Sorular: Sadece sorunun sahibi ve onaylı öğretmenler okuyup güncelleyebilir
+    // Uygulamada hiçbir yerden kullanılmayan eski koleksiyon. Eskiden giriş yapan herkes
+    // tüm istekleri okuyup silebiliyordu; kapatıldı.
+    match /friendRequests/{requestId} {
+      allow read, write: if false;
+    }
+
+    // ── Sorular ve mesajlar ────────────────────────────────────────────────
     match /questions/{questionId} {
-      // Okuma ve Güncelleme: Soruyu soran öğrenci VEYA öğretmen
-      allow read, update: if request.auth != null && (resource.data.studentUid == request.auth.uid || isTeacher());
-      // Oluşturma: Herkes
-      allow create: if request.auth != null;
-      // Silme: Sadece sorunun sahibi
-      allow delete: if request.auth != null && resource.data.studentUid == request.auth.uid;
-      
-      // Mesajlar Alt Koleksiyonu
+      allow read, update: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isTeacher());
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.studentUid == request.auth.uid;
+
       match /messages/{messageId} {
-        // Okuma, Yazma, Güncelleme: Ana sorunun sahibi öğrenci VEYA öğretmenler
-        allow read, create, update: if request.auth != null && (
-          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid || 
+        allow read, create, update: if isSignedIn() && (
+          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid ||
           isTeacher()
         );
-        // Silme: SADECE mesajı bizzat gönderen kişi
-        allow delete: if request.auth != null && resource.data.senderUid == request.auth.uid;
+        allow delete: if isSignedIn() && resource.data.senderUid == request.auth.uid;
       }
     }
 
-    // Bildirilen mesajlar: giriş yapmış kullanıcı rapor ekleyebilir; kendi raporunu veya onaylı öğretmen tümünü okuyabilir/işleyebilir
+    // ── Bildirilen mesajlar ────────────────────────────────────────────────
     match /messageReports/{reportId} {
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
         && request.resource.data.status == 'pending'
         && request.resource.data.reportedByUid == request.auth.uid;
-      allow read: if request.auth != null && (
+      allow read: if isSignedIn() && (
         resource.data.reportedByUid == request.auth.uid ||
         isTeacher()
       );
-      // Onaylı öğretmen: sadece pending -> dismissed/action_taken geçişi, sadece işlem alanlarını değiştirebilir.
-      allow update: if request.auth != null && isTeacher()
+      allow update: if isTeacher()
         && resource.data.status == 'pending'
         && request.resource.data.status in ['dismissed', 'action_taken']
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'handledByUid', 'handledAt'])
+        && changed().hasOnly(['status', 'handledByUid', 'handledAt'])
         && request.resource.data.handledByUid == request.auth.uid;
       allow delete: if false;
     }
 
-    // Tahta üst dokümanı (meta): sezon sonu CF sorgusu için partId / lessonIndex / season (+ isteğe bağlı titleUnit).
-    // Not: [FieldValue.serverTimestamp] yazımında kurallar `updatedAt is timestamp` ile doğrulanamaz; yalnızca alanın varlığını şart koşuyoruz.
+    // ── Liderlik tabloları ─────────────────────────────────────────────────
     match /lessonLeaderboards/{leaderboardId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.resource.data.partId is number
         && request.resource.data.lessonIndex is number
         && request.resource.data.season is number
@@ -138,66 +240,43 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Ders liderlik tablosu girişleri: giriş yapmış herkes okur.
-    // Yazma işlemleri YALNIZCA sunucu taraflı `submitLeaderboardScore` Cloud Function üzerinden yapılır.
-    // (Admin SDK kuralları bypass ettiğinden direkt CF yazımı çalışır.)
-    // İstemciden doğrudan yazma kapalıdır → cihaz saati manipülasyonuna karşı koruma.
+    // Girişler yalnızca submitLeaderboardScore Cloud Function üzerinden yazılır.
     match /lessonLeaderboards/{leaderboardId}/entries/{userId} {
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
       allow write: if false;
     }
 
-    // Anket panelleri (Ders sonu ve Tutorial sonu)
+    // ── Anketler / istatistikler ───────────────────────────────────────────
     match /questionPanel/{document=**} {
-      // Güvenlik: Okuma ve silme yasak! Sadece yeni oy/cevap ekleme (create) ve sayacı artırma (update) serbest.
-      allow create, update: if request.auth != null;
+      allow create, update: if isSignedIn();
       allow read, delete: if false;
     }
     match /questionPanelTutorial/{document=**} {
-      allow create, update: if request.auth != null;
+      allow create, update: if isSignedIn();
       allow read, delete: if false;
     }
 
-    // Geri bildirimler
     match /feedback/{feedbackId} {
-      allow create: if request.auth != null;
+      allow create: if isSignedIn();
     }
     match /ratingFeedback/{ratingId} {
-      // Sadece kendi UID'si ile eşleşen dokümana yazabilir (Spam Koruması: 1 Kullanıcı = 1 Yorum)
-      allow create, update: if request.auth != null && request.auth.uid == ratingId;
+      allow create, update: if isSelf(ratingId);
       allow read, delete: if false;
     }
 
-    // Uygulama istatistikleri (Nereden duydunuz sayaçları)
-    // Okuma kapalı → istemciler istatistik verisini göremez. Yazma sadece giriş yapmış kullanıcılara açık.
     match /appStatistics/{docId} {
-      allow create, update: if request.auth != null;
+      allow create, update: if isSignedIn();
       allow read, delete: if false;
     }
 
-    // Günlük Soru Başarı Oranları
     match /successRate/{document=**} {
-      allow read, create, update: if request.auth != null;
+      allow read, create, update: if isSignedIn();
       allow delete: if false;
     }
 
-    // Yukarıdakilerin dışındaki tüm path'ler reddedilir (ileride meetingRequests vb. eklenebilir)
+    // Yukarıdakilerin dışındaki tüm path'ler reddedilir.
     match /{document=**} {
       allow read, write: if false;
-    }
-
-    // Takip sistemi: takipçi alt koleksiyonu
-    // Bir kullanıcıyı takip etmek = o kullanıcının followers/ koleksiyonuna kendi UID'ini yazma
-    match /users/{targetUserId}/followers/{followerUid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == followerUid;
-    }
-
-    // Takip sistemi: takip edilenler alt koleksiyonu
-    // Birini takip etmek = kendi following/ koleksiyonuna hedef UID'i yazma
-    match /users/{ownerUserId}/following/{followingUid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.uid == ownerUserId || request.auth.uid == followingUid);
     }
   }
 }

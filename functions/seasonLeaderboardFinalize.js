@@ -200,8 +200,16 @@ async function finalizeSeason(db, season) {
   for (const [uid, inc] of byUid) {
     if (!uid) continue;
     if (uid.startsWith('seed_lb_')) continue;
-    const stateRef = db.collection('users').doc(uid).collection('badgeProgress').doc('state');
+    const userRef = db.collection('users').doc(uid);
+    const stateRef = userRef.collection('badgeProgress').doc('state');
     try {
+      // Hesabını sezon bitmeden/finalize öncesi silmiş kullanıcıya ödül yazıp
+      // users/{uid}/badgeProgress/state dokümanını hayalet olarak yeniden oluşturmamak için kontrol.
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) {
+        console.log(`finalizeSeasonLeaderboardMedals: uid=${uid} kullanıcısı artık yok, ödül atlanıyor`);
+        continue;
+      }
       await db.runTransaction(async (t) => {
         const stateSnap = await t.get(stateRef);
         const d = stateSnap.data() || {};

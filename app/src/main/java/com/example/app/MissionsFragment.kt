@@ -47,8 +47,8 @@ class MissionsFragment : Fragment() {
         val ctx = context ?: return
 
         val snap = MissionsProgressStore.getSnapshot(ctx)
-        val dailyHours = MissionsProgressStore.hoursUntilDailyReset()
-        val weeklyMs = MissionsProgressStore.millisUntilWeeklyReset()
+        val dailyHours = MissionsProgressStore.hoursUntilDailyReset(ctx)
+        val weeklyMs = MissionsProgressStore.millisUntilWeeklyReset(ctx)
         val weeklyLabel = formatWeeklyCountdown(weeklyMs)
 
         b.weeklySectionCountdown.text = weeklyLabel
@@ -202,6 +202,9 @@ class MissionsFragment : Fragment() {
         } else {
             NewChestFragment.ChestRarity.COMMON
         }
+
+        // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
+        ServerRewards.prefetchChest(startRarity.name)
 
         val mainActivity = activity as? MainActivity
         val containerId = mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.id ?: R.id.fragmentContainerID

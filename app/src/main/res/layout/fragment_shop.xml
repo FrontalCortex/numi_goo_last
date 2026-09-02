@@ -484,6 +484,7 @@
                             android:layout_marginBottom="12dp" />
 
                         <TextView
+                            android:id="@+id/shopProPriceText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="aylık ₺19,99"
@@ -604,6 +605,13 @@
             </androidx.cardview.widget.CardView>
 
             <!-- ── Section: Altın ──────────────────────────────────────── -->
+            <!--
+                DİKKAT: Aşağıdaki altın/anahtar kartlarındaki ₺ fiyatları geçici olarak sabit
+                yazılmıştır. Google Play Billing bağlandığında fiyatlar ProductDetails üzerinden
+                (getFormattedPrice) okunmalıdır — Play fiyatı kullanıcının ülkesine ve para
+                birimine göre yerelleştirir, sabit metin yanlış fiyat gösterir.
+                Aynı uyarı yukarıdaki Pro kartının "aylık ₺19,99" etiketi için de geçerlidir.
+            -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -665,6 +673,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopGoldPrice1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺20,99"
@@ -721,6 +730,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopGoldPrice2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺99,99"
@@ -777,6 +787,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopGoldPrice3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺204,99"
@@ -852,6 +863,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopKeyPrice1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺20,99"
@@ -908,6 +920,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopKeyPrice2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺99,99"
@@ -964,6 +977,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/shopKeyPrice3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₺204,99"

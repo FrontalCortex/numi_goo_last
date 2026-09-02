@@ -72,6 +72,54 @@
                     android:checked="true" />
             </LinearLayout>
 
+            <!-- Abaküs Ses Seçenekleri Satırı: diğer satırlarla aynı görünüm, sağda Switch yerine
+                 tıklanınca 4 ses seçeneğinin listelendiği bir seçim paneli açan buton var. -->
+            <LinearLayout
+                android:id="@+id/rowAbacusSoundPicker"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/volume_up_ic"
+                    app:tint="#607887" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Abaküs ses seçenekleri"
+                    android:textColor="@color/dark_text"
+                    android:textSize="18sp"
+                    android:fontFamily="@font/font_regular"
+                    android:layout_marginStart="16dp" />
+
+                <TextView
+                    android:id="@+id/textAbacusSoundCurrent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ses 1"
+                    android:textColor="@color/dark_text_secondary"
+                    android:textSize="15sp"
+                    android:fontFamily="@font/font_regular"
+                    android:layout_marginEnd="8dp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:scaleX="-1"
+                    android:src="@drawable/ic_back_arrow"
+                    app:tint="#607887" />
+            </LinearLayout>
+
             <!-- Eğitim Seslendirme Satırı -->
             <LinearLayout
                 android:layout_width="match_parent"

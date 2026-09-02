@@ -47,13 +47,18 @@
 
         <!-- Toplam Puan -->
         <LinearLayout
+            android:id="@+id/totalScoreBox"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
             android:orientation="vertical"
             android:background="@drawable/result_box_yellow"
             android:gravity="center"
-            android:layout_marginEnd="8dp">
+            android:layout_marginEnd="8dp"
+            android:visibility="invisible"
+            android:alpha="0"
+            android:scaleX="0.75"
+            android:scaleY="0.75">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -73,6 +78,7 @@
 
         <!-- Başarı Oranı -->
         <LinearLayout
+            android:id="@+id/successRateBox"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
@@ -80,7 +86,11 @@
             android:background="@drawable/result_box_green"
             android:gravity="center"
             android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp">
+            android:layout_marginEnd="8dp"
+            android:visibility="invisible"
+            android:alpha="0"
+            android:scaleX="0.75"
+            android:scaleY="0.75">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -117,5 +127,7 @@
         android:layout_marginBottom="20dp"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:visibility="invisible"
+        android:alpha="0"
         app:cornerRadius="15dp"/>
 </LinearLayout>

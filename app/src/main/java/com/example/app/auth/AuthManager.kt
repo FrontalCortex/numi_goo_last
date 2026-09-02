@@ -30,7 +30,42 @@ class AuthManager {
         const val ROLE_STUDENT = "STUDENT"
         const val ROLE_TEACHER = "TEACHER"
         private const val PREFS_NAME = "auth_prefs"
+
+        /** OTP gönderim amacı — hedef uid'i sunucu bu bilgiye göre kendisi çözer. */
+        const val OTP_PURPOSE_REGISTER = "register"
+        const val OTP_PURPOSE_LOGIN = "login"
+        const val OTP_PURPOSE_TEACHER_RESET = "teacher_reset"
+
+        /**
+         * Kayıt sırasında girilen ad/şifre/rol bilgisini, kod doğrulama adımına kadar
+         * SADECE BELLEKTE taşır.
+         *
+         * Eskiden bu bilgiler `pendingRegistrations/{email}` dokümanına düz metin şifreyle
+         * yazılıyordu ve o koleksiyona kimliksiz yazma açıktı. Artık hiçbir yere yazılmıyor;
+         * doğrulama adımında `verifyRegistrationCode` çağrısının gövdesinde gidiyor.
+         * Process ölürse kayıt yarım kalır — kullanıcı yeni kod isteyip baştan girer.
+         */
+        private val pendingRegistrations = mutableMapOf<String, PendingRegistration>()
+
+        fun rememberPendingRegistration(
+            email: String,
+            name: String,
+            password: String,
+            role: String,
+        ) {
+            pendingRegistrations[email.trim().lowercase()] =
+                PendingRegistration(name = name, password = password, role = role)
+        }
+
+        private fun consumePendingRegistration(email: String): PendingRegistration? =
+            pendingRegistrations.remove(email.trim().lowercase())
     }
+
+    private data class PendingRegistration(
+        val name: String,
+        val password: String,
+        val role: String,
+    )
     
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -74,21 +109,21 @@ class AuthManager {
             }
     }
 
-    /** Öğretmen şifre sıfırlama: e-postayı TEACHER olarak doğrular, OTP gönderir (sendStudentVerificationCode). */
+    /**
+     * Öğretmen şifre sıfırlama: OTP gönderir.
+     *
+     * E-postanın TEACHER rolüne ait olduğu kontrolü artık sunucuda da yapılıyor
+     * (purpose = teacher_reset); buradaki ön kontrol yalnızca hata mesajını
+     * kullanıcıya daha hızlı göstermek için duruyor.
+     */
     fun sendTeacherPasswordResetCode(email: String, callback: (Boolean, String?) -> Unit) {
         val trimmed = email.trim().lowercase()
         if (trimmed.isEmpty()) {
             callback(false, "E-posta adresi girin")
             return
         }
-        isEmailRegistered(trimmed) { registered, uid, role ->
-            if (!registered || role != ROLE_TEACHER || uid.isNullOrEmpty()) {
-                callback(false, "E-posta hatalı.")
-                return@isEmailRegistered
-            }
-            sendStudentVerificationCode(trimmed, uid) { success, error ->
-                callback(success, error)
-            }
+        sendStudentVerificationCode(trimmed, OTP_PURPOSE_TEACHER_RESET) { success, error ->
+            callback(success, error)
         }
     }
 
@@ -244,47 +279,51 @@ class AuthManager {
             }
     }
 
-    /** Giriş kodu gönderir (uid Cloud Function'dan alındığında Firestore okumaya gerek yok) */
+    /**
+     * Giriş kodu gönderir.
+     *
+     * [uid] parametresi artık kullanılmıyor — sunucu hedef hesabı e-postadan kendisi
+     * buluyor. Çağrı yerlerini bozmamak için imza korundu.
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun sendLoginCode(email: String, uid: String, callback: (Boolean, String?) -> Unit) {
-        sendStudentVerificationCode(email, uid, callback)
+        sendStudentVerificationCode(email.trim().lowercase(), OTP_PURPOSE_LOGIN, callback)
     }
 
-    /** Sadece öğrenci girişi için kod gönderir. Öğretmen e-postasına kod gönderilmez. */
+    /**
+     * Sadece öğrenci girişi için kod gönderir. Öğretmen e-postasına kod gönderilmez;
+     * bu kural sunucuda da uygulanıyor (purpose = login → rol STUDENT olmalı).
+     */
     fun sendLoginCodeOnly(email: String, callback: (Boolean, String?) -> Unit) {
-        val normalizedEmail = email.trim().lowercase()
-        isEmailRegistered(normalizedEmail) { registered, uid, role ->
-            if (registered && !uid.isNullOrEmpty()) {
-                if (role == ROLE_TEACHER) {
-                    callback(false, "E-posta hatalı.")
-                    return@isEmailRegistered
-                }
-                sendStudentVerificationCode(normalizedEmail, uid) { success, error ->
-                    callback(success, error)
-                }
-            } else {
-                callback(false, "Kullanıcı bulunamadı")
-            }
+        sendStudentVerificationCode(email.trim().lowercase(), OTP_PURPOSE_LOGIN) { success, error ->
+            callback(success, error)
         }
     }
 
-    /** OTP ile kayıt için pending registration oluşturur (email + rastgele şifre, isim boş) */
+    /**
+     * OTP ile öğrenci kaydını hazırlar.
+     *
+     * Artık Firestore'a HİÇBİR ŞEY YAZMIYOR. Eskiden `pendingRegistrations/{email}`
+     * dokümanına düz metin şifre yazılıyordu ve o koleksiyona kimliksiz yazma açıktı;
+     * saldırgan kurbanın dokümanını kendi şifresiyle ezip hesabı devralabiliyordu.
+     * Bilgi yalnızca bellekte tutulur, `verifyStudentCode` sırasında sunucuya gider.
+     *
+     * Şifre gönderilmiyor: OTP ile giren öğrenci hesabı için şifreyi sunucu üretir.
+     */
     fun createPendingRegistrationForOTP(email: String, callback: (Boolean, String?) -> Unit) {
         val normalizedEmail = email.trim().lowercase()
-        val randomPassword = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
-        val pendingData = mapOf(
-            "email" to normalizedEmail,
-            "name" to "",
-            "password" to randomPassword,
-            "role" to ROLE_STUDENT,
-            "updatedAt" to com.google.firebase.Timestamp.now()
-        )
-        firestore.collection("pendingRegistrations").document(normalizedEmail)
-            .set(pendingData)
-            .addOnSuccessListener { callback(true, null) }
-            .addOnFailureListener { e -> callback(false, e.localizedMessage) }
+        if (normalizedEmail.isEmpty()) {
+            callback(false, "Geçersiz bilgiler")
+            return
+        }
+        rememberPendingRegistration(normalizedEmail, name = "", password = "", role = ROLE_STUDENT)
+        callback(true, null)
     }
 
-    /** OTP ile öğretmen kaydı için pending registration oluşturur (kullanıcı adı + email + şifre, role = TEACHER) */
+    /**
+     * OTP ile öğretmen kaydını hazırlar (kullanıcı adı + şifre, role = TEACHER).
+     * Bkz. [createPendingRegistrationForOTP] — bilgi Firestore'a yazılmaz, bellekte tutulur.
+     */
     fun createPendingTeacherRegistrationForOTP(
         email: String,
         name: String,
@@ -296,17 +335,8 @@ class AuthManager {
             callback(false, "Geçersiz bilgiler")
             return
         }
-        val pendingData = mapOf(
-            "email" to normalizedEmail,
-            "name" to name.trim(),
-            "password" to password,
-            "role" to ROLE_TEACHER,
-            "updatedAt" to com.google.firebase.Timestamp.now()
-        )
-        firestore.collection("pendingRegistrations").document(normalizedEmail)
-            .set(pendingData)
-            .addOnSuccessListener { callback(true, null) }
-            .addOnFailureListener { e -> callback(false, e.localizedMessage) }
+        rememberPendingRegistration(normalizedEmail, name.trim(), password, ROLE_TEACHER)
+        callback(true, null)
     }
 
     /** userId ile öğretmen e-postasını bul (role = TEACHER) - Cloud Function ile güvenli sorgu */
@@ -912,21 +942,28 @@ class AuthManager {
             .addOnFailureListener { e -> callback(false, e.localizedMessage) }
     }
 
+    /**
+     * OTP gönderir.
+     *
+     * Not: Hedef `uid` ARTIK GÖNDERİLMİYOR. Sunucu, [purpose] ve e-postaya bakarak uid'i
+     * kendisi çözüyor — eskiden istemcinin gönderdiği uid doğrulanmadan kabul ediliyordu
+     * ve başka bir kullanıcının uid'i verilerek o hesap için token alınabiliyordu.
+     */
     private fun sendStudentVerificationCode(
         email: String,
-        uid: String,
+        purpose: String,
         callback: (Boolean, String?) -> Unit
     ) {
         val payload = hashMapOf<String, Any>(
             "email" to email,
-            "uid" to uid
+            "purpose" to purpose
         )
-        
+
         android.util.Log.d(
             "AuthManager",
-            "sendStudentVerificationCode çağrıldı - email: $email, uid: $uid"
+            "sendStudentVerificationCode çağrıldı - email: $email, purpose: $purpose"
         )
-        
+
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sendStudentVerificationCode")
             .call(payload)
@@ -952,25 +989,9 @@ class AuthManager {
         callback: (Boolean, String?) -> Unit
     ) {
         val normalizedEmail = email.trim().lowercase()
-        if (isRegistration) {
-            val tempUid = "pending_${System.currentTimeMillis()}"
-            sendStudentVerificationCode(normalizedEmail, tempUid) { success, error ->
-                callback(success, error)
-            }
-        } else {
-            isEmailRegistered(normalizedEmail) { registered, uid, role ->
-                if (registered && !uid.isNullOrEmpty()) {
-                    if (role == ROLE_TEACHER) {
-                        callback(false, "E-posta hatalı.")
-                        return@isEmailRegistered
-                    }
-                    sendStudentVerificationCode(normalizedEmail, uid) { success, error ->
-                        callback(success, error)
-                    }
-                } else {
-                    callback(false, "Kullanıcı bulunamadı")
-                }
-            }
+        val purpose = if (isRegistration) OTP_PURPOSE_REGISTER else OTP_PURPOSE_LOGIN
+        sendStudentVerificationCode(normalizedEmail, purpose) { success, error ->
+            callback(success, error)
         }
     }
 
@@ -978,14 +999,33 @@ class AuthManager {
         verifyStudentCode(email, code, autoLogin = false, callback = callback)
     }
 
+    /**
+     * Kayıt kodunu doğrular ve hesabı oluşturur.
+     *
+     * Ad / şifre / rol bilgisi bu çağrının gövdesinde gider ([rememberPendingRegistration]
+     * ile bellekte tutulan değerler). Eskiden bunlar Firestore'a düz metin yazılıyordu.
+     * [birthYear] ve [acquisitionSource] da sunucuda yazılır — `birthYear` reklam yaş
+     * korumasını belirlediği için istemci yazımına kapalıdır (bkz. firestore.rules).
+     */
     fun verifyStudentCode(
         email: String,
         code: String,
         autoLogin: Boolean,
+        birthYear: Int? = null,
+        acquisitionSource: String? = null,
         callback: (Boolean, String?) -> Unit
     ) {
-        android.util.Log.d("AuthManager", "verifyStudentCode Cloud Function çağrılıyor - email: $email, code: $code, autoLogin: $autoLogin")
-        val payload = hashMapOf<String, Any>("email" to email, "code" to code)
+        android.util.Log.d("AuthManager", "verifyStudentCode Cloud Function çağrılıyor - email: $email, autoLogin: $autoLogin")
+        val normalizedEmail = email.trim().lowercase()
+        val pending = consumePendingRegistration(normalizedEmail)
+        val payload = hashMapOf<String, Any>("email" to normalizedEmail, "code" to code)
+        pending?.let {
+            if (it.name.isNotBlank()) payload["name"] = it.name
+            if (it.password.isNotEmpty()) payload["password"] = it.password
+            payload["role"] = it.role
+        }
+        birthYear?.let { payload["birthYear"] = it }
+        acquisitionSource?.let { payload["acquisitionSource"] = it }
         FirebaseFunctions.getInstance()
             .getHttpsCallable("verifyRegistrationCode")
             .call(payload)

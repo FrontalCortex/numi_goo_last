@@ -85,7 +85,7 @@ object SessionDeviceManager {
                 if (!activeDeviceId.isNullOrBlank() && activeDeviceId != deviceId) {
                     stopSessionHeartbeat()
                     FirebaseAuth.getInstance().signOut()
-                    Toast.makeText(context, "Bu hesap başka bir cihazda aktif.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Bir kaç dakika sonra tekrar dene.", Toast.LENGTH_SHORT).show()
                     redirectToLogin(context)
                 }
             }
@@ -143,7 +143,7 @@ object SessionDeviceManager {
                     onAllowed()
                 } else {
                     FirebaseAuth.getInstance().signOut()
-                    Toast.makeText(activity, "Bu hesap başka bir cihazda aktif.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, "Bir kaç dakika sonra tekrar dene.", Toast.LENGTH_SHORT).show()
                     redirectToLogin(activity)
                 }
             }

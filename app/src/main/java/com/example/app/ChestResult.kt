@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
@@ -28,7 +27,8 @@ import kotlin.math.min
 import kotlin.math.max
 
 class ChestResult : Fragment() {
-    private lateinit var binding: FragmentChestResultBinding
+    private var _binding: FragmentChestResultBinding? = null
+    private val binding get() = _binding!!
 
     private lateinit var lessonItem : LessonItem
     private var correctAnswers: Int = 0
@@ -43,13 +43,6 @@ class ChestResult : Fragment() {
     private var scoreCap: Int = 1
     private var cupPoint2Threshold: Int = 1
     private var displayedScore: Int = 0
-    private var activeSkippablePhaseAnimator: AnimatorSet? = null
-    private var isSkippablePhaseRunning: Boolean = false
-    private var bubbleMoveAnimator: AnimatorSet? = null
-    private var bubbleImpactAnimator: AnimatorSet? = null
-    private var finalScoreAnimator: ValueAnimator? = null
-    private var isBubbleSequenceRunning: Boolean = false
-    private var isFinalScoreRunning: Boolean = false
     private var hasFinalizedScore: Boolean = false
     private var starSoundPool: SoundPool? = null
     private var starSoundId: Int = 0
@@ -80,7 +73,7 @@ class ChestResult : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentChestResultBinding.inflate(inflater, container, false)
+        _binding = FragmentChestResultBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -105,7 +98,6 @@ class ChestResult : Fragment() {
         continueFragment()
         prepareInitialUiState()
         setupStarSound()
-        setupSkipToEndOnTap()
         showRandomAnimation()
         setupStarMarkerPositions()
         startRevealSequence()
@@ -201,24 +193,39 @@ class ChestResult : Fragment() {
                             "CLAIM_MAP_RETURN",
                             "removeThenPrepare+finalize",
                         )
-                        if (isAdded) {
-                            fm.beginTransaction()
-                                .setCustomAnimations(
-                                    R.anim.slide_in_right,
-                                    R.anim.slide_out_right,
-                                )
-                                .remove(this@ChestResult)
-                                .commitNowAllowingStateLoss()
+                        // FragmentTransaction'ın setCustomAnimations'ı burada güvenilir oynamıyor
+                        // (abacusFragmentContainer prepareMapReturnAfterLessonClaim içinde GONE'a alınıyor);
+                        // bu yüzden view'ı elle kaydırıp animasyon bitince kaldırıyoruz.
+                        var mapReturnHandled = false
+                        val completeMapReturn: () -> Unit = {
+                            if (!mapReturnHandled) {
+                                mapReturnHandled = true
+                                if (isAdded) {
+                                    fm.beginTransaction()
+                                        .remove(this@ChestResult)
+                                        .commitNowAllowingStateLoss()
+                                }
+                                main?.prepareMapReturnAfterLessonClaim()
+                                main?.let {
+                                    it.logTouchDiag("ChestResult.claimAfterRemove.beforeFinalize")
+                                    MainActivityChromeBlocker.release(it)
+                                    it.finalizeMapReturnAfterLessonClaim(
+                                        caller = "ChestResult.claimAfterRemove",
+                                        badgePayloads = payloads,
+                                    )
+                                }
+                            }
                         }
-                        main?.prepareMapReturnAfterLessonClaim()
-                        main?.let {
-                            it.logTouchDiag("ChestResult.claimAfterRemove.beforeFinalize")
-                            MainActivityChromeBlocker.release(it)
-                            it.finalizeMapReturnAfterLessonClaim(
-                                caller = "ChestResult.claimAfterRemove",
-                                badgePayloads = payloads,
-                            )
-                        }
+                        val rootView = binding.root
+                        rootView.animate()
+                            .translationX(rootView.width.toFloat())
+                            .setDuration(300L)
+                            .withEndAction { completeMapReturn() }
+                            .start()
+                        // Animasyon kesintiye uğrar da withEndAction hiç çalışmazsa (arka plana alma,
+                        // view'ın penceresinden kopması vb.) haritaya dönüşü garantiye alan yedek.
+                        android.os.Handler(android.os.Looper.getMainLooper())
+                            .postDelayed({ completeMapReturn() }, 600L)
                     }
                 }
 
@@ -278,15 +285,11 @@ class ChestResult : Fragment() {
     private fun prepareInitialUiState() {
         binding.claimButton.isEnabled = false
         binding.claimButton.visibility = View.INVISIBLE
+        binding.claimButton.alpha = 0f
         binding.successRate.text = "0%"
         binding.totalScoreLargeText.text = "0"
         displayedScore = 0
         hasFinalizedScore = false
-        isBubbleSequenceRunning = false
-        isFinalScoreRunning = false
-        bubbleMoveAnimator = null
-        bubbleImpactAnimator = null
-        finalScoreAnimator = null
         updateScoreProgressBar(animatedScore = 0, previousScore = 0)
         binding.totalTime.text = "0:00"
         binding.multiplierText.text = "x0.00"
@@ -310,7 +313,7 @@ class ChestResult : Fragment() {
             return
         }
         val phase1ScoreAnimator = ValueAnimator.ofInt(0, dersPuani).apply {
-            duration = 5000L
+            duration = 2000L
             interpolator = DecelerateInterpolator()
             addUpdateListener {
                 val scoreValue = it.animatedValue as Int
@@ -320,7 +323,7 @@ class ChestResult : Fragment() {
             }
         }
         val phase1SuccessAnimator = ValueAnimator.ofInt(0, successRate.toInt()).apply {
-            duration = 5000L
+            duration = 2000L
             interpolator = DecelerateInterpolator()
             addUpdateListener {
                 binding.successRate.text = "${it.animatedValue as Int}%"
@@ -328,12 +331,8 @@ class ChestResult : Fragment() {
         }
         val phase1Set = AnimatorSet().apply {
             playTogether(phase1ScoreAnimator, phase1SuccessAnimator)
-            isSkippablePhaseRunning = true
-            activeSkippablePhaseAnimator = this
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    isSkippablePhaseRunning = false
-                    activeSkippablePhaseAnimator = null
                     startPhase2()
                 }
             })
@@ -356,14 +355,14 @@ class ChestResult : Fragment() {
         }
 
         val phase2TimeAnimator = ValueAnimator.ofInt(0, targetTimeSeconds).apply {
-            duration = 5000L
+            duration = 2000L
             interpolator = DecelerateInterpolator()
             addUpdateListener {
                 binding.totalTime.text = formatSeconds(it.animatedValue as Int)
             }
         }
         val phase2CarpanAnimator = ValueAnimator.ofFloat(0f, carpan).apply {
-            duration = 5000L
+            duration = 2000L
             interpolator = DecelerateInterpolator()
             addUpdateListener {
                 val value = it.animatedValue as Float
@@ -372,12 +371,8 @@ class ChestResult : Fragment() {
         }
         val phase2Set = AnimatorSet().apply {
             playTogether(phase2TimeAnimator, phase2CarpanAnimator)
-            isSkippablePhaseRunning = true
-            activeSkippablePhaseAnimator = this
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
-                    isSkippablePhaseRunning = false
-                    activeSkippablePhaseAnimator = null
                     animateBubbleToScore()
                 }
             })
@@ -387,7 +382,6 @@ class ChestResult : Fragment() {
 
     private fun animateBubbleToScore() {
         if (hasFinalizedScore) return
-        isBubbleSequenceRunning = true
         val bubbleLoc = IntArray(2)
         val scoreLoc = IntArray(2)
         binding.multiplierBubble.getLocationInWindow(bubbleLoc)
@@ -413,7 +407,6 @@ class ChestResult : Fragment() {
                 }
             })
         }
-        bubbleMoveAnimator = moveSet
         trackAndStart(moveSet)
     }
 
@@ -432,13 +425,13 @@ class ChestResult : Fragment() {
         binding.scoreImpactFlash.scaleY = 0.5f
 
         val flashAlpha = ObjectAnimator.ofFloat(binding.scoreImpactFlash, View.ALPHA, 0f, 1f, 0f).apply {
-            duration = 260L
+            duration = 100L
         }
         val flashScaleX = ObjectAnimator.ofFloat(binding.scoreImpactFlash, View.SCALE_X, 0.5f, 2f).apply {
-            duration = 260L
+            duration = 100L
         }
         val flashScaleY = ObjectAnimator.ofFloat(binding.scoreImpactFlash, View.SCALE_Y, 0.5f, 2f).apply {
-            duration = 260L
+            duration = 100L
         }
         val impactSet = AnimatorSet().apply {
             playTogether(flashAlpha, flashScaleX, flashScaleY)
@@ -451,14 +444,11 @@ class ChestResult : Fragment() {
                 }
             })
         }
-        bubbleImpactAnimator = impactSet
         trackAndStart(impactSet)
     }
 
     private fun animateFinalScoreTransition() {
         if (hasFinalizedScore) return
-        isBubbleSequenceRunning = false
-        isFinalScoreRunning = true
         val startScore = displayedScore
         if (startScore == toplamPuan) {
             finalizeScoreDisplay()
@@ -480,23 +470,31 @@ class ChestResult : Fragment() {
                 }
             })
         }
-        this.finalScoreAnimator = finalScoreAnimator
         trackAndStart(finalScoreAnimator)
     }
 
     private fun finalizeScoreDisplay() {
         if (hasFinalizedScore) return
         hasFinalizedScore = true
-        isBubbleSequenceRunning = false
-        isFinalScoreRunning = false
         binding.scoreImpactFlash.visibility = View.INVISIBLE
         binding.multiplierBubble.visibility = View.INVISIBLE
         updateScoreProgressBar(animatedScore = toplamPuan, previousScore = displayedScore)
         displayedScore = toplamPuan
         binding.totalScoreLargeText.text = toplamPuan.toString()
         playFinalScorePop()
+        playClaimButtonAppear()
+    }
+
+    private fun playClaimButtonAppear() {
+        binding.claimButton.alpha = 0f
         binding.claimButton.visibility = View.VISIBLE
         binding.claimButton.isEnabled = true
+
+        trackAndStart(
+            ObjectAnimator.ofFloat(binding.claimButton, View.ALPHA, 0f, 1f).apply {
+                duration = 300L
+            }
+        )
     }
 
     private fun playFinalScorePop() {
@@ -718,35 +716,8 @@ class ChestResult : Fragment() {
         animator.start()
     }
 
-    private fun setupSkipToEndOnTap() {
-        binding.root.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                when {
-                    isSkippablePhaseRunning -> activeSkippablePhaseAnimator?.end()
-                    isBubbleSequenceRunning -> {
-                        bubbleMoveAnimator?.cancel()
-                        bubbleImpactAnimator?.cancel()
-                        finalizeScoreDisplay()
-                    }
-                    isFinalScoreRunning -> {
-                        finalScoreAnimator?.cancel()
-                        finalizeScoreDisplay()
-                    }
-                }
-            }
-            false
-        }
-    }
-
     override fun onDestroyView() {
         isViewBeingDestroyed = true
-        activeSkippablePhaseAnimator = null
-        bubbleMoveAnimator = null
-        bubbleImpactAnimator = null
-        finalScoreAnimator = null
-        isSkippablePhaseRunning = false
-        isBubbleSequenceRunning = false
-        isFinalScoreRunning = false
         hasFinalizedScore = false
         starSoundPool?.release()
         starSoundPool = null
@@ -757,6 +728,8 @@ class ChestResult : Fragment() {
         animatorsToCancel.forEach { it.cancel() }
         MainActivityChromeBlocker.release(activity)
         super.onDestroyView()
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 
     companion object {

@@ -28,15 +28,11 @@ class DailyQuestionRewardFragment : Fragment() {
         iconRes = R.drawable.open_chest,
         label = "0 altın",
     )
-    private var goldUpdateListener: GoldUpdateListener? = null
     private var badgePayloadQueue: ArrayList<String> = arrayListOf()
     private var dailyQuestionPeriodKey: String = ""
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context is GoldUpdateListener) {
-            goldUpdateListener = context
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,12 +53,33 @@ class DailyQuestionRewardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         MainActivityChromeBlocker.acquire(requireActivity())
-        selectedVideoName = ChestCrystalPolicy.resolveVideoName()
-        rewardOutcome = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
         prepareHiddenRewardUi()
-        applyRewardUiState(rewardOutcome)
         setupClaimRewardButton()
-        showCrystalBreakAtStart()
+
+        // Hangi kristalin çıkacağını ve ödülü sunucu belirler; bakiye orada yazılır.
+        binding.claimRewardButton.isEnabled = false
+        ServerRewards.openCrystal(
+            onResult = { outcome ->
+                if (!isAdded || _binding == null) return@openCrystal
+                selectedVideoName = outcome.videoName
+                rewardOutcome = ChestCrystalPolicy.outcomeFromServer(outcome.rewardType, outcome.rewardAmount)
+                applyRewardUiState(rewardOutcome)
+                binding.claimRewardButton.isEnabled = true
+                (activity as? MainActivity)?.refreshWalletUi()
+                showCrystalBreakAtStart()
+            },
+            onFailure = {
+                if (!isAdded || _binding == null) return@openCrystal
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Ödül alınamadı. Tekrar deneyin.",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+                val main = activity as? MainActivity
+                if (main != null) main.finishOverlayReturnToTasks("dailyReward.error")
+                else parentFragmentManager.popBackStack()
+            },
+        )
     }
 
     private fun setupClaimRewardButton() {
@@ -71,7 +88,7 @@ class DailyQuestionRewardFragment : Fragment() {
             claimRewardInProgress = true
             binding.claimRewardButton.isEnabled = false
             try {
-                ChestRewardClaimHelper.applyReward(goldUpdateListener, rewardOutcome)
+                // Ödül sunucuda zaten verildi (openCrystalReward); burada yalnızca akış devam eder.
                 if (dailyQuestionPeriodKey.isNotEmpty()) {
                     DailyQuestionRepository.markRewardClaimed(
                         requireContext(),

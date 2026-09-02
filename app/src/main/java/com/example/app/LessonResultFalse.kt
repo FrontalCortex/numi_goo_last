@@ -18,7 +18,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class LessonResultFalse : Fragment() {
-    private lateinit var binding: FragmentLessonResultFalseBinding
+    private var _binding: FragmentLessonResultFalseBinding? = null
+    private val binding get() = _binding!!
     private val animations = listOf(
         "animation_one.json",
         "animaton_two.json",
@@ -63,7 +64,7 @@ class LessonResultFalse : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentLessonResultFalseBinding.inflate(inflater, container, false)
+        _binding = FragmentLessonResultFalseBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -136,6 +137,8 @@ class LessonResultFalse : Fragment() {
     override fun onDestroyView() {
         MainActivityChromeBlocker.release(activity)
         super.onDestroyView()
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 
     private fun updateUI() {

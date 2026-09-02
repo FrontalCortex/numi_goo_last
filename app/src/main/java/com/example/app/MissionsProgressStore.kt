@@ -1,14 +1,11 @@
 package com.example.app
 
 import android.content.Context
+import android.os.SystemClock
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.gson.Gson
-import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Calendar
 import kotlin.random.Random
 
@@ -39,7 +36,9 @@ object MissionsProgressStore {
     private const val FIRESTORE_COLLECTION = "missionProgress"
     private const val FIRESTORE_DOC_STATE = "state"
     private const val FIELD_REWARD_CLAIMED_KEYS = "rewardClaimedKeys"
-    private const val DEBUG_LOG_PATH = "debug-33b519.log"
+    private const val KEY_TRUSTED_NOW_MS = "trusted_now_ms"
+    private const val KEY_TRUSTED_ANCHOR_ELAPSED_MS = "trusted_anchor_elapsed_ms"
+    private const val CLOCK_TOLERANCE_MS = 5 * 60 * 1000L
     @Volatile private var cloudSyncRequestedForUid: String? = null
     @Volatile private var cloudStateAppliedForUid: String? = null
     @Volatile private var lastSeenUid: String? = null
@@ -47,37 +46,6 @@ object MissionsProgressStore {
     private var missionRealtimeListener: ListenerRegistration? = null
     private var missionRealtimeUid: String? = null
     private val firestore by lazy { FirebaseFirestore.getInstance() }
-
-    private fun debugLog(hypothesisId: String, location: String, message: String, data: Map<String, Any?> = emptyMap()) {
-        try {
-            val payload = mapOf(
-                "sessionId" to "33b519",
-                "runId" to "baseline",
-                "hypothesisId" to hypothesisId,
-                "location" to location,
-                "message" to message,
-                "data" to data,
-                "timestamp" to System.currentTimeMillis(),
-            )
-            val json = Gson().toJson(payload)
-            android.util.Log.d("DBG33b519", json)
-            File(DEBUG_LOG_PATH).appendText("$json\n")
-            Thread {
-                try {
-                    val conn = (URL("http://127.0.0.1:7913/ingest/8a0b1fc3-fae1-418f-bbbd-80b43a829b14").openConnection() as HttpURLConnection)
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.setRequestProperty("X-Debug-Session-Id", "33b519")
-                    conn.doOutput = true
-                    conn.outputStream.use { it.write(json.toByteArray()) }
-                    conn.inputStream.close()
-                    conn.disconnect()
-                } catch (_: Exception) {
-                }
-            }.start()
-        } catch (_: Exception) {
-        }
-    }
 
     data class Snapshot(
         val dailyStepFinishCount: Int,
@@ -124,8 +92,8 @@ object MissionsProgressStore {
         val uid = currentUid() ?: return
         val p = prefs(context)
         val payload = hashMapOf<String, Any>(
-            KEY_DAY_ID to (p.getString(KEY_DAY_ID, todayId()) ?: todayId()),
-            KEY_WEEK_ID to (p.getString(KEY_WEEK_ID, weekIdNow()) ?: weekIdNow()),
+            KEY_DAY_ID to (p.getString(KEY_DAY_ID, todayId(context)) ?: todayId(context)),
+            KEY_WEEK_ID to (p.getString(KEY_WEEK_ID, weekIdNow(context)) ?: weekIdNow(context)),
             KEY_DAILY_STEP_FINISH_COUNT to p.getInt(KEY_DAILY_STEP_FINISH_COUNT, 0),
             KEY_WEEKLY_STEP_FINISH_COUNT to p.getInt(KEY_WEEKLY_STEP_FINISH_COUNT, 0),
             KEY_DAILY_STEP_INCREMENT_COUNT to p.getInt(KEY_DAILY_STEP_INCREMENT_COUNT, 0),
@@ -153,14 +121,6 @@ object MissionsProgressStore {
     private fun ensureSyncStateForCurrentUid() {
         val uid = currentUid()
         if (uid != lastSeenUid) {
-            // #region agent log
-            debugLog(
-                hypothesisId = "H4",
-                location = "MissionsProgressStore.kt:ensureSyncStateForCurrentUid",
-                message = "uid switch detected",
-                data = mapOf("fromUidPresent" to (lastSeenUid != null), "toUidPresent" to (uid != null)),
-            )
-            // #endregion
             lastSeenUid = uid
             cloudSyncRequestedForUid = null
             cloudStateAppliedForUid = null
@@ -196,11 +156,49 @@ object MissionsProgressStore {
         return "${c.get(Calendar.YEAR)}-${c.get(Calendar.DAY_OF_YEAR)}"
     }
 
-    private fun todayId(): String = calendarDayId()
+    /**
+     * Cihaz saatinin elle ileri/geri alınmasına karşı dayanıklı "şimdi" değeri.
+     * `SystemClock.elapsedRealtime()` cihaz saati değiştirilse de (uyku dahil) monotonik akar;
+     * duvar saati bu değerden makul bir tolerans (±5dk) dışına sapıyorsa duvar saati yerine
+     * son bilinen güvenilir zaman + geçen gerçek süre kullanılır. Böylece kullanıcı tarihi
+     * ileri/geri alarak günlük/haftalık görev ve ödülleri birden fazla kez tetikleyemez.
+     */
+    private fun trustedNowMs(context: Context): Long {
+        val p = prefs(context)
+        val nowWall = System.currentTimeMillis()
+        val nowElapsed = SystemClock.elapsedRealtime()
+        val lastTrusted = p.getLong(KEY_TRUSTED_NOW_MS, 0L)
+        val lastElapsed = p.getLong(KEY_TRUSTED_ANCHOR_ELAPSED_MS, 0L)
+
+        val trusted: Long = when {
+            lastTrusted == 0L -> nowWall
+            nowElapsed < lastElapsed -> {
+                // Cihaz yeniden başlatılmış (elapsedRealtime sıfırlandı); monotonik karşılaştırma
+                // güvenilir değil. Duvar saatine güven ama geriye gitmesine izin verme.
+                maxOf(nowWall, lastTrusted)
+            }
+            else -> {
+                val monotonicNow = lastTrusted + (nowElapsed - lastElapsed)
+                if (kotlin.math.abs(nowWall - monotonicNow) <= CLOCK_TOLERANCE_MS) nowWall else monotonicNow
+            }
+        }
+
+        p.edit()
+            .putLong(KEY_TRUSTED_NOW_MS, trusted)
+            .putLong(KEY_TRUSTED_ANCHOR_ELAPSED_MS, nowElapsed)
+            .apply()
+        return trusted
+    }
+
+    private fun todayId(context: Context): String {
+        val c = Calendar.getInstance().apply { timeInMillis = trustedNowMs(context) }
+        return "${c.get(Calendar.YEAR)}-${c.get(Calendar.DAY_OF_YEAR)}"
+    }
 
     /** Bu haftanın Pazartesi tarihini (yerel) benzersiz anahtar olarak kullanır */
-    private fun weekIdNow(): String {
+    private fun weekIdNow(context: Context): String {
         val cal = Calendar.getInstance().apply {
+            timeInMillis = trustedNowMs(context)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
@@ -212,10 +210,10 @@ object MissionsProgressStore {
         return "${cal.get(Calendar.YEAR)}-${cal.get(Calendar.MONTH)}-${cal.get(Calendar.DAY_OF_MONTH)}"
     }
 
-    private fun rewardClaimKey(window: MissionWindow, missionId: String): String {
+    private fun rewardClaimKey(context: Context, window: MissionWindow, missionId: String): String {
         val periodId = when (window) {
-            MissionWindow.DAILY -> todayId()
-            MissionWindow.WEEKLY -> weekIdNow()
+            MissionWindow.DAILY -> todayId(context)
+            MissionWindow.WEEKLY -> weekIdNow(context)
         }
         val prefix = when (window) {
             MissionWindow.DAILY -> "reward_claimed_daily"
@@ -253,21 +251,13 @@ object MissionsProgressStore {
         if (applyingCloudState) return
         val uid = currentUid() ?: return
         if (cloudStateAppliedForUid != uid) {
-            // #region agent log
-            debugLog(
-                hypothesisId = "H5",
-                location = "MissionsProgressStore.kt:uploadStateToCloud",
-                message = "upload deferred until cloud apply",
-                data = mapOf("uidPresent" to true, "cloudStateAppliedForUid" to cloudStateAppliedForUid),
-            )
-            // #endregion
             requestCloudSync(context)
             return
         }
         val p = prefs(context)
         val payload = hashMapOf<String, Any>(
-            KEY_DAY_ID to (p.getString(KEY_DAY_ID, todayId()) ?: todayId()),
-            KEY_WEEK_ID to (p.getString(KEY_WEEK_ID, weekIdNow()) ?: weekIdNow()),
+            KEY_DAY_ID to (p.getString(KEY_DAY_ID, todayId(context)) ?: todayId(context)),
+            KEY_WEEK_ID to (p.getString(KEY_WEEK_ID, weekIdNow(context)) ?: weekIdNow(context)),
             KEY_DAILY_STEP_FINISH_COUNT to p.getInt(KEY_DAILY_STEP_FINISH_COUNT, 0),
             KEY_WEEKLY_STEP_FINISH_COUNT to p.getInt(KEY_WEEKLY_STEP_FINISH_COUNT, 0),
             KEY_DAILY_STEP_INCREMENT_COUNT to p.getInt(KEY_DAILY_STEP_INCREMENT_COUNT, 0),
@@ -310,14 +300,6 @@ object MissionsProgressStore {
 
     private fun applyCloudDocument(context: Context, uid: String, data: Map<String, Any>?) {
         if (data == null) {
-            // #region agent log
-            debugLog(
-                hypothesisId = "H5",
-                location = "MissionsProgressStore.kt:applyCloudDocument:emptyDoc",
-                message = "mission cloud doc empty (blocking hydrate)",
-                data = mapOf("uidPresent" to true),
-            )
-            // #endregion
             cloudStateAppliedForUid = uid
             cloudSyncRequestedForUid = null
             uploadStateToCloud(context)
@@ -332,8 +314,8 @@ object MissionsProgressStore {
         fun longOf(key: String) = (data[key] as? Number)?.toLong() ?: p.getLong(key, 0L)
         fun strOf(key: String, fallback: String) = data[key] as? String ?: fallback
         editor
-            .putString(KEY_DAY_ID, strOf(KEY_DAY_ID, todayId()))
-            .putString(KEY_WEEK_ID, strOf(KEY_WEEK_ID, weekIdNow()))
+            .putString(KEY_DAY_ID, strOf(KEY_DAY_ID, todayId(context)))
+            .putString(KEY_WEEK_ID, strOf(KEY_WEEK_ID, weekIdNow(context)))
             .putInt(KEY_DAILY_STEP_FINISH_COUNT, intOf(KEY_DAILY_STEP_FINISH_COUNT))
             .putInt(KEY_WEEKLY_STEP_FINISH_COUNT, intOf(KEY_WEEKLY_STEP_FINISH_COUNT))
             .putInt(KEY_DAILY_STEP_INCREMENT_COUNT, intOf(KEY_DAILY_STEP_INCREMENT_COUNT))
@@ -369,58 +351,12 @@ object MissionsProgressStore {
         ensureSyncStateForCurrentUid()
         val uid = currentUid() ?: return
         if (cloudStateAppliedForUid == uid || cloudSyncRequestedForUid == uid) return
-        // #region agent log
-        debugLog(
-            hypothesisId = "H5",
-            location = "MissionsProgressStore.kt:requestCloudSync:start",
-            message = "requesting mission cloud sync",
-            data = mapOf("uidPresent" to true, "alreadyApplied" to (cloudStateAppliedForUid == uid)),
-        )
-        // #endregion
         cloudSyncRequestedForUid = uid
         stateDoc(uid).get()
             .addOnSuccessListener { doc ->
-                val data = doc.data
-                // #region agent log
-                if (data != null) {
-                    debugLog(
-                        hypothesisId = "H5",
-                        location = "MissionsProgressStore.kt:requestCloudSync:success",
-                        message = "mission cloud state loaded",
-                        data = mapOf(
-                            "keysCount" to data.keys.size,
-                            "dayId" to (data[KEY_DAY_ID] as? String),
-                            "weekId" to (data[KEY_WEEK_ID] as? String),
-                            "dailyStepFinish" to ((data[KEY_DAILY_STEP_FINISH_COUNT] as? Number)?.toInt() ?: -1),
-                            "weeklyStepFinish" to ((data[KEY_WEEKLY_STEP_FINISH_COUNT] as? Number)?.toInt() ?: -1),
-                            "dailyStepIncrement" to ((data[KEY_DAILY_STEP_INCREMENT_COUNT] as? Number)?.toInt() ?: -1),
-                            "weeklyStepIncrement" to ((data[KEY_WEEKLY_STEP_INCREMENT_COUNT] as? Number)?.toInt() ?: -1),
-                        ),
-                    )
-                } else {
-                    debugLog(
-                        hypothesisId = "H5",
-                        location = "MissionsProgressStore.kt:requestCloudSync:emptyDoc",
-                        message = "mission cloud doc empty",
-                        data = mapOf("uidPresent" to true),
-                    )
-                }
-                // #endregion
-                applyCloudDocument(context, uid, data)
+                applyCloudDocument(context, uid, doc.data)
             }
-            .addOnFailureListener { e ->
-                // #region agent log
-                debugLog(
-                    hypothesisId = "H5",
-                    location = "MissionsProgressStore.kt:requestCloudSync:failure",
-                    message = "mission cloud sync failed",
-                    data = mapOf(
-                        "uidPresent" to true,
-                        "errorType" to e.javaClass.simpleName,
-                        "errorMessage" to (e.message ?: "null"),
-                    ),
-                )
-                // #endregion
+            .addOnFailureListener {
                 cloudSyncRequestedForUid = null
                 applyingCloudState = false
             }
@@ -461,8 +397,8 @@ object MissionsProgressStore {
         if (stored.size == 3) return stored
 
         val key = when (window) {
-            MissionWindow.DAILY -> "${todayId()}_${p.getInt(KEY_DAILY_SELECTION_NONCE, 0)}"
-            MissionWindow.WEEKLY -> "${weekIdNow()}_${p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0)}"
+            MissionWindow.DAILY -> "${todayId(context)}_${p.getInt(KEY_DAILY_SELECTION_NONCE, 0)}"
+            MissionWindow.WEEKLY -> "${weekIdNow(context)}_${p.getInt(KEY_WEEKLY_SELECTION_NONCE, 0)}"
         }
         val random = Random(key.hashCode())
         val generated = MissionQuestCatalog.all
@@ -497,13 +433,13 @@ object MissionsProgressStore {
         ensureResets(context)
         hydrateFromServerIfNeededBlocking(context)
         requestCloudSync(context)
-        return prefs(context).getBoolean(rewardClaimKey(window, missionId), false)
+        return prefs(context).getBoolean(rewardClaimKey(context, window, missionId), false)
     }
 
     fun markMissionRewardClaimed(context: Context, window: MissionWindow, missionId: String) {
         ensureResets(context)
         prefs(context).edit()
-            .putBoolean(rewardClaimKey(window, missionId), true)
+            .putBoolean(rewardClaimKey(context, window, missionId), true)
             .apply()
         uploadStateToCloud(context)
     }
@@ -511,7 +447,7 @@ object MissionsProgressStore {
     fun ensureResets(context: Context) {
         val p = prefs(context)
         val ed = p.edit()
-        val t = todayId()
+        val t = todayId(context)
         if (p.getString(KEY_DAY_ID, null) != t) {
             ed.putString(KEY_DAY_ID, t)
             ed.putInt(KEY_DAILY_STEP_FINISH_COUNT, 0)
@@ -523,7 +459,7 @@ object MissionsProgressStore {
             ed.putLong(KEY_DAILY_LEARN_REMAINDER_MS, 0L)
             ed.remove(KEY_DAILY_SELECTED_MISSION_IDS)
         }
-        val w = weekIdNow()
+        val w = weekIdNow(context)
         if (p.getString(KEY_WEEK_ID, null) != w) {
             ed.putString(KEY_WEEK_ID, w)
             ed.putInt(KEY_WEEKLY_STEP_FINISH_COUNT, 0)
@@ -687,8 +623,8 @@ object MissionsProgressStore {
         val editor = p.edit()
         clearRewardClaimFlags(editor, p)
         editor
-            .putString(KEY_DAY_ID, todayId())
-            .putString(KEY_WEEK_ID, weekIdNow())
+            .putString(KEY_DAY_ID, todayId(context))
+            .putString(KEY_WEEK_ID, weekIdNow(context))
             .putInt(KEY_DAILY_STEP_FINISH_COUNT, 0)
             .putInt(KEY_WEEKLY_STEP_FINISH_COUNT, 0)
             .putInt(KEY_DAILY_STEP_INCREMENT_COUNT, 0)
@@ -710,16 +646,17 @@ object MissionsProgressStore {
     }
 
     /** Bir sonraki yerel gece yarısına kalan tam saat (en az 1) */
-    fun hoursUntilDailyReset(): Int {
-        val now = Calendar.getInstance()
+    fun hoursUntilDailyReset(context: Context): Int {
+        val now = trustedNowMs(context)
         val next = Calendar.getInstance().apply {
+            timeInMillis = now
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val diff = next.timeInMillis - now.timeInMillis
+        val diff = next.timeInMillis - now
         return (diff / (1000 * 60 * 60)).toInt().coerceAtLeast(1)
     }
 
@@ -727,8 +664,10 @@ object MissionsProgressStore {
      * Haftalık pencere sonu: bu haftanın Pazartesi 00:00 + 7 gün.
      * Kalan süre 24 saatten fazlaysa gün, değilse saat metni için kullanılır.
      */
-    fun millisUntilWeeklyReset(): Long {
+    fun millisUntilWeeklyReset(context: Context): Long {
+        val now = trustedNowMs(context)
         val cal = Calendar.getInstance().apply {
+            timeInMillis = now
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
@@ -738,7 +677,7 @@ object MissionsProgressStore {
             cal.add(Calendar.DAY_OF_YEAR, -1)
         }
         cal.add(Calendar.DAY_OF_YEAR, 7)
-        return (cal.timeInMillis - System.currentTimeMillis()).coerceAtLeast(0L)
+        return (cal.timeInMillis - now).coerceAtLeast(0L)
     }
 }
 

@@ -122,6 +122,7 @@ class AbacusBeadController(
     }
 
     fun setup() {
+        AbacusSoundPlayer.preload(context)
         captureInitialPositionsIfNeeded()
         // Bottom beads (1..4) + top bead: click davranışını koruyarak drag ekliyoruz.
         for (rod in 0..4) {
@@ -492,6 +493,7 @@ class AbacusBeadController(
                         )
 
                         if (commit) {
+                            AbacusSoundPlayer.playBeadClick(context, activating = session.directionUp)
                             // Final state: ensure logical count is targetCount, then animate physical movement.
                             if (!session.provisionalApplied) {
                                 bottomCount[session.rod] = session.targetCount
@@ -628,6 +630,7 @@ class AbacusBeadController(
                         )
 
                         if (commit) {
+                            AbacusSoundPlayer.playBeadClick(context, activating = session.targetDown)
                             // State already updated when drag started; still ensure if provisional was not applied.
                             if (!session.provisionalApplied) {
                                 topDown[session.rod] = session.targetDown
@@ -797,6 +800,7 @@ class AbacusBeadController(
         val target = if (current >= beadNumber) beadNumber - 1 else beadNumber
         val clampedTarget = target.coerceIn(0, 4)
         if (clampedTarget == current) return
+        AbacusSoundPlayer.playBeadClick(context, activating = clampedTarget > current)
 
         val from = min(current, clampedTarget) + 1
         val to = max(current, clampedTarget)
@@ -818,6 +822,7 @@ class AbacusBeadController(
         if (bead in animatingBeads) {
             interruptAndSnapTopBead(rod)
         }
+        AbacusSoundPlayer.playBeadClick(context, activating = !topDown[rod])
         if (!topDown[rod]) {
             animateTopBeadDown(bead)
             topDown[rod] = true

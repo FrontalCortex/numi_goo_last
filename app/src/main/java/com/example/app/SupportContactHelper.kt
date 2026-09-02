@@ -8,7 +8,7 @@ import androidx.fragment.app.Fragment
 
 /** Destek e-postasını açan ortak yardımcı: mailto başarısız olursa Gmail web'e düşer. */
 object SupportContactHelper {
-    private const val SUPPORT_EMAIL = "numigo.support@gmail.com"
+    private const val SUPPORT_EMAIL = "sorobit.support@gmail.com"
 
     fun openSupportEmail(fragment: Fragment, subject: String? = null, body: String? = null) {
         val context = fragment.requireContext()

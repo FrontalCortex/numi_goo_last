@@ -3,7 +3,7 @@ package com.example.app
 import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -59,6 +59,11 @@ object AccountDeletionHelper {
                 null
             }
 
+            // Not: followersCount / followingCount sayaçlarını artık burada elle
+            // düşürmüyoruz. Bu alanlar istemci yazımına kapatıldı (eskiden herkes
+            // başkasının sayacını değiştirebiliyordu); takip kaydı silindiğinde
+            // sunucudaki onFollowingDeleted / onFollowerDeleted trigger'ları sayacı
+            // kendisi azaltıyor.
             followersSnapshot?.documents?.forEach { doc ->
                 val followerUid = doc.id
                 try {
@@ -69,15 +74,6 @@ object AccountDeletionHelper {
                         .await()
                 } catch (e: Exception) {
                     Log.e(TAG, "Takipçinin following listesinden silinemedi ($followerUid): ${e.message}")
-                }
-                
-                try {
-                    // Decrement their followingCount
-                    firestore.collection("users").document(followerUid)
-                        .update("followingCount", FieldValue.increment(-1))
-                        .await()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Takipçinin followingCount'u güncellenemedi ($followerUid): ${e.message}")
                 }
             }
 
@@ -96,6 +92,7 @@ object AccountDeletionHelper {
                 val followingUid = doc.id
                 try {
                     // Remove myUid from their followers subcollection
+                    // (followersCount'u sunucudaki onFollowerDeleted trigger'ı düşürüyor.)
                     firestore.collection("users").document(followingUid)
                         .collection("followers").document(myUid)
                         .delete()
@@ -103,26 +100,21 @@ object AccountDeletionHelper {
                 } catch (e: Exception) {
                     Log.e(TAG, "Takip edilenin followers listesinden silinemedi ($followingUid): ${e.message}")
                 }
-
-                try {
-                    // Decrement their followersCount
-                    firestore.collection("users").document(followingUid)
-                        .update("followersCount", FieldValue.increment(-1))
-                        .await()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Takip edilenin followersCount'u güncellenemedi ($followingUid): ${e.message}")
-                }
             }
 
+            // 3. Kendi alt koleksiyonlarını temizle: Firestore'da bir dokümanı silmek
+            // alt koleksiyonlarını OTOMATİK silmez, bu yüzden hepsi tek tek temizlenmeli.
+            deleteAllUserSubcollections(firestore, myUid)
+
             try {
-                // 3. Delete user's profile document from Firestore
+                // 4. Delete user's profile document from Firestore
                 firestore.collection("users").document(myUid).delete().await()
             } catch (e: Exception) {
                 throw Exception("Kullanıcı Firestore belgesi silinemedi: ${e.message}")
             }
 
             try {
-                // 4. Delete user's Authentication record
+                // 5. Delete user's Authentication record
                 user.delete().await()
             } catch (e: Exception) {
                 if (e is FirebaseAuthRecentLoginRequiredException) {
@@ -143,6 +135,75 @@ object AccountDeletionHelper {
                     onFailure(e)
                 }
             }
+        }
+    }
+
+    /**
+     * `users/{uid}` altında bilinen tüm alt koleksiyonları siler.
+     * Firestore'da üst doküman silinse bile alt koleksiyonlar kendiliğinden silinmediği için,
+     * `users/{uid}` dokümanını silmeden önce bunların tek tek temizlenmesi gerekir.
+     * Her adım kendi içinde try/catch ile korunur: biri başarısız olsa bile diğer temizlik
+     * adımları ve asıl hesap silme işlemi devam eder.
+     */
+    private suspend fun deleteAllUserSubcollections(firestore: FirebaseFirestore, uid: String) {
+        val userDoc = firestore.collection("users").document(uid)
+
+        // Kendi followers/following listesindeki dokümanlar (karşı taraftaki referanslar
+        // yukarıda zaten temizlendi, burada sadece kullanıcının kendi alt koleksiyonu siliniyor).
+        deleteAllDocsInCollection(firestore, userDoc.collection("followers"))
+        deleteAllDocsInCollection(firestore, userDoc.collection("following"))
+
+        // lessonProgress/{partId}/items/{position} — iki seviyeli, önce items sonra partId dokümanı.
+        try {
+            val partDocs = userDoc.collection("lessonProgress").get().await()
+            partDocs.documents.forEach { partDoc ->
+                deleteAllDocsInCollection(firestore, partDoc.reference.collection("items"))
+                try {
+                    partDoc.reference.delete().await()
+                } catch (e: Exception) {
+                    Log.e(TAG, "lessonProgress/${partDoc.id} silinemedi: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "lessonProgress listesi alınamadı: ${e.message}")
+        }
+
+        // Tek dokümanlık alt koleksiyonlar
+        deleteSingleDoc(userDoc.collection("badgeProgress").document("state"))
+        deleteSingleDoc(userDoc.collection("cupWayProgress").document("progress"))
+        deleteSingleDoc(userDoc.collection("abacusCustomization").document("state"))
+        deleteSingleDoc(userDoc.collection("missionProgress").document("state"))
+        deleteSingleDoc(userDoc.collection("dailyQuestion").document("current"))
+
+        // Çok dokümanlı düz (leaf) alt koleksiyonlar
+        deleteAllDocsInCollection(firestore, userDoc.collection("cupHistory"))
+        deleteAllDocsInCollection(firestore, userDoc.collection("lessonSuccessRateState"))
+    }
+
+    private suspend fun deleteAllDocsInCollection(firestore: FirebaseFirestore, collection: CollectionReference) {
+        val snapshot = try {
+            collection.get().await()
+        } catch (e: Exception) {
+            Log.e(TAG, "${collection.path} okunamadı: ${e.message}")
+            return
+        }
+        if (snapshot.isEmpty) return
+        snapshot.documents.chunked(450).forEach { chunk ->
+            val batch = firestore.batch()
+            chunk.forEach { batch.delete(it.reference) }
+            try {
+                batch.commit().await()
+            } catch (e: Exception) {
+                Log.e(TAG, "${collection.path} toplu silme başarısız: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun deleteSingleDoc(doc: com.google.firebase.firestore.DocumentReference) {
+        try {
+            doc.delete().await()
+        } catch (e: Exception) {
+            Log.e(TAG, "${doc.path} silinemedi: ${e.message}")
         }
     }
 }

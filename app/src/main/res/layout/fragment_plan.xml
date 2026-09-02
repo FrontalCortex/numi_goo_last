@@ -81,13 +81,6 @@
                     android:text="Sınırsız enerji"
                     android:textColor="#666666"
                     android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/textView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="firebase deploy --only firestore:rules" />
             </LinearLayout>
 
             <LinearLayout
@@ -105,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Canlı öğretmen desteği (10 kredi)"
+                    android:text="Eğitmen desteği (10 kredi)"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -270,7 +263,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Canın 10 dakikada yenilensin"
+                    android:text="Canın 7 dakikada yenilensin"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>

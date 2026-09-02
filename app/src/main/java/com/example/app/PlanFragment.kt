@@ -54,24 +54,12 @@ class PlanFragment : DialogFragment() {
         }
 
         binding.btnTryFree.setOnClickListener {
-            val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-            if (user != null) {
-                com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users")
-                    .document(user.uid)
-                    .update("plan", selectedPlan)
-                    .addOnSuccessListener {
-                        Toast.makeText(requireContext(), "Plan $selectedPlan olarak güncellendi", Toast.LENGTH_SHORT).show()
-                        // Eğer MainActivity içindeyse arayüzü güncellet
-                        (activity as? MainActivity)?.checkSubscriptionAndUpdateEnergy()
-                        dismiss()
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(requireContext(), "Hata oluştu", Toast.LENGTH_SHORT).show()
-                        dismiss()
-                    }
-            } else {
-                dismiss()
-            }
+            // `plan` alanını istemci yazamaz (firestore.rules kilitli tutuyor). Play'den gelen
+            // abonelik token'ı sunucuda doğrulandıktan sonra Admin SDK ile yazılır.
+            val mainActivity = activity as? MainActivity ?: run { dismiss(); return@setOnClickListener }
+            val productId = BillingCatalog.subscriptionForPlanName(selectedPlan)
+            mainActivity.billingManager.launchPurchase(mainActivity, productId)
+            dismiss()
         }
     }
 

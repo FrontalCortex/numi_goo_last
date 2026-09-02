@@ -1756,6 +1756,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
+            android:visibility="gone"
             android:textColor="#FFFFFF"
             android:textSize="@dimen/tutorial_result_body_text_size"
             app:layout_constraintStart_toStartOf="parent"

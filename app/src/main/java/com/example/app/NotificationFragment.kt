@@ -1,10 +1,7 @@
 package com.example.app
 
 import android.app.Dialog
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -232,31 +229,7 @@ class NotificationFragment : Fragment() {
 
     private fun setupTeacherApprovalPendingUi() {
         binding.teacherApprovalSupportButton.setOnClickListener {
-            val mailtoIntent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:numigo.support@gmail.com")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            val gmailWebUri = Uri.parse(
-                "https://mail.google.com/mail/?view=cm&to=numigo.support@gmail.com"
-            )
-            val browserIntent = Intent(Intent.ACTION_VIEW, gmailWebUri).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            try {
-                startActivity(mailtoIntent)
-            } catch (_: ActivityNotFoundException) {
-                try {
-                    startActivity(Intent.createChooser(browserIntent, null))
-                } catch (_: ActivityNotFoundException) {
-                    Toast.makeText(requireContext(), "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
-                }
-            } catch (_: SecurityException) {
-                try {
-                    startActivity(Intent.createChooser(browserIntent, null))
-                } catch (_: Exception) {
-                    Toast.makeText(requireContext(), "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
-                }
-            }
+            SupportContactHelper.openSupportEmail(this)
         }
     }
 

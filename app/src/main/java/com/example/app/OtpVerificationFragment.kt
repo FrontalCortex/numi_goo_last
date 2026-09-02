@@ -13,8 +13,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentOtpVerificationBinding
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 /** Öğretmen şifre sıfırlama akışında OTP doğrulandığında activity'ye bildirim. */
 interface OnTeacherOtpVerifiedForResetListener {
@@ -279,9 +277,19 @@ class OtpVerificationFragment : Fragment() {
                 }
             }
             isRegistration -> {
-                authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
+                // birthYear / acquisitionSource artık SUNUCUYA gönderiliyor; hesap
+                // oluşturulurken Cloud Function yazıyor. Eskiden kayıt sonrası istemci
+                // kendi dokümanına update atıyordu — birthYear reklam yaş korumasını
+                // belirlediği için o alan artık istemci yazımına kapalı.
+                authManager.verifyStudentCode(
+                    email = email,
+                    code = code,
+                    autoLogin = true,
+                    birthYear = birthYear,
+                    acquisitionSource = acquisitionSource,
+                ) { success, error ->
                     if (success) {
-                        saveExtraUserDataIfPresent()
+                        acquisitionSource?.let { AppStatisticsManager.incrementAcquisitionSource(it) }
                         requireActivity().setResult(Activity.RESULT_OK)
                         startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                         requireActivity().finish()
@@ -301,29 +309,6 @@ class OtpVerificationFragment : Fragment() {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * OTP kayıt başarılı olduğunda, eğer birthYear veya acquisitionSource argümanı varsa,
-     * mevcut Firebase Auth kullanıcısının Firestore dokümanına yazılır.
-     * Bu işlem asenkron yapılır; sonucu beklenmeden MainActivity açılır.
-     */
-    private fun saveExtraUserDataIfPresent() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val updates = mutableMapOf<String, Any>()
-        birthYear?.let { updates["birthYear"] = it }
-        acquisitionSource?.let { src ->
-            updates["acquisitionSource"] = src
-            AppStatisticsManager.incrementAcquisitionSource(src)
-        }
-
-        if (updates.isNotEmpty()) {
-            FirebaseFirestore.getInstance().collection("users").document(uid)
-                .update(updates)
-                .addOnFailureListener { e ->
-                    android.util.Log.w("OtpVerificationFragment", "Ekstra veriler yazılamadı", e)
-                }
         }
     }
 

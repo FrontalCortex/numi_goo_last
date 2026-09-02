@@ -17,7 +17,6 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
     private var isVideoFlowOpen = false
     private var isRewardReady = false
     private var selectedVideoName: String = "crystal_red_yellow"
-    private var goldUpdateListener: GoldUpdateListener? = null
     private var rewardOutcome: ChestRewardOutcome = ChestRewardOutcome(
         type = ChestRewardType.GOLD,
         amount = 0,
@@ -35,9 +34,6 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
 
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
-        if (context is GoldUpdateListener) {
-            goldUpdateListener = context
-        }
     }
 
     override fun onCreateView(
@@ -51,16 +47,35 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        selectedVideoName = ChestCrystalPolicy.resolveVideoName()
-        rewardOutcome = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
-        applyRewardUiState()
         prepareHiddenRewardUi()
         binding.claimRewardButton.setOnClickListener {
-            ChestRewardClaimHelper.applyReward(goldUpdateListener, rewardOutcome)
+            // Ödül sunucuda zaten verildi (openCrystalReward); burada yalnızca akış devam eder.
             onRewardClaimedCallback?.invoke()
             dismissAllowingStateLoss()
         }
-        showCrystalBreakAtStart()
+
+        // Hangi kristalin çıkacağını ve ödülü sunucu belirler; bakiye orada yazılır.
+        binding.claimRewardButton.isEnabled = false
+        ServerRewards.openCrystal(
+            onResult = { outcome ->
+                if (!isAdded || _binding == null) return@openCrystal
+                selectedVideoName = outcome.videoName
+                rewardOutcome = ChestCrystalPolicy.outcomeFromServer(outcome.rewardType, outcome.rewardAmount)
+                applyRewardUiState()
+                binding.claimRewardButton.isEnabled = true
+                (activity as? MainActivity)?.refreshWalletUi()
+                showCrystalBreakAtStart()
+            },
+            onFailure = {
+                if (!isAdded || _binding == null) return@openCrystal
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Ödül alınamadı. Tekrar deneyin.",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+                dismissAllowingStateLoss()
+            },
+        )
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -136,7 +151,6 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
     }
 
     override fun onDetach() {
-        goldUpdateListener = null
         super.onDetach()
     }
 }

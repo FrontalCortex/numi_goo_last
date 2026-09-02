@@ -11,6 +11,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" android:minSdkVersion="34" />
+    <!-- ScreenRecordingService, MediaRecorder.AudioSource.MIC ile ses de kaydediyor.
+         Android 14 (API 34) itibarıyla mikrofona erişen bir ön plan servisi, mediaProjection'a
+         ek olarak microphone tipini de bildirmek ZORUNDA; aksi halde startForeground
+         SecurityException atar. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" android:minSdkVersion="34" />
 
     <application
         android:allowBackup="true"
@@ -26,7 +31,7 @@
         <!-- AdMob App ID - Test ID kullanılıyor -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-8436855856536384~4638018464"/>
             
         <!-- Conflict resolution for AdMob vs Firebase Analytics -->
         <property
@@ -111,7 +116,7 @@
             android:name=".ScreenRecordingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
+            android:foregroundServiceType="mediaProjection|microphone" />
 
         <service
             android:name=".MyFirebaseMessagingService"

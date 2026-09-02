@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.view.View
 import android.graphics.Color
 
@@ -194,5 +195,29 @@ object SharedGuideHelper {
 
             else -> emptyList()
         }
+    }
+}
+
+/**
+ * Belirli bir rehber (guide) numarasının kullanıcıya kaç kez gösterildiğini SharedPreferences'ta
+ * tutar. Bazı rehberler (örn. guide 6: abaküs boyutu ölçekleme ipucu) her uygun ekran açıldığında
+ * tekrar tetiklenebiliyor; [MAX_SHOW_COUNT] sınırıyla belirli bir sayıdan sonra bir daha gösterilmez.
+ */
+object GuideShowTracker {
+    private const val PREFS_NAME = "AppPrefs"
+    private const val MAX_SHOW_COUNT = 2
+
+    private fun key(guideNumber: Int) = "guide_shown_count_$guideNumber"
+
+    fun canShow(context: Context, guideNumber: Int): Boolean {
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(key(guideNumber), 0) < MAX_SHOW_COUNT
+    }
+
+    fun recordShown(context: Context, guideNumber: Int) {
+        val appContext = context.applicationContext
+        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val current = prefs.getInt(key(guideNumber), 0)
+        prefs.edit().putInt(key(guideNumber), current + 1).apply()
     }
 }

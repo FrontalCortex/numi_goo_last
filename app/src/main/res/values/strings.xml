@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">NumiGoo</string>
+    <string name="app_name">Sorobit</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <!-- Google Sign-In Web Client ID - Firebase Console > Authentication > Sign-in method > Google'dan alınmalı -->
@@ -11,7 +11,7 @@
     <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
     <string name="lesson_hint_step5">10 gelir adımını uygularken 5 lik kuralı kullanman gerekebilir.</string>
     <string name="login_start_student_title">Hesabın mı var?</string>
-    <string name="login_start_student_subtitle">Numigo\ya ilk defa mı giriyorsun?</string>
+    <string name="login_start_student_subtitle">Sorobit\'e ilk defa mı giriyorsun?</string>
     <string name="login_start_teacher_title">Öğretmen hesabın mı var?</string>
     <string name="login_start_teacher_subtitle">Öğretmen kaydı oluştur</string>
     <string name="login_start_primary_button">GİRİŞ YAP</string>

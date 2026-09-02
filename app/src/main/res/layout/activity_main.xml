@@ -136,6 +136,10 @@
         app:constraint_referenced_ids="currencyPanel,teacherSendTopBar" />
 
     <!-- Ders / Record overlay — harita üstünde; varsayılan GONE (alt barı kilitlemesin) -->
+    <!-- android:background: içindeki fragment'in view'ı geçici olarak invisible yapıldığında
+         (ör. ChestFragment kayma geçişleri sırasında) arkadaki harita çıplak görünmesin diye;
+         normalde içerik her zaman bu container'ı tam kaplayan opak bir arka planla geldiğinden
+         bu renk hiçbir zaman fark edilmez. -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/abacusFragmentContainer"
         android:layout_width="match_parent"
@@ -153,6 +157,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
+        android:background="#101820"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

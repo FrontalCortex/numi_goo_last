@@ -463,7 +463,7 @@ class AbacusCustomizationFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            fun onDeltaSuccess() {
+            fun onDeltaSuccess(rollbackToken: String?) {
                 val currentCount = (ownedBeads[beadType.name]?.count ?: 0)
                 val newCount = currentCount + 5
                 BeadPurchaseFirestore.setBeadCount(
@@ -480,8 +480,8 @@ class AbacusCustomizationFragment : Fragment() {
                     onFailure = {
                         Toast.makeText(ctx, "Kayıt hatası. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
                         // Geri iade
-                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price)
-                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
+                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
                         refreshCurrencyUi()
                         purchaseBtn.isEnabled = true
                         closeBtn.isEnabled = true
@@ -499,14 +499,14 @@ class AbacusCustomizationFragment : Fragment() {
 
             if (isKeyCurrency) {
                 UserWalletFirestore.applyKeyDelta(
-                    context = ctx, uid = uid, delta = -price,
-                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             } else {
                 UserWalletFirestore.applyCurrencyDelta(
-                    context = ctx, uid = uid, delta = -price,
-                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             }
@@ -576,6 +576,7 @@ class AbacusCustomizationFragment : Fragment() {
                 context = ctx,
                 uid = uid,
                 delta = -price,
+                reason = WalletReason.SPEND,
                 onSuccess = {
                     BeadPurchaseFirestore.setColorFeatureActive(uid, beadType.name, onSuccess = {
                         val currentData = ownedBeads[beadType.name] ?: BeadData(0, false)
@@ -707,7 +708,7 @@ class AbacusCustomizationFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            fun onDeltaSuccess() {
+            fun onDeltaSuccess(rollbackToken: String?) {
                 val newCount = count + 5
                 BeadPurchaseFirestore.setBeadCount(uid, beadType.name, newCount,
                     onSuccess = {
@@ -719,8 +720,8 @@ class AbacusCustomizationFragment : Fragment() {
                     },
                     onFailure = {
                         Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
-                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price)
-                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                        if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
+                        else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
                         refreshCurrencyUi()
                         slotBuyBtn.isEnabled = true
                         dialog.setCancelable(true)
@@ -736,14 +737,14 @@ class AbacusCustomizationFragment : Fragment() {
 
             if (isKeyCurrency) {
                 UserWalletFirestore.applyKeyDelta(
-                    context = ctx, uid = uid, delta = -price,
-                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             } else {
                 UserWalletFirestore.applyCurrencyDelta(
-                    context = ctx, uid = uid, delta = -price,
-                    onSuccess = { ::onDeltaSuccess.invoke() },
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             }
@@ -1219,7 +1220,8 @@ class AbacusCustomizationFragment : Fragment() {
                 context = ctx,
                 uid     = uid,
                 delta   = -price,
-                onSuccess = {
+                reason  = WalletReason.SPEND,
+                onSuccess = { wallet ->
                     FramePurchaseFirestore.markFrameOwned(uid, frameType,
                         onSuccess = {
                             val currentData = ownedFrames[frameType.name] ?: FrameData(owned = false, colorFeatureActive = false)
@@ -1233,7 +1235,7 @@ class AbacusCustomizationFragment : Fragment() {
                         },
                         onFailure = {
                             // Firestore kaydı başarısız — parayı iade et
-                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, wallet.rollbackToken)
                             Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
                             purchaseBtn.isEnabled = true
                             closeBtn.isEnabled    = true
@@ -1306,7 +1308,8 @@ class AbacusCustomizationFragment : Fragment() {
                 context = ctx,
                 uid     = uid,
                 delta   = -price,
-                onSuccess = {
+                reason  = WalletReason.SPEND,
+                onSuccess = { wallet ->
                     FramePurchaseFirestore.setColorFeatureActive(uid, frameType,
                         onSuccess = {
                             val currentData = ownedFrames[frameType.name] ?: FrameData(owned = false, colorFeatureActive = false)
@@ -1317,7 +1320,7 @@ class AbacusCustomizationFragment : Fragment() {
                             dialog.dismiss()
                         },
                         onFailure = {
-                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price)
+                            UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, wallet.rollbackToken)
                             Toast.makeText(ctx, "Kayıt hatası", Toast.LENGTH_SHORT).show()
                             purchaseBtn.isEnabled = true
                             closeBtn.isEnabled    = true

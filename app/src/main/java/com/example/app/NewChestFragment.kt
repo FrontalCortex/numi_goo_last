@@ -74,11 +74,23 @@ class NewChestFragment : Fragment() {
 
     companion object {
         private const val ARG_START_RARITY = "start_rarity"
+        private const val ARG_AD_NONCE = "ad_nonce"
+        const val RESULT_EARNED_GOLD = "earned_gold"
+        const val RESULT_EARNED_KEY = "earned_key"
 
-        fun newInstance(startRarity: ChestRarity = ChestRarity.COMMON): NewChestFragment {
+        /**
+         * @param adNonce Reklamla kazanilan sandiklar icin AdManager'in urettigi nonce.
+         *   Sunucu bu nonce ile AdMob SSV dogrulamasindan gelen hakki bozdurur. Reklam disi
+         *   sandiklarda (ders/gorev) null birakilir ve gunluk tavan uygulanir.
+         */
+        fun newInstance(
+            startRarity: ChestRarity = ChestRarity.COMMON,
+            adNonce: String? = null,
+        ): NewChestFragment {
             return NewChestFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_START_RARITY, startRarity.name)
+                    if (adNonce != null) putString(ARG_AD_NONCE, adNonce)
                 }
             }
         }
@@ -87,6 +99,14 @@ class NewChestFragment : Fragment() {
     // Oyun durumu
     private var canClose = false
     private var currentRarity = ChestRarity.COMMON
+    private var earnedGoldAmount = 0
+    private var earnedKeyAmount = 0
+
+    // Sunucudan gelen sonuç. Zar istemcide atılmaz; bkz. [requestOutcomeFromServer]
+    private var serverRarityPath: List<ChestRarity> = emptyList()
+    private var serverRewardType: String = "GOLD"
+    private var serverRewardAmount: Int = 0
+    private var outcomeReady = false
     // 0 = hiç tıklanmadı, 1..3 = adımlar, 4 = açılmaya hazır, 5 = açıldı
     private var tapCount = 0
 
@@ -107,6 +127,10 @@ class NewChestFragment : Fragment() {
 
     private var originalStatusBarColor: Int? = null
     private var originalNavigationBarColor: Int? = null
+
+    override fun onAttach(context: android.content.Context) {
+        super.onAttach(context)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -129,6 +153,8 @@ class NewChestFragment : Fragment() {
             ChestRarity.COMMON
         }
 
+        ChestSoundPlayer.preload(requireContext())
+
         // Başlangıç durumunu uygula
         applyRarity(currentRarity, animate = false)
         updateStepIndicators()
@@ -141,6 +167,10 @@ class NewChestFragment : Fragment() {
         binding.newChestRoot.setOnClickListener {
             onScreenTapped()
         }
+
+        // Sonucu sunucudan iste. Ödül bu çağrıda verilir; kullanıcı sandığı açmadan
+        // ekranı kapatsa bile kaybolmaz. Yanıt gelene kadar tıklamalar yok sayılır.
+        requestOutcomeFromServer()
 
         // Geri tuşu -> hicbir sey yapma
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
@@ -164,16 +194,55 @@ class NewChestFragment : Fragment() {
         requireActivity().findViewById<View>(R.id.bottomNavigationID)?.requestApplyInsets()
     }
 
+    /**
+     * Sandığın sonucunu sunucudan çeker.
+     *
+     * Zar sunucuda atılır: nadirlik yükseltme adımları [serverRarityPath]'te sırayla
+     * oynatılır, ödül de sunucudan gelir. Çağrı başarısız olursa sandık açılamaz —
+     * ödül verilmediği için kullanıcı bir şey kaybetmez, tekrar deneyebilir.
+     */
+    private fun requestOutcomeFromServer() {
+        ServerRewards.openChest(
+            startRarity = currentRarity.name,
+            adNonce = arguments?.getString(ARG_AD_NONCE),
+            onResult = { outcome ->
+                if (!isAdded || _binding == null) return@openChest
+                serverRarityPath = outcome.rarityPath.mapNotNull { name ->
+                    try { ChestRarity.valueOf(name) } catch (e: IllegalArgumentException) { null }
+                }
+                serverRewardType = outcome.rewardType
+                serverRewardAmount = outcome.rewardAmount
+                outcomeReady = true
+                binding.chestLoadingSpinner.visibility = View.GONE
+                // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
+                (activity as? MainActivity)?.refreshWalletUi()
+            },
+            onFailure = {
+                if (!isAdded || _binding == null) return@openChest
+                binding.chestLoadingSpinner.visibility = View.GONE
+                android.widget.Toast.makeText(
+                    requireContext(),
+                    "Sandık açılamadı. Tekrar deneyin.",
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
+                closeFragment()
+            },
+        )
+    }
+
     private fun onScreenTapped() {
+        // Sunucu sonucu gelmeden sandık oynatılmaz.
+        if (!outcomeReady) return
         resetHintTimer()
         when (tapCount) {
             0, 1, 2 -> {
-                // Adım tıklaması: rarity yükseltme şansı
+                // Adım tıklaması: sunucunun çektiği nadirliği göster
+                val newRarity = serverRarityPath.getOrNull(tapCount) ?: currentRarity
                 tapCount++
-                val newRarity = rollRarity(currentRarity)
                 val rarityChanged = newRarity != currentRarity
                 currentRarity = newRarity
                 updateStepIndicators()
+                ChestSoundPlayer.playForRarity(requireContext(), currentRarity.ordinal)
                 if (rarityChanged) {
                     applyRarity(currentRarity, animate = true)
                 } else {
@@ -188,6 +257,7 @@ class NewChestFragment : Fragment() {
                 // Sandığı aç
                 tapCount++
                 stopIdleAnimation()
+                ChestSoundPlayer.playForRarity(requireContext(), currentRarity.ordinal)
                 openChest()
             }
             4 -> {
@@ -197,28 +267,6 @@ class NewChestFragment : Fragment() {
                     closeFragment()
                 }
             }
-        }
-    }
-
-    /** Mevcut raritye göre ihtimalleri hesaplar ve yeni rarity döner. */
-    private fun rollRarity(current: ChestRarity): ChestRarity {
-        val rand = (1..100).random()
-        return when (current) {
-            ChestRarity.COMMON -> when {
-                rand <= 5 -> ChestRarity.EPIC   // %5
-                rand <= 20 -> ChestRarity.RARE   // %15
-                else -> ChestRarity.COMMON       // %80
-            }
-            ChestRarity.RARE -> when {
-                rand <= 5 -> ChestRarity.LEGENDARY // %5
-                rand <= 20 -> ChestRarity.EPIC      // %15
-                else -> ChestRarity.RARE            // %80
-            }
-            ChestRarity.EPIC -> when {
-                rand <= 5 -> ChestRarity.LEGENDARY // %5
-                else -> ChestRarity.EPIC            // %95
-            }
-            ChestRarity.LEGENDARY -> ChestRarity.LEGENDARY // %100 aynı kalır
         }
     }
 
@@ -474,69 +522,26 @@ class NewChestFragment : Fragment() {
     }
 
     private fun showReward() {
-        var textValue = ""
-        var coinDrawable = 0
-        var textDrawable = 0
-        var earnedGold = 0
-        var earnedKey = 0
+        ChestSoundPlayer.playReward(requireContext())
 
-        val rand = (1..100).random()
-        when (currentRarity) {
-            ChestRarity.COMMON -> {
-                val amount = (50..100).random()
-                earnedGold = amount
-                textValue = "$amount"
-                coinDrawable = R.drawable.shop_coin_ic1
-                textDrawable = R.drawable.gold_ic
-            }
-            ChestRarity.RARE -> {
-                val amount = (150..200).random()
-                earnedGold = amount
-                textValue = "$amount"
-                coinDrawable = R.drawable.shop_coin_ic1
-                textDrawable = R.drawable.gold_ic
+        // Ödül sunucudan geldi ve bakiyeye ZATEN yazıldı; burada yalnızca gösteriliyor.
+        val isKeyReward = serverRewardType == "KEY"
+        val earnedGold = if (isKeyReward) 0 else serverRewardAmount
+        val earnedKey = if (isKeyReward) serverRewardAmount else 0
 
-            }
-            ChestRarity.EPIC -> {
-                if (rand <= 50) {
-                    val amount = (300..400).random()
-                    earnedGold = amount
-                    textValue = "$amount"
-                    coinDrawable = R.drawable.shop_coin_ic2
-                    textDrawable = R.drawable.gold_ic
-                } else {
-                    earnedKey = 1
-                    textValue = "1"
-                    coinDrawable = R.drawable.key
-                    textDrawable = R.drawable.key
-                }
-            }
-            ChestRarity.LEGENDARY -> {
-                if (rand <= 50) {
-                    val amount = (1000..1500).random()
-                    earnedGold = amount
-                    textValue = "$amount"
-                    coinDrawable = R.drawable.shop_coin_ic3
-                    textDrawable = R.drawable.gold_ic
-                } else {
-                    earnedKey = 5
-                    textValue = "5"
-                    coinDrawable = R.drawable.key
-                    textDrawable = R.drawable.key
-                }
-            }
+        val textValue = serverRewardAmount.toString()
+        val textDrawable = if (isKeyReward) R.drawable.key else R.drawable.gold_ic
+        val coinDrawable = when {
+            isKeyReward -> R.drawable.key
+            currentRarity == ChestRarity.LEGENDARY -> R.drawable.shop_coin_ic3
+            currentRarity == ChestRarity.EPIC -> R.drawable.shop_coin_ic2
+            else -> R.drawable.shop_coin_ic1
         }
-        
-        val ctx = context
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-        if (ctx != null && uid != null) {
-            if (earnedGold > 0) {
-                UserWalletFirestore.applyCurrencyDelta(ctx, uid, earnedGold)
-            }
-            if (earnedKey > 0) {
-                UserWalletFirestore.applyKeyDelta(ctx, uid, earnedKey)
-            }
-        }
+
+        earnedGoldAmount = earnedGold
+        earnedKeyAmount = earnedKey
+        // Bakiye sunucuda güncellendi; üst paneli tazelemek yeterli.
+        (activity as? MainActivity)?.refreshWalletUi()
 
         binding.chestRewardText.text = textValue
         binding.chestRewardText.setCompoundDrawablesWithIntrinsicBounds(textDrawable, 0, 0, 0)
@@ -566,20 +571,58 @@ class NewChestFragment : Fragment() {
     }
 
     private fun closeFragment() {
-        parentFragmentManager.setFragmentResult("chest_closed", android.os.Bundle())
+        val resultBundle = Bundle().apply {
+            putInt(RESULT_EARNED_GOLD, earnedGoldAmount)
+            putInt(RESULT_EARNED_KEY, earnedKeyAmount)
+        }
         val fm = parentFragmentManager
         val topName = if (fm.backStackEntryCount > 0) fm.getBackStackEntryAt(fm.backStackEntryCount - 1).name else null
-        
-        if (topName == "mission_chest" || topName == "map_chest" || topName == "shop_chest") {
-            fm.popBackStack(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+
+        if (topName == "map_chest") {
+            // Haritaya dönüşte kullanıcının gördüğü tek ekran bu (ChestFragment kendi ekranını hiç
+            // göstermiyor); bu yüzden kayma animasyonu burada, gerçek ödülü gösteren bu ekranın
+            // üzerinde yapılıyor. Animasyon bitince (ya da bir aksilik olursa yedek süreyle) kapatılıyor.
+            //
+            // ChestFragment'i animasyon BAŞLAMADAN hemen önce görünmez yapıyoruz: aksi halde biz
+            // sağa kayarken solda ChestFragment'in kendi (eşleşmeyen/boş görünen) ekranı ortaya
+            // çıkıyordu — animasyon bitene kadar bekleseydik bu görünürdü. Şimdi kayma sırasında
+            // solda direkt harita görünüyor.
+            (fm.fragments.firstOrNull { it is ChestFragment } as? ChestFragment)?.hideOwnScreenForChestClose()
+            var closeHandled = false
+            val finishClose: () -> Unit = {
+                if (!closeHandled) {
+                    closeHandled = true
+                    if (isAdded) {
+                        fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    }
+                    fm.setFragmentResult("chest_closed", resultBundle)
+                }
+            }
+            val rootView = binding.root
+            rootView.animate()
+                .translationX(rootView.width.toFloat())
+                .setDuration(300L)
+                .withEndAction { finishClose() }
+                .start()
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finishClose() }, 600L)
+            return
+        }
+
+        // "chest_closed" sonucu, alttaki fragment'i (ör. ChestFragment) anında görünür/kaydırılabilir
+        // hale getiriyor. Bu yüzden önce NewChestFragment'i senkron olarak (Immediate) kaldırıp,
+        // altındaki ekran zaten "dinlenme" halindeyken sonucu gönderiyoruz — aksi halde alttaki
+        // fragment daha NewChestFragment tam kalkmadan animasyona başlayıp tuhaf bir "dönüşme" görüntüsü oluşuyordu.
+        if (topName == "mission_chest" || topName == "shop_chest") {
+            fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         } else {
             val main = activity as? MainActivity
             if (main != null) {
                 main.finishTasksOverlayAnimated("NewChestFragment.close")
             } else {
-                fm.popBackStack()
+                fm.popBackStackImmediate()
             }
         }
+        fm.setFragmentResult("chest_closed", resultBundle)
     }
 
     override fun onDestroyView() {

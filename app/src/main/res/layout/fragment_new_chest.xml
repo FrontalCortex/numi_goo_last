@@ -51,6 +51,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/stepsContainer" />
 
+    <!-- Sunucudan sonuç gelene kadar gösterilen yükleniyor göstergesi. Genelde göze çarpmaz —
+         bkz. ServerRewards.prefetchChest — yalnızca ağ beklenenden yavaşsa görünür kalır. -->
+    <ProgressBar
+        android:id="@+id/chestLoadingSpinner"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:indeterminateTint="#FFFFFF"
+        app:layout_constraintTop_toTopOf="@id/chestImage"
+        app:layout_constraintBottom_toBottomOf="@id/chestImage"
+        app:layout_constraintStart_toStartOf="@id/chestImage"
+        app:layout_constraintEnd_toEndOf="@id/chestImage" />
+
     <!-- Yıldız parçacıklarının ekleneceği katman (Sandığın önünde) -->
     <FrameLayout
         android:id="@+id/starContainer"

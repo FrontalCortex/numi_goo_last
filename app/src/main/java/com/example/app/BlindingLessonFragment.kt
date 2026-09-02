@@ -134,7 +134,8 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var runnable: Runnable
     private lateinit var timerTextView: TextView
     private var isTimerStarted = false
-    private lateinit var binding: FragmentBlindingLessonBinding
+    private var _binding: FragmentBlindingLessonBinding? = null
+    private val binding get() = _binding!!
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
     private var isAbacusSettingsPanelOpen = false
@@ -277,7 +278,7 @@ class BlindingLessonFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentBlindingLessonBinding.inflate(inflater, container, false)
+        _binding = FragmentBlindingLessonBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -362,8 +363,14 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun startGuideNumber(guideNumber: Int) {
+        if (guideNumber == 6 && !GuideShowTracker.canShow(requireContext(), guideNumber)) {
+            // Bu rehber daha önce yeterince gösterildi, bir daha gösterilmesin.
+            panelContent.visibility = View.GONE
+            setGuideNavButtonsVisibility(View.GONE)
+            return
+        }
         val guideContents = SharedGuideHelper.getGuideContentsForNumber(
-            guideNumber, binding.firstNumberText, binding.secondNumberText, 
+            guideNumber, binding.firstNumberText, binding.secondNumberText,
             binding.kontrolButton, rulesPanelButton, rulesBookButton, binding.skipStepButton, binding.abacusModeButton
         )
         panelContent.visibility = View.GONE
@@ -375,14 +382,17 @@ class BlindingLessonFragment : Fragment() {
             binding.overlay.isFocusable = true
             binding.overlay.alpha = 0.01f
             binding.overlay.setOnClickListener { }
-            Handler(Looper.getMainLooper()).postDelayed({
-                if (!isAdded) return@postDelayed
+            // postDelayedSafely: view yok edilmişse geri çağrı sessizce atlanır.
+            postDelayedSafely(500) {
                 enableGuidePanelMode()
                 showGuidePanelWithAnimation()
                 if (guideNumber == 5) {
                     AuthManager().also { it.initialize(requireContext()) }.setSkipStepTutorialShown()
                 }
-            }, 500)
+                if (guideNumber == 6) {
+                    GuideShowTracker.recordShown(requireContext(), guideNumber)
+                }
+            }
         }
     }
     private fun setupAskQuestionButton() {
@@ -890,9 +900,10 @@ class BlindingLessonFragment : Fragment() {
             override fun onAnimationRepeat(animation: Animator) {}
 
             override fun onAnimationEnd(animation: Animator) {
-                Handler(Looper.getMainLooper()).postDelayed({
+                // Eskiden korumasızdı: view yok edildikten sonra tetiklenirse ölü view'a yazıyordu.
+                postDelayedSafely(1000) { // 1000 ms = 1 saniye
                     binding.resetButton.frame = 20
-                }, 1000) // 1000 ms = 1 saniye
+                }
             }
         })
     }
@@ -1425,11 +1436,12 @@ class BlindingLessonFragment : Fragment() {
     }
 
 
-    private fun playSound(soundResId: Int) {
+    private fun playSound(soundResId: Int, volume: Float = 1f) {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.setVolume(volume, volume)
         mediaPlayer?.start()
     }
 
@@ -1445,7 +1457,7 @@ class BlindingLessonFragment : Fragment() {
             // Doğru cevap durumu
 
             correctAnswer++
-            playSound(R.raw.correct_answer_sound)
+            playSound(R.raw.correct_answer_sound, volume = 0.3f)
 
             if (currentIndex == operations.size - 1 && correctAnswer == totalQuestions) {
                 lottieView.visibility = View.VISIBLE
@@ -2224,6 +2236,11 @@ class BlindingLessonFragment : Fragment() {
         releaseLaunchTouchBlocker()
         super.onDestroyView()
         stopSequencePlayback()
+        // Bu fragment'in kendi handler'ına planlanmış tüm gecikmeli işleri iptal et;
+        // aksi halde view yok edildikten sonra tetiklenirler.
+        handler.removeCallbacksAndMessages(null)
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 
     override fun onResume() {
@@ -2246,7 +2263,7 @@ class BlindingLessonFragment : Fragment() {
      * when the user navigates back.
      */
     private fun applyCustomization() {
-        if (!::binding.isInitialized) return
+        if (_binding == null) return
         binding.abacusContainer.background =
             com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(requireContext())
         if (::abacusController.isInitialized) abacusController.refreshAll()

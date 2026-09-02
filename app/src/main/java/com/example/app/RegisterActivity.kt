@@ -191,7 +191,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
         val termsText = "Kullanım Şartlarını"
         val privacyText = "Gizlilik Politikasını"
-        val policyUrl = "https://sites.google.com/view/numigo-policy"
+        // Tek sayfada birleşik: privacy-policy.html hem Gizlilik Politikası (Part I) hem
+        // Kullanım Şartları (Part II) içeriyor, çapa (#pp-1 / #tos-1) doğru bölüme atlıyor.
+        val termsUrl = "https://numigo-new.web.app/privacy-policy.html#tos-1"
+        val policyUrl = "https://numigo-new.web.app/privacy-policy.html#pp-1"
 
         val termsStart = fullText.indexOf(termsText)
         if (termsStart != -1) {
@@ -205,7 +208,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             spannable.setSpan(
                 object : ClickableSpan() {
                     override fun onClick(widget: View) {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(policyUrl))
+                        val browserIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(termsUrl))
                         startActivity(browserIntent)
                     }
                     override fun updateDrawState(ds: TextPaint) {
@@ -455,7 +458,13 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         if (requestCode == RC_GOOGLE_SIGN_IN) {
             // Kullanıcı hesap seçim ekranından geri döndüyse ve iptal ettiyse:
             if (resultCode != RESULT_OK) {
-                android.util.Log.d("RegisterActivity", "Google Sign-In iptal edildi veya başarısız")
+                // Play Services, imza/paket uyuşmazlığında da "iptal" gibi döner. Gerçek nedeni
+                // ApiException'ın durum kodundan oku: 10 = DEVELOPER_ERROR (SHA-1 eşleşmiyor),
+                // 12501 = kullanıcı gerçekten iptal etti, 7 = ağ hatası.
+                android.util.Log.w(
+                    "RegisterActivity",
+                    "Google Sign-In tamamlanmadı: ${googleSignInFailureReason(data)}"
+                )
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
                 return

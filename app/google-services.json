@@ -14,6 +14,59 @@
       },
       "oauth_client": [
         {
+          "client_id": "1056334163260-im3v1mmma8ssnkrs3i1nidrao5717pvh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app",
+            "certificate_hash": "7143c724869758fa59eb3df2bce07777435db44e"
+          }
+        },
+        {
+          "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsl8G0GUZ7YByoOU9RHfN04kmE38r30Sc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1056334163260:android:04cae6c29a3175871e4239",
+        "android_client_info": {
+          "package_name": "com.numigo.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1056334163260-4ce0ca95vsf74jdcj6kfcp28j9pifo42.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "7143c724869758fa59eb3df2bce07777435db44e"
+          }
+        },
+        {
+          "client_id": "1056334163260-abse1l7m8g6evnvmi79nhah7sjs3st2d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "7c4a8f620f517eaf106f82f2b0185df4b7a4f8e0"
+          }
+        },
+        {
           "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
           "client_type": 3
         }

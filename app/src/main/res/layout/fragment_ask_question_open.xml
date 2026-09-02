@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#050C38">
+
+    <!-- SUPER Badge -->
+    <TextView
+        android:id="@+id/superBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_shop_super_badge"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:text="PRO"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Title Texts -->
+    <TextView
+        android:id="@+id/titleText1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:text="Anlamadığın yerde"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/superBadge" />
+
+    <TextView
+        android:id="@+id/titleText2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:text="öğretmeninden destek al!"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleText1" />
+
+    <!-- Center Graphic Placeholder -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/centerGraphic"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="32dp"
+        app:lottie_fileName="chating_anim.json"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/titleText2"
+        app:layout_constraintWidth_percent="0.9" />
+
+    <!-- Bottom White Container -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomWhiteContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_bottom_sheet_white"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageView
+            android:id="@+id/infoIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="32dp"
+            android:src="@drawable/question_video_ic"
+            app:tint="#4A4A4A"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/infoText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="24dp"
+            android:text="Takıldığın yerin görselini veya videosunu öğretmenine kolayca gönder, öğretmenin sana video ile cevap versin!"
+            android:textColor="#4A4A4A"
+            android:textSize="14sp"
+            android:gravity="center_horizontal"
+            app:layout_constraintBottom_toBottomOf="@id/infoIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/infoIcon"
+            app:layout_constraintTop_toTopOf="@id/infoIcon" />
+
+        <!-- Try for 1 week free Button -->
+        <FrameLayout
+            android:id="@+id/btnTryFree"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_blue_rounded_button"
+            app:layout_constraintTop_toBottomOf="@id/infoText">
+
+            <TextView
+                android:id="@+id/tryFreeText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:fontFamily="sans-serif-black"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+        </FrameLayout>
+
+        <!-- No Thanks Button -->
+        <TextView
+            android:id="@+id/btnNoThanks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-black"
+            android:text="HAYIR TEŞEKKÜRLER"
+            android:textColor="#3D4DFF"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnTryFree" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Full Screen Confetti Animation -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/confettiAnim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:elevation="10dp"
+        android:focusable="false"
+        app:lottie_autoPlay="true"
+        app:lottie_fileName="confetti_anim3.json"
+        app:lottie_loop="true"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

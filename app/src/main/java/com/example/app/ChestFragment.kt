@@ -20,23 +20,14 @@ import com.google.firebase.auth.FirebaseAuth
 
 class ChestFragment : Fragment() {
     private var isVideoFlowOpen = false
-    private var isChestRevealReady = false
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
     private var icon: Int = 0
     private lateinit var lessonItem : LessonItem
-    private var selectedVideoName: String = "crystal_red_yellow"
-    private var currentReward: ChestRewardOutcome = ChestRewardOutcome(
-        type = ChestRewardType.GOLD,
-        amount = 0,
-        iconRes = R.drawable.open_chest,
-        label = "0 altın",
-    )
     private var recordScore: Int = 0
     private var lessonSuccessRate: Float = 0f
     private var pendingChestRecordBreakMission: Boolean = false
     private var pendingChestStarGainAmount: Int = 0
-    private var goldUpdateListener: GoldUpdateListener? = null
     /** Aynı anda yalnızca bir ödül akışı (çift tıklama engeli) */
     private var claimRewardInProgress = false
 
@@ -95,15 +86,8 @@ class ChestFragment : Fragment() {
                 )
                 .remove(this@ChestFragment)
                 .commit()
-            ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
+            // Ödül NewChestFragment kapanırken zaten verildi (bkz. showCrystalBreakAtStart); burada tekrar verilmiyor.
             (activity as? MainActivity)?.tryShowPendingMarathonGuideOnMap("ChestFragment.loginReturn")
-        }
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is GoldUpdateListener) {
-            goldUpdateListener = context
         }
     }
 
@@ -115,9 +99,51 @@ class ChestFragment : Fragment() {
         return binding.root
     }
 
+    /**
+     * İlk tutorial dersini bitiren, henüz hesap açmamış kullanıcıyı login ekranına gönderir.
+     * [GlobalValues.currentTutorialNumber] sıfırlanır ki aynı açılışta tekrar tetiklenmesin;
+     * `tutorial1_login_flow_pending` bayrağı, girişten dönüldüğünde ders sırasının doğru
+     * devam etmesi için [GlobalLessonData] tarafından okunuyor.
+     */
+    private fun redirectToLoginForFirstTutorial(source: String) {
+        FirstTutorialShownStore.markShown(requireContext(), source)
+        requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("tutorial1_login_flow_pending", true)
+            .apply()
+        GlobalValues.currentTutorialNumber = 0
+        loginLauncher.launch(
+            Intent(requireContext(), LoginStartActivity::class.java)
+                .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
+        )
+    }
+
+    /** [NewChestFragment] kapanış kayma animasyonuna başlamadan hemen önce çağrılır: ChestFragment'in
+     * kendi (boş/eşleşmeyen) ekranı, NewChestFragment kayarken solda ortaya çıkmasın diye görünmez yapılır. */
+    fun hideOwnScreenForChestClose() {
+        if (_binding != null) {
+            binding.root.visibility = View.INVISIBLE
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         MainActivityChromeBlocker.acquire(requireActivity())
+
+        // İlk tutorial dersini bitirip henüz hesap açmamış kullanıcı: sandığı hiç göstermeden
+        // login ekranına yönlendir. openChest artık sunucuda ve girişsiz kullanıcıyı
+        // "unauthenticated" ile reddediyor — bu kontrol NewChestFragment açılmadan ÖNCE
+        // yapılmazsa kullanıcı önce bir "Sandık açılamadı" hatası görüp sonra login'e düşer.
+        if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
+            redirectToLoginForFirstTutorial("ChestFragment.onViewCreated")
+            return
+        }
+
+        // NewChestFragment açılmadan önce sunucu isteğini başlat: ilk açılıştaki Cloud
+        // Functions soğuk başlangıç gecikmesi (1-3 sn), buradan NewChestFragment'e kadar
+        // geçen animasyon/geçiş süresinin arkasında gizlenir.
+        ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name)
+
         lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
         recordScore = arguments?.getInt("toplamPuan", arguments?.getInt("dersPuani", 0) ?: 0) ?: 0
         lessonSuccessRate = arguments?.getFloat("successRate", 0f) ?: 0f
@@ -125,10 +151,13 @@ class ChestFragment : Fragment() {
             arguments?.getBoolean(ChestResult.ARG_PENDING_CHEST_RECORD_BREAK_MISSION, false) == true
         //record()
         changeCupIcon()
-        selectedVideoName = ChestCrystalPolicy.resolveVideoName()
-        currentReward = ChestCrystalPolicy.resolveRewardForVideo(selectedVideoName)
+        // ChestFragment'in kendi ödül kutusu (chestImage/goldText/claimRewardButton) kullanıcıya hiç
+        // gösterilmiyor; görünen tek ekran NewChestFragment (kristal/sandık mini oyunu). ChestFragment'in
+        // KENDİ root'unu burada invisible yapmıyoruz: NewChestFragment bir "post" ile (yani asenkron)
+        // eklendiği için araya bir çizim (frame) girip arkadaki haritayı bir an gösterebiliyordu.
+        // fragment_chest.xml'in arka planı (#101820) NewChestFragment'in ilk açılış temasına
+        // (#141F23) çok yakın olduğu için bu kısa yükleme anı fark edilmiyor.
         prepareHiddenRewardUi()
-        applyRewardUiState(currentReward)
         setupClaimRewardButton()
         showCrystalBreakAtStart()
         binding.root.post { elevateChestOverlayAboveMap() }
@@ -137,21 +166,14 @@ class ChestFragment : Fragment() {
 
     private fun setupClaimRewardButton() {
         binding.claimRewardButton.setOnClickListener {
-            // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
-            val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-            if (GlobalValues.currentTutorialNumber == 1) {
-                FirstTutorialShownStore.markShown(requireContext(), "ChestFragment.claim")
-            }
+            // Normalde bu dala artık girilmez: aynı kontrol onViewCreated'da NewChestFragment
+            // açılmadan önce yapılıyor. Kullanıcı bu ekranın ömrü içinde çıkış yaparsa diye
+            // (uzak ihtimal ama zararsız) burada da bırakıldı.
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 if (claimRewardInProgress) return@setOnClickListener
                 claimRewardInProgress = true
                 binding.claimRewardButton.isEnabled = false
-                prefs.edit().putBoolean("tutorial1_login_flow_pending", true).apply()
-                GlobalValues.currentTutorialNumber = 0
-                loginLauncher.launch(
-                    Intent(requireContext(), LoginStartActivity::class.java)
-                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
-                )
+                redirectToLoginForFirstTutorial("ChestFragment.claim")
                 return@setOnClickListener
             }
 
@@ -332,23 +354,21 @@ class ChestFragment : Fragment() {
                                 "CLAIM_MAP_RETURN",
                                 "removeThenPrepare+finalize",
                             )
+                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
+                            // ChestFragment'in kendi ekranı zaten görünmez (bkz. chest_closed dinleyicisi);
+                            // burada gösterilecek/kaydırılacak bir şey yok, harita dönüşü hemen yapılıyor.
                             if (isAdded) {
                                 fm.beginTransaction()
-                                    .setCustomAnimations(
-                                        R.anim.slide_in_left,
-                                        R.anim.slide_out_left,
-                                    )
                                     .remove(this@ChestFragment)
                                     .commitNowAllowingStateLoss()
                             }
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
                             main?.prepareMapReturnAfterLessonClaim()
                             main?.finalizeMapReturnAfterLessonClaim(
                                 caller = "ChestFragment.claimAfterRemove",
                                 badgePayloads = levelUpPayloads
                             )
                         }
-                        ChestRewardClaimHelper.applyReward(goldUpdateListener, currentReward)
+                        // Ödül NewChestFragment kapanırken zaten verildi (bkz. showCrystalBreakAtStart); burada tekrar verilmiyor.
                     }
                 }
                 val safeFm = parentFragmentManager
@@ -429,7 +449,7 @@ class ChestFragment : Fragment() {
     }
 
     private fun showCrystalBreakAtStart() {
-        if (isChestRevealReady || isVideoFlowOpen || !isAdded) return
+        if (isVideoFlowOpen || !isAdded) return
 
         isVideoFlowOpen = true
         
@@ -437,29 +457,18 @@ class ChestFragment : Fragment() {
             parentFragmentManager.clearFragmentResultListener("chest_closed")
             isVideoFlowOpen = false
             if (!isAdded || _binding == null) return@setFragmentResultListener
+            // ChestFragment zaten NewChestFragment'in kayma animasyonu BAŞLARKEN görünmez yapıldı
+            // (bkz. hideOwnScreenForChestClose / NewChestFragment.closeFragment); burada tekrar
+            // gizlemeye gerek yok, sadece harita dönüşü/görev/rozet mantığı tetikleniyor.
             binding.claimRewardButton.performClick()
         }
 
         val containerId = (requireView().parent as View).id
         parentFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_left, 0)
             .add(containerId, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
             .addToBackStack("map_chest")
             .commit()
-    }
-
-    private fun revealChestRewardUi() {
-        Log.d("bacısı","work")
-        if (isChestRevealReady) return
-        isChestRevealReady = true
-        applyRewardUiState(currentReward)
-        binding.chestImage.visibility = View.VISIBLE
-        binding.goldText.visibility = View.VISIBLE
-        binding.claimRewardButton.visibility = View.VISIBLE
-    }
-
-    private fun applyRewardUiState(reward: ChestRewardOutcome) {
-        binding.chestImage.setImageResource(reward.iconRes)
-        binding.goldText.text = reward.label
     }
 
     private fun changeCupIcon() {

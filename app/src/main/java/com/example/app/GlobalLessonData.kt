@@ -14,9 +14,6 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
-import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 
 object GlobalLessonData {
     data class ChestLessonRef(
@@ -36,7 +33,6 @@ object GlobalLessonData {
     /** [createLessonItems] ile tanımlı tüm part id'leri; seed ve çapraz-part okumalar için. */
     private val SEED_PART_IDS = intArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
     private const val AUTH_WAIT_TIMEOUT_MS = 1500L
-    private const val DEBUG_LOG_PATH = "debug-33b519.log"
     private var lessonRealtimeListener: ListenerRegistration? = null
     private var lessonRealtimeUid: String? = null
     private var lessonRealtimePartId: Int? = null
@@ -49,7 +45,18 @@ object GlobalLessonData {
 
     private const val LOG_TAG = "LessonProgress"
 
+    /**
+     * Teşhis logu — yalnızca Logcat'e yazar.
+     *
+     * Not: Bu fonksiyon eskiden her çağrıda ham bir [Thread] açıp geliştirme makinesindeki
+     * bir HTTP ingest ucuna (127.0.0.1:7913) timeout'suz POST atıyor, ayrıca göreli bir
+     * dosya yoluna ("debug-33b519.log") yazmaya çalışıyordu. İkisi de üretim derlemesinde
+     * işe yaramıyordu; kaldırıldı. İmza korundu, 12 çağrı noktası değişmedi.
+     *
+     * Logcat: `adb logcat -s DBG33b519`
+     */
     private fun debugLog(hypothesisId: String, location: String, message: String, data: Map<String, Any?> = emptyMap()) {
+        if (!BuildConfig.DEBUG) return
         try {
             val payload = mapOf(
                 "sessionId" to "33b519",
@@ -60,22 +67,7 @@ object GlobalLessonData {
                 "data" to data,
                 "timestamp" to System.currentTimeMillis(),
             )
-            val json = Gson().toJson(payload)
-            Log.d("DBG33b519", json)
-            File(DEBUG_LOG_PATH).appendText("$json\n")
-            Thread {
-                try {
-                    val conn = (URL("http://127.0.0.1:7913/ingest/8a0b1fc3-fae1-418f-bbbd-80b43a829b14").openConnection() as HttpURLConnection)
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.setRequestProperty("X-Debug-Session-Id", "33b519")
-                    conn.doOutput = true
-                    conn.outputStream.use { it.write(json.toByteArray()) }
-                    conn.inputStream.close()
-                    conn.disconnect()
-                } catch (_: Exception) {
-                }
-            }.start()
+            Log.d("DBG33b519", Gson().toJson(payload))
         } catch (_: Exception) {
         }
     }

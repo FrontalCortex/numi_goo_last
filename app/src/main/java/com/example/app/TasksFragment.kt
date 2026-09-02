@@ -69,7 +69,8 @@ class TasksFragment : Fragment() {
         }
     }
 
-    private lateinit var binding: FragmentTasksBinding
+    private var _binding: FragmentTasksBinding? = null
+    private val binding get() = _binding!!
     private lateinit var bulletinAdapter: BulletinAdapter
     private var part1Sources: List<DailyQuestionSource> = emptyList()
     private var dailyCardState: DailyQuestionCardUiState = defaultDailyCardState()
@@ -578,7 +579,7 @@ class TasksFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        binding = FragmentTasksBinding.inflate(inflater, container, false)
+        _binding = FragmentTasksBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -916,6 +917,8 @@ class TasksFragment : Fragment() {
                 }
             }
             
+            // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
+            ServerRewards.prefetchChest(NewChestFragment.ChestRarity.RARE.name)
             openAbacusContainerFragment(
                 NewChestFragment.newInstance(NewChestFragment.ChestRarity.RARE)
             )
@@ -2143,5 +2146,11 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
             android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
         )
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 }

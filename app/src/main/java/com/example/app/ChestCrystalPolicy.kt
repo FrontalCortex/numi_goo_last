@@ -1,7 +1,5 @@
 package com.example.app
 
-import kotlin.random.Random
-
 enum class ChestRewardType {
     GOLD,
     KEY,
@@ -14,70 +12,36 @@ data class ChestRewardOutcome(
     val label: String,
 )
 
+/**
+ * Kristal ödülünün GÖRSEL tarafı.
+ *
+ * Hangi videonun oynayacağı ve ödülün ne olduğu artık burada çekilmez — zar sunucuda
+ * atılır (`openCrystalReward`, bkz. [ServerRewards]). Bu nesne yalnızca sunucudan gelen
+ * sonucu ekranda göstermek için ikon/etiket üretir.
+ *
+ * Olasılık ve ödül tabloları functions/index.js içindedir; değiştirilirse iki taraf
+ * birlikte güncellenmelidir.
+ */
 object ChestCrystalPolicy {
-    private const val KEY_REWARD_ROLL_PERCENT = 50 //anahtarın çıkma ihtimali %de olarak
 
-    private val keyEligibleVideos = setOf(
-        "crystal_purple_yellow",
-        "crystal_red_yellow",
-        "crystal_purple_purple",
-        "crystal_blue_purple",
-        "crystal_red_purple",
-    )
+    /** Sunucudan geçerli bir video adı gelmezse oynatılacak video. */
+    const val FALLBACK_VIDEO = "crystal_blue_blue"
 
-    fun resolveVideoName(): String {
-        val roll = Random.nextInt(1000) // 0..999
-        return when {
-            roll < 500 -> "crystal_blue_blue"         // %50
-            roll < 600 -> "crystal_blue_red"          // %10
-            roll < 700 -> "crystal_red_red"           // %10
-            roll < 766 -> "crystal_red_purple"        // %6.6
-            roll < 816 -> "crystal_red_yellow"        // %5
-            roll < 882 -> "crystal_blue_purple"       // %6.6
-            roll < 948 -> "crystal_purple_purple"     // %6.6
-            else -> "crystal_purple_yellow"           // %5.1
-        }
-    }
-
-    fun resolveRewardForVideo(videoName: String): ChestRewardOutcome {
-        if (videoName in keyEligibleVideos && Random.nextInt(100) < KEY_REWARD_ROLL_PERCENT) {
-            val keyAmount = resolveKeyAmountForVideo(videoName)
-            return ChestRewardOutcome(
+    /** Sunucudan gelen sonucu ekranda gösterilecek hale getirir. */
+    fun outcomeFromServer(rewardType: String, amount: Int): ChestRewardOutcome =
+        if (rewardType == "KEY") {
+            ChestRewardOutcome(
                 type = ChestRewardType.KEY,
-                amount = keyAmount,
+                amount = amount,
                 iconRes = R.drawable.key,
-                label = "${keyAmount}x",
+                label = "${amount}x",
+            )
+        } else {
+            ChestRewardOutcome(
+                type = ChestRewardType.GOLD,
+                amount = amount,
+                iconRes = R.drawable.open_chest,
+                label = "$amount altın",
             )
         }
-        return resolveGoldRewardForVideo(videoName)
-    }
-
-    private fun resolveKeyAmountForVideo(videoName: String): Int = when (videoName) {
-        "crystal_purple_yellow", "crystal_red_yellow" -> 3
-        "crystal_purple_purple", "crystal_blue_purple", "crystal_red_purple" -> 2
-        "crystal_red_red", "crystal_blue_red" -> 1
-        else -> 1
-    }
-
-    private fun resolveGoldRewardForVideo(videoName: String): ChestRewardOutcome {
-        val goldRange = when (videoName) {
-            "crystal_blue_blue" -> 50..100
-            "crystal_blue_red" -> 150..200
-            "crystal_red_red" -> 150..200
-            "crystal_red_purple" -> 300..400
-            "crystal_red_yellow" -> 1000..1500
-            "crystal_blue_purple" -> 300..400
-            "crystal_purple_purple" -> 300..400
-            "crystal_purple_yellow" -> 1000..1500
-            else -> 50..100
-            //Yani kullanıcı ortalama 2000 altına 1 adet boncuk serisi alabilmeli.
-        }
-        val amount = goldRange.random()
-        return ChestRewardOutcome(
-            type = ChestRewardType.GOLD,
-            amount = amount,
-            iconRes = R.drawable.open_chest,
-            label = "$amount altın",
-        )
-    }
 }

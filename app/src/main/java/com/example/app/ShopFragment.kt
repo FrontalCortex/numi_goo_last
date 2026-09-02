@@ -20,7 +20,10 @@ class ShopFragment : Fragment() {
     private var currencyText: TextView? = null
     private var keyText: TextView? = null
     private var energyText: TextView? = null
-    
+
+    /** Anahtar karşılığı can alımı sürerken tekrar tıklamayı engeller. */
+    private var buyLifeInProgress = false
+
     // Timer properties for energy section
     private val handler = Handler(Looper.getMainLooper())
     private var updateRunnable: Runnable? = null
@@ -42,7 +45,6 @@ class ShopFragment : Fragment() {
         val ctx = requireContext()
         currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
         keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
-        keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
@@ -51,38 +53,15 @@ class ShopFragment : Fragment() {
                 keyText?.text = wallet.keys.toString()
             })
         }
-        
+
         // --- Can (Energy) Bölümü ---
         v.findViewById<View>(R.id.shopProCard).setOnClickListener {
-            Toast.makeText(ctx, "Pro Yakında", Toast.LENGTH_SHORT).show()
+            val mainActivity = activity as? MainActivity ?: return@setOnClickListener
+            mainActivity.billingManager.launchPurchase(mainActivity, BillingCatalog.SUB_PRO)
         }
 
         val buyButton = v.findViewById<View>(R.id.shopBuyLifeButton)
-        buyButton.setOnClickListener {
-            val activity = activity as? MainActivity ?: return@setOnClickListener
-            val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
-            
-            val currentKey = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
-            if (currentKey >= 3) {
-                // Anlık (optimistic) UI güncellemesi
-                keyText?.text = (currentKey - 3).toString()
-                
-                // Bakiyeyi düşür
-                UserWalletFirestore.applyKeyDelta(ctx, currentUid, -3) {
-                    refreshCurrencyUi()
-                }
-                
-                // Enerji ekle
-                activity.getEnergyManager().addEnergy(1)
-                
-                // Animasyon oynat
-                playHeartFlyAnimation(buyButton)
-                
-                updateEnergyUi()
-            } else {
-                Toast.makeText(ctx, "Yetersiz anahtar!", Toast.LENGTH_SHORT).show()
-            }
-        }
+        buyButton.setOnClickListener { buyLifeWithKeys(buyButton) }
 
         // --- SUPER CARD ---
         val superCard = v.findViewById<View>(R.id.shopSuperCard)
@@ -94,102 +73,143 @@ class ShopFragment : Fragment() {
         // Kristal reklam butonu
         val watchAdButton = v.findViewById<View>(R.id.shopWatchAdButton)
         watchAdButton.setOnClickListener {
-            val activity = activity as? MainActivity ?: return@setOnClickListener
-            activity.adManager.showRewardedAd(activity, showAdSkipAfter = false) {
-                val mainActivity = activity as? MainActivity
-                mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = android.view.View.VISIBLE
-                
-                parentFragmentManager.beginTransaction()
-                    .add(R.id.abacusFragmentContainer, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
-                    .commit()
+            val mainActivity = activity as? MainActivity ?: return@setOnClickListener
+            mainActivity.adManager.showRewardedAd(mainActivity, showAdSkipAfter = false) { adNonce ->
+                if (!isAdded) return@showRewardedAd
+                // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
+                ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name, adNonce)
+                mainActivity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
 
+                // "chest_closed" anahtarını bu FragmentManager'da başka ekranlar da kullanıyor ve
+                // her biri tetiklenince dinleyicisini temizliyor (aynı anahtara yalnızca tek
+                // dinleyici kayıtlı kalabilir). Aynı kalıbı burada da koruyoruz.
                 parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
-                    refreshCurrencyUi()
+                    parentFragmentManager.clearFragmentResultListener("chest_closed")
+                    if (isAdded) refreshCurrencyUi()
                 }
+
+                parentFragmentManager.beginTransaction()
+                    .add(
+                        R.id.abacusFragmentContainer,
+                        NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON, adNonce),
+                    )
+                    .commit()
             }
         }
 
         val watchAdButton2 = v.findViewById<View>(R.id.shopWatchAdButton2)
         watchAdButton2.setOnClickListener {
-            val activity = activity as? MainActivity ?: return@setOnClickListener
-            activity.adManager.showRewardedAd(activity, showAdSkipAfter = false) {
-                activity.getEnergyManager().addEnergy(1)
-                playHeartFlyAnimation(watchAdButton2)
-                updateEnergyUi()
+            val mainActivity = activity as? MainActivity ?: return@setOnClickListener
+            mainActivity.adManager.showRewardedAd(mainActivity, showAdSkipAfter = false) { adNonce ->
+                // Can sunucuda eklenir: reklamın gerçekten izlendiği AdMob SSV ile doğrulanır.
+                ServerEnergy.claimAdEnergy(
+                    adNonce = adNonce,
+                    onResult = { fullTime ->
+                        mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                        if (!isAdded) return@claimAdEnergy
+                        playHeartFlyAnimation(watchAdButton2)
+                        updateEnergyUi()
+                    },
+                    onFailure = {
+                        if (!isAdded) return@claimAdEnergy
+                        Toast.makeText(requireContext(), "Can alınamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                    },
+                )
             }
         }
 
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid        
-        // --- Altın Paketleri ---
-        val goldCard1 = v.findViewById<View>(R.id.shopGoldCard1)
-        goldCard1.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = currencyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedCurrency(ctx)
-                currencyText?.text = (current + 1200).toString()
-                
-                playItemFlyAnimation(goldCard1, 20, R.drawable.gold_ic)
-                UserWalletFirestore.applyCurrencyDelta(ctx, uid, 1200) { refreshCurrencyUi() }
-            }
-        }
-        val goldCard2 = v.findViewById<View>(R.id.shopGoldCard2)
-        goldCard2.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = currencyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedCurrency(ctx)
-                currencyText?.text = (current + 7000).toString()
-                
-                playItemFlyAnimation(goldCard2, 50, R.drawable.gold_ic)
-                UserWalletFirestore.applyCurrencyDelta(ctx, uid, 7000) { refreshCurrencyUi() }
-            }
-        }
-        val goldCard3 = v.findViewById<View>(R.id.shopGoldCard3)
-        goldCard3.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = currencyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedCurrency(ctx)
-                currencyText?.text = (current + 15000).toString()
-                
-                playItemFlyAnimation(goldCard3, 100, R.drawable.gold_ic)
-                UserWalletFirestore.applyCurrencyDelta(ctx, uid, 15000) { refreshCurrencyUi() }
-            }
-        }
-
-        // --- Anahtar Paketleri ---
-        val keyCard1 = v.findViewById<View>(R.id.shopKeyCard1)
-        keyCard1.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
-                keyText?.text = (current + 10).toString()
-                
-                playItemFlyAnimation(keyCard1, 10, R.drawable.key)
-                UserWalletFirestore.applyKeyDelta(ctx, uid, 10) { refreshCurrencyUi() }
-            }
-        }
-        val keyCard2 = v.findViewById<View>(R.id.shopKeyCard2)
-        keyCard2.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
-                keyText?.text = (current + 50).toString()
-                
-                playItemFlyAnimation(keyCard2, 20, R.drawable.key)
-                UserWalletFirestore.applyKeyDelta(ctx, uid, 50) { refreshCurrencyUi() }
-            }
-        }
-        val keyCard3 = v.findViewById<View>(R.id.shopKeyCard3)
-        keyCard3.setOnClickListener {
-            currentUid?.let { uid ->
-                val current = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
-                keyText?.text = (current + 100).toString()
-                
-                playItemFlyAnimation(keyCard3, 50, R.drawable.key)
-                UserWalletFirestore.applyKeyDelta(ctx, uid, 100) { refreshCurrencyUi() }
+        // --- Altın ve Anahtar Paketleri ---
+        // Gerçek para ile satın alınır. Verilecek miktarı SUNUCU belirler; burada yalnızca
+        // hangi kartın hangi Play ürününü açtığı bilgisi var. Bkz. docs/SATIN_ALMA_ENTEGRASYONU.md
+        CARD_PRODUCTS.forEach { (cardId, productId) ->
+            v.findViewById<View>(cardId).setOnClickListener {
+                val mainActivity = activity as? MainActivity ?: return@setOnClickListener
+                mainActivity.billingManager.launchPurchase(mainActivity, productId)
             }
         }
 
         v.isClickable = true; v.isFocusable = true; return v
     }
 
+    /**
+     * Fiyat etiketlerini Play'den gelen yerelleştirilmiş değerlerle günceller.
+     *
+     * Play fiyatı kullanıcının ülkesine ve para birimine göre belirler; layout'taki sabit
+     * ₺ değerleri yalnızca ürün bilgisi henüz gelmediğinde görünen yedektir.
+     */
+    private fun applyStorePrices() {
+        val view = view ?: return
+        val billing = (activity as? MainActivity)?.billingManager ?: return
+        CARD_PRICE_LABELS.forEach { (labelId, productId) ->
+            val price = billing.formattedPrice(productId) ?: return@forEach
+            view.findViewById<TextView>(labelId)?.text = price
+        }
+        billing.formattedPrice(BillingCatalog.SUB_PRO)?.let { price ->
+            view.findViewById<TextView>(R.id.shopProPriceText)?.text = "aylık $price"
+        }
+    }
+
+    /**
+     * [LIFE_KEY_COST] anahtar karşılığında 1 can verir.
+     *
+     * Can, ancak anahtar sunucuda gerçekten düşüldükten sonra eklenir; aksi halde çağrı
+     * reddedildiğinde (yetersiz bakiye, ağ hatası) kullanıcı bedava can kazanırdı.
+     */
+    private fun buyLifeWithKeys(buyButton: View) {
+        if (buyLifeInProgress) return
+        val ctx = context ?: return
+        val mainActivity = activity as? MainActivity ?: return
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        val currentKey = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
+        if (currentKey < LIFE_KEY_COST) {
+            Toast.makeText(ctx, "Yetersiz anahtar!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        buyLifeInProgress = true
+        // Anlık (iyimser) gösterim — sunucu reddederse aşağıda önbellekteki değere dönülür.
+        keyText?.text = (currentKey - LIFE_KEY_COST).toString()
+
+        // Anahtar düşümü ve can eklemesi sunucuda AYNI transaction'da yapılır; önceki iki
+        // adımlı akışta çağrılar arasında uygulama kapanırsa anahtar gidip can gelmiyordu.
+        ServerEnergy.buyWithKeys(
+            onResult = { fullTime, keys ->
+                buyLifeInProgress = false
+                mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                if (!isAdded) return@buyWithKeys
+                keyText?.text = keys.toString()
+                playHeartFlyAnimation(buyButton)
+                updateEnergyUi()
+            },
+            onFailure = {
+                buyLifeInProgress = false
+                if (!isAdded) return@buyWithKeys
+                refreshCurrencyUi()
+                Toast.makeText(ctx, "İşlem tamamlanamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
+        (activity as? MainActivity)?.billingManager?.let { billing ->
+            billing.onPricesReady = { if (isAdded) applyStorePrices() }
+            billing.onPurchaseGranted = { productId ->
+                if (isAdded) {
+                    refreshCurrencyUi()
+                    animatePurchasedItem(productId)
+                }
+                (activity as? MainActivity)?.refreshWalletUi()
+            }
+            billing.onError = { message ->
+                if (isAdded) Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+            }
+            // Ürün bilgisi bu ekran açılmadan önce gelmiş olabilir.
+            applyStorePrices()
+        }
+
         // Zamanlayıcıyı başlat
         updateRunnable = object : Runnable {
             override fun run() {
@@ -204,6 +224,25 @@ class ShopFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         updateRunnable?.let { handler.removeCallbacks(it) }
+        // Geri çağrıları MainActivity'ye devret; mağaza kapalıyken tamamlanan satın almalar
+        // da işlensin ve bu fragment'e sızıntı kalmasın.
+        (activity as? MainActivity)?.installDefaultBillingCallbacks()
+    }
+
+    /** Satın alınan pakete uygun kutlama animasyonunu oynatır. */
+    private fun animatePurchasedItem(productId: String) {
+        val view = view ?: return
+        val (cardId, iconRes) = when (productId) {
+            BillingCatalog.GOLD_SMALL -> R.id.shopGoldCard1 to R.drawable.gold_ic
+            BillingCatalog.GOLD_MEDIUM -> R.id.shopGoldCard2 to R.drawable.gold_ic
+            BillingCatalog.GOLD_LARGE -> R.id.shopGoldCard3 to R.drawable.gold_ic
+            BillingCatalog.KEYS_SMALL -> R.id.shopKeyCard1 to R.drawable.key
+            BillingCatalog.KEYS_MEDIUM -> R.id.shopKeyCard2 to R.drawable.key
+            BillingCatalog.KEYS_LARGE -> R.id.shopKeyCard3 to R.drawable.key
+            else -> return
+        }
+        val card = view.findViewById<View>(cardId) ?: return
+        playItemFlyAnimation(card, PURCHASE_ANIMATION_ITEM_COUNT, iconRes)
     }
 
     private fun updateEnergyUi() {
@@ -219,9 +258,10 @@ class ShopFragment : Fragment() {
         val timerText = view.findViewById<TextView>(R.id.shopLifeTimerText)
         val buyButton = view.findViewById<CardView>(R.id.shopBuyLifeButton)
         val buyIcon = view.findViewById<ImageView>(R.id.shopBuyLifeIcon)
-                val buyText = view.findViewById<TextView>(R.id.shopBuyLifeText)
+        val buyText = view.findViewById<TextView>(R.id.shopBuyLifeText)
         val watchAdButton2 = view.findViewById<View>(R.id.shopWatchAdButton2)
-        
+        buyText.text = LIFE_KEY_COST.toString()
+
         if (isInfinite || currentEnergy >= maxEnergy) {
             timerText.text = "DOLU"
             timerText.setTextColor(Color.parseColor("#78909C")) // Gri
@@ -340,6 +380,7 @@ class ShopFragment : Fragment() {
             .start()
     }
 
+    /** Bir karttan çok sayıda altın/anahtar fırlatan kutlama animasyonu. */
     private fun playItemFlyAnimation(button: View, count: Int, drawableResId: Int) {
         val rootLayout = view as? ViewGroup ?: return
         val context = context ?: return
@@ -416,5 +457,33 @@ class ShopFragment : Fragment() {
                     .start()
             }, (i * (400L / count))) // Spread spawns over 400ms
         }
+    }
+
+    companion object {
+        /** 1 can satın almanın anahtar bedeli. Arayüzdeki etiket de bu değerden yazılır. */
+        private const val LIFE_KEY_COST = 3
+
+        /** Satın alma sonrası fırlatılan ikon sayısı (yalnızca görsel). */
+        private const val PURCHASE_ANIMATION_ITEM_COUNT = 30
+
+        /** Kart -> Play ürün kimliği. */
+        private val CARD_PRODUCTS = listOf(
+            R.id.shopGoldCard1 to BillingCatalog.GOLD_SMALL,
+            R.id.shopGoldCard2 to BillingCatalog.GOLD_MEDIUM,
+            R.id.shopGoldCard3 to BillingCatalog.GOLD_LARGE,
+            R.id.shopKeyCard1 to BillingCatalog.KEYS_SMALL,
+            R.id.shopKeyCard2 to BillingCatalog.KEYS_MEDIUM,
+            R.id.shopKeyCard3 to BillingCatalog.KEYS_LARGE,
+        )
+
+        /** Fiyat etiketi -> Play ürün kimliği. */
+        private val CARD_PRICE_LABELS = listOf(
+            R.id.shopGoldPrice1 to BillingCatalog.GOLD_SMALL,
+            R.id.shopGoldPrice2 to BillingCatalog.GOLD_MEDIUM,
+            R.id.shopGoldPrice3 to BillingCatalog.GOLD_LARGE,
+            R.id.shopKeyPrice1 to BillingCatalog.KEYS_SMALL,
+            R.id.shopKeyPrice2 to BillingCatalog.KEYS_MEDIUM,
+            R.id.shopKeyPrice3 to BillingCatalog.KEYS_LARGE,
+        )
     }
 }

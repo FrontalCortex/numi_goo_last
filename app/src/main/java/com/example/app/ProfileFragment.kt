@@ -64,7 +64,8 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    private lateinit var binding: FragmentProfileBinding
+    private var _binding: FragmentProfileBinding? = null
+    private val binding get() = _binding!!
     private lateinit var authManager: AuthManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
@@ -132,7 +133,7 @@ class ProfileFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentProfileBinding.inflate(inflater, container, false)
+        _binding = FragmentProfileBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -191,7 +192,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun resumeCupAnimations() {
-        if (!::binding.isInitialized) return
+        if (_binding == null) return
         val cupIds = listOf(R.id.cupCard1, R.id.cupCard2, R.id.cupCard3, R.id.cupCard4, R.id.cupCard5, R.id.cupCard6)
         cupIds.forEach { id ->
             val lottie = binding.root.findViewById<View>(id)?.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.cardLottie)
@@ -256,7 +257,11 @@ class ProfileFragment : Fragment() {
         // Varsayılan olarak non_user göster
         binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
 
-        firestore.collection("users").document(uid)
+        // Başkasının profilinde `users` dokümanı okunamaz (yalnızca sahibi ve onaylı
+        // öğretmenler okuyabilir — bkz. firestore.rules). Görüntülenecek alanlar
+        // `publicProfiles` aynasından geliyor.
+        val profileCollection = if (isOtherUser) "publicProfiles" else "users"
+        firestore.collection(profileCollection).document(uid)
             .get()
             .addOnSuccessListener { doc ->
                 if (!isAdded) {
@@ -400,14 +405,14 @@ class ProfileFragment : Fragment() {
             .collection("followers").document(myUid)
         val followingRef = firestore.collection("users").document(myUid)
             .collection("following").document(targetUid)
-        val targetDocRef = firestore.collection("users").document(targetUid)
-        val myDocRef = firestore.collection("users").document(myUid)
 
         // Hedefin adını ve userId'sini zaten doc'tan biliriz (tvTopLeftName / tvUsernameAndDate)
         val targetName = binding.tvTopLeftName.text.toString()
         val targetUserIdRaw = binding.tvUsernameAndDate.text.toString()
             .removePrefix("@").substringBefore(" •")
 
+        // Sayaçlar sunucudaki takip trigger'ları tarafından güncelleniyor; istemci artık
+        // followersCount / followingCount yazmıyor.
         batch.set(followerRef, mapOf(
             "userId" to myUserId,
             "name" to myName,
@@ -418,8 +423,6 @@ class ProfileFragment : Fragment() {
             "name" to targetName,
             "followedAt" to com.google.firebase.Timestamp.now()
         ))
-        batch.update(targetDocRef, "followersCount", com.google.firebase.firestore.FieldValue.increment(1))
-        batch.update(myDocRef, "followingCount", com.google.firebase.firestore.FieldValue.increment(1))
 
         binding.btnAddFriend.isEnabled = false
         batch.commit()
@@ -1657,5 +1660,11 @@ class ProfileFragment : Fragment() {
             .replace(R.id.fragmentContainerID, CupHistoryFragment.newInstance(uid, field, title, animFile))
             .addToBackStack(null)
             .commit()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
+        _binding = null
     }
 }

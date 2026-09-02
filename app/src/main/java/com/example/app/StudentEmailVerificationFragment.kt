@@ -9,10 +9,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentStudentEmailVerificationBinding
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 
 class StudentEmailVerificationFragment : Fragment() {
 
@@ -20,7 +17,6 @@ class StudentEmailVerificationFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var authManager: AuthManager
-    private val firestore by lazy { FirebaseFirestore.getInstance() }
 
     private val email: String by lazy { requireArguments().getString(ARG_EMAIL).orEmpty() }
 
@@ -77,46 +73,39 @@ class StudentEmailVerificationFragment : Fragment() {
         binding.btnVerify.isEnabled = false
         binding.btnVerify.text = "Dogrulaniyor..."
 
-        // Pending registration bilgisini kaydet (verifyStudentCode bunu kullanacak)
-        val pendingData = mapOf(
-            "email" to email,
-            "name" to name,
-            "password" to password,
-            "updatedAt" to Timestamp.now()
+        // Kayıt bilgisi artık Firestore'a YAZILMIYOR (eskiden pendingRegistrations/{email}
+        // dokümanına düz metin şifre yazılıyordu). Bellekte tutulup verifyStudentCode
+        // çağrısının gövdesinde sunucuya gidiyor.
+        AuthManager.rememberPendingRegistration(
+            email = email,
+            name = name,
+            password = password,
+            role = AuthManager.ROLE_STUDENT,
         )
 
-        firestore.collection("pendingRegistrations").document(email)
-            .set(pendingData, SetOptions.merge())
-            .addOnSuccessListener {
-                authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
-                    if (!success) {
-                        binding.btnVerify.isEnabled = true
-                        binding.btnVerify.text = "Dogrula ve Giris Yap"
-                        Toast.makeText(requireContext(), error ?: "Kod dogrulanamadi", Toast.LENGTH_LONG).show()
-                        return@verifyStudentCode
-                    }
-
-                    // Eğer verify mevcut kullanıcı içindi ise FirebaseAuth oturumu olmayabilir; şifre ile giriş yap.
-                    if (FirebaseAuth.getInstance().currentUser == null) {
-                        authManager.loginStudent(email, password) { loginSuccess, loginError ->
-                            if (loginSuccess) {
-                                goToMain()
-                            } else {
-                                binding.btnVerify.isEnabled = true
-                                binding.btnVerify.text = "Dogrula ve Giris Yap"
-                                Toast.makeText(requireContext(), loginError ?: "Giris basarisiz", Toast.LENGTH_LONG).show()
-                            }
-                        }
-                    } else {
-                        goToMain()
-                    }
-                }
-            }
-            .addOnFailureListener { e ->
+        authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
+            if (!success) {
                 binding.btnVerify.isEnabled = true
                 binding.btnVerify.text = "Dogrula ve Giris Yap"
-                Toast.makeText(requireContext(), e.localizedMessage ?: "Kayit bilgileri kaydedilemedi", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), error ?: "Kod dogrulanamadi", Toast.LENGTH_LONG).show()
+                return@verifyStudentCode
             }
+
+            // Eğer verify mevcut kullanıcı içindi ise FirebaseAuth oturumu olmayabilir; şifre ile giriş yap.
+            if (FirebaseAuth.getInstance().currentUser == null) {
+                authManager.loginStudent(email, password) { loginSuccess, loginError ->
+                    if (loginSuccess) {
+                        goToMain()
+                    } else {
+                        binding.btnVerify.isEnabled = true
+                        binding.btnVerify.text = "Dogrula ve Giris Yap"
+                        Toast.makeText(requireContext(), loginError ?: "Giris basarisiz", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } else {
+                goToMain()
+            }
+        }
     }
 
     private fun goToMain() {

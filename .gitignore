@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Yayın imzalama anahtarı — asla commit'lenmemeli, kaybolursa bu uygulamaya bir daha
+# güncelleme yüklenemez. Dosyanın kendisini ayrıca (parola yöneticisi, harici disk vb.)
+# yedekleyin; bu .gitignore yalnızca git'e girmesini engeller.
+/keystore/
+keystore.properties
+*.jks
+*.keystore

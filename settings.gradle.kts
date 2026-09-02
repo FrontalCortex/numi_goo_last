@@ -20,6 +20,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NumiGoo"
+rootProject.name = "Sorobit"
 include(":app")
  

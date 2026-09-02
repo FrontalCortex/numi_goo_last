@@ -50,7 +50,7 @@ import java.io.File
 import java.io.FileOutputStream
 import android.content.SharedPreferences
 
-class MainActivity : AppCompatActivity(), GoldUpdateListener {
+class MainActivity : AppCompatActivity() {
     fun checkAndShowInterstitialAdIfAllowed(logContext: String, onDone: () -> Unit = {}) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             Log.d("AdDiag", "Skipping Ad on $logContext: User is not logged in")
@@ -171,6 +171,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     private lateinit var coin:TextView
     private lateinit var energyManager: EnergyManager
     internal lateinit var adManager: AdManager
+    internal lateinit var billingManager: BillingManager
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
     private val authManager by lazy { AuthManager().also { it.initialize(this) } }
@@ -306,7 +307,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         // adManager'ı burada init et; AgeConsentManager'ın asenkron callback'i
         // herhangi bir anda tetiklenebileceğinden lateinit crash riskine karşı önce atanmalı.
         adManager = AdManager(this)
-        
+
+        // Play Billing: uygulama açılışında bağlan ve Play'de duran, sunucuya işlenmemiş
+        // satın almaları yeniden gönder (ödeme sonrası çökme senaryosunu kurtarır).
+        billingManager = BillingManager(this)
+        installDefaultBillingCallbacks()
+        billingManager.start()
+
         // Yaşa ve ülkeye göre reklam muamelesi (TFAT) altyapısıyla AdMob'u başlat.
         // adManager preload işlemleri bu callback'in içinde yapılır;
         // böylece Firestore'dan birthYear gelmeden reklam isteği atılmaz (Claude planı).
@@ -1884,45 +1891,40 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
     }
 
 
-    override fun onGoldUpdated(amount: Int) {
-        updateGoldAmount(amount)
+    /**
+     * Billing geri çağrılarını varsayılan (ekran bağımsız) haline döndürür.
+     *
+     * ShopFragment açıkken kendi geri çağrılarını kurup animasyon/fiyat gösterir; kapanırken
+     * bu metodu çağırarak devri geri verir. Böylece mağaza kapalıyken tamamlanan bir satın alma
+     * yine de bakiyeyi tazeler.
+     */
+    fun installDefaultBillingCallbacks() {
+        if (!::billingManager.isInitialized) return
+        billingManager.onPricesReady = null
+        billingManager.onError = null
+        billingManager.onPurchaseGranted = { resyncWalletFromServer() }
+        billingManager.onSubscriptionUpdated = { checkSubscriptionAndUpdateEnergy() }
     }
 
-    override fun onKeysUpdated(amount: Int) {
-        updateKeysAmount(amount)
+    /**
+     * Sunucu bir cüzdan işlemini reddettiğinde (ödül üst sınırı, saatlik tavan, yetersiz bakiye)
+     * iyimser olarak yazdığımız değer yanlış kalır. Gerçek bakiyeyi Firestore'dan tekrar çekip
+     * hem önbelleği hem arayüzü düzeltir.
+     */
+    private fun resyncWalletFromServer() {
+        val uid = auth.currentUser?.uid ?: return
+        UserWalletFirestore.loadWallet(
+            context = this,
+            uid = uid,
+            onResult = { wallet ->
+                if (::binding.isInitialized) applyWalletToUi(wallet)
+            },
+        )
     }
 
-    fun updateGoldAmount(amount: Int) {
-        if (amount == 0) return
-        val currentGold = binding.currencyText.text.toString().toIntOrNull() ?: 0
-        val newGold = currentGold + amount
-        binding.currencyText.text = newGold.toString()
-        saveCurrency(this, newGold)
-        auth.currentUser?.uid?.let { uid ->
-            UserWalletFirestore.applyCurrencyDelta(
-                context = this,
-                uid = uid,
-                delta = amount,
-                onSuccess = { wallet -> applyWalletToUi(wallet) },
-            )
-        }
-    }
 
-    fun updateKeysAmount(amount: Int) {
-        if (amount == 0) return
-        val currentKeys = binding.keyText.text.toString().toIntOrNull() ?: 0
-        val newKeys = currentKeys + amount
-        binding.keyText.text = newKeys.toString()
-        saveKeys(this, newKeys)
-        auth.currentUser?.uid?.let { uid ->
-            UserWalletFirestore.applyKeyDelta(
-                context = this,
-                uid = uid,
-                delta = amount,
-                onSuccess = { wallet -> applyWalletToUi(wallet) },
-            )
-        }
-    }
+
+
 
     /** Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`). */
     fun spendDiamonds(amount: Int): Boolean {
@@ -1940,7 +1942,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 context = this,
                 uid = uid,
                 delta = -amount,
+                reason = WalletReason.SPEND,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
+                onFailure = { resyncWalletFromServer() },
             )
         }
         return true
@@ -1961,7 +1965,9 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
                 context = this,
                 uid = uid,
                 delta = -amount,
+                reason = WalletReason.SPEND,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
+                onFailure = { resyncWalletFromServer() },
             )
         }
         return true
@@ -1995,7 +2001,13 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             .get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    val plan = doc.getString("plan") ?: "Free"
+                    // planExpiresAt: doğrulanmış Play aboneliğinin bitiş zamanı (ms).
+                    // Süresi geçmişse kullanıcı Free'ye düşer — abonelik iptal edildiğinde
+                    // sunucudan yeni bir doğrulama gelmese bile Pro süresiz kalmasın diye.
+                    val storedPlan = doc.getString("plan") ?: "Free"
+                    val planExpiresAt = doc.getLong("planExpiresAt")
+                    val planExpired = planExpiresAt != null && planExpiresAt < System.currentTimeMillis()
+                    val plan = if (planExpired) "Free" else storedPlan
                     val role = doc.getString("role") ?: ""
                     val teacherApproved = doc.getBoolean("teacherApproved") == true
                     GlobalValues.isTeacherApproved = teacherApproved
@@ -2633,6 +2645,10 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
             return "badge_firestore_pending"
         }
 
+        if (adCheckForBadgeInProgress) {
+            return "ad_check_in_progress"
+        }
+
         val gateVisible = binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE
         val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
         if (gateVisible && gate != null) {
@@ -3057,6 +3073,7 @@ class MainActivity : AppCompatActivity(), GoldUpdateListener {
         seasonLeaderboardPendingListener?.remove()
         walletListenerRegistration?.remove()
         seasonLeaderboardPendingListener = null
+        if (::billingManager.isInitialized) billingManager.end()
         if (binding.recordingOverlayContainer.visibility == View.VISIBLE) {
             startService(Intent(this, ScreenRecordingService::class.java).setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD))
         }

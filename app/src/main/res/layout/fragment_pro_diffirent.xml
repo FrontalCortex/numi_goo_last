@@ -260,7 +260,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Canlı öğretmen desteği"
+            android:text="Eğitmen desteği"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"

@@ -10,6 +10,9 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions
+import com.google.firebase.auth.FirebaseAuth
+import java.util.UUID
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
@@ -19,12 +22,16 @@ class AdManager(private val context: Context) {
     private var rewardedAd: RewardedAd? = null
     private val TAG = "AdManager"
 
-    // TEST ID: ca-app-pub-3940256099942544/5224354917
-    private val adUnitId = "ca-app-pub-3940256099942544/5224354917"
+    // Gerçek ödüllü reklam birimi (SSV bu birim üzerinde yapılandırıldı).
+    // Test etmek için AdMob konsolunda cihazınızı "Test devices" olarak işaretleyin —
+    // aksi halde kendi reklamınıza tıklamak hesabın askıya alınmasına yol açabilir.
+    private val adUnitId = "ca-app-pub-8436855856536384/7535644549"
 
     
     private var interstitialAd: InterstitialAd? = null
-    // TEST ID: ca-app-pub-3940256099942544/1033173712
+    // DİKKAT: Bu hâlâ Google'ın PAYLAŞIMLI TEST ID'si — henüz gerçek bir geçiş reklamı
+    // (interstitial) birimi oluşturulmadı. Yayına çıkmadan önce AdMob konsolunda ayrı bir
+    // interstitial birim açılıp buraya girilmeli.
     private val interstitialAdUnitId = "ca-app-pub-3940256099942544/1033173712"
 
     fun preloadInterstitialAd() {
@@ -108,7 +115,34 @@ class AdManager(private val context: Context) {
         return rewardedAd != null
     }
 
-    fun showRewardedAd(activity: Activity, showAdSkipAfter: Boolean = true, onRewarded: () -> Unit) {
+    /**
+     * Odullu reklam gosterir.
+     *
+     * Reklam tamamlandiginda AdMob sunucumuzu imzali olarak cagirir (SSV) ve tek kullanimlik
+     * bir sandik hakki yazilir. [onRewarded] o hakki bozdurmak icin gereken nonce ile cagrilir;
+     * nonce sunucuya openChest(adNonce = ...) olarak iletilmelidir.
+     *
+     * Oturum yoksa odul hicbir hesaba yazilamayacagi icin reklam gosterilmez.
+     */
+    fun showRewardedAd(
+        activity: Activity,
+        showAdSkipAfter: Boolean = true,
+        onRewarded: (adNonce: String) -> Unit,
+    ) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            Log.w(TAG, "Oturum acik degil; odullu reklam gosterilmiyor.")
+            Toast.makeText(context, "Odul icin giris yapmalisiniz.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // custom_data = "<uid>:<nonce>" - AdMob bunu imzali callback ile geri gonderir.
+        val nonce = UUID.randomUUID().toString()
+        rewardedAd?.setServerSideVerificationOptions(
+            ServerSideVerificationOptions.Builder()
+                .setCustomData(uid + ":" + nonce)
+                .build()
+        )
+
         if (rewardedAd != null) {
             rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
@@ -141,7 +175,7 @@ class AdManager(private val context: Context) {
             rewardedAd?.show(activity) { rewardItem ->
                 // Reward the user
                 Log.d(TAG, "User earned the reward: \${rewardItem.amount} \${rewardItem.type}")
-                onRewarded()
+                onRewarded(nonce)
             }
         } else {
             Log.d(TAG, "The rewarded ad wasn't ready yet.")

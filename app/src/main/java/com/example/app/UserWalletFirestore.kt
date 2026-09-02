@@ -8,7 +8,40 @@ import com.google.firebase.firestore.SetOptions
 data class UserWallet(
     val keys: Int,
     val currency: Int,
+    /**
+     * Harcama çağrılarında sunucunun ürettiği tek kullanımlık geri alma jetonu.
+     *
+     * Bir harcamayı geri almak (iade etmek) yalnızca bu jetonla ve birebir aynı miktarla
+     * mümkündür; böylece istemci "harcamadan geri alma" yapıp bakiye şişiremez.
+     * Kredi çağrılarında ve önbellekten okumalarda null'dır.
+     */
+    val rollbackToken: String? = null,
 )
+
+/**
+ * `updateUserWallet` Cloud Function'ına gönderilen gerekçeler.
+ *
+ * Sunucu, bakiyeyi ARTIRAN çağrılarda gerekçeyi kendi kataloğunda (functions/index.js →
+ * `WALLET_CREDIT_RULES`) arar ve miktarı o gerekçenin üst sınırıyla karşılaştırır. Buradaki
+ * sabitler ile oradaki anahtarlar birebir aynı kalmalıdır. Bakiyeyi AZALTAN çağrılarda gerekçe
+ * yalnızca günlüğe yazılır.
+ */
+object WalletReason {
+    // NOT: Sandık/kristal ödülleri için gerekçe YOKTUR ve eklenmemelidir. O ödüllerin zarı
+    // sunucuda atılır ve bakiye `openChest` / `openCrystalReward` içinde yazılır
+    // (bkz. [ServerRewards]). Buraya bir "ödül" gerekçesi eklemek, istemcinin kendi ödül
+    // miktarını seçebildiği eski açığı geri getirir.
+
+    /**
+     * Uygulama içi satın alma kaydı başarısız olduğunda harcamanın geri alınması.
+     * Google Play para iadesiyle ilgisi yoktur — o sunucuda `reconcileVoidedPurchases`
+     * tarafından işlenir ve bakiyeyi eksiye düşürebilir.
+     */
+    const val PURCHASE_ROLLBACK = "purchase_rollback"
+
+    /** Kullanıcının kendi bakiyesinden harcaması. */
+    const val SPEND = "spend"
+}
 
 object UserWalletFirestore {
     const val FIELD_KEYS = "keys"
@@ -82,60 +115,69 @@ object UserWalletFirestore {
             }
     }
 
+    /**
+     * Anahtar bakiyesini [delta] kadar değiştirir.
+     *
+     * @param reason [WalletReason] sabitlerinden biri. Pozitif [delta] için sunucu bu gerekçeyi
+     *   kendi kataloğunda arar; tanımsız gerekçeyle ya da katalogdaki üst sınırın üzerinde bir
+     *   miktarla yapılan artırma reddedilir.
+     */
     fun applyKeyDelta(
         context: Context,
         uid: String,
         delta: Int,
+        reason: String,
+        rollbackToken: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
-    ) {
-        if (delta == 0) return
-        val functions = com.google.firebase.functions.FirebaseFunctions.getInstance()
-        val data = hashMapOf(
-            "keys" to delta,
-            "currency" to 0,
-            "reason" to "client_request"
-        )
-        
-        functions.getHttpsCallable("updateUserWallet")
-            .call(data)
-            .addOnSuccessListener { result ->
-                val resultData = result.data as? Map<*, *>
-                val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
-                val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
-                
-                cacheLocally(context, keys, currency)
-                onSuccess?.invoke(UserWallet(keys = keys, currency = currency))
-            }
-            .addOnFailureListener { e ->
-                onFailure?.invoke(e)
-            }
-    }
+    ) = applyDelta(context, keyDelta = delta, currencyDelta = 0, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
 
+    /**
+     * Altın bakiyesini [delta] kadar değiştirir. Gerekçe kuralları için bkz. [applyKeyDelta].
+     */
     fun applyCurrencyDelta(
         context: Context,
         uid: String,
         delta: Int,
+        reason: String,
+        rollbackToken: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
+    ) = applyDelta(context, keyDelta = 0, currencyDelta = delta, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
+
+    private fun applyDelta(
+        context: Context,
+        keyDelta: Int,
+        currencyDelta: Int,
+        reason: String,
+        rollbackToken: String?,
+        onSuccess: ((UserWallet) -> Unit)?,
+        onFailure: ((Exception) -> Unit)?,
     ) {
-        if (delta == 0) return
-        val functions = com.google.firebase.functions.FirebaseFunctions.getInstance()
-        val data = hashMapOf(
-            "keys" to 0,
-            "currency" to delta,
-            "reason" to "client_request"
+        if (keyDelta == 0 && currencyDelta == 0) return
+        val data = hashMapOf<String, Any>(
+            "keys" to keyDelta,
+            "currency" to currencyDelta,
+            "reason" to reason,
         )
-        
-        functions.getHttpsCallable("updateUserWallet")
+        if (rollbackToken != null) data["rollbackToken"] = rollbackToken
+
+        com.google.firebase.functions.FirebaseFunctions.getInstance()
+            .getHttpsCallable("updateUserWallet")
             .call(data)
             .addOnSuccessListener { result ->
                 val resultData = result.data as? Map<*, *>
                 val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
                 val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
-                
+
                 cacheLocally(context, keys, currency)
-                onSuccess?.invoke(UserWallet(keys = keys, currency = currency))
+                onSuccess?.invoke(
+                    UserWallet(
+                        keys = keys,
+                        currency = currency,
+                        rollbackToken = resultData?.get("rollbackToken") as? String,
+                    )
+                )
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)

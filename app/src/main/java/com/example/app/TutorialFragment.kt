@@ -190,7 +190,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     /** [resetAndWaith] sonrası planlanan [showStep]; üst üste geri basışta iptal edilir. */
     private var pendingBackShowStepRunnable: Runnable? = null
     private var backStepTransitionPending = false
-    private lateinit var binding: FragmentTutorialBinding
+    private var _binding: FragmentTutorialBinding? = null
+    private val binding get() = _binding!!
     private var currentStep = 0
     private var backOrFront = true
     private lateinit var focusView: View
@@ -285,7 +286,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentTutorialBinding.inflate(inflater, container, false)
+        _binding = FragmentTutorialBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -1236,8 +1237,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         fourIsUp = rod0BeadStates[3]
         
         // Margin animasyonları 300ms; bitince sayıdan iç state + drawable hizala (margin sync değil).
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (!isAdded) return@postDelayed
+        // postDelayedSafely: view yok edilmişse geri çağrı sessizce atlanır.
+        postDelayedSafely(400) {
             logWriteAnswerNumber("BEFORE_POST_COMPLETE", number)
             isWritingAnswerNumber = false
             abacusController?.applyInternalStateFromValue(number, applyAppearance = true)
@@ -1247,7 +1248,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 abacusController?.setEnabled(true)
             }
             onComplete?.invoke()
-        }, 400)
+        }
     }
     private fun closeFragment() { // Fragment'i kapat ve MapFragment'e dön
         if (!isAdded || isTutorialClosing) return
@@ -1512,12 +1513,16 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     private fun cancelPendingBackShowStep() {
-        pendingBackShowStepRunnable?.let { binding.root.removeCallbacks(it) }
+        // View yok edilmiş olabilir (onDestroyView'dan da çağrılıyor); binding'e güvenle eriş.
+        val b = _binding
+        pendingBackShowStepRunnable?.let { b?.root?.removeCallbacks(it) }
         pendingBackShowStepRunnable = null
         backStepTransitionPending = false
-        binding.overlay.visibility = View.GONE
-        binding.overlay.isClickable = false
-        binding.overlay.isFocusable = false
+        b?.overlay?.let { overlay ->
+            overlay.visibility = View.GONE
+            overlay.isClickable = false
+            overlay.isFocusable = false
+        }
     }
 
     private fun scheduleBackShowStep(delayMs: Long, skipReverseBeadAnims: Boolean) {
@@ -1610,7 +1615,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private val DEFAULT_TUTORIAL_STEP_1_JSON = """
     {
       "steps": [
-        {"text":"Numigo'ya hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.","sound":"tutorial1_1","typewriterSpeed":40,"actions":[{"op":"hide","target":"abacusLinear"},{"op":"hide","target":"abacusContainer"},{"op":"hide","target":"backButton"},{"op":"show","target":"skipTutorialButton"}]},
+        {"text":"Sorobit'e hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.","sound":"tutorial1_1","typewriterSpeed":40,"actions":[{"op":"hide","target":"abacusLinear"},{"op":"hide","target":"abacusContainer"},{"op":"hide","target":"backButton"},{"op":"show","target":"skipTutorialButton"}]},
         {"text":"Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.","sound":"tutorial1_2","typewriterSpeed":40,"actions":[{"op":"show","target":"backButton"}]},
         {"text":"Şimdi başlayalım.","sound":"tutorial1_4","typewriterSpeed":40,"actions":[{"op":"show","target":"abacusLinear"},{"op":"show","target":"abacusContainer"}]},
         {"text":"Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.","sound":"tutorial1_5","typewriterSpeed":40},
@@ -15424,7 +15429,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         if (isCorrect) {
             // Doğru cevap durumu
 
-            playCorretSound(R.raw.correct_answer_sound)
+            playCorretSound(R.raw.correct_answer_sound, volume = 0.3f)
 
             correctPanel.translationY = correctPanel.height.toFloat()
             correctPanel.visibility = View.VISIBLE
@@ -15541,6 +15546,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             incorrectPanel.translationY = incorrectPanel.height.toFloat()
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
+            incorrectPanel.findViewById<TextView>(R.id.correctAnswerText).visibility = View.GONE
 
             enableTutorialResultTouchBlock(incorrectPanel)
             
@@ -15623,7 +15629,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private fun stopInfoRequestBreathAnimation() {
         infoRequestBreathAnimator?.cancel()
         infoRequestBreathAnimator = null
-        if (!::binding.isInitialized) return
+        if (_binding == null) return
         binding.infoRequest.scaleX = 1f
         binding.infoRequest.scaleY = 1f
         binding.infoRequest.imageTintList = ColorStateList.valueOf(INFO_REQUEST_TINT)
@@ -15749,10 +15755,9 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             // showStep, writeAnswerNumber bitmeden çağrılırsa setupBeads sync atlanır; 400ms sonra
             // syncStateFromUi drawable'ı ezer → aktiflik kaybı. UI'yı onComplete'te güncelle.
             if (needsReset && backNum != null) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    if (!isAdded) return@postDelayed
+                postDelayedSafely(350L) {
                     writeAnswerNumber(backNum) { finishIncorrectStepUi() }
-                }, 350L)
+                }
             } else {
                 if (backNum != null) {
                     writeAnswerNumber(backNum) { finishIncorrectStepUi() }
@@ -16895,12 +16900,13 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.overlay.isClickable = true
         binding.overlay.isFocusable = true
 
-        // 0.4 saniye sonra overlay'i kapat
-        Handler(Looper.getMainLooper()).postDelayed({
+        // 0.4 saniye sonra overlay'i kapat.
+        // (Eskiden korumasızdı: view yok edildikten sonra tetiklenirse ölü bir view'a yazıyordu.)
+        postDelayedSafely(400) {
             binding.overlay.visibility = View.GONE
             binding.overlay.isClickable = false
             binding.overlay.isFocusable = false
-        }, 400)
+        }
 
         // Controller üzerinden abaküsü sıfırla (animasyonlu)
         abacusController?.reset(animate = true)
@@ -16974,7 +16980,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     override fun onDestroyView() {
         cancelPendingBackShowStep()
         stopInfoRequestBreathAnimation()
-        if (::binding.isInitialized) {
+        if (_binding != null) {
             dismissRequestPanelsImmediate()
         }
         stopLearningSessionTracking()
@@ -16983,12 +16989,17 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
-        typewriterRunnable?.let { binding.tutorialText.removeCallbacks(it) }
+        _binding?.let { b ->
+            typewriterRunnable?.let { b.tutorialText.removeCallbacks(it) }
+            typewriterSetupRunnable?.let { b.tutorialText.removeCallbacks(it) }
+        }
         typewriterRunnable = null
-        typewriterSetupRunnable?.let { binding.tutorialText.removeCallbacks(it) }
         typewriterSetupRunnable = null
         typewriterText = null
         typewriterPausedByLifecycle = false
+        // View hiyerarşisini bırak: fragment geri yığınında beklerken tüm view ağacının
+        // bellekte kalmasına yol açıyordu.
+        _binding = null
     }
 
     private fun startLearningSessionTracking() {
@@ -17006,11 +17017,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             MissionsProgressStore.recordLearningDurationMs(ctx, elapsedMs)
         }
     }
-    private fun playCorretSound(soundResId: Int) {
+    private fun playCorretSound(soundResId: Int, volume: Float = 1f) {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return
         mediaPlayer?.release() // Önceki sesi serbest bırak
         mediaPlayer = MediaPlayer.create(requireContext(), soundResId)
+        mediaPlayer?.setVolume(volume, volume)
         mediaPlayer?.start()
     }
     // Ses çalma fonksiyonu. soundResource: gömülü (res/raw) ses. soundStoragePath doluysa ve
@@ -17067,6 +17079,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         textView.visibility = View.INVISIBLE
         textView.text = text
         typewriterSetupRunnable = Runnable {
+            typewriterSetupRunnable = null
             textView.text = ""
             typewriterRunnable = object : Runnable {
                 override fun run() {

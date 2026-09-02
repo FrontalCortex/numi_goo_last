@@ -13,7 +13,6 @@ import com.google.android.gms.tasks.Tasks
 import com.google.android.material.tabs.TabLayout
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 class FollowersFollowingFragment : Fragment() {
@@ -161,9 +160,10 @@ class FollowersFollowingFragment : Fragment() {
                     return@addOnSuccessListener
                 }
 
-                // Fetch each user's main document in parallel to get selectedAvatar
+                // Avatar için herkese açık profili oku. `users` dokümanı artık yalnızca
+                // sahibine ve onaylı öğretmenlere açık (bkz. firestore.rules).
                 val userDocTasks = snap.documents.map { doc ->
-                    firestore.collection("users").document(doc.id).get()
+                    firestore.collection("publicProfiles").document(doc.id).get()
                 }
 
                 Tasks.whenAllSuccess<com.google.firebase.firestore.DocumentSnapshot>(userDocTasks)
@@ -228,8 +228,6 @@ class FollowersFollowingFragment : Fragment() {
             .collection("followers").document(myFirebaseUid)
         val myFollowingRef = firestore.collection("users").document(myFirebaseUid)
             .collection("following").document(targetUid)
-        val targetDocRef = firestore.collection("users").document(targetUid)
-        val myDocRef = firestore.collection("users").document(myFirebaseUid)
 
         val followData = mapOf(
             "userId" to user.userId,
@@ -242,10 +240,9 @@ class FollowersFollowingFragment : Fragment() {
             "followedAt" to Timestamp.now()
         )
 
+        // Sayaçlar sunucudaki takip trigger'ları tarafından güncelleniyor (bkz. AddFriendFragment).
         batch.set(myFollowerRef, followData)
         batch.set(myFollowingRef, myData)
-        batch.update(targetDocRef, "followersCount", FieldValue.increment(1))
-        batch.update(myDocRef, "followingCount", FieldValue.increment(1))
 
         batch.commit()
             .addOnSuccessListener {

@@ -1,10 +1,13 @@
 package com.example.app
 
+import android.app.Activity
 import android.content.Context
 import android.telephony.TelephonyManager
 import android.util.Log
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
@@ -26,19 +29,25 @@ object AgeConsentManager {
         UNSPECIFIED
     }
 
+    /** MobileAds yalnızca bir kez başlatılmalı (activity yeniden yaratılabilir). */
+    @Volatile
+    private var adsInitialized = false
+
     /**
      * Firestore'dan kullanıcının birthYear'ını asenkron olarak çeker.
-     * Ülkeye özgü dijital rıza yaşı sınırına göre muamele seviyesini belirler.
-     * Ardından MobileAds SDK'yı doğru TFCD/TFUA konfigürasyonuyla başlatır.
+     * Ülkeye özgü dijital rıza yaşı sınırına göre muamele seviyesini belirler,
+     * TFCD/TFUA konfigürasyonunu uygular, ardından GEREKİYORSA kullanıcıya
+     * reklam rızası formunu (UMP / CMP) gösterir ve en son MobileAds'i başlatır.
+     *
      * MobileAds tamamen başladıktan sonra onComplete callback'i çağrılır;
      * ad preload işlemleri bu callback içinde yapılmalıdır.
      */
-    fun initializeAdMobWithAgeConsent(context: Context, onComplete: () -> Unit) {
+    fun initializeAdMobWithAgeConsent(activity: Activity, onComplete: () -> Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamışsa güvenli varsayılan: CHILD
             Log.d(TAG, "No logged in user → defaulting to CHILD treatment.")
-            applyTreatmentAndInit(context, AgeTreatment.CHILD, onComplete)
+            applyTreatmentAndInit(activity, AgeTreatment.CHILD, onComplete)
             return
         }
 
@@ -53,31 +62,32 @@ object AgeConsentManager {
 
                 if (birthYear > 0) {
                     val age = Calendar.getInstance().get(Calendar.YEAR) - birthYear
-                    val countryCode = getCountryCode(context)
+                    val countryCode = getCountryCode(activity)
                     val consentAge = getDigitalConsentAgeForCountry(countryCode)
 
                     Log.d(TAG, "User Age=$age, Country=$countryCode, Consent Age=$consentAge")
 
                     val treatment = if (age < consentAge) AgeTreatment.CHILD else AgeTreatment.TEEN
-                    applyTreatmentAndInit(context, treatment, onComplete)
+                    applyTreatmentAndInit(activity, treatment, onComplete)
                 } else {
                     // birthYear yok veya geçersiz → plan gereği CHILD
                     Log.d(TAG, "birthYear not found or invalid → defaulting to CHILD treatment.")
-                    applyTreatmentAndInit(context, AgeTreatment.CHILD, onComplete)
+                    applyTreatmentAndInit(activity, AgeTreatment.CHILD, onComplete)
                 }
             }
             .addOnFailureListener { e ->
                 // Firestore hatası → güvenli liman: CHILD
                 Log.e(TAG, "Firestore read failed: ${e.message} → defaulting to CHILD.", e)
-                applyTreatmentAndInit(context, AgeTreatment.CHILD, onComplete)
+                applyTreatmentAndInit(activity, AgeTreatment.CHILD, onComplete)
             }
     }
 
     private fun applyTreatmentAndInit(
-        context: Context,
+        activity: Activity,
         treatment: AgeTreatment,
         onComplete: () -> Unit
     ) {
+        val context: Context = activity
         Log.d(TAG, "Applying AdMob treatment: $treatment")
 
         val builder = RequestConfiguration.Builder()
@@ -107,9 +117,78 @@ object AgeConsentManager {
             }
         }
 
+        // Test cihazı: gerçek reklam yerine 'Test Ad' etiketli reklam gösterilir, hesabı
+        // riske atmadan test edilebilir. Yalnızca debug derlemede aktif — release APK'sinde
+        // gerçek kullanıcılar test reklamı görmesin diye.
+        val isDebugBuild = (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (isDebugBuild) {
+            builder.setTestDeviceIds(listOf("7EE88C5BC09FB40090CCEF8FB3AF1F1D"))
+        }
+
         MobileAds.setRequestConfiguration(builder.build())
 
-        // SDK init, Firestore verisi alındıktan SONRA çağrılır.
+        // Rıza (UMP) akışı, MobileAds başlatılmadan ÖNCE tamamlanmalı.
+        requestConsentThenInitAds(activity, treatment, onComplete)
+    }
+
+    /**
+     * Reklam rızası (UMP / CMP) akışı.
+     *
+     * AB ve İngiltere'deki kullanıcılara reklam gösterilmeden önce bir rıza formu
+     * sunulması Google'ın "EU user consent" politikası gereği zorunludur. TFCD/TFUA
+     * etiketleri bunun yerine geçmez: onlar Google'a "bu kullanıcı çocuk" der,
+     * kullanıcıya soru sormaz.
+     *
+     * Formun metni ve hangi bölgelerde çıkacağı AdMob konsolundan (Privacy & messaging)
+     * tanımlanır. Tanımlı bir mesaj yoksa UMP "form gerekmiyor" der ve akış sorunsuz
+     * devam eder — yani bu kod konsol ayarlanmadan da uygulamayı bozmaz.
+     *
+     * Rıza alınamasa bile MobileAds başlatılır: bu durumda SDK yalnızca
+     * kişiselleştirilmemiş reklam sunar, uygulama reklamsız kalmaz.
+     */
+    private fun requestConsentThenInitAds(
+        activity: Activity,
+        treatment: AgeTreatment,
+        onComplete: () -> Unit
+    ) {
+        val underAge = treatment != AgeTreatment.TEEN
+
+        val params = ConsentRequestParameters.Builder()
+            .setTagForUnderAgeOfConsent(underAge)
+            .build()
+
+        val consentInformation = UserMessagingPlatform.getConsentInformation(activity)
+        consentInformation.requestConsentInfoUpdate(
+            activity,
+            params,
+            {
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
+                    if (formError != null) {
+                        Log.w(TAG, "Consent form error: ${formError.errorCode} ${formError.message}")
+                    } else {
+                        Log.d(TAG, "Consent flow complete. canRequestAds=${consentInformation.canRequestAds()}")
+                    }
+                    initMobileAdsOnce(activity, treatment, onComplete)
+                }
+            },
+            { requestError ->
+                // Rıza bilgisi alınamadı (ağ vb.) — reklamsız kalmamak için devam et.
+                Log.w(TAG, "Consent info update failed: ${requestError.errorCode} ${requestError.message}")
+                initMobileAdsOnce(activity, treatment, onComplete)
+            }
+        )
+    }
+
+    private fun initMobileAdsOnce(
+        context: Context,
+        treatment: AgeTreatment,
+        onComplete: () -> Unit
+    ) {
+        if (adsInitialized) {
+            onComplete()
+            return
+        }
+        adsInitialized = true
         MobileAds.initialize(context) {
             Log.d(TAG, "MobileAds initialized with treatment=$treatment")
             onComplete()

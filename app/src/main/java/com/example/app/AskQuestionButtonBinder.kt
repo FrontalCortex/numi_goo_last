@@ -2,7 +2,6 @@ package com.example.app
 
 import android.content.Intent
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
@@ -83,8 +82,7 @@ object AskQuestionButtonBinder {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
             }
             !isTeacher && !hasProPlan -> {
-                Toast.makeText(fragment.requireContext(), "Bu özelliği kullanabilmek için planı Pro'ya yükselt", Toast.LENGTH_LONG).show()
-                ProDiffirentFragment().show(fragment.requireActivity().supportFragmentManager, "ProDiffirent")
+                AskQuestionOpenFragment().show(fragment.requireActivity().supportFragmentManager, "AskQuestionOpen")
             }
             else -> {
                 val main = fragment.activity as? MainActivity
