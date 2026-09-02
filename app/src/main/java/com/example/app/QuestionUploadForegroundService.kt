@@ -15,6 +15,7 @@ import com.example.app.model.QuestionMessage
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import com.google.firebase.storage.UploadTask
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
@@ -73,12 +74,14 @@ class QuestionUploadForegroundService : Service() {
         }
         val senderUid = intent.getStringExtra(KEY_SENDER_UID) ?: return START_NOT_STICKY
         val senderRole = intent.getStringExtra(KEY_SENDER_ROLE) ?: return START_NOT_STICKY
+        val studentUid = intent.getStringExtra(KEY_STUDENT_UID) ?: senderUid
         val item = UploadItem(
             questionId = questionId,
             type = type,
             clientId = clientId,
             senderUid = senderUid,
             senderRole = senderRole,
+            studentUid = studentUid,
             filePath = intent.getStringExtra(KEY_FILE_PATH),
             textContent = intent.getStringExtra(KEY_TEXT_CONTENT),
             caption = intent.getStringExtra(KEY_CAPTION)
@@ -171,7 +174,15 @@ class QuestionUploadForegroundService : Service() {
             .getOrPut(item.questionId) { mutableSetOf() }
             .add(clientId)
 
-        val task = ref.putFile(Uri.fromFile(file))
+        // Storage kuralı, medyanın sahipliğini (soruyu soran öğrenci kim) Firestore'a
+        // cross-service firestore.get() ile kontrol ediyordu; bu güvenilir çalışmadı
+        // (öğrenci, öğretmenin gönderdiği medyayı indiremiyordu — "user does not have
+        // permission to access"). Artık sahiplik dosyanın kendi metadata'sında taşınıyor,
+        // kural Firestore'a hiç gitmeden okuyabiliyor.
+        val metadata = StorageMetadata.Builder()
+            .setCustomMetadata("studentUid", item.studentUid)
+            .build()
+        val task = ref.putFile(Uri.fromFile(file), metadata)
         activeTasks[clientId] = task
         currentUploadClientId = clientId
         task.addOnProgressListener { snapshot ->
@@ -279,7 +290,10 @@ class QuestionUploadForegroundService : Service() {
                 val baos = ByteArrayOutputStream()
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
                 val thumbRef = storage.child("question_media/${item.questionId}/thumb_${System.currentTimeMillis()}.jpg")
-                thumbRef.putBytes(baos.toByteArray()).await()
+                val thumbMetadata = StorageMetadata.Builder()
+                    .setCustomMetadata("studentUid", item.studentUid)
+                    .build()
+                thumbRef.putBytes(baos.toByteArray(), thumbMetadata).await()
                 thumbnailUrl = thumbRef.downloadUrl.await().toString()
             }
             val ref = storage.child("question_media/${item.questionId}/video_${System.currentTimeMillis()}.mp4")
@@ -461,6 +475,7 @@ class QuestionUploadForegroundService : Service() {
         val clientId: String,
         val senderUid: String,
         val senderRole: String,
+        val studentUid: String,
         val filePath: String?,
         val textContent: String?,
         val caption: String?
@@ -474,6 +489,7 @@ class QuestionUploadForegroundService : Service() {
         const val KEY_CLIENT_ID = "client_id"
         const val KEY_SENDER_UID = "sender_uid"
         const val KEY_SENDER_ROLE = "sender_role"
+        const val KEY_STUDENT_UID = "student_uid"
         const val KEY_FILE_PATH = "file_path"
         const val KEY_TEXT_CONTENT = "text_content"
         const val KEY_CAPTION = "caption"

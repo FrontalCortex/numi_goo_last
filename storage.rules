@@ -32,12 +32,16 @@ service firebase.storage {
       return isSignedIn() && fileName.matches(request.auth.uid + '_.*');
     }
 
-    // Sorunun sahibi öğrenci veya onaylı öğretmen mi?
-    function canAccessQuestion(questionId) {
-      return isSignedIn() && (
-        firestore.get(/databases/(default)/documents/questions/$(questionId)).data.studentUid == request.auth.uid
-        || isTeacher()
-      );
+    // Sorunun sahibi öğrenci veya onaylı öğretmen mi? Burada da Firestore'a
+    // cross-service firestore.get() ile bakmak güvenilir çalışmadı (öğrenci kendi
+    // sorusundaki öğretmen medyasını indiremiyordu); bunun yerine dosya QuestionUploadForegroundService
+    // tarafından yüklenirken üzerine konan `studentUid` custom metadata'sı okunuyor.
+    function ownsUploadedFile() {
+      return isSignedIn() && request.resource.metadata.studentUid == request.auth.uid;
+    }
+
+    function ownsExistingFile() {
+      return isSignedIn() && resource.metadata.studentUid == request.auth.uid;
     }
 
     // Soru ekran görüntüleri — CreateQuestionFragment `{uid}_{zaman}.jpg` olarak yükler.
@@ -58,11 +62,11 @@ service firebase.storage {
         && request.resource.contentType.matches('video/.*');
     }
 
-    // Soru mesaj medyası (görsel / ses / video). Yol soru kimliğini taşıdığı için yetki
-    // doğrudan soru dokümanından okunuyor: yalnızca soruyu soran öğrenci ve öğretmenler.
+    // Soru mesaj medyası (görsel / ses / video). Yalnızca soruyu soran öğrenci ve
+    // onaylı öğretmenler erişebilir; öğrenci kontrolü dosyanın studentUid metadata'sından.
     match /question_media/{questionId}/{fileName} {
-      allow read: if canAccessQuestion(questionId);
-      allow write: if canAccessQuestion(questionId)
+      allow read: if isTeacher() || ownsExistingFile();
+      allow write: if (isTeacher() || ownsUploadedFile())
         && request.resource.size < 100 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*')
             || request.resource.contentType.matches('video/.*')
