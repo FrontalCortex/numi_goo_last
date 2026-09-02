@@ -177,7 +177,10 @@ class ScreenRecordingService : Service() {
         if (withAudio) recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
         recorder.setVideoSize(1280, 720)
         recorder.setVideoFrameRate(30)
-        recorder.setVideoEncodingBitRate(2_500_000)
+        // 2.5 Mbps'te ekran içeriği (ince metin, ikon kenarları) gözle görülür şekilde
+        // pikselleşiyordu; 4 Mbps'e çıkarıldı (bkz. storage.rules'daki 150 MB üst sınırı —
+        // 180 sn * 4 Mbps + ses ~93 MB, hâlâ rahat bir payla altında).
+        recorder.setVideoEncodingBitRate(4_000_000)
         if (withAudio) {
             recorder.setAudioChannels(1)
             recorder.setAudioSamplingRate(44100)

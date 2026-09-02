@@ -54,20 +54,23 @@ service firebase.storage {
     }
 
     // Soru ekran kayıtları — `{uid}_{zaman}.mp4`.
-    // Süre sınırı 180 sn, ~2.6 Mbps → en fazla ~60 MB; 100 MB rahat bir üst sınır.
+    // Süre sınırı 180 sn (öğretmen), 4 Mbps video + 128 kbps ses → en fazla ~93 MB;
+    // 150 MB rahat bir üst sınır.
     match /question_videos/{fileName} {
       allow read: if isOwnFile(fileName) || isTeacher();
       allow write: if isOwnFile(fileName)
-        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.size < 150 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');
     }
 
     // Soru mesaj medyası (görsel / ses / video). Yalnızca soruyu soran öğrenci ve
     // onaylı öğretmenler erişebilir; öğrenci kontrolü dosyanın studentUid metadata'sından.
+    // Boyut sınırı question_videos ile aynı gerekçeyle 150 MB (bkz. yukarısı) — ekran
+    // kaydı cevapları da bu yola yükleniyor.
     match /question_media/{questionId}/{fileName} {
       allow read: if isTeacher() || ownsExistingFile();
       allow write: if (isTeacher() || ownsUploadedFile())
-        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.size < 150 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*')
             || request.resource.contentType.matches('video/.*')
             || request.resource.contentType.matches('audio/.*'));
