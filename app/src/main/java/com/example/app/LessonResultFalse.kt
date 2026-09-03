@@ -55,7 +55,11 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.loginReturn")
+            // LessonResultFalse hem lesson hem chest başarısızlığı için kullanılıyor; isChestFailure ayırıyor.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "LessonResultFalse.loginReturn",
+                isLessonTypeReturn = !isChestFailure,
+            )
         }
     }
 
@@ -126,7 +130,11 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.claim")
+            // LessonResultFalse hem lesson hem chest başarısızlığı için kullanılıyor; isChestFailure ayırıyor.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "LessonResultFalse.claim",
+                isLessonTypeReturn = !isChestFailure,
+            )
         }
 
         // Animasyonları başlat

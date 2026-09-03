@@ -2516,6 +2516,9 @@ class MainActivity : AppCompatActivity() {
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
         badgeStringPayloads: List<String> = emptyList(),
+        // true: bu dönüş türü LESSON olan (chest hariç) bir item'ın claim'inden geliyor —
+        // maybeShowAskQuestionPromo yalnızca bu durumda denenir (bkz. notifyMapVisibleAfterLessonClaim).
+        isLessonTypeReturn: Boolean = false,
     ) {
         android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
@@ -2534,7 +2537,7 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
-            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads)
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads, isLessonTypeReturn)
             tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
         }
     }
@@ -2546,7 +2549,8 @@ class MainActivity : AppCompatActivity() {
     fun notifyMapVisibleAfterLessonClaim(
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
-        badgeStringPayloads: List<String> = emptyList()
+        badgeStringPayloads: List<String> = emptyList(),
+        isLessonTypeReturn: Boolean = false,
     ) {
         android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
         // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
@@ -2604,6 +2608,12 @@ class MainActivity : AppCompatActivity() {
                             AppRatingManager.checkAndShowRatingPrompt(this@MainActivity, 1)
                         }
                     }
+                }
+            } else if (isLessonTypeReturn) {
+                // Chest dönüşleri (guide/rozet/rating/tasks yönlendirmesi) yukarıdaki dallarda
+                // ele alındığı için buraya asla düşmez — bu dal sadece türü LESSON olan item'lardan.
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    maybeShowAskQuestionPromo("notifyMapVisibleAfterLessonClaim:$caller")
                 }
             }
             val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
@@ -2674,6 +2684,53 @@ class MainActivity : AppCompatActivity() {
         }
         Log.d(MarathonGuideStore.LOG_TAG, "mapReady | ok")
         return true
+    }
+
+    /**
+     * [marathonGuideMapBlockReason]'a ek olarak, chest akışından (guide/rating/tasks yönlendirmesi)
+     * kalan gecikmeli/kuyruktaki durumları da kapsar. null → harita tamamen temiz, AskQuestionOpenFragment
+     * güvenle gösterilebilir.
+     */
+    private fun askQuestionPromoMapBlockReason(): String? {
+        marathonGuideMapBlockReason()?.let { return it }
+        if (GlobalValues.pendingCupPathRevealPartId != null) return "cup_path_pending"
+        if (MarathonGuideStore.isPending(this)) return "guide_pending"
+        if (justFinishedChestForRating) return "rating_pending"
+        if (supportFragmentManager.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (supportFragmentManager.findFragmentByTag("AskQuestionOpen") != null) return "already_showing"
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map != null && map.isAdded && map.view != null &&
+            map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
+        ) {
+            return "guide_panel_visible"
+        }
+        return null
+    }
+
+    /**
+     * Pro olmayan/öğretmen olmayan kullanıcıya, türü LESSON olan (chest hariç) bir item'dan haritaya
+     * her dönüşte 1 artan sayaç 3'e ulaşınca AskQuestionOpenFragment'ı otomatik gösterir.
+     * Guide/rozet/rating/tasks yönlendirmesiyle üst üste binmesin diye [askQuestionPromoMapBlockReason]
+     * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
+     */
+    private fun maybeShowAskQuestionPromo(caller: String) {
+        if (!::binding.isInitialized) return
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        if (energyManager.getUserRole() == "TEACHER") return
+        val plan = energyManager.getUserPlan()
+        if (plan == "Pro" || plan == "Premium") return
+
+        val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
+        if (count < 3) return
+
+        val blockReason = askQuestionPromoMapBlockReason()
+        if (blockReason != null) {
+            logMapTouchDiag("askQuestionPromo", "SKIP", "caller=$caller reason=$blockReason count=$count")
+            return
+        }
+        GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
+        logMapTouchDiag("askQuestionPromo", "SHOW", "caller=$caller count=$count")
+        AskQuestionOpenFragment().show(supportFragmentManager, "AskQuestionOpen")
     }
 
     fun tryShowPendingMarathonGuideOnMap(caller: String) {

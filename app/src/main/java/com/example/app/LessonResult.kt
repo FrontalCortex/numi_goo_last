@@ -173,7 +173,11 @@ class LessonResult : Fragment() {
                                 .commitNowAllowingStateLoss()
                         }
                         main?.prepareMapReturnAfterLessonClaim()
-                        main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
+                        // LessonResult sadece türü LESSON olan item'lar için açılır (chest başarısı ChestResult'tan geçer).
+                        main?.finalizeMapReturnAfterLessonClaim(
+                            "LessonResult.claimStepFinish",
+                            isLessonTypeReturn = true,
+                        )
                     }
                 }
                 val rootView = binding.root

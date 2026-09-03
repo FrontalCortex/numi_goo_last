@@ -174,6 +174,26 @@ object GlobalValues {
 
     private const val PREFS_NAME = "GlobalValuesPrefs"
     private const val KEY_DOWNLOADED_MEDIA = "downloaded_media_by_message"
+    private const val KEY_ASK_QUESTION_PROMO_COUNT = "ask_question_promo_lesson_return_count"
+
+    /**
+     * Pro olmayan/öğretmen olmayan kullanıcıya AskQuestionOpenFragment'ı otomatik göstermek için:
+     * türü LESSON olan (chest hariç) bir item'dan haritaya her dönüşte 1 artırılır.
+     * MainActivity.maybeShowAskQuestionPromo bu sayaç 3'e ulaşınca göstermeyi dener; harita o an
+     * başka bir overlay ile doluysa sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
+     * Süreç yeniden başlasa bile sayı kaybolmasın diye SharedPreferences'ta saklanır.
+     */
+    fun incrementAskQuestionPromoLessonReturnCount(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val next = prefs.getInt(KEY_ASK_QUESTION_PROMO_COUNT, 0) + 1
+        prefs.edit().putInt(KEY_ASK_QUESTION_PROMO_COUNT, next).apply()
+        return next
+    }
+
+    fun resetAskQuestionPromoLessonReturnCount(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_ASK_QUESTION_PROMO_COUNT, 0).apply()
+    }
 
     fun loadDownloadedMediaCache(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
