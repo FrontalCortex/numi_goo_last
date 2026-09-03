@@ -1330,6 +1330,10 @@ class MapFragment : Fragment() {
                 .setCustomAnimations(
                     android.R.anim.slide_in_left,
                     android.R.anim.slide_out_right,
+                    // popEnter/popExit: LessonAdapter'daki aynı açılış yolunda olduğu gibi,
+                    // geri tuşu/X ile kapanışta da kayarak kapansın.
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
                 )
                 .replace(
                     R.id.abacusFragmentContainer,

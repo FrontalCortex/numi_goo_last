@@ -34,11 +34,6 @@ class RecordFragment : Fragment() {
     }
 
     private fun closeRecordOverlay() {
-        // TANI LOGU: bu Toast görünüyorsa telefonda güncel kod çalışıyor demektir.
-        // Kök nedeni bulunca kaldırılacak.
-        context?.let {
-            android.widget.Toast.makeText(it, "RecordFragment kapanıyor (güncel kod v2)", android.widget.Toast.LENGTH_SHORT).show()
-        }
         val main = activity as? MainActivity
         if (isAdded && parentFragmentManager.backStackEntryCount > 0) {
             parentFragmentManager.popBackStack()
