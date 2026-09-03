@@ -337,6 +337,7 @@ class ChestFragment : Fragment() {
                                         after = afterSnap,
                                         openBadgeAfterContinue = levelUpPayloads.isNotEmpty(),
                                         badgePayloadQueue = levelUpPayloads.map { BadgeProgressFirestore.payloadToQueueItem(it) },
+                                        isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
                                     ),
                                 )
                                 .commitNowAllowingStateLoss()

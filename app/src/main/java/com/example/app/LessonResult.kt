@@ -174,10 +174,11 @@ class LessonResult : Fragment() {
                         }
                         main?.prepareMapReturnAfterLessonClaim()
                         // Bu dal (SKIP_TO_MAP) hem LESSON hem CHEST item'ı için çalışabiliyor;
-                        // kararı tek kaynaktan (item türü) veriyoruz.
+                        // yukarıda (tıklama anında) okunan lessonItem'a göre karar veriyoruz —
+                        // prepareMapReturn sonrası global aramaya güvenilmiyor.
                         main?.finalizeMapReturnAfterLessonClaim(
                             "LessonResult.claimStepFinish",
-                            isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
+                            isLessonTypeReturn = lessonItem?.type == LessonItem.TYPE_LESSON,
                         )
                     }
                 }

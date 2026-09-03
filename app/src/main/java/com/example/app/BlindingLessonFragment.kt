@@ -1209,9 +1209,11 @@ class BlindingLessonFragment : Fragment() {
         }
         main?.prepareMapReturnAfterLessonClaim()
         // Yarıda bırakma da türü LESSON olan bir item'dan haritaya dönüş sayılır.
+        // Derse girerken yakalanan lessonItem kullanılıyor (global index aramasına güvenilmiyor).
         main?.finalizeMapReturnAfterLessonClaim(
             "BlindingLessonFragment.quit",
-            isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
+            isLessonTypeReturn = ::lessonItem.isInitialized &&
+                lessonItem.type == LessonItem.TYPE_LESSON,
         )
     }
     private fun rulesBookButtonClick() {

@@ -2571,6 +2571,12 @@ class MainActivity : AppCompatActivity() {
             pendingBadgePayloadsForAd = emptyList()
             pendingBadgeStringPayloadsForAd = emptyList()
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
+            // TANI LOGU: her harita dönüşünde hangi dala girildiğini gösterir. Kök neden bulununca kaldırılacak.
+            android.widget.Toast.makeText(
+                this,
+                "mapReturn lessonType=$isLessonTypeReturn badge=${resolvedBadgePayloads.size}/${resolvedBadgeStringPayloads.size} rating=$justFinishedChestForRating caller=$caller",
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
             if (resolvedBadgePayloads.isNotEmpty()) {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
@@ -2685,15 +2691,6 @@ class MainActivity : AppCompatActivity() {
         Log.d(MarathonGuideStore.LOG_TAG, "mapReady | ok")
         return true
     }
-
-    /**
-     * Az önce oynanan/bitirilen harita item'ının türü LESSON mu (chest/race/header değil)?
-     * Ders akışından haritaya dönen her nokta (LessonResult, ChestFragment, MissionChestReward,
-     * quit) [finalizeMapReturnAfterLessonClaim]'e isLessonTypeReturn'ü bununla veriyor.
-     */
-    fun isCurrentMapItemLessonType(): Boolean =
-        LessonManager.getLessonItem(GlobalValues.mapFragmentStepIndex)?.type ==
-            com.example.app.model.LessonItem.TYPE_LESSON
 
     /**
      * [marathonGuideMapBlockReason]'a ek olarak, chest akışından (guide/rating/tasks yönlendirmesi)
