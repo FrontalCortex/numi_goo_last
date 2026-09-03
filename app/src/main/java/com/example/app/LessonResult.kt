@@ -173,10 +173,11 @@ class LessonResult : Fragment() {
                                 .commitNowAllowingStateLoss()
                         }
                         main?.prepareMapReturnAfterLessonClaim()
-                        // LessonResult sadece türü LESSON olan item'lar için açılır (chest başarısı ChestResult'tan geçer).
+                        // Bu dal (SKIP_TO_MAP) hem LESSON hem CHEST item'ı için çalışabiliyor;
+                        // kararı tek kaynaktan (item türü) veriyoruz.
                         main?.finalizeMapReturnAfterLessonClaim(
                             "LessonResult.claimStepFinish",
-                            isLessonTypeReturn = true,
+                            isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
                         )
                     }
                 }

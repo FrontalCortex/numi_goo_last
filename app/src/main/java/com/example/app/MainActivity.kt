@@ -2687,6 +2687,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Az önce oynanan/bitirilen harita item'ının türü LESSON mu (chest/race/header değil)?
+     * Ders akışından haritaya dönen her nokta (LessonResult, ChestFragment, MissionChestReward,
+     * quit) [finalizeMapReturnAfterLessonClaim]'e isLessonTypeReturn'ü bununla veriyor.
+     */
+    fun isCurrentMapItemLessonType(): Boolean =
+        LessonManager.getLessonItem(GlobalValues.mapFragmentStepIndex)?.type ==
+            com.example.app.model.LessonItem.TYPE_LESSON
+
+    /**
      * [marathonGuideMapBlockReason]'a ek olarak, chest akışından (guide/rating/tasks yönlendirmesi)
      * kalan gecikmeli/kuyruktaki durumları da kapsar. null → harita tamamen temiz, AskQuestionOpenFragment
      * güvenle gösterilebilir.
@@ -2730,11 +2739,33 @@ class MainActivity : AppCompatActivity() {
         // TANI LOGU: sayaç ve varsa blok sebebini ekranda göster. Kök neden bulununca kaldırılacak.
         android.widget.Toast.makeText(this, "askQuestionPromo count=$count", android.widget.Toast.LENGTH_SHORT).show()
         if (count < 3) return
+        tryShowAskQuestionPromo(caller, count, retryDelaysMs = longArrayOf(1_500L, 3_500L))
+    }
 
+    /**
+     * Promoyu göstermeyi dener. Blok sebebi geçici olabileceği için (rozet Firestore kontrolü,
+     * reklam kontrolü, görev paneli kapanışı) [retryDelaysMs] boyunca tekrar denenir — guide'daki
+     * retry deseniyle aynı. Her denemede kapı yeniden değerlendirildiği için gerçekten bir overlay
+     * açıldıysa (rozet/rehber/rating) promo hiç gösterilmez, sayaç da sıfırlanmaz.
+     */
+    private fun tryShowAskQuestionPromo(caller: String, count: Int, retryDelaysMs: LongArray) {
+        if (!::binding.isInitialized) return
+        // Gecikmeli denemede activity kapanmış/state kaydedilmiş olabilir; show() o durumda çöker.
+        if (isFinishing || isDestroyed || supportFragmentManager.isStateSaved) return
         val blockReason = askQuestionPromoMapBlockReason()
         if (blockReason != null) {
-            logMapTouchDiag("askQuestionPromo", "SKIP", "caller=$caller reason=$blockReason count=$count")
-            android.widget.Toast.makeText(this, "askQuestionPromo BLOCKED: $blockReason", android.widget.Toast.LENGTH_LONG).show()
+            logMapTouchDiag(
+                "askQuestionPromo",
+                "SKIP",
+                "caller=$caller reason=$blockReason count=$count retriesLeft=${retryDelaysMs.size}",
+            )
+            android.widget.Toast.makeText(this, "askQuestionPromo BLOCKED: $blockReason", android.widget.Toast.LENGTH_SHORT).show()
+            if (retryDelaysMs.isNotEmpty()) {
+                binding.root.postDelayed(
+                    { tryShowAskQuestionPromo(caller, count, retryDelaysMs.drop(1).toLongArray()) },
+                    retryDelaysMs.first(),
+                )
+            }
             return
         }
         GlobalValues.resetAskQuestionPromoLessonReturnCount(this)

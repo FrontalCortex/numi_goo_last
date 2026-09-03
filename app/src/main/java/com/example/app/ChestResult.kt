@@ -214,6 +214,9 @@ class ChestResult : Fragment() {
                                     it.finalizeMapReturnAfterLessonClaim(
                                         caller = "ChestResult.claimAfterRemove",
                                         badgePayloads = payloads,
+                                        // ChestResult normalde sadece TYPE_CHEST/RACE için açılır; yine de
+                                        // tek kaynaktan (item türü) karar veriyoruz.
+                                        isLessonTypeReturn = it.isCurrentMapItemLessonType(),
                                     )
                                 }
                             }

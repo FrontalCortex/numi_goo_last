@@ -368,7 +368,10 @@ class ChestFragment : Fragment() {
                             main?.prepareMapReturnAfterLessonClaim()
                             main?.finalizeMapReturnAfterLessonClaim(
                                 caller = "ChestFragment.claimAfterRemove",
-                                badgePayloads = levelUpPayloads
+                                badgePayloads = levelUpPayloads,
+                                // Ders başarıyla bitince LessonResult buraya (ders ödül sandığı) yönlendiriyor;
+                                // türü LESSON olan item'lar için haritaya dönüş asıl olarak burada oluyor.
+                                isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
                             )
                         }
                         // Ödül NewChestFragment kapanırken zaten verildi (bkz. showCrystalBreakAtStart); burada tekrar verilmiyor.

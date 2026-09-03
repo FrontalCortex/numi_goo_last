@@ -1858,7 +1858,11 @@ class AbacusFragment : Fragment() {
                 .commitNowAllowingStateLoss()
         }
         main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("AbacusFragment.quit")
+        // Yarıda bırakma da türü LESSON olan bir item'dan haritaya dönüş sayılır.
+        main?.finalizeMapReturnAfterLessonClaim(
+            "AbacusFragment.quit",
+            isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
+        )
     }
 
     private fun abacusNumberReturn() {

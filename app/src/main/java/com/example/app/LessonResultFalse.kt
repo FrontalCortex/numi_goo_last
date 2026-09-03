@@ -55,10 +55,11 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            // LessonResultFalse hem lesson hem chest başarısızlığı için kullanılıyor; isChestFailure ayırıyor.
+            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
+            // kararı tek kaynaktan (item türü) veriyoruz.
             main?.finalizeMapReturnAfterLessonClaim(
                 "LessonResultFalse.loginReturn",
-                isLessonTypeReturn = !isChestFailure,
+                isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
             )
         }
     }
@@ -130,10 +131,11 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            // LessonResultFalse hem lesson hem chest başarısızlığı için kullanılıyor; isChestFailure ayırıyor.
+            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
+            // kararı tek kaynaktan (item türü) veriyoruz.
             main?.finalizeMapReturnAfterLessonClaim(
                 "LessonResultFalse.claim",
-                isLessonTypeReturn = !isChestFailure,
+                isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
             )
         }
 

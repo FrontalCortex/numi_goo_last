@@ -1208,7 +1208,11 @@ class BlindingLessonFragment : Fragment() {
                 .commitNowAllowingStateLoss()
         }
         main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("BlindingLessonFragment.quit")
+        // Yarıda bırakma da türü LESSON olan bir item'dan haritaya dönüş sayılır.
+        main?.finalizeMapReturnAfterLessonClaim(
+            "BlindingLessonFragment.quit",
+            isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
+        )
     }
     private fun rulesBookButtonClick() {
         rulesBookButton.setOnClickListener {

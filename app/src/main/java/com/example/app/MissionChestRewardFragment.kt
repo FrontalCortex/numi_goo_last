@@ -135,7 +135,10 @@ class MissionChestRewardFragment : Fragment() {
                     android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
                     main?.finalizeMapReturnAfterLessonClaim(
                         caller = "MissionChestReward.continue",
-                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
+                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList(),
+                        // Görev ilerlemesi paneli gösterildiğinde haritaya dönüş buradan oluyor;
+                        // item türü LESSON ise bu da bir lesson dönüşü sayılmalı.
+                        isLessonTypeReturn = main?.isCurrentMapItemLessonType() == true,
                     )
                 }
             }
