@@ -2586,12 +2586,6 @@ class MainActivity : AppCompatActivity() {
             val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
             pendingLessonTypeReturnForPromo = false
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
-            // TANI LOGU: her harita dönüşünde hangi dala girildiğini gösterir. Kök neden bulununca kaldırılacak.
-            android.widget.Toast.makeText(
-                this,
-                "mapReturn lessonType=$resolvedLessonTypeReturn (param=$isLessonTypeReturn) badge=${resolvedBadgePayloads.size}/${resolvedBadgeStringPayloads.size} rating=$justFinishedChestForRating",
-                android.widget.Toast.LENGTH_LONG,
-            ).show()
             if (resolvedBadgePayloads.isNotEmpty()) {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
@@ -2746,12 +2740,6 @@ class MainActivity : AppCompatActivity() {
      * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
      */
     private fun maybeShowAskQuestionPromo(caller: String) {
-        // TANI LOGU: fonksiyon tetikleniyor mu, hangi erken çıkışta duruyor görebilmek için.
-        android.widget.Toast.makeText(
-            this,
-            "askQuestionPromo CALLED caller=$caller role=${if (::energyManager.isInitialized) energyManager.getUserRole() else "?"} plan=${if (::energyManager.isInitialized) energyManager.getUserPlan() else "?"}",
-            android.widget.Toast.LENGTH_LONG,
-        ).show()
         if (!::binding.isInitialized) return
         if (FirebaseAuth.getInstance().currentUser == null) return
         if (energyManager.getUserRole() == "TEACHER") return
@@ -2759,8 +2747,6 @@ class MainActivity : AppCompatActivity() {
         if (plan == "Pro" || plan == "Premium") return
 
         val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
-        // TANI LOGU: sayaç ve varsa blok sebebini ekranda göster. Kök neden bulununca kaldırılacak.
-        android.widget.Toast.makeText(this, "askQuestionPromo count=$count", android.widget.Toast.LENGTH_SHORT).show()
         if (count < 3) return
         tryShowAskQuestionPromo(caller, count, retryDelaysMs = longArrayOf(1_500L, 3_500L))
     }
@@ -2782,7 +2768,6 @@ class MainActivity : AppCompatActivity() {
                 "SKIP",
                 "caller=$caller reason=$blockReason count=$count retriesLeft=${retryDelaysMs.size}",
             )
-            android.widget.Toast.makeText(this, "askQuestionPromo BLOCKED: $blockReason", android.widget.Toast.LENGTH_SHORT).show()
             if (retryDelaysMs.isNotEmpty()) {
                 binding.root.postDelayed(
                     { tryShowAskQuestionPromo(caller, count, retryDelaysMs.drop(1).toLongArray()) },
