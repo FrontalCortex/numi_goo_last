@@ -2714,6 +2714,12 @@ class MainActivity : AppCompatActivity() {
      * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
      */
     private fun maybeShowAskQuestionPromo(caller: String) {
+        // TANI LOGU: fonksiyon tetikleniyor mu, hangi erken çıkışta duruyor görebilmek için.
+        android.widget.Toast.makeText(
+            this,
+            "askQuestionPromo CALLED caller=$caller role=${if (::energyManager.isInitialized) energyManager.getUserRole() else "?"} plan=${if (::energyManager.isInitialized) energyManager.getUserPlan() else "?"}",
+            android.widget.Toast.LENGTH_LONG,
+        ).show()
         if (!::binding.isInitialized) return
         if (FirebaseAuth.getInstance().currentUser == null) return
         if (energyManager.getUserRole() == "TEACHER") return
@@ -2721,11 +2727,14 @@ class MainActivity : AppCompatActivity() {
         if (plan == "Pro" || plan == "Premium") return
 
         val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
+        // TANI LOGU: sayaç ve varsa blok sebebini ekranda göster. Kök neden bulununca kaldırılacak.
+        android.widget.Toast.makeText(this, "askQuestionPromo count=$count", android.widget.Toast.LENGTH_SHORT).show()
         if (count < 3) return
 
         val blockReason = askQuestionPromoMapBlockReason()
         if (blockReason != null) {
             logMapTouchDiag("askQuestionPromo", "SKIP", "caller=$caller reason=$blockReason count=$count")
+            android.widget.Toast.makeText(this, "askQuestionPromo BLOCKED: $blockReason", android.widget.Toast.LENGTH_LONG).show()
             return
         }
         GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
