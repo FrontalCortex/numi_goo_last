@@ -62,6 +62,9 @@ class AbacusFragment : Fragment() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
+    /** lessonSuccessRate telemetrisi için: bu soru ekranına giriş anı ve en az bir cevap verilip verilmediği. */
+    private var questionSessionStartMs: Long = 0L
+    private var hasSubmittedAnyAnswer: Boolean = false
 
     private var operations: List<MathOperation> = emptyList()
     private var currentIndex = 0
@@ -220,9 +223,22 @@ class AbacusFragment : Fragment() {
         GlobalValues.shouldShowAdOnReturn = true
         lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
 
+        questionSessionStartMs = System.currentTimeMillis()
+        hasSubmittedAnyAnswer = false
+        if (isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordQuestionEntry(
+                GlobalLessonData.globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
 
         uploadLessonData()
     }
+
+    /** bkz. [LessonSuccessRateRepository] — sadece TYPE_LESSON/TYPE_CHEST adımları kapsar. */
+    private fun isLessonSuccessRateScope(): Boolean =
+        lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -1681,6 +1697,7 @@ class AbacusFragment : Fragment() {
                                 .start()
 
                             // Tıklama işlemini gerçekleştir
+                            hasSubmittedAnyAnswer = true
                             val isCorrect = stepAnswerAlgorithm()
                             if (currentIndex == operations.size - 1 && isTimerStarted) {
                                 // Son soruda panel butonunu beklemeden süreyi anında durdur.
@@ -2851,6 +2868,13 @@ class AbacusFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordAbandonWithoutAnswer(
+                GlobalLessonData.globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
         stopLearningSessionTracking()
         stopGuideTypewriter()
         super.onDestroyView()
@@ -3110,6 +3134,7 @@ class AbacusFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
         lessonResultFragment.arguments = args
         val argsFalse = Bundle().apply {
@@ -3232,6 +3257,7 @@ class AbacusFragment : Fragment() {
             putInt("worstCupTime", worstCupTime)
             putFloat("carpan", carpan)
             putInt("toplamPuan", toplamPuan)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
         chestResultFragment.arguments = args
         stopTimer()

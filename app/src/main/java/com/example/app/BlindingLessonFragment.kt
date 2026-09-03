@@ -77,6 +77,9 @@ class BlindingLessonFragment : Fragment() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
+    /** lessonSuccessRate telemetrisi için: bu soru ekranına giriş anı ve en az bir cevap verilip verilmediği. */
+    private var questionSessionStartMs: Long = 0L
+    private var hasSubmittedAnyAnswer: Boolean = false
     private var operations: List<Any> = emptyList()
     private lateinit var numberText: TextView
     private var currentIndex = 0
@@ -270,8 +273,19 @@ class BlindingLessonFragment : Fragment() {
             LessonManager.getLessonItem(mapFragmentStepIndex)!!
         }
 
+        questionSessionStartMs = System.currentTimeMillis()
+        hasSubmittedAnyAnswer = false
+        if (isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordQuestionEntry(globalPartId, mapFragmentStepIndex, lessonItem.currentStep)
+        }
+
         uploadLessonData()
     }
+
+    /** Günlük soru ve Kupa Modu (part 9) lessonSuccessRate'e dahil değil — bkz. [LessonSuccessRateRepository]. */
+    private fun isLessonSuccessRateScope(): Boolean =
+        !isDailyQuestionMode && globalPartId != 9 &&
+            (lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -1008,6 +1022,7 @@ class BlindingLessonFragment : Fragment() {
                             .start()
 
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
+                        hasSubmittedAnyAnswer = true
                         val isCorrect = stepAnswerAlgorithm()
                         updateProgressBar(isCorrect)
                         
@@ -2052,6 +2067,7 @@ class BlindingLessonFragment : Fragment() {
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
             putBoolean("isChestFailure", isChestFailure)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
     }
 
@@ -2102,6 +2118,7 @@ class BlindingLessonFragment : Fragment() {
             putInt("worstCupTime", worstCupTime)
             putFloat("carpan", carpan)
             putInt("toplamPuan", toplamPuan)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
         chestResultFragment.arguments = args
 
@@ -2232,6 +2249,13 @@ class BlindingLessonFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordAbandonWithoutAnswer(
+                globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
         stopLearningSessionTracking()
         releaseLaunchTouchBlocker()
         super.onDestroyView()

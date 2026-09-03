@@ -38,6 +38,7 @@ class ChestResult : Fragment() {
     private var dersPuani: Int = 0
     private var toplamPuan: Int = 0
     private var worstCupTime: Int = 0
+    private var questionElapsedMs: Long = -1L
     private var targetTimeSeconds: Int = 0
     private var carpan: Float = 1f
     private var scoreCap: Int = 1
@@ -88,6 +89,7 @@ class ChestResult : Fragment() {
             time = bundle.getString("time", "")
             dersPuani = bundle.getInt("dersPuani", 0)
             worstCupTime = bundle.getInt("worstCupTime", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
             successRate = bundle.getFloat("successRate", 0f)
             targetTimeSeconds = parseTimeToSeconds(time) ?: 0
             carpan = bundle.getFloat("carpan", 1f)
@@ -278,6 +280,7 @@ class ChestResult : Fragment() {
                                 putFloat("successRate", successRate)
                                 putInt("toplamPuan", toplamPuan)
                                 putInt("dersPuani", dersPuani)
+                                putLong("questionElapsedMs", questionElapsedMs)
                             }
                         },
                     )

@@ -41,6 +41,7 @@ class LessonResult : Fragment() {
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
+    private var questionElapsedMs: Long = -1L
 
     private val revealHandler = Handler(Looper.getMainLooper())
     private var activeCountAnimator: ValueAnimator? = null
@@ -112,6 +113,7 @@ class LessonResult : Fragment() {
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
             } else {
@@ -145,6 +147,7 @@ class LessonResult : Fragment() {
             val args = Bundle().apply {
                 putFloat("successRate", succsessRate)
                 putInt("dersPuani", lessonScore)
+                putLong("questionElapsedMs", questionElapsedMs)
             }
             if (lessonItem?.stepIsFinish == true) {
                 LessonProgressDiag.log(

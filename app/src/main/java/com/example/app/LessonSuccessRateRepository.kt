@@ -2,6 +2,7 @@ package com.example.app
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 
@@ -48,6 +49,65 @@ object LessonSuccessRateRepository {
     private const val FIELD_SUCCESS_RATE_PERCENT = "successRatePercent"
     private const val FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT = "firstTrySuccessRatePercent"
 
+    // Soruya giriş / cevapsız çıkış (part 1-8, transaction'sız atomik increment)
+    private const val FIELD_QUESTION_ENTRY_COUNT = "questionEntryCount"
+    private const val FIELD_ABANDON_WITHOUT_ANSWER_COUNT = "abandonWithoutAnswerCount"
+
+    /**
+     * Başarısız olunan denemedeki başarı oranının (0-100) düştüğü dilim — sadece part 1-6.
+     * Denominatör olarak [FIELD_ATTEMPT_FAIL_TOTAL] kullanılır (her başarısız deneme sayılır).
+     */
+    private val FAIL_RATE_BUCKET_COUNT_FIELDS = listOf(
+        "failRate100to80Count",
+        "failRate80to60Count",
+        "failRate60to40Count",
+        "failRate40to20Count",
+        "failRate20to0Count",
+    )
+    private val FAIL_RATE_BUCKET_PERCENT_FIELDS = listOf(
+        "failRate100to80Percent",
+        "failRate80to60Percent",
+        "failRate60to40Percent",
+        "failRate40to20Percent",
+        "failRate20to0Percent",
+    )
+
+    /**
+     * Başarıyla bitirme süresinin (saniye) düştüğü dilim — part 1-8, sadece kullanıcının bu
+     * adımı İLK kez geçtiği an (recordPass'in tekilleştirme mantığıyla aynı, bkz. [FIELD_PASSED]).
+     * Denominatör olarak [FIELD_STEP_PASS_USER_COUNT] kullanılır.
+     */
+    private val FINISH_TIME_BUCKET_COUNT_FIELDS = listOf(
+        "finishTime0to30Count",
+        "finishTime30to60Count",
+        "finishTime60to90Count",
+        "finishTime90to120Count",
+        "finishTime120PlusCount",
+    )
+    private val FINISH_TIME_BUCKET_PERCENT_FIELDS = listOf(
+        "finishTime0to30Percent",
+        "finishTime30to60Percent",
+        "finishTime60to90Percent",
+        "finishTime90to120Percent",
+        "finishTime120PlusPercent",
+    )
+
+    private fun failRateBucketIndex(successRatePercent: Float): Int = when {
+        successRatePercent >= 80f -> 0
+        successRatePercent >= 60f -> 1
+        successRatePercent >= 40f -> 2
+        successRatePercent >= 20f -> 3
+        else -> 4
+    }
+
+    private fun finishTimeBucketIndex(elapsedSeconds: Long): Int = when {
+        elapsedSeconds < 30L -> 0
+        elapsedSeconds < 60L -> 1
+        elapsedSeconds < 90L -> 2
+        elapsedSeconds < 120L -> 3
+        else -> 4
+    }
+
     // --- Item seviyesi alanları ---
     private const val FIELD_ITEM_PASS_USER_COUNT = "passUserCount"
     private const val FIELD_TOTAL_COMPLETION_COUNT = "totalCompletionCount"
@@ -78,8 +138,12 @@ object LessonSuccessRateRepository {
             .collection("lessonSuccessRateState")
             .document("${partId}_${position}_${step.coerceAtLeast(1)}")
 
-    /** Kullanıcı bu adımı bitiremeden dersten çıktığında (quiz veya chest skoru yetersiz) çağrılır. */
-    fun recordFail(partId: Int, position: Int, step: Int) {
+    /**
+     * Kullanıcı bu adımı bitiremeden dersten çıktığında (quiz veya chest skoru yetersiz) çağrılır.
+     * [answerSuccessRatePercent] o başarısız denemenin başarı oranıdır (0-100) — verilirse ve
+     * [partId] 1-6 aralığındaysa, hangi dilime düştüğü de kaydedilir (bkz. [FAIL_RATE_BUCKET_COUNT_FIELDS]).
+     */
+    fun recordFail(partId: Int, position: Int, step: Int, answerSuccessRatePercent: Float? = null) {
         if (partId !in 1..8) return
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val userRef = userStepStateRef(uid, partId, position, step)
@@ -100,29 +164,41 @@ object LessonSuccessRateRepository {
             val passUserCount = globalSnap.getLong(FIELD_STEP_PASS_USER_COUNT) ?: 0L
             val passFirst = globalSnap.getLong(FIELD_PASS_FIRST_TRY) ?: 0L
 
+            val updates = mutableMapOf<String, Any>(
+                FIELD_ATTEMPT_FAIL_TOTAL to attemptFailTotal,
+                FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
+                FIELD_SUCCESS_RATE_PERCENT to ratioPercent(passUserCount, attemptUserCount),
+                FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to ratioPercent(passFirst, attemptUserCount),
+            )
+            if (partId in 1..6 && answerSuccessRatePercent != null) {
+                val bucketIndex = failRateBucketIndex(answerSuccessRatePercent)
+                for (i in FAIL_RATE_BUCKET_COUNT_FIELDS.indices) {
+                    val currentCount = globalSnap.getLong(FAIL_RATE_BUCKET_COUNT_FIELDS[i]) ?: 0L
+                    val newCount = if (i == bucketIndex) currentCount + 1 else currentCount
+                    updates[FAIL_RATE_BUCKET_COUNT_FIELDS[i]] = newCount
+                    updates[FAIL_RATE_BUCKET_PERCENT_FIELDS[i]] = ratioPercent(newCount, attemptFailTotal)
+                }
+            }
+
             tx.set(
                 userRef,
                 mapOf(FIELD_ATTEMPTED to true, FIELD_FAIL_STREAK to newFailStreak),
                 SetOptions.merge(),
             )
-            tx.set(
-                docRef,
-                mapOf(
-                    FIELD_ATTEMPT_FAIL_TOTAL to attemptFailTotal,
-                    FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
-                    FIELD_SUCCESS_RATE_PERCENT to successRatePercent(passUserCount, attemptUserCount),
-                    FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to successRatePercent(passFirst, attemptUserCount),
-                ),
-                SetOptions.merge(),
-            )
+            tx.set(docRef, updates, SetOptions.merge())
             null
         }.addOnFailureListener { e ->
             Log.w(TAG, "recordFail failed part=$partId position=$position step=$step", e)
         }
     }
 
-    /** Kullanıcı bu adımı ilk kez başarıyla geçtiğinde (adım ilerlemesi veya item bitişi) çağrılır. */
-    fun recordPass(partId: Int, position: Int, step: Int) {
+    /**
+     * Kullanıcı bu adımı ilk kez başarıyla geçtiğinde (adım ilerlemesi veya item bitişi) çağrılır.
+     * [elapsedMs] soru ekranına girişten bitirmeye kadar geçen süredir — verilirse (yalnızca bu
+     * ilk-geçiş anında, tekrarlarda değil) hangi süre dilimine düştüğü de kaydedilir
+     * (bkz. [FINISH_TIME_BUCKET_COUNT_FIELDS]).
+     */
+    fun recordPass(partId: Int, position: Int, step: Int, elapsedMs: Long? = null) {
         if (partId !in 1..8) return
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val userRef = userStepStateRef(uid, partId, position, step)
@@ -149,27 +225,59 @@ object LessonSuccessRateRepository {
                 else -> passThirdPlus += 1
             }
 
+            val updates = mutableMapOf<String, Any>(
+                FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
+                FIELD_STEP_PASS_USER_COUNT to passUserCount,
+                FIELD_PASS_FIRST_TRY to passFirst,
+                FIELD_PASS_SECOND_TRY to passSecond,
+                FIELD_PASS_THIRD_PLUS_TRY to passThirdPlus,
+                FIELD_SUCCESS_RATE_PERCENT to ratioPercent(passUserCount, attemptUserCount),
+                FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to ratioPercent(passFirst, attemptUserCount),
+            )
+            if (elapsedMs != null) {
+                val elapsedSeconds = (elapsedMs / 1000L).coerceAtLeast(0L)
+                val bucketIndex = finishTimeBucketIndex(elapsedSeconds)
+                for (i in FINISH_TIME_BUCKET_COUNT_FIELDS.indices) {
+                    val currentCount = globalSnap.getLong(FINISH_TIME_BUCKET_COUNT_FIELDS[i]) ?: 0L
+                    val newCount = if (i == bucketIndex) currentCount + 1 else currentCount
+                    updates[FINISH_TIME_BUCKET_COUNT_FIELDS[i]] = newCount
+                    updates[FINISH_TIME_BUCKET_PERCENT_FIELDS[i]] = ratioPercent(newCount, passUserCount)
+                }
+            }
+
             tx.set(
                 userRef,
                 mapOf(FIELD_ATTEMPTED to true, FIELD_PASSED to true),
                 SetOptions.merge(),
             )
-            tx.set(
-                docRef,
-                mapOf(
-                    FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
-                    FIELD_STEP_PASS_USER_COUNT to passUserCount,
-                    FIELD_PASS_FIRST_TRY to passFirst,
-                    FIELD_PASS_SECOND_TRY to passSecond,
-                    FIELD_PASS_THIRD_PLUS_TRY to passThirdPlus,
-                    FIELD_SUCCESS_RATE_PERCENT to successRatePercent(passUserCount, attemptUserCount),
-                    FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to successRatePercent(passFirst, attemptUserCount),
-                ),
-                SetOptions.merge(),
-            )
+            tx.set(docRef, updates, SetOptions.merge())
             null
         }.addOnFailureListener { e ->
             Log.w(TAG, "recordPass failed part=$partId position=$position step=$step", e)
+        }
+    }
+
+    /** Kullanıcı bu adımın soru ekranına her girdiğinde (tekrarlar dahil) çağrılır. */
+    fun recordQuestionEntry(partId: Int, position: Int, step: Int) {
+        if (partId !in 1..8) return
+        if (FirebaseAuth.getInstance().currentUser?.uid == null) return
+        stepRef(partId, position, step).set(
+            mapOf(FIELD_QUESTION_ENTRY_COUNT to FieldValue.increment(1)),
+            SetOptions.merge(),
+        ).addOnFailureListener { e ->
+            Log.w(TAG, "recordQuestionEntry failed part=$partId position=$position step=$step", e)
+        }
+    }
+
+    /** Kullanıcı bu adımın soru ekranını hiç cevap vermeden terk ettiğinde çağrılır. */
+    fun recordAbandonWithoutAnswer(partId: Int, position: Int, step: Int) {
+        if (partId !in 1..8) return
+        if (FirebaseAuth.getInstance().currentUser?.uid == null) return
+        stepRef(partId, position, step).set(
+            mapOf(FIELD_ABANDON_WITHOUT_ANSWER_COUNT to FieldValue.increment(1)),
+            SetOptions.merge(),
+        ).addOnFailureListener { e ->
+            Log.w(TAG, "recordAbandonWithoutAnswer failed part=$partId position=$position step=$step", e)
         }
     }
 
@@ -242,9 +350,10 @@ object LessonSuccessRateRepository {
         }
     }
 
-    private fun successRatePercent(passUserCount: Long, attemptUserCount: Long): Float {
-        if (attemptUserCount <= 0L) return 0f
-        return (passUserCount.toFloat() / attemptUserCount.toFloat()) * 100f
+    /** Genel oran-yüzde yardımcısı: geçme oranı, fail bucket payı, finish-time bucket payı hep bunu kullanır. */
+    private fun ratioPercent(numerator: Long, denominator: Long): Float {
+        if (denominator <= 0L) return 0f
+        return (numerator.toFloat() / denominator.toFloat()) * 100f
     }
 
     private fun avgReplayCount(totalCompletionCount: Long, passUserCount: Long): Float {
