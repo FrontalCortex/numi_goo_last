@@ -37,14 +37,20 @@ class RecordFragment : Fragment() {
         val main = activity as? MainActivity
         if (isAdded && parentFragmentManager.backStackEntryCount > 0) {
             parentFragmentManager.popBackStack()
-            parentFragmentManager.executePendingTransactions()
         } else if (isAdded) {
             requireActivity().supportFragmentManager.beginTransaction()
                 .remove(this@RecordFragment)
                 .commitNowAllowingStateLoss()
         }
-        main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
+        // popExit animasyonu (slide_out_left, 300ms) oynarken abacusFragmentContainer'ı
+        // hemen GONE'a çekmeyelim — prepareMapReturnAfterLessonClaim (purgeAbacusOverlayHosts
+        // üzerinden) bunu senkron yapıyordu, konteyner kaybolunca animasyon hiç görünmüyordu.
+        // executePendingTransactions() de kaldırıldı: pop'u zorla senkronlaştırmak yerine
+        // FragmentManager'ın kendi zamanlamasına (bir sonraki frame) bırakıyoruz.
+        Handler(Looper.getMainLooper()).postDelayed({
+            main?.prepareMapReturnAfterLessonClaim()
+            main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
+        }, 300L)
     }
 
     private val partId: Int
