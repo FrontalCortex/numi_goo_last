@@ -2056,9 +2056,27 @@ async function verifyAdmobSignature(rawQuery) {
     return false;
   }
 
-  const verifier = require('crypto').createVerify('sha256');
-  verifier.update(signedContent, 'utf8');
-  return verifier.verify(pem, Buffer.from(signature, 'base64url'));
+  const signatureBytes = Buffer.from(signature, 'base64url');
+
+  // AdMob imzayı, custom_data içindeki ":" gibi karakterleri KODLAMADAN oluşturduğu dize
+  // üzerinde hesaplar; ancak istek bize ulaşana kadar aradaki katmanlar bunları yüzde
+  // kodlayabiliyor (":" -> "%3A"). Bu yüzden önce geldiği hâliyle, tutmazsa yüzde
+  // kodlaması çözülmüş hâliyle doğruluyoruz. İmza her iki durumda da zorunlu olduğu
+  // için bu, güvenliği zayıflatmaz; yalnızca kodlama farkını tolere eder.
+  const candidates = [signedContent];
+  try {
+    const decoded = decodeURIComponent(signedContent);
+    if (decoded !== signedContent) candidates.push(decoded);
+  } catch (error) {
+    // Bozuk yüzde kodlaması: yalnızca ham hâliyle denenir.
+  }
+
+  for (const content of candidates) {
+    const verifier = require('crypto').createVerify('sha256');
+    verifier.update(content, 'utf8');
+    if (verifier.verify(pem, signatureBytes)) return true;
+  }
+  return false;
 }
 
 exports.admobRewardCallback = functions.https.onRequest(async (req, res) => {
@@ -2342,4 +2360,4 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
 });
 
 // ShopFragment.LIFE_KEY_COST ile aynı olmalı.
-const ENERGY_KEY_COST = 3;
+const ENERGY_KEY_COST = 1;

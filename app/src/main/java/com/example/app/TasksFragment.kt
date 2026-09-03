@@ -594,7 +594,6 @@ class TasksFragment : Fragment() {
                             "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
                             "cup_path" -> showCupPathPanel()
                             "chest_animation" -> openAbacusContainerFragment(NewChestFragment())
-                            "test_ad_skip_card" -> AdSkipFragment().show(requireActivity().supportFragmentManager, "AdSkip")
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
@@ -673,13 +672,6 @@ class TasksFragment : Fragment() {
                     subtitle = "Yeni sandık açılış animasyonu yapısı.",
                     iconRes = R.drawable.gold_ic,
                     colorRes = android.R.color.holo_orange_dark
-                ),
-                BulletinRow.Standard(
-                    id = "test_ad_skip_card",
-                    title = "Test Ad Skip",
-                    subtitle = "AdSkipFragment'i test etmek için tıkla.",
-                    iconRes = R.drawable.gold_ic,
-                    colorRes = android.R.color.holo_purple
                 ),
             ),
         )

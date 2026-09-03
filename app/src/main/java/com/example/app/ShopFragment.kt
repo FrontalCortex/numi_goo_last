@@ -461,7 +461,7 @@ class ShopFragment : Fragment() {
 
     companion object {
         /** 1 can satın almanın anahtar bedeli. Arayüzdeki etiket de bu değerden yazılır. */
-        private const val LIFE_KEY_COST = 3
+        private const val LIFE_KEY_COST = 1
 
         /** Satın alma sonrası fırlatılan ikon sayısı (yalnızca görsel). */
         private const val PURCHASE_ANIMATION_ITEM_COUNT = 30
