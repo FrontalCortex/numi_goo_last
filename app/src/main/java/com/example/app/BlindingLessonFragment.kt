@@ -2074,6 +2074,9 @@ class BlindingLessonFragment : Fragment() {
             putInt("dersPuani", dersPuani)
             putBoolean("isChestFailure", isChestFailure)
             putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
+            // Tip bilgisi burada kesin; sonuç ekranında GlobalLessonData listesi asenkron
+            // yenilenmiş olabildiği için indeks aramasına güvenilmiyor.
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
     }
 

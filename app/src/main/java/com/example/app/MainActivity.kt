@@ -2714,6 +2714,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Yalnızca AskQuestionOpen promosunu dener — harita dönüş akışının hiçbir parçasını
+     * (rozet, rehber, rating, reklam, sezon kapısı, tasks yönlendirmesi) çalıştırmaz.
+     * TutorialFragment → harita gibi, [finalizeMapReturnAfterLessonClaim]'in bilinçli olarak
+     * çağrılmadığı yollar için.
+     */
+    fun tryShowAskQuestionPromoOnly(caller: String) {
+        if (!::binding.isInitialized) return
+        binding.root.post { maybeShowAskQuestionPromo(caller) }
+    }
+
+    /**
      * Pro olmayan/öğretmen olmayan kullanıcıya, türü LESSON olan (chest hariç) bir item'dan haritaya
      * her dönüşte 1 artan sayaç 3'e ulaşınca AskQuestionOpenFragment'ı otomatik gösterir.
      * Guide/rozet/rating/tasks yönlendirmesiyle üst üste binmesin diye [askQuestionPromoMapBlockReason]

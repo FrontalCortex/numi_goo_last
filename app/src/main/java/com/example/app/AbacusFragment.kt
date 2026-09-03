@@ -3141,6 +3141,9 @@ class AbacusFragment : Fragment() {
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
             putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
+            // Tip bilgisi burada kesin; sonuç ekranında GlobalLessonData listesi asenkron
+            // yenilenmiş olabildiği için indeks aramasına güvenilmiyor.
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFragment.arguments = args
         val argsFalse = Bundle().apply {
@@ -3148,6 +3151,7 @@ class AbacusFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFalse.arguments = argsFalse
 
@@ -3235,6 +3239,7 @@ class AbacusFragment : Fragment() {
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
             putBoolean("isChestFailure", isChestFailure)
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFalse.arguments = argsFalse
 

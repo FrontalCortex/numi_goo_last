@@ -42,6 +42,8 @@ class LessonResult : Fragment() {
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
     private var questionElapsedMs: Long = -1L
+    /** Türü LESSON olan bir item mı? Dersi başlatan fragment args ile bildiriyor. */
+    private var isLessonTypeItem: Boolean = false
 
     private val revealHandler = Handler(Looper.getMainLooper())
     private var activeCountAnimator: ValueAnimator? = null
@@ -114,6 +116,8 @@ class LessonResult : Fragment() {
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
             questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
             } else {
@@ -178,7 +182,7 @@ class LessonResult : Fragment() {
                         // prepareMapReturn sonrası global aramaya güvenilmiyor.
                         main?.finalizeMapReturnAfterLessonClaim(
                             "LessonResult.claimStepFinish",
-                            isLessonTypeReturn = lessonItem?.type == LessonItem.TYPE_LESSON,
+                            isLessonTypeReturn = isLessonTypeItem,
                         )
                     }
                 }

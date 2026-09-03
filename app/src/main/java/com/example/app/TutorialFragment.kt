@@ -1296,6 +1296,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
                 .commitNowAllowingStateLoss()
         }
         act?.scheduleSeasonGateAfterAbacusOverlayDismissed()
+        // Bu yol bilinçli olarak harita dönüş akışını (prepareMapReturn/finalizeMapReturn ve
+        // dolayısıyla rozet/rehber/rating/reklam) çalıştırmıyor. Türü LESSON olan bir item'dan
+        // çıkıldıysa yalnızca AskQuestionOpen promosu denenir; başka hiçbir yapı tetiklenmez.
+        if (lessonItem?.type == LessonItem.TYPE_LESSON) {
+            act?.tryShowAskQuestionPromoOnly("TutorialFragment.quit")
+        }
     }
     private fun devametFragment(fragment: Fragment) {
         // Devam butonunu ekranın altından kayarak göster

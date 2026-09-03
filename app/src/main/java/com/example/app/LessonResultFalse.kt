@@ -42,7 +42,7 @@ class LessonResultFalse : Fragment() {
     private var lessonScore: Int = 0
     private var isChestFailure: Boolean = false
     private var failRecorded: Boolean = false
-    /** Bu başarısızlık ekranı türü LESSON olan bir item'dan mı geldi? onViewCreated'da yakalanır. */
+    /** Bu başarısızlık ekranı türü LESSON olan bir item'dan mı geldi? Args ile geliyor. */
     private var isLessonTypeItem: Boolean = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
@@ -84,6 +84,8 @@ class LessonResultFalse : Fragment() {
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
             isChestFailure = bundle.getBoolean("isChestFailure", false)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             Log.d("mesi","$correctAnswers, $totalQuestions")
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
@@ -98,7 +100,6 @@ class LessonResultFalse : Fragment() {
         if (!failRecorded) {
             failRecorded = true
             val item = LessonManager.getLessonItem(GlobalValues.mapFragmentStepIndex)
-            isLessonTypeItem = item?.type == LessonItem.TYPE_LESSON
             if (item?.type == LessonItem.TYPE_LESSON || item?.type == LessonItem.TYPE_CHEST) {
                 LessonSuccessRateRepository.recordFail(
                     GlobalLessonData.globalPartId,
