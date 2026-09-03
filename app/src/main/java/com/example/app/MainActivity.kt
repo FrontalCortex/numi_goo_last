@@ -266,6 +266,13 @@ class MainActivity : AppCompatActivity() {
 
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (BadgeLevelUpPayload listesi). */
     private var pendingBadgePayloadsForAd: List<com.example.app.BadgeLevelUpPayload> = emptyList()
+    /**
+     * Türü LESSON olan bir item'dan harita dönüşü başladı mı? Rozet payload'larıyla aynı
+     * "bekleyen" deseni: reconcile yolu notifyMapVisibleAfterLessonClaim'i parametresiz
+     * çağırıp adCheckForBadgeInProgress'i true yapabildiği için, isLessonTypeReturn bilgisi
+     * doğrudan parametreyle taşındığında kaybolabiliyor. Burada biriktirilip onDone'da tüketilir.
+     */
+    private var pendingLessonTypeReturnForPromo = false
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (String listesi). */
     private var pendingBadgeStringPayloadsForAd: List<String> = emptyList()
     /** Reklam kontrolü zaten uçuştayken ikinci çağrının onDone'ını tetiklemesini önler. */
@@ -2523,6 +2530,10 @@ class MainActivity : AppCompatActivity() {
         android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
+        // scheduleSeasonGate'in post'u bizim post'umuzdan ÖNCE çalışıp reconcile üzerinden
+        // notifyMapVisibleAfterLessonClaim'i parametresiz tetikleyebiliyor; bayrağı burada
+        // (senkron) biriktir ki hangi çağrı kazanırsa kazansın kaybolmasın.
+        if (isLessonTypeReturn) pendingLessonTypeReturnForPromo = true
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
         // Rozet veya rehber gösterileceği burada zaten kesinse (payload'lar dolu / rehber
@@ -2556,6 +2567,8 @@ class MainActivity : AppCompatActivity() {
         // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
+        // Aynı gerekçe: erken return'e takılsak bile lesson dönüşü bilgisi kaybolmasın.
+        if (isLessonTypeReturn) pendingLessonTypeReturnForPromo = true
         // Eğer reklam kontrolü zaten uçuştaysa ikinci çağrı sadece payload biriktirir, onDone tekrar tetiklenmez.
         if (adCheckForBadgeInProgress) {
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
@@ -2570,11 +2583,13 @@ class MainActivity : AppCompatActivity() {
             val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
             pendingBadgePayloadsForAd = emptyList()
             pendingBadgeStringPayloadsForAd = emptyList()
+            val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
+            pendingLessonTypeReturnForPromo = false
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
             // TANI LOGU: her harita dönüşünde hangi dala girildiğini gösterir. Kök neden bulununca kaldırılacak.
             android.widget.Toast.makeText(
                 this,
-                "mapReturn lessonType=$isLessonTypeReturn badge=${resolvedBadgePayloads.size}/${resolvedBadgeStringPayloads.size} rating=$justFinishedChestForRating caller=$caller",
+                "mapReturn lessonType=$resolvedLessonTypeReturn (param=$isLessonTypeReturn) badge=${resolvedBadgePayloads.size}/${resolvedBadgeStringPayloads.size} rating=$justFinishedChestForRating",
                 android.widget.Toast.LENGTH_LONG,
             ).show()
             if (resolvedBadgePayloads.isNotEmpty()) {
@@ -2615,7 +2630,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-            } else if (isLessonTypeReturn) {
+            } else if (resolvedLessonTypeReturn) {
                 // Chest dönüşleri (guide/rozet/rating/tasks yönlendirmesi) yukarıdaki dallarda
                 // ele alındığı için buraya asla düşmez — bu dal sadece türü LESSON olan item'lardan.
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
