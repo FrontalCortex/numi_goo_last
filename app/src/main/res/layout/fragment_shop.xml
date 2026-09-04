@@ -52,11 +52,29 @@
                 android:gravity="center_vertical"
                 android:layout_marginEnd="12dp">
                 
-                <ImageView
+                <FrameLayout
                     android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:src="@drawable/heart_ic"
-                    android:contentDescription="Can" />
+                    android:layout_height="22dp">
+
+                    <ImageView
+                        android:id="@+id/shopEnergyIcon"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/heart_ic"
+                        android:contentDescription="Can" />
+
+                    <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
+                    <TextView
+                        android:id="@+id/shopEnergyInfiniteBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="∞"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/shopEnergyText"
@@ -99,7 +117,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:layout_marginEnd="12dp">
                 
                 <ImageView
                     android:layout_width="22dp"
@@ -114,6 +133,30 @@
                     android:layout_marginStart="4dp"
                     android:text="0"
                     android:textColor="#AEEA00"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/shopCreditContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/chat_credit_ic3"
+                    android:contentDescription="Danışma kredisi" />
+
+                <TextView
+                    android:id="@+id/shopCreditText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="0"
+                    android:textColor="#A99AF0"
                     android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -487,7 +530,7 @@
                             android:id="@+id/shopProPriceText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="aylık ₺19,99"
+                            android:text="aylık ₺99,00"
                             android:textColor="#E91E63"
                             android:textSize="14sp"
                             android:textStyle="bold"
@@ -606,12 +649,230 @@
 
             <!-- ── Section: Altın ──────────────────────────────────────── -->
             <!--
-                DİKKAT: Aşağıdaki altın/anahtar kartlarındaki ₺ fiyatları geçici olarak sabit
-                yazılmıştır. Google Play Billing bağlandığında fiyatlar ProductDetails üzerinden
-                (getFormattedPrice) okunmalıdır — Play fiyatı kullanıcının ülkesine ve para
-                birimine göre yerelleştirir, sabit metin yanlış fiyat gösterir.
-                Aynı uyarı yukarıdaki Pro kartının "aylık ₺19,99" etiketi için de geçerlidir.
+                Buradaki ₺ fiyatları YALNIZCA yer tutucudur: çalışma anında ShopFragment.
+                applyStorePrices() hepsini Play'den gelen yerelleştirilmiş fiyatla değiştirir
+                (bkz. CARD_PRICE_LABELS). Yer tutucuları güncel tutmak yalnızca ilk karede
+                ve düzen önizlemesinde doğru görünmesi içindir.
             -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Öğretmene Sor"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="2dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/shopCreditBalanceText"
+                android:text="Her kredi, bir sorunu öğretmene sorma hakkı verir."
+                android:textColor="#B0BEC5"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:weightSum="3">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopCreditCard1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:src="@drawable/shop_teacher_ic"
+                            android:contentDescription="Danışma kredisi" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="8dp">
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/chat_credit_ic3"
+                                android:layout_marginEnd="6dp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="1"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/shopCreditPrice1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺39,00"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopCreditCard2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:src="@drawable/shop_teacher_ic"
+                            android:contentDescription="Danışma kredisi" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="8dp">
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/chat_credit_ic3"
+                                android:layout_marginEnd="6dp" />
+                            <TextView
+                                android:id="@+id/shopCreditAmount2"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="5"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/shopCreditPrice2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺179,00"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/shopCreditBonus2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text=""
+                            android:textColor="#A99AF0"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopCreditCard3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:src="@drawable/shop_teacher_ic"
+                            android:contentDescription="Danışma kredisi" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="8dp">
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/chat_credit_ic3"
+                                android:layout_marginEnd="6dp" />
+                            <TextView
+                                android:id="@+id/shopCreditAmount3"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="10"
+                                android:textColor="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/shopCreditPrice3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺329,00"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/shopCreditBonus3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text=""
+                            android:textColor="#A99AF0"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -666,7 +927,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="1 000"
+                                android:text="5 000"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -676,7 +937,7 @@
                             android:id="@+id/shopGoldPrice1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₺29,00"
+                            android:text="₺39,00"
                             android:textColor="#29B6F6"
                             android:textSize="14sp"
                             android:textStyle="bold"
@@ -723,7 +984,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="10 000"
+                                android:text="20 000"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -733,7 +994,7 @@
                             android:id="@+id/shopGoldPrice2"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₺259,00"
+                            android:text="₺120,00"
                             android:textColor="#29B6F6"
                             android:textSize="14sp"
                             android:textStyle="bold"
@@ -790,7 +1051,7 @@
                             android:id="@+id/shopGoldPrice3"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₺1599,00"
+                            android:text="₺500,00"
                             android:textColor="#29B6F6"
                             android:textSize="14sp"
                             android:textStyle="bold"

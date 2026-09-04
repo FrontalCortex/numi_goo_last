@@ -74,6 +74,14 @@ class AskQuestionOpenFragment : DialogFragment() {
             }, 500)
         }
 
+        // Aboneliğe geçmek istemeyen kullanıcı krediyi tek seferlik de alabilir; soru sorma
+        // hakkı artık plana değil krediye bağlı (bkz. AskQuestionButtonBinder).
+        binding.btnBuyCredits.setOnClickListener {
+            val main = activity as? MainActivity
+            dismiss()
+            main?.openShopFragment()
+        }
+
         binding.btnNoThanks.setOnClickListener {
             dismiss()
         }

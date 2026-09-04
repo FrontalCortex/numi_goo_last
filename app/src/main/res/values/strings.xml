@@ -119,4 +119,8 @@
     <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
     <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
     <string name="ask_question_alert_ok">Tamam</string>
+
+    <!-- Plan ekranı: fiyatlar Play'den gelir, buradaki yalnızca biçimdir. -->
+    <string name="plan_price_monthly">Aylık %1$s</string>
+    <string name="plan_price_yearly">%1$s/yıl</string>
 </resources>

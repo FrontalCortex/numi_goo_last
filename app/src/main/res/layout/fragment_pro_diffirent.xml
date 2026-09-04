@@ -260,7 +260,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Eğitmen desteği"
+            android:text="Danışma kredilerinde %20 bonus"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
@@ -288,6 +288,41 @@
             app:layout_constraintTop_toTopOf="@id/row5Text" />
 
 
+        <!-- Row 6 -->
+        <TextView
+            android:id="@+id/row6Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="16dp"
+            android:text="Hoş geldin: 1 danışma kredisi"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row5Text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="—"
+            android:textColor="#999999"
+            app:layout_constraintBottom_toBottomOf="@id/row6Text"
+            app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintTop_toTopOf="@id/row6Text" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/correct_ic2"
+            app:layout_constraintBottom_toBottomOf="@id/row6Text"
+            app:layout_constraintEnd_toEndOf="@id/superColumnBg"
+            app:layout_constraintStart_toStartOf="@id/superColumnBg"
+            app:layout_constraintTop_toTopOf="@id/row6Text" />
+
         <!-- Button -->
         <FrameLayout
             android:id="@+id/btnTryFree"
@@ -296,7 +331,7 @@
             android:layout_marginHorizontal="24dp"
             android:layout_marginTop="32dp"
             android:background="@drawable/bg_blue_rounded_button"
-            app:layout_constraintTop_toBottomOf="@id/row5Text">
+            app:layout_constraintTop_toBottomOf="@id/row6Text">
 
             <TextView
                 android:layout_width="wrap_content"

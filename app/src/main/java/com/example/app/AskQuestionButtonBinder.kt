@@ -71,8 +71,16 @@ object AskQuestionButtonBinder {
         isTeacher: Boolean,
         onAllowedClick: () -> Unit,
     ) {
-        val plan = doc.getString("plan") ?: "Free"
-        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true)
+        // Soru sorma hakkı artık plana değil, danışma kredisine bağlı: kredisi olan
+        // herkes (Free dahil) soru sorabilir. Kredi bakiyesi sunucuya ait bir alandır ve
+        // firestore.rules ile istemci yazımına kapalıdır; buradaki kontrol yalnızca arayüz
+        // içindir, gerçek kontrolü askTeacherQuestion yapar.
+        val credits = doc.getLong("questionCredits")?.toInt() ?: 0
+
+        // Zaten Pro olan bir kullanıcıya Pro yükseltme ekranı göstermek yanlış olur; ona
+        // eksik olan şey plan değil kredi. Süresi geçmiş abonelik Free sayılır (sunucudaki
+        // effectivePlan ile aynı kural).
+        val hasProPlan = PlanStatus.isPro(doc)
 
         when {
             UserAskQuestionRestriction.isRestricted(doc) -> {
@@ -81,7 +89,10 @@ object AskQuestionButtonBinder {
             isTeacher && doc.getBoolean("teacherApproved") != true -> {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
             }
-            !isTeacher && !hasProPlan -> {
+            !isTeacher && credits < 1 && hasProPlan -> {
+                showOutOfCreditsDialog(fragment)
+            }
+            !isTeacher && credits < 1 -> {
                 AskQuestionOpenFragment().show(fragment.requireActivity().supportFragmentManager, "AskQuestionOpen")
             }
             else -> {
@@ -90,6 +101,27 @@ object AskQuestionButtonBinder {
                 onAllowedClick()
             }
         }
+    }
+
+    /**
+     * Kredisi biten Pro üyesine gösterilir.
+     *
+     * Doğrudan mağazaya atmak yerine tek cümlelik bir açıklama veriliyor: kullanıcının
+     * niyeti soru sormaktı, açıklamasız bir sıçrama hata gibi görünür ve mağazanın hangi
+     * bölümüne bakması gerektiğini de bilemez.
+     */
+    private fun showOutOfCreditsDialog(fragment: Fragment) {
+        AlertDialog.Builder(fragment.requireContext())
+            .setTitle("Danışma kredin kalmadı")
+            .setMessage(
+                "Öğretmene soru sormak için krediye ihtiyacın var. " +
+                    "Pro üyesi olduğun için kredi paketlerinde bonus kredi kazanıyorsun."
+            )
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Mağazaya git") { _, _ ->
+                (fragment.activity as? MainActivity)?.openShopFragment()
+            }
+            .show()
     }
 
     private fun showMessage(fragment: Fragment, messageResId: Int) {

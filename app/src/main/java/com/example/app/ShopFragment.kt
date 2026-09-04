@@ -14,6 +14,8 @@ import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 
 class ShopFragment : Fragment() {
 
@@ -55,9 +57,11 @@ class ShopFragment : Fragment() {
         }
 
         // --- Can (Energy) Bölümü ---
+        // Pro kartı doğrudan satın alma başlatmaz; önce plan karşılaştırma ekranını açar
+        // (shopSuperCard ile aynı davranış). Kullanıcı neyi satın aldığını görmeden ödeme
+        // akışına girmemeli.
         v.findViewById<View>(R.id.shopProCard).setOnClickListener {
-            val mainActivity = activity as? MainActivity ?: return@setOnClickListener
-            mainActivity.billingManager.launchPurchase(mainActivity, BillingCatalog.SUB_PRO)
+            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
         }
 
         val buyButton = v.findViewById<View>(R.id.shopBuyLifeButton)
@@ -199,6 +203,7 @@ class ShopFragment : Fragment() {
             billing.onPurchaseGranted = { productId ->
                 if (isAdded) {
                     refreshCurrencyUi()
+                    refreshCreditBalance()
                     animatePurchasedItem(productId)
                 }
                 (activity as? MainActivity)?.refreshWalletUi()
@@ -219,6 +224,7 @@ class ShopFragment : Fragment() {
         }
         handler.post(updateRunnable!!)
         refreshCurrencyUi()
+        refreshCreditBalance()
     }
 
     override fun onDestroyView() {
@@ -232,17 +238,32 @@ class ShopFragment : Fragment() {
     /** Satın alınan pakete uygun kutlama animasyonunu oynatır. */
     private fun animatePurchasedItem(productId: String) {
         val view = view ?: return
-        val (cardId, iconRes) = when (productId) {
-            BillingCatalog.GOLD_SMALL -> R.id.shopGoldCard1 to R.drawable.gold_ic
-            BillingCatalog.GOLD_MEDIUM -> R.id.shopGoldCard2 to R.drawable.gold_ic
-            BillingCatalog.GOLD_LARGE -> R.id.shopGoldCard3 to R.drawable.gold_ic
-            BillingCatalog.KEYS_SMALL -> R.id.shopKeyCard1 to R.drawable.key
-            BillingCatalog.KEYS_MEDIUM -> R.id.shopKeyCard2 to R.drawable.key
-            BillingCatalog.KEYS_LARGE -> R.id.shopKeyCard3 to R.drawable.key
+        // Kredi paketlerinde fırlatılan ikon sayısı verilen kredi adedini birebir yansıtır
+        // (1 / 5 / 10). Altın ve anahtarda adetler çok yüksek olduğu için orada sabit bir
+        // görsel yoğunluk (PURCHASE_ANIMATION_ITEM_COUNT) kullanılıyor.
+        val (cardId, iconRes, itemCount) = when (productId) {
+            BillingCatalog.GOLD_SMALL ->
+                Triple(R.id.shopGoldCard1, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.GOLD_MEDIUM ->
+                Triple(R.id.shopGoldCard2, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.GOLD_LARGE ->
+                Triple(R.id.shopGoldCard3, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_SMALL ->
+                Triple(R.id.shopKeyCard1, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_MEDIUM ->
+                Triple(R.id.shopKeyCard2, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_LARGE ->
+                Triple(R.id.shopKeyCard3, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.CREDITS_SMALL ->
+                Triple(R.id.shopCreditCard1, R.drawable.chat_credit_ic3, 1)
+            BillingCatalog.CREDITS_MEDIUM ->
+                Triple(R.id.shopCreditCard2, R.drawable.chat_credit_ic3, 5)
+            BillingCatalog.CREDITS_LARGE ->
+                Triple(R.id.shopCreditCard3, R.drawable.chat_credit_ic3, 10)
             else -> return
         }
         val card = view.findViewById<View>(cardId) ?: return
-        playItemFlyAnimation(card, PURCHASE_ANIMATION_ITEM_COUNT, iconRes)
+        playItemFlyAnimation(card, itemCount, iconRes)
     }
 
     private fun updateEnergyUi() {
@@ -252,7 +273,12 @@ class ShopFragment : Fragment() {
         val isInfinite = activity.isInfiniteEnergy()
         
         val currentEnergy = em.getCurrentEnergy()
-        energyText?.text = if (isInfinite) "∞" else currentEnergy.toString()
+        EnergyDisplay.apply(
+            text = energyText,
+            infiniteBadge = view.findViewById(R.id.shopEnergyInfiniteBadge),
+            isInfinite = isInfinite,
+            value = currentEnergy.toString(),
+        )
         val maxEnergy = em.getMaxEnergy()
         
         val timerText = view.findViewById<TextView>(R.id.shopLifeTimerText)
@@ -298,6 +324,49 @@ class ShopFragment : Fragment() {
         val ctx = context ?: return
         currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
         keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
+    }
+
+    /**
+     * Danışma kredisi bakiyesini gösterir.
+     *
+     * Bakiye cüzdan önbelleğinde tutulmuyor (o yalnızca altın/anahtar için); alan
+     * sunucuya ait ve seyrek değiştiği için doğrudan tek seferlik okunuyor.
+     */
+    private fun refreshCreditBalance() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (!isAdded) return@addOnSuccessListener
+                val credits = doc.getLong("questionCredits")?.toInt() ?: 0
+                view?.findViewById<TextView>(R.id.shopCreditText)?.text = credits.toString()
+                applyProCreditBonusUi(doc)
+            }
+    }
+
+    /**
+     * Kredi kartlarinda Pro bonusunu gosterir.
+     *
+     * Pro uyeye alacagi GERCEK adet yazilir (6 / 12) ve bonusun dahil oldugu belirtilir;
+     * digerlerine baz adet kalir ve Pro'ya gecince ne kazanacagi gosterilir. Boylece tek
+     * bir yerlesim hem odulu hem yukseltme gerekcesini anlatir.
+     *
+     * Buradaki bonus degerleri functions/index.js -> PRO_CREDIT_BONUS ile ayni olmalidir.
+     * 1'lik pakette bonus yoktur, o karta rozet konmaz.
+     */
+    private fun applyProCreditBonusUi(doc: DocumentSnapshot) {
+        val v = view ?: return
+        val isPro = PlanStatus.isPro(doc)
+
+        fun apply(amountId: Int, bonusId: Int, base: Int, bonus: Int) {
+            v.findViewById<TextView>(amountId)?.text =
+                (if (isPro) base + bonus else base).toString()
+            v.findViewById<TextView>(bonusId)?.apply {
+                text = if (isPro) "bonus dahil" else "Pro'da +$bonus"
+                visibility = View.VISIBLE
+            }
+        }
+        apply(R.id.shopCreditAmount2, R.id.shopCreditBonus2, 5, 1)
+        apply(R.id.shopCreditAmount3, R.id.shopCreditBonus3, 10, 2)
     }
 
     private fun playHeartFlyAnimation(button: View) {
@@ -474,6 +543,9 @@ class ShopFragment : Fragment() {
             R.id.shopKeyCard1 to BillingCatalog.KEYS_SMALL,
             R.id.shopKeyCard2 to BillingCatalog.KEYS_MEDIUM,
             R.id.shopKeyCard3 to BillingCatalog.KEYS_LARGE,
+            R.id.shopCreditCard1 to BillingCatalog.CREDITS_SMALL,
+            R.id.shopCreditCard2 to BillingCatalog.CREDITS_MEDIUM,
+            R.id.shopCreditCard3 to BillingCatalog.CREDITS_LARGE,
         )
 
         /** Fiyat etiketi -> Play ürün kimliği. */
@@ -484,6 +556,9 @@ class ShopFragment : Fragment() {
             R.id.shopKeyPrice1 to BillingCatalog.KEYS_SMALL,
             R.id.shopKeyPrice2 to BillingCatalog.KEYS_MEDIUM,
             R.id.shopKeyPrice3 to BillingCatalog.KEYS_LARGE,
+            R.id.shopCreditPrice1 to BillingCatalog.CREDITS_SMALL,
+            R.id.shopCreditPrice2 to BillingCatalog.CREDITS_MEDIUM,
+            R.id.shopCreditPrice3 to BillingCatalog.CREDITS_LARGE,
         )
     }
 }

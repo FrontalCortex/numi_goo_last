@@ -121,19 +121,34 @@
                 android:textSize="16sp" />
         </FrameLayout>
 
+        <!-- Abonelik istemeyen kullanıcı için ikinci yol: tek seferlik kredi satın alma. -->
+        <TextView
+            android:id="@+id/btnBuyCredits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:fontFamily="sans-serif-black"
+            android:text="BUNUN YERİNE KREDİ AL"
+            android:textColor="#3D4DFF"
+            android:textSize="15sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnTryFree" />
+
         <!-- No Thanks Button -->
         <TextView
             android:id="@+id/btnNoThanks"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:fontFamily="sans-serif-black"
             android:text="HAYIR TEŞEKKÜRLER"
             android:textColor="#3D4DFF"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnTryFree" />
+            app:layout_constraintTop_toBottomOf="@id/btnBuyCredits" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

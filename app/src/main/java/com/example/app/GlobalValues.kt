@@ -183,6 +183,11 @@ object GlobalValues {
      * başka bir overlay ile doluysa sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
      * Süreç yeniden başlasa bile sayı kaybolmasın diye SharedPreferences'ta saklanır.
      */
+    /** Sayacı artırmadan okur — dönüş daha başlarken "bu dönüşte promo çıkacak mı" kararı için. */
+    fun peekAskQuestionPromoLessonReturnCount(context: Context): Int =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(KEY_ASK_QUESTION_PROMO_COUNT, 0)
+
     fun incrementAskQuestionPromoLessonReturnCount(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val next = prefs.getInt(KEY_ASK_QUESTION_PROMO_COUNT, 0) + 1

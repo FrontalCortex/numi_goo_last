@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Aylık ₺101"
+            android:text="Aylık ₺99"
             android:textColor="#333333"
             android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="@id/tvBireyselTitle"
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-black"
-            android:text="₺1.210/yıl"
+            android:text="₺1.188/yıl"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -83,25 +83,6 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:orientation="horizontal">
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginTop="2dp"
-                    android:src="@drawable/correct_ic2"
-                    app:tint="#00B0FF" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Eğitmen desteği (10 kredi)"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
-            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -126,6 +107,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:orientation="horizontal">
                 <ImageView
                     android:layout_width="16dp"
@@ -138,6 +120,45 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="Ustalık Yolu"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/correct_ic2"
+                    app:tint="#00B0FF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Danışma kredilerinde %20 bonus"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/correct_ic2"
+                    app:tint="#00B0FF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Hoş geldin: 1 danışma kredisi"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -200,7 +221,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Aylık ₺30"
+            android:text="Aylık ₺49"
             android:textColor="#333333"
             android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="@id/tvLiteTitle"
@@ -213,7 +234,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-black"
-            android:text="₺360/yıl"
+            android:text="₺588/yıl"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"

@@ -1739,10 +1739,13 @@ class MapFragment : Fragment() {
         // 1.2-2.8 sn'lik retry penceresinde haritayı tıklanabilir bırakmayalım. Rozet
         // Firestore kontrolü sürüyorsa da aynı sebeple kilit açılmasın (bkz.
         // ChestFragment/ChestResult — GlobalValues.pendingBadgeFirestoreOperation).
+        // AskQuestionOpen promosu da aynı sebeple bekliyor olabilir (reklam kontrolü + haritanın
+        // temizlenmesi); promo ekrana gelene kadar kilit açılmamalı.
         if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE ||
-            MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation
+            MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
         ) {
-            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending or badge check in flight")
+            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending, badge check in flight or ask-question promo pending")
             return
         }
 
@@ -1779,8 +1782,11 @@ class MapFragment : Fragment() {
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
         
-        // EAGER LOCK: Eğer rehber açılacaksa haritanın animasyonunu/rötarını beklemeden kalkanı hemen aç!
-        if (MarathonGuideStore.isPending(requireContext())) {
+        // EAGER LOCK: Eğer rehber ya da AskQuestionOpen promosu açılacaksa haritanın
+        // animasyonunu/rötarını beklemeden kalkanı hemen aç!
+        if (MarathonGuideStore.isPending(requireContext()) ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
+        ) {
             disableMainActivityViews()
             disableMapFragmentViews()
         }

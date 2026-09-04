@@ -53,6 +53,8 @@ class PlanFragment : DialogFragment() {
             binding.imgBadgeBireysel.visibility = View.GONE
         }
 
+        applyLivePrices()
+
         binding.btnTryFree.setOnClickListener {
             // `plan` alanını istemci yazamaz (firestore.rules kilitli tutuyor). Play'den gelen
             // abonelik token'ı sunucuda doğrulandıktan sonra Admin SDK ile yazılır.
@@ -61,6 +63,47 @@ class PlanFragment : DialogFragment() {
             mainActivity.billingManager.launchPurchase(mainActivity, productId)
             dismiss()
         }
+    }
+
+    /**
+     * Fiyatları Play'den gelen değerlerle yazar.
+     *
+     * XML'deki rakamlar yalnızca yer tutucudur: Play fiyatı kullanıcının ülkesine ve para
+     * birimine göre yerelleştirir, sabit metin yabancı kullanıcıya yanlış tutar gösterir.
+     * Ürün bilgisi henüz gelmediyse yer tutucu korunur.
+     */
+    private fun applyLivePrices() {
+        val billing = (activity as? MainActivity)?.billingManager ?: return
+
+        billing.formattedPrice(BillingCatalog.SUB_PRO)?.let {
+            binding.tvBireyselPriceRight.text = getString(R.string.plan_price_monthly, it)
+        }
+        billing.formattedPrice(BillingCatalog.SUB_LITE)?.let {
+            binding.tvLitePriceRight.text = getString(R.string.plan_price_monthly, it)
+        }
+
+        applyYearlyEquivalent(billing, BillingCatalog.SUB_PRO, binding.tvBireyselPriceSub)
+        applyYearlyEquivalent(billing, BillingCatalog.SUB_LITE, binding.tvLitePriceSub)
+    }
+
+    /** Aylık tutarın 12 ile çarpımı; satın alınabilir bir yıllık plan değil, karşılaştırma. */
+    private fun applyYearlyEquivalent(
+        billing: BillingManager,
+        productId: String,
+        target: android.widget.TextView,
+    ) {
+        val (micros, currencyCode) = billing.subscriptionPriceAmount(productId) ?: return
+        val yearly = micros * 12.0 / 1_000_000.0
+        val formatter = java.text.NumberFormat.getCurrencyInstance()
+        formatter.currency = runCatching { java.util.Currency.getInstance(currencyCode) }.getOrNull()
+            ?: return
+        target.text = getString(R.string.plan_price_yearly, formatter.format(yearly))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Ürün bilgisi uygulama açılışında yükleniyor; ekran o tamamlanmadan açılmış olabilir.
+        applyLivePrices()
     }
 
     override fun onDestroyView() {

@@ -147,6 +147,22 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             ?.formattedPrice
     }
 
+    /**
+     * Aboneliğin dönem tutarı (mikro birim) ve para birimi kodu.
+     *
+     * Yıllık karşılık gibi türetilmiş rakamları biçimlenmiş metni ayrıştırarak hesaplamak
+     * ülkeden ülkeye kırılır (ondalık ayracı, sembol konumu); bu yüzden ham değer verilir.
+     */
+    fun subscriptionPriceAmount(productId: String): Pair<Long, String>? {
+        val details = productDetails[productId] ?: return null
+        val phase = details.subscriptionOfferDetails
+            ?.firstOrNull()
+            ?.pricingPhases
+            ?.pricingPhaseList
+            ?.lastOrNull() ?: return null
+        return phase.priceAmountMicros to phase.priceCurrencyCode
+    }
+
     fun isReady(): Boolean = billingClient.isReady
 
     // ── Satın alma başlatma ─────────────────────────────────────────────────
@@ -256,9 +272,29 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
                     else consumeProduct(purchase, productId)
                     return@addOnFailureListener
                 }
+                // Abonelik cihazdaki Play hesabına aittir, uygulama hesabına değil. Başka bir
+                // uygulama hesabı aynı aboneliği doğrulatmaya çalışırsa sunucu permission-denied
+                // döner. Bu kalıcı bir durumdur: "tekrar denenecek" demek yanlış olur, çünkü
+                // kullanıcı uygulamayı her açtığında aynı mesajı görürdü.
+                if (isBoundToAnotherAccount(e)) {
+                    Log.w(TAG, "Abonelik başka bir hesaba tanımlı: $productId")
+                    main.post {
+                        onError?.invoke(
+                            "Bu abonelik bu cihazdaki Google Play hesabının başka bir Sorobit " +
+                                "hesabına tanımlı. Aboneliği o hesapla kullanabilirsiniz."
+                        )
+                    }
+                    return@addOnFailureListener
+                }
                 Log.e(TAG, "Satın alma sunucuda işlenemedi: $productId", e)
                 main.post { onError?.invoke("Satın alma doğrulanamadı. Uygulamayı tekrar açtığınızda denenecek.") }
             }
+    }
+
+    /** Abonelik bu cihazın Play hesabında var ama başka bir uygulama hesabına bağlı. */
+    private fun isBoundToAnotherAccount(e: Exception): Boolean {
+        val ffe = e as? com.google.firebase.functions.FirebaseFunctionsException ?: return false
+        return ffe.code == com.google.firebase.functions.FirebaseFunctionsException.Code.PERMISSION_DENIED
     }
 
     private fun isAlreadyProcessed(e: Exception): Boolean {

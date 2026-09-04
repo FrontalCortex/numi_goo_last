@@ -37,6 +37,7 @@ class TasksFragment : Fragment() {
     private fun startEnergyUpdateTimer(contentView: View, energyManager: EnergyManager?) {
         if (energyManager == null) return
         val energyText = contentView.findViewById<android.widget.TextView>(R.id.panelCupPathEnergyText) ?: return
+        val infiniteBadge = contentView.findViewById<View>(R.id.panelCupPathEnergyInfiniteBadge)
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         
         var updateRunnable: Runnable? = null
@@ -44,9 +45,9 @@ class TasksFragment : Fragment() {
             val activity = activity as? MainActivity
             if (activity != null) {
                 val isInfinite = activity.isInfiniteEnergy()
-                val currentText = if (isInfinite) "∞" else energyManager.getCurrentEnergy().toString()
+                val currentText = if (isInfinite) "" else energyManager.getCurrentEnergy().toString()
                 if (energyText.text.toString() != currentText) {
-                    energyText.text = currentText
+                    EnergyDisplay.apply(energyText, infiniteBadge, isInfinite, currentText)
                 }
             }
             handler.postDelayed(updateRunnable!!, 1000)
@@ -65,7 +66,12 @@ class TasksFragment : Fragment() {
         val activity = activity as? MainActivity
         if (activity != null) {
             val isInfinite = activity.isInfiniteEnergy()
-            energyText.text = if (isInfinite) "∞" else energyManager.getCurrentEnergy().toString()
+            EnergyDisplay.apply(
+                energyText,
+                infiniteBadge,
+                isInfinite,
+                energyManager.getCurrentEnergy().toString(),
+            )
         }
     }
 

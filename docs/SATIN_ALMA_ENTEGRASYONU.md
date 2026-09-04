@@ -28,12 +28,15 @@ Değiştirirken:
 
 | Ürün kimliği | Tür | Verilen |
 | --- | --- | --- |
-| `gold_1200` | Tüketilebilir | 1200 altın |
-| `gold_7000` | Tüketilebilir | 7000 altın |
-| `gold_15000` | Tüketilebilir | 15000 altın |
-| `keys_10` | Tüketilebilir | 10 anahtar |
-| `keys_50` | Tüketilebilir | 50 anahtar |
-| `keys_100` | Tüketilebilir | 100 anahtar |
+| `gold_small` | Tüketilebilir | 5.000 altın |
+| `gold_medium` | Tüketilebilir | 20.000 altın |
+| `gold_large` | Tüketilebilir | 100.000 altın |
+| `keys_small` | Tüketilebilir | 10 anahtar |
+| `keys_medium` | Tüketilebilir | 50 anahtar |
+| `keys_large` | Tüketilebilir | 200 anahtar |
+| `credits_small` | Tüketilebilir | 1 danışma kredisi |
+| `credits_medium` | Tüketilebilir | 5 danışma kredisi (Pro: 6) |
+| `credits_large` | Tüketilebilir | 10 danışma kredisi (Pro: 12) |
 | `pro_monthly` | Abonelik | `plan = "Pro"` |
 | `lite_monthly` | Abonelik | `plan = "Lite"` |
 

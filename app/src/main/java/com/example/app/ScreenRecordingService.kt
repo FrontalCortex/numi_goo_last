@@ -180,10 +180,10 @@ class ScreenRecordingService : Service() {
         // 30'dan 20 fps'e düşürmek aynı bitrate'i daha az kareye bölüp kare başına
         // netliği artırıyor, dosya boyutunu BÜYÜTMÜYOR (bkz. bitrate açıklaması altta).
         recorder.setVideoFrameRate(20)
-        // 2.5 Mbps'te ekran içeriği (ince metin, ikon kenarları) gözle görülür şekilde
-        // pikselleşiyordu; 4 Mbps'e çıkarıldı (bkz. storage.rules'daki 150 MB üst sınırı —
-        // 180 sn * 4 Mbps + ses ~93 MB, hâlâ rahat bir payla altında).
-        recorder.setVideoEncodingBitRate(4_000_000)
+        // 2.5 Mbps'te, sonra 4 Mbps'te bile ekran içeriği (ince metin, ikon kenarları)
+        // gözle görülür şekilde pikselleşiyordu; 5 Mbps'e çıkarıldı (bkz. storage.rules'daki
+        // 150 MB üst sınırı — 180 sn * 5 Mbps + ses ~115 MB, hâlâ rahat bir payla altında).
+        recorder.setVideoEncodingBitRate(5_000_000)
         if (withAudio) {
             recorder.setAudioChannels(1)
             recorder.setAudioSamplingRate(44100)

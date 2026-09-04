@@ -860,7 +860,26 @@ exports.onMessageCreated = functions.firestore
     return null;
   });
 
-// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları kalıcı sil
+// Storage'daki soru medyasını (ekran görüntüsü/video/sohbet eki) sonsuza kadar biriktirmemek
+// için Firestore dokümanlarıyla birlikte siliyoruz — aksi halde bucket hiç küçülmüyor.
+async function deleteStorageFiles(paths) {
+  const bucket = admin.storage().bucket();
+  await Promise.all(
+    paths.filter(Boolean).map((path) =>
+      bucket
+        .file(path)
+        .delete()
+        .catch((err) => {
+          if (err.code !== 404) {
+            console.error(`Storage dosyası silinemedi: ${path}`, err.message);
+          }
+        }),
+    ),
+  );
+}
+
+// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları + Storage
+// medyasını kalıcı sil
 exports.onQuestionUpdated = functions.firestore
   .document('questions/{questionId}')
   .onUpdate(async (change, context) => {
@@ -874,6 +893,12 @@ exports.onQuestionUpdated = functions.firestore
     const bothDeleted =
       deletedForUids.includes(studentUid) && deletedForUids.includes(claimedByTeacherUid);
     if (!bothDeleted) return null;
+
+    const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
+    const storagePaths = messagesSnap.docs
+      .map((doc) => doc.data().mediaStoragePath)
+      .concat([after.videoStoragePath, after.screenshotStoragePath]);
+    await deleteStorageFiles(storagePaths);
 
     await deleteCollection(`questions/${questionId}/messages`);
     await change.after.ref.delete();
@@ -1342,13 +1367,46 @@ const ANDROID_PACKAGE_NAME = process.env.ANDROID_PACKAGE_NAME || '';
 // Tüketilebilir ürünler: productId -> verilecek miktar.
 // Play Console'daki ürün kimlikleriyle ve istemcideki BillingCatalog ile birebir aynı olmalı.
 const PLAY_PRODUCT_CATALOG = {
-  gold_1200: { currency: 1200, keys: 0 },
-  gold_7000: { currency: 7000, keys: 0 },
-  gold_15000: { currency: 15000, keys: 0 },
-  keys_10: { currency: 0, keys: 10 },
-  keys_50: { currency: 0, keys: 50 },
-  keys_100: { currency: 0, keys: 100 },
+  gold_small: { currency: 5000, keys: 0, credits: 0 },
+  gold_medium: { currency: 20000, keys: 0, credits: 0 },
+  gold_large: { currency: 100000, keys: 0, credits: 0 },
+  keys_small: { currency: 0, keys: 10, credits: 0 },
+  keys_medium: { currency: 0, keys: 50, credits: 0 },
+  keys_large: { currency: 0, keys: 200, credits: 0 },
+  // Öğretmen danışma kredileri. Her kredi bir soru hakkıdır ve cevaplandığında
+  // öğretmene ödenen ücret kadar gerçek maliyet doğurur — bu yüzden bedava
+  // dağıtılmaz, yalnızca satın alma ve Pro deneme hediyesiyle verilir.
+  credits_small: { currency: 0, keys: 0, credits: 1 },
+  credits_medium: { currency: 0, keys: 0, credits: 5 },
+  credits_large: { currency: 0, keys: 0, credits: 10 },
 };
+
+/**
+ * Pro abonelerine kredi paketlerinde verilen bonus kredi.
+ *
+ * Tek kredilik pakette bonus YOKTUR: ₺39'luk satıştan KDV ve Play komisyonundan
+ * sonra kalan (~₺27,6) tek bir kredinin maliyetini (₺15) ancak karşılar; bonus
+ * verilirse paket zarara geçer. Büyük paketlerde marj bonusu absorbe eder.
+ */
+const PRO_CREDIT_BONUS = {
+  credits_medium: 1,
+  credits_large: 2,
+};
+
+/**
+ * Pro'ya ilk geçişte verilen hoş geldin kredisi. Hesap başına BİR KEZ.
+ *
+ * Denemeyle mi doğrudan mı abone olunduğu fark etmez; aksi halde ücretsiz denemeyi
+ * başlatan kullanıcı 1 kredi alırken doğrudan ödeme yapan hiç alamıyordu.
+ */
+const PRO_WELCOME_CREDITS = 1;
+
+/** Pro/Premium abonelerine bonus uygulanır (istemcideki plan kontrolüyle aynı). */
+function creditBonusFor(userData, productId) {
+  const plan = effectivePlan(userData);
+  const isPro = plan === 'Pro' || plan === 'Premium';
+  return isPro ? (PRO_CREDIT_BONUS[productId] || 0) : 0;
+}
 
 // Abonelikler: productId -> users/{uid}.plan değeri.
 const PLAY_SUBSCRIPTION_CATALOG = {
@@ -1453,6 +1511,8 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
       const userData = userDoc.data();
       const newKeys = (Number.parseInt(userData.keys, 10) || 0) + reward.keys;
       const newCurrency = (Number.parseInt(userData.currency, 10) || 0) + reward.currency;
+      const grantedCredits = reward.credits + creditBonusFor(userData, productId);
+      const newCredits = (Number.parseInt(userData.questionCredits, 10) || 0) + grantedCredits;
 
       transaction.set(purchaseRef, {
         uid,
@@ -1461,20 +1521,368 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         orderId: purchase.orderId || null,
         grantedKeys: reward.keys,
         grantedCurrency: reward.currency,
+        grantedCredits,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      transaction.update(userRef, { keys: newKeys, currency: newCurrency });
+      transaction.update(userRef, {
+        keys: newKeys,
+        currency: newCurrency,
+        questionCredits: newCredits,
+      });
 
-      return { keys: newKeys, currency: newCurrency };
+      return { keys: newKeys, currency: newCurrency, credits: newCredits };
     });
 
     console.log('Satın alma işlendi', { uid, productId, orderId: purchase.orderId });
-    return { success: true, keys: result.keys, currency: result.currency };
+    return { success: true, keys: result.keys, currency: result.currency, credits: result.credits };
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
     console.error('Satın alma işlenemedi', { uid, productId, error });
     throw new functions.https.HttpsError('internal', 'Satın alma işlenemedi.');
   }
+});
+
+/**
+ * Süresi dolmuş (`expired`) bir soruyu yeni bir kredi harcayarak tekrar kuyruğa alır.
+ *
+ * Kullanıcı sorusunu ve yüklediği medyayı kaybetmez; tek dokunuşla yeniden sorabilir.
+ * 48 saatlik iade sayacı da sıfırlanır, yani tekrar cevapsız kalırsa kredi yine iade edilir.
+ */
+exports.resendTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const questionId = readText((data || {}).questionId, 128);
+  if (!questionId) {
+    throw new functions.https.HttpsError('invalid-argument', 'questionId zorunludur.');
+  }
+
+  const questionRef = db.collection('questions').doc(questionId);
+  const userRef = db.collection('users').doc(uid);
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const [questionDoc, userDoc] = await Promise.all([
+      transaction.get(questionRef),
+      transaction.get(userRef),
+    ]);
+
+    if (!questionDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Soru bulunamadı.');
+    }
+    if (questionDoc.data().studentUid !== uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu soru size ait değil.');
+    }
+    if (questionDoc.data().status !== 'expired') {
+      throw new functions.https.HttpsError('failed-precondition', 'Bu soru zaten kuyrukta.');
+    }
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+
+    const userData = userDoc.data();
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError('failed-precondition', 'Yeterli danışma krediniz yok.');
+    }
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.update(questionRef, {
+      status: 'pending',
+      creditSpent: true,
+      creditRefunded: false,
+      // 48 saatlik iade sayacı baştan başlar.
+      createdAtMs: Date.now(),
+      lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      resentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru tekrar kuyruğa alındı', { uid, questionId, remaining });
+  return { success: true, credits: remaining };
+});
+
+/**
+ * 48 saat boyunca hiçbir öğretmenin almadığı soruların kredisini iade eder.
+ *
+ * Yalnızca `pending` (kimsenin üstlenmediği) sorular iade edilir. İade edilen soru
+ * `expired` durumuna geçer ve öğretmen kuyruğundan çıkar — aksi halde kredi iade
+ * edilmiş bir soru sonradan cevaplanıp bize bedava iş maliyeti çıkarırdı. Soru
+ * öğrencinin geçmişinde durmaya devam eder; "Tekrar sor" ile yeni bir kredi
+ * harcayarak kuyruğa geri gönderilebilir.
+ */
+async function runUnansweredQuestionRefund() {
+  const cutoff = Date.now() - QUESTION_REFUND_AFTER_MS;
+  const snapshot = await db
+    .collection('questions')
+    .where('status', '==', 'pending')
+    .where('createdAtMs', '<', cutoff)
+    .limit(300)
+    .get();
+
+  const counts = { scanned: snapshot.size, refunded: 0, skipped: 0, failed: 0 };
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    // Kredi harcanmadan oluşmuş (eski) veya zaten iade edilmiş kayıtlara dokunma.
+    if (data.creditSpent !== true || data.creditRefunded === true || !data.studentUid) {
+      counts.skipped++;
+      continue;
+    }
+    try {
+      await db.runTransaction(async (transaction) => {
+        const questionRef = doc.ref;
+        const userRef = db.collection('users').doc(data.studentUid);
+        const [questionDoc, userDoc] = await Promise.all([
+          transaction.get(questionRef),
+          transaction.get(userRef),
+        ]);
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş olabilir.
+        const fresh = questionDoc.data();
+        if (!questionDoc.exists || fresh.status !== 'pending' || fresh.creditRefunded === true) {
+          return;
+        }
+
+        if (userDoc.exists) {
+          const credits = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
+          transaction.update(userRef, { questionCredits: credits + 1 });
+        }
+        transaction.update(questionRef, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      counts.refunded++;
+    } catch (error) {
+      console.error('Soru kredisi iade edilemedi', { questionId: doc.id, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runUnansweredQuestionRefund tamamlandı', counts);
+  return counts;
+}
+
+exports.reconcileUnansweredQuestions = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runUnansweredQuestionRefund();
+    return null;
+  });
+
+/** Çözülmüş bir sorunun medyası bu süre sonunda, kimse elle silmese bile otomatik silinir. */
+const RESOLVED_MEDIA_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * NEDEN
+ *   Soru medyası (video/görsel/ses) eskiden yalnızca hem öğrenci hem öğretmen elle
+ *   "listeden sil" dediğinde Storage'dan siliniyordu (bkz. onQuestionUpdated) — pratikte bu
+ *   neredeyse hiç gerçekleşmiyor, bucket sınırsız büyüyordu. Bu fonksiyon çözülmüş bir sorunun
+ *   ağır medya dosyalarını (asıl maliyet kalemi) kimse elle silmese bile belli bir süre sonra
+ *   otomatik siler. Firestore metnini (soru/mesaj dokümanlarını) SİLMEZ — kullanıcı sohbet
+ *   geçmişini görmeye devam eder, sadece medya alanları temizlenir.
+ *
+ *   Bekleyen (pending) bir raporu olan sorulara DOKUNMAZ — moderasyon incelemesi bitmeden
+ *   kanıt (raporlanan medya) silinmesin diye; bir sonraki günlük taramada tekrar denenir.
+ */
+async function runResolvedQuestionMediaCleanup() {
+  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - RESOLVED_MEDIA_RETENTION_MS);
+  const snapshot = await db
+    .collection('questions')
+    .where('status', '==', 'resolved')
+    .where('mediaPurged', '==', false)
+    .where('resolvedAt', '<', cutoff)
+    .limit(300)
+    .get();
+
+  const counts = { scanned: snapshot.size, purged: 0, skippedForReport: 0, failed: 0 };
+
+  for (const doc of snapshot.docs) {
+    const questionId = doc.id;
+    try {
+      const pendingReport = await db
+        .collection('messageReports')
+        .where('questionId', '==', questionId)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+      if (!pendingReport.empty) {
+        counts.skippedForReport++;
+        continue;
+      }
+
+      const data = doc.data();
+      const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
+      const storagePaths = messagesSnap.docs
+        .map((m) => m.data().mediaStoragePath)
+        .concat([data.videoStoragePath, data.screenshotStoragePath]);
+      await deleteStorageFiles(storagePaths);
+
+      const batch = db.batch();
+      messagesSnap.docs.forEach((m) => {
+        if (m.data().mediaStoragePath) {
+          batch.update(m.ref, {
+            mediaStoragePath: admin.firestore.FieldValue.delete(),
+            mediaUrl: admin.firestore.FieldValue.delete(),
+            thumbnailUrl: admin.firestore.FieldValue.delete(),
+          });
+        }
+      });
+      batch.update(doc.ref, {
+        mediaPurged: true,
+        mediaPurgedAt: admin.firestore.FieldValue.serverTimestamp(),
+        videoStoragePath: admin.firestore.FieldValue.delete(),
+        videoUrl: admin.firestore.FieldValue.delete(),
+        screenshotStoragePath: admin.firestore.FieldValue.delete(),
+        screenshotUrl: admin.firestore.FieldValue.delete(),
+      });
+      await batch.commit();
+      counts.purged++;
+    } catch (error) {
+      console.error('Soru medyası temizlenemedi', { questionId, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runResolvedQuestionMediaCleanup tamamlandı', counts);
+  return counts;
+}
+
+exports.cleanupResolvedQuestionMedia = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 24 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runResolvedQuestionMediaCleanup();
+    return null;
+  });
+
+// Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
+exports._runResolvedQuestionMediaCleanup = runResolvedQuestionMediaCleanup;
+
+// ─── Öğretmen danışma soruları — sunucu taraflı ─────────────────────────────
+//
+// NEDEN
+//   Soru dokümanları eskiden doğrudan istemciden yazılıyordu (firestore.rules:
+//   `allow create: if isSignedIn()`). Yani değiştirilmiş bir istemci kredi harcamadan
+//   sınırsız soru gönderebilirdi ve cevaplanan her soru gerçek para maliyeti doğurur.
+//   Artık soru YALNIZCA burada oluşturulur; kredi düşümü ve doküman yazımı aynı
+//   transaction'da yapılır, böylece "kredi gitti soru gelmedi" durumu da oluşamaz.
+
+/** Cevapsız soru bu süre sonunda krediyi iade eder ve öğretmen kuyruğundan çıkar. */
+const QUESTION_REFUND_AFTER_MS = 48 * 60 * 60 * 1000;
+
+/** UserAskQuestionRestriction.kt ile aynı kural. */
+function isAskQuestionRestricted(userData) {
+  if (userData.banned === true) return true;
+  const until = userData.restrictedUntil;
+  const untilMs = until && typeof until.toMillis === 'function' ? until.toMillis() : 0;
+  return untilMs > Date.now();
+}
+
+function readText(value, maxLength) {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
+/**
+ * Öğretmene soru gönderir: 1 danışma kredisi düşer ve soruyu oluşturur.
+ *
+ * Medya (görsel/video) istemci tarafından Storage'a yüklenir; buraya yalnızca yolu
+ * ve indirme adresi gelir. Kredi kontrolü, düşümü ve soru yazımı atomiktir.
+ */
+exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const payload = data || {};
+
+  const isVideo = payload.mediaType === 'video';
+  const storagePath = readText(payload.storagePath, 512);
+  const mediaUrl = readText(payload.mediaUrl, 2048);
+  const message = readText(payload.message, 500);
+  const previewText = readText(payload.previewText, 500);
+  const description = readText(payload.description, 2000);
+  const videoDurationSec = Number.parseInt(payload.videoDurationSec, 10) || 0;
+
+  if (!storagePath || !mediaUrl) {
+    throw new functions.https.HttpsError('invalid-argument', 'Medya bilgisi eksik.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const questionRef = db.collection('questions').doc();
+  const messageRef = questionRef.collection('messages').doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const userDoc = await transaction.get(userRef);
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const userData = userDoc.data();
+
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Yeterli danışma krediniz yok.'
+      );
+    }
+
+    const questionData = {
+      studentUid: uid,
+      studentEmail: context.auth.token.email || null,
+      message,
+      previewText,
+      status: 'pending',
+      createdAt: now,
+      lastMessageAt: now,
+      createdAtMs: Date.now(),
+      // İade takibi: cevapsız kalırsa reconcileUnansweredQuestions krediyi geri verir.
+      creditSpent: true,
+      creditRefunded: false,
+    };
+    if (isVideo) {
+      questionData.mediaType = 'video';
+      questionData.videoStoragePath = storagePath;
+      questionData.videoUrl = mediaUrl;
+      questionData.videoDurationSec = videoDurationSec;
+    } else {
+      questionData.screenshotStoragePath = storagePath;
+      questionData.screenshotUrl = mediaUrl;
+    }
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.set(questionRef, questionData);
+    transaction.set(messageRef, {
+      senderUid: uid,
+      senderRole: 'student',
+      type: isVideo ? 'video' : 'image',
+      mediaStoragePath: storagePath,
+      mediaUrl,
+      textContent: description || null,
+      createdAt: now,
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru oluşturuldu', { uid, questionId: questionRef.id, remaining });
+  return { success: true, questionId: questionRef.id, credits: remaining };
 });
 
 /**
@@ -1484,14 +1892,22 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
  * istemci elindeki aboneliği yeniden doğrulatır, sunucu da `plan` ve `planExpiresAt`
  * alanlarını günceller. Böylece iptal eden kullanıcı, süresi dolduğunda Pro olmaktan çıkar.
  */
-exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
-  }
+/**
+ * Bir abonelik token'ını Play'e doğrulatır ve kullanıcının planını günceller.
+ *
+ * İKİ ÇAĞIRAN
+ *   1. redeemGooglePlaySubscription — istemci uygulamayı her açtığında doğrulatır.
+ *   2. playSubscriptionNotification — Google, yenileme/iptal/süre dolumu olduğunda
+ *      istemciden bağımsız olarak haber verir.
+ *
+ * İkincisi olmadan, aboneliğini iptal eden kullanıcının `plan` alanı Firestore'da
+ * kalıcı olarak eski değerinde donar (gönderilecek token kalmadığı için istemci de
+ * doğrulatamaz); ayrıca aboneliği aldığı Play hesabından farklı bir cihazda uygulamayı
+ * kullanan kişi, ödemeye devam etmesine rağmen yenilemesi kaydedilmediği için Free'ye
+ * düşerdi.
+ */
+async function syncSubscriptionForToken(uid, productId, purchaseToken) {
   assertBillingConfigured();
-
-  const uid = context.auth.uid;
-  const { productId, purchaseToken } = readPurchaseArgs(data);
 
   const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
   if (!entry) {
@@ -1546,6 +1962,13 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
         throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
       }
 
+      // Hoş geldin kredisi yalnızca ilk Pro aktivasyonunda verilir. İşaretçi KULLANICI
+      // dokümanında değil burada tutulur: kullanıcı kendi dokümanını silip yeniden
+      // oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat döngüsüyle
+      // sınırsız kredi üretilebilirdi. processedPurchases istemciye tamamen kapalıdır.
+      const alreadyWelcomed = purchaseDoc.exists && purchaseDoc.data().welcomeCreditGranted === true;
+      const grantWelcome = stillValid && entry.plan === 'Pro' && !alreadyWelcomed;
+
       transaction.set(
         purchaseRef,
         {
@@ -1555,15 +1978,24 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
           subscriptionState: subscription.subscriptionState || null,
           expiryTime: expiryRaw,
           processedAt: admin.firestore.FieldValue.serverTimestamp(),
+          welcomeCreditGranted: alreadyWelcomed || grantWelcome,
         },
         { merge: true }
       );
 
-      transaction.update(userRef, {
+      const planUpdate = {
         plan: stillValid ? entry.plan : 'Free',
         planExpiresAt: stillValid ? expiryMs : null,
         planProductId: stillValid ? productId : null,
-      });
+      };
+
+      if (grantWelcome) {
+        const current = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
+        planUpdate.questionCredits = current + PRO_WELCOME_CREDITS;
+        console.log('Pro hoş geldin kredisi verildi', { uid, productId });
+      }
+
+      transaction.update(userRef, planUpdate);
     });
 
     return {
@@ -1576,7 +2008,88 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
     console.error('Abonelik işlenemedi', { uid, productId, error });
     throw new functions.https.HttpsError('internal', 'Abonelik işlenemedi.');
   }
+}
+
+exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const { productId, purchaseToken } = readPurchaseArgs(data);
+  return syncSubscriptionForToken(context.auth.uid, productId, purchaseToken);
 });
+
+// ─── Google Play gerçek zamanlı abonelik bildirimleri (RTDN) ────────────────
+//
+// Google, abonelik durumu değiştiğinde (yenileme, iptal, süre dolumu, ödeme sorunu,
+// duraklatma, iade) bu Pub/Sub konusuna mesaj bırakır. İstemciye hiç bağımlı değildir.
+//
+// KURULUM
+//   1. Google Cloud → Pub/Sub → PLAY_RTDN_TOPIC adıyla konu oluşturulur.
+//   2. google-play-developer-notifications@system.gserviceaccount.com hesabına o konu
+//      üzerinde "Pub/Sub Publisher" rolü verilir.
+//   3. Play Console → Para kazanma kurulumu → konu tam adı yapıştırılır.
+
+const PLAY_RTDN_TOPIC = 'play-rtdn';
+
+exports.playSubscriptionNotification = functions.pubsub
+  .topic(PLAY_RTDN_TOPIC)
+  .onPublish(async (message) => {
+    let payload;
+    try {
+      payload = message.json;
+    } catch (error) {
+      console.error('RTDN mesajı çözümlenemedi', error);
+      return null;
+    }
+    if (!payload) return null;
+
+    // Play Console'daki "test bildirimi gönder" düğmesi bunu üretir; kurulumun
+    // doğruluğunu anlamak için loglanır, başka işlem gerektirmez.
+    if (payload.testNotification) {
+      console.log('RTDN test bildirimi alındı', { packageName: payload.packageName });
+      return null;
+    }
+
+    const notification = payload.subscriptionNotification;
+    if (!notification) {
+      // Tek seferlik ürün ve iade bildirimleri burada işlenmiyor; iadeleri
+      // reconcileVoidedPurchases günlük taramayla ele alıyor.
+      return null;
+    }
+
+    const purchaseToken = notification.purchaseToken;
+    const productId = notification.subscriptionId;
+    if (!purchaseToken || !productId) {
+      console.warn('RTDN: eksik token/ürün', notification);
+      return null;
+    }
+
+    // Token'ı kullanıcıya bağlayan tek kayıt processedPurchases'tır. İlk satın almada
+    // bildirim, istemcinin doğrulamasından ÖNCE gelebilir; o durumda eşleşme yoktur ve
+    // işlem atlanır — istemci saniyeler içinde kendi doğrulamasını yapar.
+    const purchaseDoc = await db.collection('processedPurchases').doc(purchaseToken).get();
+    if (!purchaseDoc.exists || !purchaseDoc.data().uid) {
+      console.log('RTDN: token henüz bir hesaba bağlı değil, atlandı', {
+        productId,
+        notificationType: notification.notificationType,
+      });
+      return null;
+    }
+
+    const uid = purchaseDoc.data().uid;
+    try {
+      const result = await syncSubscriptionForToken(uid, productId, purchaseToken);
+      console.log('RTDN işlendi', {
+        uid,
+        productId,
+        notificationType: notification.notificationType,
+        plan: result.plan,
+      });
+    } catch (error) {
+      console.error('RTDN işlenemedi', { uid, productId, error: error.message });
+    }
+    return null;
+  });
 
 // ─── Google Play para iadelerini geri alma ──────────────────────────────────
 //

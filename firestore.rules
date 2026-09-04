@@ -25,6 +25,12 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // Bir sorunun dokümanı — mesaj alt koleksiyonu kurallarında tekrar tekrar get()
+    // yazmamak için.
+    function questionOf(questionId) {
+      return get(/databases/$(database)/documents/questions/$(questionId)).data;
+    }
+
     // ── Kullanıcılar ───────────────────────────────────────────────────────
     //
     // OKUMA: Yalnızca kişinin kendisi ve onaylı öğretmenler.
@@ -48,6 +54,7 @@ service cloud.firestore {
           'keys', 'currency',            // cüzdan → yalnız updateUserWallet / satın alma CF'leri
           'walletGuard', 'rewardGuard',  // ödül tavanı sayaçları
           'energy_full_time',            // can → yalnız spendEnergy/claimAdEnergy/buyEnergyWithKeys
+          'questionCredits',             // danışma kredisi → yalnız satın alma / askTeacherQuestion
           'teacherApproved',             // öğretmen onayı → yalnız admin
           'plan', 'planExpiresAt', 'planProductId', // yalnız doğrulanmış Play aboneliği
           'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
@@ -67,7 +74,7 @@ service cloud.firestore {
         && request.resource.data.currency == 0
         // keys/currency yukarıda değeriyle sabitlendi; geri kalan sunucu alanları yasak.
         && !request.resource.data.keys().hasAny([
-             'walletGuard', 'rewardGuard', 'energy_full_time', 'teacherApproved',
+             'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved',
              'plan', 'planExpiresAt', 'planProductId',
              'followersCount', 'followingCount',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
@@ -196,15 +203,51 @@ service cloud.firestore {
 
     // ── Sorular ve mesajlar ────────────────────────────────────────────────
     match /questions/{questionId} {
-      allow read, update: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isTeacher());
-      allow create: if isSignedIn();
+      // Soru YALNIZCA askTeacherQuestion Cloud Function'ı tarafından oluşturulur; kredi
+      // düşümüyle aynı transaction'da yazılır. Eskiden burası `if isSignedIn()` idi, yani
+      // değiştirilmiş bir istemci kredi harcamadan sınırsız soru gönderebiliyordu ve
+      // cevaplanan her soru gerçek para maliyeti doğuruyordu.
+      allow create: if false;
+
+      // Kredi muhasebesi alanlarına ne öğrenci ne öğretmen dokunabilir; aksi halde iade
+      // mekanizması (reconcileUnansweredQuestions) manipüle edilebilirdi.
+      allow read: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isTeacher());
+      allow update: if isSignedIn()
+        && (resource.data.studentUid == request.auth.uid || isTeacher())
+        && !changed().hasAny(['creditSpent', 'creditRefunded', 'creditRefundedAt',
+                              'createdAtMs', 'studentUid']);
       allow delete: if isSignedIn() && resource.data.studentUid == request.auth.uid;
 
       match /messages/{messageId} {
-        allow read, create, update: if isSignedIn() && (
-          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid ||
-          isTeacher()
+        // Okuma: soru sahibi öğrenci veya onaylı bir öğretmen (öğretmenler henüz
+        // sahiplenmedikleri soruları kuyrukta önizleyebilir/okunmamış sayısını görebilir —
+        // bkz. NotificationFragment.refreshUnreadCounts/attachMessageListeners).
+        allow read: if isSignedIn() && (
+          questionOf(questionId).studentUid == request.auth.uid || isTeacher()
         );
+
+        // Yazma (create/update): SADECE sorunun öğrencisi veya soruyu SAHİPLENEN öğretmen.
+        // Eskiden burası salt `isTeacher()` idi — yani sahiplenmemiş HERHANGİ bir öğretmen
+        // başka bir öğrencinin sohbetine mesaj yazabiliyor/güncelleyebiliyordu ve
+        // `senderUid` alanı hiç doğrulanmadığı için biri adına sahte mesaj (ve buradan
+        // tetiklenen push bildirimi) üretilebiliyordu.
+        allow create: if isSignedIn()
+          && request.resource.data.senderUid == request.auth.uid
+          && (
+            questionOf(questionId).studentUid == request.auth.uid ||
+            questionOf(questionId).claimedByTeacherUid == request.auth.uid
+          );
+
+        // Güncelleme yalnızca "okundu" işareti ve "benden sil" listesiyle sınırlı;
+        // başka hiçbir alan (textContent, mediaUrl, senderUid, createdAt...) sonradan
+        // değiştirilemez.
+        allow update: if isSignedIn()
+          && changed().hasOnly(['readAt', 'deletedForUids'])
+          && (
+            questionOf(questionId).studentUid == request.auth.uid ||
+            questionOf(questionId).claimedByTeacherUid == request.auth.uid
+          );
+
         allow delete: if isSignedIn() && resource.data.senderUid == request.auth.uid;
       }
     }

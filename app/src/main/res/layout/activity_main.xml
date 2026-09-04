@@ -83,12 +83,29 @@
             android:layout_height="1dp"
             android:layout_weight="1"/>
 
-        <ImageView
-            android:id="@+id/energyIcon"
+        <FrameLayout
             android:layout_width="@dimen/main_energy_icon_size"
-            android:layout_height="@dimen/main_energy_icon_size"
-            android:src="@drawable/heart_ic"
-            android:contentDescription="Energy" />
+            android:layout_height="@dimen/main_energy_icon_size">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/energyIcon"
+                android:src="@drawable/heart_ic"
+                android:contentDescription="Energy" />
+
+            <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
+            <TextView
+                android:id="@+id/energyInfiniteBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="∞"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/energyText"
@@ -117,6 +134,28 @@
             android:text="1"
             android:layout_marginStart="3dp"
             android:textColor="#FFD600"
+            android:textStyle="bold"
+            android:textSize="@dimen/main_energy_text_size"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+
+        <ImageView
+            android:id="@+id/creditIcon"
+            android:src="@drawable/chat_credit_ic3"
+            android:layout_width="@dimen/main_energy_icon_size"
+            android:layout_height="@dimen/main_energy_icon_size"
+            android:contentDescription="Danışma kredisi" />
+
+        <TextView
+            android:id="@+id/creditText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:layout_marginStart="3dp"
+            android:textColor="#A99AF0"
             android:textStyle="bold"
             android:textSize="@dimen/main_energy_text_size"/>
 
