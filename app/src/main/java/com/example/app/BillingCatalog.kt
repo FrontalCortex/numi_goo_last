@@ -43,4 +43,20 @@ object BillingCatalog {
     /** PlanFragment'teki "Pro" / "Lite" seçimini ürün kimliğine çevirir. */
     fun subscriptionForPlanName(planName: String): String =
         if (planName.equals("Lite", ignoreCase = true)) SUB_LITE else SUB_PRO
+
+    /**
+     * Abonelik rütbesi. Yüksek olan daha kapsamlı plandır.
+     *
+     * İki yerde gerekiyor:
+     *   • Mevcut abonelikten yenisine geçerken YÖN belirlemek (yükseltme mi düşürme mi);
+     *     Play'in `CHARGE_PRORATED_PRICE` modu yalnızca yükseltmede çalışıyor, düşürmede
+     *     çağrıyı hata ile reddediyor.
+     *   • Sunucu tarafındaki plan çakışmasının aynısı (bkz. functions/index.js → PLAN_RANK).
+     *     İki liste birlikte güncellenmelidir.
+     */
+    fun subscriptionRank(productId: String): Int = when (productId) {
+        SUB_PRO -> 2
+        SUB_LITE -> 1
+        else -> 0
+    }
 }

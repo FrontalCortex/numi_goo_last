@@ -1454,6 +1454,43 @@ const PLAY_SUBSCRIPTION_CATALOG = {
   lite_monthly: { plan: 'Lite' },
 };
 
+/**
+ * Plan rütbesi. Yüksek olan daha kapsamlı plandır.
+ * İstemcideki BillingCatalog.subscriptionRank ile birlikte güncellenmelidir.
+ */
+const PLAN_RANK = { Free: 0, Lite: 1, Pro: 2, Premium: 3 };
+
+function planRank(plan) {
+  return PLAN_RANK[plan] || 0;
+}
+
+/**
+ * Bu token'ın senkronu `plan` alanlarını yazmalı mı?
+ *
+ * SORUN
+ *   Aynı anda iki aktif aboneliği olan kullanıcıda (Lite + Pro) her token ayrı ayrı
+ *   senkron ediliyor ve her senkron `plan`'ı KOŞULSUZ yazıyordu. refreshPurchases
+ *   satın almaları asenkron işlediği için tamamlanma sırası belirsiz: Lite senkronu
+ *   Pro'dan sonra biterse kullanıcı Pro'ya para ödediği hâlde Lite görünüyordu.
+ *   RTDN'de de aynısı — hangi aboneliğin bildirimi gelirse onun planı yazılıyordu.
+ *
+ * KURAL
+ *   Yaz  ⟺  bu token mevcut planın sahibiyse (o zaman düşürme/sona erme meşrudur)
+ *           VEYA yeni plan mevcut plandan düşük değilse.
+ *
+ * Saf fonksiyon: Play API'sine dokunmaz, bu yüzden gerçek abonelik olmadan test
+ * edilebilir (bkz. scripts/test-plan-resolution.js).
+ */
+function resolvePlanUpdate(userData, productId, newPlan) {
+  const storedPlan = effectivePlan(userData || {});
+  const ownsCurrentPlan = ((userData || {}).planProductId || null) === productId;
+  if (ownsCurrentPlan) return { write: true, reason: 'own_token' };
+  if (planRank(newPlan) >= planRank(storedPlan)) {
+    return { write: true, reason: 'rank_not_lower' };
+  }
+  return { write: false, reason: 'lower_than_active_plan' };
+}
+
 let androidPublisherClient = null;
 
 /**
@@ -2047,11 +2084,23 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
         { merge: true }
       );
 
-      const planUpdate = {
-        plan: stillValid ? entry.plan : 'Free',
-        planExpiresAt: stillValid ? expiryMs : null,
-        planProductId: stillValid ? productId : null,
-      };
+      const newPlan = stillValid ? entry.plan : 'Free';
+      const planDecision = resolvePlanUpdate(userDoc.data(), productId, newPlan);
+      const planUpdate = {};
+      if (planDecision.write) {
+        planUpdate.plan = newPlan;
+        planUpdate.planExpiresAt = stillValid ? expiryMs : null;
+        planUpdate.planProductId = stillValid ? productId : null;
+      } else {
+        // Daha yüksek rütbeli bir abonelik aktif; bu token onu ezmemeli.
+        console.log('Plan yazılmadı', {
+          uid,
+          productId,
+          newPlan,
+          reason: planDecision.reason,
+          activePlan: effectivePlan(userDoc.data()),
+        });
+      }
 
       if (grantWelcome) {
         const current = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
@@ -2073,7 +2122,11 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
         console.log('Hoş geldin kredisi verilmedi: bu cihaza daha önce verilmiş', { uid, productId });
       }
 
-      transaction.update(userRef, planUpdate);
+      // planUpdate boş kalabilir (plan yazılmadı ve kredi verilmedi); Firestore boş
+      // update'i reddediyor.
+      if (Object.keys(planUpdate).length > 0) {
+        transaction.update(userRef, planUpdate);
+      }
     });
 
     return {
@@ -2489,6 +2542,7 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // Bu ikisi Play API'sine HİÇ dokunmaz, yalnızca Firestore'la çalışır — dolayısıyla
 // gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
+exports._resolvePlanUpdate = resolvePlanUpdate;
 exports._reverseVoidedPurchase = reverseVoidedPurchase;
 exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 

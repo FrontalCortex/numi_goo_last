@@ -254,6 +254,62 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             return
         }
 
+        if (details.productType != BillingClient.ProductType.SUBS) {
+            startFlow(activity, details, existingSubscription = null)
+            return
+        }
+
+        // Abonelikte, kullanıcının BAŞKA bir aboneliği varsa satın alma değil GEÇİŞ
+        // yapılmalı. Bu sorgu asenkron olduğu için akış ikiye bölünüyor.
+        findOtherActiveSubscription(productId) { existing ->
+            startFlow(activity, details, existing)
+        }
+    }
+
+    /**
+     * Kullanıcının [excludingProductId] dışındaki aktif aboneliğini bulur.
+     *
+     * Sorgu başarısız olursa null döner ve akış normal satın alma olarak devam eder:
+     * geçiş yapılamaması, satın almanın hiç açılmamasından iyidir.
+     */
+    private fun findOtherActiveSubscription(
+        excludingProductId: String,
+        onResult: (Purchase?) -> Unit,
+    ) {
+        if (!billingClient.isReady) {
+            onResult(null)
+            return
+        }
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+        billingClient.queryPurchasesAsync(params) { result, purchases ->
+            val existing = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                purchases.firstOrNull { purchase ->
+                    purchase.purchaseState == Purchase.PurchaseState.PURCHASED &&
+                        purchase.products.none { it == excludingProductId } &&
+                        purchase.products.any { it in BillingCatalog.subscriptions }
+                }
+            } else {
+                Log.w(TAG, "Mevcut abonelikler sorgulanamadı: ${result.debugMessage}")
+                null
+            }
+            main.post { onResult(existing) }
+        }
+    }
+
+    /**
+     * Satın alma / geçiş ekranını açar.
+     *
+     * [existingSubscription] doluysa Play, YENİ bir abonelik açmak yerine mevcut olanı
+     * değiştirir. Bu parametre olmadan kullanıcı iki aboneliğe birden para öder — Lite
+     * abonesi Pro'ya bastığında Lite'ı olduğu yerde kalıyordu.
+     */
+    private fun startFlow(
+        activity: Activity,
+        details: ProductDetails,
+        existingSubscription: Purchase?,
+    ) {
         val paramsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(details)
 
@@ -268,11 +324,40 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             paramsBuilder.setOfferToken(offerToken)
         }
 
-        val flowParams = BillingFlowParams.newBuilder()
+        val flowBuilder = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(paramsBuilder.build()))
-            .build()
 
-        val result = billingClient.launchBillingFlow(activity, flowParams)
+        if (existingSubscription != null) {
+            val oldProductId = existingSubscription.products
+                .firstOrNull { it in BillingCatalog.subscriptions }
+            val newRank = BillingCatalog.subscriptionRank(details.productId)
+            val oldRank = BillingCatalog.subscriptionRank(oldProductId.orEmpty())
+
+            // YÜKSELTME (Lite → Pro): anında geçer, kalan gün için farkı öder, fatura
+            // tarihi değişmez. DÜŞÜRME (Pro → Lite): ödediği dönemi sonuna kadar kullanır,
+            // Lite bir sonraki yenilemede başlar — böylece iade/kredi hesabı gerekmiyor.
+            //
+            // Mod seçimi tercih değil zorunluluk: CHARGE_PRORATED_PRICE yalnızca yükseltmede
+            // geçerli, düşürmede Play çağrıyı hata ile reddediyor.
+            val replacementMode = if (newRank > oldRank) {
+                BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE
+            } else {
+                BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED
+            }
+            Log.d(
+                TAG,
+                "Abonelik geçişi: $oldProductId(rank=$oldRank) → ${details.productId}" +
+                    "(rank=$newRank) mode=$replacementMode",
+            )
+            flowBuilder.setSubscriptionUpdateParams(
+                BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                    .setOldPurchaseToken(existingSubscription.purchaseToken)
+                    .setSubscriptionReplacementMode(replacementMode)
+                    .build()
+            )
+        }
+
+        val result = billingClient.launchBillingFlow(activity, flowBuilder.build())
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
             Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
             onError?.invoke("Satın alma başlatılamadı.")
