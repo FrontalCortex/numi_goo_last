@@ -1481,6 +1481,55 @@ function planRank(plan) {
  * Saf fonksiyon: Play API'sine dokunmaz, bu yüzden gerçek abonelik olmadan test
  * edilebilir (bkz. scripts/test-plan-resolution.js).
  */
+/**
+ * Auth kaydı hâlâ duruyor mu?
+ *
+ * AccountDeletionHelper hesabı silerken hem `users/{uid}` dokümanını hem Auth kaydını
+ * siliyor. Firestore dokümanı kullanıcı tarafından tek başına da silinebildiği için
+ * (bkz. firestore.rules) daha güçlü sinyal olan Auth kaydına bakılıyor.
+ */
+async function firebaseUserExists(uid) {
+  try {
+    await admin.auth().getUser(uid);
+    return true;
+  } catch (error) {
+    if (error && error.code === 'auth/user-not-found') return false;
+    // Geçici bir hata olabilir; kararı arayan tarafa bırakma, yukarı fırlat.
+    throw error;
+  }
+}
+
+/**
+ * Bu token başka bir uid'ye bağlıyken yeni uid'ye devredilebilir mi?
+ *
+ * SORUN
+ *   Token sahipliği kontrolü, tek bir aboneliğin birden fazla hesaba Pro vermesini
+ *   engelliyor — gerçek bir koruma, kaldırılamaz. Ama yan etkisi ağırdı: uygulama
+ *   hesabını silip yeniden kaydolan kullanıcının aboneliği Play'de aktif kalmaya ve
+ *   parası çekilmeye devam ederken, uygulama her açılışta 'permission-denied' alıp
+ *   kullanıcıyı Free'de bırakıyordu. Kendi başına düzeltemiyordu.
+ *
+ * KURAL
+ *   Devret ⟺ eski uid'nin Auth kaydı artık yok (hesap gerçekten silinmiş).
+ *
+ * NEDEN GÜVENLİ
+ *   Token paylaşımı senaryosunda eski hesap DURUYOR, dolayısıyla istisna hiç devreye
+ *   girmiyor. Girmesi için orijinal sahibin hesabını tamamen silmesi gerekiyor; yani
+ *   "aktarım" ona tüm hesabına mal oluyor ve her an en fazla tek yararlanıcı kalıyor.
+ *
+ * Saf fonksiyon (varlık sorgusunun SONUCUNU alır, kendisi sorgulamaz) — böylece Auth'a
+ * ya da Play'e dokunmadan test edilebiliyor.
+ */
+function resolveTokenRebind(storedUid, requestingUid, storedUidStillExists) {
+  if (!storedUid || storedUid === requestingUid) {
+    return { allowed: true, rebind: false, reason: 'same_owner' };
+  }
+  if (storedUidStillExists) {
+    return { allowed: false, rebind: false, reason: 'other_account_active' };
+  }
+  return { allowed: true, rebind: true, reason: 'previous_account_deleted' };
+}
+
 function resolvePlanUpdate(userData, productId, newPlan) {
   const storedPlan = effectivePlan(userData || {});
   const ownsCurrentPlan = ((userData || {}).planProductId || null) === productId;
@@ -2036,6 +2085,27 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
     ? db.collection('welcomeCreditGrants').doc(deviceHash)
     : null;
 
+  // Devir kararı transaction'dan ÖNCE veriliyor: Auth sorgusu bir yan etkili okuma ve
+  // transaction içinde yapılmamalı. Uid'ler yeniden kullanılmadığı için araya girme
+  // (silinen hesabın geri gelmesi) pratikte imkânsız.
+  let rebindDecision = { allowed: true, rebind: false, reason: 'no_existing_record' };
+  const existingPurchaseSnap = await purchaseRef.get();
+  const storedUid = existingPurchaseSnap.exists ? existingPurchaseSnap.data().uid : null;
+  if (storedUid && storedUid !== uid) {
+    let storedUidStillExists = true;
+    try {
+      storedUidStillExists = await firebaseUserExists(storedUid);
+    } catch (error) {
+      // Auth'a ulaşılamadı: devri VARSAYMA, güvenli yön reddetmek.
+      console.error('Token sahibi kontrol edilemedi', { uid, storedUid, error: error.message });
+      storedUidStillExists = true;
+    }
+    rebindDecision = resolveTokenRebind(storedUid, uid, storedUidStillExists);
+    if (rebindDecision.rebind) {
+      console.log('Abonelik token\'ı yeni hesaba devrediliyor', { from: storedUid, to: uid, productId });
+    }
+  }
+
   try {
     await db.runTransaction(async (transaction) => {
       const [userDoc, purchaseDoc, deviceGrantDoc] = await Promise.all([
@@ -2044,7 +2114,9 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
         deviceGrantRef ? transaction.get(deviceGrantRef) : Promise.resolve(null),
       ]);
 
-      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid) {
+      // Sahiplik: tek bir aboneliğin birden fazla hesaba Pro vermesini engeller.
+      // Tek istisna, sahibinin hesabı silinmiş token'ın devri (bkz. resolveTokenRebind).
+      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid && !rebindDecision.rebind) {
         throw new functions.https.HttpsError(
           'permission-denied',
           'Bu abonelik başka bir hesaba tanımlı.'
@@ -2080,6 +2152,15 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
           expiryTime: expiryRaw,
           processedAt: admin.firestore.FieldValue.serverTimestamp(),
           welcomeCreditGranted: alreadyWelcomed || grantWelcome,
+          // Devir izi: destek talebinde "abonelik neden başka hesapta" sorusu
+          // cevaplanabilsin diye. Hoş geldin kredisi devirde TEKRAR VERİLMEZ —
+          // welcomeCreditGranted token'da kalıyor, cihaz kapısı da ayrıca duruyor.
+          ...(rebindDecision.rebind
+            ? {
+                previousUids: admin.firestore.FieldValue.arrayUnion(storedUid),
+                rebindAt: admin.firestore.FieldValue.serverTimestamp(),
+              }
+            : {}),
         },
         { merge: true }
       );
@@ -2543,6 +2624,7 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
 exports._resolvePlanUpdate = resolvePlanUpdate;
+exports._resolveTokenRebind = resolveTokenRebind;
 exports._reverseVoidedPurchase = reverseVoidedPurchase;
 exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 

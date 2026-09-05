@@ -72,5 +72,24 @@ function applySequence(order) {
 check('  Pro → Lite sırası', applySequence(['pro_monthly', 'lite_monthly']), 'Pro');
 check('  Lite → Pro sırası', applySequence(['lite_monthly', 'pro_monthly']), 'Pro');
 
+// ── resolveTokenRebind ──────────────────────────────────────────────────────
+const rebind = fns._resolveTokenRebind;
+console.log('\n\nresolveTokenRebind\n');
+
+console.log('Kayıt yok / kendi token\'ı:');
+check('  storedUid null → izin', rebind(null, 'u1', false).allowed, true);
+check('  aynı uid → izin', rebind('u1', 'u1', true).allowed, true);
+check('  aynı uid → devir DEĞİL', rebind('u1', 'u1', true).rebind, false);
+
+console.log('\nToken başka bir hesapta, o hesap DURUYOR (token paylaşımı):');
+check('  reddedilmeli', rebind('u1', 'u2', true).allowed, false);
+check('  devir olmamalı', rebind('u1', 'u2', true).rebind, false);
+check('  sebep', rebind('u1', 'u2', true).reason, 'other_account_active');
+
+console.log('\nToken başka bir hesapta, o hesap SİLİNMİŞ (asıl senaryo):');
+check('  izin verilmeli', rebind('u1', 'u2', false).allowed, true);
+check('  devredilmeli', rebind('u1', 'u2', false).rebind, true);
+check('  sebep', rebind('u1', 'u2', false).reason, 'previous_account_deleted');
+
 console.log(failures === 0 ? '\nSONUÇ: TÜM KONTROLLER GEÇTİ' : `\nSONUÇ: ${failures} KONTROL BAŞARISIZ`);
 process.exit(failures === 0 ? 0 : 1);
