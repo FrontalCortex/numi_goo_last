@@ -2176,8 +2176,40 @@ async function reverseVoidedPurchase(voided) {
       // bakiye eksiye düşebilir, yoksa "hepsini harca sonra iade al" açık kalır.
       revokedCredits = Number.parseInt(record.grantedCredits, 10) || 0;
       if (revokedCredits > 0) {
-        update.questionCredits =
-          (Number.parseInt(userData.questionCredits, 10) || 0) - revokedCredits;
+        const creditsBefore = Number.parseInt(userData.questionCredits, 10) || 0;
+        update.questionCredits = creditsBefore - revokedCredits;
+
+        // DENETİM DEFTERİ — bir koruma değil, ölçüm.
+        //
+        // Faz 1 döngüyü hesap seviyesinde kârsız hale getirdi, ama istismarcı her turda
+        // YENİ uygulama hesabı açarsa hesap başına bir kez kâr edebiliyor. Bunu cihaz
+        // bazlı bir sayaçla kapatmak mümkün; ne var ki bugün ortada bu istismarın
+        // gerçekleştiğine dair hiçbir veri yok ve yanlış pozitifi gerçek kullanıcıyı
+        // (yanlışlıkla satın alıp iade eden ebeveyn gibi) cezalandırır. Karar tahmine
+        // değil bu deftere dayansın diye önce yalnızca kayıt tutuluyor.
+        //
+        // Doküman kimliği purchaseToken: tarama tekrarlansa da kayıt çoğalmaz.
+        // firestore.rules'daki varsayılan reddetme kuralı gereği istemciye kapalıdır.
+        const accountCreatedAt = userData.createdAt || null;
+        const accountAgeDays =
+          accountCreatedAt && typeof accountCreatedAt.toMillis === 'function'
+            ? Math.floor((Date.now() - accountCreatedAt.toMillis()) / (24 * 60 * 60 * 1000))
+            : null;
+        transaction.set(db.collection('creditRefundAudit').doc(purchaseToken), {
+          uid,
+          productId: record.productId || null,
+          orderId: record.orderId || null,
+          revokedCredits,
+          creditsBefore,
+          creditsAfter: creditsBefore - revokedCredits,
+          // Hesap satın almadan hemen önce mi açılmış? Farming örüntüsünün en ucuz
+          // göstergesi bu; yeni bir kişisel veri toplamayı gerektirmiyor.
+          accountCreatedAt,
+          accountAgeDaysAtRefund: accountAgeDays,
+          voidedReason: voided.voidedReason != null ? voided.voidedReason : null,
+          voidedSource: voided.voidedSource != null ? voided.voidedSource : null,
+          refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
       }
     }
 
@@ -2329,9 +2361,14 @@ async function runVoidedPurchaseScan() {
         // tekrarlansa bile kredi ikinci kez düşülmez.
         if (result.outcome === 'reversed' && result.revokedCredits > 0 && result.uid) {
           try {
-            counts.canceledQuestions =
-              (counts.canceledQuestions || 0) +
-              (await cancelPendingQuestionsForCreditDebt(result.uid));
+            const canceled = await cancelPendingQuestionsForCreditDebt(result.uid);
+            counts.canceledQuestions = (counts.canceledQuestions || 0) + canceled;
+            // Defteri tamamla: kaç bekleyen soru iptal edildiği ancak bu adımdan sonra
+            // biliniyor. Kayıt zaten transaction'da oluşturuldu, burada sadece merge.
+            await db
+              .collection('creditRefundAudit')
+              .doc(voided.purchaseToken)
+              .set({ canceledPendingQuestions: canceled }, { merge: true });
           } catch (error) {
             console.error('İade sonrası soru iptali başarısız', { uid: result.uid, error });
           }
