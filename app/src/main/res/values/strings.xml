@@ -126,5 +126,9 @@
     <!-- Abonelik CTA'sı: deneme yalnızca Play'in UYGUN gördüğü kullanıcıya vaat edilir. -->
     <string name="sub_cta_trial_days">%1$d GÜN ÜCRETSİZ DENE</string>
     <string name="sub_cta_trial_weeks">%1$d HAFTA ÜCRETSİZ DENE</string>
-    <string name="sub_cta_no_trial">PRO\'YA GEÇ</string>
+    <!-- Deneme yoksa metin plana göre değişmeli: Lite seçiliyken "PRO'YA GEÇ" yazmak,
+         düğmeye basınca Lite satın alındığı için yanlış. Türkçe ek uyumu tek bir format
+         dizesiyle çözülemediği için (Pro'ya / Lite'a) ayrı ayrı tanımlı. -->
+    <string name="sub_cta_no_trial_pro">PRO\'YA GEÇ</string>
+    <string name="sub_cta_no_trial_lite">LITE\'A GEÇ</string>
 </resources>

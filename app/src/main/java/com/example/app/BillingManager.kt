@@ -124,11 +124,39 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             if (unfetched.isNotEmpty()) {
                 Log.w(TAG, "Play'de bulunamayan ürünler ($type): ${unfetched.joinToString { it.productId }}")
             }
+            details.productDetailsList
+                .filter { it.productType == BillingClient.ProductType.SUBS }
+                .forEach { logSubscriptionOffers(it) }
             main.post {
                 details.productDetailsList.forEach { productDetails[it.productId] = it }
                 onPricesReady?.invoke()
             }
         }
+    }
+
+    /**
+     * Play'in bu kullanıcı için hangi abonelik tekliflerini gönderdiğini Logcat'e yazar.
+     *
+     * Ücretsiz deneme teklifi eklendiğinde "geldi mi gelmedi mi" sorusunun arayüzden
+     * cevabı yok: teklif hiç ulaşmamışsa da kullanıcı uygun değilse de düğmede aynı metin
+     * çıkıyor. Bu log ikisini ayırıyor — teklif listesi boşsa/tek elemanlıysa deneme
+     * ulaşmamış, iki elemanlıysa ulaşmış ve kullanıcı uygun demektir.
+     *
+     * Filtre: `adb logcat -s BillingManager`
+     */
+    private fun logSubscriptionOffers(details: ProductDetails) {
+        val offers = details.subscriptionOfferDetails
+        if (offers.isNullOrEmpty()) {
+            Log.d(TAG, "OFFERS ${details.productId}: teklif YOK")
+            return
+        }
+        val summary = offers.joinToString(" | ") { offer ->
+            val phases = offer.pricingPhases.pricingPhaseList.joinToString(",") { phase ->
+                "${phase.formattedPrice}/${phase.billingPeriod}"
+            }
+            "offerId=${offer.offerId ?: "(temel plan)"} basePlan=${offer.basePlanId} [$phases]"
+        }
+        Log.d(TAG, "OFFERS ${details.productId} (${offers.size} adet): $summary")
     }
 
     /**

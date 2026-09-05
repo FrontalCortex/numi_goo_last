@@ -28,7 +28,13 @@ object SubscriptionCta {
         val view = target ?: return
         val days = billing?.freeTrialDays(productId)
         if (days == null) {
-            view.text = view.context.getString(R.string.sub_cta_no_trial)
+            view.text = view.context.getString(
+                if (productId == BillingCatalog.SUB_LITE) {
+                    R.string.sub_cta_no_trial_lite
+                } else {
+                    R.string.sub_cta_no_trial_pro
+                }
+            )
             return
         }
         // 7, 14, 21… gün "1 hafta / 2 hafta" olarak daha doğal okunuyor.
