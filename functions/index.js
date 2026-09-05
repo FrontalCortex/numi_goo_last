@@ -2397,6 +2397,11 @@ exports.reconcileVoidedPurchases = functions
 
 // Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
 exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
+// Bu ikisi Play API'sine HİÇ dokunmaz, yalnızca Firestore'la çalışır — dolayısıyla
+// gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
+// edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
+exports._reverseVoidedPurchase = reverseVoidedPurchase;
+exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 
 // ─── Sunucu taraflı ödül çekilişi ───────────────────────────────────────────
 //

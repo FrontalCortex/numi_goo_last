@@ -21,3 +21,7 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+
+# Firebase emülatörü / yerel test artıkları
+firebase-debug.log
+ui-debug.log
