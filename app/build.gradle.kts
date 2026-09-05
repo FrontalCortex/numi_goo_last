@@ -167,6 +167,22 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+
+    // App Check: "bu istek gerçekten benim uygulamamdan mı geliyor?" sorusunu yanıtlar.
+    // Kurallar (firestore.rules) ve context.auth "kim" sorusunu çözüyor; App Check
+    // APK'dan çıkarılan yapılandırmayla yazılmış bir script'in ya da yamalanmış bir
+    // APK'nın backend'i çağırmasını engelleyen ayrı katmandır.
+    //
+    // ZORLAMA (enforcement) Firebase Console'dan açılır ve ŞU AN KAPALI OLMALIDIR:
+    // açıldığı anda App Check SDK'sı olmayan her istemci kilitlenir. Bu yüzden SDK
+    // yayınlanan ilk sürümde bulunmalı, zorlama ise Console'daki doğrulanmış istek
+    // oranı oturduktan sonra (yayından ~2-4 hafta sonra) servis servis açılmalıdır.
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    // Debug derlemeleri Play'den dağıtılmadığı için Play Integrity ile doğrulanamaz;
+    // debug sağlayıcı Logcat'e bir jeton basar, Console'a eklenince test cihazı da
+    // zorlama açıkken çalışır. Release APK'ya girmez.
+    debugImplementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Video oynatma (ağ / galeri formatları için) — aynı sürüm kullanılmalı
