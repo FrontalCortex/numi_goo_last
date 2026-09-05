@@ -123,4 +123,8 @@
     <!-- Plan ekranı: fiyatlar Play'den gelir, buradaki yalnızca biçimdir. -->
     <string name="plan_price_monthly">Aylık %1$s</string>
     <string name="plan_price_yearly">%1$s/yıl</string>
+    <!-- Abonelik CTA'sı: deneme yalnızca Play'in UYGUN gördüğü kullanıcıya vaat edilir. -->
+    <string name="sub_cta_trial_days">%1$d GÜN ÜCRETSİZ DENE</string>
+    <string name="sub_cta_trial_weeks">%1$d HAFTA ÜCRETSİZ DENE</string>
+    <string name="sub_cta_no_trial">PRO\'YA GEÇ</string>
 </resources>

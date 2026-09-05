@@ -43,6 +43,8 @@ class PlanFragment : DialogFragment() {
             binding.cardLite.setBackgroundResource(R.drawable.bg_plan_lite)
             binding.imgBadgeBireysel.visibility = View.VISIBLE
             binding.imgBadgeLite.visibility = View.GONE
+            // Deneme uygunluğu ürüne göre değişebilir; düğme metni seçimi takip etmeli.
+            applyLivePrices()
         }
 
         binding.cardLite.setOnClickListener {
@@ -51,6 +53,7 @@ class PlanFragment : DialogFragment() {
             binding.cardBireysel.setBackgroundResource(R.drawable.bg_plan_lite)
             binding.imgBadgeLite.visibility = View.VISIBLE
             binding.imgBadgeBireysel.visibility = View.GONE
+            applyLivePrices()
         }
 
         applyLivePrices()
@@ -84,6 +87,14 @@ class PlanFragment : DialogFragment() {
 
         applyYearlyEquivalent(billing, BillingCatalog.SUB_PRO, binding.tvBireyselPriceSub)
         applyYearlyEquivalent(billing, BillingCatalog.SUB_LITE, binding.tvLitePriceSub)
+
+        // Düğme metni de fiyat gibi Play'den geliyor: deneme yalnızca uygun kullanıcıya
+        // vaat edilmeli (bkz. SubscriptionCta).
+        SubscriptionCta.apply(
+            billing,
+            binding.btnTryFreeText,
+            BillingCatalog.subscriptionForPlanName(selectedPlan),
+        )
     }
 
     /** Aylık tutarın 12 ile çarpımı; satın alınabilir bir yıllık plan değil, karşılaştırma. */

@@ -151,6 +151,9 @@ class ShopFragment : Fragment() {
         billing.formattedPrice(BillingCatalog.SUB_PRO)?.let { price ->
             view.findViewById<TextView>(R.id.shopProPriceText)?.text = "aylık $price"
         }
+        // "1 HAFTA ÜCRETSİZ DENE" layout'ta sabitti; denemeye uygun olmayan kullanıcıya
+        // yanlış vaat oluyordu.
+        SubscriptionCta.apply(billing, view.findViewById(R.id.superButton))
     }
 
     /**

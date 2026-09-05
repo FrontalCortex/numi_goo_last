@@ -334,6 +334,7 @@
             app:layout_constraintTop_toBottomOf="@id/row6Text">
 
             <TextView
+                android:id="@+id/btnTryFreeText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

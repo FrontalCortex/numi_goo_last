@@ -1394,12 +1394,52 @@ const PRO_CREDIT_BONUS = {
 };
 
 /**
- * Pro'ya ilk geçişte verilen hoş geldin kredisi. Hesap başına BİR KEZ.
+ * Pro'ya ilk geçişte verilen hoş geldin kredisi.
  *
  * Denemeyle mi doğrudan mı abone olunduğu fark etmez; aksi halde ücretsiz denemeyi
  * başlatan kullanıcı 1 kredi alırken doğrudan ödeme yapan hiç alamıyordu.
+ *
+ * İKİ KAPI birden geçilmeli:
+ *   1. processedPurchases/{token}.welcomeCreditGranted — aynı abonelik iki kez vermesin.
+ *      İşaretçi kullanıcı dokümanında DEĞİL burada: kullanıcı kendi dokümanını silip
+ *      yeniden oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat
+ *      döngüsüyle sınırsız kredi üretilebilirdi.
+ *   2. welcomeCreditGrants/{deviceHash} — aynı CİHAZ iki kez almasın. Birincisi tek başına
+ *      yetmiyordu: yeni Google hesabı + yeni uygulama hesabı = yeni token, yani her turda
+ *      bir kredi daha. Cihaz kapısı bunun ucuz yollarını (yeni hesap, uygulama verisini
+ *      temizleme, yeniden kurulum) kapatıyor; fabrika ayarları, ikinci cihaz ve ikincil
+ *      kullanıcı profili açık kalıyor — bilinçli kabul.
  */
 const PRO_WELCOME_CREDITS = 1;
+
+/**
+ * Hoş geldin kredisinin CİHAZ başına da bir kez verilmesi için kullanılan gizli salt.
+ *
+ * Ham ANDROID_ID asla saklanmaz ve loglanmaz; yalnızca bu salt ile HMAC'lenmiş özeti
+ * `welcomeCreditGrants/{hash}` doküman kimliği olarak tutulur.
+ */
+const WELCOME_CREDIT_SALT = process.env.WELCOME_CREDIT_SALT || '';
+
+/**
+ * İstemciden gelen cihaz tanımlayıcısını saklanabilir bir özete çevirir.
+ *
+ * Salt tanımlı değilse null döner ve arayan taraf cihaz kontrolünü ATLAR (yalnızca token
+ * kontrolü kalır). Bilinçli bir tercih: eksik yapılandırma yüzünden gerçek kullanıcıların
+ * hediyesini kesmek, istismarı bir süre açık bırakmaktan daha kötü. Durum loglanıyor.
+ */
+function hashDeviceKey(rawDeviceKey) {
+  if (!WELCOME_CREDIT_SALT) {
+    console.warn('WELCOME_CREDIT_SALT tanımlı değil — hoş geldin kredisi cihaz kontrolü atlanıyor.');
+    return null;
+  }
+  if (typeof rawDeviceKey !== 'string') return null;
+  const trimmed = rawDeviceKey.trim();
+  if (!trimmed) return null;
+  return require('crypto')
+    .createHmac('sha256', WELCOME_CREDIT_SALT)
+    .update(trimmed)
+    .digest('hex');
+}
 
 /** Pro/Premium abonelerine bonus uygulanır (istemcideki plan kontrolüyle aynı). */
 function creditBonusFor(userData, productId) {
@@ -1447,7 +1487,10 @@ function readPurchaseArgs(data) {
   if (!productId || !purchaseToken) {
     throw new functions.https.HttpsError('invalid-argument', 'productId ve purchaseToken zorunludur.');
   }
-  return { productId, purchaseToken };
+  // Yalnızca abonelik yolunda gönderilir; hoş geldin kredisinin cihaz kontrolü için.
+  const deviceKey =
+    typeof payload.deviceKey === 'string' ? payload.deviceKey.trim().slice(0, 256) : '';
+  return { productId, purchaseToken, deviceKey };
 }
 
 /**
@@ -1906,8 +1949,15 @@ exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
  * kullanan kişi, ödemeye devam etmesine rağmen yenilemesi kaydedilmediği için Free'ye
  * düşerdi.
  */
-async function syncSubscriptionForToken(uid, productId, purchaseToken) {
+async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOptions) {
   assertBillingConfigured();
+
+  // Hoş geldin kredisi YALNIZCA istemci yolundan verilir (bkz. redeemGooglePlaySubscription).
+  // RTDN'de istemci yok, dolayısıyla cihaz bilgisi de yok; oradan kredi verilseydi cihaz
+  // kontrolü, bildirim istemciden önce geldiğinde sessizce delinirdi. İstemci uygulama her
+  // açılışta aboneliği yeniden doğrulattığı için kredi saniyeler içinde düşüyor.
+  const allowWelcomeCredit = !!(welcomeOptions && welcomeOptions.allowWelcomeCredit);
+  const deviceHash = allowWelcomeCredit ? hashDeviceKey(welcomeOptions.deviceKey) : null;
 
   const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
   if (!entry) {
@@ -1945,11 +1995,16 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken) {
   // işlendiyse reddet. (Aynı uid tekrar doğrulatabilir — yenileme akışı bunu gerektirir.)
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
+  const deviceGrantRef = deviceHash
+    ? db.collection('welcomeCreditGrants').doc(deviceHash)
+    : null;
+
   try {
     await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc] = await Promise.all([
+      const [userDoc, purchaseDoc, deviceGrantDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
+        deviceGrantRef ? transaction.get(deviceGrantRef) : Promise.resolve(null),
       ]);
 
       if (purchaseDoc.exists && purchaseDoc.data().uid !== uid) {
@@ -1967,7 +2022,16 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken) {
       // oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat döngüsüyle
       // sınırsız kredi üretilebilirdi. processedPurchases istemciye tamamen kapalıdır.
       const alreadyWelcomed = purchaseDoc.exists && purchaseDoc.data().welcomeCreditGranted === true;
-      const grantWelcome = stillValid && entry.plan === 'Pro' && !alreadyWelcomed;
+      // Cihaz kapısı: aynı telefonda yeni Google + yeni uygulama hesabı açarak ücretsiz
+      // deneme hediyesini tekrar tekrar almayı engeller. Token kapısı (yukarıdaki
+      // alreadyWelcomed) yalnızca AYNI aboneliği koruyor; yeni abonelik yeni token demek.
+      const alreadyWelcomedOnDevice = !!(deviceGrantDoc && deviceGrantDoc.exists);
+      const grantWelcome =
+        stillValid &&
+        entry.plan === 'Pro' &&
+        allowWelcomeCredit &&
+        !alreadyWelcomed &&
+        !alreadyWelcomedOnDevice;
 
       transaction.set(
         purchaseRef,
@@ -1992,7 +2056,21 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken) {
       if (grantWelcome) {
         const current = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
         planUpdate.questionCredits = current + PRO_WELCOME_CREDITS;
-        console.log('Pro hoş geldin kredisi verildi', { uid, productId });
+        if (deviceGrantRef) {
+          // Yalnızca özet + zaman damgası; ham cihaz kimliği hiçbir yerde tutulmuyor.
+          transaction.set(deviceGrantRef, {
+            grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+            uid,
+            productId,
+          });
+        }
+        console.log('Pro hoş geldin kredisi verildi', {
+          uid,
+          productId,
+          deviceChecked: !!deviceGrantRef,
+        });
+      } else if (stillValid && entry.plan === 'Pro' && allowWelcomeCredit && alreadyWelcomedOnDevice) {
+        console.log('Hoş geldin kredisi verilmedi: bu cihaza daha önce verilmiş', { uid, productId });
       }
 
       transaction.update(userRef, planUpdate);
@@ -2014,8 +2092,12 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
   }
-  const { productId, purchaseToken } = readPurchaseArgs(data);
-  return syncSubscriptionForToken(context.auth.uid, productId, purchaseToken);
+  const { productId, purchaseToken, deviceKey } = readPurchaseArgs(data);
+  // İstemci yolu: hoş geldin kredisi burada verilebilir, cihaz bilgisi elimizde.
+  return syncSubscriptionForToken(context.auth.uid, productId, purchaseToken, {
+    allowWelcomeCredit: true,
+    deviceKey,
+  });
 });
 
 // ─── Google Play gerçek zamanlı abonelik bildirimleri (RTDN) ────────────────
@@ -2078,7 +2160,11 @@ exports.playSubscriptionNotification = functions.pubsub
 
     const uid = purchaseDoc.data().uid;
     try {
-      const result = await syncSubscriptionForToken(uid, productId, purchaseToken);
+      // RTDN: yalnızca plan senkronu. Hoş geldin kredisi bilinçli olarak VERİLMEZ —
+      // burada istemci yok, dolayısıyla cihaz kontrolü yapılamaz.
+      const result = await syncSubscriptionForToken(uid, productId, purchaseToken, {
+        allowWelcomeCredit: false,
+      });
       console.log('RTDN işlendi', {
         uid,
         productId,
@@ -2343,7 +2429,10 @@ async function runVoidedPurchaseScan() {
   do {
     const response = await publisher.purchases.voidedpurchases.list({
       packageName: ANDROID_PACKAGE_NAME,
-      // type: 1 → tüketilebilir ürünlerin yanında iptal edilen abonelikleri de getirir.
+      // type: 1 → tüketilebilir ürünlerin yanında iade/geri alınmış abonelikleri de getirir.
+      // "Voided" iade veya geri alma demek; kullanıcının otomatik yenilemeyi KAPATMASI buna
+      // girmez (o abonelik süresi dolunca EXPIRED olur ve syncSubscriptionForToken planı
+      // Free'ye çeker). Deneme iptali bu taramaya hiç düşmez.
       type: 1,
       maxResults: 1000,
       token: pageToken,

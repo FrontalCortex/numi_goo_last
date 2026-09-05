@@ -132,19 +132,70 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     }
 
     /**
+     * Kullanıcı için geçerli abonelik teklifini seçer.
+     *
+     * Play, `subscriptionOfferDetails` içinde kullanıcının UYGUN OLDUĞU teklifleri döndürür
+     * ve sıralarını garanti ETMEZ. Ücretsiz deneme teklifi eklendiğinde liste iki elemanlı
+     * olur (deneme + temel plan); `first()` almak, denemeye hak kazanmış kullanıcıdan ilk gün
+     * para çekilmesine yol açabilir. Bu yüzden ilk fiyat aşaması en ucuz olan teklif seçilir:
+     * deneme (0) ya da tanıtım indirimi varsa o, yoksa temel plan.
+     *
+     * Uygun olmayan kullanıcıya Play deneme teklifini zaten hiç göndermediği için ters yönde
+     * ("herkese bedava") bir risk yoktur.
+     */
+    private fun bestOffer(details: ProductDetails): ProductDetails.SubscriptionOfferDetails? {
+        val offers = details.subscriptionOfferDetails ?: return null
+        return offers.minByOrNull { offer ->
+            offer.pricingPhases.pricingPhaseList.firstOrNull()?.priceAmountMicros ?: Long.MAX_VALUE
+        }
+    }
+
+    /**
      * Play'in yerelleştirdiği fiyat etiketi (ör. "₺20,99"). Ürün bilgisi henüz gelmediyse
      * veya ürün Play Console'da tanımlı değilse null döner — arayüz bu durumda kendi
      * yedek metnini göstermelidir.
+     *
+     * Aboneliklerde SON fiyat aşaması okunur: deneme/tanıtım aşamalarından sonraki, kullanıcının
+     * asıl ödeyeceği tutar budur.
      */
     fun formattedPrice(productId: String): String? {
         val details = productDetails[productId] ?: return null
         details.oneTimePurchaseOfferDetails?.let { return it.formattedPrice }
-        return details.subscriptionOfferDetails
-            ?.firstOrNull()
+        return bestOffer(details)
             ?.pricingPhases
             ?.pricingPhaseList
             ?.lastOrNull()
             ?.formattedPrice
+    }
+
+    /**
+     * Bu kullanıcı bu abonelikte ücretsiz denemeye uygunsa denemenin gün sayısı, değilse null.
+     *
+     * Play uygun olmayan kullanıcıya deneme teklifini hiç göndermediği için, "teklifte ilk
+     * aşama bedava mı" sorusu aynı zamanda "bu kullanıcı denemeye uygun mu" sorusunun da
+     * cevabıdır. Arayüz, uygun OLMAYAN kullanıcıya "1 hafta ücretsiz" yazmamalıdır.
+     */
+    fun freeTrialDays(productId: String): Int? {
+        val details = productDetails[productId] ?: return null
+        val firstPhase = bestOffer(details)?.pricingPhases?.pricingPhaseList?.firstOrNull()
+            ?: return null
+        if (firstPhase.priceAmountMicros != 0L) return null
+        return isoPeriodToDays(firstPhase.billingPeriod)
+    }
+
+    /**
+     * ISO-8601 süre metnini (Play "P1W", "P7D", "P1M" gibi verir) gün sayısına çevirir.
+     * Ay/yıl yaklaşık alınır; burada amaç takvim hesabı değil, "7 gün ücretsiz" etiketi.
+     */
+    private fun isoPeriodToDays(period: String?): Int? {
+        val match = Regex("^P(?:(\\d+)Y)?(?:(\\d+)M)?(?:(\\d+)W)?(?:(\\d+)D)?$")
+            .find(period.orEmpty()) ?: return null
+        val (y, mo, w, d) = match.destructured
+        val days = (y.toIntOrNull() ?: 0) * 365 +
+            (mo.toIntOrNull() ?: 0) * 30 +
+            (w.toIntOrNull() ?: 0) * 7 +
+            (d.toIntOrNull() ?: 0)
+        return days.takeIf { it > 0 }
     }
 
     /**
@@ -155,8 +206,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
      */
     fun subscriptionPriceAmount(productId: String): Pair<Long, String>? {
         val details = productDetails[productId] ?: return null
-        val phase = details.subscriptionOfferDetails
-            ?.firstOrNull()
+        val phase = bestOffer(details)
             ?.pricingPhases
             ?.pricingPhaseList
             ?.lastOrNull() ?: return null
@@ -179,9 +229,10 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         val paramsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(details)
 
-        // Abonelikler için teklif (offer) token'ı zorunludur.
+        // Abonelikler için teklif (offer) token'ı zorunludur. Hangi teklif seçileceği
+        // önemlidir; bkz. [bestOffer].
         if (details.productType == BillingClient.ProductType.SUBS) {
-            val offerToken = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
+            val offerToken = bestOffer(details)?.offerToken
             if (offerToken == null) {
                 onError?.invoke("Abonelik teklifi bulunamadı.")
                 return
@@ -235,6 +286,24 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         }
     }
 
+    /**
+     * Hoş geldin kredisinin cihaz başına bir kez verilmesi için kullanılan tanımlayıcı.
+     *
+     * ANDROID_ID, Android 8'den beri (imza anahtarı + kullanıcı + cihaz) üçlüsüne özeldir ve
+     * uygulama silinip yeniden kurulsa da DEĞİŞMEZ — yalnızca fabrika ayarlarına dönüşte
+     * sıfırlanır. Uygulama verisini temizlemek de değiştirmez, bu yüzden istismarın ucuz
+     * yollarını (yeni hesap, veri temizleme) kapatır.
+     *
+     * Ham değer yalnızca bu tek çağrıda gönderilir; sunucu salt'layıp özetler, ham hâlini
+     * saklamaz ve loglamaz. Reklam kimliğiyle ilişkilendirilmez.
+     */
+    private fun deviceKeyForWelcomeCredit(): String? = runCatching {
+        android.provider.Settings.Secure.getString(
+            appContext.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+        )
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+
     private fun processPurchase(purchase: Purchase) {
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
         if (FirebaseAuth.getInstance().currentUser == null) {
@@ -248,14 +317,21 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         val isSubscription = productId in BillingCatalog.subscriptions
         val callable = if (isSubscription) FN_SUBSCRIPTION else FN_PRODUCT
 
+        val payload = hashMapOf<String, Any>(
+            "productId" to productId,
+            "purchaseToken" to purchase.purchaseToken,
+        )
+        // Pro hoş geldin kredisi cihaz başına bir kez verilir; aksi halde aynı telefonda
+        // yeni Google + yeni uygulama hesabı açarak ücretsiz deneme hediyesi tekrar tekrar
+        // alınabiliyor. Ham değer sunucuda saklanmaz; salt'lanıp özetleniyor (bkz.
+        // functions/index.js → welcomeCreditGrants). Yalnızca abonelik yolunda gönderilir.
+        if (isSubscription) {
+            deviceKeyForWelcomeCredit()?.let { payload["deviceKey"] = it }
+        }
+
         FirebaseFunctions.getInstance()
             .getHttpsCallable(callable)
-            .call(
-                hashMapOf(
-                    "productId" to productId,
-                    "purchaseToken" to purchase.purchaseToken,
-                )
-            )
+            .call(payload)
             .addOnSuccessListener {
                 if (isSubscription) {
                     acknowledgeSubscription(purchase)
