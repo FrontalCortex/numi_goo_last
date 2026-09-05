@@ -60,3 +60,11 @@ jobs:
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # assembleDebug, release kaynak kümesini (app/src/release) HİÇ derlemiyor. App Check
+      # sağlayıcısı derleme türüne göre ayrıldığından oradaki dosya artık yalnızca release'te
+      # derleniyor ve bir hata ilk release derlemesine kadar gizli kalırdı. Bu adım R8, lint
+      # ve imzalama olmadan sadece Kotlin derlemesini yapar. Debug APK yukarıda zaten
+      # yayınlandığı için bu adımın kırılması test APK'sını almaya engel olmaz.
+      - name: Verify release variant compiles
+        run: ./gradlew compileReleaseKotlin --no-daemon
