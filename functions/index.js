@@ -2115,10 +2115,16 @@ exports.playSubscriptionNotification = functions.pubsub
 // bu yüzden ayrıca imleç (cursor) tutmaya gerek yoktur.
 const MAX_VOIDED_PAGES = 20;
 
-/** Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz. */
+/**
+ * Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz.
+ *
+ * `{ outcome, uid, revokedCredits }` döndürür: çağıran, kredi geri alındığında
+ * [cancelPendingQuestionsForCreditDebt] ile bekleyen soruları da iptal edebilsin diye
+ * sadece sonuç etiketi yetmiyor.
+ */
 async function reverseVoidedPurchase(voided) {
   const purchaseToken = voided.purchaseToken;
-  if (!purchaseToken) return 'skipped';
+  if (!purchaseToken) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
@@ -2126,13 +2132,13 @@ async function reverseVoidedPurchase(voided) {
     const purchaseDoc = await transaction.get(purchaseRef);
 
     // Bu token'la hiç ödül vermediysek geri alacak bir şey yok.
-    if (!purchaseDoc.exists) return 'unknown';
+    if (!purchaseDoc.exists) return { outcome: 'unknown', uid: null, revokedCredits: 0 };
 
     const record = purchaseDoc.data();
-    if (record.voided === true) return 'already';
+    if (record.voided === true) return { outcome: 'already', uid: null, revokedCredits: 0 };
 
     const uid = record.uid;
-    if (!uid) return 'skipped';
+    if (!uid) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await transaction.get(userRef);
@@ -2143,23 +2149,36 @@ async function reverseVoidedPurchase(voided) {
         { voided: true, voidedAt: admin.firestore.FieldValue.serverTimestamp(), voidedNote: 'user-missing' },
         { merge: true }
       );
-      return 'user-missing';
+      return { outcome: 'user-missing', uid, revokedCredits: 0 };
     }
 
     const userData = userDoc.data();
     const update = {};
+    let revokedCredits = 0;
 
     if (record.type === 'subscription') {
       // İade edilen abonelik: plan hemen düşer.
       update.plan = 'Free';
       update.planExpiresAt = null;
       update.planProductId = null;
+      // NOT: Pro hoş geldin kredisi (PRO_WELCOME_CREDITS) bilinçli olarak geri ALINMIYOR.
+      // Ücretsiz deneme akışı henüz kurulmadı; hoş geldin kredisinin iade/yeniden abonelik
+      // davranışı o iş yapılırken birlikte ele alınacak.
     } else {
       // Tüketilebilir ürün: verilen miktar geri alınır, bakiye eksiye düşebilir.
       const grantedKeys = Number.parseInt(record.grantedKeys, 10) || 0;
       const grantedCurrency = Number.parseInt(record.grantedCurrency, 10) || 0;
       update.keys = (Number.parseInt(userData.keys, 10) || 0) - grantedKeys;
       update.currency = (Number.parseInt(userData.currency, 10) || 0) - grantedCurrency;
+      // Danışma kredisi de geri alınmalı. Bu satırlar olmadan "kredi paketi al → hepsini
+      // harca → 48 saat içinde iade al" döngüsü tamamen bedavaydı: grantedCredits kayda
+      // yazılıyor ama hiç okunmuyordu. Altın/anahtardaki politikanın aynısı geçerli —
+      // bakiye eksiye düşebilir, yoksa "hepsini harca sonra iade al" açık kalır.
+      revokedCredits = Number.parseInt(record.grantedCredits, 10) || 0;
+      if (revokedCredits > 0) {
+        update.questionCredits =
+          (Number.parseInt(userData.questionCredits, 10) || 0) - revokedCredits;
+      }
     }
 
     transaction.update(userRef, update);
@@ -2174,8 +2193,108 @@ async function reverseVoidedPurchase(voided) {
       { merge: true }
     );
 
-    return 'reversed';
+    return { outcome: 'reversed', uid, revokedCredits };
   });
+}
+
+/**
+ * Kredi bakiyesi iade sonrası eksiye düştüyse, kullanıcının HENÜZ ÜSTLENİLMEMİŞ
+ * (pending) sorularını iptal edip kredilerini borca mahsup eder.
+ *
+ * NEDEN
+ *   Cevaplanmış bir soru batık maliyettir — öğretmen zamanını verdi, geri alınamaz ve
+ *   öğrencinin elindeki cevabı silmek kimseye bir şey kazandırmaz. Ama kuyrukta bekleyen
+ *   soru HENÜZ maliyet doğurmadı: iptal edilirse hem gelecekteki öğretmen ücreti hiç
+ *   doğmaz hem borç azalır. Geri kazanılabilir tek maliyet kalemi budur.
+ *
+ * SADECE BORÇ KAPANANA KADAR
+ *   Bakiye sıfıra ulaştığı anda durur. Kalan bekleyen sorular gerçekten ödenmiş
+ *   kredilerle sorulmuş demektir; onlara dokunmak kullanıcıyı haksız cezalandırır.
+ *   Bu kural transaction İÇİNDE (`credits >= 0`) tekrar doğrulanıyor, dıştaki sayaç
+ *   yalnızca döngü sınırı.
+ *
+ * YENİDEN ÇALIŞTIRILABİLİR
+ *   `creditRefunded` bayrağı ve transaction içindeki durum kontrolü, runUnansweredQuestion
+ *   Refund ile aynı korumayı sağlar: aynı soru iki kez iade edilemez, tarama çakışsa bile.
+ *
+ * İNDEKS
+ *   Mevcut (studentUid ASC, createdAt DESC) bileşik indeksi kullanılıyor; `status` filtresi
+ *   bellekte uygulanıyor. Böylece yeni bir indeks (ve onu deploy etme zorunluluğu) gerekmiyor
+ *   — indeks eksikse sorgu FAILED_PRECONDITION atar ve kredi geri alımını da götürürdü.
+ *   İstismar senaryosunda iptal edilecek sorular zaten en yeniler olduğu için tarama
+ *   penceresi bilinçli olarak sınırlı.
+ */
+const REFUND_PENDING_SCAN_LIMIT = 100;
+
+async function cancelPendingQuestionsForCreditDebt(uid) {
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) return 0;
+
+  let debt = -(Number.parseInt(userSnap.data().questionCredits, 10) || 0);
+  if (debt <= 0) return 0;
+
+  // En yeniden başla: en son sorulan soru, öğretmenin en az yatırım yaptığı sorudur.
+  const snapshot = await db
+    .collection('questions')
+    .where('studentUid', '==', uid)
+    .orderBy('createdAt', 'desc')
+    .limit(REFUND_PENDING_SCAN_LIMIT)
+    .get();
+
+  let canceled = 0;
+  for (const doc of snapshot.docs) {
+    if (debt <= 0) break;
+    const data = doc.data();
+    if (data.status !== 'pending' || data.creditSpent !== true || data.creditRefunded === true) {
+      continue;
+    }
+
+    try {
+      const applied = await db.runTransaction(async (transaction) => {
+        const [questionDoc, freshUserDoc] = await Promise.all([
+          transaction.get(doc.ref),
+          transaction.get(userRef),
+        ]);
+        if (!questionDoc.exists || !freshUserDoc.exists) return false;
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş ya da saatlik iade taraması
+        // aynı soruyu işlemiş olabilir.
+        const fresh = questionDoc.data();
+        if (fresh.status !== 'pending' || fresh.creditRefunded === true) return false;
+
+        // Borç kapandıysa dur — kalan bekleyen sorular ödenmiş kredilerle sorulmuş.
+        const credits = Number.parseInt(freshUserDoc.data().questionCredits, 10) || 0;
+        if (credits >= 0) return false;
+
+        transaction.update(userRef, { questionCredits: credits + 1 });
+        transaction.update(doc.ref, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+          // İade yüzünden iptal edildiğini ayırt edebilmek için (48 saatlik cevapsızlık
+          // iadesiyle karışmasın).
+          canceledForVoidedPurchase: true,
+        });
+        return true;
+      });
+      if (applied) {
+        canceled++;
+        debt--;
+      }
+    } catch (error) {
+      console.error('İade sonrası bekleyen soru iptal edilemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+    }
+  }
+
+  if (canceled > 0) {
+    console.log('İade sonrası bekleyen sorular iptal edildi', { uid, canceled, remainingDebt: debt });
+  }
+  return canceled;
 }
 
 async function runVoidedPurchaseScan() {
@@ -2185,7 +2304,7 @@ async function runVoidedPurchaseScan() {
   }
 
   const publisher = await getAndroidPublisher();
-  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0 };
+  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0, canceledQuestions: 0 };
   let pageToken;
   let pages = 0;
 
@@ -2201,8 +2320,22 @@ async function runVoidedPurchaseScan() {
     const rows = response.data.voidedPurchases || [];
     for (const voided of rows) {
       try {
-        const outcome = await reverseVoidedPurchase(voided);
-        counts[outcome] = (counts[outcome] || 0) + 1;
+        const result = await reverseVoidedPurchase(voided);
+        counts[result.outcome] = (counts[result.outcome] || 0) + 1;
+
+        // Kredi geri alındıysa bekleyen soruları da iptal et. AYRI bir try içinde:
+        // buradaki bir hata (indeks, kota, çakışma) yukarıda tamamlanmış olan geri
+        // alımı geçersiz kılmamalı — kayıt zaten `voided` işaretlendiği için tarama
+        // tekrarlansa bile kredi ikinci kez düşülmez.
+        if (result.outcome === 'reversed' && result.revokedCredits > 0 && result.uid) {
+          try {
+            counts.canceledQuestions =
+              (counts.canceledQuestions || 0) +
+              (await cancelPendingQuestionsForCreditDebt(result.uid));
+          } catch (error) {
+            console.error('İade sonrası soru iptali başarısız', { uid: result.uid, error });
+          }
+        }
       } catch (error) {
         // Tek bir kaydın hatası taramanın tamamını düşürmesin.
         console.error('İade geri alınamadı', { purchaseToken: voided.purchaseToken, error });
