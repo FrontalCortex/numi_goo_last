@@ -2222,6 +2222,33 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
   }
 }
 
+/**
+ * Bu cihaz Pro hoş geldin kredisini daha önce aldı mı?
+ *
+ * NEDEN GEREKLİ
+ *   AskQuestionOpenFragment'ın vaadi "öğretmene soru sor". Cihaz hoş geldin kredisini
+ *   daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı), kullanıcı denemeyi
+ *   başlatsa bile kredi ALMAZ — Pro olur ama soru soramaz. O kullanıcıya bu tanıtımı
+ *   göstermek, ekranın tek işlevini teslim etmemek demek.
+ *
+ *   İstemci bu kontrolü kendisi yapamıyor: doküman kimliği gizli salt ile HMAC'lenmiş ve
+ *   koleksiyon istemciye kapalı. Bu yüzden ayrı bir uç.
+ *
+ * Salt tanımlı değilse cihaz kapısı zaten uygulanmıyor, dolayısıyla eligible=true döner —
+ * sunucunun kendi davranışıyla tutarlı.
+ */
+exports.checkWelcomeCreditEligibility = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const rawDeviceKey = typeof (data || {}).deviceKey === 'string' ? data.deviceKey : '';
+  const deviceHash = hashDeviceKey(rawDeviceKey);
+  if (!deviceHash) return { eligible: true, checked: false };
+
+  const snap = await db.collection('welcomeCreditGrants').doc(deviceHash).get();
+  return { eligible: !snap.exists, checked: true };
+});
+
 exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');

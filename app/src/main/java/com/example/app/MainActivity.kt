@@ -479,6 +479,10 @@ class MainActivity : AppCompatActivity() {
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
 
+        // "Bu cihaz hoş geldin kredisini alabilir mi" cevabını tazele; promo kapısı bu
+        // önbelleğe bakıyor (bkz. WelcomeCreditEligibility).
+        WelcomeCreditEligibility.refresh(applicationContext)
+
         // Girişli kullanıcı: tüm part'larda eksik lessonProgress dokümanlarını arka planda doldur (idempotent).
         if (auth.currentUser != null) {
             GlobalLessonData.seedAllLessonProgressIfMissing(applicationContext)
@@ -1938,7 +1942,11 @@ class MainActivity : AppCompatActivity() {
         billingManager.onPricesReady = null
         billingManager.onError = null
         billingManager.onPurchaseGranted = { resyncWalletFromServer() }
-        billingManager.onSubscriptionUpdated = { checkSubscriptionAndUpdateEnergy() }
+        billingManager.onSubscriptionUpdated = {
+            checkSubscriptionAndUpdateEnergy()
+            // Kredi bu doğrulamada verilmiş olabilir; cihaz artık uygun olmayabilir.
+            WelcomeCreditEligibility.refresh(applicationContext)
+        }
     }
 
     /**
@@ -2778,12 +2786,26 @@ class MainActivity : AppCompatActivity() {
         binding.root.post { maybeShowAskQuestionPromo(caller) }
     }
 
-    /** Pro/Premium olmayan, öğretmen olmayan, oturumu açık kullanıcı. */
+    /**
+     * Pro/Premium olmayan, öğretmen olmayan, oturumu açık kullanıcı — VE bu cihaz hoş geldin
+     * kredisini henüz almamış olmalı.
+     *
+     * Son koşulun sebebi: AskQuestionOpenFragment'ın vaadi öğretmene soru sormak. Cihaz
+     * krediyi daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı) kullanıcı denemeyi
+     * başlatsa bile kredi almıyor — Pro oluyor ama soru soramıyor, karşısına
+     * showOutOfCreditsDialog çıkıyor. O kullanıcıya bu tanıtımı OTOMATİK açmak, ekranın tek
+     * işlevini teslim etmemek olur.
+     *
+     * Butona basarak açma yolu (AskQuestionButtonBinder) bu koşula tabi değil: orada niyet
+     * kullanıcıdan geliyor ve ekranın "BUNUN YERİNE KREDİ AL" seçeneği ona doğru yolu
+     * gösteriyor.
+     */
     private fun isAskQuestionPromoEligible(): Boolean {
         if (FirebaseAuth.getInstance().currentUser == null) return false
         if (energyManager.getUserRole() == "TEACHER") return false
         val plan = energyManager.getUserPlan()
-        return plan != "Pro" && plan != "Premium"
+        if (plan == "Pro" || plan == "Premium") return false
+        return WelcomeCreditEligibility.isEligible(applicationContext)
     }
 
     fun isAskQuestionPromoPending(): Boolean = askQuestionPromoPendingLock
