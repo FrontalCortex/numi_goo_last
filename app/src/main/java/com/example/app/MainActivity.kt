@@ -2026,7 +2026,9 @@ class MainActivity : AppCompatActivity() {
         EnergyDisplay.apply(
             text = binding.energyText,
             infiniteBadge = binding.energyInfiniteBadge,
+            icon = binding.energyIcon,
             isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+            isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
             value = if (energyManager.isEnergyBlocked()) {
                 "0/${energyManager.getMaxEnergy()}"
             } else {
@@ -2039,8 +2041,7 @@ class MainActivity : AppCompatActivity() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış, normal gösterim
-            val energy = energyManager.getCurrentEnergy()
-            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            updateEnergyDisplay(energyManager.getCurrentEnergy())
             return
         }
         
@@ -2067,7 +2068,9 @@ class MainActivity : AppCompatActivity() {
                     EnergyDisplay.apply(
                         text = binding.energyText,
                         infiniteBadge = binding.energyInfiniteBadge,
+                        icon = binding.energyIcon,
                         isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+                        isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
                         value = if (energyManager.isEnergyBlocked()) {
                             "0/${energyManager.getMaxEnergy()}"
                         } else {
@@ -2076,15 +2079,13 @@ class MainActivity : AppCompatActivity() {
                     )
                 } else {
                     // Firestore'da kayıt yok, normal gösterim
-                    val energy = energyManager.getCurrentEnergy()
-                    binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    updateEnergyDisplay(energyManager.getCurrentEnergy())
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("MainActivity", "Abonelik durumu kontrol edilemedi", e)
                 // Hata durumunda normal gösterim
-                val energy = energyManager.getCurrentEnergy()
-                binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                updateEnergyDisplay(energyManager.getCurrentEnergy())
             }
     }
     

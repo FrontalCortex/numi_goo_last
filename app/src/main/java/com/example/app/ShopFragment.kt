@@ -279,7 +279,9 @@ class ShopFragment : Fragment() {
         EnergyDisplay.apply(
             text = energyText,
             infiniteBadge = view.findViewById(R.id.shopEnergyInfiniteBadge),
+            icon = view.findViewById(R.id.shopEnergyIcon),
             isInfinite = isInfinite,
+            isPremium = PlanStatus.isProPlan(em.getUserPlan()),
             value = currentEnergy.toString(),
         )
         val maxEnergy = em.getMaxEnergy()
