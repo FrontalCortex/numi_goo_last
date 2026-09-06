@@ -1440,7 +1440,10 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
 //     çağırdığı, gerekçe kataloğuyla sınırlanmış ayrı bir yoldur.
 //
 // Kurulum: docs/SATIN_ALMA_ENTEGRASYONU.md
-const { google } = require('googleapis');
+// NOT: `googleapis` modülü ~yüzlerce API yüzeyi içerir ve yüklenmesi saniyeler sürer.
+// Modül seviyesinde require edilirse `firebase deploy` sırasındaki fonksiyon keşfi
+// (10 sn'lik analiz penceresi) zaman aşımına uğrayabiliyor. Bu yüzden sadece Play
+// Developer API'ye gerçekten ihtiyaç duyan yerde, tembel olarak yükleniyor.
 
 // Play Console'daki paket adı. `com.example.*` Play tarafından reddedilir;
 // gerçek paket adına geçildiğinde ortam değişkeni olarak set edilmelidir:
@@ -1632,6 +1635,7 @@ let androidPublisherClient = null;
  */
 async function getAndroidPublisher() {
   if (androidPublisherClient) return androidPublisherClient;
+  const { google } = require('googleapis');
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/androidpublisher'],
   });
