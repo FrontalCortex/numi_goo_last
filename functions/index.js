@@ -1020,6 +1020,77 @@ exports.onFollowingDeleted = functions.firestore
   .document('users/{ownerUserId}/following/{followingUid}')
   .onDelete((snap, context) => adjustCounter(context.params.ownerUserId, 'followingCount', -1));
 
+/**
+ * Silinen kullanıcının öğretmen danışma sorularını, mesajlarını ve medyasını siler.
+ *
+ * NEDEN AYRI BİR ADIM
+ *   `questions` ÜST SEVİYE bir koleksiyon ve kullanıcıya `studentUid` alanıyla bağlı; yani
+ *   `recursiveDelete(users/{uid})` ona hiç dokunmuyordu. Gizlilik politikası silmenin
+ *   mesajları da kaldırdığını söylüyor, kod bunu yapmıyordu — öğrencinin ödev fotoğrafları
+ *   ve videoları Storage'da süresiz kalıyordu. (cleanupResolvedQuestionMedia yalnızca
+ *   `resolved` durumdaki soruların medyasını 30 gün sonra temizliyor.)
+ *
+ * AÇIK MODERASYON RAPORU OLANLAR ATLANIR
+ *   Bekleyen bir `messageReports` kaydı varsa soru korunur: rapor incelenmeden kanıtın
+ *   silinmemesi gerekiyor. Aynı kural runResolvedQuestionMediaCleanup'ta da uygulanıyor.
+ *   Bu istisna gizlilik politikasında beyan edilmiştir.
+ *
+ * Sorgu tek eşitlik filtresi kullanıyor (studentUid), yani bileşik indeks gerekmiyor.
+ */
+async function deleteUserQuestions(uid) {
+  const snapshot = await db.collection('questions').where('studentUid', '==', uid).get();
+  const counts = { deleted: 0, skippedForReport: 0, failed: 0, mediaFailed: 0 };
+
+  for (const doc of snapshot.docs) {
+    try {
+      const pendingReport = await db
+        .collection('messageReports')
+        .where('questionId', '==', doc.id)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+      if (!pendingReport.empty) {
+        counts.skippedForReport++;
+        continue;
+      }
+
+      const data = doc.data();
+      const messagesSnap = await doc.ref.collection('messages').get();
+      const storagePaths = messagesSnap.docs
+        .map((m) => m.data().mediaStoragePath)
+        .concat([data.videoStoragePath, data.screenshotStoragePath]);
+
+      // Önce Storage denenmeli: doküman silindikten sonra dosya yollarını öğrenmenin yolu
+      // kalmaz. Ama AYRI bir try içinde — Storage tarafındaki bir sorun (bucket
+      // yapılandırması, izin, kesinti) kullanıcının verisinin silinmesini ENGELLEMEMELİ.
+      // Öncelik sırası: veri silme bir yükümlülük, artakalan medya dosyası ise
+      // temizlenebilir bir kalıntı.
+      try {
+        await deleteStorageFiles(storagePaths);
+      } catch (error) {
+        counts.mediaFailed++;
+        console.error('Silinen kullanıcının soru medyası silinemedi (Firestore silme devam ediyor)', {
+          uid,
+          questionId: doc.id,
+          error: error.message,
+        });
+      }
+
+      await db.recursiveDelete(doc.ref);
+      counts.deleted++;
+    } catch (error) {
+      console.error('Silinen kullanıcının sorusu temizlenemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+      counts.failed++;
+    }
+  }
+
+  return counts;
+}
+
 // Auth 'onDelete' trigger to recursively delete user data in Firestore
 exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   const uid = user.uid;
@@ -1054,7 +1125,19 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing leaderboard entries for ${uid}:`, error);
   }
+
+  // Danışma soruları users/{uid} altında DEĞİL, üst seviye `questions` koleksiyonunda;
+  // yukarıdaki recursiveDelete onlara ulaşmıyor.
+  try {
+    const counts = await deleteUserQuestions(uid);
+    console.log('Silinen kullanıcının danışma soruları temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing questions for ${uid}:`, error);
+  }
 });
+
+// Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
+exports._deleteUserQuestions = deleteUserQuestions;
 // ─── Cüzdan (altın / anahtar) güncelleme ────────────────────────────────────
 //
 // GÜVENLİK MODELİ
