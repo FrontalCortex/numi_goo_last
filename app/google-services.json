@@ -75,6 +75,22 @@
           }
         },
         {
+          "client_id": "1056334163260-qp6br199n3bgu2t34lfphtcimnnl1j8m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "74f16eabd0fa36c415570b8f3760e9bc78585ac1"
+          }
+        },
+        {
+          "client_id": "1056334163260-v6dlnmkkp3hvjmdt0lopdfi2q16tce9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "b9de53e8de6fdf3cabe523312fc9194ac308a134"
+          }
+        },
+        {
           "client_id": "1056334163260-a81t0bdjo1u4p44488v9ve60dkkea2ii.apps.googleusercontent.com",
           "client_type": 3
         }
