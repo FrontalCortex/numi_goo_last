@@ -1616,6 +1616,97 @@ function resolveTokenRebind(storedUid, requestingUid, storedUidStillExists) {
   return { allowed: true, rebind: true, reason: 'previous_account_deleted' };
 }
 
+/**
+ * Aboneliğe hak veren Play durumları.
+ *
+ * SUBSCRIPTION_STATE_CANCELED buraya DAHİL: Play'de bu durum "kullanıcı otomatik
+ * yenilemeyi kapattı ama süresi henüz dolmadı" demektir; kişinin ödediği döneme kadar
+ * hakkı devam eder. Listeden çıkarıldığında, iptal bildirimi (RTDN) geldiği anda plan
+ * Free'ye çekiliyordu — yani 1 Ekim'de abone olup 3 Ekim'de iptal eden kullanıcı ödediği
+ * 28 günü anında kaybediyordu. Ücretsiz denemede daha da ağır: denemeyi 2. günde iptal
+ * etmek (çok yaygın bir davranış) haftanın kalanını da götürüyordu.
+ *
+ * PAUSED ve ON_HOLD bilinçli olarak DIŞARIDA: ilkinde kullanıcı aboneliği kendisi
+ * duraklatmıştır, ikincisinde ödeme alınamamış ve Play hakkı zaten askıya almıştır.
+ * PENDING de dışarıda — ilk ödeme henüz tamamlanmamıştır.
+ */
+const ENTITLING_SUBSCRIPTION_STATES = [
+  'SUBSCRIPTION_STATE_ACTIVE',
+  'SUBSCRIPTION_STATE_IN_GRACE_PERIOD',
+  'SUBSCRIPTION_STATE_CANCELED',
+];
+
+/**
+ * Play'in döndürdüğü abonelik kaydından "şu an hak veriyor mu" sorusunu cevaplar.
+ *
+ * Durum tek başına yetmiyor: CANCELED hakkı sürdürür ama yalnızca `expiryTime`'a kadar.
+ * Bu yüzden karar her zaman (durum ∈ hak veren durumlar) VE (bitiş tarihi gelecekte)
+ * bileşimidir.
+ *
+ * Saf fonksiyon — gerçek bir token olmadan test edilebilir (bkz.
+ * scripts/test-subscription-verification.js).
+ */
+function subscriptionEntitlement(subscription, nowMs) {
+  const state = (subscription && subscription.subscriptionState) || '';
+  const items = (subscription && subscription.lineItems) || [];
+  // Bitiş tarihi, ürün kimliğiyle AYNI satır öğesinden okunuyor (bkz.
+  // subscriptionProductIds); ikisinin farklı öğelerden gelmesi tutarsızlık üretir.
+  const expiryRaw = (items.length > 0 ? items[items.length - 1].expiryTime : null) || null;
+  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
+  const stillValid =
+    ENTITLING_SUBSCRIPTION_STATES.includes(state) &&
+    Number.isFinite(expiryMs) &&
+    expiryMs > nowMs;
+  return { stillValid, expiryRaw, expiryMs };
+}
+
+/** Play'in döndürdüğü abonelikteki ürün kimlikleri (satır öğesi sırasıyla). */
+function subscriptionProductIds(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items
+    .map((item) => (item && typeof item.productId === 'string' ? item.productId : ''))
+    .filter((id) => !!id);
+}
+
+/**
+ * Bu token GERÇEKTEN hangi ürüne ait?
+ *
+ * SORUN
+ *   Tüketilebilir üründe `productId`, doğrulama çağrısının İÇİNE giriyor
+ *   (purchases.products.get({packageName, productId, token})) — eşleşmezse Play'in
+ *   kendisi reddediyor. Abonelikte ise çağrı yalnızca token alıyor
+ *   (purchases.subscriptionsv2.get({token})) ve plan, istemcinin bildirdiği üründen
+ *   okunuyordu. Yani geçerli bir `lite_monthly` token'ıyla `productId: "pro_monthly"`
+ *   göndermek Pro planını (ve hoş geldin kredisini) veriyordu; değiştirilmiş bir APK
+ *   bile gerekmiyor, callable'ı doğrudan çağırmak yetiyordu.
+ *
+ * KURAL
+ *   Play ürün bilgisi verdiyse GERÇEK odur. İstemcinin iddiası satır öğelerinden
+ *   birinde geçiyorsa aynen kullanılır; geçmiyorsa yok sayılır ve bitiş tarihiyle aynı
+ *   satır öğesinin ürünü esas alınır.
+ *
+ * NEDEN REDDETMEK YERİNE DÜZELTMEK
+ *   Uyuşmazlık her zaman saldırı değil: ertelenmiş düşürme (Pro → Lite) yenilemede
+ *   ürünü değiştirdiği için istemcinin elindeki Purchase nesnesi bir süre eski ürünü
+ *   bildirir. Reddetmek o kullanıcının planını senkronsuz bırakırdı. Play'in gerçeğini
+ *   yazmak iki durumu birden doğru çözüyor — sahtekârlık iddiası boşa düşer, gecikmiş
+ *   istemci de doğru plana oturur.
+ *
+ * Saf fonksiyon.
+ */
+function resolveVerifiedProductId(claimedProductId, playProductIds) {
+  const ids = playProductIds || [];
+  if (ids.length === 0) {
+    // Play satır öğesi döndürmedi (beklenmeyen cevap şekli). İddiaya güvenmek zorundayız;
+    // yine de katalog kontrolünden geçiyor ve durum loglanıyor.
+    return { productId: claimedProductId, verified: false, mismatch: false };
+  }
+  if (ids.includes(claimedProductId)) {
+    return { productId: claimedProductId, verified: true, mismatch: false };
+  }
+  return { productId: ids[ids.length - 1], verified: true, mismatch: true };
+}
+
 function resolvePlanUpdate(userData, productId, newPlan) {
   const storedPlan = effectivePlan(userData || {});
   const ownsCurrentPlan = ((userData || {}).planProductId || null) === productId;
@@ -2122,7 +2213,7 @@ exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
  * kullanan kişi, ödemeye devam etmesine rağmen yenilemesi kaydedilmediği için Free'ye
  * düşerdi.
  */
-async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOptions) {
+async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, welcomeOptions) {
   assertBillingConfigured();
 
   // Hoş geldin kredisi YALNIZCA istemci yolundan verilir (bkz. redeemGooglePlaySubscription).
@@ -2132,9 +2223,13 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
   const allowWelcomeCredit = !!(welcomeOptions && welcomeOptions.allowWelcomeCredit);
   const deviceHash = allowWelcomeCredit ? hashDeviceKey(welcomeOptions.deviceKey) : null;
 
-  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
-  if (!entry) {
-    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  // Ön kontrol: istemcinin bildirdiği ürün katalogda bile yoksa Play'e sormaya değmez.
+  // Asıl ürün kararı doğrulamadan SONRA veriliyor (bkz. resolveVerifiedProductId).
+  if (!PLAY_SUBSCRIPTION_CATALOG[claimedProductId]) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Tanımsız abonelik: ' + claimedProductId
+    );
   }
 
   let subscription;
@@ -2146,21 +2241,40 @@ async function syncSubscriptionForToken(uid, productId, purchaseToken, welcomeOp
     });
     subscription = response.data;
   } catch (error) {
-    console.error('Abonelik doğrulaması başarısız', { uid, productId, error: error.message });
+    console.error('Abonelik doğrulaması başarısız', {
+      uid,
+      productId: claimedProductId,
+      error: error.message,
+    });
     throw new functions.https.HttpsError('permission-denied', 'Abonelik doğrulanamadı.');
   }
 
-  // Yalnızca gerçekten aktif durumlar plan verir. Ödemesi bekleyen / askıya alınmış /
-  // iptal edilip süresi dolmuş abonelikler Free'ye düşer.
-  const activeStates = ['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD'];
-  const isActive = activeStates.includes(subscription.subscriptionState);
+  // Ürün, istemcinin iddiasından DEĞİL Play'in cevabından belirlenir.
+  const verifiedProduct = resolveVerifiedProductId(
+    claimedProductId,
+    subscriptionProductIds(subscription)
+  );
+  const productId = verifiedProduct.productId;
+  if (verifiedProduct.mismatch) {
+    console.warn('Abonelik ürünü istemcinin bildirdiğinden farklı — Play esas alındı', {
+      uid,
+      claimed: claimedProductId,
+      actual: productId,
+    });
+  } else if (!verifiedProduct.verified) {
+    console.warn('Play abonelik cevabında ürün bilgisi yok — istemcinin bildirdiği kullanıldı', {
+      uid,
+      productId,
+    });
+  }
 
-  const expiryRaw =
-    (subscription.lineItems && subscription.lineItems.length > 0
-      ? subscription.lineItems[subscription.lineItems.length - 1].expiryTime
-      : null) || null;
-  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
-  const stillValid = isActive && Number.isFinite(expiryMs) && expiryMs > Date.now();
+  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
+  if (!entry) {
+    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  }
+
+  // Hak veren durumlar + bitiş tarihi kontrolü tek yerde (bkz. subscriptionEntitlement).
+  const { stillValid, expiryRaw, expiryMs } = subscriptionEntitlement(subscription, Date.now());
 
   const userRef = db.collection('users').doc(uid);
 
@@ -2739,6 +2853,11 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
 exports._resolvePlanUpdate = resolvePlanUpdate;
 exports._resolveTokenRebind = resolveTokenRebind;
+// Abonelik doğrulamasının saf parçaları: Play'e hiç dokunmadan test edilebilirler.
+// Bkz. scripts/test-subscription-verification.js
+exports._subscriptionEntitlement = subscriptionEntitlement;
+exports._subscriptionProductIds = subscriptionProductIds;
+exports._resolveVerifiedProductId = resolveVerifiedProductId;
 exports._reverseVoidedPurchase = reverseVoidedPurchase;
 exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 

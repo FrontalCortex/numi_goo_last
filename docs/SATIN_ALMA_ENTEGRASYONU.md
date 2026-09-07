@@ -104,9 +104,17 @@ Tüketilebilirlerden farklı olarak **tekrar tekrar çağrılabilir**. Uygulama 
 açıldığında `BillingManager.refreshPurchases()` eldeki abonelik token'ını yeniden
 doğrulatır; sunucu `plan` ve `planExpiresAt` alanlarını günceller.
 
+Ürün kimliği **istemciden değil Play'in cevabından** alınır: doğrulama çağrısı yalnızca
+token taşıdığı için (`purchases.subscriptionsv2.get`), istemcinin bildirdiği `productId`'ye
+güvenmek Lite token'ıyla Pro istemeye izin verirdi. Bkz. `resolveVerifiedProductId`.
+
 İptal eden kullanıcı iki katmanda yakalanır:
 
-1. Sunucu, Play'den `SUBSCRIPTION_STATE_*` okur; aktif değilse `plan = "Free"` yazar.
+1. Sunucu, Play'den `SUBSCRIPTION_STATE_*` okur; hak veren durumlar `ACTIVE`,
+   `IN_GRACE_PERIOD` ve `CANCELED`'dır — üçünde de `expiryTime` gelecekte olmalıdır.
+   `CANCELED` "otomatik yenileme kapatıldı, süre henüz dolmadı" demektir; kullanıcı
+   ödediği dönemi sonuna kadar kullanır. `PAUSED`, `ON_HOLD` ve `PENDING` hak vermez.
+   Bkz. `ENTITLING_SUBSCRIPTION_STATES`.
 2. `MainActivity.checkSubscriptionAndUpdateEnergy()` `planExpiresAt` geçmişse
    planı Free sayar — sunucudan hiç yeni doğrulama gelmese bile Pro süresiz kalmaz.
 
