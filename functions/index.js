@@ -2328,6 +2328,22 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
   // Hak veren durumlar + bitiş tarihi kontrolü tek yerde (bkz. subscriptionEntitlement).
   const { stillValid, expiryRaw, expiryMs } = subscriptionEntitlement(subscription, Date.now());
 
+  // Play'in NE dediğini her senkronda yaz.
+  //
+  // Bu satır olmadan "abonelik iptal edildi ve plan Free'ye düştü" gözlemi teşhis
+  // edilemiyordu: sonucun sebebi Play'in durumu mu (gerçekten süresi dolmuş), lisans
+  // testçisinde dönemlerin dakikalara sıkışması mı, yoksa bizim kararımız mı ayırt
+  // edilemiyordu. Başarılı senkronda hiç log yoktu; yalnızca hata ve istisna yolları
+  // loglanıyordu.
+  console.log('Abonelik senkronu', {
+    uid,
+    productId,
+    state: subscription.subscriptionState || null,
+    expiry: expiryRaw,
+    expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) : null,
+    plan: stillValid ? entry.plan : 'Free',
+  });
+
   const userRef = db.collection('users').doc(uid);
 
   // Aynı token'ın başka bir hesaba bağlanmasını engelle: token daha önce başka bir uid ile

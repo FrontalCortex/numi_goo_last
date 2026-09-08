@@ -294,10 +294,24 @@ async function runOnce(db, admin) {
   }
 }
 
+/**
+ * Sezon bitişlerini finalize eden zamanlayıcı.
+ *
+ * PERİYOT NEDEN 5 DAKİKA
+ *   Sezonlar HAFTALIK (bkz. seasonCalendar → SEASON_DURATION_MS). Dakikada bir çalışmak,
+ *   haftada bir yapılacak iş için 10.080 çağrı demekti; her çağrı imleç dokümanını okuyup
+ *   "bitmiş sezon var mı" diye bakıp çıkıyor. Bedava kotaların içinde kalıyordu ama
+ *   projedeki en yoğun fonksiyon buydu ve logları gürültüyle doldurup gerçek sorunları
+ *   aramayı zorlaştırıyordu.
+ *
+ *   5 dakika, sezon bitiminde en fazla 5 dakikalık gecikme demek — madalyalar haftalık bir
+ *   döngüde dağıtıldığı için fark edilmez. runOnce zaten geride kalmış sezonları
+ *   (maxCatchUp'a kadar) toparlıyor, yani bir çalıştırma kaçsa bile kayıp olmuyor.
+ */
 function scheduleFinalize(functions, admin, db) {
   return functions
     .runWith({ timeoutSeconds: 300, memory: '512MB' })
-    .pubsub.schedule('every 1 minutes')
+    .pubsub.schedule('every 5 minutes')
     .timeZone('Etc/UTC')
     .onRun(async () => {
       await runOnce(db, admin);
