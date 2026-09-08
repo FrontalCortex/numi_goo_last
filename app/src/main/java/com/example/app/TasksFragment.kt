@@ -36,23 +36,36 @@ import kotlin.math.roundToInt
 class TasksFragment : Fragment() {
     private fun startEnergyUpdateTimer(contentView: View, energyManager: EnergyManager?) {
         if (energyManager == null) return
-        val energyText = contentView.findViewById<android.widget.TextView>(R.id.panelCupPathEnergyText) ?: return
+        val energyText = contentView.findViewById<TextView>(R.id.panelCupPathEnergyText) ?: return
         val infiniteBadge = contentView.findViewById<View>(R.id.panelCupPathEnergyInfiniteBadge)
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        
+        val energyIcon = contentView.findViewById<ImageView>(R.id.panelCupPathEnergyIcon)
+        val handler = Handler(Looper.getMainLooper())
+
+        // Metin degismeden de plan degisebiliyor (ör. onayli ogretmen Pro olursa ikisinde de
+        // metin bos kalir), o yuzden premium durumu ayrica takip edilir.
+        var lastPremium: Boolean? = null
         var updateRunnable: Runnable? = null
         updateRunnable = Runnable {
             val activity = activity as? MainActivity
             if (activity != null) {
                 val isInfinite = activity.isInfiniteEnergy()
+                val isPremium = PlanStatus.isProPlan(energyManager.getUserPlan())
                 val currentText = if (isInfinite) "" else energyManager.getCurrentEnergy().toString()
-                if (energyText.text.toString() != currentText) {
-                    EnergyDisplay.apply(energyText, infiniteBadge, isInfinite, currentText)
+                if (energyText.text.toString() != currentText || lastPremium != isPremium) {
+                    lastPremium = isPremium
+                    EnergyDisplay.apply(
+                        text = energyText,
+                        infiniteBadge = infiniteBadge,
+                        icon = energyIcon,
+                        isInfinite = isInfinite,
+                        isPremium = isPremium,
+                        value = currentText,
+                    )
                 }
             }
             handler.postDelayed(updateRunnable!!, 1000)
         }
-        
+
         contentView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) {
                 handler.post(updateRunnable!!)
@@ -61,16 +74,20 @@ class TasksFragment : Fragment() {
                 handler.removeCallbacks(updateRunnable!!)
             }
         })
-        
+
         // Initial set
         val activity = activity as? MainActivity
         if (activity != null) {
             val isInfinite = activity.isInfiniteEnergy()
+            val isPremium = PlanStatus.isProPlan(energyManager.getUserPlan())
+            lastPremium = isPremium
             EnergyDisplay.apply(
-                energyText,
-                infiniteBadge,
-                isInfinite,
-                energyManager.getCurrentEnergy().toString(),
+                text = energyText,
+                infiniteBadge = infiniteBadge,
+                icon = energyIcon,
+                isInfinite = isInfinite,
+                isPremium = isPremium,
+                value = energyManager.getCurrentEnergy().toString(),
             )
         }
     }

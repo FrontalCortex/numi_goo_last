@@ -230,6 +230,10 @@ class MainActivity : AppCompatActivity() {
             putExtra(ScreenRecordingService.EXTRA_RESULT_DATA, result.data)
             putExtra(ScreenRecordingService.EXTRA_MAX_DURATION_MS, maxRecordingSecForSession * 1000L)
         }
+        // Alıcı ve zaman aşımı servisten ÖNCE kurulmalı: servis ilk saniyede patlarsa
+        // gönderdiği RECORDING_FAILED yayınını kaçırmayalım (yoksa panel sessizce açık kalıyor).
+        registerRecordingReceiver()
+        armRecordingStartTimeout()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
@@ -1202,6 +1206,12 @@ class MainActivity : AppCompatActivity() {
     private var isRecordingPaused = false
     private var maxRecordingSecForSession = 60
 
+    /** Servis ACTION_RECORDING_STARTED gönderdi mi? Gönderilmezse panel kapatılıp hata gösterilir. */
+    private var recordingStartConfirmed = false
+    private var recordingStartTimeoutRunnable: Runnable? = null
+    /** MediaProjection izni + encoder kurulumu için rahat bir pay; aşılırsa kayıt başlamamıştır. */
+    private val RECORDING_START_TIMEOUT_MS = 8_000L
+
     private fun showRecordingOverlay() {
         recordingStartTimeMs = System.currentTimeMillis()
         totalPausedDurationMs = 0L
@@ -1430,9 +1440,39 @@ class MainActivity : AppCompatActivity() {
         }
         binding.recordingOverlayContainer.visibility = View.VISIBLE
         updateRecordingTimerText(0)
+        registerRecordingReceiver()
+        recordingTimerRunnable = object : Runnable {
+            override fun run() {
+                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
+                updateRecordingTimerText(elapsedSec)
+                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
+            }
+        }
+        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
+        setQuitButtonEnabled(false)
+        setAskQuestionButtonEnabled(false)
+    }
+
+    /**
+     * Kayıt yayınlarının alıcısını kurar. Servis başlatılmadan ÖNCE çağrılır: servis daha
+     * ilk saniyede patlarsa (startForeground / encoder hatası) gönderdiği RECORDING_FAILED
+     * yayını, alıcı henüz kayıtlı olmadığı için kaybolabiliyordu. Zaten kayıtlıysa no-op.
+     */
+    private fun registerRecordingReceiver() {
+        if (recordingReceiver != null) return
         recordingReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
+                    ScreenRecordingService.ACTION_RECORDING_STARTED -> {
+                        recordingStartConfirmed = true
+                        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+                        recordingStartTimeoutRunnable = null
+                        // Sayaç, panelin açıldığı andan değil kaydın gerçekten başladığı
+                        // andan işlesin (MediaProjection kurulumu birkaç yüz ms sürebiliyor).
+                        recordingStartTimeMs = System.currentTimeMillis()
+                        totalPausedDurationMs = 0L
+                        updateRecordingTimerText(0)
+                    }
                     ScreenRecordingService.ACTION_RECORDING_FINISHED -> {
                         val path = intent.getStringExtra(ScreenRecordingService.EXTRA_OUTPUT_PATH)
                         hideRecordingOverlay()
@@ -1476,22 +1516,35 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val filter = IntentFilter().apply {
+            addAction(ScreenRecordingService.ACTION_RECORDING_STARTED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FINISHED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FAILED)
             addAction(ScreenRecordingService.ACTION_RECORDING_PAUSED)
             addAction(ScreenRecordingService.ACTION_RECORDING_RESUMED)
         }
         ContextCompat.registerReceiver(this, recordingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        recordingTimerRunnable = object : Runnable {
-            override fun run() {
-                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
-                updateRecordingTimerText(elapsedSec)
-                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
-            }
+    }
+
+    /**
+     * Servisten "kayıt başladı" sinyali gelmezse paneli kapatıp kullanıcıyı uyarır.
+     * Bu olmadan, kayıt hiç başlamamışken panel açık kalıp sayaç işliyor; kaydet ve duraklat
+     * butonları da yanıtı servisten bekledikleri için hiçbir şey yapmıyor gibi görünüyordu.
+     */
+    private fun armRecordingStartTimeout() {
+        recordingStartConfirmed = false
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        val runnable = Runnable {
+            recordingStartTimeoutRunnable = null
+            if (recordingStartConfirmed) return@Runnable
+            startService(
+                Intent(this, ScreenRecordingService::class.java)
+                    .setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD)
+            )
+            hideRecordingOverlay()
+            Toast.makeText(this, "Ekran kaydı bu cihazda başlatılamadı.", Toast.LENGTH_LONG).show()
         }
-        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
-        setQuitButtonEnabled(false)
-        setAskQuestionButtonEnabled(false)
+        recordingStartTimeoutRunnable = runnable
+        recordingHandler.postDelayed(runnable, RECORDING_START_TIMEOUT_MS)
     }
 
     private fun updateRecordingTimerText(elapsedSec: Int) {
@@ -1504,11 +1557,13 @@ class MainActivity : AppCompatActivity() {
     private fun hideRecordingOverlay() {
         recordingTimerRunnable?.let { recordingHandler.removeCallbacks(it) }
         recordingTimerRunnable = null
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        recordingStartTimeoutRunnable = null
+        recordingStartConfirmed = false
         recordingReceiver?.let { receiver ->
             try {
                 unregisterReceiver(receiver)
             } catch (_: IllegalArgumentException) { /* zaten kaldırılmış */ }
-            recordingReceiver = null
         }
         recordingReceiver = null
         binding.recordingOverlayContainer.visibility = View.GONE
@@ -2026,7 +2081,9 @@ class MainActivity : AppCompatActivity() {
         EnergyDisplay.apply(
             text = binding.energyText,
             infiniteBadge = binding.energyInfiniteBadge,
+            icon = binding.energyIcon,
             isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+            isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
             value = if (energyManager.isEnergyBlocked()) {
                 "0/${energyManager.getMaxEnergy()}"
             } else {
@@ -2039,8 +2096,7 @@ class MainActivity : AppCompatActivity() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış, normal gösterim
-            val energy = energyManager.getCurrentEnergy()
-            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            updateEnergyDisplay(energyManager.getCurrentEnergy())
             return
         }
         
@@ -2067,7 +2123,9 @@ class MainActivity : AppCompatActivity() {
                     EnergyDisplay.apply(
                         text = binding.energyText,
                         infiniteBadge = binding.energyInfiniteBadge,
+                        icon = binding.energyIcon,
                         isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+                        isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
                         value = if (energyManager.isEnergyBlocked()) {
                             "0/${energyManager.getMaxEnergy()}"
                         } else {
@@ -2076,15 +2134,13 @@ class MainActivity : AppCompatActivity() {
                     )
                 } else {
                     // Firestore'da kayıt yok, normal gösterim
-                    val energy = energyManager.getCurrentEnergy()
-                    binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    updateEnergyDisplay(energyManager.getCurrentEnergy())
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("MainActivity", "Abonelik durumu kontrol edilemedi", e)
                 // Hata durumunda normal gösterim
-                val energy = energyManager.getCurrentEnergy()
-                binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                updateEnergyDisplay(energyManager.getCurrentEnergy())
             }
     }
     
