@@ -2335,7 +2335,14 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
   // testçisinde dönemlerin dakikalara sıkışması mı, yoksa bizim kararımız mı ayırt
   // edilemiyordu. Başarılı senkronda hiç log yoktu; yalnızca hata ve istisna yolları
   // loglanıyordu.
-  console.log('Abonelik senkronu', {
+  //
+  // console.log DEĞİL functions.logger: `console.log('mesaj', {nesne})` biçimi nesneyi
+  // util.inspect ile yazıyor ve nesne bir satıra sığmayınca satır satır bölünüyor.
+  // Cloud Logging her satırı AYRI bir kayıt yaptığı için log okunamaz hale geliyordu —
+  // ilk kayıtta yalnızca "Abonelik senkronu {" görünüyor, alanlar alttaki kayıtlara
+  // dağılıyordu. functions.logger tek bir yapılandırılmış kayıt üretiyor ve alanlar
+  // jsonPayload altında sorgulanabilir oluyor (ör. jsonPayload.state="...").
+  functions.logger.log('Abonelik senkronu', {
     uid,
     productId,
     state: subscription.subscriptionState || null,
