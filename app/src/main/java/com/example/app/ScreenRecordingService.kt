@@ -11,6 +11,9 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.media.MediaCodecInfo
+import android.media.MediaCodecList
+import android.media.MediaFormat
 import android.media.MediaRecorder
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
@@ -24,7 +27,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import java.io.File
-import java.io.IOException
 
 /**
  * Foreground service that records the screen (480p, with mic).
@@ -76,7 +78,7 @@ class ScreenRecordingService : Service() {
             intent.getParcelableExtra(EXTRA_RESULT_DATA)
         }
         if (resultCode != android.app.Activity.RESULT_OK || data == null) {
-            sendBroadcast(Intent(ACTION_RECORDING_FAILED))
+            broadcastToApp(ACTION_RECORDING_FAILED)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -96,7 +98,7 @@ class ScreenRecordingService : Service() {
             }
         } catch (e: Exception) {
             Log.e(TAG, "startForeground başarısız", e)
-            sendBroadcast(Intent(ACTION_RECORDING_FAILED))
+            broadcastToApp(ACTION_RECORDING_FAILED)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -117,9 +119,10 @@ class ScreenRecordingService : Service() {
                 }
             }
             projection.registerCallback(projectionCallback!!, handler)
-            setupMediaRecorder(file.absolutePath)
-            createVirtualDisplay(projection)
-            mediaRecorder?.start()
+            val (recorder, config) = prepareMediaRecorder(file.absolutePath)
+            mediaRecorder = recorder
+            createVirtualDisplay(projection, config)
+            recorder.start()
             recordingStartTimeMs = System.currentTimeMillis()
             totalPausedDurationMs = 0
             isPaused = false
@@ -127,30 +130,75 @@ class ScreenRecordingService : Service() {
                 stopRecordingInternal()
             }
             handler.postDelayed(stopRunnable!!, maxDurationMs)
+            // Panel, kaydın GERÇEKTEN başladığını yalnızca bu sinyalle öğreniyor. Gelmezse
+            // MainActivity paneli kapatıp hata gösteriyor; aksi halde kayıt hiç başlamamışken
+            // sayaç işlemeye devam edip kullanıcıya "kaydediliyor" izlenimi veriyordu.
+            broadcastToApp(ACTION_RECORDING_STARTED)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recording", e)
-            sendBroadcast(Intent(ACTION_RECORDING_FAILED))
+            releaseRecorderAndDisplay()
+            releaseProjection()
+            try {
+                file.delete()
+            } catch (_: Exception) { }
+            outputPath = null
+            broadcastToApp(ACTION_RECORDING_FAILED)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
         return START_NOT_STICKY
     }
 
-    private fun createVirtualDisplay(projection: MediaProjection) {
-        val metrics = resources.displayMetrics
-        val density = metrics.densityDpi
-        val width = 1280
-        val height = 720
+    /**
+     * Servis ile MainActivity aynı uygulamada; yayını pakete kilitliyoruz.
+     * Paketsiz (implicit) yayınlar, alıcı RECEIVER_NOT_EXPORTED ile kayıtlı olduğunda
+     * Android 14+ ve bazı üretici ROM'larında (HyperOS/MIUI) teslim edilmiyor; kaydet/duraklat
+     * butonları basılıyor ama arayüz hiç tepki vermiyordu.
+     */
+    private fun broadcastToApp(action: String, extras: (Intent.() -> Unit)? = null) {
+        val intent = Intent(action).setPackage(packageName)
+        extras?.invoke(intent)
+        sendBroadcast(intent)
+    }
+
+    private fun createVirtualDisplay(projection: MediaProjection, config: VideoConfig) {
+        val density = resources.displayMetrics.densityDpi
         virtualDisplay = projection.createVirtualDisplay(
             "QuestionRecord",
-            width,
-            height,
+            config.width,
+            config.height,
             density,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             mediaRecorder!!.surface,
             null,
             handler
         )
+    }
+
+    /** Hata yolunda yarım kalmış recorder/display'i bırakır (stop() çağırmadan; kayıt başlamamış olabilir). */
+    private fun releaseRecorderAndDisplay() {
+        try {
+            mediaRecorder?.reset()
+            mediaRecorder?.release()
+        } catch (_: Exception) { }
+        mediaRecorder = null
+        try {
+            virtualDisplay?.release()
+        } catch (_: Exception) { }
+        virtualDisplay = null
+    }
+
+    private fun releaseProjection() {
+        projectionCallback?.let { cb ->
+            try {
+                mediaProjection?.unregisterCallback(cb)
+            } catch (_: Exception) { }
+        }
+        projectionCallback = null
+        try {
+            mediaProjection?.stop()
+        } catch (_: Exception) { }
+        mediaProjection = null
     }
 
     /**
@@ -162,28 +210,64 @@ class ScreenRecordingService : Service() {
         ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
 
-    private fun setupMediaRecorder(path: String) {
-        val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    /** Kaydın çözünürlük/bitrate/fps üçlüsü; cihazın H264 encoder'ına göre seçilir. */
+    private data class VideoConfig(val width: Int, val height: Int, val bitRate: Int, val frameRate: Int) {
+        override fun toString() = "${width}x$height@${frameRate}fps ${bitRate / 1000}kbps"
+    }
+
+    /**
+     * Adayları sırayla prepare() ederek cihazın gerçekten kabul ettiği ilk profili döner.
+     *
+     * Sabit 1280x720 + 20 fps + 5 Mbps kombinasyonu her donanım encoder'ında geçerli değil;
+     * reddedildiğinde kayıt hiç başlamıyor, kullanıcı bunu ancak butonlar tepki vermeyince
+     * fark ediyordu. Önce MediaCodecList'ten okunan yeteneklere göre değerleri kırpıyor,
+     * yine de olmazsa daha düşük çözünürlüklere iniyoruz.
+     */
+    private fun prepareMediaRecorder(path: String): Pair<MediaRecorder, VideoConfig> {
+        var lastError: Exception? = null
+        for (config in videoConfigCandidates()) {
+            val recorder = newRecorder()
+            try {
+                configureRecorder(recorder, path, config)
+                recorder.prepare()
+                Log.i(TAG, "Kayıt profili: $config")
+                return recorder to config
+            } catch (e: Exception) {
+                lastError = e
+                Log.w(TAG, "Profil reddedildi ($config), sonraki aday deneniyor", e)
+                try {
+                    recorder.reset()
+                    recorder.release()
+                } catch (_: Exception) { }
+            }
+        }
+        throw RuntimeException("MediaRecorder hiçbir video profiliyle hazırlanamadı", lastError)
+    }
+
+    private fun newRecorder(): MediaRecorder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder(this)
         } else {
             @Suppress("DEPRECATION")
             MediaRecorder()
         }
+
+    private fun configureRecorder(recorder: MediaRecorder, path: String, config: VideoConfig) {
         val withAudio = hasAudioPermission()
         recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
         if (withAudio) recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
         recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
         if (withAudio) recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-        recorder.setVideoSize(1280, 720)
+        recorder.setVideoSize(config.width, config.height)
         // Ders ekranları büyük ölçüde durağan (akıcı hareket yerine dokunma/geçiş);
         // 30'dan 20 fps'e düşürmek aynı bitrate'i daha az kareye bölüp kare başına
         // netliği artırıyor, dosya boyutunu BÜYÜTMÜYOR (bkz. bitrate açıklaması altta).
-        recorder.setVideoFrameRate(20)
+        recorder.setVideoFrameRate(config.frameRate)
         // 2.5 Mbps'te, sonra 4 Mbps'te bile ekran içeriği (ince metin, ikon kenarları)
         // gözle görülür şekilde pikselleşiyordu; 5 Mbps'e çıkarıldı (bkz. storage.rules'daki
         // 150 MB üst sınırı — 180 sn * 5 Mbps + ses ~115 MB, hâlâ rahat bir payla altında).
-        recorder.setVideoEncodingBitRate(5_000_000)
+        recorder.setVideoEncodingBitRate(config.bitRate)
         if (withAudio) {
             recorder.setAudioChannels(1)
             recorder.setAudioSamplingRate(44100)
@@ -192,12 +276,56 @@ class ScreenRecordingService : Service() {
             Log.w(TAG, "RECORD_AUDIO verilmedi; ekran kaydı sessiz yapılacak.")
         }
         recorder.setOutputFile(path)
-        try {
-            recorder.prepare()
-        } catch (e: IOException) {
-            throw RuntimeException("MediaRecorder prepare failed", e)
+    }
+
+    /**
+     * İstenen boyutlar, cihazın AVC encoder'ının desteklediği aralığa/hizalamaya çekilerek
+     * aday listesine dönüştürülür. Yetenekler okunamazsa ham adaylarla devam edilir.
+     */
+    private fun videoConfigCandidates(): List<VideoConfig> {
+        val caps = avcVideoCapabilities()
+        val out = LinkedHashSet<VideoConfig>()
+        for ((w, h) in PREFERRED_SIZES) {
+            val size = supportedSize(caps, w, h) ?: continue
+            val bitRate = caps?.bitrateRange?.clamp(TARGET_BITRATE) ?: TARGET_BITRATE
+            val frameRate = caps
+                ?.let { runCatching { it.getSupportedFrameRatesFor(size.first, size.second) }.getOrNull() }
+                ?.clamp(TARGET_FRAME_RATE.toDouble())?.toInt()
+                ?: TARGET_FRAME_RATE
+            out += VideoConfig(size.first, size.second, bitRate, frameRate.coerceAtLeast(1))
         }
-        mediaRecorder = recorder
+        // Yetenek sorgusu tüm adayları elediyse en azından klasik 720p ile bir kez denensin.
+        if (out.isEmpty()) out += VideoConfig(1280, 720, TARGET_BITRATE, TARGET_FRAME_RATE)
+        return out.toList()
+    }
+
+    private fun avcVideoCapabilities(): MediaCodecInfo.VideoCapabilities? = try {
+        MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
+            .asSequence()
+            .filter { it.isEncoder }
+            .filter { info -> info.supportedTypes.any { it.equals(MediaFormat.MIMETYPE_VIDEO_AVC, true) } }
+            .mapNotNull {
+                runCatching { it.getCapabilitiesForType(MediaFormat.MIMETYPE_VIDEO_AVC).videoCapabilities }
+                    .getOrNull()
+            }
+            .firstOrNull()
+    } catch (e: Exception) {
+        Log.w(TAG, "AVC encoder yetenekleri okunamadı; varsayılan profillerle denenecek", e)
+        null
+    }
+
+    /** [w]x[h]'yi encoder'ın hizalama kuralına ve desteklediği aralığa çeker; mümkün değilse null. */
+    private fun supportedSize(caps: MediaCodecInfo.VideoCapabilities?, w: Int, h: Int): Pair<Int, Int>? {
+        if (caps == null) return w to h
+        return try {
+            val wAlign = caps.widthAlignment.coerceAtLeast(1)
+            val hAlign = caps.heightAlignment.coerceAtLeast(1)
+            val aw = (caps.supportedWidths.clamp(w) / wAlign) * wAlign
+            val ah = (caps.supportedHeights.clamp(h) / hAlign) * hAlign
+            if (aw > 0 && ah > 0 && caps.isSizeSupported(aw, ah)) aw to ah else null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun stopRecordingInternal() {
@@ -221,10 +349,12 @@ class ScreenRecordingService : Service() {
         val path = outputPath
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
-        if (path != null && File(path).exists()) {
-            sendBroadcast(Intent(ACTION_RECORDING_FINISHED).apply { putExtra(EXTRA_OUTPUT_PATH, path) })
+        // Encoder hiç kare yazamadan durursa dosya oluşur ama 0 bayt kalır; bunu başarı sayıp
+        // CreateQuestion'ı açmak, oynatılamayan bir videoyla ilerlemek demek olurdu.
+        if (path != null && File(path).length() > 0L) {
+            broadcastToApp(ACTION_RECORDING_FINISHED) { putExtra(EXTRA_OUTPUT_PATH, path) }
         } else {
-            sendBroadcast(Intent(ACTION_RECORDING_FAILED))
+            broadcastToApp(ACTION_RECORDING_FAILED)
         }
     }
 
@@ -239,7 +369,7 @@ class ScreenRecordingService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "pause failed", e)
         }
-        sendBroadcast(Intent(ACTION_RECORDING_PAUSED))
+        broadcastToApp(ACTION_RECORDING_PAUSED)
     }
 
     private fun resumeRecording() {
@@ -255,7 +385,7 @@ class ScreenRecordingService : Service() {
         val remainingMs = (maxDurationMs - elapsedMs).coerceAtLeast(0L)
         stopRunnable = Runnable { stopRecordingInternal() }
         handler.postDelayed(stopRunnable!!, remainingMs)
-        sendBroadcast(Intent(ACTION_RECORDING_RESUMED))
+        broadcastToApp(ACTION_RECORDING_RESUMED)
     }
 
     private fun stopAndDiscard() {
@@ -311,6 +441,7 @@ class ScreenRecordingService : Service() {
 
     companion object {
         private const val TAG = "ScreenRecordingService"
+        const val ACTION_RECORDING_STARTED = "com.example.app.RECORDING_STARTED"
         const val ACTION_RECORDING_FINISHED = "com.example.app.RECORDING_FINISHED"
         const val ACTION_RECORDING_FAILED = "com.example.app.RECORDING_FAILED"
         const val ACTION_STOP_AND_SAVE = "com.example.app.STOP_AND_SAVE"
@@ -325,5 +456,14 @@ class ScreenRecordingService : Service() {
         const val EXTRA_MAX_DURATION_MS = "extra_max_duration_ms"
         const val MAX_DURATION_MS = 60_000L
         private const val NOTIFICATION_ID = 9002
+        private const val TARGET_BITRATE = 5_000_000
+        private const val TARGET_FRAME_RATE = 20
+        /** İstenen sırayla denenecek çözünürlükler; ilki kabul edilen kullanılır. */
+        private val PREFERRED_SIZES = listOf(
+            1280 to 720,
+            960 to 540,
+            854 to 480,
+            640 to 360
+        )
     }
 }
