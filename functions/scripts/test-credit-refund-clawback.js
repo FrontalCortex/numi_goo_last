@@ -227,11 +227,95 @@ async function scenarioB() {
   await cleanup();
 }
 
+/**
+ * SENARYO C — abonelik iadesi yalnızca MEVCUT planı veren aboneliği düşürmeli.
+ *
+ * Eskiden `type === 'subscription'` olan her iade planı koşulsuz Free yazıyordu.
+ * Kullanıcı Pro alıp (token A) iade edip yeniden abone olduğunda (token B, aktif),
+ * A'nın günlük taramada işlenmesi B'nin planını siliyordu — kişi ödeme yapmaya devam
+ * ederken uygulamayı yeniden açana kadar Free kalıyordu.
+ */
+async function scenarioC() {
+  const uid = `test-subrefund-uid-${STAMP}`;
+  const tokenA = `test-subrefund-token-a-${STAMP}`;
+  const tokenB = `test-subrefund-token-b-${STAMP}`;
+  const userRef = db.collection('users').doc(uid);
+  const future = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+  const seedSub = async (planTokenHash) => {
+    const batch = db.batch();
+    batch.set(userRef, {
+      uid,
+      role: 'STUDENT',
+      keys: 1,
+      currency: 0,
+      questionCredits: 3,
+      plan: 'Pro',
+      planExpiresAt: future,
+      planProductId: 'pro_monthly',
+      planPurchaseTokenHash: planTokenHash,
+      createdAt: admin.firestore.Timestamp.fromMillis(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    });
+    // İade edilen abonelik her iki durumda da token A.
+    batch.set(db.collection('processedPurchases').doc(tokenA), {
+      uid,
+      productId: 'pro_monthly',
+      type: 'subscription',
+      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  };
+
+  const clearSub = async () => {
+    const batch = db.batch();
+    batch.delete(userRef);
+    batch.delete(db.collection('processedPurchases').doc(tokenA));
+    await batch.commit();
+  };
+
+  const plan = async () => {
+    const snap = await userRef.get();
+    return snap.exists ? snap.data().plan : null;
+  };
+
+  console.log('\n\n=== SENARYO C1 — iade edilen abonelik AKTİF planı veriyor ===');
+  await seedSub(fns._purchaseTokenFingerprint(tokenA));
+  check('başlangıç planı', await plan(), 'Pro');
+  const c1 = await fns._reverseVoidedPurchase({ purchaseToken: tokenA });
+  check('sonuç', c1.outcome, 'reversed');
+  check('plan Free\'ye düştü', await plan(), 'Free');
+  const afterC1 = await userRef.get();
+  check('planProductId temizlendi', afterC1.data().planProductId, null);
+  check('planPurchaseTokenHash temizlendi', afterC1.data().planPurchaseTokenHash, null);
+  check('kredilere dokunulmadı', afterC1.data().questionCredits, 3);
+  await clearSub();
+
+  console.log('\n=== SENARYO C2 — kullanıcı yeniden abone oldu, planı BAŞKA token veriyor ===');
+  await seedSub(fns._purchaseTokenFingerprint(tokenB));
+  check('başlangıç planı', await plan(), 'Pro');
+  // Boş update koruması burada sınanıyor: bu dalda kullanıcı dokümanına yazılacak
+  // hiçbir alan kalmıyor ve Firestore boş update'i reddediyor.
+  const c2 = await fns._reverseVoidedPurchase({ purchaseToken: tokenA });
+  check('sonuç', c2.outcome, 'reversed');
+  check('AKTİF plan korundu', await plan(), 'Pro');
+  const afterC2 = await userRef.get();
+  check('planProductId korundu', afterC2.data().planProductId, 'pro_monthly');
+  check(
+    'planPurchaseTokenHash korundu',
+    afterC2.data().planPurchaseTokenHash,
+    fns._purchaseTokenFingerprint(tokenB)
+  );
+  const voidedRecord = await db.collection('processedPurchases').doc(tokenA).get();
+  check('iade kaydı yine de işaretlendi', voidedRecord.data().voided, true);
+  await clearSub();
+}
+
 async function main() {
   console.log('Proje:', PROJECT_ID, IS_EMULATOR ? '(emülatör)' : '(GERÇEK)');
 
   await scenarioA();
   await scenarioB();
+  await scenarioC();
 
   console.log('\nTest dokümanları silindi.');
   console.log(

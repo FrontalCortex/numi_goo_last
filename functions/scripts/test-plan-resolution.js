@@ -14,6 +14,8 @@ process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || '12
 
 const fns = require('../index');
 const resolve = fns._resolvePlanUpdate;
+const owns = fns._ownsStoredPlan;
+const fingerprint = fns._purchaseTokenFingerprint;
 
 const FUTURE = Date.now() + 30 * 24 * 60 * 60 * 1000;
 const PAST = Date.now() - 24 * 60 * 60 * 1000;
@@ -73,6 +75,70 @@ check('  Pro → Lite sırası', applySequence(['pro_monthly', 'lite_monthly']),
 check('  Lite → Pro sırası', applySequence(['lite_monthly', 'pro_monthly']), 'Pro');
 
 // ── resolveTokenRebind ──────────────────────────────────────────────────────
+// ── Token bazlı sahiplik: ertelenmiş düşürme ve iade geri alımı ─────────────
+//
+// Sahiplik yalnızca `planProductId` ile ölçülürken iki senaryo yanlış çözülüyordu;
+// ikisi de para ödeyen kullanıcıyı etkiliyordu. Bkz. ownsStoredPlan.
+console.log('\n\nownsStoredPlan (token bazlı sahiplik)\n');
+
+const TOKEN_A = 'token-A';
+const TOKEN_B = 'token-B';
+
+console.log('Yeni kayıt (planPurchaseTokenHash var):');
+const proFromA = {
+  plan: 'Pro',
+  planExpiresAt: FUTURE,
+  planProductId: 'pro_monthly',
+  planPurchaseTokenHash: fingerprint(TOKEN_A),
+};
+check('  planı veren token → sahip', owns(proFromA, TOKEN_A, 'pro_monthly'), true);
+check('  başka token, aynı ürün → sahip DEĞİL', owns(proFromA, TOKEN_B, 'pro_monthly'), false);
+check('  ürün değişse de aynı token → sahip', owns(proFromA, TOKEN_A, 'lite_monthly'), true);
+
+console.log('\nEski kayıt (alan yok → ürüne düşülür):');
+const legacyPro = { plan: 'Pro', planExpiresAt: FUTURE, planProductId: 'pro_monthly' };
+check('  ürün eşleşiyor → sahip', owns(legacyPro, TOKEN_A, 'pro_monthly'), true);
+check('  ürün eşleşmiyor → sahip değil', owns(legacyPro, TOKEN_A, 'lite_monthly'), false);
+check('  plan hiç yok → sahip değil', owns({}, TOKEN_A, 'pro_monthly'), false);
+
+// C: ertelenmiş düşürmede Play aynı token'ı sürdürüp ürünü Lite'a çeviriyor.
+console.log('\nC — ertelenmiş düşürme (Pro → Lite, AYNI token):');
+check(
+  '  Lite yazımı artık kabul ediliyor',
+  resolve(proFromA, 'lite_monthly', 'Lite', TOKEN_A).write,
+  true
+);
+check(
+  '  sebep',
+  resolve(proFromA, 'lite_monthly', 'Lite', TOKEN_A).reason,
+  'own_token'
+);
+check(
+  '  BAŞKA token\'ın Lite yazımı hâlâ reddediliyor (çift abonelik koruması)',
+  resolve(proFromA, 'lite_monthly', 'Lite', TOKEN_B).write,
+  false
+);
+
+// Yeniden abone olan kullanıcı: eski token'ın gecikmiş EXPIRED bildirimi aktif planı
+// düşürmemeli. Ürün eşleşmesi bunu kaçırıyordu.
+console.log('\nAynı ürünle yeniden abonelik (eski token gecikmeli Free yazmak istiyor):');
+check(
+  '  eski token Free yazamaz',
+  resolve(proFromA, 'pro_monthly', 'Free', TOKEN_B).write,
+  false
+);
+check(
+  '  planı veren token Free yazabilir (gerçek sona erme)',
+  resolve(proFromA, 'pro_monthly', 'Free', TOKEN_A).write,
+  true
+);
+
+console.log('\nparmak izi:');
+check('  aynı token → aynı özet', fingerprint(TOKEN_A) === fingerprint(TOKEN_A), true);
+check('  farklı token → farklı özet', fingerprint(TOKEN_A) === fingerprint(TOKEN_B), false);
+check('  boş token → null', fingerprint(''), null);
+check('  token yok → null', fingerprint(undefined), null);
+
 const rebind = fns._resolveTokenRebind;
 console.log('\n\nresolveTokenRebind\n');
 

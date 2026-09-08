@@ -56,7 +56,8 @@ service cloud.firestore {
           'energy_full_time',            // can → yalnız spendEnergy/claimAdEnergy/buyEnergyWithKeys
           'questionCredits',             // danışma kredisi → yalnız satın alma / askTeacherQuestion
           'teacherApproved',             // öğretmen onayı → yalnız admin
-          'plan', 'planExpiresAt', 'planProductId', // yalnız doğrulanmış Play aboneliği
+          // yalnız doğrulanmış Play aboneliği
+          'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
           'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
@@ -75,7 +76,7 @@ service cloud.firestore {
         // keys/currency yukarıda değeriyle sabitlendi; geri kalan sunucu alanları yasak.
         && !request.resource.data.keys().hasAny([
              'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved',
-             'plan', 'planExpiresAt', 'planProductId',
+             'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
              'followersCount', 'followingCount',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',

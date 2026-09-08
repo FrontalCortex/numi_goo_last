@@ -125,7 +125,13 @@ güvenmek Lite token'ıyla Pro istemeye izin verirdi. Bkz. `resolveVerifiedProdu
 `users/{uid}.keys` ve `.currency` yalnızca Cloud Functions üzerinden değişir.
 `firestore.rules` şu alanları istemci yazımına kapatır:
 `keys`, `currency`, `walletGuard`, `role`, `teacherApproved`, `plan`,
-`planExpiresAt`, `planProductId`, `userId`, `uid`, `email`, `createdAt`.
+`planExpiresAt`, `planProductId`, `planPurchaseTokenHash`, `userId`, `uid`,
+`email`, `createdAt`.
+
+`planPurchaseTokenHash`, planı HANGİ aboneliğin verdiğini tutar (token'ın ham hâli
+değil, sha256 özeti). Sahiplik kararı buna dayanır: plan yazımında "bu token mevcut
+planın sahibi mi" ve iade geri alımında "iade edilen abonelik mevcut planı mı veriyor"
+sorularını cevaplar. Bkz. `ownsStoredPlan`.
 
 **İstemcinin çağırabildiği hiçbir yol artık bakiyeyi serbestçe artıramaz.**
 

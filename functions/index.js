@@ -1707,10 +1707,62 @@ function resolveVerifiedProductId(claimedProductId, playProductIds) {
   return { productId: ids[ids.length - 1], verified: true, mismatch: true };
 }
 
-function resolvePlanUpdate(userData, productId, newPlan) {
+/**
+ * Satın alma token'ının kısa, saklanabilir kimliği.
+ *
+ * Token'ın HAM hâli `users/{uid}` dokümanına yazılmıyor: o dokümanı kullanıcının kendisi
+ * ve onaylı öğretmenler okuyabiliyor (bkz. firestore.rules). Token'ı ele geçirmek tek
+ * başına aboneliği devralmaya yetmiyor — sunucu başka bir uid'ye bağlı token'ı reddediyor —
+ * ama hesap silindiğinde devir yolu açıldığı için gereksiz bir maruziyet. Karşılaştırma
+ * için özet yeterli; token'ın kendisi zaten yüksek entropili, bu yüzden salt gerekmiyor.
+ *
+ * Destek tarafında ham token'a ihtiyaç duyulursa kaynak `processedPurchases/{token}`.
+ */
+function purchaseTokenFingerprint(purchaseToken) {
+  if (typeof purchaseToken !== 'string' || !purchaseToken) return null;
+  return require('crypto').createHash('sha256').update(purchaseToken).digest('hex');
+}
+
+/**
+ * Kullanıcının ŞU ANDAKİ planını veren kayıt bu mu?
+ *
+ * NEDEN TOKEN, NEDEN ÜRÜN DEĞİL
+ *   Sahiplik önce yalnızca `planProductId` ile ölçülüyordu ve bu iki yerde yanlış cevap
+ *   veriyordu:
+ *
+ *   • Ertelenmiş düşürme (Pro → Lite): Play aynı token'ı sürdürüp yenilemede ürünü
+ *     değiştiriyor. O an `planProductId` hâlâ pro_monthly olduğu için sahiplik tutmuyor,
+ *     Lite yazımı rütbe kuralına takılıyor ve para ödeyen abone eski `planExpiresAt`
+ *     geçene kadar Pro, sonra da uygulamayı yeniden açana kadar Free görünüyordu.
+ *
+ *   • İade geri alımı: kullanıcı Pro alıp (token A) iade edip yeniden abone olduğunda
+ *     (token B, aktif), A'nın iadesi ürün eşleştiği için B'nin planını siliyordu.
+ *
+ *   Token bazlı sahiplik ikisini de doğru çözüyor ve korumayı GENİŞLETMİYOR, daraltıyor:
+ *   farklı token hâlâ rütbe kuralına tabi, yani çift abonelikte Lite senkronu aktif
+ *   Pro'yu ezemiyor.
+ *
+ * ESKİ KAYITLAR
+ *   `planPurchaseTokenHash` bu değişiklikten önce yazılmadığı için mevcut abonelerde yok.
+ *   O durumda eski kurala (ürün eşleşmesi) düşülüyor — aksi halde mevcut bir Pro abonesinin
+ *   süresi dolduğunda kendi token'ı bile Free yazamazdı. İlk senkronda alan yazılıyor ve
+ *   kayıt kendiliğinden yeni kurala geçiyor.
+ *
+ * Saf fonksiyon.
+ */
+function ownsStoredPlan(userData, purchaseToken, productId) {
+  const stored = userData || {};
+  const storedHash = stored.planPurchaseTokenHash || null;
+  if (storedHash) return storedHash === purchaseTokenFingerprint(purchaseToken);
+  const storedProductId = stored.planProductId || null;
+  return !!storedProductId && storedProductId === (productId || null);
+}
+
+function resolvePlanUpdate(userData, productId, newPlan, purchaseToken) {
   const storedPlan = effectivePlan(userData || {});
-  const ownsCurrentPlan = ((userData || {}).planProductId || null) === productId;
-  if (ownsCurrentPlan) return { write: true, reason: 'own_token' };
+  if (ownsStoredPlan(userData, purchaseToken, productId)) {
+    return { write: true, reason: 'own_token' };
+  }
   if (planRank(newPlan) >= planRank(storedPlan)) {
     return { write: true, reason: 'rank_not_lower' };
   }
@@ -2367,12 +2419,17 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
       );
 
       const newPlan = stillValid ? entry.plan : 'Free';
-      const planDecision = resolvePlanUpdate(userDoc.data(), productId, newPlan);
+      const planDecision = resolvePlanUpdate(userDoc.data(), productId, newPlan, purchaseToken);
       const planUpdate = {};
       if (planDecision.write) {
         planUpdate.plan = newPlan;
         planUpdate.planExpiresAt = stillValid ? expiryMs : null;
         planUpdate.planProductId = stillValid ? productId : null;
+        // Planı HANGİ aboneliğin verdiği kaydediliyor; sahiplik kararı buna dayanıyor
+        // (bkz. ownsStoredPlan). Ham token değil, özeti.
+        planUpdate.planPurchaseTokenHash = stillValid
+          ? purchaseTokenFingerprint(purchaseToken)
+          : null;
       } else {
         // Daha yüksek rütbeli bir abonelik aktif; bu token onu ezmemeli.
         console.log('Plan yazılmadı', {
@@ -2605,10 +2662,21 @@ async function reverseVoidedPurchase(voided) {
     let revokedCredits = 0;
 
     if (record.type === 'subscription') {
-      // İade edilen abonelik: plan hemen düşer.
-      update.plan = 'Free';
-      update.planExpiresAt = null;
-      update.planProductId = null;
+      // İade edilen abonelik: plan hemen düşer — AMA yalnızca planı veren abonelik buysa.
+      // Koşulsuz düşürmek, arada yeniden abone olmuş kullanıcının (yeni token, aktif
+      // abonelik) planını siliyordu; iade eski kaydın iadesi olsa bile.
+      if (ownsStoredPlan(userData, purchaseToken, record.productId)) {
+        update.plan = 'Free';
+        update.planExpiresAt = null;
+        update.planProductId = null;
+        update.planPurchaseTokenHash = null;
+      } else {
+        console.log('İade edilen abonelik mevcut planı vermiyor, plan korunuyor', {
+          uid,
+          refundedProductId: record.productId || null,
+          activePlan: effectivePlan(userData),
+        });
+      }
       // NOT: Pro hoş geldin kredisi (PRO_WELCOME_CREDITS) bilinçli olarak geri ALINMIYOR.
       // Ücretsiz deneme akışı henüz kurulmadı; hoş geldin kredisinin iade/yeniden abonelik
       // davranışı o iş yapılırken birlikte ele alınacak.
@@ -2661,7 +2729,11 @@ async function reverseVoidedPurchase(voided) {
       }
     }
 
-    transaction.update(userRef, update);
+    // Abonelik dalı, iade mevcut planı vermeyen bir kayda aitse hiç alan yazmaz;
+    // Firestore boş update'i reddediyor.
+    if (Object.keys(update).length > 0) {
+      transaction.update(userRef, update);
+    }
     transaction.set(
       purchaseRef,
       {
@@ -2852,6 +2924,8 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
 exports._resolvePlanUpdate = resolvePlanUpdate;
+exports._ownsStoredPlan = ownsStoredPlan;
+exports._purchaseTokenFingerprint = purchaseTokenFingerprint;
 exports._resolveTokenRebind = resolveTokenRebind;
 // Abonelik doğrulamasının saf parçaları: Play'e hiç dokunmadan test edilebilirler.
 // Bkz. scripts/test-subscription-verification.js
