@@ -2347,7 +2347,8 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
     productId,
     state: subscription.subscriptionState || null,
     expiry: expiryRaw,
-    expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) : null,
+    // `|| 0`, Math.round'un negatif sıfır üretmesini engelliyor (logda "-0" görünüyordu).
+    expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) || 0 : null,
     plan: stillValid ? entry.plan : 'Free',
   });
 
