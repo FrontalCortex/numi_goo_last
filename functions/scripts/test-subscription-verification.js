@@ -133,5 +133,110 @@ check('  iddiaya düşülür', verifyProduct('pro_monthly', []).productId, 'pro_
 check('  doğrulanmadı olarak işaretlenir', verifyProduct('pro_monthly', []).verified, false);
 check('  null liste', verifyProduct('pro_monthly', null).productId, 'pro_monthly');
 
-console.log(failures === 0 ? '\nSONUÇ: TÜM KONTROLLER GEÇTİ' : `\nSONUÇ: ${failures} KONTROL BAŞARISIZ`);
-process.exit(failures === 0 ? 0 : 1);
+// ── RTDN'de bilinmeyen token'ın çözülmesi ──────────────────────────────────
+//
+// Ertelenmiş düşürmede (Pro → Lite) Play YENİ bir purchase token üretiyor. O token
+// processedPurchases'ta olmadığı için bildirim "hesaba bağlı değil" diye atlanıyordu ve
+// yeni dönem hiç yazılmıyordu: kullanıcı Lite aboneliği aktifken Free görünüyordu.
+// Gerçek logda gözlendi:
+//   RTDN: token henüz bir hesaba bağlı değil, atlandı { productId: 'lite_monthly' }
+const resolveUid = fns._resolveUidForSubscriptionToken;
+
+/** Sahte bağımlılıklar: kayıt tablosu + Play'in bağlı token cevabı. */
+function deps(records, links) {
+  return {
+    readPurchaseRecord: async (token) => records[token] || null,
+    readLinkedToken: async (token) => links[token] || null,
+  };
+}
+
+console.log('\n\nresolveUidForSubscriptionToken\n');
+
+const results = [];
+async function run() {
+  console.log('Token doğrudan kayıtlı:');
+  let r = await resolveUid('T1', deps({ T1: { uid: 'u1' } }, {}));
+  check('  uid bulundu', r.uid, 'u1');
+  check('  doğrudan', r.via, 'direct');
+  check('  sıçrama yok', r.hops, 0);
+
+  console.log('\nYeni token kayıtsız, bağlı token kayıtlı (asıl senaryo):');
+  r = await resolveUid('T_new', deps({ T_old: { uid: 'u1' } }, { T_new: 'T_old' }));
+  check('  uid bulundu', r.uid, 'u1');
+  check('  zincirle çözüldü', r.via, 'linked');
+  check('  bir sıçrama', r.hops, 1);
+
+  console.log('\nZincir birden fazla halka (üst üste plan değişikliği):');
+  r = await resolveUid(
+    'T3',
+    deps({ T1: { uid: 'u1' } }, { T3: 'T2', T2: 'T1' })
+  );
+  check('  uid bulundu', r.uid, 'u1');
+  check('  iki sıçrama', r.hops, 2);
+
+  console.log('\nÇözülemeyen durumlar:');
+  r = await resolveUid('T_new', deps({}, {}));
+  check('  zincir yok → uid null', r.uid, null);
+  check('  sebep', r.via, 'unresolved');
+
+  r = await resolveUid('T_new', deps({ T_old: {} }, { T_new: 'T_old' }));
+  check('  kayıt var ama uid yok → null', r.uid, null);
+
+  console.log('\nDöngüsel bağ sonsuz döngüye girmemeli:');
+  r = await resolveUid('A', deps({}, { A: 'B', B: 'A' }));
+  check('  uid null', r.uid, null);
+  check('  iki token denendi', r.hops, 2);
+
+  console.log('\nZincir sınırı aşılırsa durmalı:');
+  const longLinks = {};
+  for (let i = 0; i < 20; i++) longLinks[`L${i}`] = `L${i + 1}`;
+  r = await resolveUid('L0', deps({ L19: { uid: 'u1' } }, longLinks));
+  check('  sınır aşıldı → uid null', r.uid, null);
+
+  // ── Sahiplik devralma ────────────────────────────────────────────────────
+  //
+  // Yeni token, planı veren token'ın DEVAMI ise sahipliği devralmalı. Olmazsa
+  // ertelenmiş düşürme rütbe kuralına takılıyor (Lite < Pro) ve sonuç, eski dönemin
+  // bitişi ile bildirimin gelişi arasındaki saniyelere kalıyordu.
+  const owns = fns._ownsStoredPlan;
+  const fp = fns._purchaseTokenFingerprint;
+  const resolvePlan = fns._resolvePlanUpdate;
+  const proFromOld = {
+    plan: 'Pro',
+    planExpiresAt: Date.now() + 60000,
+    planProductId: 'pro_monthly',
+    planPurchaseTokenHash: fp('T_old'),
+  };
+
+  console.log('\n\nSahiplik devralma (linkedPurchaseToken)\n');
+  check(
+    '  bağlı token planı veren token → sahip',
+    owns(proFromOld, 'T_new', 'lite_monthly', 'T_old'),
+    true
+  );
+  check(
+    '  bağ yok → sahip değil',
+    owns(proFromOld, 'T_new', 'lite_monthly', null),
+    false
+  );
+  check(
+    '  bağ alakasız bir token → sahip değil',
+    owns(proFromOld, 'T_new', 'lite_monthly', 'T_baska'),
+    false
+  );
+  check(
+    '  ertelenmiş düşürme artık yazılıyor (eski dönem HENÜZ bitmemişken)',
+    resolvePlan(proFromOld, 'lite_monthly', 'Lite', 'T_new', 'T_old').write,
+    true
+  );
+  check(
+    '  bağsız yabancı token Lite yazamaz (çift abonelik koruması)',
+    resolvePlan(proFromOld, 'lite_monthly', 'Lite', 'T_yabanci', null).write,
+    false
+  );
+}
+
+run().then(() => {
+  console.log(failures === 0 ? '\nSONUÇ: TÜM KONTROLLER GEÇTİ' : `\nSONUÇ: ${failures} KONTROL BAŞARISIZ`);
+  process.exit(failures === 0 ? 0 : 1);
+});

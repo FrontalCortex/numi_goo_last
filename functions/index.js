@@ -1750,17 +1750,34 @@ function purchaseTokenFingerprint(purchaseToken) {
  *
  * Saf fonksiyon.
  */
-function ownsStoredPlan(userData, purchaseToken, productId) {
+function ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken) {
   const stored = userData || {};
   const storedHash = stored.planPurchaseTokenHash || null;
-  if (storedHash) return storedHash === purchaseTokenFingerprint(purchaseToken);
+  if (storedHash) {
+    if (storedHash === purchaseTokenFingerprint(purchaseToken)) return true;
+    // DEVRALMA: plan/ürün değişikliğinde Play yeni bir token üretip `linkedPurchaseToken`
+    // ile eskisini işaret ediyor. Yeni abonelik, eskisinin DEVAMI — dolayısıyla planın
+    // sahipliğini de devralması gerekiyor.
+    //
+    // Bu olmadan ertelenmiş düşürme (Pro → Lite) yine takılabiliyordu: yeni token'ın
+    // özeti kayıtlıyla eşleşmiyor, rütbe kuralına düşülüyor ve Lite < Pro olduğu için
+    // yazım reddediliyordu. Eski dönemin bitişi ile bildirimin gelişi saniyeler
+    // farkında olduğu için sonuç zamanlamaya kalıyordu — kabul edilemez bir yarış.
+    //
+    // Korumayı zayıflatmıyor: bağı istemci değil PLAY kuruyor ve bağ, eski aboneliğin
+    // yerini yenisinin aldığı anlamına geliyor; yani eski abonelik artık aktif değil.
+    if (linkedPurchaseToken && storedHash === purchaseTokenFingerprint(linkedPurchaseToken)) {
+      return true;
+    }
+    return false;
+  }
   const storedProductId = stored.planProductId || null;
   return !!storedProductId && storedProductId === (productId || null);
 }
 
-function resolvePlanUpdate(userData, productId, newPlan, purchaseToken) {
+function resolvePlanUpdate(userData, productId, newPlan, purchaseToken, linkedPurchaseToken) {
   const storedPlan = effectivePlan(userData || {});
-  if (ownsStoredPlan(userData, purchaseToken, productId)) {
+  if (ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken)) {
     return { write: true, reason: 'own_token' };
   }
   if (planRank(newPlan) >= planRank(storedPlan)) {
@@ -2443,7 +2460,13 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
       );
 
       const newPlan = stillValid ? entry.plan : 'Free';
-      const planDecision = resolvePlanUpdate(userDoc.data(), productId, newPlan, purchaseToken);
+      const planDecision = resolvePlanUpdate(
+        userDoc.data(),
+        productId,
+        newPlan,
+        purchaseToken,
+        subscription.linkedPurchaseToken || null
+      );
       const planUpdate = {};
       if (planDecision.write) {
         planUpdate.plan = newPlan;
@@ -2554,6 +2577,51 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
 //      üzerinde "Pub/Sub Publisher" rolü verilir.
 //   3. Play Console → Para kazanma kurulumu → konu tam adı yapıştırılır.
 
+/**
+ * RTDN'de gelen token'ın hangi hesaba ait olduğunu bulur.
+ *
+ * SORUN
+ *   Token'ı hesaba bağlayan tek kayıt `processedPurchases`. Ama plan değişikliğinde
+ *   (özellikle ertelenmiş düşürme) Play YENİ bir purchase token üretiyor; o token
+ *   henüz hiçbir kayıtta olmadığı için bildirim "hesaba bağlı değil" diye atlanıyordu.
+ *   Gözlenen sonuç: Pro → Lite geçişinde yeni dönem hiç yazılmıyor, eski `planExpiresAt`
+ *   geçince kullanıcı Lite aboneliği aktifken FREE görünüyor ve ancak uygulamayı
+ *   açtığında düzeliyordu.
+ *
+ * ÇÖZÜM
+ *   Play'in cevabındaki `linkedPurchaseToken`, yeni token'ın hangi token'ın devamı
+ *   olduğunu söylüyor. Zincir geriye doğru izlenip kayıtlı bir token bulunuyor ve uid
+ *   oradan alınıyor. Sonraki senkron yeni token'ı da kaydettiği için bir sonraki
+ *   bildirim doğrudan çözülüyor.
+ *
+ * NEDEN GÜVENLİ
+ *   Bağı istemci değil Play kuruyor; uid'i uyduran bir taraf yok.
+ *
+ * Bağımlılıklar (Firestore okuması ve Play çağrısı) DIŞARIDAN veriliyor; böylece zincir
+ * yürüyüşü gerçek abonelik olmadan test edilebiliyor.
+ * Bkz. scripts/test-subscription-verification.js
+ */
+const MAX_LINKED_TOKEN_HOPS = 5;
+
+async function resolveUidForSubscriptionToken(purchaseToken, deps) {
+  let token = purchaseToken;
+  const seen = new Set();
+
+  for (let hop = 0; hop <= MAX_LINKED_TOKEN_HOPS; hop++) {
+    // Play teoride döngüsel bir bağ vermemeli; vermesi halinde sonsuz döngüye girmeyelim.
+    if (!token || seen.has(token)) break;
+    seen.add(token);
+
+    const record = await deps.readPurchaseRecord(token);
+    if (record && record.uid) {
+      return { uid: record.uid, hops: hop, via: hop === 0 ? 'direct' : 'linked' };
+    }
+    token = await deps.readLinkedToken(token);
+  }
+
+  return { uid: null, hops: seen.size, via: 'unresolved' };
+}
+
 const PLAY_RTDN_TOPIC = 'play-rtdn';
 
 exports.playSubscriptionNotification = functions.pubsub
@@ -2589,19 +2657,49 @@ exports.playSubscriptionNotification = functions.pubsub
       return null;
     }
 
-    // Token'ı kullanıcıya bağlayan tek kayıt processedPurchases'tır. İlk satın almada
-    // bildirim, istemcinin doğrulamasından ÖNCE gelebilir; o durumda eşleşme yoktur ve
-    // işlem atlanır — istemci saniyeler içinde kendi doğrulamasını yapar.
-    const purchaseDoc = await db.collection('processedPurchases').doc(purchaseToken).get();
-    if (!purchaseDoc.exists || !purchaseDoc.data().uid) {
+    // Token'ı kullanıcıya bağlayan kayıt processedPurchases'tır; bulunamazsa Play'in
+    // `linkedPurchaseToken` zinciri geriye doğru izlenir (bkz.
+    // resolveUidForSubscriptionToken). İlk satın almada bildirim istemcinin
+    // doğrulamasından ÖNCE gelebilir; o durumda zincirde de kayıt yoktur ve işlem
+    // atlanır — istemci saniyeler içinde kendi doğrulamasını yapar.
+    const resolution = await resolveUidForSubscriptionToken(purchaseToken, {
+      readPurchaseRecord: async (token) => {
+        const snap = await db.collection('processedPurchases').doc(token).get();
+        return snap.exists ? snap.data() : null;
+      },
+      readLinkedToken: async (token) => {
+        try {
+          const publisher = await getAndroidPublisher();
+          const response = await publisher.purchases.subscriptionsv2.get({
+            packageName: ANDROID_PACKAGE_NAME,
+            token,
+          });
+          return (response.data && response.data.linkedPurchaseToken) || null;
+        } catch (error) {
+          // Zincir okunamadıysa eski davranışa dön: bildirimi atla.
+          console.warn('RTDN: bağlı token okunamadı', { error: error.message });
+          return null;
+        }
+      },
+    });
+
+    if (!resolution.uid) {
       console.log('RTDN: token henüz bir hesaba bağlı değil, atlandı', {
         productId,
         notificationType: notification.notificationType,
+        checkedTokens: resolution.hops,
       });
       return null;
     }
 
-    const uid = purchaseDoc.data().uid;
+    const uid = resolution.uid;
+    if (resolution.via === 'linked') {
+      console.log('RTDN: token bağlı token zinciriyle çözüldü', {
+        uid,
+        productId,
+        hops: resolution.hops,
+      });
+    }
     try {
       // RTDN: yalnızca plan senkronu. Hoş geldin kredisi bilinçli olarak VERİLMEZ —
       // burada istemci yok, dolayısıyla cihaz kontrolü yapılamaz.
@@ -2949,6 +3047,7 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
 exports._resolvePlanUpdate = resolvePlanUpdate;
 exports._ownsStoredPlan = ownsStoredPlan;
+exports._resolveUidForSubscriptionToken = resolveUidForSubscriptionToken;
 exports._purchaseTokenFingerprint = purchaseTokenFingerprint;
 exports._resolveTokenRebind = resolveTokenRebind;
 // Abonelik doğrulamasının saf parçaları: Play'e hiç dokunmadan test edilebilirler.
