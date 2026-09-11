@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import {
   initializeTestEnvironment, assertFails, assertSucceeds,
 } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, increment, deleteField } from 'firebase/firestore';
 
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-numigoo',
@@ -88,6 +88,31 @@ await check('kendi lessonSuccessRateState okumasi', assertSucceeds(
   getDoc(doc(ali, 'users/ali/lessonSuccessRateState/1_3_1'))));
 await check('baskasinin state dokumani reddediliyor', assertFails(
   getDoc(doc(veli, 'users/ali/lessonSuccessRateState/1_3_1'))));
+
+console.log('\n-- VELI PANELI: gunluk calisma suresi (TimeTracker.DAILY_FIELD) --');
+// Veli paneli gun->saniye haritasini users/{uid} uzerinde ALAN olarak okuyor; yazma
+// totalTimeSpent ile ayni update cagrisina biniyor. Kural sunucu alanlarina bakiyor,
+// dailyTimeSpent orada olmadigi icin gecmeli.
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'users/ali'), {
+    uid: 'ali', role: 'STUDENT', keys: 1, currency: 0, totalTimeSpent: 0,
+  });
+});
+await check('gunluk sure alani yazilabiliyor', assertSucceeds(
+  updateDoc(doc(ali, 'users/ali'), {
+    totalTimeSpent: increment(120),
+    'dailyTimeSpent.20260911': increment(120),
+    'dailyTimeSpent.20260828': deleteField(),
+  })));
+await check('gunluk sure alani okunabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'users/ali'))));
+await check('baskasinin gunluk suresi yazilamiyor', assertFails(
+  updateDoc(doc(veli, 'users/ali'), { 'dailyTimeSpent.20260911': increment(120) })));
+await check('gunluk sure yazimi cuzdani kurcalayamiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali'), {
+    'dailyTimeSpent.20260911': increment(120),
+    keys: increment(999),
+  })));
 
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(

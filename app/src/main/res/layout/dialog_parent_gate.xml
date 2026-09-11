@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Veli kapısı: panele girmeden önce yetişkin doğrulaması. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    android:background="@drawable/parent_card_bg"
+    android:orientation="vertical"
+    android:paddingHorizontal="22dp"
+    android:paddingVertical="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Veli Paneli"
+        android:textColor="@color/parent_text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:lineSpacingExtra="2dp"
+        android:text="Bu bölüm veliler içindir. Devam etmek için aşağıda yazıyla verilen sayıyı rakamla yazın."
+        android:textColor="@color/parent_text_muted"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/parentGateChallenge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:gravity="center"
+        android:textColor="@color/lesson_header_blue"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        tools:text="dört yüz yirmi sekiz" />
+
+    <EditText
+        android:id="@+id/parentGateInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:autofillHints=""
+        android:background="@android:color/transparent"
+        android:gravity="center"
+        android:hint="000"
+        android:importantForAutofill="no"
+        android:inputType="number"
+        android:maxLength="3"
+        android:textColor="@color/parent_text_primary"
+        android:textColorHint="@color/parent_step_not_reached"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/parent_divider" />
+
+    <TextView
+        android:id="@+id/parentGateError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="Yanlış. Yeni sayıyı deneyin."
+        android:textColor="@color/red"
+        android:textSize="14sp"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/parentGateCancel"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Vazgeç"
+            android:textAllCaps="false"
+            android:textColor="@color/parent_text_muted"
+            android:textSize="16sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/parentGateConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:text="Devam"
+            android:textAllCaps="false"
+            android:textColor="@color/background_color"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/lesson_header_blue" />
+    </LinearLayout>
+</LinearLayout>

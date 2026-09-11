@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ders satırı. Tıklanınca altındaki adım satırları açılır/kapanır. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="64dp"
+    android:orientation="horizontal"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="10dp">
+
+    <View
+        android:id="@+id/lessonStatusDot"
+        android:layout_width="10dp"
+        android:layout_height="10dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/parent_step_dot" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/lessonTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/parent_text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            tools:text="Sayıları Abaküste Tanıma" />
+
+        <TextView
+            android:id="@+id/lessonSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/parent_text_muted"
+            android:textSize="14sp"
+            tools:text="Bitti · 2 adım, 3 denemede" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/lessonChevron"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Adımları göster"
+        android:src="@drawable/dualingo_arrow_ic"
+        app:tint="#607887" />
+</LinearLayout>

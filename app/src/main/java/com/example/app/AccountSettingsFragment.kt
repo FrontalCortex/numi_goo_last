@@ -76,6 +76,23 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+        binding.btnParentPanel.setOnClickListener {
+            // Panel çocuğun kendi verisini gösteriyor; yine de girişi yetişkin kapısı koruyor.
+            ParentGate.show(requireContext()) {
+                if (!isAdded) return@show
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right
+                    )
+                    .replace(R.id.fragmentContainerID, ParentPanelFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
+        }
+
         binding.btnPrivacySettings.setOnClickListener {
             val fragment = SoundSettingsFragment().apply {
                 arguments = Bundle().apply { putBoolean("fromAccountSettings", true) }

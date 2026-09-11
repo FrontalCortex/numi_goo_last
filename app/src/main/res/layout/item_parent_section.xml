@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Müfredattaki ünite başlığı (LessonItem.TYPE_HEADER). Tıklanmaz, yalnızca gruplar. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="18dp"
+    android:layout_marginBottom="8dp"
+    android:textColor="@color/lesson_header_blue"
+    android:textSize="15sp"
+    android:textStyle="bold"
+    tools:text="BÖLÜM 1 · SAYILARI ABAKÜSTE TANIMA" />
