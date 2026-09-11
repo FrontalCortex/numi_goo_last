@@ -14,7 +14,7 @@ import com.example.app.databinding.FragmentParentPanelBinding
  * Veri [ParentReportRepository]'den gelir; bu ekran hiçbir şey YAZMAZ — bir rapor ekranının
  * çocuğun ilerlemesine dokunması için bir sebep yok.
  *
- * Girişi [ParentGate] korur (bkz. [AccountSettingsFragment]).
+ * Girişte doğrulama yok: panel çocuğun kendi ilerlemesinden başka bir şey göstermiyor.
  */
 class ParentPanelFragment : Fragment() {
 

@@ -39,6 +39,20 @@ object ParentReportRepository {
     /** Veli paneline giren bölümler. 7-8 yarış, 9 kupa modu — ders ilerlemesi taşımıyorlar. */
     private val REPORT_PARTS = 1..6
 
+    /**
+     * Bölüm adları. Müfredatta part'ın kendi başlığı yok (yalnızca ünite başlıkları var),
+     * bu yüzden veli için okunur ad burada tanımlı. Yeni bir part açılırsa buraya da bir
+     * satır eklenmeli; eksikse panel sadece "Bölüm N" yazar, çökmez.
+     */
+    private val PART_NAMES = mapOf(
+        1 to "Abaküsün Temeli ve Toplama",
+        2 to "Abaküste Çıkarma",
+        3 to "Abaküste Çarpma",
+        4 to "Körleme Toplama",
+        5 to "Körleme Çıkarma",
+        6 to "Körleme Çarpma",
+    )
+
     enum class StepState {
         /** Geçildi. */
         PASSED,
@@ -115,6 +129,8 @@ object ParentReportRepository {
     /** Bir part ve altındaki üniteler. Dokunulmamış üniteler [sections] içinde yer almaz. */
     data class PartGroup(
         val partId: Int,
+        /** Veliye gösterilen bölüm adı, ör. "Abaküsün Temeli ve Toplama". Tanımsızsa null. */
+        val name: String?,
         val totalLessons: Int,
         val sections: List<SectionGroup>,
     ) {
@@ -337,7 +353,9 @@ object ParentReportRepository {
             }
 
             closeSection()
-            if (sections.isNotEmpty()) parts += PartGroup(partId, partTotal, sections)
+            if (sections.isNotEmpty()) {
+                parts += PartGroup(partId, PART_NAMES[partId], partTotal, sections)
+            }
         }
 
         // Ölçüt mutlak deneme sayısı DEĞİL, gereğinden fazla deneme: 6 adımlık bir dersi 6

@@ -15,28 +15,35 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="56dp"
         android:orientation="horizontal"
-        android:paddingHorizontal="4dp">
+        android:paddingHorizontal="4dp"
+        android:paddingVertical="8dp">
 
-        <TextView
-            android:id="@+id/partTitle"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textColor="@color/parent_text_primary"
-            android:textSize="19sp"
-            android:textStyle="bold"
-            tools:text="Bölüm 1" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/partProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textColor="@color/parent_text_muted"
-            android:textSize="14sp"
-            tools:text="9/18 ders" />
+            <TextView
+                android:id="@+id/partTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/parent_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                tools:text="Bölüm 1 - Abaküsün Temeli ve Toplama" />
+
+            <TextView
+                android:id="@+id/partProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/parent_text_muted"
+                android:textSize="14sp"
+                tools:text="9/18 ders bitti" />
+        </LinearLayout>
 
         <ImageView
             android:id="@+id/partChevron"

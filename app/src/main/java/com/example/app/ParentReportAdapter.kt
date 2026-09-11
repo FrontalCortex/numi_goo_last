@@ -253,8 +253,11 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
 
         fun bind(part: PartGroup, isExpanded: Boolean) {
-            b.partTitle.text = "Bölüm ${part.partId}"
-            b.partProgress.text = "${part.finishedLessons}/${part.totalLessons} ders"
+            // Adı tanımsız bir part için "Bölüm 7 - null" yazmaktansa sade başlık.
+            b.partTitle.text =
+                if (part.name.isNullOrBlank()) "Bölüm ${part.partId}"
+                else "Bölüm ${part.partId} - ${part.name}"
+            b.partProgress.text = "${part.finishedLessons}/${part.totalLessons} ders bitti"
             b.partChevron.rotation = if (isExpanded) 90f else 0f
         }
     }
