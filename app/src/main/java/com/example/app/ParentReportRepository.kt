@@ -97,11 +97,38 @@ object ParentReportRepository {
         val hardestLesson: LessonRow?,
     )
 
-    /** [lessons] yalnızca öğrencinin gerçekten dokunduğu dersleri içerir; sırası müfredat sırasıdır. */
+    /**
+     * Müfredattaki bir ünite (TYPE_HEADER) ve altındaki dersler.
+     *
+     * [lessons] yalnızca öğrencinin DOKUNDUĞU dersleri taşır; [totalLessons] ise ünitedeki
+     * tüm dersleri sayar. İkisinin ayrı olması "4/7 ders" gibi dürüst bir oran verir —
+     * dokunulmamış dersler listede görünmez ama paydadan düşmez.
+     */
+    data class SectionGroup(
+        val title: String?,
+        val totalLessons: Int,
+        val lessons: List<LessonRow>,
+    ) {
+        val finishedLessons: Int get() = lessons.count { it.isFinished }
+    }
+
+    /** Bir part ve altındaki üniteler. Dokunulmamış üniteler [sections] içinde yer almaz. */
+    data class PartGroup(
+        val partId: Int,
+        val totalLessons: Int,
+        val sections: List<SectionGroup>,
+    ) {
+        val finishedLessons: Int get() = sections.sumOf { it.finishedLessons }
+    }
+
+    /** [parts] müfredat sırasındadır ve yalnızca öğrencinin dokunduğu bölümleri içerir. */
     data class Report(
         val summary: Summary,
-        val lessons: List<LessonRow>,
-    )
+        val parts: List<PartGroup>,
+    ) {
+        /** Panelde gösterilecek hiçbir ders yoksa true. */
+        val isEmpty: Boolean get() = parts.isEmpty()
+    }
 
     // ── Doküman kimliği çözümleme ───────────────────────────────────────────
     //
@@ -232,21 +259,40 @@ object ParentReportRepository {
         dailySeconds: Map<String, Long>,
         streakDays: Int,
     ): Report {
-        val lessons = mutableListOf<LessonRow>()
+        val parts = mutableListOf<PartGroup>()
+        val allLessons = mutableListOf<LessonRow>()
         var totalLessons = 0
 
         REPORT_PARTS.forEach { partId ->
             val template = templates[partId] ?: return@forEach
             val progress = progressByPart[partId].orEmpty()
+
+            val sections = mutableListOf<SectionGroup>()
             var currentSection: String? = null
+            var sectionTotal = 0
+            var sectionLessons = mutableListOf<LessonRow>()
+            var partTotal = 0
+
+            // Biriken üniteyi kapat. Dokunulmamış ünite listeye girmez ama dersleri
+            // bölüm toplamından düşmez: "4/7" ifadesinin paydası müfredat, ilerleme değil.
+            fun closeSection() {
+                if (sectionLessons.isNotEmpty()) {
+                    sections += SectionGroup(currentSection, sectionTotal, sectionLessons)
+                }
+                sectionLessons = mutableListOf()
+                sectionTotal = 0
+            }
 
             template.forEach { item ->
                 if (item.type == LessonItem.TYPE_HEADER) {
+                    closeSection()
                     currentSection = item.title
                     return@forEach
                 }
                 if (item.type != LessonItem.TYPE_LESSON && item.type != LessonItem.TYPE_CHEST) return@forEach
                 totalLessons++
+                partTotal++
+                sectionTotal++
 
                 val itemProgress = progress[item.stableId].orEmpty()
                 val finishedByProgress = itemProgress["stepIsFinish"] as? Boolean ?: false
@@ -276,22 +322,27 @@ object ParentReportRepository {
                 }
 
                 // Öğrencinin hiç dokunmadığı dersler panele girmez: veli neyi yaptığını görmek
-                // ister, yapmadığı 90 dersi taramak değil. Ölçek özet satırında veriliyor.
+                // ister, yapmadığı 90 dersi taramak değil. Ölçek başlık satırlarında veriliyor.
                 if (steps.any { it.state != StepState.NOT_REACHED }) {
-                    lessons += LessonRow(
+                    val row = LessonRow(
                         stableId = item.stableId,
                         title = item.title,
                         sectionTitle = currentSection,
                         partId = partId,
                         steps = steps,
                     )
+                    sectionLessons.add(row)
+                    allLessons += row
                 }
             }
+
+            closeSection()
+            if (sections.isNotEmpty()) parts += PartGroup(partId, partTotal, sections)
         }
 
         // Ölçüt mutlak deneme sayısı DEĞİL, gereğinden fazla deneme: 6 adımlık bir dersi 6
         // denemede bitirmek kusursuz, 3 adımlık dersi 5 denemede bitirmek zorlanmadır.
-        val hardest = lessons
+        val hardest = allLessons
             .filter { it.isFinished }
             .maxByOrNull { it.totalKnownAttempts - it.stepCount }
             ?.takeIf { it.totalKnownAttempts > it.stepCount }
@@ -303,7 +354,7 @@ object ParentReportRepository {
 
         return Report(
             summary = Summary(
-                finishedLessons = lessons.count { it.isFinished },
+                finishedLessons = allLessons.count { it.isFinished },
                 totalLessons = totalLessons,
                 totalTimeSeconds = totalTimeSeconds + pending,
                 todaySeconds = week.lastOrNull()?.seconds ?: 0L,
@@ -311,7 +362,7 @@ object ParentReportRepository {
                 streakDays = streakDays,
                 hardestLesson = hardest,
             ),
-            lessons = lessons,
+            parts = parts,
         )
     }
 

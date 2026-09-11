@@ -1,25 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bölüm başlığı: part başına BİR kez. Altındaki ünite başlıkları item_parent_section.xml. -->
+<!-- Bölüm satırı: part başına bir kez, tıklanınca üniteleri açar/kapar. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="22dp"
-    android:layout_marginBottom="2dp"
+    android:layout_marginTop="14dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/partTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/parent_text_primary"
-        android:textSize="19sp"
-        android:textStyle="bold"
-        tools:text="Bölüm 1" />
+        android:gravity="center_vertical"
+        android:minHeight="52dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="4dp">
+
+        <TextView
+            android:id="@+id/partTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/parent_text_primary"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            tools:text="Bölüm 1" />
+
+        <TextView
+            android:id="@+id/partProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:textColor="@color/parent_text_muted"
+            android:textSize="14sp"
+            tools:text="9/18 ders" />
+
+        <ImageView
+            android:id="@+id/partChevron"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="10dp"
+            android:contentDescription="Üniteleri göster"
+            android:src="@drawable/dualingo_arrow_ic"
+            app:tint="#607887" />
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:layout_marginTop="6dp"
         android:background="@color/parent_divider" />
 </LinearLayout>

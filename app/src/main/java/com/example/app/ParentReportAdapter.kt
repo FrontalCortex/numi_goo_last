@@ -7,7 +7,9 @@ import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.ParentReportRepository.LessonRow
+import com.example.app.ParentReportRepository.PartGroup
 import com.example.app.ParentReportRepository.Report
+import com.example.app.ParentReportRepository.SectionGroup
 import com.example.app.ParentReportRepository.StepRow
 import com.example.app.ParentReportRepository.StepState
 import com.example.app.databinding.ItemParentDayBarBinding
@@ -20,11 +22,21 @@ import com.example.app.databinding.ItemParentSummaryBinding
 /**
  * Veli panelinin listesi.
  *
+ * ## Üç seviye, hepsi kapalı başlar
+ *
+ *     Bölüm 1                    9/18 ders   ›
+ *       KURALSIZ TOPLAMA         4/4 ders    ›
+ *         ● Kuralsız Toplama - 1 Basamaklı   ›
+ *             Adım 1        İlk denemede geçti
+ *
+ * Panel açıldığında yalnızca bölüm satırları görünür; veli ilgilendiği yere doğru iniyor.
+ * Kapalı satır da bilgi taşısın diye her başlıkta "biten/toplam ders" yazıyor — açmadan da
+ * nerede olunduğu okunuyor.
+ *
  * ## Neden ExpandableListView değil
  * `ExpandableListView` iki seviyeyle sınırlı, `RecyclerView` ekosisteminin dışında ve özet kartı
  * gibi ekstra satır tiplerini taşıyamıyor. Bunun yerine ağaç **düz bir listeye** açılır ve satır
- * tipi `viewType` ile ayrılır; ders satırına dokunulunca yalnızca o dersin adımları listeye
- * girer/çıkar. Yeni bir satır tipi eklemek (ör. haftalık grafik) tek bir `when` dalı demek.
+ * tipi `viewType` ile ayrılır. Yeni bir satır tipi eklemek tek bir `when` dalı demek.
  *
  * ## Yeni ders eklendiğinde
  * Burada hiçbir şey değişmez. Adapter yalnızca [ParentReportRepository]'nin verdiği satırları
@@ -43,22 +55,28 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     /** Ekrana çizilen düz satır listesi; [rebuild] ile üretilir. */
     private sealed class Row {
         data class Summary(val report: Report) : Row()
-        /** "Bölüm 1" — part başına bir kez. */
-        data class Part(val partId: Int) : Row()
-        /** "Kuralsız Toplama" — bölümün altındaki ünite. */
-        data class Section(val title: String) : Row()
+        data class Part(val part: PartGroup, val expanded: Boolean) : Row()
+        data class Section(val partId: Int, val section: SectionGroup, val expanded: Boolean) : Row()
         data class Lesson(val lesson: LessonRow, val expanded: Boolean) : Row()
         data class Step(val step: StepRow) : Row()
     }
 
     private var report: Report? = null
-    /** Açık ders kimlikleri. stableId kullanılır: liste değişse de açık kalan ders kaymaz. */
-    private val expanded = HashSet<String>()
+
+    // Açık satırlar kimlikle tutuluyor, konumla değil: liste yeniden kurulunca kayma olmuyor
+    // ve bir bölüm kapatılıp açıldığında içindeki açık dersler aynen geri geliyor.
+    private val expandedParts = HashSet<Int>()
+    private val expandedSections = HashSet<String>()
+    private val expandedLessons = HashSet<String>()
+
     private var rows: List<Row> = emptyList()
 
     fun submit(report: Report) {
         this.report = report
-        expanded.clear()
+        // Her şey kapalı başlar.
+        expandedParts.clear()
+        expandedSections.clear()
+        expandedLessons.clear()
         rebuild()
         notifyDataSetChanged()
     }
@@ -69,42 +87,65 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             rows = emptyList()
             return
         }
-        val out = ArrayList<Row>(r.lessons.size + 8)
+        val out = ArrayList<Row>(r.parts.size + 8)
         out += Row.Summary(r)
-        var lastSection: String? = null
-        var lastPart = -1
-        r.lessons.forEach { lesson ->
-            val section = lesson.sectionTitle
-            // Bölüm başlığı part başına BİR kez; ünite başlıkları onun altına girer.
-            if (lesson.partId != lastPart) {
-                out += Row.Part(lesson.partId)
-                lastPart = lesson.partId
-                lastSection = null
+        r.parts.forEach { part ->
+            val partOpen = part.partId in expandedParts
+            out += Row.Part(part, partOpen)
+            if (!partOpen) return@forEach
+
+            part.sections.forEach { section ->
+                // Başlıksız ünite için boş satır basmanın anlamı yok; o grup hep açık sayılır,
+                // yoksa dersleri açılamaz bir satırın altında kalırdı.
+                val hasTitle = !section.title.isNullOrBlank()
+                val sectionOpen = !hasTitle || sectionKey(part.partId, section) in expandedSections
+                if (hasTitle) out += Row.Section(part.partId, section, sectionOpen)
+                if (!sectionOpen) return@forEach
+
+                section.lessons.forEach { lesson ->
+                    val lessonOpen = lesson.stableId in expandedLessons
+                    out += Row.Lesson(lesson, lessonOpen)
+                    if (lessonOpen) lesson.steps.forEach { out += Row.Step(it) }
+                }
             }
-            if (section != lastSection) {
-                // Üniteyi olmayan (başlıksız) ders için boş satır basmanın anlamı yok.
-                if (!section.isNullOrBlank()) out += Row.Section(section.uppercase(TR))
-                lastSection = section
-            }
-            val isOpen = lesson.stableId in expanded
-            out += Row.Lesson(lesson, isOpen)
-            if (isOpen) lesson.steps.forEach { out += Row.Step(it) }
         }
         rows = out
     }
 
-    private fun toggle(stableId: String) {
-        val index = rows.indexOfFirst { it is Row.Lesson && it.lesson.stableId == stableId }
-        if (index < 0) return
-        val stepCount = (rows[index] as Row.Lesson).lesson.steps.size
+    /**
+     * Ünitenin açık/kapalı kimliği. Başlık metni DEĞİL ilk dersinin [LessonRow.stableId]'si
+     * kullanılıyor: başlık metni bir gün tekrar edebilir ya da değiştirilebilir, stableId ise
+     * kalıcı ve benzersiz. ([SectionGroup] hiçbir zaman boş ders listesiyle kurulmuyor.)
+     */
+    private fun sectionKey(partId: Int, section: SectionGroup): String =
+        section.lessons.firstOrNull()?.stableId ?: "$partId|${section.title}"
 
-        val wasOpen = expanded.remove(stableId)
-        if (!wasOpen) expanded.add(stableId)
+    /**
+     * Üç seviyenin tamamı için tek geçit. Bir satırı açmak/kapamak YALNIZCA onun altındaki
+     * satırları değiştirdiği için, listeyi yeniden kurup boy farkını bildirmek her seviye
+     * için doğru sonucu veriyor — seviye başına ayrı aralık hesabı gerekmiyor.
+     */
+    private fun toggleAt(position: Int) {
+        if (position !in rows.indices) return
+        when (val row = rows[position]) {
+            is Row.Part -> flip(expandedParts, row.part.partId)
+            is Row.Section -> flip(expandedSections, sectionKey(row.partId, row.section))
+            is Row.Lesson -> flip(expandedLessons, row.lesson.stableId)
+            else -> return
+        }
+        val before = rows.size
         rebuild()
+        val delta = rows.size - before
 
-        notifyItemChanged(index) // ok yönü
-        if (wasOpen) notifyItemRangeRemoved(index + 1, stepCount)
-        else notifyItemRangeInserted(index + 1, stepCount)
+        notifyItemChanged(position) // ok yönü
+        when {
+            delta > 0 -> notifyItemRangeInserted(position + 1, delta)
+            delta < 0 -> notifyItemRangeRemoved(position + 1, -delta)
+        }
+    }
+
+    private fun <T> flip(set: MutableSet<T>, key: T) {
+        if (!set.remove(key)) set.add(key)
     }
 
     override fun getItemCount(): Int = rows.size
@@ -131,8 +172,8 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
             is Row.Summary -> (holder as SummaryHolder).bind(row.report)
-            is Row.Part -> (holder as PartHolder).bind(row.partId)
-            is Row.Section -> (holder as SectionHolder).bind(row.title)
+            is Row.Part -> (holder as PartHolder).bind(row.part, row.expanded)
+            is Row.Section -> (holder as SectionHolder).bind(row.section, row.expanded)
             is Row.Lesson -> (holder as LessonHolder).bind(row.lesson, row.expanded)
             is Row.Step -> (holder as StepHolder).bind(row.step)
         }
@@ -206,19 +247,35 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    private class PartHolder(val b: ItemParentPartBinding) : RecyclerView.ViewHolder(b.root) {
-        fun bind(partId: Int) {
-            b.partTitle.text = "Bölüm $partId"
+    private inner class PartHolder(val b: ItemParentPartBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
+        fun bind(part: PartGroup, isExpanded: Boolean) {
+            b.partTitle.text = "Bölüm ${part.partId}"
+            b.partProgress.text = "${part.finishedLessons}/${part.totalLessons} ders"
+            b.partChevron.rotation = if (isExpanded) 90f else 0f
         }
     }
 
-    private class SectionHolder(val b: ItemParentSectionBinding) : RecyclerView.ViewHolder(b.root) {
-        fun bind(title: String) {
-            b.root.text = title
+    private inner class SectionHolder(val b: ItemParentSectionBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
+        fun bind(section: SectionGroup, isExpanded: Boolean) {
+            b.sectionTitle.text = section.title.orEmpty().uppercase(TR)
+            b.sectionProgress.text = "${section.finishedLessons}/${section.totalLessons} ders"
+            b.sectionChevron.rotation = if (isExpanded) 90f else 0f
         }
     }
 
     private inner class LessonHolder(val b: ItemParentLessonBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
         fun bind(lesson: LessonRow, isExpanded: Boolean) {
             b.lessonTitle.text = lesson.title
             b.lessonSubtitle.text = lessonSubtitle(lesson)
@@ -228,7 +285,6 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
             // Kapalıyken sağa, açıkken aşağı bakar: durum tek bakışta anlaşılsın.
             b.lessonChevron.rotation = if (isExpanded) 90f else 0f
-            b.root.setOnClickListener { toggle(lesson.stableId) }
         }
 
         private fun lessonSubtitle(lesson: LessonRow): String {

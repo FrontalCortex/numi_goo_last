@@ -54,7 +54,7 @@ class ParentPanelFragment : Fragment() {
                     if (error != null) "İlerleme bilgisi alınamadı. İnternet bağlantınızı kontrol edip tekrar deneyin."
                     else "İlerleme bilgisi alınamadı.",
                 )
-                report.lessons.isEmpty() -> showMessage(
+                report.isEmpty -> showMessage(
                     "Henüz başlanmış bir ders yok. Çocuğunuz ilk dersi açtığında ilerlemesi burada görünecek."
                 )
                 else -> showReport(report)
