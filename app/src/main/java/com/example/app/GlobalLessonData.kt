@@ -252,11 +252,17 @@ object GlobalLessonData {
                 if (snapshot == null || snapshot.isEmpty) return@addSnapshotListener
                 try {
                     val template = createLessonItems(partId)
-                    val byIndex = snapshot.documents.mapNotNull { d ->
+                    // Yazma tarafı stableId ile anahtarlıyor (writeAllItemsToFirestore); burada
+                    // yalnızca tamsayı anahtar aranırsa snapshot BOŞ görünür ve ilerleme
+                    // sıfırlanmış gibi çizilir. Okuma sırası readLessonItemsFromFirestore ile aynı.
+                    val byStableId = snapshot.documents.associate { it.id to it.data }
+                    val byLegacyIndex = snapshot.documents.mapNotNull { d ->
                         d.id.toIntOrNull()?.let { it to d.data }
                     }.toMap()
                     val parsed = template.mapIndexed { index, item ->
-                        val data = byIndex[index] ?: return@mapIndexed item
+                        val data = byStableId[item.stableId]
+                            ?: byLegacyIndex[index]
+                            ?: return@mapIndexed item
                         applyProgressFields(item, data)
                     }
                     val merged = if (_lessonItems.isEmpty()) {
