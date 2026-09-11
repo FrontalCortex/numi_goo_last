@@ -74,6 +74,21 @@ class NumiGooApplication : Application() {
             }
         }
 
+        override fun onActivityResumed(activity: Activity) {
+            // Reklam, rıza formu, satın alma gibi ekranlar KENDİ Activity'lerinde açılır ve
+            // fragment içermezler; onFragmentResumed onlar için hiç tetiklenmez. Bu yüzden
+            // burada activity adı yazılıyor.
+            //
+            // Kendi ekranlarımızda bu değer hemen ardından fragment adıyla eziliyor:
+            // dispatchActivityResumed Activity.onResume içinden çağrılıyor, fragment'lar ise
+            // onPostResume/onResumeFragments ile DAHA SONRA resume oluyor. Sıra garantili.
+            //
+            // Bu olmadan reklam açıkken uygulamadan çıkılınca exit_screen bir önceki DERSİN
+            // adını gösteriyordu — reklam terkleri derslerin üstüne yazılıyordu.
+            currentScreen = activity::class.java.simpleName
+            currentScreenStartMs = SystemClock.elapsedRealtime()
+        }
+
         override fun onActivityStarted(activity: Activity) {
             if (startedActivityCount == 0) {
                 // Öne dönüldü: arka planda geçen süre ekranın süresine yazılmasın.

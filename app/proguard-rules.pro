@@ -142,3 +142,15 @@
     public static int d(...);
     public static int v(...);
 }
+
+# ── Analytics ekran adları ──────────────────────────────────────────────────
+# screen_view ve app_exit_screen olayları ekran adını `simpleName` ile gönderiyor
+# (bkz. NumiGooApplication). Obfuscation bunları "a", "b2" gibi anlamsız değerlere
+# çevirir ve üretimdeki TÜM ekran raporları kullanılamaz hale gelir — hata vermeden,
+# sessizce. Activity'ler manifest'te adlarıyla anıldığı için zaten korunuyor;
+# fragment'ler korunmuyordu.
+#
+# -keepnames = -keep,allowshrinking: adı korur ama kullanılmayan sınıfın atılmasını
+# engellemez, yani APK boyutuna etkisi yoktur.
+-keepnames class * extends androidx.fragment.app.Fragment
+-keepnames class * extends android.app.Activity
