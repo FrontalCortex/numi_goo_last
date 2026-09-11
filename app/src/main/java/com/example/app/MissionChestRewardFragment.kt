@@ -23,6 +23,8 @@ class MissionChestRewardFragment : Fragment() {
     private val binding get() = _binding!!
     private var isVideoFlowOpen = false
     private var popBackStackOnContinue = false
+    /** Bu görev paneli türü LESSON olan bir item'ın bitişinden mi açıldı? (bkz. ChestFragment) */
+    private var isLessonTypeReturn = false
     private lateinit var beforeSnapshot: MissionsProgressStore.Snapshot
     private lateinit var afterSnapshot: MissionsProgressStore.Snapshot
     private var shouldOpenBadgeAfterContinue: Boolean = false
@@ -69,6 +71,7 @@ class MissionChestRewardFragment : Fragment() {
 
         MainActivityChromeBlocker.acquire(requireActivity())
         popBackStackOnContinue = requireArguments().getBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, false)
+        isLessonTypeReturn = requireArguments().getBoolean(ARG_IS_LESSON_TYPE_RETURN, false)
         shouldOpenBadgeAfterContinue = requireArguments().getBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, false)
         badgePayloadQueue = requireArguments().getStringArrayList(ARG_BADGE_PAYLOAD_QUEUE) ?: arrayListOf()
         val args = requireArguments()
@@ -135,7 +138,10 @@ class MissionChestRewardFragment : Fragment() {
                     android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
                     main?.finalizeMapReturnAfterLessonClaim(
                         caller = "MissionChestReward.continue",
-                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
+                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList(),
+                        // Görev ilerlemesi paneli gösterildiğinde haritaya dönüş buradan oluyor;
+                        // bilgi ChestFragment'ten argümanla geliyor.
+                        isLessonTypeReturn = isLessonTypeReturn,
                     )
                 }
             }
@@ -425,6 +431,7 @@ class MissionChestRewardFragment : Fragment() {
         private const val ARG_POP_BACKSTACK_ON_CONTINUE = "pop_backstack_on_continue"
         private const val ARG_OPEN_BADGE_AFTER_CONTINUE = "open_badge_after_continue"
         private const val ARG_BADGE_PAYLOAD_QUEUE = "badge_payload_queue"
+        private const val ARG_IS_LESSON_TYPE_RETURN = "is_lesson_type_return"
 
         fun newInstance(
             before: MissionsProgressStore.Snapshot,
@@ -432,6 +439,7 @@ class MissionChestRewardFragment : Fragment() {
             popBackStackOnContinue: Boolean = false,
             openBadgeAfterContinue: Boolean = false,
             badgePayloadQueue: List<String> = emptyList(),
+            isLessonTypeReturn: Boolean = false,
         ) =
             MissionChestRewardFragment().apply {
                 arguments = Bundle().apply {
@@ -462,6 +470,7 @@ class MissionChestRewardFragment : Fragment() {
                     putBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, popBackStackOnContinue)
                     putBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, openBadgeAfterContinue)
                     putStringArrayList(ARG_BADGE_PAYLOAD_QUEUE, ArrayList(badgePayloadQueue))
+                    putBoolean(ARG_IS_LESSON_TYPE_RETURN, isLessonTypeReturn)
                 }
             }
     }

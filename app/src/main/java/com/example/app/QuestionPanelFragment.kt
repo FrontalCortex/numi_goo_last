@@ -14,7 +14,6 @@ import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentQuestionPanelBinding
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
@@ -23,10 +22,20 @@ import com.google.firebase.firestore.FirebaseFirestore
  * gönder veya atla'ya bastıktan sonra LessonResult / ChestResult / LessonResultFalse
  * fragment'ine geçilir.
  *
- * Firestore hiyerarşisi:
- *   questionPanel/{globalPartId}/{mapFragmentIndex}/question{N}/
- *     - choice{1–5}  : FieldValue.increment(1) ile sayaç
- *     - text/{uid}   : { uid, text } sub-collection
+ * ## Cevaplar nereye gidiyor
+ * Anket iki farklı türde veri üretir ve ikisi ayrı yerlere yazılır:
+ *
+ * - **Şık seçimleri → Firebase Analytics.** Eskiden
+ *   `questionPanel/{partId}/{index}/question{N}` dokümanında `choice{1–5}` sayaçlarıydı.
+ *   Güvenlik kuralı zaten `allow read: false` diyordu; veri uygulamaya geri dönmüyordu.
+ *   Analytics'te aynı dağılım sürüm/ülke/segment boyutlarıyla kırılabiliyor ve sayaçlar
+ *   manipüle edilemiyor. Bkz. [AnalyticsLogger.logSurveyChoice].
+ *
+ * - **Serbest metin → Firestore'da KALIR**, `questionPanel/.../question{N}/text/{uid}`.
+ *   Bunlar çocukların kendi yazdığı metinlerdir; Analytics'e gönderilmesi hem Google'ın
+ *   kişisel veri politikasını ihlal eder hem de 100 karakter sınırında kesilirdi. Ayrıca
+ *   bu metinler okunup değerlendirilecek — Analytics'ten geri okuma mümkün değildir.
+ *   Analytics'e yalnızca "metin yazıldı" bilgisi gider ([AnalyticsLogger.logSurveyText]).
  */
 class QuestionPanelFragment : Fragment() {
 
@@ -241,56 +250,50 @@ class QuestionPanelFragment : Fragment() {
             return
         }
 
-        setSendingUi(true)
-
         val basePath = firestore
             .collection("questionPanel")
             .document(globalPartId.toString())
             .collection(mapFragmentIndex.toString())
 
-        // Tüm yazma işlemlerini topla; hepsi bitince sonuca geç
+        // Firestore'a yazılacak işler; yalnızca SERBEST METİN kaldı (bkz. sınıf başlığı).
         val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
 
         // ── Soru 1 ──
         val q1Choice = q1SelectedChoice
         val q1Text = binding.q1TextInput.text.toString().trim()
-        if (q1Choice != null || q1Text.isNotEmpty()) {
-            val q1Doc = basePath.document("question1")
-            if (q1Choice != null) {
-                tasks.add(
-                    q1Doc.set(
-                        mapOf("choice$q1Choice" to FieldValue.increment(1)),
-                        com.google.firebase.firestore.SetOptions.merge()
-                    )
-                )
-            }
-            if (q1Text.isNotEmpty() && uid != null) {
-                tasks.add(
-                    q1Doc.collection("text").document(uid)
-                        .set(mapOf("uid" to uid, "text" to q1Text))
-                )
-            }
+        if (q1Choice != null) {
+            AnalyticsLogger.logSurveyChoice(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 1, q1Choice,
+            )
+        }
+        if (q1Text.isNotEmpty() && uid != null) {
+            tasks.add(
+                basePath.document("question1")
+                    .collection("text").document(uid)
+                    .set(mapOf("uid" to uid, "text" to q1Text))
+            )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 1,
+            )
         }
 
         // ── Soru 2 ──
         val q2Choice = q2SelectedChoice
         val q2Text = binding.q2TextInput.text.toString().trim()
-        if (q2Choice != null || q2Text.isNotEmpty()) {
-            val q2Doc = basePath.document("question2")
-            if (q2Choice != null) {
-                tasks.add(
-                    q2Doc.set(
-                        mapOf("choice$q2Choice" to FieldValue.increment(1)),
-                        com.google.firebase.firestore.SetOptions.merge()
-                    )
-                )
-            }
-            if (q2Text.isNotEmpty() && uid != null) {
-                tasks.add(
-                    q2Doc.collection("text").document(uid)
-                        .set(mapOf("uid" to uid, "text" to q2Text))
-                )
-            }
+        if (q2Choice != null) {
+            AnalyticsLogger.logSurveyChoice(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 2, q2Choice,
+            )
+        }
+        if (q2Text.isNotEmpty() && uid != null) {
+            tasks.add(
+                basePath.document("question2")
+                    .collection("text").document(uid)
+                    .set(mapOf("uid" to uid, "text" to q2Text))
+            )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 2,
+            )
         }
 
         // ── Soru 3 (sadece metin) ──
@@ -301,7 +304,19 @@ class QuestionPanelFragment : Fragment() {
                     .collection("text").document(uid)
                     .set(mapOf("uid" to uid, "text" to q3Text))
             )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 3,
+            )
         }
+
+        // Kullanıcı yalnızca şık seçtiyse Firestore'a yazılacak bir şey kalmaz; bekleme
+        // katmanını hiç göstermeden geç. (Analytics çağrıları ağı beklemez.)
+        if (tasks.isEmpty()) {
+            proceedToResult()
+            return
+        }
+
+        setSendingUi(true)
 
         // Tüm task'ler tamamlanınca sonuca geç
         com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)

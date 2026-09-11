@@ -14,16 +14,24 @@ package com.example.app
 object BillingCatalog {
 
     // ── Tüketilebilir ürünler (altın / anahtar paketleri) ───────────────────
-    const val GOLD_SMALL = "gold_1200"
-    const val GOLD_MEDIUM = "gold_7000"
-    const val GOLD_LARGE = "gold_15000"
-    const val KEYS_SMALL = "keys_10"
-    const val KEYS_MEDIUM = "keys_50"
-    const val KEYS_LARGE = "keys_100"
+    const val GOLD_SMALL = "gold_small"
+    const val GOLD_MEDIUM = "gold_medium"
+    const val GOLD_LARGE = "gold_large"
+    const val KEYS_SMALL = "keys_small"
+    const val KEYS_MEDIUM = "keys_medium"
+    const val KEYS_LARGE = "keys_large"
+
+    // ── Öğretmen danışma kredileri ──────────────────────────────────────────
+    // Her kredi bir soru hakkıdır. Verilen adet yine sunucudan gelir; Pro aboneler
+    // büyük paketlerde bonus kredi alır (bkz. functions/index.js → PRO_CREDIT_BONUS).
+    const val CREDITS_SMALL = "credits_small"
+    const val CREDITS_MEDIUM = "credits_medium"
+    const val CREDITS_LARGE = "credits_large"
 
     val consumables = listOf(
         GOLD_SMALL, GOLD_MEDIUM, GOLD_LARGE,
         KEYS_SMALL, KEYS_MEDIUM, KEYS_LARGE,
+        CREDITS_SMALL, CREDITS_MEDIUM, CREDITS_LARGE,
     )
 
     // ── Abonelikler ─────────────────────────────────────────────────────────
@@ -35,4 +43,20 @@ object BillingCatalog {
     /** PlanFragment'teki "Pro" / "Lite" seçimini ürün kimliğine çevirir. */
     fun subscriptionForPlanName(planName: String): String =
         if (planName.equals("Lite", ignoreCase = true)) SUB_LITE else SUB_PRO
+
+    /**
+     * Abonelik rütbesi. Yüksek olan daha kapsamlı plandır.
+     *
+     * İki yerde gerekiyor:
+     *   • Mevcut abonelikten yenisine geçerken YÖN belirlemek (yükseltme mi düşürme mi);
+     *     Play'in `CHARGE_PRORATED_PRICE` modu yalnızca yükseltmede çalışıyor, düşürmede
+     *     çağrıyı hata ile reddediyor.
+     *   • Sunucu tarafındaki plan çakışmasının aynısı (bkz. functions/index.js → PLAN_RANK).
+     *     İki liste birlikte güncellenmelidir.
+     */
+    fun subscriptionRank(productId: String): Int = when (productId) {
+        SUB_PRO -> 2
+        SUB_LITE -> 1
+        else -> 0
+    }
 }

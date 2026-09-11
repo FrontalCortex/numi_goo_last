@@ -329,11 +329,13 @@ class ProfileFragment : Fragment() {
                     }
 
                     // Abonelik bilgisi
-                    val plan = doc.getString("plan") ?: "Free"
-                    when (plan.lowercase()) {
-                        "pro" -> binding.tvSubscriptionInfo.text = "PRO"
-                        "lite" -> binding.tvSubscriptionInfo.text = "Lite"
-                        else -> binding.tvSubscriptionInfo.text = "Free"
+                    // Süresi dolmuş abonelik Free gösterilir; ayrıca "Premium" da Pro
+                    // ayrıcalıklarını verdiği için PRO olarak etiketlenir.
+                    val plan = PlanStatus.effectivePlan(doc)
+                    binding.tvSubscriptionInfo.text = when {
+                        PlanStatus.isProPlan(plan) -> "PRO"
+                        plan.equals("Lite", ignoreCase = true) -> "Lite"
+                        else -> "Free"
                     }
 
                     // Takipçi / Takip edilen sayaçları

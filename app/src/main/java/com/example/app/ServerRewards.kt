@@ -35,8 +35,8 @@ object ServerRewards {
 
     private const val TAG = "ServerRewards"
 
-    /** SSV callback'i gecikirse yeniden deneme sayisi ve araligi. */
-    private const val AD_VERIFY_MAX_ATTEMPTS = 4
+    /** SSV callback'i gecikirse yeniden deneme sayisi ve araligi (10 x 1.5 sn = ~15 sn). */
+    private const val AD_VERIFY_MAX_ATTEMPTS = 10
     private const val AD_VERIFY_RETRY_DELAY_MS = 1500L
 
     // Sandık ekranı (NewChestFragment) açılmadan hemen önce başlatılan istek burada bekler.

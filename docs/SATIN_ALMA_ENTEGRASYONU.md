@@ -28,12 +28,15 @@ Değiştirirken:
 
 | Ürün kimliği | Tür | Verilen |
 | --- | --- | --- |
-| `gold_1200` | Tüketilebilir | 1200 altın |
-| `gold_7000` | Tüketilebilir | 7000 altın |
-| `gold_15000` | Tüketilebilir | 15000 altın |
-| `keys_10` | Tüketilebilir | 10 anahtar |
-| `keys_50` | Tüketilebilir | 50 anahtar |
-| `keys_100` | Tüketilebilir | 100 anahtar |
+| `gold_small` | Tüketilebilir | 5.000 altın |
+| `gold_medium` | Tüketilebilir | 20.000 altın |
+| `gold_large` | Tüketilebilir | 100.000 altın |
+| `keys_small` | Tüketilebilir | 10 anahtar |
+| `keys_medium` | Tüketilebilir | 50 anahtar |
+| `keys_large` | Tüketilebilir | 200 anahtar |
+| `credits_small` | Tüketilebilir | 1 danışma kredisi |
+| `credits_medium` | Tüketilebilir | 5 danışma kredisi (Pro: 6) |
+| `credits_large` | Tüketilebilir | 10 danışma kredisi (Pro: 12) |
 | `pro_monthly` | Abonelik | `plan = "Pro"` |
 | `lite_monthly` | Abonelik | `plan = "Lite"` |
 
@@ -101,9 +104,17 @@ Tüketilebilirlerden farklı olarak **tekrar tekrar çağrılabilir**. Uygulama 
 açıldığında `BillingManager.refreshPurchases()` eldeki abonelik token'ını yeniden
 doğrulatır; sunucu `plan` ve `planExpiresAt` alanlarını günceller.
 
+Ürün kimliği **istemciden değil Play'in cevabından** alınır: doğrulama çağrısı yalnızca
+token taşıdığı için (`purchases.subscriptionsv2.get`), istemcinin bildirdiği `productId`'ye
+güvenmek Lite token'ıyla Pro istemeye izin verirdi. Bkz. `resolveVerifiedProductId`.
+
 İptal eden kullanıcı iki katmanda yakalanır:
 
-1. Sunucu, Play'den `SUBSCRIPTION_STATE_*` okur; aktif değilse `plan = "Free"` yazar.
+1. Sunucu, Play'den `SUBSCRIPTION_STATE_*` okur; hak veren durumlar `ACTIVE`,
+   `IN_GRACE_PERIOD` ve `CANCELED`'dır — üçünde de `expiryTime` gelecekte olmalıdır.
+   `CANCELED` "otomatik yenileme kapatıldı, süre henüz dolmadı" demektir; kullanıcı
+   ödediği dönemi sonuna kadar kullanır. `PAUSED`, `ON_HOLD` ve `PENDING` hak vermez.
+   Bkz. `ENTITLING_SUBSCRIPTION_STATES`.
 2. `MainActivity.checkSubscriptionAndUpdateEnergy()` `planExpiresAt` geçmişse
    planı Free sayar — sunucudan hiç yeni doğrulama gelmese bile Pro süresiz kalmaz.
 
@@ -114,7 +125,13 @@ doğrulatır; sunucu `plan` ve `planExpiresAt` alanlarını günceller.
 `users/{uid}.keys` ve `.currency` yalnızca Cloud Functions üzerinden değişir.
 `firestore.rules` şu alanları istemci yazımına kapatır:
 `keys`, `currency`, `walletGuard`, `role`, `teacherApproved`, `plan`,
-`planExpiresAt`, `planProductId`, `userId`, `uid`, `email`, `createdAt`.
+`planExpiresAt`, `planProductId`, `planPurchaseTokenHash`, `userId`, `uid`,
+`email`, `createdAt`.
+
+`planPurchaseTokenHash`, planı HANGİ aboneliğin verdiğini tutar (token'ın ham hâli
+değil, sha256 özeti). Sahiplik kararı buna dayanır: plan yazımında "bu token mevcut
+planın sahibi mi" ve iade geri alımında "iade edilen abonelik mevcut planı mı veriyor"
+sorularını cevaplar. Bkz. `ownsStoredPlan`.
 
 **İstemcinin çağırabildiği hiçbir yol artık bakiyeyi serbestçe artıramaz.**
 

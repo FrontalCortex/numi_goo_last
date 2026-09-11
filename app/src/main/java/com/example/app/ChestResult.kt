@@ -38,6 +38,7 @@ class ChestResult : Fragment() {
     private var dersPuani: Int = 0
     private var toplamPuan: Int = 0
     private var worstCupTime: Int = 0
+    private var questionElapsedMs: Long = -1L
     private var targetTimeSeconds: Int = 0
     private var carpan: Float = 1f
     private var scoreCap: Int = 1
@@ -88,6 +89,7 @@ class ChestResult : Fragment() {
             time = bundle.getString("time", "")
             dersPuani = bundle.getInt("dersPuani", 0)
             worstCupTime = bundle.getInt("worstCupTime", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
             successRate = bundle.getFloat("successRate", 0f)
             targetTimeSeconds = parseTimeToSeconds(time) ?: 0
             carpan = bundle.getFloat("carpan", 1f)
@@ -212,6 +214,10 @@ class ChestResult : Fragment() {
                                     it.finalizeMapReturnAfterLessonClaim(
                                         caller = "ChestResult.claimAfterRemove",
                                         badgePayloads = payloads,
+                                        // Derse girerken yakalanan lessonItem; dönüş sırasındaki
+                                        // liste temizliğinden etkilenmiyor.
+                                        isLessonTypeReturn =
+                                            lessonItem.type == LessonItem.TYPE_LESSON,
                                     )
                                 }
                             }
@@ -237,6 +243,11 @@ class ChestResult : Fragment() {
                 if (shouldIncrementKarate || shouldIncrementTornado || shouldIncrementVolcano) {
                     val safeFm = parentFragmentManager
                     val safeActivity = activity as? MainActivity
+                    GlobalValues.pendingBadgeFirestoreOperation = true
+                    // Rozet kontrolü asenkron (Firestore round-trip) — sonucu netleşene kadar
+                    // haritayı erkenden kilitle (bkz. ChestFragment'teki aynı düzeltme).
+                    (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                        ?.lockTouchForPendingOverlay()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,
@@ -246,6 +257,9 @@ class ChestResult : Fragment() {
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
+                            GlobalValues.pendingBadgeFirestoreOperation = false
+                            (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                                ?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(R.id.abacusFragmentContainer) as? MissionChestRewardFragment
@@ -254,6 +268,8 @@ class ChestResult : Fragment() {
                                 } else if (safeActivity != null) {
                                     safeActivity.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
+                            } else {
+                                safeActivity?.tryShowPendingMarathonGuideOnMap("ChestResult.badgeFirestoreOnDone.noPayloads")
                             }
                         },
                     )
@@ -268,6 +284,7 @@ class ChestResult : Fragment() {
                                 putFloat("successRate", successRate)
                                 putInt("toplamPuan", toplamPuan)
                                 putInt("dersPuani", dersPuani)
+                                putLong("questionElapsedMs", questionElapsedMs)
                             }
                         },
                     )

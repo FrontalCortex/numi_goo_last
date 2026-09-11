@@ -45,6 +45,8 @@ class ProDiffirentFragment : DialogFragment() {
             dismiss()
         }
 
+        SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.btnTryFreeText)
+
         binding.btnTryFree.setOnClickListener {
             // Yeni fragmenti hemen açıyoruz
             PlanFragment().show(requireActivity().supportFragmentManager, "Plan")

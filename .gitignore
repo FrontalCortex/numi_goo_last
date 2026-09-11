@@ -21,3 +21,10 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+
+# Firebase emülatörü / yerel test artıkları
+firebase-debug.log
+ui-debug.log
+# Firestore emülatörü her çalıştığında yeniden yazıyor; testler çalışma ağacını
+# kirletmesin (bkz. functions/scripts/test-*.js).
+firestore-debug.log

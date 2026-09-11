@@ -207,42 +207,23 @@ class CreateQuestionFragment : Fragment() {
                 ref.downloadUrl.addOnSuccessListener { uri ->
                     val screenshotUrl = uri.toString()
                     val previewText = header.take(80)
-                    val now = com.google.firebase.Timestamp.now()
-                    val data = hashMapOf(
-                        "studentUid" to uid,
-                        "studentEmail" to auth.currentUser?.email,
-                        "screenshotStoragePath" to fileName,
-                        "screenshotUrl" to screenshotUrl,
-                        "message" to header,
-                        "previewText" to previewText,
-                        "status" to StudentQuestion.STATUS_PENDING,
-                        "createdAt" to now,
-                        "lastMessageAt" to now
-                    )
-                    firestore.collection("questions")
-                        .add(data)
-                        .addOnSuccessListener { docRef ->
-                            val questionId = docRef.id
-                            // İlk medya+caption mesajını sohbet için oluştur
-                            val msg = hashMapOf(
-                                "senderUid" to uid,
-                                "senderRole" to AuthManager.ROLE_STUDENT,
-                                "type" to QuestionMessage.TYPE_IMAGE,
-                                "mediaStoragePath" to fileName,
-                                "mediaUrl" to screenshotUrl,
-                                "textContent" to description,
-                                "createdAt" to com.google.firebase.Timestamp.now()
-                            )
-                            firestore.collection("questions").document(questionId)
-                                .collection("messages")
-                                .add(msg)
-
+                    // Soru ve ilk mesaj sunucuda, kredi düşümüyle aynı transaction'da oluşur.
+                    ServerQuestions.ask(
+                        mediaType = ServerQuestions.MEDIA_IMAGE,
+                        storagePath = fileName,
+                        mediaUrl = screenshotUrl,
+                        message = header,
+                        previewText = previewText,
+                        description = description,
+                        onResult = { _, _ ->
                             runStudentGolfBadgeThenClose("Soru gönderildi.")
-                        }
-                        .addOnFailureListener { e ->
+                        },
+                        onFailure = { e ->
                             setSendingUi(false)
-                            Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
+                            didSendOrIsSending = false
+                            showSendFailure(e)
+                        },
+                    )
                 }
             }
             .addOnFailureListener { e ->
@@ -283,53 +264,28 @@ class CreateQuestionFragment : Fragment() {
                 ref.downloadUrl.addOnSuccessListener { uri ->
                     val videoUrl = uri.toString()
                     val previewText = header.take(80)
-                    val now = com.google.firebase.Timestamp.now()
-                    val data = hashMapOf(
-                        "studentUid" to uid,
-                        "studentEmail" to auth.currentUser?.email,
-                        "mediaType" to StudentQuestion.MEDIA_TYPE_VIDEO,
-                        "videoStoragePath" to fileName,
-                        "videoUrl" to videoUrl,
-                        "videoDurationSec" to durationSec,
-                        "message" to header,
-                        "previewText" to previewText,
-                        "status" to StudentQuestion.STATUS_PENDING,
-                        "createdAt" to now,
-                        "lastMessageAt" to now
-                    )
-                    firestore.collection("questions")
-                        .add(data)
-                        .addOnSuccessListener { docRef ->
-                            val questionId = docRef.id
-                            val msg = hashMapOf(
-                                "senderUid" to uid,
-                                "senderRole" to AuthManager.ROLE_STUDENT,
-                                "type" to QuestionMessage.TYPE_VIDEO,
-                                "mediaStoragePath" to fileName,
-                                "mediaUrl" to videoUrl,
-                                "textContent" to description.ifEmpty { null },
-                                "createdAt" to com.google.firebase.Timestamp.now()
-                            )
-                            firestore.collection("questions").document(questionId)
-                                .collection("messages")
-                                .add(msg)
-                                .addOnSuccessListener {
-                                    // Offline yok: upload + kayıt başarılıysa yerel cache videosunu temizle.
-                                    runCatching { File(videoPath).delete() }
-                                }
-                                .addOnFailureListener {
-                                    // Mesaj yazılamadıysa da yerel videoyu tutmaya gerek yok (offline yok).
-                                    runCatching { File(videoPath).delete() }
-                                }
-
-                            runStudentGolfBadgeThenClose("Soru gönderildi.")
-                        }
-                        .addOnFailureListener { e ->
-                            setSendingUi(false)
-                            // Soru dokümanı oluşturulamadıysa videoyu cache'te tutmayalım (offline yok).
+                    // Soru ve ilk mesaj sunucuda, kredi düşümüyle aynı transaction'da oluşur.
+                    ServerQuestions.ask(
+                        mediaType = ServerQuestions.MEDIA_VIDEO,
+                        storagePath = fileName,
+                        mediaUrl = videoUrl,
+                        message = header,
+                        previewText = previewText,
+                        description = description.ifEmpty { null },
+                        videoDurationSec = durationSec,
+                        onResult = { _, _ ->
+                            // Offline yok: gönderim başarılıysa yerel cache videosunu temizle.
                             runCatching { File(videoPath).delete() }
-                            Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
+                            runStudentGolfBadgeThenClose("Soru gönderildi.")
+                        },
+                        onFailure = { e ->
+                            setSendingUi(false)
+                            didSendOrIsSending = false
+                            // Soru oluşturulamadıysa videoyu cache'te tutmayalım (offline yok).
+                            runCatching { File(videoPath).delete() }
+                            showSendFailure(e)
+                        },
+                    )
                 }
                 .addOnFailureListener {
                     setSendingUi(false)
@@ -351,6 +307,22 @@ class CreateQuestionFragment : Fragment() {
         if (!isTeacher) studentSendInProgress = sending
         binding.sendButton.isEnabled = !sending
         binding.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Gönderim hatasını kullanıcıya anlatır.
+     *
+     * Kredi yetersizliği ayrı ele alınır: bu bir arıza değil, kullanıcının çözebileceği
+     * bir durum — genel "gönderilemedi" mesajı burada yanıltıcı olurdu.
+     */
+    private fun showSendFailure(e: Exception) {
+        if (!isAdded) return
+        val text = if (ServerQuestions.isInsufficientCredits(e)) {
+            "Danışma kredin kalmadı. Mağazadan kredi alabilirsin."
+        } else {
+            "Gönderilemedi: ${e.message}"
+        }
+        Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
     }
 
     /** Soru kaydı tamam; golf +1 Firestore, gerekirse [BadgeFragment] kutlaması (Chest akışıyla aynı container). */

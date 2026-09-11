@@ -46,6 +46,10 @@ class AdSkipFragment : DialogFragment() {
 
         playSounds()
 
+        // Bu ekran satın alma başlatmıyor (huniyi ProDiffirent → Plan diye sürdürüyor) ama
+        // düğmede deneme vaadi var; uygun olmayan kullanıcıya o vaadi göstermemek gerekiyor.
+        SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.btnTryFreeText)
+
         binding.btnTryFree.setOnClickListener {
             // Yeni fragmenti hemen açıyoruz
             ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")

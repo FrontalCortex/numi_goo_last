@@ -269,6 +269,12 @@ class LessonAdapter(
                             .setCustomAnimations(
                                 android.R.anim.slide_in_left,
                                 android.R.anim.slide_out_right,
+                                // popEnter/popExit: geri tuşu/X ile kapatılırken de kayarak
+                                // kapansın — bunlar verilmezse pop varsayılan olarak animasyonsuz.
+                                // android.R.anim'de karşılığı olmadığı için uygulamanın kendi
+                                // res/anim/slide_in_right.xml ve slide_out_left.xml'i kullanılıyor.
+                                R.anim.slide_in_right,
+                                R.anim.slide_out_left,
                             )
                             .replace(
                                 R.id.abacusFragmentContainer,

@@ -111,6 +111,13 @@ class MainActivity : AppCompatActivity() {
         const val MAP_TOUCH_DIAG_LOG_TAG = MapTouchDiagnostics.LOG_TAG
         /** Görevler pratik / günlük soru overlay kapanışı — [finishOverlayReturnToTasks] ile temizlenir. */
         const val ABACUS_OVERLAY_BACK_STACK = "abacus_overlay"
+        /** Kaçıncı LESSON dönüşünde AskQuestionOpen promosu gösterilir. */
+        private const val ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD = 3
+        /** Harita temizlenene kadar promo denemesi bu aralıkla tekrarlanır. */
+        private const val ASK_QUESTION_PROMO_RETRY_INTERVAL_MS = 100L
+        private const val ASK_QUESTION_PROMO_MAX_ATTEMPTS = 40
+        /** Promo hiç gösterilemezse harita kalıcı kilitli kalmasın diye son güvenlik ağı. */
+        private const val ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS = 15_000L
     }
 
     internal fun buildTouchDiagSnapshot(): String {
@@ -223,6 +230,10 @@ class MainActivity : AppCompatActivity() {
             putExtra(ScreenRecordingService.EXTRA_RESULT_DATA, result.data)
             putExtra(ScreenRecordingService.EXTRA_MAX_DURATION_MS, maxRecordingSecForSession * 1000L)
         }
+        // Alıcı ve zaman aşımı servisten ÖNCE kurulmalı: servis ilk saniyede patlarsa
+        // gönderdiği RECORDING_FAILED yayınını kaçırmayalım (yoksa panel sessizce açık kalıyor).
+        registerRecordingReceiver()
+        armRecordingStartTimeout()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
@@ -266,6 +277,19 @@ class MainActivity : AppCompatActivity() {
 
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (BadgeLevelUpPayload listesi). */
     private var pendingBadgePayloadsForAd: List<com.example.app.BadgeLevelUpPayload> = emptyList()
+    /**
+     * Türü LESSON olan bir item'dan harita dönüşü başladı mı? Rozet payload'larıyla aynı
+     * "bekleyen" deseni: reconcile yolu notifyMapVisibleAfterLessonClaim'i parametresiz
+     * çağırıp adCheckForBadgeInProgress'i true yapabildiği için, isLessonTypeReturn bilgisi
+     * doğrudan parametreyle taşındığında kaybolabiliyor. Burada biriktirilip onDone'da tüketilir.
+     */
+    private var pendingLessonTypeReturnForPromo = false
+    /**
+     * AskQuestionOpen promosunun bu dönüşte gösterileceği belli, ama içerik henüz ekranda değil
+     * (reklam kontrolü + harita temizlenme beklemesi). Rozet/rehberdeki desenin aynısı: bayrak
+     * açıkken harita kilitli tutulur ve [MapFragment.enableMapTouchRouting] kilidi açmaz.
+     */
+    private var askQuestionPromoPendingLock = false
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (String listesi). */
     private var pendingBadgeStringPayloadsForAd: List<String> = emptyList()
     /** Reklam kontrolü zaten uçuştayken ikinci çağrının onDone'ını tetiklemesini önler. */
@@ -458,6 +482,10 @@ class MainActivity : AppCompatActivity() {
         
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
+
+        // "Bu cihaz hoş geldin kredisini alabilir mi" cevabını tazele; promo kapısı bu
+        // önbelleğe bakıyor (bkz. WelcomeCreditEligibility).
+        WelcomeCreditEligibility.refresh(applicationContext)
 
         // Girişli kullanıcı: tüm part'larda eksik lessonProgress dokümanlarını arka planda doldur (idempotent).
         if (auth.currentUser != null) {
@@ -845,6 +873,8 @@ class MainActivity : AppCompatActivity() {
         binding.currencyText.setOnClickListener(openShop)
         binding.keyIcon.setOnClickListener(openShop)
         binding.keyText.setOnClickListener(openShop)
+        binding.creditIcon.setOnClickListener(openShop)
+        binding.creditText.setOnClickListener(openShop)
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
@@ -1176,6 +1206,12 @@ class MainActivity : AppCompatActivity() {
     private var isRecordingPaused = false
     private var maxRecordingSecForSession = 60
 
+    /** Servis ACTION_RECORDING_STARTED gönderdi mi? Gönderilmezse panel kapatılıp hata gösterilir. */
+    private var recordingStartConfirmed = false
+    private var recordingStartTimeoutRunnable: Runnable? = null
+    /** MediaProjection izni + encoder kurulumu için rahat bir pay; aşılırsa kayıt başlamamıştır. */
+    private val RECORDING_START_TIMEOUT_MS = 8_000L
+
     private fun showRecordingOverlay() {
         recordingStartTimeMs = System.currentTimeMillis()
         totalPausedDurationMs = 0L
@@ -1404,9 +1440,39 @@ class MainActivity : AppCompatActivity() {
         }
         binding.recordingOverlayContainer.visibility = View.VISIBLE
         updateRecordingTimerText(0)
+        registerRecordingReceiver()
+        recordingTimerRunnable = object : Runnable {
+            override fun run() {
+                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
+                updateRecordingTimerText(elapsedSec)
+                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
+            }
+        }
+        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
+        setQuitButtonEnabled(false)
+        setAskQuestionButtonEnabled(false)
+    }
+
+    /**
+     * Kayıt yayınlarının alıcısını kurar. Servis başlatılmadan ÖNCE çağrılır: servis daha
+     * ilk saniyede patlarsa (startForeground / encoder hatası) gönderdiği RECORDING_FAILED
+     * yayını, alıcı henüz kayıtlı olmadığı için kaybolabiliyordu. Zaten kayıtlıysa no-op.
+     */
+    private fun registerRecordingReceiver() {
+        if (recordingReceiver != null) return
         recordingReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
+                    ScreenRecordingService.ACTION_RECORDING_STARTED -> {
+                        recordingStartConfirmed = true
+                        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+                        recordingStartTimeoutRunnable = null
+                        // Sayaç, panelin açıldığı andan değil kaydın gerçekten başladığı
+                        // andan işlesin (MediaProjection kurulumu birkaç yüz ms sürebiliyor).
+                        recordingStartTimeMs = System.currentTimeMillis()
+                        totalPausedDurationMs = 0L
+                        updateRecordingTimerText(0)
+                    }
                     ScreenRecordingService.ACTION_RECORDING_FINISHED -> {
                         val path = intent.getStringExtra(ScreenRecordingService.EXTRA_OUTPUT_PATH)
                         hideRecordingOverlay()
@@ -1450,22 +1516,35 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val filter = IntentFilter().apply {
+            addAction(ScreenRecordingService.ACTION_RECORDING_STARTED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FINISHED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FAILED)
             addAction(ScreenRecordingService.ACTION_RECORDING_PAUSED)
             addAction(ScreenRecordingService.ACTION_RECORDING_RESUMED)
         }
         ContextCompat.registerReceiver(this, recordingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        recordingTimerRunnable = object : Runnable {
-            override fun run() {
-                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
-                updateRecordingTimerText(elapsedSec)
-                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
-            }
+    }
+
+    /**
+     * Servisten "kayıt başladı" sinyali gelmezse paneli kapatıp kullanıcıyı uyarır.
+     * Bu olmadan, kayıt hiç başlamamışken panel açık kalıp sayaç işliyor; kaydet ve duraklat
+     * butonları da yanıtı servisten bekledikleri için hiçbir şey yapmıyor gibi görünüyordu.
+     */
+    private fun armRecordingStartTimeout() {
+        recordingStartConfirmed = false
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        val runnable = Runnable {
+            recordingStartTimeoutRunnable = null
+            if (recordingStartConfirmed) return@Runnable
+            startService(
+                Intent(this, ScreenRecordingService::class.java)
+                    .setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD)
+            )
+            hideRecordingOverlay()
+            Toast.makeText(this, "Ekran kaydı bu cihazda başlatılamadı.", Toast.LENGTH_LONG).show()
         }
-        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
-        setQuitButtonEnabled(false)
-        setAskQuestionButtonEnabled(false)
+        recordingStartTimeoutRunnable = runnable
+        recordingHandler.postDelayed(runnable, RECORDING_START_TIMEOUT_MS)
     }
 
     private fun updateRecordingTimerText(elapsedSec: Int) {
@@ -1478,11 +1557,13 @@ class MainActivity : AppCompatActivity() {
     private fun hideRecordingOverlay() {
         recordingTimerRunnable?.let { recordingHandler.removeCallbacks(it) }
         recordingTimerRunnable = null
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        recordingStartTimeoutRunnable = null
+        recordingStartConfirmed = false
         recordingReceiver?.let { receiver ->
             try {
                 unregisterReceiver(receiver)
             } catch (_: IllegalArgumentException) { /* zaten kaldırılmış */ }
-            recordingReceiver = null
         }
         recordingReceiver = null
         binding.recordingOverlayContainer.visibility = View.GONE
@@ -1854,14 +1935,15 @@ class MainActivity : AppCompatActivity() {
             .addToBackStack(null)
             .commit()
     }
+    // Önbellek dosyası kullanıcıya özeldir; adını UserWalletFirestore belirler. Buradan
+    // doğrudan "app_prefs" açmak, hesap değişiminde önceki kullanıcının bakiyesini
+    // gösterilmesine yol açıyordu.
     fun saveCurrency(context: Context, value: Int) {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("currency", value).apply()
+        UserWalletFirestore.cacheCurrency(context, value)
     }
 
     fun saveKeys(context: Context, value: Int) {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("keys", value).apply()
+        UserWalletFirestore.cacheKeys(context, value)
     }
 
     fun getCurrency(context: Context): Int = UserWalletFirestore.getCachedCurrency(context)
@@ -1883,6 +1965,18 @@ class MainActivity : AppCompatActivity() {
     private fun applyWalletToUi(wallet: UserWallet) {
         binding.currencyText.text = wallet.currency.toString()
         binding.keyText.text = wallet.keys.toString()
+        // Kredi yerel önbellekte tutulmuyor; değeri yalnızca bu canlı dinleyici besliyor.
+        // Böylece sunucu tarafındaki değişiklikler (satın alma, soru gönderme, 48 saatlik
+        // iade) panele kendiliğinden yansıyor.
+        binding.creditText.text = wallet.questionCredits.toString()
+
+        // Plan sunucuda değişmiş olabilir (abonelik yenilendi, iptal edildi, süresi doldu
+        // ya da başka bir cihazdan işlem yapıldı). Bunların hiçbiri istemcide bir satın
+        // alma geri çağrısı üretmez; tek haber kanalı bu dinleyicidir. Yalnızca gerçekten
+        // değiştiğinde tam güncellemeyi çalıştırıyoruz ki her snapshot'ta gereksiz iş olmasın.
+        if (wallet.plan != energyManager.getUserPlan()) {
+            checkSubscriptionAndUpdateEnergy()
+        }
     }
 
     fun refreshWalletUi() {
@@ -1903,7 +1997,11 @@ class MainActivity : AppCompatActivity() {
         billingManager.onPricesReady = null
         billingManager.onError = null
         billingManager.onPurchaseGranted = { resyncWalletFromServer() }
-        billingManager.onSubscriptionUpdated = { checkSubscriptionAndUpdateEnergy() }
+        billingManager.onSubscriptionUpdated = {
+            checkSubscriptionAndUpdateEnergy()
+            // Kredi bu doğrulamada verilmiş olabilir; cihaz artık uygun olmayabilir.
+            WelcomeCreditEligibility.refresh(applicationContext)
+        }
     }
 
     /**
@@ -1980,19 +2078,25 @@ class MainActivity : AppCompatActivity() {
         // adımda dallanan) bir Firestore fetch döngüsüne yol açıp uygulamayı kilitliyordu.
         // Burada sadece zaten bilinen yerel duruma göre UI'ı güncelliyoruz.
         if (!::binding.isInitialized) return
-        binding.energyText.text = when {
-            energyManager.isEnergyBlocked() -> "0/${energyManager.getMaxEnergy()}"
-            energyManager.isInfiniteEnergy() -> "∞"
-            else -> "$energy/${energyManager.getMaxEnergy()}"
-        }
+        EnergyDisplay.apply(
+            text = binding.energyText,
+            infiniteBadge = binding.energyInfiniteBadge,
+            icon = binding.energyIcon,
+            isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+            isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
+            value = if (energyManager.isEnergyBlocked()) {
+                "0/${energyManager.getMaxEnergy()}"
+            } else {
+                "$energy/${energyManager.getMaxEnergy()}"
+            },
+        )
     }
     
     fun checkSubscriptionAndUpdateEnergy() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış, normal gösterim
-            val energy = energyManager.getCurrentEnergy()
-            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            updateEnergyDisplay(energyManager.getCurrentEnergy())
             return
         }
         
@@ -2014,31 +2118,29 @@ class MainActivity : AppCompatActivity() {
                     energyManager.setUserPlan(plan)
                     energyManager.setUserRoleApproval(role, teacherApproved)
 
-                    when {
-                        // Onaysız öğretmen: plan ne olursa olsun enerji her zaman 0
-                        energyManager.isEnergyBlocked() -> {
-                            binding.energyText.text = "0/${energyManager.getMaxEnergy()}"
-                        }
-                        // teacherApproved=true veya Pro/Premium plan: sonsuz enerji
-                        energyManager.isInfiniteEnergy() -> {
-                            binding.energyText.text = "∞"
-                        }
-                        else -> {
-                            val energy = energyManager.getCurrentEnergy()
-                            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
-                        }
-                    }
+                    // Onaysız öğretmende enerji her zaman 0'dır ve sonsuz sayılmaz;
+                    // bu yüzden kilit kontrolü sonsuzdan önce gelir.
+                    EnergyDisplay.apply(
+                        text = binding.energyText,
+                        infiniteBadge = binding.energyInfiniteBadge,
+                        icon = binding.energyIcon,
+                        isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+                        isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
+                        value = if (energyManager.isEnergyBlocked()) {
+                            "0/${energyManager.getMaxEnergy()}"
+                        } else {
+                            "${energyManager.getCurrentEnergy()}/${energyManager.getMaxEnergy()}"
+                        },
+                    )
                 } else {
                     // Firestore'da kayıt yok, normal gösterim
-                    val energy = energyManager.getCurrentEnergy()
-                    binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    updateEnergyDisplay(energyManager.getCurrentEnergy())
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("MainActivity", "Abonelik durumu kontrol edilemedi", e)
                 // Hata durumunda normal gösterim
-                val energy = energyManager.getCurrentEnergy()
-                binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                updateEnergyDisplay(energyManager.getCurrentEnergy())
             }
     }
     
@@ -2516,16 +2618,35 @@ class MainActivity : AppCompatActivity() {
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
         badgeStringPayloads: List<String> = emptyList(),
+        // true: bu dönüş türü LESSON olan (chest hariç) bir item'ın claim'inden geliyor —
+        // maybeShowAskQuestionPromo yalnızca bu durumda denenir (bkz. notifyMapVisibleAfterLessonClaim).
+        isLessonTypeReturn: Boolean = false,
     ) {
         android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
+        // scheduleSeasonGate'in post'u bizim post'umuzdan ÖNCE çalışıp reconcile üzerinden
+        // notifyMapVisibleAfterLessonClaim'i parametresiz tetikleyebiliyor; bayrağı burada
+        // (senkron) biriktir ki hangi çağrı kazanırsa kazansın kaybolmasın.
+        if (isLessonTypeReturn) {
+            pendingLessonTypeReturnForPromo = true
+            lockTouchForPendingAskQuestionPromo("finalizeMapReturn:$caller")
+        }
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
+        // Rozet veya rehber gösterileceği burada zaten kesinse (payload'lar dolu / rehber
+        // pending), asıl gösterim reklam kontrolü gibi asenkron bir gecikme yüzünden hemen
+        // gelmeyebilir — o gecikme boyunca harita tıklanabilir kalmasın diye erkenden kilitle.
+        // notifyMapVisibleAfterLessonClaim → enableMapTouchRouting bu kilidi gösterim
+        // netleştiğinde (ya da gösterilmeyecekse hemen) kaldırır.
+        if (badgePayloads.isNotEmpty() || badgeStringPayloads.isNotEmpty() || MarathonGuideStore.isPending(this)) {
+            (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                ?.lockTouchForPendingOverlay()
+        }
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
-            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads)
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads, isLessonTypeReturn)
             tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
         }
     }
@@ -2537,12 +2658,18 @@ class MainActivity : AppCompatActivity() {
     fun notifyMapVisibleAfterLessonClaim(
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
-        badgeStringPayloads: List<String> = emptyList()
+        badgeStringPayloads: List<String> = emptyList(),
+        isLessonTypeReturn: Boolean = false,
     ) {
         android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
         // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
+        // Aynı gerekçe: erken return'e takılsak bile lesson dönüşü bilgisi kaybolmasın.
+        if (isLessonTypeReturn) {
+            pendingLessonTypeReturnForPromo = true
+            lockTouchForPendingAskQuestionPromo("notifyMapVisible:$caller")
+        }
         // Eğer reklam kontrolü zaten uçuştaysa ikinci çağrı sadece payload biriktirir, onDone tekrar tetiklenmez.
         if (adCheckForBadgeInProgress) {
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
@@ -2557,7 +2684,16 @@ class MainActivity : AppCompatActivity() {
             val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
             pendingBadgePayloadsForAd = emptyList()
             pendingBadgeStringPayloadsForAd = emptyList()
+            val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
+            pendingLessonTypeReturnForPromo = false
             android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
+            // Aşağıdaki zincirde promo dalına düşülmeyecekse (rozet/rating kazandı ya da bu dönüş
+            // lesson dönüşü değil) erken kilit burada bırakılmalı; yoksa harita kilitli kalır.
+            if (resolvedBadgePayloads.isNotEmpty() || resolvedBadgeStringPayloads.isNotEmpty() ||
+                justFinishedChestForRating || !resolvedLessonTypeReturn
+            ) {
+                releaseAskQuestionPromoLock("otherBranch:$caller")
+            }
             if (resolvedBadgePayloads.isNotEmpty()) {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
@@ -2595,6 +2731,12 @@ class MainActivity : AppCompatActivity() {
                             AppRatingManager.checkAndShowRatingPrompt(this@MainActivity, 1)
                         }
                     }
+                }
+            } else if (resolvedLessonTypeReturn) {
+                // Chest dönüşleri (guide/rozet/rating/tasks yönlendirmesi) yukarıdaki dallarda
+                // ele alındığı için buraya asla düşmez — bu dal sadece türü LESSON olan item'lardan.
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    maybeShowAskQuestionPromo("notifyMapVisibleAfterLessonClaim:$caller")
                 }
             }
             val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
@@ -2665,6 +2807,160 @@ class MainActivity : AppCompatActivity() {
         }
         Log.d(MarathonGuideStore.LOG_TAG, "mapReady | ok")
         return true
+    }
+
+    /**
+     * [marathonGuideMapBlockReason]'a ek olarak, chest akışından (guide/rating/tasks yönlendirmesi)
+     * kalan gecikmeli/kuyruktaki durumları da kapsar. null → harita tamamen temiz, AskQuestionOpenFragment
+     * güvenle gösterilebilir.
+     */
+    private fun askQuestionPromoMapBlockReason(): String? {
+        marathonGuideMapBlockReason()?.let { return it }
+        if (GlobalValues.pendingCupPathRevealPartId != null) return "cup_path_pending"
+        if (MarathonGuideStore.isPending(this)) return "guide_pending"
+        if (justFinishedChestForRating) return "rating_pending"
+        if (supportFragmentManager.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (supportFragmentManager.findFragmentByTag("AskQuestionOpen") != null) return "already_showing"
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map != null && map.isAdded && map.view != null &&
+            map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
+        ) {
+            return "guide_panel_visible"
+        }
+        return null
+    }
+
+    /**
+     * Yalnızca AskQuestionOpen promosunu dener — harita dönüş akışının hiçbir parçasını
+     * (rozet, rehber, rating, reklam, sezon kapısı, tasks yönlendirmesi) çalıştırmaz.
+     * TutorialFragment → harita gibi, [finalizeMapReturnAfterLessonClaim]'in bilinçli olarak
+     * çağrılmadığı yollar için.
+     */
+    fun tryShowAskQuestionPromoOnly(caller: String) {
+        if (!::binding.isInitialized) return
+        lockTouchForPendingAskQuestionPromo(caller)
+        binding.root.post { maybeShowAskQuestionPromo(caller) }
+    }
+
+    /**
+     * Pro/Premium olmayan, öğretmen olmayan, oturumu açık kullanıcı — VE bu cihaz hoş geldin
+     * kredisini henüz almamış olmalı.
+     *
+     * Son koşulun sebebi: AskQuestionOpenFragment'ın vaadi öğretmene soru sormak. Cihaz
+     * krediyi daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı) kullanıcı denemeyi
+     * başlatsa bile kredi almıyor — Pro oluyor ama soru soramıyor, karşısına
+     * showOutOfCreditsDialog çıkıyor. O kullanıcıya bu tanıtımı OTOMATİK açmak, ekranın tek
+     * işlevini teslim etmemek olur.
+     *
+     * Butona basarak açma yolu (AskQuestionButtonBinder) bu koşula tabi değil: orada niyet
+     * kullanıcıdan geliyor ve ekranın "BUNUN YERİNE KREDİ AL" seçeneği ona doğru yolu
+     * gösteriyor.
+     */
+    private fun isAskQuestionPromoEligible(): Boolean {
+        if (FirebaseAuth.getInstance().currentUser == null) return false
+        if (energyManager.getUserRole() == "TEACHER") return false
+        val plan = energyManager.getUserPlan()
+        if (plan == "Pro" || plan == "Premium") return false
+        return WelcomeCreditEligibility.isEligible(applicationContext)
+    }
+
+    fun isAskQuestionPromoPending(): Boolean = askQuestionPromoPendingLock
+
+    /**
+     * Bu lesson dönüşünde promo gösterileceği sayaçtan belliyse haritayı daha reklam kontrolü
+     * başlamadan kilitler — rozet/rehberdeki eager lock deseninin aynısı. Promo ekrana gelene
+     * (ya da gelmeyeceği netleşene) kadar kilit [releaseAskQuestionPromoLock] ile açılmaz.
+     */
+    fun lockTouchForPendingAskQuestionPromo(caller: String) {
+        if (!::binding.isInitialized || askQuestionPromoPendingLock) return
+        if (!isAskQuestionPromoEligible()) return
+        val nextCount = GlobalValues.peekAskQuestionPromoLessonReturnCount(this) + 1
+        if (nextCount < ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD) return
+
+        askQuestionPromoPendingLock = true
+        logMapTouchDiag("askQuestionPromo", "LOCK", "caller=$caller nextCount=$nextCount")
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+            ?.lockTouchForPendingOverlay()
+        scheduleAskQuestionPromoLockWatchdog()
+    }
+
+    private fun releaseAskQuestionPromoLock(caller: String) {
+        if (!askQuestionPromoPendingLock) return
+        askQuestionPromoPendingLock = false
+        logMapTouchDiag("askQuestionPromo", "UNLOCK", "caller=$caller")
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+            ?.enableMapTouchRouting()
+    }
+
+    private fun scheduleAskQuestionPromoLockWatchdog() {
+        binding.root.postDelayed({
+            if (!askQuestionPromoPendingLock) return@postDelayed
+            // Reklam açıkken kilidi bırakmak, reklam kapanışıyla promo arasında tıklanabilir
+            // pencere açar; kontrol bitene kadar bekle.
+            if (adCheckForBadgeInProgress) {
+                scheduleAskQuestionPromoLockWatchdog()
+                return@postDelayed
+            }
+            releaseAskQuestionPromoLock("watchdog")
+        }, ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS)
+    }
+
+    /**
+     * Pro olmayan/öğretmen olmayan kullanıcıya, türü LESSON olan (chest hariç) bir item'dan haritaya
+     * her dönüşte 1 artan sayaç 3'e ulaşınca AskQuestionOpenFragment'ı otomatik gösterir.
+     * Guide/rozet/rating/tasks yönlendirmesiyle üst üste binmesin diye [askQuestionPromoMapBlockReason]
+     * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
+     */
+    private fun maybeShowAskQuestionPromo(caller: String) {
+        if (!::binding.isInitialized) return
+        if (!isAskQuestionPromoEligible()) {
+            releaseAskQuestionPromoLock("notEligible:$caller")
+            return
+        }
+
+        val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
+        if (count < ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD) {
+            releaseAskQuestionPromoLock("belowThreshold:$caller")
+            return
+        }
+        tryShowAskQuestionPromo(caller, count, attempt = 0)
+    }
+
+    /**
+     * Promoyu göstermeyi dener. Blok sebebi geçici olabileceği için (rozet Firestore kontrolü,
+     * reklam kontrolü, görev paneli kapanışı) kısa aralıklarla tekrar denenir; harita temizlenir
+     * temizlenmez promo ~[ASK_QUESTION_PROMO_RETRY_INTERVAL_MS] içinde açılır. Her denemede kapı
+     * yeniden değerlendirildiği için gerçekten bir overlay açıldıysa (rozet/rehber/rating) promo
+     * hiç gösterilmez, sayaç da sıfırlanmaz.
+     */
+    private fun tryShowAskQuestionPromo(caller: String, count: Int, attempt: Int) {
+        if (!::binding.isInitialized) return
+        // Gecikmeli denemede activity kapanmış/state kaydedilmiş olabilir; show() o durumda çöker.
+        if (isFinishing || isDestroyed || supportFragmentManager.isStateSaved) {
+            releaseAskQuestionPromoLock("activityGone:$caller")
+            return
+        }
+        val blockReason = askQuestionPromoMapBlockReason()
+        if (blockReason != null) {
+            if (attempt >= ASK_QUESTION_PROMO_MAX_ATTEMPTS) {
+                logMapTouchDiag("askQuestionPromo", "GIVE_UP", "caller=$caller reason=$blockReason count=$count")
+                releaseAskQuestionPromoLock("retriesExhausted:$caller")
+                return
+            }
+            if (attempt == 0) {
+                logMapTouchDiag("askQuestionPromo", "WAIT", "caller=$caller reason=$blockReason count=$count")
+            }
+            binding.root.postDelayed(
+                { tryShowAskQuestionPromo(caller, count, attempt + 1) },
+                ASK_QUESTION_PROMO_RETRY_INTERVAL_MS,
+            )
+            return
+        }
+        GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
+        logMapTouchDiag("askQuestionPromo", "SHOW", "caller=$caller count=$count attempt=$attempt")
+        AskQuestionOpenFragment().show(supportFragmentManager, "AskQuestionOpen")
+        // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
+        binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
     }
 
     fun tryShowPendingMarathonGuideOnMap(caller: String) {

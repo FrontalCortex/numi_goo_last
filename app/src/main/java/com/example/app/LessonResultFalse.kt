@@ -42,6 +42,8 @@ class LessonResultFalse : Fragment() {
     private var lessonScore: Int = 0
     private var isChestFailure: Boolean = false
     private var failRecorded: Boolean = false
+    /** Bu başarısızlık ekranı türü LESSON olan bir item'dan mı geldi? Args ile geliyor. */
+    private var isLessonTypeItem: Boolean = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
@@ -55,7 +57,12 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.loginReturn")
+            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
+            // kararı tek kaynaktan (item türü) veriyoruz.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "LessonResultFalse.loginReturn",
+                isLessonTypeReturn = isLessonTypeItem,
+            )
         }
     }
 
@@ -77,6 +84,8 @@ class LessonResultFalse : Fragment() {
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
             isChestFailure = bundle.getBoolean("isChestFailure", false)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             Log.d("mesi","$correctAnswers, $totalQuestions")
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
@@ -96,6 +105,7 @@ class LessonResultFalse : Fragment() {
                     GlobalLessonData.globalPartId,
                     GlobalValues.mapFragmentStepIndex,
                     item.currentStep,
+                    succsessRate,
                 )
             }
         }
@@ -125,7 +135,12 @@ class LessonResultFalse : Fragment() {
                     .commitNowAllowingStateLoss()
             }
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.claim")
+            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
+            // kararı tek kaynaktan (item türü) veriyoruz.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "LessonResultFalse.claim",
+                isLessonTypeReturn = isLessonTypeItem,
+            )
         }
 
         // Animasyonları başlat

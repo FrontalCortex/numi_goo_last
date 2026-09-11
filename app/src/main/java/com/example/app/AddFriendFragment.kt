@@ -239,7 +239,7 @@ class AddFriendFragment : Fragment() {
                     lastVisibleName = snapshot.documents[snapshot.size() - 1]
                     batchResults.addAll(parseSnapshot(snapshot))
                 }
-                // If we got exactly limitSize, there might be more. 
+                // If we got exactly limitSize, there might be more.
                 // If less, there are definitely no more for this specific query.
                 // We'll just assume there's no more if both queries return empty.
                 completedQueries++

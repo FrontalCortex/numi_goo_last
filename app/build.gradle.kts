@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp") version "1.9.24-1.0.20"
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 // Yayın imzalama bilgileri keystore.properties'ten okunur (git'e girmez, bkz. .gitignore).
@@ -32,7 +33,7 @@ android {
         applicationId = "com.numigo.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
+        versionCode = 7
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -50,6 +51,18 @@ android {
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+        // CI runner'larda ~/.android/debug.keystore varsayılan konumu ortam kurulumuna göre
+        // değişebiliyor (AGP her seferinde farklı, kayıtsız bir sertifika üretebiliyor →
+        // Google Sign-In DEVELOPER_ERROR). CI_DEBUG_KEYSTORE_PATH ortam değişkeni verildiğinde
+        // konumu varsaymadan doğrudan o dosyayı kullan; yoksa AGP'nin normal varsayılanı geçerli.
+        System.getenv("CI_DEBUG_KEYSTORE_PATH")?.let { ciDebugKeystorePath ->
+            getByName("debug") {
+                storeFile = file(ciDebugKeystorePath)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
             }
         }
     }
@@ -150,11 +163,29 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+    // Üretimdeki çökmeler ve "ölümcül olmayan" hatalar (bkz. AnalyticsLogger.recordNonFatal).
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-functions")
     implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+
+    // App Check: "bu istek gerçekten benim uygulamamdan mı geliyor?" sorusunu yanıtlar.
+    // Kurallar (firestore.rules) ve context.auth "kim" sorusunu çözüyor; App Check
+    // APK'dan çıkarılan yapılandırmayla yazılmış bir script'in ya da yamalanmış bir
+    // APK'nın backend'i çağırmasını engelleyen ayrı katmandır.
+    //
+    // ZORLAMA (enforcement) Firebase Console'dan açılır ve ŞU AN KAPALI OLMALIDIR:
+    // açıldığı anda App Check SDK'sı olmayan her istemci kilitlenir. Bu yüzden SDK
+    // yayınlanan ilk sürümde bulunmalı, zorlama ise Console'daki doğrulanmış istek
+    // oranı oturduktan sonra (yayından ~2-4 hafta sonra) servis servis açılmalıdır.
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    // Debug derlemeleri Play'den dağıtılmadığı için Play Integrity ile doğrulanamaz;
+    // debug sağlayıcı Logcat'e bir jeton basar, Console'a eklenince test cihazı da
+    // zorlama açıkken çalışır. Release APK'ya girmez.
+    debugImplementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Video oynatma (ağ / galeri formatları için) — aynı sürüm kullanılmalı

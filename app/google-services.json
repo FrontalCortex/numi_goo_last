@@ -59,11 +59,35 @@
           }
         },
         {
+          "client_id": "1056334163260-4u912j5t993pfuijj26dbqivnk4nn65e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "9644234983005570c956dbb4cca1cd9d46d966a9"
+          }
+        },
+        {
           "client_id": "1056334163260-abse1l7m8g6evnvmi79nhah7sjs3st2d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.numigo.app",
             "certificate_hash": "7c4a8f620f517eaf106f82f2b0185df4b7a4f8e0"
+          }
+        },
+        {
+          "client_id": "1056334163260-qp6br199n3bgu2t34lfphtcimnnl1j8m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "74f16eabd0fa36c415570b8f3760e9bc78585ac1"
+          }
+        },
+        {
+          "client_id": "1056334163260-v6dlnmkkp3hvjmdt0lopdfi2q16tce9k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.numigo.app",
+            "certificate_hash": "b9de53e8de6fdf3cabe523312fc9194ac308a134"
           }
         },
         {

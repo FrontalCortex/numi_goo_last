@@ -110,6 +110,14 @@ class NewChestFragment : Fragment() {
     // 0 = hiç tıklanmadı, 1..3 = adımlar, 4 = açılmaya hazır, 5 = açıldı
     private var tapCount = 0
 
+    // ── Ölçüm (bkz. AnalyticsLogger) ────────────────────────────────────────
+    // Sandık akışı kullanıcıdan 5 dokunuş ve birkaç saniye animasyon istiyor. Bu üç alan
+    // "akış ne kadar sürüyor" ve "kaç kişi ödülü görmeden çıkıyor" sorularını ölçer;
+    // animasyonun uzunluğuna dair kararlar buradan gelen dağılıma dayanmalı.
+    private var screenOpenedAtMs = 0L
+    private var rewardShown = false
+    private var outcomeLogged = false
+
     // Sallanma animasyonu
     private var idleAnim: ObjectAnimator? = null
     private var activeStepAnim: ObjectAnimator? = null
@@ -145,6 +153,9 @@ class NewChestFragment : Fragment() {
 
         originalStatusBarColor = requireActivity().window.statusBarColor
         originalNavigationBarColor = requireActivity().window.navigationBarColor
+
+        // Sunucu beklemesi de kullanıcının beklediği süreye dahil; sayaç burada başlar.
+        screenOpenedAtMs = android.os.SystemClock.elapsedRealtime()
 
         val startRarityName = arguments?.getString(ARG_START_RARITY) ?: ChestRarity.COMMON.name
         currentRarity = try {
@@ -216,8 +227,19 @@ class NewChestFragment : Fragment() {
                 binding.chestLoadingSpinner.visibility = View.GONE
                 // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
                 (activity as? MainActivity)?.refreshWalletUi()
+
+                AnalyticsLogger.logChestOpenStart(
+                    startRarity = currentRarity.name,
+                    finalRarity = outcome.finalRarity,
+                    // Reklamla kazanılan sandıklar nonce taşır; ders/görev sandıkları taşımaz.
+                    chestSource = if (arguments?.getString(ARG_AD_NONCE) != null) "ad" else "lesson",
+                )
             },
             onFailure = {
+                // Sunucu hatası "kullanıcı sıkılıp bıraktı" demek değil; sandık hiç açılabilir
+                // hâle gelmedi. Bayrağı burada set ederek onDestroyView'ın bunu terk olarak
+                // saymasını engelliyoruz — aksi halde chest_abandoned oranı şişerdi.
+                outcomeLogged = true
                 if (!isAdded || _binding == null) return@openChest
                 binding.chestLoadingSpinner.visibility = View.GONE
                 android.widget.Toast.makeText(
@@ -524,6 +546,17 @@ class NewChestFragment : Fragment() {
     private fun showReward() {
         ChestSoundPlayer.playReward(requireContext())
 
+        rewardShown = true
+        if (!outcomeLogged) {
+            outcomeLogged = true
+            AnalyticsLogger.logChestOpenComplete(
+                finalRarity = currentRarity.name,
+                rewardType = serverRewardType,
+                rewardAmount = serverRewardAmount,
+                durationMs = android.os.SystemClock.elapsedRealtime() - screenOpenedAtMs,
+            )
+        }
+
         // Ödül sunucudan geldi ve bakiyeye ZATEN yazıldı; burada yalnızca gösteriliyor.
         val isKeyReward = serverRewardType == "KEY"
         val earnedGold = if (isKeyReward) 0 else serverRewardAmount
@@ -627,6 +660,17 @@ class NewChestFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        // Ödül görülmeden çıkıldıysa kaydet. Tüm Activity'ler portrait kilitli olduğu için
+        // burası ekran döndürmeyle tetiklenmez; gerçekten terk edilen akışları ölçer.
+        if (!rewardShown && !outcomeLogged) {
+            outcomeLogged = true
+            AnalyticsLogger.logChestAbandoned(
+                atTap = tapCount,
+                durationMs = android.os.SystemClock.elapsedRealtime() - screenOpenedAtMs,
+            )
+        }
+
         activity?.window?.let { w ->
             originalStatusBarColor?.let { w.statusBarColor = it }
             originalNavigationBarColor?.let { w.navigationBarColor = it }

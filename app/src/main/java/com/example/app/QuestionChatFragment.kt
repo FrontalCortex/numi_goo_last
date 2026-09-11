@@ -64,6 +64,7 @@ class QuestionChatFragment : Fragment() {
     private val firestore = FirebaseFirestore.getInstance()
     private val authManager by lazy { AuthManager().also { it.initialize(requireContext()) } }
     private var questionId: String = ""
+    private var questionStudentUid: String = ""
     private var questionStatus: String = ""
     private var claimedByTeacherUid: String? = null
     private var isTeacher = false
@@ -350,6 +351,14 @@ class QuestionChatFragment : Fragment() {
             putExtra(QuestionUploadForegroundService.KEY_CLIENT_ID, clientId)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_UID, uid)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_ROLE, role)
+            // Storage kuralı, medyanın sahipliğini Firestore'a gitmeden bu metadata'dan
+            // okuyor (bkz. QuestionUploadForegroundService, storage.rules). questionStudentUid
+            // henüz yüklenmediyse (nadir bir yarış durumu) gönderen kendisiyse kendi uid'i
+            // yeterli olur.
+            putExtra(
+                QuestionUploadForegroundService.KEY_STUDENT_UID,
+                questionStudentUid.ifBlank { uid }
+            )
             filePath?.let { putExtra(QuestionUploadForegroundService.KEY_FILE_PATH, it) }
             textContent?.let { putExtra(QuestionUploadForegroundService.KEY_TEXT_CONTENT, it) }
             caption?.let { putExtra(QuestionUploadForegroundService.KEY_CAPTION, it) }
@@ -504,6 +513,7 @@ class QuestionChatFragment : Fragment() {
                     return@addSnapshotListener
                 }
                 if (doc == null || !doc.exists()) return@addSnapshotListener
+                questionStudentUid = doc.getString("studentUid") ?: questionStudentUid
                 val newStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
                 val newClaimedBy = doc.getString("claimedByTeacherUid")
                 if (newStatus == questionStatus && newClaimedBy == claimedByTeacherUid) return@addSnapshotListener
@@ -1377,7 +1387,10 @@ class QuestionChatFragment : Fragment() {
     private fun markResolved() {
         val updates = hashMapOf<String, Any>(
             "status" to StudentQuestion.STATUS_RESOLVED,
-            "resolvedAt" to Timestamp.now()
+            "resolvedAt" to Timestamp.now(),
+            // cleanupResolvedQuestionMedia (functions/index.js) bu alanı sorgulayıp N gün sonra
+            // medyayı otomatik siliyor; tekrar çözülürse bu false'a dönüp süre sıfırlanmalı.
+            "mediaPurged" to false
         )
         firestore.collection("questions").document(questionId).update(updates)
             .addOnSuccessListener {

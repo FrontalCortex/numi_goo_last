@@ -119,4 +119,16 @@
     <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
     <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
     <string name="ask_question_alert_ok">Tamam</string>
+
+    <!-- Plan ekranı: fiyatlar Play'den gelir, buradaki yalnızca biçimdir. -->
+    <string name="plan_price_monthly">Aylık %1$s</string>
+    <string name="plan_price_yearly">%1$s/yıl</string>
+    <!-- Abonelik CTA'sı: deneme yalnızca Play'in UYGUN gördüğü kullanıcıya vaat edilir. -->
+    <string name="sub_cta_trial_days">%1$d GÜN ÜCRETSİZ DENE</string>
+    <string name="sub_cta_trial_weeks">%1$d HAFTA ÜCRETSİZ DENE</string>
+    <!-- Deneme yoksa metin plana göre değişmeli: Lite seçiliyken "PRO'YA GEÇ" yazmak,
+         düğmeye basınca Lite satın alındığı için yanlış. Türkçe ek uyumu tek bir format
+         dizesiyle çözülemediği için (Pro'ya / Lite'a) ayrı ayrı tanımlı. -->
+    <string name="sub_cta_no_trial_pro">PRO\'YA GEÇ</string>
+    <string name="sub_cta_no_trial_lite">LITE\'A GEÇ</string>
 </resources>

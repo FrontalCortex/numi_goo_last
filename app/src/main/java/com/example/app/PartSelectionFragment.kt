@@ -48,7 +48,9 @@ class PartSelectionFragment : Fragment() {
                         firestore.collection("users").document(currentUser.uid)
                             .get()
                             .addOnSuccessListener { doc ->
-                                val plan = if (doc.exists()) doc.getString("plan") ?: "Free" else "Free"
+                                // Süresi dolmuş abonelik Free sayılır; aksi halde aboneliği
+                                // biten kullanıcı Pro derslerine erişmeye devam ederdi.
+                                val plan = if (doc.exists()) PlanStatus.effectivePlan(doc) else "Free"
                                 val teacherApproved = doc.getBoolean("teacherApproved") == true
                                 finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, part3ChestComplete)
                             }
@@ -64,7 +66,7 @@ class PartSelectionFragment : Fragment() {
     private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
         if (!isAdded) return
 
-        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true) || teacherApproved
+        val hasProPlan = PlanStatus.isProPlan(plan) || teacherApproved
         
         val getPartState = { partId: Int ->
             when (partId) {

@@ -28,6 +28,8 @@ data class StudentQuestion(
         const val STATUS_PENDING = "pending"
         const val STATUS_CLAIMED = "claimed"
         const val STATUS_RESOLVED = "resolved"
+        /** 48 saat cevapsız kaldığı için kredisi iade edilmiş; kuyrukta değil. */
+        const val STATUS_EXPIRED = "expired"
         const val MEDIA_TYPE_IMAGE = "image"
         const val MEDIA_TYPE_VIDEO = "video"
     }

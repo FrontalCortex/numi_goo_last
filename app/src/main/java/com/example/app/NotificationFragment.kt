@@ -909,7 +909,16 @@ class NotificationFragment : Fragment() {
         binding.emptyText.text = "Bekleyen soru yok."
         val query = firestore.collection("questions")
             .whereEqualTo("studentUid", uid)
-            .whereIn("status", listOf(StudentQuestion.STATUS_PENDING, StudentQuestion.STATUS_CLAIMED))
+            // Süresi dolanlar da listede kalır: kullanıcı sorusunu ve yüklediği medyayı
+            // kaybetmesin, tek dokunuşla tekrar sorabilsin (bkz. showResendQuestionDialog).
+            .whereIn(
+                "status",
+                listOf(
+                    StudentQuestion.STATUS_PENDING,
+                    StudentQuestion.STATUS_CLAIMED,
+                    StudentQuestion.STATUS_EXPIRED,
+                )
+            )
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
             if (e != null || _binding == null || !isAdded) return@addSnapshotListener
@@ -1047,8 +1056,50 @@ class NotificationFragment : Fragment() {
         }
     }
 
+    /**
+     * 48 saat cevapsız kalıp kredisi iade edilmiş soruyu tekrar kuyruğa almayı önerir.
+     *
+     * Kredi iade edildiği için tekrar sormak yeni bir kredi harcar — aksi halde
+     * cevapsız kalan soru sonradan bedava cevaplanmış olurdu.
+     */
+    private fun showResendQuestionDialog(question: StudentQuestion) {
+        val ctx = context ?: return
+        androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setTitle("Soru cevaplanmadı")
+            .setMessage("Bu soru 48 saat içinde cevaplanmadı ve kredin iade edildi. Tekrar sormak 1 kredi harcar.")
+            .setNegativeButton("Vazgeç", null)
+            .setPositiveButton("Tekrar sor") { _, _ -> resendQuestion(question) }
+            .show()
+    }
+
+    private fun resendQuestion(question: StudentQuestion) {
+        com.google.firebase.functions.FirebaseFunctions.getInstance()
+            .getHttpsCallable("resendTeacherQuestion")
+            .call(hashMapOf("questionId" to question.id))
+            .addOnSuccessListener {
+                if (!isAdded) return@addOnSuccessListener
+                Toast.makeText(requireContext(), "Soru tekrar gönderildi.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                val insufficient = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.code ==
+                    com.google.firebase.functions.FirebaseFunctionsException.Code.FAILED_PRECONDITION
+                val text = if (insufficient) {
+                    "Danışma kredin kalmadı. Mağazadan kredi alabilirsin."
+                } else {
+                    "Gönderilemedi: ${e.message}"
+                }
+                Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
+            }
+    }
+
     private fun onQuestionClick(question: StudentQuestion) {
         requireOnlineAndLoggedInOrLogin {
+            // Süresi dolmuş soru sohbete açılmaz; kullanıcıya tekrar sorma seçeneği sunulur.
+            if (!isTeacher && question.status == StudentQuestion.STATUS_EXPIRED) {
+                showResendQuestionDialog(question)
+                return@requireOnlineAndLoggedInOrLogin
+            }
             if (isTeacher) {
                 if (teacherSelectionMode && teacherTab == TeacherTab.CHATS) {
                     if (question.status == StudentQuestion.STATUS_RESOLVED) {

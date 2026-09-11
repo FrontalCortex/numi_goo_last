@@ -9,6 +9,20 @@ data class UserWallet(
     val keys: Int,
     val currency: Int,
     /**
+     * Öğretmen danışma kredisi. Sunucuya ait bir alandır (firestore.rules ile istemci
+     * yazımına kapalı); yalnızca satın alma ve askTeacherQuestion değiştirir.
+     * Yerel önbellekte tutulmaz, canlı dinleyiciden gelir.
+     */
+    val questionCredits: Int = 0,
+    /**
+     * Süre kontrolü uygulanmış GEÇERLİ plan (bkz. PlanStatus).
+     *
+     * Plan, istemcide hiçbir olay üretmeden değişebilir: RTDN'nin ilettiği yenileme ve
+     * iptal, aboneliğin süresinin dolması, başka bir cihazdan yapılan işlem. Bu canlı
+     * dinleyici, arayüzün bunları öğrenebildiği tek kanaldır.
+     */
+    val plan: String = "Free",
+    /**
      * Harcama çağrılarında sunucunun ürettiği tek kullanımlık geri alma jetonu.
      *
      * Bir harcamayı geri almak (iade etmek) yalnızca bu jetonla ve birebir aynı miktarla
@@ -46,10 +60,23 @@ object WalletReason {
 object UserWalletFirestore {
     const val FIELD_KEYS = "keys"
     const val FIELD_CURRENCY = "currency"
+    const val FIELD_QUESTION_CREDITS = "questionCredits"
     const val DEFAULT_KEYS = 1
     const val DEFAULT_CURRENCY = 0
 
     private const val PREFS_APP = "app_prefs"
+
+    /**
+     * Cüzdan önbelleği KULLANICIYA ÖZELDİR: aynı cihazda hesap değiştiğinde önceki
+     * kullanıcının altın/anahtar bakiyesi yeni kullanıcıya görünmesin diye dosya adı uid
+     * içerir. Değerler zaten Firestore'dan tazeleniyor; bu yalnızca ilk karede gösterilen
+     * önbellektir.
+     */
+    private fun walletPrefs(context: Context): android.content.SharedPreferences {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        val suffix = if (uid.isNullOrEmpty()) "guest" else uid
+        return context.getSharedPreferences(PREFS_APP + "_" + suffix, Context.MODE_PRIVATE)
+    }
     private const val PREF_CURRENCY = "currency"
     private const val PREF_CURRENCY_MIGRATED = "currency_migrated_to_firestore"
 
@@ -91,8 +118,7 @@ object UserWalletFirestore {
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
-                val keys = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-                    .getInt(FIELD_KEYS, DEFAULT_KEYS)
+                val keys = walletPrefs(context).getInt(FIELD_KEYS, DEFAULT_KEYS)
                 val currency = getCachedCurrency(context)
                 onResult(UserWallet(keys = keys, currency = currency))
             }
@@ -110,8 +136,16 @@ object UserWalletFirestore {
                 if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
                 val keys = snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS
                 val currency = snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context)
+                val credits = snapshot.getLong(FIELD_QUESTION_CREDITS)?.toInt() ?: 0
                 cacheLocally(context, keys, currency)
-                onUpdate(UserWallet(keys, currency))
+                onUpdate(
+                    UserWallet(
+                        keys,
+                        currency,
+                        questionCredits = credits,
+                        plan = PlanStatus.effectivePlan(snapshot),
+                    )
+                )
             }
     }
 
@@ -185,15 +219,23 @@ object UserWalletFirestore {
     }
 
     fun getCachedKeys(context: Context): Int =
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-            .getInt(FIELD_KEYS, DEFAULT_KEYS)
+        walletPrefs(context).getInt(FIELD_KEYS, DEFAULT_KEYS)
 
     fun getCachedCurrency(context: Context): Int =
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-            .getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+        walletPrefs(context).getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+
+    /** Yalnızca altın bakiyesini önbelleğe yazar (MainActivity.saveCurrency için). */
+    fun cacheCurrency(context: Context, value: Int) {
+        walletPrefs(context).edit().putInt(PREF_CURRENCY, value).apply()
+    }
+
+    /** Yalnızca anahtar bakiyesini önbelleğe yazar (MainActivity.saveKeys için). */
+    fun cacheKeys(context: Context, value: Int) {
+        walletPrefs(context).edit().putInt(FIELD_KEYS, value).apply()
+    }
 
     private fun cacheLocally(context: Context, keys: Int, currency: Int) {
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+        walletPrefs(context)
             .edit()
             .putInt(FIELD_KEYS, keys)
             .putInt(PREF_CURRENCY, currency)
@@ -201,7 +243,7 @@ object UserWalletFirestore {
     }
 
     private fun resolveCurrencyForMigration(context: Context): Int {
-        val prefs = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+        val prefs = walletPrefs(context)
         if (!prefs.getBoolean(PREF_CURRENCY_MIGRATED, false)) {
             val legacy = prefs.getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
             prefs.edit().putBoolean(PREF_CURRENCY_MIGRATED, true).apply()

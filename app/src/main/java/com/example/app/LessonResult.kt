@@ -41,6 +41,9 @@ class LessonResult : Fragment() {
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
+    private var questionElapsedMs: Long = -1L
+    /** Türü LESSON olan bir item mı? Dersi başlatan fragment args ile bildiriyor. */
+    private var isLessonTypeItem: Boolean = false
 
     private val revealHandler = Handler(Looper.getMainLooper())
     private var activeCountAnimator: ValueAnimator? = null
@@ -112,6 +115,9 @@ class LessonResult : Fragment() {
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
             } else {
@@ -145,6 +151,7 @@ class LessonResult : Fragment() {
             val args = Bundle().apply {
                 putFloat("successRate", succsessRate)
                 putInt("dersPuani", lessonScore)
+                putLong("questionElapsedMs", questionElapsedMs)
             }
             if (lessonItem?.stepIsFinish == true) {
                 LessonProgressDiag.log(
@@ -170,7 +177,13 @@ class LessonResult : Fragment() {
                                 .commitNowAllowingStateLoss()
                         }
                         main?.prepareMapReturnAfterLessonClaim()
-                        main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
+                        // Bu dal (SKIP_TO_MAP) hem LESSON hem CHEST item'ı için çalışabiliyor;
+                        // yukarıda (tıklama anında) okunan lessonItem'a göre karar veriyoruz —
+                        // prepareMapReturn sonrası global aramaya güvenilmiyor.
+                        main?.finalizeMapReturnAfterLessonClaim(
+                            "LessonResult.claimStepFinish",
+                            isLessonTypeReturn = isLessonTypeItem,
+                        )
                     }
                 }
                 val rootView = binding.root

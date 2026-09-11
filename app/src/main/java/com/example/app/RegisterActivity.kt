@@ -461,12 +461,18 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 // Play Services, imza/paket uyuşmazlığında da "iptal" gibi döner. Gerçek nedeni
                 // ApiException'ın durum kodundan oku: 10 = DEVELOPER_ERROR (SHA-1 eşleşmiyor),
                 // 12501 = kullanıcı gerçekten iptal etti, 7 = ağ hatası.
+                val reason = googleSignInFailureReason(data)
                 android.util.Log.w(
                     "RegisterActivity",
-                    "Google Sign-In tamamlanmadı: ${googleSignInFailureReason(data)}"
+                    "Google Sign-In tamamlanmadı: $reason"
                 )
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
+                if (!reason.contains("kullanıcı geri tuşuna basmış olabilir")
+                    && !reason.contains("statusCode=12501")
+                ) {
+                    showError("Google kaydı başarısız: $reason")
+                }
                 return
             }
 

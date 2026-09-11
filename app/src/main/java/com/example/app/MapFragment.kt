@@ -1330,6 +1330,10 @@ class MapFragment : Fragment() {
                 .setCustomAnimations(
                     android.R.anim.slide_in_left,
                     android.R.anim.slide_out_right,
+                    // popEnter/popExit: LessonAdapter'daki aynı açılış yolunda olduğu gibi,
+                    // geri tuşu/X ile kapanışta da kayarak kapansın.
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
                 )
                 .replace(
                     R.id.abacusFragmentContainer,
@@ -1730,12 +1734,29 @@ class MapFragment : Fragment() {
     /** Recycler + MainActivity dokunma yönlendirmesini sıfırla (overlay / guide panel sonrası). */
     fun enableMapTouchRouting() {
         if (!isAdded || view == null) return
-        
-        if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE) {
-            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled or visible")
+
+        // Rehber henüz gösterilmedi ama gösterilecek (isPending) — kilidi burada açıp
+        // 1.2-2.8 sn'lik retry penceresinde haritayı tıklanabilir bırakmayalım. Rozet
+        // Firestore kontrolü sürüyorsa da aynı sebeple kilit açılmasın (bkz.
+        // ChestFragment/ChestResult — GlobalValues.pendingBadgeFirestoreOperation).
+        // AskQuestionOpen promosu da aynı sebeple bekliyor olabilir (reklam kontrolü + haritanın
+        // temizlenmesi); promo ekrana gelene kadar kilit açılmamalı.
+        if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE ||
+            MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
+        ) {
+            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending, badge check in flight or ask-question promo pending")
             return
         }
-        
+
+        forceEnableMapTouchRouting()
+    }
+
+    /** [enableMapTouchRouting]'in guard'larını atlayıp kilidi doğrudan kaldırır — yalnızca
+     * rehber retry'ları tükendiğinde (bkz. [scheduleMarathonGuideRetriesAfterMapVisible]) güvenlik
+     * ağı olarak kullanılır; aksi halde harita kalıcı olarak kilitli kalabilir. */
+    private fun forceEnableMapTouchRouting() {
+        if (!isAdded || view == null) return
         enableMapFragmentViews()
         enableMainActivityViews()
         (activity as? MainActivity)?.logMapTouchDiag(
@@ -1745,12 +1766,27 @@ class MapFragment : Fragment() {
         )
     }
 
+    /**
+     * Rozet/rehber gösterileceği kesinleşmiş ama içerik henüz hazır değilken (reklam kontrolü,
+     * ağ isteği vb. asenkron gecikme) haritayı erkenden kilitler — açılışta 2-3 sn'lik
+     * tıklanabilir pencere kalmasın diye. [enableMapTouchRouting] içerik gösterildiğinde veya
+     * gösterilmeyeceği netleştiğinde kilidi kaldırır.
+     */
+    fun lockTouchForPendingOverlay() {
+        if (!isAdded || view == null) return
+        disableMainActivityViews()
+        disableMapFragmentViews()
+    }
+
     /** Ders overlay (Abacus quit, ChestResult vb.) kapandıktan sonra liste ve dokunuşları yenile. */
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
         
-        // EAGER LOCK: Eğer rehber açılacaksa haritanın animasyonunu/rötarını beklemeden kalkanı hemen aç!
-        if (MarathonGuideStore.isPending(requireContext())) {
+        // EAGER LOCK: Eğer rehber ya da AskQuestionOpen promosu açılacaksa haritanın
+        // animasyonunu/rötarını beklemeden kalkanı hemen aç!
+        if (MarathonGuideStore.isPending(requireContext()) ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
+        ) {
             disableMainActivityViews()
             disableMapFragmentViews()
         }
@@ -1818,6 +1854,19 @@ class MapFragment : Fragment() {
                 maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss+retry@${delay}ms")
             }, delay)
         }
+        // Güvenlik ağı: son retry'dan sonra rehber hâlâ pending ise (kalıcı bir block_reason
+        // yüzünden hiç gösterilemediyse) [enableMapTouchRouting]'in isPending guard'ı haritayı
+        // süresiz kilitli bırakır — burada zorla açıyoruz.
+        view?.postDelayed({
+            if (!isAdded || view == null) return@postDelayed
+            if (MarathonGuideStore.isPending(requireContext())) {
+                LessonProgressDiag.log(
+                    "MapFragment.guideRetry",
+                    "safety-net@3200ms still pending → force unlock touch",
+                )
+                forceEnableMapTouchRouting()
+            }
+        }, 3_200L)
     }
 
     /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */

@@ -860,7 +860,26 @@ exports.onMessageCreated = functions.firestore
     return null;
   });
 
-// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları kalıcı sil
+// Storage'daki soru medyasını (ekran görüntüsü/video/sohbet eki) sonsuza kadar biriktirmemek
+// için Firestore dokümanlarıyla birlikte siliyoruz — aksi halde bucket hiç küçülmüyor.
+async function deleteStorageFiles(paths) {
+  const bucket = admin.storage().bucket();
+  await Promise.all(
+    paths.filter(Boolean).map((path) =>
+      bucket
+        .file(path)
+        .delete()
+        .catch((err) => {
+          if (err.code !== 404) {
+            console.error(`Storage dosyası silinemedi: ${path}`, err.message);
+          }
+        }),
+    ),
+  );
+}
+
+// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları + Storage
+// medyasını kalıcı sil
 exports.onQuestionUpdated = functions.firestore
   .document('questions/{questionId}')
   .onUpdate(async (change, context) => {
@@ -874,6 +893,12 @@ exports.onQuestionUpdated = functions.firestore
     const bothDeleted =
       deletedForUids.includes(studentUid) && deletedForUids.includes(claimedByTeacherUid);
     if (!bothDeleted) return null;
+
+    const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
+    const storagePaths = messagesSnap.docs
+      .map((doc) => doc.data().mediaStoragePath)
+      .concat([after.videoStoragePath, after.screenshotStoragePath]);
+    await deleteStorageFiles(storagePaths);
 
     await deleteCollection(`questions/${questionId}/messages`);
     await change.after.ref.delete();
@@ -941,6 +966,25 @@ exports.mirrorPublicProfile = functions.firestore
     return null;
   });
 
+// Storage Rules, öğretmen kontrolü için Firestore'a cross-service `firestore.get()` ile
+// bakıyordu; bu servisler-arası çağrı güvenilir çalışmadı (öğretmen kendi onaylı
+// olduğunu doğrulayamıyor, başka öğrencinin soru medyasını indiremiyordu). Storage
+// Rules'ın doğrudan ve güvenilir okuyabildiği tek yer ID token'ın kendisi olduğu için
+// `teacherApproved`'ı buraya bir custom claim olarak da yazıyoruz.
+exports.syncTeacherClaim = functions.firestore
+  .document('users/{uid}')
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    if (!change.after.exists) return null;
+
+    const before = change.before.exists ? change.before.data().teacherApproved === true : null;
+    const after = change.after.data().teacherApproved === true;
+    if (before === after) return null;
+
+    await admin.auth().setCustomUserClaims(uid, { teacherApproved: after });
+    return null;
+  });
+
 // ─── Takip sayaçları ────────────────────────────────────────────────────────
 //
 // `followersCount` / `followingCount` artık İSTEMCİ TARAFINDAN YAZILMIYOR. Eskiden
@@ -976,6 +1020,77 @@ exports.onFollowingDeleted = functions.firestore
   .document('users/{ownerUserId}/following/{followingUid}')
   .onDelete((snap, context) => adjustCounter(context.params.ownerUserId, 'followingCount', -1));
 
+/**
+ * Silinen kullanıcının öğretmen danışma sorularını, mesajlarını ve medyasını siler.
+ *
+ * NEDEN AYRI BİR ADIM
+ *   `questions` ÜST SEVİYE bir koleksiyon ve kullanıcıya `studentUid` alanıyla bağlı; yani
+ *   `recursiveDelete(users/{uid})` ona hiç dokunmuyordu. Gizlilik politikası silmenin
+ *   mesajları da kaldırdığını söylüyor, kod bunu yapmıyordu — öğrencinin ödev fotoğrafları
+ *   ve videoları Storage'da süresiz kalıyordu. (cleanupResolvedQuestionMedia yalnızca
+ *   `resolved` durumdaki soruların medyasını 30 gün sonra temizliyor.)
+ *
+ * AÇIK MODERASYON RAPORU OLANLAR ATLANIR
+ *   Bekleyen bir `messageReports` kaydı varsa soru korunur: rapor incelenmeden kanıtın
+ *   silinmemesi gerekiyor. Aynı kural runResolvedQuestionMediaCleanup'ta da uygulanıyor.
+ *   Bu istisna gizlilik politikasında beyan edilmiştir.
+ *
+ * Sorgu tek eşitlik filtresi kullanıyor (studentUid), yani bileşik indeks gerekmiyor.
+ */
+async function deleteUserQuestions(uid) {
+  const snapshot = await db.collection('questions').where('studentUid', '==', uid).get();
+  const counts = { deleted: 0, skippedForReport: 0, failed: 0, mediaFailed: 0 };
+
+  for (const doc of snapshot.docs) {
+    try {
+      const pendingReport = await db
+        .collection('messageReports')
+        .where('questionId', '==', doc.id)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+      if (!pendingReport.empty) {
+        counts.skippedForReport++;
+        continue;
+      }
+
+      const data = doc.data();
+      const messagesSnap = await doc.ref.collection('messages').get();
+      const storagePaths = messagesSnap.docs
+        .map((m) => m.data().mediaStoragePath)
+        .concat([data.videoStoragePath, data.screenshotStoragePath]);
+
+      // Önce Storage denenmeli: doküman silindikten sonra dosya yollarını öğrenmenin yolu
+      // kalmaz. Ama AYRI bir try içinde — Storage tarafındaki bir sorun (bucket
+      // yapılandırması, izin, kesinti) kullanıcının verisinin silinmesini ENGELLEMEMELİ.
+      // Öncelik sırası: veri silme bir yükümlülük, artakalan medya dosyası ise
+      // temizlenebilir bir kalıntı.
+      try {
+        await deleteStorageFiles(storagePaths);
+      } catch (error) {
+        counts.mediaFailed++;
+        console.error('Silinen kullanıcının soru medyası silinemedi (Firestore silme devam ediyor)', {
+          uid,
+          questionId: doc.id,
+          error: error.message,
+        });
+      }
+
+      await db.recursiveDelete(doc.ref);
+      counts.deleted++;
+    } catch (error) {
+      console.error('Silinen kullanıcının sorusu temizlenemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+      counts.failed++;
+    }
+  }
+
+  return counts;
+}
+
 // Auth 'onDelete' trigger to recursively delete user data in Firestore
 exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   const uid = user.uid;
@@ -1010,7 +1125,19 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing leaderboard entries for ${uid}:`, error);
   }
+
+  // Danışma soruları users/{uid} altında DEĞİL, üst seviye `questions` koleksiyonunda;
+  // yukarıdaki recursiveDelete onlara ulaşmıyor.
+  try {
+    const counts = await deleteUserQuestions(uid);
+    console.log('Silinen kullanıcının danışma soruları temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing questions for ${uid}:`, error);
+  }
 });
+
+// Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
+exports._deleteUserQuestions = deleteUserQuestions;
 // ─── Cüzdan (altın / anahtar) güncelleme ────────────────────────────────────
 //
 // GÜVENLİK MODELİ
@@ -1313,7 +1440,10 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
 //     çağırdığı, gerekçe kataloğuyla sınırlanmış ayrı bir yoldur.
 //
 // Kurulum: docs/SATIN_ALMA_ENTEGRASYONU.md
-const { google } = require('googleapis');
+// NOT: `googleapis` modülü ~yüzlerce API yüzeyi içerir ve yüklenmesi saniyeler sürer.
+// Modül seviyesinde require edilirse `firebase deploy` sırasındaki fonksiyon keşfi
+// (10 sn'lik analiz penceresi) zaman aşımına uğrayabiliyor. Bu yüzden sadece Play
+// Developer API'ye gerçekten ihtiyaç duyan yerde, tembel olarak yükleniyor.
 
 // Play Console'daki paket adı. `com.example.*` Play tarafından reddedilir;
 // gerçek paket adına geçildiğinde ortam değişkeni olarak set edilmelidir:
@@ -1323,19 +1453,338 @@ const ANDROID_PACKAGE_NAME = process.env.ANDROID_PACKAGE_NAME || '';
 // Tüketilebilir ürünler: productId -> verilecek miktar.
 // Play Console'daki ürün kimlikleriyle ve istemcideki BillingCatalog ile birebir aynı olmalı.
 const PLAY_PRODUCT_CATALOG = {
-  gold_1200: { currency: 1200, keys: 0 },
-  gold_7000: { currency: 7000, keys: 0 },
-  gold_15000: { currency: 15000, keys: 0 },
-  keys_10: { currency: 0, keys: 10 },
-  keys_50: { currency: 0, keys: 50 },
-  keys_100: { currency: 0, keys: 100 },
+  gold_small: { currency: 5000, keys: 0, credits: 0 },
+  gold_medium: { currency: 20000, keys: 0, credits: 0 },
+  gold_large: { currency: 100000, keys: 0, credits: 0 },
+  keys_small: { currency: 0, keys: 10, credits: 0 },
+  keys_medium: { currency: 0, keys: 50, credits: 0 },
+  keys_large: { currency: 0, keys: 200, credits: 0 },
+  // Öğretmen danışma kredileri. Her kredi bir soru hakkıdır ve cevaplandığında
+  // öğretmene ödenen ücret kadar gerçek maliyet doğurur — bu yüzden bedava
+  // dağıtılmaz, yalnızca satın alma ve Pro deneme hediyesiyle verilir.
+  credits_small: { currency: 0, keys: 0, credits: 1 },
+  credits_medium: { currency: 0, keys: 0, credits: 5 },
+  credits_large: { currency: 0, keys: 0, credits: 10 },
 };
+
+/**
+ * Pro abonelerine kredi paketlerinde verilen bonus kredi.
+ *
+ * Tek kredilik pakette bonus YOKTUR: ₺39'luk satıştan KDV ve Play komisyonundan
+ * sonra kalan (~₺27,6) tek bir kredinin maliyetini (₺15) ancak karşılar; bonus
+ * verilirse paket zarara geçer. Büyük paketlerde marj bonusu absorbe eder.
+ */
+const PRO_CREDIT_BONUS = {
+  credits_medium: 1,
+  credits_large: 2,
+};
+
+/**
+ * Pro'ya ilk geçişte verilen hoş geldin kredisi.
+ *
+ * Denemeyle mi doğrudan mı abone olunduğu fark etmez; aksi halde ücretsiz denemeyi
+ * başlatan kullanıcı 1 kredi alırken doğrudan ödeme yapan hiç alamıyordu.
+ *
+ * İKİ KAPI birden geçilmeli:
+ *   1. processedPurchases/{token}.welcomeCreditGranted — aynı abonelik iki kez vermesin.
+ *      İşaretçi kullanıcı dokümanında DEĞİL burada: kullanıcı kendi dokümanını silip
+ *      yeniden oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat
+ *      döngüsüyle sınırsız kredi üretilebilirdi.
+ *   2. welcomeCreditGrants/{deviceHash} — aynı CİHAZ iki kez almasın. Birincisi tek başına
+ *      yetmiyordu: yeni Google hesabı + yeni uygulama hesabı = yeni token, yani her turda
+ *      bir kredi daha. Cihaz kapısı bunun ucuz yollarını (yeni hesap, uygulama verisini
+ *      temizleme, yeniden kurulum) kapatıyor; fabrika ayarları, ikinci cihaz ve ikincil
+ *      kullanıcı profili açık kalıyor — bilinçli kabul.
+ */
+const PRO_WELCOME_CREDITS = 1;
+
+/**
+ * Hoş geldin kredisinin CİHAZ başına da bir kez verilmesi için kullanılan gizli salt.
+ *
+ * Ham ANDROID_ID asla saklanmaz ve loglanmaz; yalnızca bu salt ile HMAC'lenmiş özeti
+ * `welcomeCreditGrants/{hash}` doküman kimliği olarak tutulur.
+ */
+const WELCOME_CREDIT_SALT = process.env.WELCOME_CREDIT_SALT || '';
+
+/**
+ * İstemciden gelen cihaz tanımlayıcısını saklanabilir bir özete çevirir.
+ *
+ * Salt tanımlı değilse null döner ve arayan taraf cihaz kontrolünü ATLAR (yalnızca token
+ * kontrolü kalır). Bilinçli bir tercih: eksik yapılandırma yüzünden gerçek kullanıcıların
+ * hediyesini kesmek, istismarı bir süre açık bırakmaktan daha kötü. Durum loglanıyor.
+ */
+function hashDeviceKey(rawDeviceKey) {
+  if (!WELCOME_CREDIT_SALT) {
+    console.warn('WELCOME_CREDIT_SALT tanımlı değil — hoş geldin kredisi cihaz kontrolü atlanıyor.');
+    return null;
+  }
+  if (typeof rawDeviceKey !== 'string') return null;
+  const trimmed = rawDeviceKey.trim();
+  if (!trimmed) return null;
+  return require('crypto')
+    .createHmac('sha256', WELCOME_CREDIT_SALT)
+    .update(trimmed)
+    .digest('hex');
+}
+
+/** Pro/Premium abonelerine bonus uygulanır (istemcideki plan kontrolüyle aynı). */
+function creditBonusFor(userData, productId) {
+  const plan = effectivePlan(userData);
+  const isPro = plan === 'Pro' || plan === 'Premium';
+  return isPro ? (PRO_CREDIT_BONUS[productId] || 0) : 0;
+}
 
 // Abonelikler: productId -> users/{uid}.plan değeri.
 const PLAY_SUBSCRIPTION_CATALOG = {
   pro_monthly: { plan: 'Pro' },
   lite_monthly: { plan: 'Lite' },
 };
+
+/**
+ * Plan rütbesi. Yüksek olan daha kapsamlı plandır.
+ * İstemcideki BillingCatalog.subscriptionRank ile birlikte güncellenmelidir.
+ */
+const PLAN_RANK = { Free: 0, Lite: 1, Pro: 2, Premium: 3 };
+
+function planRank(plan) {
+  return PLAN_RANK[plan] || 0;
+}
+
+/**
+ * Bu token'ın senkronu `plan` alanlarını yazmalı mı?
+ *
+ * SORUN
+ *   Aynı anda iki aktif aboneliği olan kullanıcıda (Lite + Pro) her token ayrı ayrı
+ *   senkron ediliyor ve her senkron `plan`'ı KOŞULSUZ yazıyordu. refreshPurchases
+ *   satın almaları asenkron işlediği için tamamlanma sırası belirsiz: Lite senkronu
+ *   Pro'dan sonra biterse kullanıcı Pro'ya para ödediği hâlde Lite görünüyordu.
+ *   RTDN'de de aynısı — hangi aboneliğin bildirimi gelirse onun planı yazılıyordu.
+ *
+ * KURAL
+ *   Yaz  ⟺  bu token mevcut planın sahibiyse (o zaman düşürme/sona erme meşrudur)
+ *           VEYA yeni plan mevcut plandan düşük değilse.
+ *
+ * Saf fonksiyon: Play API'sine dokunmaz, bu yüzden gerçek abonelik olmadan test
+ * edilebilir (bkz. scripts/test-plan-resolution.js).
+ */
+/**
+ * Auth kaydı hâlâ duruyor mu?
+ *
+ * AccountDeletionHelper hesabı silerken hem `users/{uid}` dokümanını hem Auth kaydını
+ * siliyor. Firestore dokümanı kullanıcı tarafından tek başına da silinebildiği için
+ * (bkz. firestore.rules) daha güçlü sinyal olan Auth kaydına bakılıyor.
+ */
+async function firebaseUserExists(uid) {
+  try {
+    await admin.auth().getUser(uid);
+    return true;
+  } catch (error) {
+    if (error && error.code === 'auth/user-not-found') return false;
+    // Geçici bir hata olabilir; kararı arayan tarafa bırakma, yukarı fırlat.
+    throw error;
+  }
+}
+
+/**
+ * Bu token başka bir uid'ye bağlıyken yeni uid'ye devredilebilir mi?
+ *
+ * SORUN
+ *   Token sahipliği kontrolü, tek bir aboneliğin birden fazla hesaba Pro vermesini
+ *   engelliyor — gerçek bir koruma, kaldırılamaz. Ama yan etkisi ağırdı: uygulama
+ *   hesabını silip yeniden kaydolan kullanıcının aboneliği Play'de aktif kalmaya ve
+ *   parası çekilmeye devam ederken, uygulama her açılışta 'permission-denied' alıp
+ *   kullanıcıyı Free'de bırakıyordu. Kendi başına düzeltemiyordu.
+ *
+ * KURAL
+ *   Devret ⟺ eski uid'nin Auth kaydı artık yok (hesap gerçekten silinmiş).
+ *
+ * NEDEN GÜVENLİ
+ *   Token paylaşımı senaryosunda eski hesap DURUYOR, dolayısıyla istisna hiç devreye
+ *   girmiyor. Girmesi için orijinal sahibin hesabını tamamen silmesi gerekiyor; yani
+ *   "aktarım" ona tüm hesabına mal oluyor ve her an en fazla tek yararlanıcı kalıyor.
+ *
+ * Saf fonksiyon (varlık sorgusunun SONUCUNU alır, kendisi sorgulamaz) — böylece Auth'a
+ * ya da Play'e dokunmadan test edilebiliyor.
+ */
+function resolveTokenRebind(storedUid, requestingUid, storedUidStillExists) {
+  if (!storedUid || storedUid === requestingUid) {
+    return { allowed: true, rebind: false, reason: 'same_owner' };
+  }
+  if (storedUidStillExists) {
+    return { allowed: false, rebind: false, reason: 'other_account_active' };
+  }
+  return { allowed: true, rebind: true, reason: 'previous_account_deleted' };
+}
+
+/**
+ * Aboneliğe hak veren Play durumları.
+ *
+ * SUBSCRIPTION_STATE_CANCELED buraya DAHİL: Play'de bu durum "kullanıcı otomatik
+ * yenilemeyi kapattı ama süresi henüz dolmadı" demektir; kişinin ödediği döneme kadar
+ * hakkı devam eder. Listeden çıkarıldığında, iptal bildirimi (RTDN) geldiği anda plan
+ * Free'ye çekiliyordu — yani 1 Ekim'de abone olup 3 Ekim'de iptal eden kullanıcı ödediği
+ * 28 günü anında kaybediyordu. Ücretsiz denemede daha da ağır: denemeyi 2. günde iptal
+ * etmek (çok yaygın bir davranış) haftanın kalanını da götürüyordu.
+ *
+ * PAUSED ve ON_HOLD bilinçli olarak DIŞARIDA: ilkinde kullanıcı aboneliği kendisi
+ * duraklatmıştır, ikincisinde ödeme alınamamış ve Play hakkı zaten askıya almıştır.
+ * PENDING de dışarıda — ilk ödeme henüz tamamlanmamıştır.
+ */
+const ENTITLING_SUBSCRIPTION_STATES = [
+  'SUBSCRIPTION_STATE_ACTIVE',
+  'SUBSCRIPTION_STATE_IN_GRACE_PERIOD',
+  'SUBSCRIPTION_STATE_CANCELED',
+];
+
+/**
+ * Play'in döndürdüğü abonelik kaydından "şu an hak veriyor mu" sorusunu cevaplar.
+ *
+ * Durum tek başına yetmiyor: CANCELED hakkı sürdürür ama yalnızca `expiryTime`'a kadar.
+ * Bu yüzden karar her zaman (durum ∈ hak veren durumlar) VE (bitiş tarihi gelecekte)
+ * bileşimidir.
+ *
+ * Saf fonksiyon — gerçek bir token olmadan test edilebilir (bkz.
+ * scripts/test-subscription-verification.js).
+ */
+function subscriptionEntitlement(subscription, nowMs) {
+  const state = (subscription && subscription.subscriptionState) || '';
+  const items = (subscription && subscription.lineItems) || [];
+  // Bitiş tarihi, ürün kimliğiyle AYNI satır öğesinden okunuyor (bkz.
+  // subscriptionProductIds); ikisinin farklı öğelerden gelmesi tutarsızlık üretir.
+  const expiryRaw = (items.length > 0 ? items[items.length - 1].expiryTime : null) || null;
+  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
+  const stillValid =
+    ENTITLING_SUBSCRIPTION_STATES.includes(state) &&
+    Number.isFinite(expiryMs) &&
+    expiryMs > nowMs;
+  return { stillValid, expiryRaw, expiryMs };
+}
+
+/** Play'in döndürdüğü abonelikteki ürün kimlikleri (satır öğesi sırasıyla). */
+function subscriptionProductIds(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items
+    .map((item) => (item && typeof item.productId === 'string' ? item.productId : ''))
+    .filter((id) => !!id);
+}
+
+/**
+ * Bu token GERÇEKTEN hangi ürüne ait?
+ *
+ * SORUN
+ *   Tüketilebilir üründe `productId`, doğrulama çağrısının İÇİNE giriyor
+ *   (purchases.products.get({packageName, productId, token})) — eşleşmezse Play'in
+ *   kendisi reddediyor. Abonelikte ise çağrı yalnızca token alıyor
+ *   (purchases.subscriptionsv2.get({token})) ve plan, istemcinin bildirdiği üründen
+ *   okunuyordu. Yani geçerli bir `lite_monthly` token'ıyla `productId: "pro_monthly"`
+ *   göndermek Pro planını (ve hoş geldin kredisini) veriyordu; değiştirilmiş bir APK
+ *   bile gerekmiyor, callable'ı doğrudan çağırmak yetiyordu.
+ *
+ * KURAL
+ *   Play ürün bilgisi verdiyse GERÇEK odur. İstemcinin iddiası satır öğelerinden
+ *   birinde geçiyorsa aynen kullanılır; geçmiyorsa yok sayılır ve bitiş tarihiyle aynı
+ *   satır öğesinin ürünü esas alınır.
+ *
+ * NEDEN REDDETMEK YERİNE DÜZELTMEK
+ *   Uyuşmazlık her zaman saldırı değil: ertelenmiş düşürme (Pro → Lite) yenilemede
+ *   ürünü değiştirdiği için istemcinin elindeki Purchase nesnesi bir süre eski ürünü
+ *   bildirir. Reddetmek o kullanıcının planını senkronsuz bırakırdı. Play'in gerçeğini
+ *   yazmak iki durumu birden doğru çözüyor — sahtekârlık iddiası boşa düşer, gecikmiş
+ *   istemci de doğru plana oturur.
+ *
+ * Saf fonksiyon.
+ */
+function resolveVerifiedProductId(claimedProductId, playProductIds) {
+  const ids = playProductIds || [];
+  if (ids.length === 0) {
+    // Play satır öğesi döndürmedi (beklenmeyen cevap şekli). İddiaya güvenmek zorundayız;
+    // yine de katalog kontrolünden geçiyor ve durum loglanıyor.
+    return { productId: claimedProductId, verified: false, mismatch: false };
+  }
+  if (ids.includes(claimedProductId)) {
+    return { productId: claimedProductId, verified: true, mismatch: false };
+  }
+  return { productId: ids[ids.length - 1], verified: true, mismatch: true };
+}
+
+/**
+ * Satın alma token'ının kısa, saklanabilir kimliği.
+ *
+ * Token'ın HAM hâli `users/{uid}` dokümanına yazılmıyor: o dokümanı kullanıcının kendisi
+ * ve onaylı öğretmenler okuyabiliyor (bkz. firestore.rules). Token'ı ele geçirmek tek
+ * başına aboneliği devralmaya yetmiyor — sunucu başka bir uid'ye bağlı token'ı reddediyor —
+ * ama hesap silindiğinde devir yolu açıldığı için gereksiz bir maruziyet. Karşılaştırma
+ * için özet yeterli; token'ın kendisi zaten yüksek entropili, bu yüzden salt gerekmiyor.
+ *
+ * Destek tarafında ham token'a ihtiyaç duyulursa kaynak `processedPurchases/{token}`.
+ */
+function purchaseTokenFingerprint(purchaseToken) {
+  if (typeof purchaseToken !== 'string' || !purchaseToken) return null;
+  return require('crypto').createHash('sha256').update(purchaseToken).digest('hex');
+}
+
+/**
+ * Kullanıcının ŞU ANDAKİ planını veren kayıt bu mu?
+ *
+ * NEDEN TOKEN, NEDEN ÜRÜN DEĞİL
+ *   Sahiplik önce yalnızca `planProductId` ile ölçülüyordu ve bu iki yerde yanlış cevap
+ *   veriyordu:
+ *
+ *   • Ertelenmiş düşürme (Pro → Lite): Play aynı token'ı sürdürüp yenilemede ürünü
+ *     değiştiriyor. O an `planProductId` hâlâ pro_monthly olduğu için sahiplik tutmuyor,
+ *     Lite yazımı rütbe kuralına takılıyor ve para ödeyen abone eski `planExpiresAt`
+ *     geçene kadar Pro, sonra da uygulamayı yeniden açana kadar Free görünüyordu.
+ *
+ *   • İade geri alımı: kullanıcı Pro alıp (token A) iade edip yeniden abone olduğunda
+ *     (token B, aktif), A'nın iadesi ürün eşleştiği için B'nin planını siliyordu.
+ *
+ *   Token bazlı sahiplik ikisini de doğru çözüyor ve korumayı GENİŞLETMİYOR, daraltıyor:
+ *   farklı token hâlâ rütbe kuralına tabi, yani çift abonelikte Lite senkronu aktif
+ *   Pro'yu ezemiyor.
+ *
+ * ESKİ KAYITLAR
+ *   `planPurchaseTokenHash` bu değişiklikten önce yazılmadığı için mevcut abonelerde yok.
+ *   O durumda eski kurala (ürün eşleşmesi) düşülüyor — aksi halde mevcut bir Pro abonesinin
+ *   süresi dolduğunda kendi token'ı bile Free yazamazdı. İlk senkronda alan yazılıyor ve
+ *   kayıt kendiliğinden yeni kurala geçiyor.
+ *
+ * Saf fonksiyon.
+ */
+function ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken) {
+  const stored = userData || {};
+  const storedHash = stored.planPurchaseTokenHash || null;
+  if (storedHash) {
+    if (storedHash === purchaseTokenFingerprint(purchaseToken)) return true;
+    // DEVRALMA: plan/ürün değişikliğinde Play yeni bir token üretip `linkedPurchaseToken`
+    // ile eskisini işaret ediyor. Yeni abonelik, eskisinin DEVAMI — dolayısıyla planın
+    // sahipliğini de devralması gerekiyor.
+    //
+    // Bu olmadan ertelenmiş düşürme (Pro → Lite) yine takılabiliyordu: yeni token'ın
+    // özeti kayıtlıyla eşleşmiyor, rütbe kuralına düşülüyor ve Lite < Pro olduğu için
+    // yazım reddediliyordu. Eski dönemin bitişi ile bildirimin gelişi saniyeler
+    // farkında olduğu için sonuç zamanlamaya kalıyordu — kabul edilemez bir yarış.
+    //
+    // Korumayı zayıflatmıyor: bağı istemci değil PLAY kuruyor ve bağ, eski aboneliğin
+    // yerini yenisinin aldığı anlamına geliyor; yani eski abonelik artık aktif değil.
+    if (linkedPurchaseToken && storedHash === purchaseTokenFingerprint(linkedPurchaseToken)) {
+      return true;
+    }
+    return false;
+  }
+  const storedProductId = stored.planProductId || null;
+  return !!storedProductId && storedProductId === (productId || null);
+}
+
+function resolvePlanUpdate(userData, productId, newPlan, purchaseToken, linkedPurchaseToken) {
+  const storedPlan = effectivePlan(userData || {});
+  if (ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken)) {
+    return { write: true, reason: 'own_token' };
+  }
+  if (planRank(newPlan) >= planRank(storedPlan)) {
+    return { write: true, reason: 'rank_not_lower' };
+  }
+  return { write: false, reason: 'lower_than_active_plan' };
+}
 
 let androidPublisherClient = null;
 
@@ -1346,6 +1795,7 @@ let androidPublisherClient = null;
  */
 async function getAndroidPublisher() {
   if (androidPublisherClient) return androidPublisherClient;
+  const { google } = require('googleapis');
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/androidpublisher'],
   });
@@ -1370,7 +1820,10 @@ function readPurchaseArgs(data) {
   if (!productId || !purchaseToken) {
     throw new functions.https.HttpsError('invalid-argument', 'productId ve purchaseToken zorunludur.');
   }
-  return { productId, purchaseToken };
+  // Yalnızca abonelik yolunda gönderilir; hoş geldin kredisinin cihaz kontrolü için.
+  const deviceKey =
+    typeof payload.deviceKey === 'string' ? payload.deviceKey.trim().slice(0, 256) : '';
+  return { productId, purchaseToken, deviceKey };
 }
 
 /**
@@ -1434,6 +1887,8 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
       const userData = userDoc.data();
       const newKeys = (Number.parseInt(userData.keys, 10) || 0) + reward.keys;
       const newCurrency = (Number.parseInt(userData.currency, 10) || 0) + reward.currency;
+      const grantedCredits = reward.credits + creditBonusFor(userData, productId);
+      const newCredits = (Number.parseInt(userData.questionCredits, 10) || 0) + grantedCredits;
 
       transaction.set(purchaseRef, {
         uid,
@@ -1442,20 +1897,368 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         orderId: purchase.orderId || null,
         grantedKeys: reward.keys,
         grantedCurrency: reward.currency,
+        grantedCredits,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      transaction.update(userRef, { keys: newKeys, currency: newCurrency });
+      transaction.update(userRef, {
+        keys: newKeys,
+        currency: newCurrency,
+        questionCredits: newCredits,
+      });
 
-      return { keys: newKeys, currency: newCurrency };
+      return { keys: newKeys, currency: newCurrency, credits: newCredits };
     });
 
     console.log('Satın alma işlendi', { uid, productId, orderId: purchase.orderId });
-    return { success: true, keys: result.keys, currency: result.currency };
+    return { success: true, keys: result.keys, currency: result.currency, credits: result.credits };
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
     console.error('Satın alma işlenemedi', { uid, productId, error });
     throw new functions.https.HttpsError('internal', 'Satın alma işlenemedi.');
   }
+});
+
+/**
+ * Süresi dolmuş (`expired`) bir soruyu yeni bir kredi harcayarak tekrar kuyruğa alır.
+ *
+ * Kullanıcı sorusunu ve yüklediği medyayı kaybetmez; tek dokunuşla yeniden sorabilir.
+ * 48 saatlik iade sayacı da sıfırlanır, yani tekrar cevapsız kalırsa kredi yine iade edilir.
+ */
+exports.resendTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const questionId = readText((data || {}).questionId, 128);
+  if (!questionId) {
+    throw new functions.https.HttpsError('invalid-argument', 'questionId zorunludur.');
+  }
+
+  const questionRef = db.collection('questions').doc(questionId);
+  const userRef = db.collection('users').doc(uid);
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const [questionDoc, userDoc] = await Promise.all([
+      transaction.get(questionRef),
+      transaction.get(userRef),
+    ]);
+
+    if (!questionDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Soru bulunamadı.');
+    }
+    if (questionDoc.data().studentUid !== uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu soru size ait değil.');
+    }
+    if (questionDoc.data().status !== 'expired') {
+      throw new functions.https.HttpsError('failed-precondition', 'Bu soru zaten kuyrukta.');
+    }
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+
+    const userData = userDoc.data();
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError('failed-precondition', 'Yeterli danışma krediniz yok.');
+    }
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.update(questionRef, {
+      status: 'pending',
+      creditSpent: true,
+      creditRefunded: false,
+      // 48 saatlik iade sayacı baştan başlar.
+      createdAtMs: Date.now(),
+      lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      resentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru tekrar kuyruğa alındı', { uid, questionId, remaining });
+  return { success: true, credits: remaining };
+});
+
+/**
+ * 48 saat boyunca hiçbir öğretmenin almadığı soruların kredisini iade eder.
+ *
+ * Yalnızca `pending` (kimsenin üstlenmediği) sorular iade edilir. İade edilen soru
+ * `expired` durumuna geçer ve öğretmen kuyruğundan çıkar — aksi halde kredi iade
+ * edilmiş bir soru sonradan cevaplanıp bize bedava iş maliyeti çıkarırdı. Soru
+ * öğrencinin geçmişinde durmaya devam eder; "Tekrar sor" ile yeni bir kredi
+ * harcayarak kuyruğa geri gönderilebilir.
+ */
+async function runUnansweredQuestionRefund() {
+  const cutoff = Date.now() - QUESTION_REFUND_AFTER_MS;
+  const snapshot = await db
+    .collection('questions')
+    .where('status', '==', 'pending')
+    .where('createdAtMs', '<', cutoff)
+    .limit(300)
+    .get();
+
+  const counts = { scanned: snapshot.size, refunded: 0, skipped: 0, failed: 0 };
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    // Kredi harcanmadan oluşmuş (eski) veya zaten iade edilmiş kayıtlara dokunma.
+    if (data.creditSpent !== true || data.creditRefunded === true || !data.studentUid) {
+      counts.skipped++;
+      continue;
+    }
+    try {
+      await db.runTransaction(async (transaction) => {
+        const questionRef = doc.ref;
+        const userRef = db.collection('users').doc(data.studentUid);
+        const [questionDoc, userDoc] = await Promise.all([
+          transaction.get(questionRef),
+          transaction.get(userRef),
+        ]);
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş olabilir.
+        const fresh = questionDoc.data();
+        if (!questionDoc.exists || fresh.status !== 'pending' || fresh.creditRefunded === true) {
+          return;
+        }
+
+        if (userDoc.exists) {
+          const credits = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
+          transaction.update(userRef, { questionCredits: credits + 1 });
+        }
+        transaction.update(questionRef, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      counts.refunded++;
+    } catch (error) {
+      console.error('Soru kredisi iade edilemedi', { questionId: doc.id, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runUnansweredQuestionRefund tamamlandı', counts);
+  return counts;
+}
+
+exports.reconcileUnansweredQuestions = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runUnansweredQuestionRefund();
+    return null;
+  });
+
+/** Çözülmüş bir sorunun medyası bu süre sonunda, kimse elle silmese bile otomatik silinir. */
+const RESOLVED_MEDIA_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * NEDEN
+ *   Soru medyası (video/görsel/ses) eskiden yalnızca hem öğrenci hem öğretmen elle
+ *   "listeden sil" dediğinde Storage'dan siliniyordu (bkz. onQuestionUpdated) — pratikte bu
+ *   neredeyse hiç gerçekleşmiyor, bucket sınırsız büyüyordu. Bu fonksiyon çözülmüş bir sorunun
+ *   ağır medya dosyalarını (asıl maliyet kalemi) kimse elle silmese bile belli bir süre sonra
+ *   otomatik siler. Firestore metnini (soru/mesaj dokümanlarını) SİLMEZ — kullanıcı sohbet
+ *   geçmişini görmeye devam eder, sadece medya alanları temizlenir.
+ *
+ *   Bekleyen (pending) bir raporu olan sorulara DOKUNMAZ — moderasyon incelemesi bitmeden
+ *   kanıt (raporlanan medya) silinmesin diye; bir sonraki günlük taramada tekrar denenir.
+ */
+async function runResolvedQuestionMediaCleanup() {
+  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - RESOLVED_MEDIA_RETENTION_MS);
+  const snapshot = await db
+    .collection('questions')
+    .where('status', '==', 'resolved')
+    .where('mediaPurged', '==', false)
+    .where('resolvedAt', '<', cutoff)
+    .limit(300)
+    .get();
+
+  const counts = { scanned: snapshot.size, purged: 0, skippedForReport: 0, failed: 0 };
+
+  for (const doc of snapshot.docs) {
+    const questionId = doc.id;
+    try {
+      const pendingReport = await db
+        .collection('messageReports')
+        .where('questionId', '==', questionId)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+      if (!pendingReport.empty) {
+        counts.skippedForReport++;
+        continue;
+      }
+
+      const data = doc.data();
+      const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
+      const storagePaths = messagesSnap.docs
+        .map((m) => m.data().mediaStoragePath)
+        .concat([data.videoStoragePath, data.screenshotStoragePath]);
+      await deleteStorageFiles(storagePaths);
+
+      const batch = db.batch();
+      messagesSnap.docs.forEach((m) => {
+        if (m.data().mediaStoragePath) {
+          batch.update(m.ref, {
+            mediaStoragePath: admin.firestore.FieldValue.delete(),
+            mediaUrl: admin.firestore.FieldValue.delete(),
+            thumbnailUrl: admin.firestore.FieldValue.delete(),
+          });
+        }
+      });
+      batch.update(doc.ref, {
+        mediaPurged: true,
+        mediaPurgedAt: admin.firestore.FieldValue.serverTimestamp(),
+        videoStoragePath: admin.firestore.FieldValue.delete(),
+        videoUrl: admin.firestore.FieldValue.delete(),
+        screenshotStoragePath: admin.firestore.FieldValue.delete(),
+        screenshotUrl: admin.firestore.FieldValue.delete(),
+      });
+      await batch.commit();
+      counts.purged++;
+    } catch (error) {
+      console.error('Soru medyası temizlenemedi', { questionId, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runResolvedQuestionMediaCleanup tamamlandı', counts);
+  return counts;
+}
+
+exports.cleanupResolvedQuestionMedia = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 24 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runResolvedQuestionMediaCleanup();
+    return null;
+  });
+
+// Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
+exports._runResolvedQuestionMediaCleanup = runResolvedQuestionMediaCleanup;
+
+// ─── Öğretmen danışma soruları — sunucu taraflı ─────────────────────────────
+//
+// NEDEN
+//   Soru dokümanları eskiden doğrudan istemciden yazılıyordu (firestore.rules:
+//   `allow create: if isSignedIn()`). Yani değiştirilmiş bir istemci kredi harcamadan
+//   sınırsız soru gönderebilirdi ve cevaplanan her soru gerçek para maliyeti doğurur.
+//   Artık soru YALNIZCA burada oluşturulur; kredi düşümü ve doküman yazımı aynı
+//   transaction'da yapılır, böylece "kredi gitti soru gelmedi" durumu da oluşamaz.
+
+/** Cevapsız soru bu süre sonunda krediyi iade eder ve öğretmen kuyruğundan çıkar. */
+const QUESTION_REFUND_AFTER_MS = 48 * 60 * 60 * 1000;
+
+/** UserAskQuestionRestriction.kt ile aynı kural. */
+function isAskQuestionRestricted(userData) {
+  if (userData.banned === true) return true;
+  const until = userData.restrictedUntil;
+  const untilMs = until && typeof until.toMillis === 'function' ? until.toMillis() : 0;
+  return untilMs > Date.now();
+}
+
+function readText(value, maxLength) {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
+/**
+ * Öğretmene soru gönderir: 1 danışma kredisi düşer ve soruyu oluşturur.
+ *
+ * Medya (görsel/video) istemci tarafından Storage'a yüklenir; buraya yalnızca yolu
+ * ve indirme adresi gelir. Kredi kontrolü, düşümü ve soru yazımı atomiktir.
+ */
+exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const payload = data || {};
+
+  const isVideo = payload.mediaType === 'video';
+  const storagePath = readText(payload.storagePath, 512);
+  const mediaUrl = readText(payload.mediaUrl, 2048);
+  const message = readText(payload.message, 500);
+  const previewText = readText(payload.previewText, 500);
+  const description = readText(payload.description, 2000);
+  const videoDurationSec = Number.parseInt(payload.videoDurationSec, 10) || 0;
+
+  if (!storagePath || !mediaUrl) {
+    throw new functions.https.HttpsError('invalid-argument', 'Medya bilgisi eksik.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const questionRef = db.collection('questions').doc();
+  const messageRef = questionRef.collection('messages').doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const userDoc = await transaction.get(userRef);
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const userData = userDoc.data();
+
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Yeterli danışma krediniz yok.'
+      );
+    }
+
+    const questionData = {
+      studentUid: uid,
+      studentEmail: context.auth.token.email || null,
+      message,
+      previewText,
+      status: 'pending',
+      createdAt: now,
+      lastMessageAt: now,
+      createdAtMs: Date.now(),
+      // İade takibi: cevapsız kalırsa reconcileUnansweredQuestions krediyi geri verir.
+      creditSpent: true,
+      creditRefunded: false,
+    };
+    if (isVideo) {
+      questionData.mediaType = 'video';
+      questionData.videoStoragePath = storagePath;
+      questionData.videoUrl = mediaUrl;
+      questionData.videoDurationSec = videoDurationSec;
+    } else {
+      questionData.screenshotStoragePath = storagePath;
+      questionData.screenshotUrl = mediaUrl;
+    }
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.set(questionRef, questionData);
+    transaction.set(messageRef, {
+      senderUid: uid,
+      senderRole: 'student',
+      type: isVideo ? 'video' : 'image',
+      mediaStoragePath: storagePath,
+      mediaUrl,
+      textContent: description || null,
+      createdAt: now,
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru oluşturuldu', { uid, questionId: questionRef.id, remaining });
+  return { success: true, questionId: questionRef.id, credits: remaining };
 });
 
 /**
@@ -1465,18 +2268,37 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
  * istemci elindeki aboneliği yeniden doğrulatır, sunucu da `plan` ve `planExpiresAt`
  * alanlarını günceller. Böylece iptal eden kullanıcı, süresi dolduğunda Pro olmaktan çıkar.
  */
-exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
-  }
+/**
+ * Bir abonelik token'ını Play'e doğrulatır ve kullanıcının planını günceller.
+ *
+ * İKİ ÇAĞIRAN
+ *   1. redeemGooglePlaySubscription — istemci uygulamayı her açtığında doğrulatır.
+ *   2. playSubscriptionNotification — Google, yenileme/iptal/süre dolumu olduğunda
+ *      istemciden bağımsız olarak haber verir.
+ *
+ * İkincisi olmadan, aboneliğini iptal eden kullanıcının `plan` alanı Firestore'da
+ * kalıcı olarak eski değerinde donar (gönderilecek token kalmadığı için istemci de
+ * doğrulatamaz); ayrıca aboneliği aldığı Play hesabından farklı bir cihazda uygulamayı
+ * kullanan kişi, ödemeye devam etmesine rağmen yenilemesi kaydedilmediği için Free'ye
+ * düşerdi.
+ */
+async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, welcomeOptions) {
   assertBillingConfigured();
 
-  const uid = context.auth.uid;
-  const { productId, purchaseToken } = readPurchaseArgs(data);
+  // Hoş geldin kredisi YALNIZCA istemci yolundan verilir (bkz. redeemGooglePlaySubscription).
+  // RTDN'de istemci yok, dolayısıyla cihaz bilgisi de yok; oradan kredi verilseydi cihaz
+  // kontrolü, bildirim istemciden önce geldiğinde sessizce delinirdi. İstemci uygulama her
+  // açılışta aboneliği yeniden doğrulattığı için kredi saniyeler içinde düşüyor.
+  const allowWelcomeCredit = !!(welcomeOptions && welcomeOptions.allowWelcomeCredit);
+  const deviceHash = allowWelcomeCredit ? hashDeviceKey(welcomeOptions.deviceKey) : null;
 
-  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
-  if (!entry) {
-    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  // Ön kontrol: istemcinin bildirdiği ürün katalogda bile yoksa Play'e sormaya değmez.
+  // Asıl ürün kararı doğrulamadan SONRA veriliyor (bkz. resolveVerifiedProductId).
+  if (!PLAY_SUBSCRIPTION_CATALOG[claimedProductId]) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Tanımsız abonelik: ' + claimedProductId
+    );
   }
 
   let subscription;
@@ -1488,21 +2310,64 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
     });
     subscription = response.data;
   } catch (error) {
-    console.error('Abonelik doğrulaması başarısız', { uid, productId, error: error.message });
+    console.error('Abonelik doğrulaması başarısız', {
+      uid,
+      productId: claimedProductId,
+      error: error.message,
+    });
     throw new functions.https.HttpsError('permission-denied', 'Abonelik doğrulanamadı.');
   }
 
-  // Yalnızca gerçekten aktif durumlar plan verir. Ödemesi bekleyen / askıya alınmış /
-  // iptal edilip süresi dolmuş abonelikler Free'ye düşer.
-  const activeStates = ['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD'];
-  const isActive = activeStates.includes(subscription.subscriptionState);
+  // Ürün, istemcinin iddiasından DEĞİL Play'in cevabından belirlenir.
+  const verifiedProduct = resolveVerifiedProductId(
+    claimedProductId,
+    subscriptionProductIds(subscription)
+  );
+  const productId = verifiedProduct.productId;
+  if (verifiedProduct.mismatch) {
+    console.warn('Abonelik ürünü istemcinin bildirdiğinden farklı — Play esas alındı', {
+      uid,
+      claimed: claimedProductId,
+      actual: productId,
+    });
+  } else if (!verifiedProduct.verified) {
+    console.warn('Play abonelik cevabında ürün bilgisi yok — istemcinin bildirdiği kullanıldı', {
+      uid,
+      productId,
+    });
+  }
 
-  const expiryRaw =
-    (subscription.lineItems && subscription.lineItems.length > 0
-      ? subscription.lineItems[subscription.lineItems.length - 1].expiryTime
-      : null) || null;
-  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
-  const stillValid = isActive && Number.isFinite(expiryMs) && expiryMs > Date.now();
+  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
+  if (!entry) {
+    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  }
+
+  // Hak veren durumlar + bitiş tarihi kontrolü tek yerde (bkz. subscriptionEntitlement).
+  const { stillValid, expiryRaw, expiryMs } = subscriptionEntitlement(subscription, Date.now());
+
+  // Play'in NE dediğini her senkronda yaz.
+  //
+  // Bu satır olmadan "abonelik iptal edildi ve plan Free'ye düştü" gözlemi teşhis
+  // edilemiyordu: sonucun sebebi Play'in durumu mu (gerçekten süresi dolmuş), lisans
+  // testçisinde dönemlerin dakikalara sıkışması mı, yoksa bizim kararımız mı ayırt
+  // edilemiyordu. Başarılı senkronda hiç log yoktu; yalnızca hata ve istisna yolları
+  // loglanıyordu.
+  //
+  // console.log DEĞİL functions.logger: `console.log('mesaj', {nesne})` biçimi nesneyi
+  // util.inspect ile yazıyor ve nesne bir satıra sığmayınca satır satır bölünüyor.
+  // Cloud Logging her satırı AYRI bir kayıt yaptığı için log okunamaz hale geliyordu —
+  // ilk kayıtta yalnızca "Abonelik senkronu {" görünüyor, alanlar alttaki kayıtlara
+  // dağılıyordu. functions.logger tek bir yapılandırılmış kayıt üretiyor ve alanlar
+  // jsonPayload altında sorgulanabilir oluyor (ör. jsonPayload.state="...").
+  functions.logger.log('Abonelik senkronu', {
+    uid,
+    productId,
+    state: subscription.subscriptionState || null,
+    expiry: expiryRaw,
+    // `|| 0`, Math.round'un negatif sıfır üretmesini engelliyor (logda "-0" görünüyordu).
+    expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) || 0 : null,
+    plan: stillValid ? entry.plan : 'Free',
+  });
 
   const userRef = db.collection('users').doc(uid);
 
@@ -1510,14 +2375,42 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
   // işlendiyse reddet. (Aynı uid tekrar doğrulatabilir — yenileme akışı bunu gerektirir.)
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
+  const deviceGrantRef = deviceHash
+    ? db.collection('welcomeCreditGrants').doc(deviceHash)
+    : null;
+
+  // Devir kararı transaction'dan ÖNCE veriliyor: Auth sorgusu bir yan etkili okuma ve
+  // transaction içinde yapılmamalı. Uid'ler yeniden kullanılmadığı için araya girme
+  // (silinen hesabın geri gelmesi) pratikte imkânsız.
+  let rebindDecision = { allowed: true, rebind: false, reason: 'no_existing_record' };
+  const existingPurchaseSnap = await purchaseRef.get();
+  const storedUid = existingPurchaseSnap.exists ? existingPurchaseSnap.data().uid : null;
+  if (storedUid && storedUid !== uid) {
+    let storedUidStillExists = true;
+    try {
+      storedUidStillExists = await firebaseUserExists(storedUid);
+    } catch (error) {
+      // Auth'a ulaşılamadı: devri VARSAYMA, güvenli yön reddetmek.
+      console.error('Token sahibi kontrol edilemedi', { uid, storedUid, error: error.message });
+      storedUidStillExists = true;
+    }
+    rebindDecision = resolveTokenRebind(storedUid, uid, storedUidStillExists);
+    if (rebindDecision.rebind) {
+      console.log('Abonelik token\'ı yeni hesaba devrediliyor', { from: storedUid, to: uid, productId });
+    }
+  }
+
   try {
     await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc] = await Promise.all([
+      const [userDoc, purchaseDoc, deviceGrantDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
+        deviceGrantRef ? transaction.get(deviceGrantRef) : Promise.resolve(null),
       ]);
 
-      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid) {
+      // Sahiplik: tek bir aboneliğin birden fazla hesaba Pro vermesini engeller.
+      // Tek istisna, sahibinin hesabı silinmiş token'ın devri (bkz. resolveTokenRebind).
+      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid && !rebindDecision.rebind) {
         throw new functions.https.HttpsError(
           'permission-denied',
           'Bu abonelik başka bir hesaba tanımlı.'
@@ -1526,6 +2419,22 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
       if (!userDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
       }
+
+      // Hoş geldin kredisi yalnızca ilk Pro aktivasyonunda verilir. İşaretçi KULLANICI
+      // dokümanında değil burada tutulur: kullanıcı kendi dokümanını silip yeniden
+      // oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat döngüsüyle
+      // sınırsız kredi üretilebilirdi. processedPurchases istemciye tamamen kapalıdır.
+      const alreadyWelcomed = purchaseDoc.exists && purchaseDoc.data().welcomeCreditGranted === true;
+      // Cihaz kapısı: aynı telefonda yeni Google + yeni uygulama hesabı açarak ücretsiz
+      // deneme hediyesini tekrar tekrar almayı engeller. Token kapısı (yukarıdaki
+      // alreadyWelcomed) yalnızca AYNI aboneliği koruyor; yeni abonelik yeni token demek.
+      const alreadyWelcomedOnDevice = !!(deviceGrantDoc && deviceGrantDoc.exists);
+      const grantWelcome =
+        stillValid &&
+        entry.plan === 'Pro' &&
+        allowWelcomeCredit &&
+        !alreadyWelcomed &&
+        !alreadyWelcomedOnDevice;
 
       transaction.set(
         purchaseRef,
@@ -1536,15 +2445,74 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
           subscriptionState: subscription.subscriptionState || null,
           expiryTime: expiryRaw,
           processedAt: admin.firestore.FieldValue.serverTimestamp(),
+          welcomeCreditGranted: alreadyWelcomed || grantWelcome,
+          // Devir izi: destek talebinde "abonelik neden başka hesapta" sorusu
+          // cevaplanabilsin diye. Hoş geldin kredisi devirde TEKRAR VERİLMEZ —
+          // welcomeCreditGranted token'da kalıyor, cihaz kapısı da ayrıca duruyor.
+          ...(rebindDecision.rebind
+            ? {
+                previousUids: admin.firestore.FieldValue.arrayUnion(storedUid),
+                rebindAt: admin.firestore.FieldValue.serverTimestamp(),
+              }
+            : {}),
         },
         { merge: true }
       );
 
-      transaction.update(userRef, {
-        plan: stillValid ? entry.plan : 'Free',
-        planExpiresAt: stillValid ? expiryMs : null,
-        planProductId: stillValid ? productId : null,
-      });
+      const newPlan = stillValid ? entry.plan : 'Free';
+      const planDecision = resolvePlanUpdate(
+        userDoc.data(),
+        productId,
+        newPlan,
+        purchaseToken,
+        subscription.linkedPurchaseToken || null
+      );
+      const planUpdate = {};
+      if (planDecision.write) {
+        planUpdate.plan = newPlan;
+        planUpdate.planExpiresAt = stillValid ? expiryMs : null;
+        planUpdate.planProductId = stillValid ? productId : null;
+        // Planı HANGİ aboneliğin verdiği kaydediliyor; sahiplik kararı buna dayanıyor
+        // (bkz. ownsStoredPlan). Ham token değil, özeti.
+        planUpdate.planPurchaseTokenHash = stillValid
+          ? purchaseTokenFingerprint(purchaseToken)
+          : null;
+      } else {
+        // Daha yüksek rütbeli bir abonelik aktif; bu token onu ezmemeli.
+        console.log('Plan yazılmadı', {
+          uid,
+          productId,
+          newPlan,
+          reason: planDecision.reason,
+          activePlan: effectivePlan(userDoc.data()),
+        });
+      }
+
+      if (grantWelcome) {
+        const current = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
+        planUpdate.questionCredits = current + PRO_WELCOME_CREDITS;
+        if (deviceGrantRef) {
+          // Yalnızca özet + zaman damgası; ham cihaz kimliği hiçbir yerde tutulmuyor.
+          transaction.set(deviceGrantRef, {
+            grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+            uid,
+            productId,
+          });
+        }
+        console.log('Pro hoş geldin kredisi verildi', {
+          uid,
+          productId,
+          deviceChecked: !!deviceGrantRef,
+        });
+      } else if (stillValid && entry.plan === 'Pro' && allowWelcomeCredit && alreadyWelcomedOnDevice) {
+        console.log('Hoş geldin kredisi verilmedi: bu cihaza daha önce verilmiş', { uid, productId });
+      }
+
+      // planUpdate boş kalabilir (plan yazılmadı ve kredi verilmedi); Firestore boş
+      // update'i reddediyor.
+      if (Object.keys(planUpdate).length > 0) {
+        transaction.update(userRef, planUpdate);
+      }
     });
 
     return {
@@ -1557,7 +2525,198 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
     console.error('Abonelik işlenemedi', { uid, productId, error });
     throw new functions.https.HttpsError('internal', 'Abonelik işlenemedi.');
   }
+}
+
+/**
+ * Bu cihaz Pro hoş geldin kredisini daha önce aldı mı?
+ *
+ * NEDEN GEREKLİ
+ *   AskQuestionOpenFragment'ın vaadi "öğretmene soru sor". Cihaz hoş geldin kredisini
+ *   daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı), kullanıcı denemeyi
+ *   başlatsa bile kredi ALMAZ — Pro olur ama soru soramaz. O kullanıcıya bu tanıtımı
+ *   göstermek, ekranın tek işlevini teslim etmemek demek.
+ *
+ *   İstemci bu kontrolü kendisi yapamıyor: doküman kimliği gizli salt ile HMAC'lenmiş ve
+ *   koleksiyon istemciye kapalı. Bu yüzden ayrı bir uç.
+ *
+ * Salt tanımlı değilse cihaz kapısı zaten uygulanmıyor, dolayısıyla eligible=true döner —
+ * sunucunun kendi davranışıyla tutarlı.
+ */
+exports.checkWelcomeCreditEligibility = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const rawDeviceKey = typeof (data || {}).deviceKey === 'string' ? data.deviceKey : '';
+  const deviceHash = hashDeviceKey(rawDeviceKey);
+  if (!deviceHash) return { eligible: true, checked: false };
+
+  const snap = await db.collection('welcomeCreditGrants').doc(deviceHash).get();
+  return { eligible: !snap.exists, checked: true };
 });
+
+exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const { productId, purchaseToken, deviceKey } = readPurchaseArgs(data);
+  // İstemci yolu: hoş geldin kredisi burada verilebilir, cihaz bilgisi elimizde.
+  return syncSubscriptionForToken(context.auth.uid, productId, purchaseToken, {
+    allowWelcomeCredit: true,
+    deviceKey,
+  });
+});
+
+// ─── Google Play gerçek zamanlı abonelik bildirimleri (RTDN) ────────────────
+//
+// Google, abonelik durumu değiştiğinde (yenileme, iptal, süre dolumu, ödeme sorunu,
+// duraklatma, iade) bu Pub/Sub konusuna mesaj bırakır. İstemciye hiç bağımlı değildir.
+//
+// KURULUM
+//   1. Google Cloud → Pub/Sub → PLAY_RTDN_TOPIC adıyla konu oluşturulur.
+//   2. google-play-developer-notifications@system.gserviceaccount.com hesabına o konu
+//      üzerinde "Pub/Sub Publisher" rolü verilir.
+//   3. Play Console → Para kazanma kurulumu → konu tam adı yapıştırılır.
+
+/**
+ * RTDN'de gelen token'ın hangi hesaba ait olduğunu bulur.
+ *
+ * SORUN
+ *   Token'ı hesaba bağlayan tek kayıt `processedPurchases`. Ama plan değişikliğinde
+ *   (özellikle ertelenmiş düşürme) Play YENİ bir purchase token üretiyor; o token
+ *   henüz hiçbir kayıtta olmadığı için bildirim "hesaba bağlı değil" diye atlanıyordu.
+ *   Gözlenen sonuç: Pro → Lite geçişinde yeni dönem hiç yazılmıyor, eski `planExpiresAt`
+ *   geçince kullanıcı Lite aboneliği aktifken FREE görünüyor ve ancak uygulamayı
+ *   açtığında düzeliyordu.
+ *
+ * ÇÖZÜM
+ *   Play'in cevabındaki `linkedPurchaseToken`, yeni token'ın hangi token'ın devamı
+ *   olduğunu söylüyor. Zincir geriye doğru izlenip kayıtlı bir token bulunuyor ve uid
+ *   oradan alınıyor. Sonraki senkron yeni token'ı da kaydettiği için bir sonraki
+ *   bildirim doğrudan çözülüyor.
+ *
+ * NEDEN GÜVENLİ
+ *   Bağı istemci değil Play kuruyor; uid'i uyduran bir taraf yok.
+ *
+ * Bağımlılıklar (Firestore okuması ve Play çağrısı) DIŞARIDAN veriliyor; böylece zincir
+ * yürüyüşü gerçek abonelik olmadan test edilebiliyor.
+ * Bkz. scripts/test-subscription-verification.js
+ */
+const MAX_LINKED_TOKEN_HOPS = 5;
+
+async function resolveUidForSubscriptionToken(purchaseToken, deps) {
+  let token = purchaseToken;
+  const seen = new Set();
+
+  for (let hop = 0; hop <= MAX_LINKED_TOKEN_HOPS; hop++) {
+    // Play teoride döngüsel bir bağ vermemeli; vermesi halinde sonsuz döngüye girmeyelim.
+    if (!token || seen.has(token)) break;
+    seen.add(token);
+
+    const record = await deps.readPurchaseRecord(token);
+    if (record && record.uid) {
+      return { uid: record.uid, hops: hop, via: hop === 0 ? 'direct' : 'linked' };
+    }
+    token = await deps.readLinkedToken(token);
+  }
+
+  return { uid: null, hops: seen.size, via: 'unresolved' };
+}
+
+const PLAY_RTDN_TOPIC = 'play-rtdn';
+
+exports.playSubscriptionNotification = functions.pubsub
+  .topic(PLAY_RTDN_TOPIC)
+  .onPublish(async (message) => {
+    let payload;
+    try {
+      payload = message.json;
+    } catch (error) {
+      console.error('RTDN mesajı çözümlenemedi', error);
+      return null;
+    }
+    if (!payload) return null;
+
+    // Play Console'daki "test bildirimi gönder" düğmesi bunu üretir; kurulumun
+    // doğruluğunu anlamak için loglanır, başka işlem gerektirmez.
+    if (payload.testNotification) {
+      console.log('RTDN test bildirimi alındı', { packageName: payload.packageName });
+      return null;
+    }
+
+    const notification = payload.subscriptionNotification;
+    if (!notification) {
+      // Tek seferlik ürün ve iade bildirimleri burada işlenmiyor; iadeleri
+      // reconcileVoidedPurchases günlük taramayla ele alıyor.
+      return null;
+    }
+
+    const purchaseToken = notification.purchaseToken;
+    const productId = notification.subscriptionId;
+    if (!purchaseToken || !productId) {
+      console.warn('RTDN: eksik token/ürün', notification);
+      return null;
+    }
+
+    // Token'ı kullanıcıya bağlayan kayıt processedPurchases'tır; bulunamazsa Play'in
+    // `linkedPurchaseToken` zinciri geriye doğru izlenir (bkz.
+    // resolveUidForSubscriptionToken). İlk satın almada bildirim istemcinin
+    // doğrulamasından ÖNCE gelebilir; o durumda zincirde de kayıt yoktur ve işlem
+    // atlanır — istemci saniyeler içinde kendi doğrulamasını yapar.
+    const resolution = await resolveUidForSubscriptionToken(purchaseToken, {
+      readPurchaseRecord: async (token) => {
+        const snap = await db.collection('processedPurchases').doc(token).get();
+        return snap.exists ? snap.data() : null;
+      },
+      readLinkedToken: async (token) => {
+        try {
+          const publisher = await getAndroidPublisher();
+          const response = await publisher.purchases.subscriptionsv2.get({
+            packageName: ANDROID_PACKAGE_NAME,
+            token,
+          });
+          return (response.data && response.data.linkedPurchaseToken) || null;
+        } catch (error) {
+          // Zincir okunamadıysa eski davranışa dön: bildirimi atla.
+          console.warn('RTDN: bağlı token okunamadı', { error: error.message });
+          return null;
+        }
+      },
+    });
+
+    if (!resolution.uid) {
+      console.log('RTDN: token henüz bir hesaba bağlı değil, atlandı', {
+        productId,
+        notificationType: notification.notificationType,
+        checkedTokens: resolution.hops,
+      });
+      return null;
+    }
+
+    const uid = resolution.uid;
+    if (resolution.via === 'linked') {
+      console.log('RTDN: token bağlı token zinciriyle çözüldü', {
+        uid,
+        productId,
+        hops: resolution.hops,
+      });
+    }
+    try {
+      // RTDN: yalnızca plan senkronu. Hoş geldin kredisi bilinçli olarak VERİLMEZ —
+      // burada istemci yok, dolayısıyla cihaz kontrolü yapılamaz.
+      const result = await syncSubscriptionForToken(uid, productId, purchaseToken, {
+        allowWelcomeCredit: false,
+      });
+      console.log('RTDN işlendi', {
+        uid,
+        productId,
+        notificationType: notification.notificationType,
+        plan: result.plan,
+      });
+    } catch (error) {
+      console.error('RTDN işlenemedi', { uid, productId, error: error.message });
+    }
+    return null;
+  });
 
 // ─── Google Play para iadelerini geri alma ──────────────────────────────────
 //
@@ -1583,10 +2742,16 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
 // bu yüzden ayrıca imleç (cursor) tutmaya gerek yoktur.
 const MAX_VOIDED_PAGES = 20;
 
-/** Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz. */
+/**
+ * Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz.
+ *
+ * `{ outcome, uid, revokedCredits }` döndürür: çağıran, kredi geri alındığında
+ * [cancelPendingQuestionsForCreditDebt] ile bekleyen soruları da iptal edebilsin diye
+ * sadece sonuç etiketi yetmiyor.
+ */
 async function reverseVoidedPurchase(voided) {
   const purchaseToken = voided.purchaseToken;
-  if (!purchaseToken) return 'skipped';
+  if (!purchaseToken) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
@@ -1594,13 +2759,13 @@ async function reverseVoidedPurchase(voided) {
     const purchaseDoc = await transaction.get(purchaseRef);
 
     // Bu token'la hiç ödül vermediysek geri alacak bir şey yok.
-    if (!purchaseDoc.exists) return 'unknown';
+    if (!purchaseDoc.exists) return { outcome: 'unknown', uid: null, revokedCredits: 0 };
 
     const record = purchaseDoc.data();
-    if (record.voided === true) return 'already';
+    if (record.voided === true) return { outcome: 'already', uid: null, revokedCredits: 0 };
 
     const uid = record.uid;
-    if (!uid) return 'skipped';
+    if (!uid) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await transaction.get(userRef);
@@ -1611,26 +2776,86 @@ async function reverseVoidedPurchase(voided) {
         { voided: true, voidedAt: admin.firestore.FieldValue.serverTimestamp(), voidedNote: 'user-missing' },
         { merge: true }
       );
-      return 'user-missing';
+      return { outcome: 'user-missing', uid, revokedCredits: 0 };
     }
 
     const userData = userDoc.data();
     const update = {};
+    let revokedCredits = 0;
 
     if (record.type === 'subscription') {
-      // İade edilen abonelik: plan hemen düşer.
-      update.plan = 'Free';
-      update.planExpiresAt = null;
-      update.planProductId = null;
+      // İade edilen abonelik: plan hemen düşer — AMA yalnızca planı veren abonelik buysa.
+      // Koşulsuz düşürmek, arada yeniden abone olmuş kullanıcının (yeni token, aktif
+      // abonelik) planını siliyordu; iade eski kaydın iadesi olsa bile.
+      if (ownsStoredPlan(userData, purchaseToken, record.productId)) {
+        update.plan = 'Free';
+        update.planExpiresAt = null;
+        update.planProductId = null;
+        update.planPurchaseTokenHash = null;
+      } else {
+        console.log('İade edilen abonelik mevcut planı vermiyor, plan korunuyor', {
+          uid,
+          refundedProductId: record.productId || null,
+          activePlan: effectivePlan(userData),
+        });
+      }
+      // NOT: Pro hoş geldin kredisi (PRO_WELCOME_CREDITS) bilinçli olarak geri ALINMIYOR.
+      // Ücretsiz deneme akışı henüz kurulmadı; hoş geldin kredisinin iade/yeniden abonelik
+      // davranışı o iş yapılırken birlikte ele alınacak.
     } else {
       // Tüketilebilir ürün: verilen miktar geri alınır, bakiye eksiye düşebilir.
       const grantedKeys = Number.parseInt(record.grantedKeys, 10) || 0;
       const grantedCurrency = Number.parseInt(record.grantedCurrency, 10) || 0;
       update.keys = (Number.parseInt(userData.keys, 10) || 0) - grantedKeys;
       update.currency = (Number.parseInt(userData.currency, 10) || 0) - grantedCurrency;
+      // Danışma kredisi de geri alınmalı. Bu satırlar olmadan "kredi paketi al → hepsini
+      // harca → 48 saat içinde iade al" döngüsü tamamen bedavaydı: grantedCredits kayda
+      // yazılıyor ama hiç okunmuyordu. Altın/anahtardaki politikanın aynısı geçerli —
+      // bakiye eksiye düşebilir, yoksa "hepsini harca sonra iade al" açık kalır.
+      revokedCredits = Number.parseInt(record.grantedCredits, 10) || 0;
+      if (revokedCredits > 0) {
+        const creditsBefore = Number.parseInt(userData.questionCredits, 10) || 0;
+        update.questionCredits = creditsBefore - revokedCredits;
+
+        // DENETİM DEFTERİ — bir koruma değil, ölçüm.
+        //
+        // Faz 1 döngüyü hesap seviyesinde kârsız hale getirdi, ama istismarcı her turda
+        // YENİ uygulama hesabı açarsa hesap başına bir kez kâr edebiliyor. Bunu cihaz
+        // bazlı bir sayaçla kapatmak mümkün; ne var ki bugün ortada bu istismarın
+        // gerçekleştiğine dair hiçbir veri yok ve yanlış pozitifi gerçek kullanıcıyı
+        // (yanlışlıkla satın alıp iade eden ebeveyn gibi) cezalandırır. Karar tahmine
+        // değil bu deftere dayansın diye önce yalnızca kayıt tutuluyor.
+        //
+        // Doküman kimliği purchaseToken: tarama tekrarlansa da kayıt çoğalmaz.
+        // firestore.rules'daki varsayılan reddetme kuralı gereği istemciye kapalıdır.
+        const accountCreatedAt = userData.createdAt || null;
+        const accountAgeDays =
+          accountCreatedAt && typeof accountCreatedAt.toMillis === 'function'
+            ? Math.floor((Date.now() - accountCreatedAt.toMillis()) / (24 * 60 * 60 * 1000))
+            : null;
+        transaction.set(db.collection('creditRefundAudit').doc(purchaseToken), {
+          uid,
+          productId: record.productId || null,
+          orderId: record.orderId || null,
+          revokedCredits,
+          creditsBefore,
+          creditsAfter: creditsBefore - revokedCredits,
+          // Hesap satın almadan hemen önce mi açılmış? Farming örüntüsünün en ucuz
+          // göstergesi bu; yeni bir kişisel veri toplamayı gerektirmiyor.
+          accountCreatedAt,
+          accountAgeDaysAtRefund: accountAgeDays,
+          voidedReason: voided.voidedReason != null ? voided.voidedReason : null,
+          voidedSource: voided.voidedSource != null ? voided.voidedSource : null,
+          refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
     }
 
-    transaction.update(userRef, update);
+    // Abonelik dalı, iade mevcut planı vermeyen bir kayda aitse hiç alan yazmaz;
+    // Firestore boş update'i reddediyor.
+    if (Object.keys(update).length > 0) {
+      transaction.update(userRef, update);
+    }
     transaction.set(
       purchaseRef,
       {
@@ -1642,8 +2867,108 @@ async function reverseVoidedPurchase(voided) {
       { merge: true }
     );
 
-    return 'reversed';
+    return { outcome: 'reversed', uid, revokedCredits };
   });
+}
+
+/**
+ * Kredi bakiyesi iade sonrası eksiye düştüyse, kullanıcının HENÜZ ÜSTLENİLMEMİŞ
+ * (pending) sorularını iptal edip kredilerini borca mahsup eder.
+ *
+ * NEDEN
+ *   Cevaplanmış bir soru batık maliyettir — öğretmen zamanını verdi, geri alınamaz ve
+ *   öğrencinin elindeki cevabı silmek kimseye bir şey kazandırmaz. Ama kuyrukta bekleyen
+ *   soru HENÜZ maliyet doğurmadı: iptal edilirse hem gelecekteki öğretmen ücreti hiç
+ *   doğmaz hem borç azalır. Geri kazanılabilir tek maliyet kalemi budur.
+ *
+ * SADECE BORÇ KAPANANA KADAR
+ *   Bakiye sıfıra ulaştığı anda durur. Kalan bekleyen sorular gerçekten ödenmiş
+ *   kredilerle sorulmuş demektir; onlara dokunmak kullanıcıyı haksız cezalandırır.
+ *   Bu kural transaction İÇİNDE (`credits >= 0`) tekrar doğrulanıyor, dıştaki sayaç
+ *   yalnızca döngü sınırı.
+ *
+ * YENİDEN ÇALIŞTIRILABİLİR
+ *   `creditRefunded` bayrağı ve transaction içindeki durum kontrolü, runUnansweredQuestion
+ *   Refund ile aynı korumayı sağlar: aynı soru iki kez iade edilemez, tarama çakışsa bile.
+ *
+ * İNDEKS
+ *   Mevcut (studentUid ASC, createdAt DESC) bileşik indeksi kullanılıyor; `status` filtresi
+ *   bellekte uygulanıyor. Böylece yeni bir indeks (ve onu deploy etme zorunluluğu) gerekmiyor
+ *   — indeks eksikse sorgu FAILED_PRECONDITION atar ve kredi geri alımını da götürürdü.
+ *   İstismar senaryosunda iptal edilecek sorular zaten en yeniler olduğu için tarama
+ *   penceresi bilinçli olarak sınırlı.
+ */
+const REFUND_PENDING_SCAN_LIMIT = 100;
+
+async function cancelPendingQuestionsForCreditDebt(uid) {
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) return 0;
+
+  let debt = -(Number.parseInt(userSnap.data().questionCredits, 10) || 0);
+  if (debt <= 0) return 0;
+
+  // En yeniden başla: en son sorulan soru, öğretmenin en az yatırım yaptığı sorudur.
+  const snapshot = await db
+    .collection('questions')
+    .where('studentUid', '==', uid)
+    .orderBy('createdAt', 'desc')
+    .limit(REFUND_PENDING_SCAN_LIMIT)
+    .get();
+
+  let canceled = 0;
+  for (const doc of snapshot.docs) {
+    if (debt <= 0) break;
+    const data = doc.data();
+    if (data.status !== 'pending' || data.creditSpent !== true || data.creditRefunded === true) {
+      continue;
+    }
+
+    try {
+      const applied = await db.runTransaction(async (transaction) => {
+        const [questionDoc, freshUserDoc] = await Promise.all([
+          transaction.get(doc.ref),
+          transaction.get(userRef),
+        ]);
+        if (!questionDoc.exists || !freshUserDoc.exists) return false;
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş ya da saatlik iade taraması
+        // aynı soruyu işlemiş olabilir.
+        const fresh = questionDoc.data();
+        if (fresh.status !== 'pending' || fresh.creditRefunded === true) return false;
+
+        // Borç kapandıysa dur — kalan bekleyen sorular ödenmiş kredilerle sorulmuş.
+        const credits = Number.parseInt(freshUserDoc.data().questionCredits, 10) || 0;
+        if (credits >= 0) return false;
+
+        transaction.update(userRef, { questionCredits: credits + 1 });
+        transaction.update(doc.ref, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+          // İade yüzünden iptal edildiğini ayırt edebilmek için (48 saatlik cevapsızlık
+          // iadesiyle karışmasın).
+          canceledForVoidedPurchase: true,
+        });
+        return true;
+      });
+      if (applied) {
+        canceled++;
+        debt--;
+      }
+    } catch (error) {
+      console.error('İade sonrası bekleyen soru iptal edilemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+    }
+  }
+
+  if (canceled > 0) {
+    console.log('İade sonrası bekleyen sorular iptal edildi', { uid, canceled, remainingDebt: debt });
+  }
+  return canceled;
 }
 
 async function runVoidedPurchaseScan() {
@@ -1653,14 +2978,17 @@ async function runVoidedPurchaseScan() {
   }
 
   const publisher = await getAndroidPublisher();
-  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0 };
+  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0, canceledQuestions: 0 };
   let pageToken;
   let pages = 0;
 
   do {
     const response = await publisher.purchases.voidedpurchases.list({
       packageName: ANDROID_PACKAGE_NAME,
-      // type: 1 → tüketilebilir ürünlerin yanında iptal edilen abonelikleri de getirir.
+      // type: 1 → tüketilebilir ürünlerin yanında iade/geri alınmış abonelikleri de getirir.
+      // "Voided" iade veya geri alma demek; kullanıcının otomatik yenilemeyi KAPATMASI buna
+      // girmez (o abonelik süresi dolunca EXPIRED olur ve syncSubscriptionForToken planı
+      // Free'ye çeker). Deneme iptali bu taramaya hiç düşmez.
       type: 1,
       maxResults: 1000,
       token: pageToken,
@@ -1669,8 +2997,27 @@ async function runVoidedPurchaseScan() {
     const rows = response.data.voidedPurchases || [];
     for (const voided of rows) {
       try {
-        const outcome = await reverseVoidedPurchase(voided);
-        counts[outcome] = (counts[outcome] || 0) + 1;
+        const result = await reverseVoidedPurchase(voided);
+        counts[result.outcome] = (counts[result.outcome] || 0) + 1;
+
+        // Kredi geri alındıysa bekleyen soruları da iptal et. AYRI bir try içinde:
+        // buradaki bir hata (indeks, kota, çakışma) yukarıda tamamlanmış olan geri
+        // alımı geçersiz kılmamalı — kayıt zaten `voided` işaretlendiği için tarama
+        // tekrarlansa bile kredi ikinci kez düşülmez.
+        if (result.outcome === 'reversed' && result.revokedCredits > 0 && result.uid) {
+          try {
+            const canceled = await cancelPendingQuestionsForCreditDebt(result.uid);
+            counts.canceledQuestions = (counts.canceledQuestions || 0) + canceled;
+            // Defteri tamamla: kaç bekleyen soru iptal edildiği ancak bu adımdan sonra
+            // biliniyor. Kayıt zaten transaction'da oluşturuldu, burada sadece merge.
+            await db
+              .collection('creditRefundAudit')
+              .doc(voided.purchaseToken)
+              .set({ canceledPendingQuestions: canceled }, { merge: true });
+          } catch (error) {
+            console.error('İade sonrası soru iptali başarısız', { uid: result.uid, error });
+          }
+        }
       } catch (error) {
         // Tek bir kaydın hatası taramanın tamamını düşürmesin.
         console.error('İade geri alınamadı', { purchaseToken: voided.purchaseToken, error });
@@ -1695,6 +3042,21 @@ exports.reconcileVoidedPurchases = functions
 
 // Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
 exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
+// Bu ikisi Play API'sine HİÇ dokunmaz, yalnızca Firestore'la çalışır — dolayısıyla
+// gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
+// edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
+exports._resolvePlanUpdate = resolvePlanUpdate;
+exports._ownsStoredPlan = ownsStoredPlan;
+exports._resolveUidForSubscriptionToken = resolveUidForSubscriptionToken;
+exports._purchaseTokenFingerprint = purchaseTokenFingerprint;
+exports._resolveTokenRebind = resolveTokenRebind;
+// Abonelik doğrulamasının saf parçaları: Play'e hiç dokunmadan test edilebilirler.
+// Bkz. scripts/test-subscription-verification.js
+exports._subscriptionEntitlement = subscriptionEntitlement;
+exports._subscriptionProductIds = subscriptionProductIds;
+exports._resolveVerifiedProductId = resolveVerifiedProductId;
+exports._reverseVoidedPurchase = reverseVoidedPurchase;
+exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 
 // ─── Sunucu taraflı ödül çekilişi ───────────────────────────────────────────
 //
@@ -2037,9 +3399,27 @@ async function verifyAdmobSignature(rawQuery) {
     return false;
   }
 
-  const verifier = require('crypto').createVerify('sha256');
-  verifier.update(signedContent, 'utf8');
-  return verifier.verify(pem, Buffer.from(signature, 'base64url'));
+  const signatureBytes = Buffer.from(signature, 'base64url');
+
+  // AdMob imzayı, custom_data içindeki ":" gibi karakterleri KODLAMADAN oluşturduğu dize
+  // üzerinde hesaplar; ancak istek bize ulaşana kadar aradaki katmanlar bunları yüzde
+  // kodlayabiliyor (":" -> "%3A"). Bu yüzden önce geldiği hâliyle, tutmazsa yüzde
+  // kodlaması çözülmüş hâliyle doğruluyoruz. İmza her iki durumda da zorunlu olduğu
+  // için bu, güvenliği zayıflatmaz; yalnızca kodlama farkını tolere eder.
+  const candidates = [signedContent];
+  try {
+    const decoded = decodeURIComponent(signedContent);
+    if (decoded !== signedContent) candidates.push(decoded);
+  } catch (error) {
+    // Bozuk yüzde kodlaması: yalnızca ham hâliyle denenir.
+  }
+
+  for (const content of candidates) {
+    const verifier = require('crypto').createVerify('sha256');
+    verifier.update(content, 'utf8');
+    if (verifier.verify(pem, signatureBytes)) return true;
+  }
+  return false;
 }
 
 exports.admobRewardCallback = functions.https.onRequest(async (req, res) => {
@@ -2323,4 +3703,4 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
 });
 
 // ShopFragment.LIFE_KEY_COST ile aynı olmalı.
-const ENERGY_KEY_COST = 3;
+const ENERGY_KEY_COST = 1;

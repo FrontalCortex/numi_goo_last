@@ -1,0 +1,70 @@
+name: Build Debug APK
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Install fixed debug keystore
+        # CI runner'ları her seferinde sıfırdan başladığı için Android Gradle Plugin,
+        # keystore yoksa RASTGELE bir sertifika üretir. Bu sertifika Firebase/Google'da
+        # kayıtlı olmadığından Google Sign-In DEVELOPER_ERROR (10) verir. ~/.android/
+        # varsayılan konumuna güvenmiyoruz (setup-android action'ı ANDROID_USER_HOME'u
+        # değiştirebiliyor, AGP o zaman farklı bir yerden okuyup yine rastgele üretiyor);
+        # bunun yerine dosyayı workspace içinde sabit bir yola koyup build.gradle.kts'e
+        # CI_DEBUG_KEYSTORE_PATH ile açıkça söylüyoruz.
+        run: |
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > "${{ github.workspace }}/ci-debug.keystore"
+
+      - name: Build debug APK
+        env:
+          CI_DEBUG_KEYSTORE_PATH: ${{ github.workspace }}/ci-debug.keystore
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Debug build #${{ github.run_number }}
+          body: "Otomatik debug build (commit ${{ github.sha }})"
+          prerelease: true
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # assembleDebug, release kaynak kümesini (app/src/release) HİÇ derlemiyor. App Check
+      # sağlayıcısı derleme türüne göre ayrıldığından oradaki dosya artık yalnızca release'te
+      # derleniyor ve bir hata ilk release derlemesine kadar gizli kalırdı. Bu adım R8, lint
+      # ve imzalama olmadan sadece Kotlin derlemesini yapar. Debug APK yukarıda zaten
+      # yayınlandığı için bu adımın kırılması test APK'sını almaya engel olmaz.
+      - name: Verify release variant compiles
+        run: ./gradlew compileReleaseKotlin --no-daemon
