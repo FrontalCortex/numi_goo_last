@@ -273,7 +273,7 @@ object GlobalLessonData {
                     if (LessonProgressMerge.sameProgressState(_lessonItems, merged)) {
                         return@addSnapshotListener
                     }
-                    _lessonItems = merged
+                    _lessonItems = withDerivedUnlocks(partId, merged)
                     LessonManager.refreshLessonsFromGlobalData()
                 } catch (e: Exception) {
                     Log.e(LOG_TAG, "realtimeSnapshot parse/merge failed", e)
@@ -317,7 +317,7 @@ object GlobalLessonData {
             ),
         )
         // #endregion
-        _lessonItems = buildDefaultLessonItemsForPart(context, partId).toMutableList()
+        _lessonItems = withDerivedUnlocks(partId, buildDefaultLessonItemsForPart(context, partId))
         saveToPreferences(context, saveRemote = saveRemote)
     }
 
@@ -411,6 +411,40 @@ object GlobalLessonData {
         } else {
             null
         }
+    }
+
+    /**
+     * Kilit durumunu LİSTE DURUMUNDAN türetir: bir ders, kendisi zaten açıksa **ya da** bir
+     * önceki oynanabilir ders bitirilmişse ([LessonItem.stepIsFinish]) açıktır. Başlıklar
+     * zincirde şeffaftır — ChestFragment'in sandıktan sonra +2 atlayarak başlığı geçmesiyle
+     * aynı davranış.
+     *
+     * ## Neden gerekli
+     * Kilit açma bugün yalnızca bir OLAY: ders bitince bir SONRAKİ satıra `isCompleted = true`
+     * yazılıyor. Olay kaçarsa o ders kalıcı olarak kilitli kalır. Kaçtığı üç durum:
+     *
+     * 1. **Araya ders eklemek.** Kullanıcı p1_i02'yi çoktan bitirmiş; o an açılan satır
+     *    p1_i03'tü. Sonradan araya eklenen ders için olay bir daha hiç tetiklenmez ve ders
+     *    haritada sonsuza dek kilitli durur.
+     * 2. Çevrimdışıyken veya çökme anında yazmanın kaybolması.
+     * 3. Verinin elle/araçla düzeltilmesi.
+     *
+     * ## Yalnızca AÇAR, asla kilitlemez
+     * Mevcut kullanıcının açık dersi hiçbir koşulda kapanmaz; bu yüzden şablondaki
+     * `isCompleted` değerleri üretim için `false`'a çevrildiğinde de geriye dönük kayıp olmaz.
+     *
+     * Yalnızca 1-6 için çalışır: 7-8'de kilit `raceBusyLevel` ile yönetiliyor, `isCompleted`
+     * oradaki anlamı taşımıyor.
+     */
+    private fun withDerivedUnlocks(partId: Int, items: List<LessonItem>): MutableList<LessonItem> {
+        if (partId !in 1..6) return items.toMutableList()
+        var previousFinished = true // ilk oynanabilir ders her zaman açıktır
+        return items.map { item ->
+            if (item.type == LessonItem.TYPE_HEADER) return@map item
+            val unlocked = item.isCompleted || previousFinished
+            previousFinished = item.stepIsFinish
+            if (unlocked && !item.isCompleted) item.copy(isCompleted = true) else item
+        }.toMutableList()
     }
 
     /**
@@ -3316,7 +3350,7 @@ object GlobalLessonData {
         // #endregion
         return if (json != null) {
             try {
-                _lessonItems = parseLessonItemsWithMigration(json, globalPartId)
+                _lessonItems = withDerivedUnlocks(globalPartId, parseLessonItemsWithMigration(json, globalPartId))
                 Log.d(LOG_TAG, "loadFromPreferences key=$key -> loaded ${_lessonItems.size} items from LOCAL")
                 true
             } catch (e: Exception) {
@@ -3378,7 +3412,7 @@ object GlobalLessonData {
             )
             // #endregion
             if (items != null) {
-                _lessonItems = items.toMutableList()
+                _lessonItems = withDerivedUnlocks(globalPartId, items)
                 val completedCount = _lessonItems.count { it.stepIsFinish }
                 val chestCompletedCount = _lessonItems.count { it.type == LessonItem.TYPE_CHEST && it.stepIsFinish }
                 Log.d(LOG_TAG, "loadFromFirestore LOADED ${_lessonItems.size} items from CLOUD")
