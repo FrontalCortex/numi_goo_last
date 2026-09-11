@@ -3,6 +3,7 @@ package com.example.app
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -30,6 +31,20 @@ class NumiGooApplication : Application() {
         "NavHostFragment",
     )
 
+    // ── Çıkış ekranı ────────────────────────────────────────────────────────
+    //
+    // Görünen son ekran ve ona ne zaman geçildiği. `SystemClock.elapsedRealtime` kullanılıyor:
+    // duvar saati kullanıcı tarafından değiştirilebilir, bu ölçüm ondan etkilenmemeli.
+    //
+    // Arka plana geçişi ProcessLifecycleOwner yerine "başlamış activity sayacı" ile buluyoruz;
+    // yeni bir bağımlılık (lifecycle-process) getirmemek için. Sayaç sıfıra düştüğünde
+    // uygulama arka plandadır — tek istisna ekran döndürme, o da isChangingConfigurations
+    // ile eleniyor, yoksa her dönüşte sahte bir çıkış kaydedilirdi.
+
+    @Volatile private var currentScreen: String? = null
+    @Volatile private var currentScreenStartMs: Long = 0L
+    private var startedActivityCount = 0
+
     /**
      * Fragment bazlı `screen_view`.
      *
@@ -45,6 +60,8 @@ class NumiGooApplication : Application() {
         override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
             val name = f::class.java.simpleName
             if (name.isEmpty() || name in ignoredFragments) return
+            currentScreen = name
+            currentScreenStartMs = SystemClock.elapsedRealtime()
             AnalyticsLogger.logScreenView(name)
         }
     }
@@ -55,6 +72,24 @@ class NumiGooApplication : Application() {
                 activity.supportFragmentManager
                     .registerFragmentLifecycleCallbacks(fragmentCallbacks, true)
             }
+        }
+
+        override fun onActivityStarted(activity: Activity) {
+            if (startedActivityCount == 0) {
+                // Öne dönüldü: arka planda geçen süre ekranın süresine yazılmasın.
+                currentScreenStartMs = SystemClock.elapsedRealtime()
+            }
+            startedActivityCount++
+        }
+
+        override fun onActivityStopped(activity: Activity) {
+            if (startedActivityCount > 0) startedActivityCount--
+            if (startedActivityCount != 0) return
+            if (activity.isChangingConfigurations) return
+
+            val screen = currentScreen ?: return
+            val elapsed = (SystemClock.elapsedRealtime() - currentScreenStartMs).coerceAtLeast(0L)
+            AnalyticsLogger.logAppBackground(screen, elapsed)
         }
     }
 

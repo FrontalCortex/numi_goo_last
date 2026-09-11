@@ -49,6 +49,7 @@ object AnalyticsLogger {
     private const val EV_CHEST_OPEN_START = "chest_open_start"
     private const val EV_CHEST_OPEN_COMPLETE = "chest_open_complete"
     private const val EV_CHEST_ABANDONED = "chest_abandoned"
+    private const val EV_APP_BACKGROUND = "app_background"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -77,6 +78,7 @@ object AnalyticsLogger {
     private const val P_ANIMATION_MS = "animation_ms"
     private const val P_AT_TAP = "at_tap"
     private const val P_CHEST_SOURCE = "chest_source"
+    private const val P_EXIT_SCREEN = "exit_screen"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -377,6 +379,28 @@ object AnalyticsLogger {
             param(P_DURATION_MS, durationMs)
             if (serverWaitMs != null) param(P_SERVER_WAIT_MS, serverWaitMs)
             param(P_CHEST_SOURCE, sanitize(chestSource))
+        }
+    }
+
+    // ── Uygulamadan çıkış ───────────────────────────────────────────────────
+
+    /**
+     * Uygulama arka plana geçti — **hangi ekran açıkken** ve o ekranda ne kadar kalındıktan sonra.
+     *
+     * ## Bu olay olmadan da türetilebilirdi, neden yine de var
+     * Bir oturumun son `screen_view`'ı zaten çıkış ekranıdır ve BigQuery'de sorgulanabilir.
+     * Ama GA4 arayüzü bunu yapamıyor (uygulama raporlarında "exit rate" diye bir şey yok) ve
+     * BigQuery verisi günlük toplu geliyor. Açık bir olay DebugView'da anında, standart
+     * raporlarda doğrudan görünür.
+     *
+     * @param screenName Arka plana geçildiği anda görünen son fragment.
+     * @param durationMs O ekranda geçirilen süre. 3 saniyede bırakılan bir ders ile 5 dakika
+     *   sonra bırakılan ders aynı şey değil; ekran adı tek başına bunu ayırt etmiyor.
+     */
+    fun logAppBackground(screenName: String, durationMs: Long) = safe { fa ->
+        fa.logEvent(EV_APP_BACKGROUND) {
+            param(P_EXIT_SCREEN, sanitize(screenName))
+            param(P_DURATION_MS, durationMs)
         }
     }
 
