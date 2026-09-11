@@ -322,7 +322,13 @@ class MissionChestRewardFragment : Fragment() {
 
                 val containerId = (requireView().parent as View).id
                 parentFragmentManager.beginTransaction()
-                    .add(containerId, NewChestFragment.newInstance(startRarity))
+                    .add(
+                        containerId,
+                        NewChestFragment.newInstance(
+                            startRarity,
+                            source = AnalyticsLogger.CHEST_SOURCE_MISSION_CHEST,
+                        ),
+                    )
                     .addToBackStack("mission_chest")
                     .commit()
             }

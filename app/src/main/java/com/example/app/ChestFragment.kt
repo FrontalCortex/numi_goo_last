@@ -479,7 +479,13 @@ class ChestFragment : Fragment() {
         val containerId = (requireView().parent as View).id
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.slide_in_left, 0)
-            .add(containerId, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
+            .add(
+                containerId,
+                NewChestFragment.newInstance(
+                    NewChestFragment.ChestRarity.COMMON,
+                    source = AnalyticsLogger.CHEST_SOURCE_LESSON,
+                ),
+            )
             .addToBackStack("map_chest")
             .commit()
     }

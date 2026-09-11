@@ -75,6 +75,7 @@ class NewChestFragment : Fragment() {
     companion object {
         private const val ARG_START_RARITY = "start_rarity"
         private const val ARG_AD_NONCE = "ad_nonce"
+        private const val ARG_SOURCE = "chest_source"
         const val RESULT_EARNED_GOLD = "earned_gold"
         const val RESULT_EARNED_KEY = "earned_key"
 
@@ -82,15 +83,22 @@ class NewChestFragment : Fragment() {
          * @param adNonce Reklamla kazanilan sandiklar icin AdManager'in urettigi nonce.
          *   Sunucu bu nonce ile AdMob SSV dogrulamasindan gelen hakki bozdurur. Reklam disi
          *   sandiklarda (ders/gorev) null birakilir ve gunluk tavan uygulanir.
+         * @param source Sandığın hangi akıştan açıldığı — [AnalyticsLogger] içindeki
+         *   `CHEST_SOURCE_*` sabitlerinden biri. Varsayılanı YOKTUR: uygulamadaki bütün
+         *   sandık akışları bu tek ekrandan geçtiği için, kaynağı bildirmek ölçümde onları
+         *   ayırt edebilmenin tek yolu. Yeni bir çağrı yeri eklendiğinde derleyici burayı
+         *   doldurmaya zorlar.
          */
         fun newInstance(
             startRarity: ChestRarity = ChestRarity.COMMON,
             adNonce: String? = null,
+            source: String,
         ): NewChestFragment {
             return NewChestFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_START_RARITY, startRarity.name)
                     if (adNonce != null) putString(ARG_AD_NONCE, adNonce)
+                    putString(ARG_SOURCE, source)
                 }
             }
         }
@@ -111,12 +119,21 @@ class NewChestFragment : Fragment() {
     private var tapCount = 0
 
     // ── Ölçüm (bkz. AnalyticsLogger) ────────────────────────────────────────
-    // Sandık akışı kullanıcıdan 5 dokunuş ve birkaç saniye animasyon istiyor. Bu üç alan
-    // "akış ne kadar sürüyor" ve "kaç kişi ödülü görmeden çıkıyor" sorularını ölçer;
-    // animasyonun uzunluğuna dair kararlar buradan gelen dağılıma dayanmalı.
+    // Sandık akışı kullanıcıdan 5 dokunuş ve birkaç saniye animasyon istiyor. Bu alanlar
+    // "akış ne kadar sürüyor" ve "kaç kişi ödülü görmeden çıkıyor" sorularını ölçer.
+    //
+    // Süre iki parçaya ayrılıyor: ekran açılışından sunucu cevabına kadar geçen bekleme
+    // ([outcomeReadyAtMs] set edilene kadar) ve ondan sonraki saf animasyon. İkisinin
+    // çaresi farklı olduğu için ayrı ölçülmeleri gerekiyor — bkz. AnalyticsLogger.
     private var screenOpenedAtMs = 0L
+    /** Sunucu sonucu geldiği an; 0 = henüz gelmedi. */
+    private var outcomeReadyAtMs = 0L
     private var rewardShown = false
     private var outcomeLogged = false
+
+    /** Hangi akıştan açıldığımız; [AnalyticsLogger] `CHEST_SOURCE_*` sabitlerinden biri. */
+    private val chestSource: String
+        get() = arguments?.getString(ARG_SOURCE) ?: AnalyticsLogger.CHEST_SOURCE_LESSON
 
     // Sallanma animasyonu
     private var idleAnim: ObjectAnimator? = null
@@ -228,11 +245,11 @@ class NewChestFragment : Fragment() {
                 // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
                 (activity as? MainActivity)?.refreshWalletUi()
 
+                outcomeReadyAtMs = android.os.SystemClock.elapsedRealtime()
                 AnalyticsLogger.logChestOpenStart(
                     startRarity = currentRarity.name,
                     finalRarity = outcome.finalRarity,
-                    // Reklamla kazanılan sandıklar nonce taşır; ders/görev sandıkları taşımaz.
-                    chestSource = if (arguments?.getString(ARG_AD_NONCE) != null) "ad" else "lesson",
+                    chestSource = chestSource,
                 )
             },
             onFailure = {
@@ -549,11 +566,18 @@ class NewChestFragment : Fragment() {
         rewardShown = true
         if (!outcomeLogged) {
             outcomeLogged = true
+            val now = android.os.SystemClock.elapsedRealtime()
+            // showReward yalnızca sunucu sonucu geldikten sonra çağrılabildiği için
+            // outcomeReadyAtMs burada her zaman set edilmiştir.
+            val serverWaitMs = (outcomeReadyAtMs - screenOpenedAtMs).coerceAtLeast(0L)
             AnalyticsLogger.logChestOpenComplete(
                 finalRarity = currentRarity.name,
                 rewardType = serverRewardType,
                 rewardAmount = serverRewardAmount,
-                durationMs = android.os.SystemClock.elapsedRealtime() - screenOpenedAtMs,
+                durationMs = now - screenOpenedAtMs,
+                serverWaitMs = serverWaitMs,
+                animationMs = (now - outcomeReadyAtMs).coerceAtLeast(0L),
+                chestSource = chestSource,
             )
         }
 
@@ -668,6 +692,9 @@ class NewChestFragment : Fragment() {
             AnalyticsLogger.logChestAbandoned(
                 atTap = tapCount,
                 durationMs = android.os.SystemClock.elapsedRealtime() - screenOpenedAtMs,
+                // 0 = sunucu cevabı hiç gelmedi; kullanıcı beklerken çıktı.
+                serverWaitMs = (outcomeReadyAtMs - screenOpenedAtMs).takeIf { outcomeReadyAtMs > 0L },
+                chestSource = chestSource,
             )
         }
 

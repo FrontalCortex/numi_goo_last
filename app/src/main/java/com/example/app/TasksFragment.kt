@@ -616,7 +616,11 @@ class TasksFragment : Fragment() {
                         when (row.id) {
                             "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
                             "cup_path" -> showCupPathPanel()
-                            "chest_animation" -> openAbacusContainerFragment(NewChestFragment())
+                            "chest_animation" -> openAbacusContainerFragment(
+                                NewChestFragment.newInstance(
+                                    source = AnalyticsLogger.CHEST_SOURCE_BULLETIN,
+                                )
+                            )
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
@@ -935,7 +939,10 @@ class TasksFragment : Fragment() {
             // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
             ServerRewards.prefetchChest(NewChestFragment.ChestRarity.RARE.name)
             openAbacusContainerFragment(
-                NewChestFragment.newInstance(NewChestFragment.ChestRarity.RARE)
+                NewChestFragment.newInstance(
+                    NewChestFragment.ChestRarity.RARE,
+                    source = AnalyticsLogger.CHEST_SOURCE_DAILY_QUESTION,
+                )
             )
         }
     }

@@ -68,12 +68,32 @@ object AnalyticsLogger {
     private const val P_REWARD_TYPE = "reward_type"
     private const val P_REWARD_AMOUNT = "reward_amount"
     private const val P_DURATION_MS = "duration_ms"
+    private const val P_SERVER_WAIT_MS = "server_wait_ms"
+    private const val P_ANIMATION_MS = "animation_ms"
     private const val P_AT_TAP = "at_tap"
     private const val P_CHEST_SOURCE = "chest_source"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
     const val SURVEY_TUTORIAL = "tutorial"
+
+    // ── Sandık kaynakları ───────────────────────────────────────────────────
+    // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
+    // dolayısıyla hepsi aynı olaylarla ölçülür. Ayırt edilebilmeleri için her çağrı yeri
+    // kendi kaynağını bildirir; aksi halde "ders sandığı mı görev sandığı mı daha çok
+    // terk ediliyor" sorusu sorulamaz.
+    /** Ders sonu sandığı ([ChestFragment]). */
+    const val CHEST_SOURCE_LESSON = "lesson"
+    /** Günlük soru ödülü ([TasksFragment]). */
+    const val CHEST_SOURCE_DAILY_QUESTION = "daily_question"
+    /** Görev tamamlama ödülü ([MissionsFragment]). */
+    const val CHEST_SOURCE_MISSION = "mission"
+    /** Görev sandığı ([MissionChestRewardFragment]). */
+    const val CHEST_SOURCE_MISSION_CHEST = "mission_chest"
+    /** Mağazada reklam izleyerek açılan sandık ([ShopFragment]). */
+    const val CHEST_SOURCE_SHOP_AD = "shop_ad"
+    /** Bülten kartından açılan sandık ([TasksFragment]); prefetch YAPILMAZ. */
+    const val CHEST_SOURCE_BULLETIN = "bulletin"
 
     /** Firebase kullanıcı özelliği: değer en fazla 36 karakter olabilir. */
     private const val USER_PROPERTY_MAX = 36
@@ -303,31 +323,55 @@ object AnalyticsLogger {
 
     /**
      * Kullanıcı sandığı açıp ödülü gördü.
-     * @param durationMs Ekranın açılmasından ödülün görülmesine kadar geçen süre —
-     *   "animasyon çok mu uzun" sorusunun cevabı bu dağılımdadır.
+     *
+     * Toplam süre iki parçaya ayrılır, çünkü ikisinin çaresi farklıdır:
+     * - [serverWaitMs] uzunsa sorun Cloud Functions soğuk başlangıcındadır. Çağrı yerlerinin
+     *   çoğu ekranı açmadan önce [ServerRewards.prefetchChest] çağırıyor; bu parametre o
+     *   optimizasyonun gerçekten işe yarayıp yaramadığını ölçer (yarıyorsa ~0 olmalı).
+     * - [animationMs] uzunsa sorun animasyon tasarımındadır.
+     *
+     * [durationMs] ikisinin toplamıdır; tek başına "kullanıcı ne kadar bekledi" sorusunu
+     * cevapladığı için ayrıca gönderilir.
      */
     fun logChestOpenComplete(
         finalRarity: String,
         rewardType: String,
         rewardAmount: Int,
         durationMs: Long,
+        serverWaitMs: Long,
+        animationMs: Long,
+        chestSource: String,
     ) = safe { fa ->
         fa.logEvent(EV_CHEST_OPEN_COMPLETE) {
             param(P_RARITY_FINAL, sanitize(finalRarity))
             param(P_REWARD_TYPE, sanitize(rewardType))
             param(P_REWARD_AMOUNT, rewardAmount.toLong())
             param(P_DURATION_MS, durationMs)
+            param(P_SERVER_WAIT_MS, serverWaitMs)
+            param(P_ANIMATION_MS, animationMs)
+            param(P_CHEST_SOURCE, sanitize(chestSource))
         }
     }
 
     /**
      * Sandık ekranı, ödül görülmeden kapandı.
+     *
      * @param atTap Kaçıncı dokunuşta bırakıldı (0 = hiç dokunmadan).
+     * @param serverWaitMs Sunucu cevabının gelmesi ne kadar sürdü; **null ise cevap hiç
+     *   gelmeden çıkıldı**. Bu ikisinin ayrımı kritik: `at_tap = 0` + `server_wait_ms` yok,
+     *   "kullanıcı beklerken sıkıldı" demektir ve çaresi animasyon değil, prefetch'tir.
      */
-    fun logChestAbandoned(atTap: Int, durationMs: Long) = safe { fa ->
+    fun logChestAbandoned(
+        atTap: Int,
+        durationMs: Long,
+        serverWaitMs: Long?,
+        chestSource: String,
+    ) = safe { fa ->
         fa.logEvent(EV_CHEST_ABANDONED) {
             param(P_AT_TAP, atTap.toLong())
             param(P_DURATION_MS, durationMs)
+            if (serverWaitMs != null) param(P_SERVER_WAIT_MS, serverWaitMs)
+            param(P_CHEST_SOURCE, sanitize(chestSource))
         }
     }
 

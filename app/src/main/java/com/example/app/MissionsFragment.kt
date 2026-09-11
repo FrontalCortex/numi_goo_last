@@ -211,7 +211,13 @@ class MissionsFragment : Fragment() {
         mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = android.view.View.VISIBLE
 
         parentFragmentManager.beginTransaction()
-                .add(containerId, NewChestFragment.newInstance(startRarity))
+                .add(
+                    containerId,
+                    NewChestFragment.newInstance(
+                        startRarity,
+                        source = AnalyticsLogger.CHEST_SOURCE_MISSION,
+                    ),
+                )
                 .commit()
     }
 

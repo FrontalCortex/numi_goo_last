@@ -95,7 +95,11 @@ class ShopFragment : Fragment() {
                 parentFragmentManager.beginTransaction()
                     .add(
                         R.id.abacusFragmentContainer,
-                        NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON, adNonce),
+                        NewChestFragment.newInstance(
+                            NewChestFragment.ChestRarity.COMMON,
+                            adNonce,
+                            source = AnalyticsLogger.CHEST_SOURCE_SHOP_AD,
+                        ),
                     )
                     .commit()
             }
