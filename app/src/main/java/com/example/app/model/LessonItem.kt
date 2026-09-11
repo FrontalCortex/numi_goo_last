@@ -38,6 +38,12 @@ data class LessonItem(
     var stepCompletionStatus: List<Boolean> = List(stepCount) { false },// Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
     var startStepNumber: Int? = null,
+    /**
+     * Dersin liste içindeki 0-tabanlı konumu. **Elle verilmez** — [GlobalLessonData.createLessonItems]
+     * dönerken her item'a konumunu atar, şablonda yazılan bir değer sessizce ezilir.
+     *
+     * Kalıcı kimlik için [stableId] kullanın: bu alan araya ders eklendiğinde kayar.
+     */
     var mapFragmentIndex: Int? = null,
     var stepIsFinish: Boolean = false,
     var finalGoldVisualUnlocked: Boolean = false,

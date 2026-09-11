@@ -216,7 +216,7 @@ class TutorialQuestionPanelFragment : Fragment() {
 
     private fun submitAndProceed() {
         val globalPartId = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: return
-        val mapFragmentIndex = arguments?.getInt(ARG_MAP_FRAGMENT_INDEX) ?: return
+        val lessonId = arguments?.getString(ARG_LESSON_ID).orEmpty()
         val uid = auth.currentUser?.uid
 
         val hasAnyAnswer = q1SelectedChoice != null
@@ -224,7 +224,9 @@ class TutorialQuestionPanelFragment : Fragment() {
                 || binding.q1TextInput.text.isNotBlank()
                 || binding.q2TextInput.text.isNotBlank()
                 || binding.q3TextInput.text.isNotBlank()
-        if (!hasAnyAnswer) {
+        // Kimliksiz cevabı saklayacak yer yok — ama akış ASLA burada durmamalı, yoksa
+        // çocuk anket ekranında kilitli kalır. Kaydetmeyi atla, derse devam et.
+        if (!hasAnyAnswer || lessonId.isBlank()) {
             proceedToLesson()
             return
         }
@@ -232,7 +234,7 @@ class TutorialQuestionPanelFragment : Fragment() {
         val basePath = firestore
             .collection("questionPanelTutorial")
             .document(globalPartId.toString())
-            .collection(mapFragmentIndex.toString())
+            .collection(lessonId)
 
         // Firestore'a yazılacak işler; yalnızca SERBEST METİN kaldı (bkz. sınıf başlığı).
         val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
@@ -242,7 +244,7 @@ class TutorialQuestionPanelFragment : Fragment() {
         val q1Text = binding.q1TextInput.text.toString().trim()
         if (q1Choice != null) {
             AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, mapFragmentIndex, 1, q1Choice,
+                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 1, q1Choice,
             )
         }
         if (q1Text.isNotEmpty() && uid != null) {
@@ -252,7 +254,7 @@ class TutorialQuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q1Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, mapFragmentIndex, 1,
+                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 1,
             )
         }
 
@@ -261,7 +263,7 @@ class TutorialQuestionPanelFragment : Fragment() {
         val q2Text = binding.q2TextInput.text.toString().trim()
         if (q2Choice != null) {
             AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, mapFragmentIndex, 2, q2Choice,
+                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 2, q2Choice,
             )
         }
         if (q2Text.isNotEmpty() && uid != null) {
@@ -271,7 +273,7 @@ class TutorialQuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q2Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, mapFragmentIndex, 2,
+                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 2,
             )
         }
 
@@ -284,7 +286,7 @@ class TutorialQuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q3Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, mapFragmentIndex, 3,
+                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 3,
             )
         }
 
@@ -335,16 +337,16 @@ class TutorialQuestionPanelFragment : Fragment() {
 
     companion object {
         const val ARG_GLOBAL_PART_ID = "globalPartId"
-        const val ARG_MAP_FRAGMENT_INDEX = "mapFragmentIndex"
+        const val ARG_LESSON_ID = "lessonId"
 
         fun newInstance(
             globalPartId: Int,
-            mapFragmentIndex: Int,
+            lessonId: String,
         ): TutorialQuestionPanelFragment {
             return TutorialQuestionPanelFragment().apply {
                 arguments = Bundle().apply {
                     putInt(ARG_GLOBAL_PART_ID, globalPartId)
-                    putInt(ARG_MAP_FRAGMENT_INDEX, mapFragmentIndex)
+                    putString(ARG_LESSON_ID, lessonId)
                 }
             }
         }

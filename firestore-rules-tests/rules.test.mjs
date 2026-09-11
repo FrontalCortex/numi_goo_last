@@ -114,6 +114,28 @@ await check('gunluk sure yazimi cuzdani kurcalayamiyor', assertFails(
     keys: increment(999),
   })));
 
+console.log('\n-- KALICI KIMLIK: anket ve liderlik artik stableId ile anahtarli --');
+// Anket yolunun orta segmenti artik liste konumu degil LessonItem.stableId.
+await check('anket metni stableId yoluna yazilabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanel/1/p1_i06_kuralsiz_toplama_1_basamakli/question1/text/ali'),
+    { uid: 'ali', text: 'kolaydi' })));
+await check('tutorial anketi stableId yoluna yazilabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanelTutorial/1/p1_i01_sayilari_abakuste_tanima/question1/text/ali'),
+    { uid: 'ali', text: 'anlasildi' })));
+await check('baskasinin anket metni stableId yolunda da reddediliyor', assertFails(
+  setDoc(doc(veli, 'questionPanel/1/p1_i06_kuralsiz_toplama_1_basamakli/question1/text/ali'),
+    { uid: 'ali', text: 'ezildi' })));
+
+// Tahta meta dokumanini yalnizca submitLeaderboardScore (Admin SDK) yazar.
+await check('liderlik tahtasi okunabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7'))));
+await check('istemci tahta uyduramiyor', assertFails(
+  setDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7'),
+    { partId: 1, lessonKey: 'p1_i04_unite_maratonu', season: 7, updatedAt: 'x' })));
+await check('istemci tahta kaydi yazamiyor', assertFails(
+  setDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7/entries/ali'),
+    { recordScore: 2000 })));
+
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(
   setDoc(doc(ali, 'users/ali/lessonProgress/1'), { x: 1 })));

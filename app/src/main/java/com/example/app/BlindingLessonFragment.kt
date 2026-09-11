@@ -2005,7 +2005,7 @@ class BlindingLessonFragment : Fragment() {
             successRate = successRate,
             dersPuani = dersPuani,
             globalPartId = globalPartId,
-            mapFragmentIndex = mapFragmentStepIndex,
+            lessonId = lessonItem.stableId,
             lessonType = lessonItem.type,
             currentTime = currentTime,
             worstCupTime = worstCupTime

@@ -236,7 +236,7 @@ class QuestionPanelFragment : Fragment() {
 
     private fun submitAndProceed() {
         val globalPartId = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: return
-        val mapFragmentIndex = arguments?.getInt(ARG_MAP_FRAGMENT_INDEX) ?: return
+        val lessonId = arguments?.getString(ARG_LESSON_ID).orEmpty()
         val uid = auth.currentUser?.uid
 
         // Kaydedilecek hiçbir şey yoksa direkt geç (güvenlik)
@@ -245,7 +245,9 @@ class QuestionPanelFragment : Fragment() {
                 || binding.q1TextInput.text.isNotBlank()
                 || binding.q2TextInput.text.isNotBlank()
                 || binding.q3TextInput.text.isNotBlank()
-        if (!hasAnyAnswer) {
+        // Kimliksiz cevabı saklayacak yer yok — ama akış ASLA burada durmamalı, yoksa
+        // çocuk anket ekranında kilitli kalır. Kaydetmeyi atla, derse devam et.
+        if (!hasAnyAnswer || lessonId.isBlank()) {
             proceedToResult()
             return
         }
@@ -253,7 +255,7 @@ class QuestionPanelFragment : Fragment() {
         val basePath = firestore
             .collection("questionPanel")
             .document(globalPartId.toString())
-            .collection(mapFragmentIndex.toString())
+            .collection(lessonId)
 
         // Firestore'a yazılacak işler; yalnızca SERBEST METİN kaldı (bkz. sınıf başlığı).
         val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
@@ -263,7 +265,7 @@ class QuestionPanelFragment : Fragment() {
         val q1Text = binding.q1TextInput.text.toString().trim()
         if (q1Choice != null) {
             AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 1, q1Choice,
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 1, q1Choice,
             )
         }
         if (q1Text.isNotEmpty() && uid != null) {
@@ -273,7 +275,7 @@ class QuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q1Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 1,
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 1,
             )
         }
 
@@ -282,7 +284,7 @@ class QuestionPanelFragment : Fragment() {
         val q2Text = binding.q2TextInput.text.toString().trim()
         if (q2Choice != null) {
             AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 2, q2Choice,
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 2, q2Choice,
             )
         }
         if (q2Text.isNotEmpty() && uid != null) {
@@ -292,7 +294,7 @@ class QuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q2Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 2,
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 2,
             )
         }
 
@@ -305,7 +307,7 @@ class QuestionPanelFragment : Fragment() {
                     .set(mapOf("uid" to uid, "text" to q3Text))
             )
             AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_LESSON, globalPartId, mapFragmentIndex, 3,
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 3,
             )
         }
 
@@ -373,7 +375,7 @@ class QuestionPanelFragment : Fragment() {
         const val ARG_SUCCESS_RATE = "successRate"
         const val ARG_DERS_PUANI = "dersPuani"
         const val ARG_GLOBAL_PART_ID = "globalPartId"
-        const val ARG_MAP_FRAGMENT_INDEX = "mapFragmentIndex"
+        const val ARG_LESSON_ID = "lessonId"
         const val ARG_LESSON_TYPE = "lessonType"
         const val ARG_CURRENT_TIME = "currentTime"
         const val ARG_WORST_CUP_TIME = "worstCupTime"
@@ -384,7 +386,7 @@ class QuestionPanelFragment : Fragment() {
             successRate: Float,
             dersPuani: Int,
             globalPartId: Int,
-            mapFragmentIndex: Int,
+            lessonId: String,
             lessonType: Int,
             currentTime: String = "",
             worstCupTime: Int = 0
@@ -396,7 +398,7 @@ class QuestionPanelFragment : Fragment() {
                     putFloat(ARG_SUCCESS_RATE, successRate)
                     putInt(ARG_DERS_PUANI, dersPuani)
                     putInt(ARG_GLOBAL_PART_ID, globalPartId)
-                    putInt(ARG_MAP_FRAGMENT_INDEX, mapFragmentIndex)
+                    putString(ARG_LESSON_ID, lessonId)
                     putInt(ARG_LESSON_TYPE, lessonType)
                     putString(ARG_CURRENT_TIME, currentTime)
                     putInt(ARG_WORST_CUP_TIME, worstCupTime)

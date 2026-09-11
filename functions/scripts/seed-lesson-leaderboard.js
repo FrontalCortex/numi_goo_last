@@ -98,7 +98,7 @@ function resolveParams() {
     lessonIndex = parsed.lessonIndex;
     season = parsed.season;
   } else {
-    boardId = `part_${partId}_lesson_${lessonIndex}_season_${season}`;
+    boardId = `part_${partId}_lesson_${process.env.LESSON_KEY || lessonIndex}_season_${season}`;
   }
 
   const score = parseInt(process.env.SCORE || '1980', 10);
@@ -118,7 +118,7 @@ function resolveParams() {
 }
 
 async function seedOneBoard(partId, lessonIndex, season, score, count, titleUnit) {
-  const boardId = `part_${partId}_lesson_${lessonIndex}_season_${season}`;
+  const boardId = `part_${partId}_lesson_${process.env.LESSON_KEY || lessonIndex}_season_${season}`;
   const boardRef = db.collection('lessonLeaderboards').doc(boardId);
   const entriesCol = boardRef.collection('entries');
 

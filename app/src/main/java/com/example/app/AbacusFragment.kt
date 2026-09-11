@@ -3195,7 +3195,7 @@ class AbacusFragment : Fragment() {
             successRate = successRate,
             dersPuani = dersPuani,
             globalPartId = GlobalLessonData.globalPartId,
-            mapFragmentIndex = mapFragmentStepIndex,
+            lessonId = lessonItem.stableId,
             lessonType = lessonItem.type,
             currentTime = currentTime,
             worstCupTime = worstCupTime

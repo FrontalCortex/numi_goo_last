@@ -278,7 +278,7 @@ class LessonAdapter(
                             )
                             .replace(
                                 R.id.abacusFragmentContainer,
-                                RecordFragment.newInstance(globalPartId, position, item.title),
+                                RecordFragment.newInstance(globalPartId, item.stableId, item.title),
                             )
                             .addToBackStack(null)
                             .commitAllowingStateLoss()

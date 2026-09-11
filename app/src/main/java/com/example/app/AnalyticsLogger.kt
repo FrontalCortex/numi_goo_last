@@ -60,7 +60,12 @@ object AnalyticsLogger {
     private const val P_ANSWER_SUCCESS_RATE = "answer_success_rate"
     private const val P_SOURCE = "source"
     private const val P_SURVEY_TYPE = "survey_type"
-    private const val P_MAP_INDEX = "map_index"
+    /**
+     * Dersin kalıcı kimliği ([com.example.app.model.LessonItem.stableId]). Eskiden `map_index`
+     * (liste konumu) gönderiliyordu; müfredata araya ders eklendiğinde konum kayıyor ve geçmiş
+     * anket verisi başka bir derse aitmiş gibi okunuyordu.
+     */
+    private const val P_LESSON_ID = "lesson_id"
     private const val P_QUESTION_NO = "question_no"
     private const val P_CHOICE = "choice"
     private const val P_RARITY_START = "rarity_start"
@@ -278,14 +283,14 @@ object AnalyticsLogger {
     fun logSurveyChoice(
         surveyType: String,
         partId: Int,
-        mapFragmentIndex: Int,
+        lessonId: String,
         questionNo: Int,
         choice: Int,
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_CHOICE) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
             param(P_PART_ID, partId.toLong())
-            param(P_MAP_INDEX, mapFragmentIndex.toLong())
+            param(P_LESSON_ID, sanitize(lessonId))
             param(P_QUESTION_NO, questionNo.toLong())
             param(P_CHOICE, choice.toLong())
         }
@@ -299,13 +304,13 @@ object AnalyticsLogger {
     fun logSurveyText(
         surveyType: String,
         partId: Int,
-        mapFragmentIndex: Int,
+        lessonId: String,
         questionNo: Int,
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_TEXT) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
             param(P_PART_ID, partId.toLong())
-            param(P_MAP_INDEX, mapFragmentIndex.toLong())
+            param(P_LESSON_ID, sanitize(lessonId))
             param(P_QUESTION_NO, questionNo.toLong())
         }
     }

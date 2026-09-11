@@ -56,8 +56,9 @@ class RecordFragment : Fragment() {
     private val partId: Int
         get() = requireArguments().getInt(ARG_PART_ID)
 
-    private val lessonIndex: Int
-        get() = requireArguments().getInt(ARG_LESSON_INDEX)
+    /** Tahta anahtarı: liste konumu değil dersin kalıcı kimliği (bkz. LessonItem.stableId). */
+    private val lessonKey: String
+        get() = requireArguments().getString(ARG_LESSON_KEY).orEmpty()
 
     private val lessonTitle: String
         get() = requireArguments().getString(ARG_LESSON_TITLE).orEmpty()
@@ -101,7 +102,7 @@ class RecordFragment : Fragment() {
         boundLeaderboardSeason = season
         leaderboardListener = LessonLeaderboardRepository.listenLeaderboard(
             partId = partId,
-            lessonIndex = lessonIndex,
+            lessonKey = lessonKey,
             season = season,
             onUpdate = { entries ->
                 if (!isAdded) return@listenLeaderboard
@@ -215,14 +216,14 @@ class RecordFragment : Fragment() {
 
     companion object {
         private const val ARG_PART_ID = "partId"
-        private const val ARG_LESSON_INDEX = "lessonIndex"
+        private const val ARG_LESSON_KEY = "lessonKey"
         private const val ARG_LESSON_TITLE = "lessonTitle"
 
-        fun newInstance(partId: Int, lessonIndex: Int, lessonTitle: String): RecordFragment {
+        fun newInstance(partId: Int, lessonKey: String, lessonTitle: String): RecordFragment {
             val f = RecordFragment()
             f.arguments = Bundle().apply {
                 putInt(ARG_PART_ID, partId)
-                putInt(ARG_LESSON_INDEX, lessonIndex)
+                putString(ARG_LESSON_KEY, lessonKey)
                 putString(ARG_LESSON_TITLE, lessonTitle)
             }
             return f

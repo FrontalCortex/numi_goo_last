@@ -1335,10 +1335,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
             // Tutorial soru panelini aç; panel bittikten sonra asıl geçişi yap
             val globalPartId = GlobalLessonData.globalPartId
-            val mapFragmentIndex = lessonItem?.mapFragmentIndex ?: 0
+            // Ders çözülemezse kimlik boş gider; panel yine açılır, yalnızca anket kaydı atlanır
+            // (bkz. TutorialQuestionPanelFragment.submitAndProceed).
+            val lessonId = lessonItem?.stableId.orEmpty()
             val panelFragment = TutorialQuestionPanelFragment.newInstance(
                 globalPartId = globalPartId,
-                mapFragmentIndex = mapFragmentIndex,
+                lessonId = lessonId,
             )
 
             parentFragmentManager.setFragmentResultListener(

@@ -1364,14 +1364,23 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
 
   const uid = context.auth.uid;
   const partId = parseInt(data.partId);
+  // Tahta anahtarı artık dersin kalıcı kimliği (LessonItem.stableId). Eskiden liste konumuydu;
+  // müfredata araya ders eklemek tahtayı ikiye bölüyordu. Eski sürüm istemciler hâlâ
+  // lessonIndex gönderebilir, o yüzden sayısal biçim geriye dönük kabul ediliyor.
+  const lessonKeyRaw = typeof data.lessonKey === 'string' ? data.lessonKey.trim() : '';
+  // Doküman kimliğine giriyor: "/", ".", ".." ve "__x__" gibi biçimleri tamamen dışarıda bırakır.
+  const lessonKey = /^[a-z0-9_]{1,120}$/.test(lessonKeyRaw) ? lessonKeyRaw : null;
   const lessonIndex = parseInt(data.lessonIndex);
   const recordScore = parseInt(data.recordScore);
   const displayName = typeof data.displayName === 'string' ? data.displayName.trim().slice(0, 127) || 'Kullanıcı' : 'Kullanıcı';
   const photoUrl = typeof data.photoUrl === 'string' ? data.photoUrl.slice(0, 511) : '';
   const titleUnit = typeof data.titleUnit === 'string' ? data.titleUnit.trim().slice(0, 127) || null : null;
 
-  if (!Number.isFinite(partId) || !Number.isFinite(lessonIndex)) {
-    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz partId veya lessonIndex.');
+  if (!Number.isFinite(partId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz partId.');
+  }
+  if (lessonKey === null && !Number.isFinite(lessonIndex)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz lessonKey veya lessonIndex.');
   }
   if (!Number.isFinite(recordScore) || recordScore <= 0 || recordScore > 2000) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz recordScore (1-2000 aralığında olmalı).');
@@ -1380,7 +1389,8 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   // Sezonu SUNUCU saatine göre hesapla — istemciye güvenilmez.
   const { currentSeason } = require('./seasonCalendar');
   const season = currentSeason(Date.now());
-  const boardId = `part_${partId}_lesson_${lessonIndex}_season_${season}`;
+  const lessonRef = lessonKey !== null ? lessonKey : String(lessonIndex);
+  const boardId = `part_${partId}_lesson_${lessonRef}_season_${season}`;
 
   const boardRef = db.collection('lessonLeaderboards').doc(boardId);
   const entryRef = boardRef.collection('entries').doc(uid);
@@ -1410,10 +1420,12 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
       if (!boardSnap.exists) {
         const boardMeta = {
           partId,
-          lessonIndex,
+          lessonKey: lessonRef,
           season,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
+        // Eski sürüm istemciden geldiyse konumu da sakla (NaN yazılmasın).
+        if (Number.isFinite(lessonIndex)) boardMeta.lessonIndex = lessonIndex;
         if (titleUnit) boardMeta.titleUnit = titleUnit;
         transaction.set(boardRef, boardMeta);
       }

@@ -14,7 +14,7 @@ import com.google.firebase.functions.FirebaseFunctions
 /**
  * Firestore: `lessonLeaderboards/{boardDocId}` (meta) + `entries/{uid}`.
  * Kupa/altın/gümüş/bronz rozet satırları sezon sonunda Cloud Function [finalizeSeasonLeaderboardMedals] ile yazılır;
- * istemci yalnızca skor gönderir. Tahta üst dokümanında `season` / `partId` / `lessonIndex` tutulur (sorgu için).
+ * istemci yalnızca skor gönderir. Tahta üst dokümanında `season` / `partId` / `lessonKey` tutulur (sorgu için).
  */
 object LessonLeaderboardRepository {
 
@@ -30,7 +30,6 @@ object LessonLeaderboardRepository {
     private const val F_TITLE_UNIT = "titleUnit"
 
     private const val META_PART_ID = "partId"
-    private const val META_LESSON_INDEX = "lessonIndex"
     private const val META_SEASON = "season"
 
     /** Kupa liderliği → rozet [abacusLeaderboardRank] senkronu: bu parttaki ilk [LessonItem.TYPE_CHEST] satırının liste indeksi. */
@@ -55,12 +54,19 @@ object LessonLeaderboardRepository {
      * Sezon bazlı tahta doküman id'si (`lessonLeaderboards/{id}/entries/...`).
      * Firestore rules güncellenirken `*_season_*` kalıbına izin verildiğinden emin olun.
      */
+    /**
+     * Tahta kimliği artık liste konumuyla DEĞİL dersin kalıcı kimliğiyle kuruluyor
+     * (`part_1_lesson_p1_i04_unite_maratonu_season_7`). Müfredata araya ders eklendiğinde
+     * konum kayar ve eski biçimde tahta ikiye bölünürdü.
+     *
+     * Sunucu tarafı da aynı biçimi üretiyor: functions/index.js → submitLeaderboardScore.
+     */
     fun leaderboardDocumentId(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         season: Int = SeasonClock.currentSeason(),
     ): String =
-        "part_${partId}_lesson_${lessonIndex}_season_$season"
+        "part_${partId}_lesson_${lessonKey}_season_$season"
 
     /**
      * [orderBy recordScore DESC] ile gelen doküman sırası için beraberlikte paylaşılan ödül sırası
@@ -99,7 +105,7 @@ object LessonLeaderboardRepository {
      */
     fun submitBestIfNeeded(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         recordScore: Int,
         @Suppress("UNUSED_PARAMETER") season: Int = SeasonClock.currentSeason(), // Artık sunucu belirliyor, parametre geriye dönük uyumluluk için tutuldu
         titleUnit: String? = null,
@@ -115,9 +121,15 @@ object LessonLeaderboardRepository {
             return
         }
 
+        if (lessonKey.isBlank()) {
+            Log.w(TAG, "submitBestIfNeeded: lessonKey boş, gönderilmiyor part=$partId")
+            onComplete?.invoke()
+            return
+        }
+
         val data = hashMapOf<String, Any>(
             "partId" to partId,
-            "lessonIndex" to lessonIndex,
+            "lessonKey" to lessonKey,
             "recordScore" to recordScore,
             "displayName" to (user.displayName?.trim()?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
             "photoUrl" to (user.photoUrl?.toString() ?: ""),
@@ -131,11 +143,11 @@ object LessonLeaderboardRepository {
             .getHttpsCallable("submitLeaderboardScore")
             .call(data)
             .addOnSuccessListener {
-                Log.d(TAG, "submitBestIfNeeded CF OK part=$partId lesson=$lessonIndex score=$recordScore")
+                Log.d(TAG, "submitBestIfNeeded CF OK part=$partId lesson=$lessonKey score=$recordScore")
                 onComplete?.invoke()
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "submitBestIfNeeded CF failed part=$partId lesson=$lessonIndex", e)
+                Log.e(TAG, "submitBestIfNeeded CF failed part=$partId lesson=$lessonKey", e)
                 onComplete?.invoke()
             }
     }
@@ -147,14 +159,14 @@ object LessonLeaderboardRepository {
      */
     fun fetchUserRankInLessonLeaderboard(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         userId: String,
         topLimit: Long = ABACUS_BADGE_LEADERBOARD_TOP_N,
         season: Int = SeasonClock.currentSeason(),
         onResult: (rank: Int?, querySucceeded: Boolean) -> Unit,
     ) {
         val db = FirebaseFirestore.getInstance()
-        val boardId = leaderboardDocumentId(partId, lessonIndex, season)
+        val boardId = leaderboardDocumentId(partId, lessonKey, season)
         val uidNorm = userId.trim()
         Log.d(
             TAG,
@@ -188,7 +200,7 @@ object LessonLeaderboardRepository {
                     Log.w(
                         TAG,
                         "fetchRank USER_NOT_IN_TOP board=$boardId idxTrim=$idxTrim idxRaw=$idxRaw " +
-                            "(yanlış lessonIndex / farklı uid / kayıt orderBy dışında kaldı mı?)",
+                            "(yanlış lessonKey / farklı uid / kayıt orderBy dışında kaldı mı?)",
                     )
                     // Aynı path'te kullanıcı dokümanı var mı + ham skor tipi (orderBy dışı kalma teşhisi)
                     db.collection(COLLECTION).document(boardId).collection(ENTRIES).document(userId).get()
@@ -213,7 +225,7 @@ object LessonLeaderboardRepository {
                 onResult(if (idx >= 0) ranks[idx] else null, true)
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "fetchRank QUERY_FAILED part=$partId lesson=$lessonIndex board=$boardId", e)
+                Log.e(TAG, "fetchRank QUERY_FAILED part=$partId lesson=$lessonKey board=$boardId", e)
                 onResult(null, false)
             }
     }
@@ -235,10 +247,17 @@ object LessonLeaderboardRepository {
                 return@resolveFirstChestLessonIndexForUser
             }
             val partId = ABACUS_BADGE_LEADERBOARD_PART_ID
+            // Konum yalnızca sandığı BULMAK için; tahta anahtarı kalıcı kimlik.
+            val lessonKey = GlobalLessonData.stableIdAt(partId, chestIndex)
+            if (lessonKey == null) {
+                Log.w(TAG, "syncAbacusLeaderboardRankToBadgeProgress: idx=$chestIndex için stableId yok")
+                onFinished()
+                return@resolveFirstChestLessonIndexForUser
+            }
             GlobalLessonData.backfillLeaderboardFromStoredChest(uid, partId, chestIndex) {
                 fetchUserRankInLessonLeaderboard(
                     partId = partId,
-                    lessonIndex = chestIndex,
+                    lessonKey = lessonKey,
                     userId = uid,
                     topLimit = ABACUS_BADGE_LEADERBOARD_TOP_N,
                 ) { rank, querySucceeded ->
@@ -292,14 +311,14 @@ object LessonLeaderboardRepository {
 
     fun listenLeaderboard(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         season: Int = SeasonClock.currentSeason(),
         onUpdate: (List<LeaderboardEntry>) -> Unit,
         onError: (Exception) -> Unit,
     ): ListenerRegistration {
         val db = FirebaseFirestore.getInstance()
         val q = db.collection(COLLECTION)
-            .document(leaderboardDocumentId(partId, lessonIndex, season))
+            .document(leaderboardDocumentId(partId, lessonKey, season))
             .collection(ENTRIES)
             .orderBy(F_SCORE, Query.Direction.DESCENDING)
             .limit(LEADERBOARD_LIST_QUERY_LIMIT)

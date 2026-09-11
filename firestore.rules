@@ -273,15 +273,11 @@ service cloud.firestore {
     // ── Liderlik tabloları ─────────────────────────────────────────────────
     match /lessonLeaderboards/{leaderboardId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn()
-        && request.resource.data.partId is number
-        && request.resource.data.lessonIndex is number
-        && request.resource.data.season is number
-        && ('updatedAt' in request.resource.data)
-        && (!('titleUnit' in request.resource.data)
-            || (request.resource.data.titleUnit is string
-                && request.resource.data.titleUnit.size() < 200));
-      allow delete: if false;
+      // Tahta meta dokümanını YALNIZCA submitLeaderboardScore (Admin SDK, kuralları atlar) yazar.
+      // İstemci yalnızca okuyor; eski kural ise her giriş yapmış kullanıcının tahta uydurmasına
+      // izin veriyordu. Ayrıca `lessonIndex is number` koşulu, tahta anahtarı liste konumundan
+      // LessonItem.stableId'ye taşındığı için artık yanlış alanı doğruluyordu.
+      allow create, update, delete: if false;
     }
 
     // Girişler yalnızca submitLeaderboardScore Cloud Function üzerinden yazılır.
@@ -299,16 +295,17 @@ service cloud.firestore {
     //
     // Firestore'da yalnızca kullanıcının yazdığı SERBEST METİN kalıyor: Analytics'e
     // kişisel veri yazılamaz, ayrıca bu metinler okunup değerlendirilecek.
-    // Yol: questionPanel/{partId}/{mapIndex}/question{N}/text/{uid}
+    // Yol: questionPanel/{partId}/{lessonId}/question{N}/text/{uid}
+    // {lessonId} = LessonItem.stableId (eskiden liste konumuydu; araya ders eklenince kayıyordu).
     //
     // Yazma izni `isSignedIn()` yerine `isSelf(uid)`: kullanıcı yalnızca kendi dokümanına
     // yazabilir, başkasının cevabını ezemez. Okuma kapalı — metinler yalnızca Admin SDK
     // (Firebase Console / Cloud Functions) ile okunur.
-    match /questionPanel/{partId}/{mapIndex}/{questionDoc}/text/{uid} {
+    match /questionPanel/{partId}/{lessonId}/{questionDoc}/text/{uid} {
       allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
-    match /questionPanelTutorial/{partId}/{mapIndex}/{questionDoc}/text/{uid} {
+    match /questionPanelTutorial/{partId}/{lessonId}/{questionDoc}/text/{uid} {
       allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
