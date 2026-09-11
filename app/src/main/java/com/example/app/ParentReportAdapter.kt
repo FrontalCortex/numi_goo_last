@@ -12,6 +12,7 @@ import com.example.app.ParentReportRepository.StepRow
 import com.example.app.ParentReportRepository.StepState
 import com.example.app.databinding.ItemParentDayBarBinding
 import com.example.app.databinding.ItemParentLessonBinding
+import com.example.app.databinding.ItemParentPartBinding
 import com.example.app.databinding.ItemParentSectionBinding
 import com.example.app.databinding.ItemParentStepBinding
 import com.example.app.databinding.ItemParentSummaryBinding
@@ -33,14 +34,18 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private companion object {
         const val TYPE_SUMMARY = 0
-        const val TYPE_SECTION = 1
-        const val TYPE_LESSON = 2
-        const val TYPE_STEP = 3
+        const val TYPE_PART = 1
+        const val TYPE_SECTION = 2
+        const val TYPE_LESSON = 3
+        const val TYPE_STEP = 4
     }
 
     /** Ekrana çizilen düz satır listesi; [rebuild] ile üretilir. */
     private sealed class Row {
         data class Summary(val report: Report) : Row()
+        /** "Bölüm 1" — part başına bir kez. */
+        data class Part(val partId: Int) : Row()
+        /** "Kuralsız Toplama" — bölümün altındaki ünite. */
         data class Section(val title: String) : Row()
         data class Lesson(val lesson: LessonRow, val expanded: Boolean) : Row()
         data class Step(val step: StepRow) : Row()
@@ -70,9 +75,15 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         var lastPart = -1
         r.lessons.forEach { lesson ->
             val section = lesson.sectionTitle
-            if (lesson.partId != lastPart || section != lastSection) {
-                out += Row.Section(sectionHeading(lesson.partId, section))
+            // Bölüm başlığı part başına BİR kez; ünite başlıkları onun altına girer.
+            if (lesson.partId != lastPart) {
+                out += Row.Part(lesson.partId)
                 lastPart = lesson.partId
+                lastSection = null
+            }
+            if (section != lastSection) {
+                // Üniteyi olmayan (başlıksız) ders için boş satır basmanın anlamı yok.
+                if (!section.isNullOrBlank()) out += Row.Section(section.uppercase(TR))
                 lastSection = section
             }
             val isOpen = lesson.stableId in expanded
@@ -81,10 +92,6 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
         rows = out
     }
-
-    private fun sectionHeading(partId: Int, section: String?): String =
-        if (section.isNullOrBlank()) "BÖLÜM $partId"
-        else "BÖLÜM $partId · ${section.uppercase(TR)}"
 
     private fun toggle(stableId: String) {
         val index = rows.indexOfFirst { it is Row.Lesson && it.lesson.stableId == stableId }
@@ -104,6 +111,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun getItemViewType(position: Int): Int = when (rows[position]) {
         is Row.Summary -> TYPE_SUMMARY
+        is Row.Part -> TYPE_PART
         is Row.Section -> TYPE_SECTION
         is Row.Lesson -> TYPE_LESSON
         is Row.Step -> TYPE_STEP
@@ -113,6 +121,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             TYPE_SUMMARY -> SummaryHolder(ItemParentSummaryBinding.inflate(inflater, parent, false))
+            TYPE_PART -> PartHolder(ItemParentPartBinding.inflate(inflater, parent, false))
             TYPE_SECTION -> SectionHolder(ItemParentSectionBinding.inflate(inflater, parent, false))
             TYPE_LESSON -> LessonHolder(ItemParentLessonBinding.inflate(inflater, parent, false))
             else -> StepHolder(ItemParentStepBinding.inflate(inflater, parent, false))
@@ -122,6 +131,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
             is Row.Summary -> (holder as SummaryHolder).bind(row.report)
+            is Row.Part -> (holder as PartHolder).bind(row.partId)
             is Row.Section -> (holder as SectionHolder).bind(row.title)
             is Row.Lesson -> (holder as LessonHolder).bind(row.lesson, row.expanded)
             is Row.Step -> (holder as StepHolder).bind(row.step)
@@ -193,6 +203,12 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                     LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
                 )
             }
+        }
+    }
+
+    private class PartHolder(val b: ItemParentPartBinding) : RecyclerView.ViewHolder(b.root) {
+        fun bind(partId: Int) {
+            b.partTitle.text = "Bölüm $partId"
         }
     }
 
