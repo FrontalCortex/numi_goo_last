@@ -15,7 +15,10 @@ data class ChestRewardOutcome(
 /**
  * Kristal ödülünün GÖRSEL tarafı.
  *
- * Hangi videonun oynayacağı ve ödülün ne olduğu artık burada çekilmez — zar sunucuda
+ * Kristal kırılma videosu akıştan kaldırıldı; ödül ekranları ödülü doğrudan gösteriyor.
+ * Geriye yalnızca sunucudan gelen sonucu ikon/etikete çeviren [outcomeFromServer] kaldı.
+ *
+ * Ödülün ne olduğu burada çekilmez — zar sunucuda
  * atılır (`openCrystalReward`, bkz. [ServerRewards]). Bu nesne yalnızca sunucudan gelen
  * sonucu ekranda göstermek için ikon/etiket üretir.
  *
@@ -23,9 +26,6 @@ data class ChestRewardOutcome(
  * birlikte güncellenmelidir.
  */
 object ChestCrystalPolicy {
-
-    /** Sunucudan geçerli bir video adı gelmezse oynatılacak video. */
-    const val FALLBACK_VIDEO = "crystal_blue_blue"
 
     /** Sunucudan gelen sonucu ekranda gösterilecek hale getirir. */
     fun outcomeFromServer(rewardType: String, amount: Int): ChestRewardOutcome =

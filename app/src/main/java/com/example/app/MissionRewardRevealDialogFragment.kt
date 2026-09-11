@@ -14,9 +14,7 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
 
-    private var isVideoFlowOpen = false
     private var isRewardReady = false
-    private var selectedVideoName: String = "crystal_red_yellow"
     private var rewardOutcome: ChestRewardOutcome = ChestRewardOutcome(
         type = ChestRewardType.GOLD,
         amount = 0,
@@ -54,17 +52,16 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
             dismissAllowingStateLoss()
         }
 
-        // Hangi kristalin çıkacağını ve ödülü sunucu belirler; bakiye orada yazılır.
+        // Ödülü sunucu belirler; bakiye orada yazılır.
         binding.claimRewardButton.isEnabled = false
         ServerRewards.openCrystal(
             onResult = { outcome ->
                 if (!isAdded || _binding == null) return@openCrystal
-                selectedVideoName = outcome.videoName
                 rewardOutcome = ChestCrystalPolicy.outcomeFromServer(outcome.rewardType, outcome.rewardAmount)
                 applyRewardUiState()
                 binding.claimRewardButton.isEnabled = true
                 (activity as? MainActivity)?.refreshWalletUi()
-                showCrystalBreakAtStart()
+                revealRewardUi()
             },
             onFailure = {
                 if (!isAdded || _binding == null) return@openCrystal
@@ -112,22 +109,6 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
         binding.goldText.text = rewardOutcome.label
     }
 
-    private fun showCrystalBreakAtStart() {
-        if (isRewardReady || isVideoFlowOpen || !isAdded) return
-        val tag = CrystalBreakVideoFragment::class.java.simpleName
-        if (childFragmentManager.findFragmentByTag(tag) != null) return
-
-        isVideoFlowOpen = true
-        CrystalBreakVideoFragment.newInstance(selectedVideoName).show(childFragmentManager, tag)
-        childFragmentManager.executePendingTransactions()
-        (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
-            ?.setOnDismissCallback {
-                isVideoFlowOpen = false
-                if (!isAdded || _binding == null) return@setOnDismissCallback
-                revealRewardUi()
-            }
-    }
-
     private fun revealRewardUi() {
         if (isRewardReady) return
         isRewardReady = true
@@ -145,7 +126,6 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        isVideoFlowOpen = false
         _binding = null
         super.onDestroyView()
     }

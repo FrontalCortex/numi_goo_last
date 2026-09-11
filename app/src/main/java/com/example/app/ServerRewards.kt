@@ -26,9 +26,14 @@ object ServerRewards {
         val rewardAmount: Int,
     )
 
-    /** [openCrystal] sonucu. [videoName] oynatılacak kristal videosudur. */
+    /**
+     * [openCrystal] sonucu.
+     *
+     * Sunucu yanıtında bir `videoName` alanı da var ama artık okunmuyor: kristal kırılma
+     * videosu akıştan kaldırıldı (ödül ekranları ödülü doğrudan gösteriyor). Sunucu tarafı
+     * değiştirilmediği için alan yanıtta durmaya devam eder, istemci yok sayar.
+     */
     data class CrystalOutcome(
-        val videoName: String,
         val rewardType: String,
         val rewardAmount: Int,
     )
@@ -163,7 +168,6 @@ object ServerRewards {
                 }
                 onResult(
                     CrystalOutcome(
-                        videoName = data["videoName"] as? String ?: ChestCrystalPolicy.FALLBACK_VIDEO,
                         rewardType = data["rewardType"] as? String ?: "GOLD",
                         rewardAmount = (data["rewardAmount"] as? Number)?.toInt() ?: 0,
                     )

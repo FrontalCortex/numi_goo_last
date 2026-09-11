@@ -18,10 +18,8 @@ class DailyQuestionRewardFragment : Fragment() {
     private var _binding: FragmentChestBinding? = null
     private val binding get() = _binding!!
 
-    private var isVideoFlowOpen = false
     private var isChestRevealReady = false
     private var claimRewardInProgress = false
-    private var selectedVideoName: String = "crystal_red_yellow"
     private var rewardOutcome: ChestRewardOutcome = ChestRewardOutcome(
         type = ChestRewardType.GOLD,
         amount = 0,
@@ -56,17 +54,16 @@ class DailyQuestionRewardFragment : Fragment() {
         prepareHiddenRewardUi()
         setupClaimRewardButton()
 
-        // Hangi kristalin çıkacağını ve ödülü sunucu belirler; bakiye orada yazılır.
+        // Ödülü sunucu belirler; bakiye orada yazılır.
         binding.claimRewardButton.isEnabled = false
         ServerRewards.openCrystal(
             onResult = { outcome ->
                 if (!isAdded || _binding == null) return@openCrystal
-                selectedVideoName = outcome.videoName
                 rewardOutcome = ChestCrystalPolicy.outcomeFromServer(outcome.rewardType, outcome.rewardAmount)
                 applyRewardUiState(rewardOutcome)
                 binding.claimRewardButton.isEnabled = true
                 (activity as? MainActivity)?.refreshWalletUi()
-                showCrystalBreakAtStart()
+                revealChestRewardUi()
             },
             onFailure = {
                 if (!isAdded || _binding == null) return@openCrystal
@@ -141,22 +138,6 @@ class DailyQuestionRewardFragment : Fragment() {
         binding.claimRewardButton.visibility = View.GONE
     }
 
-    private fun showCrystalBreakAtStart() {
-        if (isChestRevealReady || isVideoFlowOpen || !isAdded) return
-        val tag = CrystalBreakVideoFragment::class.java.simpleName
-        if (childFragmentManager.findFragmentByTag(tag) != null) return
-
-        isVideoFlowOpen = true
-        CrystalBreakVideoFragment.newInstance(selectedVideoName).show(childFragmentManager, tag)
-        childFragmentManager.executePendingTransactions()
-        (childFragmentManager.findFragmentByTag(tag) as? CrystalBreakVideoFragment)
-            ?.setOnDismissCallback {
-                isVideoFlowOpen = false
-                if (!isAdded || _binding == null) return@setOnDismissCallback
-                revealChestRewardUi()
-            }
-    }
-
     private fun revealChestRewardUi() {
         if (isChestRevealReady) return
         isChestRevealReady = true
@@ -173,7 +154,6 @@ class DailyQuestionRewardFragment : Fragment() {
 
     override fun onDestroyView() {
         MainActivityChromeBlocker.release(activity)
-        isVideoFlowOpen = false
         _binding = null
         super.onDestroyView()
     }
