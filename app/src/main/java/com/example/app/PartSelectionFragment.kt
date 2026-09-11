@@ -106,6 +106,8 @@ class PartSelectionFragment : Fragment() {
     private fun openMapForPart(partId: Int) {
         if (partId == 7 || partId == 8) {
             val dummyItem = LessonItem(
+                // Kalıcı değil: yalnızca yarış haritasını açmak için taşıyıcı.
+                stableId = "transient_race_part$partId",
                 type = LessonItem.TYPE_RACE,
                 title = if (partId == 7) "Toplama Ustalığı" else "Çıkarma Ustalığı",
                 offset = 0,

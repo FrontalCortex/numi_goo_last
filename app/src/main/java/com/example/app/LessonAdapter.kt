@@ -1066,12 +1066,16 @@ class LessonAdapter(
             )
         }
 
-        private fun lessonProgressKey(item: LessonItem): String {
-            val stableId = item.id ?: -1
-            val part = item.partId ?: -1
-            val idx = item.mapFragmentIndex ?: bindingAdapterPosition
-            return "${item.type}_${stableId}_${part}_${item.title}_$idx"
-        }
+        /**
+         * Yerel (SharedPreferences) görsel durum anahtarı.
+         *
+         * Eskiden `item.id` kullanılıyordu ama o alan hiçbir zaman doldurulmuyordu (hep null →
+         * -1) ve anahtar liste sırasını içerdiği için müfredata ders eklendiğinde kayıyordu.
+         * Artık [LessonItem.stableId] kullanılıyor: ders nereye taşınırsa taşınsın anahtar aynı.
+         */
+        private fun lessonProgressKey(item: LessonItem): String =
+            "${item.type}_${item.stableId}"
+
 
         private fun applyPersistentFinalGoldState() {
             lessonCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_center_gold))

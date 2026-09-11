@@ -371,7 +371,7 @@ object GlobalLessonData {
             Log.d(LOG_TAG, "updateLessonItem position=$position title=${newItem.title.take(30)} stepIsFinish=${newItem.stepIsFinish} -> saving to Firestore")
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             if (uid != null) {
-                writeSingleItemToFirestore(uid, globalPartId, position, newItem) { e ->
+                writeSingleItemToFirestore(uid, globalPartId, newItem) { e ->
                     if (e != null) {
                         Log.e(LOG_TAG, "updateLessonItem Firestore write failed position=$position", e)
                     }
@@ -667,14 +667,28 @@ object GlobalLessonData {
                 }
                 try {
                     val template = createLessonItems(partId)
-                    val byIndex = snapshot.documents.mapNotNull { d ->
+
+                    // Yeni biçim: doküman kimliği = LessonItem.stableId
+                    val byStableId = snapshot.documents.associate { it.id to it.data }
+                    // Eski biçim: doküman kimliği = liste sırası ("0", "1", "2"…)
+                    val byLegacyIndex = snapshot.documents.mapNotNull { d ->
                         d.id.toIntOrNull()?.let { it to d.data }
                     }.toMap()
+
                     val merged = template.mapIndexed { index, item ->
-                        val data = byIndex[index] ?: return@mapIndexed item
+                        val data = byStableId[item.stableId]
+                            ?: byLegacyIndex[index]
+                            ?: return@mapIndexed item
                         applyProgressFields(item, data)
                     }
                     onResult(merged, null)
+
+                    // Eski anahtarlı doküman görüldüyse bir kereliğine taşı. Okuma sonucu zaten
+                    // döndürüldüğü için göç kullanıcıyı bekletmez; başarısız olursa bir sonraki
+                    // okumada yeniden denenir (idempotent).
+                    if (byLegacyIndex.isNotEmpty()) {
+                        migrateLegacyItemKeys(uid, partId, merged, byLegacyIndex.keys)
+                    }
                 } catch (e: Exception) {
                     onResult(null, e)
                 }
@@ -682,7 +696,44 @@ object GlobalLessonData {
             .addOnFailureListener { e -> onResult(null, e) }
     }
 
-    /** [items] listesindeki her item'ın progress alanlarını `items/{position}` dokümanına toplu (batch) yazar. */
+    /**
+     * Liste sırasıyla anahtarlanmış eski dokümanları [LessonItem.stableId] anahtarına taşır.
+     *
+     * Neden gerekli: kimlik eskiden liste sırasıydı. Müfredatın ortasına yeni bir ders eklendiğinde
+     * sonraki tüm item'lar kayıyor ve her kullanıcının ilerlemesi sessizce BİR ÖNCEKİ derse
+     * bağlanıyordu. Göç ancak şablon sırası hâlâ verinin yazıldığı zamanki sırayla aynıyken doğru
+     * yapılabilir — bu yüzden müfredata ilk ders eklenmeden ÖNCE çalışması şart.
+     *
+     * Yalnızca gerçekten eski anahtarlı veri bulunan item'lar yazılır; boş şablon item'ları için
+     * gereksiz doküman oluşturulmaz. Taşıma bittikten sonra eski dokümanlar silinir, böylece
+     * ileride araya ders eklendiğinde eski bir doküman yanlış item'la eşleşemez.
+     */
+    private fun migrateLegacyItemKeys(
+        uid: String,
+        partId: Int,
+        merged: List<LessonItem>,
+        legacyIndexes: Set<Int>,
+    ) {
+        val col = itemsCollectionRef(uid, partId)
+        val batch = firestore.batch()
+        merged.forEachIndexed { index, item ->
+            if (index in legacyIndexes) {
+                batch.set(col.document(item.stableId), progressFieldsOf(item))
+            }
+        }
+        legacyIndexes.forEach { batch.delete(col.document(it.toString())) }
+        batch.commit()
+            .addOnSuccessListener {
+                Log.d(LOG_TAG, "Eski anahtarlar taşındı part=$partId adet=${legacyIndexes.size}")
+            }
+            .addOnFailureListener { e ->
+                // Yutulmaz: bir sonraki okumada yeniden denenir, ama sessiz kalmamalı.
+                Log.w(LOG_TAG, "Anahtar göçü başarısız part=$partId", e)
+                AnalyticsLogger.recordNonFatal("GlobalLessonData.migrateLegacyItemKeys part=$partId", e)
+            }
+    }
+
+    /** [items] listesindeki her item'ın progress alanlarını `items/{stableId}` dokümanına toplu (batch) yazar. */
     private fun writeAllItemsToFirestore(
         uid: String,
         partId: Int,
@@ -691,23 +742,22 @@ object GlobalLessonData {
     ) {
         val col = itemsCollectionRef(uid, partId)
         val batch = firestore.batch()
-        items.forEachIndexed { index, item ->
-            batch.set(col.document(index.toString()), progressFieldsOf(item))
+        items.forEach { item ->
+            batch.set(col.document(item.stableId), progressFieldsOf(item))
         }
         batch.commit()
             .addOnSuccessListener { onComplete?.invoke(null) }
             .addOnFailureListener { e -> onComplete?.invoke(e) }
     }
 
-    /** Tek bir item'ın progress alanlarını `items/{position}` dokümanına yazar — tüm part'ı yeniden yazmaz. */
+    /** Tek bir item'ın progress alanlarını `items/{stableId}` dokümanına yazar — tüm part'ı yeniden yazmaz. */
     private fun writeSingleItemToFirestore(
         uid: String,
         partId: Int,
-        position: Int,
         item: LessonItem,
         onComplete: ((Exception?) -> Unit)? = null,
     ) {
-        itemsCollectionRef(uid, partId).document(position.toString())
+        itemsCollectionRef(uid, partId).document(item.stableId)
             .set(progressFieldsOf(item))
             .addOnSuccessListener { onComplete?.invoke(null) }
             .addOnFailureListener { e -> onComplete?.invoke(e) }
@@ -718,6 +768,7 @@ object GlobalLessonData {
         val items = when(partId) {
             1 -> listOf(
                 LessonItem(
+                    stableId = "p1_i00_sayilari_abakuste_tanima",
                     type = LessonItem.TYPE_HEADER,
                     title = "Sayıları Abaküste Tanıma",
                     offset = 0,
@@ -727,6 +778,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_blue
                 ),
                 LessonItem(
+                    stableId = "p1_i01_sayilari_abakuste_tanima",
                     type = LessonItem.TYPE_LESSON,
                     title = "Sayıları Abaküste Tanıma",
                     offset = -30,
@@ -740,6 +792,7 @@ object GlobalLessonData {
                     lessonHint = "En sağdaki sütunu kullan. Aşağıda boncuklar birlik, yukarıdaki beşlik değere sahip."
                 ),
                 LessonItem(
+                    stableId = "p1_i02_2_basamakli_sayilar",
                     type = LessonItem.TYPE_LESSON,
                     title = "2 Basamaklı Sayılar",
                     offset = 0,
@@ -753,6 +806,7 @@ object GlobalLessonData {
                     lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
                 ),
                 LessonItem(
+                    stableId = "p1_i03_3_4_5_basamakli_sayilar",
                     type = LessonItem.TYPE_LESSON,
                     title = "3-4-5 Basamaklı Sayılar",
                     offset = 30,
@@ -766,6 +820,7 @@ object GlobalLessonData {
                     lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
                 ),
                 LessonItem(
+                    stableId = "p1_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "Sayıları Abaküste Tanıma",
@@ -784,6 +839,7 @@ object GlobalLessonData {
                     worstCupTime = 150 //1 yıldız alması için min kaç saniyede bitirmeli.
                 ),
                 LessonItem(
+                    stableId = "p1_i05_kuralsiz_toplama",
                     type = LessonItem.TYPE_HEADER,
                     title = "Kuralsız toplama",
                     offset = 0,
@@ -794,6 +850,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i06_kuralsiz_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 1 Basamaklı",
                     offset = 0,
@@ -807,6 +864,7 @@ object GlobalLessonData {
                     lessonHint = "İlk sayıyı yaz. Toplanacak sayı değerinde boncuk ekle.",
                     abacusGuideNumber = 1
                 ),LessonItem(
+                    stableId = "p1_i07_kuralsiz_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 2 Basamaklı",
                     offset = -30,
@@ -819,6 +877,7 @@ object GlobalLessonData {
                     finishStepNumber = 1007,
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
+                    stableId = "p1_i08_kuralsiz_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 3 Basamaklı",
                     offset = 0,
@@ -831,6 +890,7 @@ object GlobalLessonData {
                     finishStepNumber = 1011,
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),LessonItem(
+                    stableId = "p1_i09_kuralsiz_toplama_4_5_basamak",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 4, 5 Basamaklı",
                     offset = 30,
@@ -844,6 +904,7 @@ object GlobalLessonData {
                     lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
                 ),
                 LessonItem(
+                    stableId = "p1_i10_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "Kuralsız Toplama",
@@ -862,6 +923,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i11_5_lik_toplama",
                     type = LessonItem.TYPE_HEADER,
                     title = "5'lik Toplama",
                     offset = 0,
@@ -872,6 +934,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i12_5_lik_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - Kurallar",
                     offset = -30,
@@ -886,6 +949,7 @@ object GlobalLessonData {
                     abacusGuideNumber = 2
                 ),
                 LessonItem(
+                    stableId = "p1_i13_5_lik_toplama_kuralsiz_topla",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - Kuralsız Toplama Farkı",
                     offset = -60,
@@ -900,6 +964,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p1_i14_5_lik_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - 3, 4 Basamaklı",
                     offset = -30,
@@ -913,6 +978,7 @@ object GlobalLessonData {
                     lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
                 ),
                 LessonItem(
+                    stableId = "p1_i15_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "5'lik Toplama",
@@ -931,6 +997,7 @@ object GlobalLessonData {
                     lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
                     ),
                 LessonItem(
+                    stableId = "p1_i16_10_luk_toplama_1_2_3_4_5",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 1-2-3-4-5",
                     offset = 0,
@@ -941,6 +1008,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i17_10_luk_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - Kurallar",
                     offset = 0,
@@ -956,6 +1024,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i18_10_luk_toplama_elde_mantigi",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk toplama - Elde Mantığı",
                     offset = -30,
@@ -970,6 +1039,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i19_10_luk_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 3 Basamaklı",
                     offset = -60,
@@ -982,6 +1052,7 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
                 ),LessonItem(
+                    stableId = "p1_i20_10_luk_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 3, 4 Basamaklı",
                     offset = -30,
@@ -995,6 +1066,7 @@ object GlobalLessonData {
                     lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
 
                 ),LessonItem(
+                    stableId = "p1_i21_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "10'luk Toplama 1-2-3-4-5",
@@ -1014,6 +1086,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i22_10_luk_toplama_6_7_8_9",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 6-7-8-9",
                     offset = 0,
@@ -1024,6 +1097,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i23_10_luk_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - Kurallar",
                     offset = 0,
@@ -1038,6 +1112,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i24_10_luk_toplama_elde_mantigi",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - Elde Mantığı",
                     offset = -30,
@@ -1051,6 +1126,7 @@ object GlobalLessonData {
                     lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
                 ),
                 LessonItem(
+                    stableId = "p1_i25_10_luk_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 3 Basamaklı",
                     offset = 0,
@@ -1065,6 +1141,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i26_10_luk_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 3, 4 Basamaklı",
                     offset = 30,
@@ -1078,6 +1155,7 @@ object GlobalLessonData {
                     lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
                 ),
                 LessonItem(
+                    stableId = "p1_i27_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "10'luk Toplama 6-7-8-9",
@@ -1096,6 +1174,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i28_boncuk_kurali",
                     type = LessonItem.TYPE_HEADER,
                     title = "Boncuk kuralı",
                     offset = 0,
@@ -1105,6 +1184,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p1_i29_boncuk_kurali_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Kuralı - Kurallar",
                     offset = -30,
@@ -1119,6 +1199,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i30_boncuk_kurali_onluk_kural_fa",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Kuralı - Onluk Kural Farkı",
                     offset = 0,
@@ -1133,6 +1214,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i31_boncuk_kurali_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Kuralı - 3, 4 Basamaklı",
                     offset = -30,
@@ -1147,6 +1229,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p1_i32_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "Boncuk Kuralı",
@@ -1166,6 +1249,7 @@ object GlobalLessonData {
             )
             2 -> listOf(
                 LessonItem(
+                    stableId = "p2_i00_kuralsiz_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "Kuralsız Çıkarma",
                     offset = 0,
@@ -1176,6 +1260,7 @@ object GlobalLessonData {
                 ),
 
                 LessonItem(
+                    stableId = "p2_i01_kuralsiz_cikarma_temeli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - Temeli",
                     offset = 0,
@@ -1190,6 +1275,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p2_i02_kuralsiz_cikarma_3_4_5_basam",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - 3,4,5 basamaklı",
                     offset = 30,
@@ -1203,6 +1289,7 @@ object GlobalLessonData {
                     lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
                 ),
                 LessonItem(
+                    stableId = "p2_i03_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "Kuralsız Çıkarma",
@@ -1222,6 +1309,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p2_i04_5_lik_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "5'lik Çıkarma",
                     offset = 0,
@@ -1231,6 +1319,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_green
                 ),
                 LessonItem(
+                    stableId = "p2_i05_5_lik_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - Kurallar",
                     offset = 30,
@@ -1244,6 +1333,7 @@ object GlobalLessonData {
                     lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
+                    stableId = "p2_i06_5_lik_cikarma_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - 3 Basamaklı",
                     offset = 60,
@@ -1257,6 +1347,7 @@ object GlobalLessonData {
                     lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
+                    stableId = "p2_i07_5_lik_cikarma_kuralli_kurals",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - Kurallı,Kuralsız Çıkarma",
                     offset = 30,
@@ -1270,6 +1361,7 @@ object GlobalLessonData {
                     lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
                 ),
                 LessonItem(
+                    stableId = "p2_i08_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "5'lik Çıkarma",
@@ -1288,6 +1380,7 @@ object GlobalLessonData {
                     worstCupTime = 180
                 ),
                 LessonItem(
+                    stableId = "p2_i09_10_luk_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Çıkarma",
                     offset = 0,
@@ -1297,6 +1390,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_blue
                 ),
                 LessonItem(
+                    stableId = "p2_i10_10_luk_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - Kurallar",
                     offset = -30,
@@ -1310,6 +1404,7 @@ object GlobalLessonData {
                     lessonHint = "10 gider. Kardeş gelir."
                 ),
                 LessonItem(
+                    stableId = "p2_i11_10_luk_cikarma_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - 2 basamaklı",
                     offset = -60,
@@ -1323,6 +1418,7 @@ object GlobalLessonData {
                     lessonHint = "10 gider. Kardeş gelir."
                 ),
                 LessonItem(
+                    stableId = "p2_i12_10_luk_cikarma_komsu_mantigi",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - Komşu Mantığı",
                     offset = -30,
@@ -1336,6 +1432,7 @@ object GlobalLessonData {
                     lessonHint = "10 gider adımını yaparken 5'lik olmazsa 10'luk çıkarma kuralı kullan."
                 ),
                 LessonItem(
+                    stableId = "p2_i13_10_luk_cikarma_ileri_seviye",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - İleri Seviye",
                     offset = -60,
@@ -1349,6 +1446,7 @@ object GlobalLessonData {
                     lessonHint = "İlk kuralsız çıkarmayı dene. Olmuyorsa 5'lik çıkarma. Olmuyorsa 10'luk çıkarma."
                 ),
                 LessonItem(
+                    stableId = "p2_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "10'luk Çıkarma",
@@ -1367,6 +1465,7 @@ object GlobalLessonData {
                     worstCupTime = 180
                 ),
                 LessonItem(
+                    stableId = "p2_i15_boncuk_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "Boncuk Çıkarma",
                     offset = 0,
@@ -1376,6 +1475,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_yellow
                 ),
                 LessonItem(
+                    stableId = "p2_i16_boncuk_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - Kurallar",
                     offset = 30,
@@ -1389,6 +1489,7 @@ object GlobalLessonData {
                     lessonHint = "Kardeş gelirken 5'lik kural uygula."
                 ),
                 LessonItem(
+                    stableId = "p2_i17_boncuk_cikarma_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - 3 Basamaklı",
                     offset = 60,
@@ -1402,6 +1503,7 @@ object GlobalLessonData {
                     lessonHint = "Kardeş gelirken 5'lik kural uygula."
                 ),
                 LessonItem(
+                    stableId = "p2_i18_boncuk_cikarma_ileri_seviye",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - İleri Seviye",
                     offset = 30,
@@ -1415,6 +1517,7 @@ object GlobalLessonData {
                     lessonHint = "Kardeş gelirken 5'lik kural uygula."
                 ),
                 LessonItem(
+                    stableId = "p2_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "Boncuk Çıkarma",
@@ -1436,6 +1539,7 @@ object GlobalLessonData {
             )
             3 -> listOf(
                 LessonItem(
+                    stableId = "p3_i00_2_ye_1_carpma",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 1 Çarpma",
                     offset = 0,
@@ -1446,6 +1550,7 @@ object GlobalLessonData {
                 ),
 
                 LessonItem(
+                    stableId = "p3_i01_2_ye_1_carpma_kuralsiz",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma - Kuralsız",
                     offset = 0,
@@ -1460,6 +1565,7 @@ object GlobalLessonData {
                     lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i02_2_ye_1_carpma_kuralli",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma - Kurallı",
                     offset = -30,
@@ -1473,6 +1579,7 @@ object GlobalLessonData {
                     lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i03_2_ye_1_carpma_genel",
                     //Bu 2 adım ve 8 soru olsun. Genel çarpmayı kullanalım.
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma - Genel",
@@ -1487,6 +1594,7 @@ object GlobalLessonData {
                     lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "2'ye 1 Çarpma",
@@ -1505,6 +1613,7 @@ object GlobalLessonData {
                     worstCupTime = 90
                 ),
                 LessonItem(
+                    stableId = "p3_i05_2_ye_2_carpma",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 2 Çarpma",
                     offset = 0,
@@ -1514,6 +1623,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_blue
                 ),
                 LessonItem(
+                    stableId = "p3_i06_2_ye_2_carpma_temel",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 çarpma - Temel",
                     offset = 30,
@@ -1527,6 +1637,7 @@ object GlobalLessonData {
                     lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i07_2_ye_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 çarpma - Genel",
                     offset = 60,
@@ -1540,6 +1651,7 @@ object GlobalLessonData {
                     lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i08_2_ye_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 çarpma - Genel",
                     offset = 30,
@@ -1553,6 +1665,7 @@ object GlobalLessonData {
                     lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "2'ye 2 Çarpma",
@@ -1571,6 +1684,7 @@ object GlobalLessonData {
                     worstCupTime = 160
                 ),
                 LessonItem(
+                    stableId = "p3_i10_3_e_1_carpma",
                     type = LessonItem.TYPE_HEADER,
                     title = "3'e 1 Çarpma",
                     offset = 0,
@@ -1580,6 +1694,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_orange
                 ),
                 LessonItem(
+                    stableId = "p3_i11_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 1 Çarpma",
                     offset = 30,
@@ -1593,6 +1708,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i12_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 1 Çarpma",
                     offset = 0,
@@ -1606,6 +1722,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i13_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 1 Çarpma",
                     offset = -30,
@@ -1619,6 +1736,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "3'e 1 Çarpma",
@@ -1637,6 +1755,7 @@ object GlobalLessonData {
                     worstCupTime = 160
                 ),
                 LessonItem(
+                    stableId = "p3_i15_3_e_2_carpma",
                     type = LessonItem.TYPE_HEADER,
                     title = "3'e 2 Çarpma",
                     offset = 0,
@@ -1646,6 +1765,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_pink
                 ),
                 LessonItem(
+                    stableId = "p3_i16_3_e_2_carpma_temel",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 2 Çarpma - Temel",
                     offset = -30,
@@ -1659,6 +1779,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i17_3_e_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 2 Çarpma - Genel",
                     offset = -60,
@@ -1672,6 +1793,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i18_3_e_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
                     title = "3'e 2 Çarpma - Genel",
                     offset = -30,
@@ -1685,6 +1807,7 @@ object GlobalLessonData {
                     lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
                 ),
                 LessonItem(
+                    stableId = "p3_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     titleUnit = "3'e 2 Çarpma",
@@ -1706,6 +1829,7 @@ object GlobalLessonData {
             )
             4 -> listOf(
                 LessonItem(
+                    stableId = "p4_i00_kuralsiz_toplama",
                     type = LessonItem.TYPE_HEADER,
                     title = "Kuralsız Toplama",
                     offset = 0,
@@ -1716,6 +1840,7 @@ object GlobalLessonData {
                 ),
 
                 LessonItem(
+                    stableId = "p4_i01_kuralsiz_toplama_3_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 3 Saniye Arayla",
                     offset = 30,
@@ -1731,6 +1856,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p4_i02_kuralsiz_toplama_2_5_saniye",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 2,5 Saniye Arayla",
                     offset = 0,
@@ -1746,6 +1872,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p4_i03_kuralsiz_toplama_2_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Toplama - 2 Saniye Arayla",
                     offset = -30,
@@ -1761,6 +1888,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p4_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -1776,6 +1904,7 @@ object GlobalLessonData {
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                 ),
                 LessonItem(
+                    stableId = "p4_i05_5_lik_toplama",
                     type = LessonItem.TYPE_HEADER,
                     title = "5'lik Toplama",
                     offset = 0,
@@ -1785,6 +1914,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_blue
                 ),
                 LessonItem(
+                    stableId = "p4_i06_5_lik_toplama_3_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - 3 Saniye Arayla",
                     offset = 30,
@@ -1800,6 +1930,7 @@ object GlobalLessonData {
                     lessonHint = "5 gelir. Kardeş gider."
                 ),
                 LessonItem(
+                    stableId = "p4_i07_5_lik_toplama_2_5_saniye_ara",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - 2,5 Saniye Arayla",
                     offset = 60,
@@ -1815,6 +1946,7 @@ object GlobalLessonData {
                     lessonHint = "5 gelir. Kardeş gider."
                 ),
                 LessonItem(
+                    stableId = "p4_i08_5_lik_toplama_2_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Toplama - 2 Saniye Arayla",
                     offset = 30,
@@ -1830,6 +1962,7 @@ object GlobalLessonData {
                     lessonHint = "5 gelir. Kardeş gider."
                 ),
                 LessonItem(
+                    stableId = "p4_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -1845,6 +1978,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p4_i10_10_luk_toplama_1_2_3_4_5",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 1-2-3-4-5",
                     offset = 0,
@@ -1854,6 +1988,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_blue
                 ),
                 LessonItem(
+                    stableId = "p4_i11_10_luk_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 1 Basamaklı",
                     offset = 30,
@@ -1869,6 +2004,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i12_10_luk_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 2 Basamaklı",
                     offset = 0,
@@ -1884,6 +2020,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i13_10_luk_toplama_2_basamakli_h",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 2 Basamaklı Hızlı",
                     offset = -30,
@@ -1899,6 +2036,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -1914,6 +2052,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p4_i15_10_luk_toplama_6_7_8_9",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Toplama 6,7,8,9",
                     offset = 30,
@@ -1923,6 +2062,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p4_i16_10_luk_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 1 Basamaklı",
                     offset = 0,
@@ -1938,6 +2078,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p4_i17_10_luk_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 2 Basamaklı",
                     offset = -30,
@@ -1953,6 +2094,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p4_i18_10_luk_toplama_2_basamakli_h",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Toplama - 2 Basamaklı Hızlı",
                     offset = -60,
@@ -1968,6 +2110,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik kuralı uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p4_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -1983,6 +2126,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p4_i20_boncuk_kurali",
                     type = LessonItem.TYPE_HEADER,
                     title = "Boncuk Kuralı",
                     offset = 0,
@@ -1992,6 +2136,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_green
                 ),
                 LessonItem(
+                    stableId = "p4_i21_boncuk_toplama_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Toplama - 3 Saniye Arayla",
                     offset = -30,
@@ -2007,6 +2152,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i22_boncuk_toplama_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Toplama - 2,5 Saniye Arayla",
                     offset = -60,
@@ -2022,6 +2168,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i23_boncuk_toplama_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Toplama - 2 Saniye Arayla",
                     offset = -30,
@@ -2037,6 +2184,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p4_i24_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2057,6 +2205,7 @@ object GlobalLessonData {
             )
             5 -> listOf(
                 LessonItem(
+                    stableId = "p5_i00_kuralsiz_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "Kuralsız Çıkarma",
                     offset = 0,
@@ -2067,6 +2216,7 @@ object GlobalLessonData {
                 ),
 
                 LessonItem(
+                    stableId = "p5_i01_kuralsiz_cikarma_3_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - 3 Saniye Arayla",
                     offset = 0,
@@ -2082,6 +2232,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i02_kuralsiz_cikarma_2_5_saniye",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - 2,5 Saniye Arayla",
                     offset = 30,
@@ -2097,6 +2248,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i03_kuralsiz_cikarma_2_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kuralsız Çıkarma - 2 Saniye Arayla",
                     offset = -30,
@@ -2112,6 +2264,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2127,6 +2280,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p5_i05_5_lik_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "5'lik Çıkarma",
                     offset = 0,
@@ -2136,6 +2290,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p5_i06_5_lik_cikarma_3_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - 3 Saniye Arayla",
                     offset = -30,
@@ -2151,6 +2306,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i07_5_lik_cikarma_2_5_saniye_ara",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - 2,5 Saniye Arayla",
                     offset = -60,
@@ -2166,6 +2322,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i08_5_lik_cikarma_2_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
                     title = "5'lik Çıkarma - 2 Saniye Arayla",
                     offset = -30,
@@ -2181,6 +2338,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
                 ),
                 LessonItem(
+                    stableId = "p5_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2196,6 +2354,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p5_i10_10_luk_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "10'luk Çıkarma",
                     offset = 0,
@@ -2205,6 +2364,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p5_i11_10_luk_cikarma_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - 3 Saniye Arayla",
                     offset = 0,
@@ -2220,6 +2380,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p5_i12_10_luk_cikarma_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - 2,5 Saniye Arayla",
                     offset = 30,
@@ -2235,6 +2396,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p5_i13_10_luk_cikarma_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "10'luk Çıkarma - 2 Saniye Arayla",
                     offset = 60,
@@ -2250,6 +2412,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir."
                 ),
                 LessonItem(
+                    stableId = "p5_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2265,6 +2428,7 @@ object GlobalLessonData {
                     timePeriod = 2000,
                 ),
                 LessonItem(
+                    stableId = "p5_i15_boncuk_cikarma",
                     type = LessonItem.TYPE_HEADER,
                     title = "Boncuk Çıkarma",
                     offset = 0,
@@ -2274,6 +2438,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p5_i16_boncuk_cikarma_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - 3 Saniye Arayla",
                     offset = -30,
@@ -2289,6 +2454,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p5_i17_boncuk_cikarma_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - 2,5 Saniye Arayla",
                     offset = -60,
@@ -2304,6 +2470,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p5_i18_boncuk_cikarma_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
                     title = "Boncuk Çıkarma - 2 Saniye Arayla",
                     offset = -30,
@@ -2319,6 +2486,7 @@ object GlobalLessonData {
                     lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
                 ),
                 LessonItem(
+                    stableId = "p5_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2338,6 +2506,7 @@ object GlobalLessonData {
             )
             6 -> listOf(
                 LessonItem(
+                    stableId = "p6_i00_2_ye_1_carpma_kolay",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 1 Çarpma - Kolay",
                     offset = 0,
@@ -2348,6 +2517,7 @@ object GlobalLessonData {
                 ),
 
                 LessonItem(
+                    stableId = "p6_i01_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
                     offset = 30,
@@ -2363,6 +2533,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i02_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
                     offset = 60,
@@ -2378,6 +2549,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i03_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
                     offset = 30,
@@ -2393,6 +2565,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2411,6 +2584,7 @@ object GlobalLessonData {
                     worstCupTime = 60
                 ),
                 LessonItem(
+                    stableId = "p6_i05_2_ye_1_carpma_zor",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 1 Çarpma - Zor",
                     offset = 0,
@@ -2420,6 +2594,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p6_i06_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
                     offset = 0,
@@ -2435,6 +2610,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i07_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma",
                     offset = -30,
@@ -2450,6 +2626,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i08_2_ye_1_carpma_imkansiz",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 1 Çarpma - İmkansız",
                     offset = -60,
@@ -2465,6 +2642,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2483,6 +2661,7 @@ object GlobalLessonData {
                     worstCupTime = 90
                 ),
                 LessonItem(
+                    stableId = "p6_i10_2_ye_2_carpma_kolay",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 2 Çarpma - Kolay",
                     offset = 0,
@@ -2492,6 +2671,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p6_i11_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = 30,
@@ -2507,6 +2687,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i12_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = 60,
@@ -2522,6 +2703,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i13_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = 30,
@@ -2537,6 +2719,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2555,6 +2738,7 @@ object GlobalLessonData {
                     worstCupTime = 120
                 ),
                 LessonItem(
+                    stableId = "p6_i15_2_ye_2_carpma_zor",
                     type = LessonItem.TYPE_HEADER,
                     title = "2'ye 2 Çarpma - Zor",
                     offset = 0,
@@ -2564,6 +2748,7 @@ object GlobalLessonData {
                     color = R.color.lesson_header_red
                 ),
                 LessonItem(
+                    stableId = "p6_i16_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = -30,
@@ -2579,6 +2764,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i17_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = 0,
@@ -2594,6 +2780,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i18_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
                     title = "2'ye 2 Çarpma",
                     offset = 30,
@@ -2609,6 +2796,7 @@ object GlobalLessonData {
                     lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
                 ),
                 LessonItem(
+                    stableId = "p6_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
                     title = "Ünite Maratonu",
                     offset = 0,
@@ -2630,6 +2818,7 @@ object GlobalLessonData {
             )
             7 -> listOf(
                 LessonItem(
+                    stableId = "p7_i00_acemi_cirak",
                     type = LessonItem.TYPE_LESSON,
                     title = "Acemi Çırak",
                     offset = 0,
@@ -2645,6 +2834,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i01_baslangic_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Başlangıç Ustası",
                     offset = 0,
@@ -2660,6 +2850,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i02_bilgi_avcisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgi Avcısı",
                     offset = 0,
@@ -2675,6 +2866,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i03_ogrenme_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Öğrenme Ustası",
                     offset = 0,
@@ -2690,6 +2882,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i04_zihin_kasifi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zihin Kaşifi",
                     offset = 0,
@@ -2705,6 +2898,7 @@ object GlobalLessonData {
                     raceTitle = "2 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i05_bilgelik_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgelik Ustası",
                     offset = 0,
@@ -2720,6 +2914,7 @@ object GlobalLessonData {
                     raceTitle = "2 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i06_zeka_kasifi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Kaşifi",
                     offset = 0,
@@ -2735,6 +2930,7 @@ object GlobalLessonData {
                     raceTitle = "2 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i07_beyin_muhendisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Beyin Mühendisi",
                     offset = 0,
@@ -2750,6 +2946,7 @@ object GlobalLessonData {
                     raceTitle = "3 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i08_mantik_ustadi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Mantık Üstadı",
                     offset = 0,
@@ -2765,6 +2962,7 @@ object GlobalLessonData {
                     raceTitle = "3 basamaklı 4 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i09_deha",
                     type = LessonItem.TYPE_LESSON,
                     title = "Deha",
                     offset = 0,
@@ -2780,6 +2978,7 @@ object GlobalLessonData {
                     raceTitle = "3 basamaklı 6 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i10_ust_zihin",
                     type = LessonItem.TYPE_LESSON,
                     title = "Üst Zihin",
                     offset = 0,
@@ -2795,6 +2994,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 15 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i11_bilge_sampiyon",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilge Şampiyon",
                     offset = 0,
@@ -2810,6 +3010,7 @@ object GlobalLessonData {
                     raceTitle = "2 basamaklı 10 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i12_zeka_mimari",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Mimarı",
                     offset = 0,
@@ -2825,6 +3026,7 @@ object GlobalLessonData {
                     raceTitle = "3 basamaklı 10 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i13_ustalik_efendisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Ustalık Efendisi",
                     offset = 0,
@@ -2840,6 +3042,7 @@ object GlobalLessonData {
                     raceTitle = "1 basamaklı 20 adet sayı"
                 ),
                 LessonItem(
+                    stableId = "p7_i14_efsanevi_bilge",
                     type = LessonItem.TYPE_LESSON,
                     title = "Efsanevi Bilge",
                     offset = 0,
@@ -2857,6 +3060,7 @@ object GlobalLessonData {
             )
             8 -> listOf(
                 LessonItem(
+                    stableId = "p8_i00_acemi_cirak",
                     type = LessonItem.TYPE_LESSON,
                     title = "Acemi Çırak",
                     offset = 0,
@@ -2873,6 +3077,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i01_baslangic_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Başlangıç Ustası",
                     offset = 0,
@@ -2889,6 +3094,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i02_bilgi_avcisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgi Avcısı",
                     offset = 0,
@@ -2905,6 +3111,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i03_ogrenme_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Öğrenme Ustası",
                     offset = 0,
@@ -2921,6 +3128,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i04_zihin_kasifi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zihin Kaşifi",
                     offset = 0,
@@ -2937,6 +3145,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i05_bilgelik_ustasi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilgelik Ustası",
                     offset = 0,
@@ -2953,6 +3162,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i06_zeka_kasifi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Kaşifi",
                     offset = 0,
@@ -2969,6 +3179,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i07_beyin_muhendisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Beyin Mühendisi",
                     offset = 0,
@@ -2985,6 +3196,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i08_mantik_ustadi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Mantık Üstadı",
                     offset = 0,
@@ -3002,6 +3214,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p8_i09_deha",
                     type = LessonItem.TYPE_LESSON,
                     title = "Deha",
                     offset = 0,
@@ -3019,6 +3232,7 @@ object GlobalLessonData {
 
                 ),
                 LessonItem(
+                    stableId = "p8_i10_ust_zihin",
                     type = LessonItem.TYPE_LESSON,
                     title = "Üst Zihin",
                     offset = 0,
@@ -3036,6 +3250,7 @@ object GlobalLessonData {
                     //1 15 2 10 3 10 1 20 4 10
                     ),
                 LessonItem(
+                    stableId = "p8_i11_bilge_sampiyon",
                     type = LessonItem.TYPE_LESSON,
                     title = "Bilge Şampiyon",
                     offset = 0,
@@ -3052,6 +3267,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i12_zeka_mimari",
                     type = LessonItem.TYPE_LESSON,
                     title = "Zeka Mimarı",
                     offset = 0,
@@ -3068,6 +3284,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i13_ustalik_efendisi",
                     type = LessonItem.TYPE_LESSON,
                     title = "Ustalık Efendisi",
                     offset = 0,
@@ -3084,6 +3301,7 @@ object GlobalLessonData {
 
                     ),
                 LessonItem(
+                    stableId = "p8_i14_efsanevi_bilge",
                     type = LessonItem.TYPE_LESSON,
                     title = "Efsanevi Bilge",
                     offset = 0,
@@ -3109,6 +3327,7 @@ object GlobalLessonData {
             // ──────────────────────────────────────────────────────────────────────────────────
             9 -> listOf(
                 LessonItem(
+                    stableId = "p9_i00_kupa_modu",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kupa Modu",
                     offset = 0,
@@ -3123,8 +3342,18 @@ object GlobalLessonData {
 
             else -> emptyList()
         }
+        // Kimlik güvenliği: boş veya yinelenen bir stableId, kullanıcı ilerlemesinin yanlış derse
+        // yazılması demektir ve üretimde sessizce olur. Geliştirme derlemesinde hemen patlasın ki
+        // müfredata ders eklerken fark edilsin.
+        if (BuildConfig.DEBUG) {
+            val ids = items.map { it.stableId }
+            val blank = ids.filter { it.isBlank() }
+            require(blank.isEmpty()) { "part $partId: stableId boş olan ${blank.size} ders var" }
+            val dupes = ids.groupBy { it }.filterValues { it.size > 1 }.keys
+            require(dupes.isEmpty()) { "part $partId: yinelenen stableId → $dupes" }
+        }
         return items.mapIndexed { index, item ->
-            item.apply { 
+            item.apply {
                 mapFragmentIndex = index
                 this.partId = partId
             }

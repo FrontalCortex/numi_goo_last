@@ -246,6 +246,8 @@ class BlindingLessonFragment : Fragment() {
         lessonItem = if (isDailyQuestionMode) {
             val hasMathOperation = operations.firstOrNull() is MathOperation
             LessonItem(
+                // Kalıcı değil: günlük soru bir ders item'ı değil, ilerlemesi saklanmaz.
+                stableId = "transient_daily_question",
                 type = LessonItem.TYPE_LESSON,
                 title = "Günlük Soru",
                 offset = 0,
@@ -259,6 +261,8 @@ class BlindingLessonFragment : Fragment() {
         } else if (globalPartId == 9) {
             arguments?.getSerializable("cup_lesson_item") as? LessonItem 
                 ?: LessonManager.getLessonItem(0) ?: LessonItem(
+                    // Kalıcı değil: kupa modu item'ı bulunamazsa son çare.
+                    stableId = "transient_cup_mode_fallback",
                     type = LessonItem.TYPE_LESSON,
                     title = "Kupa Modu",
                     offset = 0,

@@ -5,6 +5,21 @@ import com.example.app.R
 import java.io.Serializable
 
 data class LessonItem(
+    /**
+     * Bu dersin DEĞİŞMEZ kimliği. Firestore'da ilerleme ve istatistik dokümanları bu anahtarla
+     * saklanır; liste sırası artık kimlik DEĞİLDİR.
+     *
+     * Kurallar:
+     * - Bir kez verildikten sonra ASLA değiştirilmez (değişirse o dersin tüm kullanıcı verisi kopar).
+     * - ASLA yeniden kullanılmaz; ders silinse bile id emekliye ayrılır.
+     * - Müfredata yeni ders eklemek artık güvenlidir: araya eklenen ders sonrakilerin kimliğini
+     *   kaydırmaz. Eskiden kimlik liste sırasıydı ve araya ekleme tüm kullanıcıların ilerlemesini
+     *   bir önceki derse bağlıyordu.
+     *
+     * Varsayılanı bilerek YOKTUR: yeni bir [LessonItem] eklendiğinde derleyici kimlik vermeye zorlar.
+     * Kalıcı olmayan (geçici/fallback) item'lar `transient_` önekiyle işaretlenir.
+     */
+    val stableId: String,
     val id: Int? = null,
     val type: Int,
     val title: String,

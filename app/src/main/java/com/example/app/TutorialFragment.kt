@@ -264,6 +264,8 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         val firstLesson = GlobalLessonData.lessonItems.firstOrNull { it.type == LessonItem.TYPE_LESSON }
 
         lessonItem = byPosition ?: byTutorialNumber ?: firstLesson ?: LessonItem(
+            // Kalıcı değil: hiçbir ders bulunamadığında UI çökmesin diye yedek.
+            stableId = "transient_tutorial_fallback",
             type = LessonItem.TYPE_LESSON,
             title = "Tutorial",
             offset = 0,

@@ -56,12 +56,33 @@ object LessonSuccessRateRepository {
     private const val FIELD_PASSED = "passed"
     private const val FIELD_FAIL_STREAK = "failStreak"
 
-    private fun userStepStateRef(uid: String, partId: Int, position: Int, step: Int) =
+    private fun stateCollection(uid: String) =
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
             .collection("lessonSuccessRateState")
-            .document("${partId}_${position}_${step.coerceAtLeast(1)}")
+
+    /**
+     * [position]'daki dersin değişmez kimliği. Şablon dışı bir konum verilirse null döner ve
+     * çağıran taraf eski (sıra tabanlı) anahtarda kalır — veri kaybetmektense eski biçimde
+     * tutmak yeğdir.
+     */
+    private fun stableIdOf(partId: Int, position: Int): String? =
+        GlobalLessonData.createLessonItems(partId).getOrNull(position)?.stableId
+
+    /** Yeni biçim: `{partId}_{stableId}_{step}`. */
+    private fun userStepStateRef(uid: String, partId: Int, stableId: String, step: Int) =
+        stateCollection(uid).document("${partId}_${stableId}_${step.coerceAtLeast(1)}")
+
+    /**
+     * Eski biçim: `{partId}_{position}_{step}`.
+     *
+     * Kimlik eskiden liste sırasıydı; müfredata araya ders eklendiğinde bu anahtarlar sessizce
+     * yanlış derse bağlanır. Okuma sırasında hâlâ dikkate alınıyor ki geçmiş kaybolmasın —
+     * dokunulan her adım ilk denemesinde yeni anahtara taşınır (bkz. [readStateMigrating]).
+     */
+    private fun legacyUserStepStateRef(uid: String, partId: Int, position: Int, step: Int) =
+        stateCollection(uid).document("${partId}_${position}_${step.coerceAtLeast(1)}")
 
     /**
      * Kullanıcı bu adımı bitiremeden dersten çıktığında (quiz veya chest skoru yetersiz) çağrılır.
@@ -73,10 +94,17 @@ object LessonSuccessRateRepository {
     fun recordFail(partId: Int, position: Int, step: Int, answerSuccessRatePercent: Float? = null) {
         if (partId !in 1..8) return
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val userRef = userStepStateRef(uid, partId, position, step)
+        val stableId = stableIdOf(partId, position)
+        val targetRef = if (stableId != null) userStepStateRef(uid, partId, stableId, step)
+                        else legacyUserStepStateRef(uid, partId, position, step)
+        val legacyRef = if (stableId != null) legacyUserStepStateRef(uid, partId, position, step) else null
 
         FirebaseFirestore.getInstance().runTransaction { tx ->
-            val userSnap = tx.get(userRef)
+            // Firestore kuralı: tüm okumalar yazmalardan önce.
+            val targetSnap = tx.get(targetRef)
+            val legacySnap = if (!targetSnap.exists() && legacyRef != null) tx.get(legacyRef) else null
+            val userSnap = if (targetSnap.exists()) targetSnap else legacySnap ?: targetSnap
+
             // Zaten geçilmiş bir adım için başarısızlık sayılmaz (eski davranışla aynı).
             if (userSnap.getBoolean(FIELD_PASSED) == true) {
                 return@runTransaction null
@@ -84,10 +112,12 @@ object LessonSuccessRateRepository {
             val newFailStreak = (userSnap.getLong(FIELD_FAIL_STREAK) ?: 0L) + 1
 
             tx.set(
-                userRef,
+                targetRef,
                 mapOf(FIELD_ATTEMPTED to true, FIELD_FAIL_STREAK to newFailStreak),
                 SetOptions.merge(),
             )
+            // Eski anahtarlı kayıt bu adımın geçmişiydi; yeni anahtara taşındı, aslı silinir.
+            if (legacySnap?.exists() == true && legacyRef != null) tx.delete(legacyRef)
             newFailStreak
         }.addOnSuccessListener { failStreak ->
             if (failStreak != null) {
@@ -116,10 +146,17 @@ object LessonSuccessRateRepository {
     fun recordPass(partId: Int, position: Int, step: Int, elapsedMs: Long? = null) {
         if (partId !in 1..8) return
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val userRef = userStepStateRef(uid, partId, position, step)
+        val stableId = stableIdOf(partId, position)
+        val targetRef = if (stableId != null) userStepStateRef(uid, partId, stableId, step)
+                        else legacyUserStepStateRef(uid, partId, position, step)
+        val legacyRef = if (stableId != null) legacyUserStepStateRef(uid, partId, position, step) else null
 
         FirebaseFirestore.getInstance().runTransaction { tx ->
-            val userSnap = tx.get(userRef)
+            // Firestore kuralı: tüm okumalar yazmalardan önce.
+            val targetSnap = tx.get(targetRef)
+            val legacySnap = if (!targetSnap.exists() && legacyRef != null) tx.get(legacyRef) else null
+            val userSnap = if (targetSnap.exists()) targetSnap else legacySnap ?: targetSnap
+
             // İlk geçişten sonraki geçişler sayılmaz (eski davranışla aynı).
             if (userSnap.getBoolean(FIELD_PASSED) == true) {
                 return@runTransaction null
@@ -127,10 +164,11 @@ object LessonSuccessRateRepository {
             val failStreak = userSnap.getLong(FIELD_FAIL_STREAK) ?: 0L
 
             tx.set(
-                userRef,
+                targetRef,
                 mapOf(FIELD_ATTEMPTED to true, FIELD_PASSED to true),
                 SetOptions.merge(),
             )
+            if (legacySnap?.exists() == true && legacyRef != null) tx.delete(legacyRef)
             failStreak
         }.addOnSuccessListener { failStreak ->
             if (failStreak != null) {

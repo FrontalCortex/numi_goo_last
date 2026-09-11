@@ -35,11 +35,17 @@ class ChestFragment : Fragment() {
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
-    private fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String {
-        val stableId = item.id ?: -1
-        val part = item.partId ?: -1
-        return "${item.type}_${stableId}_${part}_${item.title}_$fallbackIndex"
-    }
+    /**
+     * Yerel (SharedPreferences) görsel durum anahtarı — [LessonAdapter] ile AYNI biçimde
+     * üretilmeli, yoksa iki taraf farklı anahtara yazar. Eskiden hiç doldurulmayan `item.id`
+     * ve liste sırası kullanılıyordu; artık [LessonItem.stableId].
+     *
+     * [fallbackIndex] korunmuş imza uyumu için duruyor, anahtara girmiyor.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    private fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String =
+        "${item.type}_${item.stableId}"
+
 
     /** [abacusFragmentContainer] üzerinde harita ([coordinator_layout]) dokunuşunu geçirmemek için. */
     private var chestHostView: View? = null
