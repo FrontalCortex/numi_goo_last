@@ -1244,7 +1244,7 @@ class MapFragment : Fragment() {
                         val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
                         val chestItem = GlobalLessonData.getLessonItem(chestIndex)
                         if (chestItem != null) {
-                            openRecordFragmentFromMarathonGuide(chestIndex, chestItem)
+                            openRecordFragmentFromMarathonGuide(chestItem)
                         }
 
                         // Panel kapatma işlemi setTargetViewForLastStep içinde otomatik yapılacak
@@ -1321,7 +1321,8 @@ class MapFragment : Fragment() {
         }, 600) // Panel animasyonu tamamlandıktan sonra
     }
 
-    private fun openRecordFragmentFromMarathonGuide(lessonIndex: Int, item: LessonItem) {
+    // Konum parametresi kaldırıldı: tahta anahtarı artık [item]'ın kalıcı kimliği.
+    private fun openRecordFragmentFromMarathonGuide(item: LessonItem) {
         if (!isAdded) return
         val act = requireActivity()
         val openRecord = {
@@ -1337,7 +1338,7 @@ class MapFragment : Fragment() {
                 )
                 .replace(
                     R.id.abacusFragmentContainer,
-                    RecordFragment.newInstance(globalPartId, lessonIndex, item.title),
+                    RecordFragment.newInstance(globalPartId, item.stableId, item.title),
                 )
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
