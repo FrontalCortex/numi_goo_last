@@ -49,7 +49,12 @@ object AnalyticsLogger {
     private const val EV_CHEST_OPEN_START = "chest_open_start"
     private const val EV_CHEST_OPEN_COMPLETE = "chest_open_complete"
     private const val EV_CHEST_ABANDONED = "chest_abandoned"
-    private const val EV_APP_BACKGROUND = "app_background"
+    /**
+     * DİKKAT: `app_background` KULLANILAMAZ — Firebase'in ayrılmış olay adlarından biridir ve
+     * SDK onu sessizce düşürür (hata yok, DebugView'da hiç görünmez). Aynı tuzak `app_update`,
+     * `app_remove`, `app_exception`, `first_open`, `session_start`, `screen_view` için de geçerli.
+     */
+    private const val EV_APP_EXIT_SCREEN = "app_exit_screen"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -397,8 +402,8 @@ object AnalyticsLogger {
      * @param durationMs O ekranda geçirilen süre. 3 saniyede bırakılan bir ders ile 5 dakika
      *   sonra bırakılan ders aynı şey değil; ekran adı tek başına bunu ayırt etmiyor.
      */
-    fun logAppBackground(screenName: String, durationMs: Long) = safe { fa ->
-        fa.logEvent(EV_APP_BACKGROUND) {
+    fun logAppExitScreen(screenName: String, durationMs: Long) = safe { fa ->
+        fa.logEvent(EV_APP_EXIT_SCREEN) {
             param(P_EXIT_SCREEN, sanitize(screenName))
             param(P_DURATION_MS, durationMs)
         }

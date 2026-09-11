@@ -89,7 +89,7 @@ class NumiGooApplication : Application() {
 
             val screen = currentScreen ?: return
             val elapsed = (SystemClock.elapsedRealtime() - currentScreenStartMs).coerceAtLeast(0L)
-            AnalyticsLogger.logAppBackground(screen, elapsed)
+            AnalyticsLogger.logAppExitScreen(screen, elapsed)
         }
     }
 
