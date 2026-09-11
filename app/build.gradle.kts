@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp") version "1.9.24-1.0.20"
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 // Yayın imzalama bilgileri keystore.properties'ten okunur (git'e girmez, bkz. .gitignore).
@@ -162,6 +163,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+    // Üretimdeki çökmeler ve "ölümcül olmayan" hatalar (bkz. AnalyticsLogger.recordNonFatal).
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-functions")
     implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")

@@ -290,13 +290,26 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── Anketler / istatistikler ───────────────────────────────────────────
-    match /questionPanel/{document=**} {
-      allow create, update: if isSignedIn();
+    // ── Ders sonu anketi ───────────────────────────────────────────────────
+    //
+    // Anketin ŞIK SAYAÇLARI (`choice{1–5}`) artık Firestore'da tutulmuyor; Firebase
+    // Analytics'e olay olarak gidiyor (bkz. AnalyticsLogger.logSurveyChoice). Sayaç
+    // dokümanları giriş yapan herkes tarafından istenen değere çekilebiliyordu ve veri
+    // zaten uygulamaya geri okunmuyordu.
+    //
+    // Firestore'da yalnızca kullanıcının yazdığı SERBEST METİN kalıyor: Analytics'e
+    // kişisel veri yazılamaz, ayrıca bu metinler okunup değerlendirilecek.
+    // Yol: questionPanel/{partId}/{mapIndex}/question{N}/text/{uid}
+    //
+    // Yazma izni `isSignedIn()` yerine `isSelf(uid)`: kullanıcı yalnızca kendi dokümanına
+    // yazabilir, başkasının cevabını ezemez. Okuma kapalı — metinler yalnızca Admin SDK
+    // (Firebase Console / Cloud Functions) ile okunur.
+    match /questionPanel/{partId}/{mapIndex}/{questionDoc}/text/{uid} {
+      allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
-    match /questionPanelTutorial/{document=**} {
-      allow create, update: if isSignedIn();
+    match /questionPanelTutorial/{partId}/{mapIndex}/{questionDoc}/text/{uid} {
+      allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
 
@@ -308,12 +321,27 @@ service cloud.firestore {
       allow read, delete: if false;
     }
 
-    match /appStatistics/{docId} {
-      allow create, update: if isSignedIn();
-      allow read, delete: if false;
-    }
+    // ── Edinim kaynağı istatistiği ─────────────────────────────────────────
+    // `appStatistics/acquisition_sources` sayacı kaldırıldı; artık Firebase Analytics'e
+    // hem olay hem kullanıcı özelliği olarak yazılıyor (bkz. AppStatisticsManager).
+    // Koleksiyona yazan kod kalmadığı için kural da kaldırıldı — aşağıdaki catch-all
+    // her erişimi reddeder.
 
-    match /successRate/{document=**} {
+    // ── Başarı oranı sayaçları ─────────────────────────────────────────────
+    //
+    // Yalnızca GÜNLÜK SORU sayaçları burada kaldı. Bunlar gerçek bir ürün özelliğidir:
+    // TasksFragment kartta "Başarı: %X" olarak gösterir, yani uygulama bu değeri GERİ OKUR
+    // (bkz. DailyQuestionRepository). Analytics'ten geri okuma mümkün olmadığı için
+    // Firestore'da kalmaları zorunlu.
+    //
+    // Buna karşılık `successRate/lessonSuccessRate/**` ağacı kaldırıldı: hiçbir yerde
+    // okunmuyordu, küresel sayaç dokümanları sıcak nokta yaratıyordu ve eski kural
+    // (`match /successRate/{document=**}`) giriş yapan HERKESE tüm ağaç için okuma VE
+    // yazma izni veriyordu — yani istatistikler hem görünür hem manipüle edilebilirdi.
+    // Ders istatistikleri artık Analytics'e gidiyor (bkz. LessonSuccessRateRepository).
+    //
+    // Yol: successRate/dailyQuestionSuccessRate/generatorForPart{N}Chest/{titleUnit}
+    match /successRate/dailyQuestionSuccessRate/{partCollection}/{unitDoc} {
       allow read, create, update: if isSignedIn();
       allow delete: if false;
     }
