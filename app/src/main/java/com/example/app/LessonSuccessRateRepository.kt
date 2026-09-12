@@ -124,6 +124,7 @@ object LessonSuccessRateRepository {
                 AnalyticsLogger.logLessonStepFail(
                     partId = partId,
                     position = position,
+                    lessonId = stableId,
                     step = step,
                     failStreak = failStreak,
                     answerSuccessRatePercent = answerSuccessRatePercent.takeIf { partId in 1..6 },
@@ -176,6 +177,7 @@ object LessonSuccessRateRepository {
                 AnalyticsLogger.logLessonStepPass(
                     partId = partId,
                     position = position,
+                    lessonId = stableId,
                     step = step,
                     failStreak = failStreak,
                     elapsedMs = elapsedMs,
@@ -197,14 +199,14 @@ object LessonSuccessRateRepository {
     fun recordQuestionEntry(partId: Int, position: Int, step: Int) {
         if (partId !in 1..8) return
         if (FirebaseAuth.getInstance().currentUser?.uid == null) return
-        AnalyticsLogger.logLessonQuestionEntry(partId, position, step)
+        AnalyticsLogger.logLessonQuestionEntry(partId, position, stableIdOf(partId, position), step)
     }
 
     /** Kullanıcı bu adımın soru ekranını hiç cevap vermeden terk ettiğinde çağrılır. */
     fun recordAbandonWithoutAnswer(partId: Int, position: Int, step: Int) {
         if (partId !in 1..8) return
         if (FirebaseAuth.getInstance().currentUser?.uid == null) return
-        AnalyticsLogger.logLessonAbandonWithoutAnswer(partId, position, step)
+        AnalyticsLogger.logLessonAbandonWithoutAnswer(partId, position, stableIdOf(partId, position), step)
     }
 
     /**
@@ -219,7 +221,7 @@ object LessonSuccessRateRepository {
         if (partId !in 1..8) return
         // Oturum açmamış kullanıcı eskiden de sayılmıyordu; veri karşılaştırılabilir kalsın diye korundu.
         if (FirebaseAuth.getInstance().currentUser?.uid == null) return
-        AnalyticsLogger.logLessonItemFinish(partId, position, chestStars)
+        AnalyticsLogger.logLessonItemFinish(partId, position, stableIdOf(partId, position), chestStars)
     }
 
     /**
@@ -232,6 +234,6 @@ object LessonSuccessRateRepository {
     fun recordItemReplay(partId: Int, position: Int) {
         if (partId !in 1..8) return
         if (FirebaseAuth.getInstance().currentUser?.uid == null) return
-        AnalyticsLogger.logLessonItemReplay(partId, position)
+        AnalyticsLogger.logLessonItemReplay(partId, position, stableIdOf(partId, position))
     }
 }

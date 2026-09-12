@@ -67,9 +67,11 @@ object AnalyticsLogger {
     private const val P_SOURCE = "source"
     private const val P_SURVEY_TYPE = "survey_type"
     /**
-     * Dersin kalıcı kimliği ([com.example.app.model.LessonItem.stableId]). Eskiden `map_index`
-     * (liste konumu) gönderiliyordu; müfredata araya ders eklendiğinde konum kayıyor ve geçmiş
-     * anket verisi başka bir derse aitmiş gibi okunuyordu.
+     * Dersin kalıcı kimliği ([com.example.app.model.LessonItem.stableId]).
+     *
+     * [P_POSITION] ile birlikte gönderilir ama **kalıcı olan budur**: konum, müfredata araya
+     * ders eklendiğinde kayar ve aynı numara farklı tarihlerde farklı dersi gösterir. Kimlik
+     * kaymaz; ayrıca raporda numara yerine okunur bir ad verir.
      */
     private const val P_LESSON_ID = "lesson_id"
     private const val P_QUESTION_NO = "question_no"
@@ -179,6 +181,7 @@ object AnalyticsLogger {
     fun logLessonStepPass(
         partId: Int,
         position: Int,
+        lessonId: String?,
         step: Int,
         failStreak: Long,
         elapsedMs: Long?,
@@ -186,6 +189,7 @@ object AnalyticsLogger {
         fa.logEvent(EV_LESSON_STEP_PASS) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             param(P_STEP, step.toLong())
             param(P_FAIL_STREAK, failStreak)
             if (elapsedMs != null) param(P_ELAPSED_MS, elapsedMs)
@@ -202,6 +206,7 @@ object AnalyticsLogger {
     fun logLessonStepFail(
         partId: Int,
         position: Int,
+        lessonId: String?,
         step: Int,
         failStreak: Long,
         answerSuccessRatePercent: Float?,
@@ -209,6 +214,7 @@ object AnalyticsLogger {
         fa.logEvent(EV_LESSON_STEP_FAIL) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             param(P_STEP, step.toLong())
             param(P_FAIL_STREAK, failStreak)
             if (answerSuccessRatePercent != null) {
@@ -221,10 +227,11 @@ object AnalyticsLogger {
      * Kullanıcı bir adımın soru ekranına girdi (tekrarlar dahil, tekilleştirme yok).
      * Eski `questionEntryCount` sayacının karşılığı.
      */
-    fun logLessonQuestionEntry(partId: Int, position: Int, step: Int) = safe { fa ->
+    fun logLessonQuestionEntry(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
         fa.logEvent(EV_LESSON_QUESTION_ENTRY) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             param(P_STEP, step.toLong())
         }
     }
@@ -234,10 +241,11 @@ object AnalyticsLogger {
      * Eski `abandonWithoutAnswerCount` sayacının karşılığı; [logLessonQuestionEntry] ile
      * oranlanarak "girilen sorunun yüzde kaçı cevapsız bırakılıyor" elde edilir.
      */
-    fun logLessonAbandonWithoutAnswer(partId: Int, position: Int, step: Int) = safe { fa ->
+    fun logLessonAbandonWithoutAnswer(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
         fa.logEvent(EV_LESSON_ABANDON_NO_ANSWER) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             param(P_STEP, step.toLong())
         }
     }
@@ -246,19 +254,21 @@ object AnalyticsLogger {
      * Ders/sandık item'ı (tüm adımlarıyla) ilk kez tamamlandı.
      * @param chestStars Yalnızca TYPE_CHEST için 1–3; ders item'lerinde null.
      */
-    fun logLessonItemFinish(partId: Int, position: Int, chestStars: Int?) = safe { fa ->
+    fun logLessonItemFinish(partId: Int, position: Int, lessonId: String?, chestStars: Int?) = safe { fa ->
         fa.logEvent(EV_LESSON_ITEM_FINISH) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             if (chestStars != null) param(P_CHEST_STARS, chestStars.toLong())
         }
     }
 
     /** Daha önce bitirilmiş bir item tekrar çözüldü. */
-    fun logLessonItemReplay(partId: Int, position: Int) = safe { fa ->
+    fun logLessonItemReplay(partId: Int, position: Int, lessonId: String?) = safe { fa ->
         fa.logEvent(EV_LESSON_ITEM_REPLAY) {
             param(P_PART_ID, partId.toLong())
             param(P_POSITION, position.toLong())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
         }
     }
 
