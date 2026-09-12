@@ -51,6 +51,8 @@ import kotlin.math.roundToInt
 class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     private lateinit var currentTutorialSteps: List<TutorialStep>
     private var lessonItem: LessonItem? = null
+    /** Soru adımlarının index → ölçüm kimliği eşlemesi; [buildStepAnalyticsInfo] doldurur. */
+    private var stepAnalyticsInfo: Map<Int, StepAnalyticsInfo> = emptyMap()
     private lateinit var controlButton: View
     private lateinit var correctPanel:View
     private lateinit var incorrectPanel:View
@@ -440,6 +442,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             26 -> tutorialSteps26
             else -> tutorialSteps
         }
+        buildStepAnalyticsInfo()
         setupTutorial()
         setupBackButton()
         setupQuitButton()
@@ -528,6 +531,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
     private fun showStep(position: Int, skipAnimations: Boolean = false) {
         val step = currentTutorialSteps[position]
+        logTutorialStepReachedIfFirstTime(position)
         logTutorialAbacusResetShowStep(position, "BEFORE_setupBeads")
         // #region agent log
         AgentDebugLog.log(
@@ -15170,15 +15174,106 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         showResultPanelForOptions(isCorrect = isCorrect)
     }
 
+    /**
+     * Seçenek panelinin açılabilmesi için gereken koşul.
+     *
+     * `options != null` tek başına YETMEZ: doğru şık listesi de dolu olmalı ve tüm index'leri
+     * seçenek listesinin sınırları içinde kalmalı. Bunlardan biri eksikse panel hiç açılmaz,
+     * kontrol butonu gelmez ve [handleTutorialTapToAdvance] de `options` dolu olduğu için
+     * ekrana dokunarak ilerlemeyi engeller — yani adım çıkmaza girer. Koşul iki yerden
+     * (panel gösterimi ve ölçüm) okunduğu için tek bir yerde durur.
+     */
+    private fun TutorialStep.hasValidOptions(): Boolean {
+        val opts = options ?: return false
+        val correct = correctOptionIndex ?: return false
+        return opts.isNotEmpty() && correct.isNotEmpty() && correct.all { it in opts.indices }
+    }
+
+    /**
+     * Adım kullanıcıdan cevap bekliyorsa ölçüm türünü, beklemiyorsa `null` döner.
+     *
+     * Uygulamada cevap beklenen tam olarak iki adım türü var: abaküse sayı yazıp "Kontrol Et"e
+     * basılanlar ve çoktan seçmeli olanlar. İkisi de [showResultPanelForOptions] üzerinden
+     * doğru/yanlış panelini açar.
+     */
+    private fun TutorialStep.answerStepKind(): String? = when {
+        abacusClickable -> AnalyticsLogger.STEP_KIND_ABACUS
+        hasValidOptions() -> AnalyticsLogger.STEP_KIND_OPTIONS
+        else -> null
+    }
+
+    private data class StepAnalyticsInfo(
+        val key: String,
+        val title: String,
+        val kind: String,
+        val questionText: String?,
+    )
+
+    /**
+     * Soru adımlarına ölçüm kimliği üretir; [currentTutorialSteps] atandıktan hemen sonra,
+     * ilk adım gösterilmeden önce bir kez çalışır.
+     *
+     * Aynı öğretici içinde aynı başlık birden fazla kez geçebiliyor (örn. tutorial 20'de
+     * "Hangi basamağa ekleyeceksin?" aynı soruyla 4 kez), bu yüzden kimliğe başlığın kaçıncı
+     * kullanımı olduğu da giriyor — bkz. [TutorialStepAnalytics.stepKey].
+     */
+    private fun buildStepAnalyticsInfo() {
+        val occurrences = HashMap<String, Int>()
+        val info = HashMap<Int, StepAnalyticsInfo>()
+        currentTutorialSteps.forEachIndexed { index, step ->
+            val kind = step.answerStepKind() ?: return@forEachIndexed
+            val occurrence = (occurrences[step.text] ?: 0) + 1
+            occurrences[step.text] = occurrence
+            info[index] = StepAnalyticsInfo(
+                key = TutorialStepAnalytics.stepKey(tutorialNumber, occurrence, step.text),
+                title = step.text,
+                kind = kind,
+                questionText = step.questionText,
+            )
+        }
+        stepAnalyticsInfo = info
+    }
+
+    /** Kullanıcı bu soru adımını bu cihazda ilk kez gördüyse ölçüme işler. */
+    private fun logTutorialStepReachedIfFirstTime(position: Int) {
+        val info = stepAnalyticsInfo[position] ?: return
+        val ctx = context ?: return
+        if (!TutorialStepAnalytics.markReachedOnce(ctx, info.key)) return
+        AnalyticsLogger.logTutorialStepReached(
+            tutorialNumber = tutorialNumber,
+            stepKey = info.key,
+            stepTitle = info.title,
+            stepKind = info.kind,
+            lessonId = lessonItem?.stableId,
+        )
+    }
+
+    /**
+     * Verilen cevabı ölçüme işler.
+     *
+     * Kontrol butonu da şık paneli de [showResultPanelForOptions]'dan geçtiği için tek çağrı
+     * yeri yeterli. Adım bir kez doğru geçildikten sonra verilen cevaplar
+     * [TutorialStepAnalytics.recordAttempt] tarafından `null` ile geri çevrilir: kullanıcı geri
+     * tuşuyla dönüp yeniden (bilerek yanlış da olabilir) cevaplasa bile ölçüme girmez.
+     */
+    private fun recordTutorialStepAnswer(isCorrect: Boolean) {
+        val info = stepAnalyticsInfo[currentStep] ?: return
+        val ctx = context ?: return
+        val attemptNo = TutorialStepAnalytics.recordAttempt(ctx, info.key, isCorrect) ?: return
+        AnalyticsLogger.logTutorialStepAnswer(
+            tutorialNumber = tutorialNumber,
+            stepKey = info.key,
+            stepTitle = info.title,
+            stepKind = info.kind,
+            questionText = info.questionText,
+            lessonId = lessonItem?.stableId,
+            attemptNo = attemptNo,
+            isCorrect = isCorrect,
+        )
+    }
+
     private fun updateOptionsPanelForStep(step: TutorialStep) {
         val stepOptions = step.options
-        val correctIndices = step.correctOptionIndex
-
-        val hasValidOptions = stepOptions != null &&
-                stepOptions.isNotEmpty() &&
-                correctIndices != null &&
-                correctIndices.isNotEmpty() &&
-                correctIndices.all { it in stepOptions.indices }
 
         // Her yeni adımda daha önce planlanmış panel gösterimlerini iptal et
         optionsPanelShowRunnable?.let { runnable ->
@@ -15186,7 +15281,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         }
         optionsPanelShowRunnable = null
 
-        if (!hasValidOptions) {
+        if (!step.hasValidOptions()) {
             // Her ihtimale karşı kilidi kaldır
             optionsInteractionLocked = false
             optionsTitleText.visibility = View.GONE
@@ -15434,6 +15529,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     private fun showResultPanelForOptions(isCorrect: Boolean) {
+        recordTutorialStepAnswer(isCorrect)
         dismissOptionsPanelBeforeResult()
 
         if (isCorrect) {

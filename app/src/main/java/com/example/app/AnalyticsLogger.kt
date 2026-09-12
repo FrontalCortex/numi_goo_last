@@ -55,6 +55,8 @@ object AnalyticsLogger {
      * `app_remove`, `app_exception`, `first_open`, `session_start`, `screen_view` için de geçerli.
      */
     private const val EV_APP_EXIT_SCREEN = "app_exit_screen"
+    private const val EV_TUTORIAL_STEP_REACHED = "tutorial_step_reached"
+    private const val EV_TUTORIAL_STEP_ANSWER = "tutorial_step_answer"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -86,10 +88,24 @@ object AnalyticsLogger {
     private const val P_AT_TAP = "at_tap"
     private const val P_CHEST_SOURCE = "chest_source"
     private const val P_EXIT_SCREEN = "exit_screen"
+    private const val P_TUTORIAL_NO = "tutorial_no"
+    private const val P_STEP_KEY = "step_key"
+    private const val P_STEP_TITLE = "step_title"
+    private const val P_STEP_KIND = "step_kind"
+    private const val P_QUESTION_TEXT = "question_text"
+    private const val P_ATTEMPT_NO = "attempt_no"
+    private const val P_ATTEMPT_BUCKET = "attempt_bucket"
+    private const val P_IS_CORRECT = "is_correct"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
     const val SURVEY_TUTORIAL = "tutorial"
+
+    // ── Öğretici soru adımı türleri ─────────────────────────────────────────
+    /** Kullanıcı abaküse sayıyı yazıp "Kontrol Et"e basıyor (`abacusClickable = true`). */
+    const val STEP_KIND_ABACUS = "abacus"
+    /** Kullanıcı çoktan seçmeli şıklardan seçiyor (`options` + `correctOptionIndex` dolu). */
+    const val STEP_KIND_OPTIONS = "options"
 
     // ── Sandık kaynakları ───────────────────────────────────────────────────
     // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
@@ -416,6 +432,76 @@ object AnalyticsLogger {
         fa.logEvent(EV_APP_EXIT_SCREEN) {
             param(P_EXIT_SCREEN, sanitize(screenName))
             param(P_DURATION_MS, durationMs)
+        }
+    }
+
+    // ── Öğretici soru adımları ──────────────────────────────────────────────
+
+    /**
+     * Kullanıcı bir öğretici soru adımına **ilk kez** ulaştı.
+     *
+     * [logTutorialStepAnswer]'ın paydası budur: adıma ulaşıp hiç doğru cevaplayamadan bırakan
+     * kullanıcılar yalnızca bu iki olayın kullanıcı sayısı karşılaştırılarak görülebilir.
+     * Yalnız cevap olayına bakmak, en çok zorlanan adımı sistematik olarak gizler — çünkü
+     * orada takılıp uygulamayı kapatan çocuk hiçbir "doğru" olayı üretmez.
+     *
+     * "İlk kez" kararını [TutorialStepAnalytics.markReachedOnce] verir; geri tuşu ve dersi
+     * tekrar oynama bu sayıyı şişirmez.
+     */
+    fun logTutorialStepReached(
+        tutorialNumber: Int,
+        stepKey: String,
+        stepTitle: String,
+        stepKind: String,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STEP_REACHED) {
+            param(P_TUTORIAL_NO, tutorialNumber.toLong())
+            param(P_STEP_KEY, sanitize(stepKey))
+            param(P_STEP_TITLE, sanitize(stepTitle))
+            param(P_STEP_KIND, sanitize(stepKind))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Öğretici soru adımında bir cevap gönderildi.
+     *
+     * Adım başına kullanıcı başına yalnızca **ilk geçişin** denemeleri gönderilir: adım bir kez
+     * doğru cevaplandıktan sonra aynı adıma geri dönülüp verilen cevaplar hiç ölçülmez
+     * (bkz. [TutorialStepAnalytics.recordAttempt]).
+     *
+     * ## Neden her deneme ayrı olay, neden tek bir "geçti" olayı değil
+     * Tek bir "geçti (n denemede)" olayı, adımı hiç geçemeyenleri tamamen görünmez bırakırdı.
+     * Her deneme ayrı gönderilince aynı veriden üç soru birden yanıtlanabiliyor:
+     * `is_correct = true` süzgeciyle "kaçıncı denemede geçti" dağılımı, süzgeçsiz haliyle
+     * "bu adımda toplam kaç yanlış verildi", [logTutorialStepReached] ile karşılaştırıldığında
+     * da "kaç kişi hiç geçemeden bıraktı".
+     *
+     * @param attemptNo Kaçıncı deneme (1'den başlar); [TutorialStepAnalytics.recordAttempt] verir.
+     * @param isCorrect Metin olarak gönderilir; GA4'te boole parametreler boyut olarak
+     *   süzülemiyor, `"true"` / `"false"` ise doğrudan süzgeç değeri oluyor.
+     */
+    fun logTutorialStepAnswer(
+        tutorialNumber: Int,
+        stepKey: String,
+        stepTitle: String,
+        stepKind: String,
+        questionText: String?,
+        lessonId: String?,
+        attemptNo: Int,
+        isCorrect: Boolean,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STEP_ANSWER) {
+            param(P_TUTORIAL_NO, tutorialNumber.toLong())
+            param(P_STEP_KEY, sanitize(stepKey))
+            param(P_STEP_TITLE, sanitize(stepTitle))
+            param(P_STEP_KIND, sanitize(stepKind))
+            param(P_ATTEMPT_NO, attemptNo.toLong())
+            param(P_ATTEMPT_BUCKET, TutorialStepAnalytics.bucketOf(attemptNo))
+            param(P_IS_CORRECT, if (isCorrect) "true" else "false")
+            if (!questionText.isNullOrBlank()) param(P_QUESTION_TEXT, sanitize(questionText))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
         }
     }
 
