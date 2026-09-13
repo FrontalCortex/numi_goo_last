@@ -15171,7 +15171,24 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
 
         // Kontrol yapıldıktan sonra geri ve "eğitimi atla" tekrar aktif olsun
         optionsInteractionLocked = false
-        showResultPanelForOptions(isCorrect = isCorrect)
+        showResultPanelForOptions(
+            isCorrect = isCorrect,
+            givenAnswer = describeSelectedOptions(selected, opts),
+        )
+    }
+
+    /**
+     * Seçilen şıkları ölçüme yazılacak tek bir metne çevirir: `"2 · Şık metni"`.
+     *
+     * Index metnin ÖNÜNDE duruyor: GA4 parametre değerini 100 karakterde kesiyor ve uzun bir şık
+     * metni kırpılsa bile hangi şık olduğu baştaki index'ten okunabiliyor. Çoklu seçimli
+     * adımlarda hepsi sıralı olarak birleştirilir (`"0,2 · ... + ..."`).
+     */
+    private fun describeSelectedOptions(selected: Set<Int>, options: List<String>): String {
+        val ordered = selected.sorted()
+        val indices = ordered.joinToString(",")
+        val texts = ordered.mapNotNull { options.getOrNull(it) }.joinToString(" + ")
+        return if (texts.isBlank()) indices else "$indices · $texts"
     }
 
     /**
@@ -15256,7 +15273,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
      * [TutorialStepAnalytics.recordAttempt] tarafından `null` ile geri çevrilir: kullanıcı geri
      * tuşuyla dönüp yeniden (bilerek yanlış da olabilir) cevaplasa bile ölçüme girmez.
      */
-    private fun recordTutorialStepAnswer(isCorrect: Boolean, writtenValue: Int?) {
+    private fun recordTutorialStepAnswer(isCorrect: Boolean, givenAnswer: String?) {
         val info = stepAnalyticsInfo[currentStep] ?: return
         val ctx = context ?: return
         val attemptNo = TutorialStepAnalytics.recordAttempt(ctx, info.key, isCorrect) ?: return
@@ -15269,7 +15286,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             lessonId = lessonItem?.stableId,
             attemptNo = attemptNo,
             isCorrect = isCorrect,
-            writtenValue = writtenValue,
+            wrongAnswer = givenAnswer,
         )
     }
 
@@ -15368,7 +15385,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         // yaptıktan sonra controlNumber'ı sıfırlıyor, sonrasında abaküse ne yazıldığı kaybolur.
         val writtenValue = abacusController?.getCurrentValue()
         val isCorrect = stepAnswerAlgorithm()
-        showResultPanelForOptions(isCorrect = isCorrect, writtenValue = writtenValue)
+        showResultPanelForOptions(isCorrect = isCorrect, givenAnswer = writtenValue?.toString())
     }
 
     private fun resetOptionsSharedTextSizeToDimens() {
@@ -15530,11 +15547,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     /**
-     * @param writtenValue Abaküs adımlarında kullanıcının abaküse yazdığı sayı; yalnızca ölçüme
-     *   gider, panelin görünümünü etkilemez. Şık adımlarında anlamsız olduğu için varsayılanı null.
+     * @param givenAnswer Kullanıcının verdiği cevap: abaküs adımlarında abaküse yazdığı sayı,
+     *   şık adımlarında seçtiği şık(lar). Yalnızca ölçüme gider, panelin görünümünü etkilemez.
      */
-    private fun showResultPanelForOptions(isCorrect: Boolean, writtenValue: Int? = null) {
-        recordTutorialStepAnswer(isCorrect, writtenValue)
+    private fun showResultPanelForOptions(isCorrect: Boolean, givenAnswer: String? = null) {
+        recordTutorialStepAnswer(isCorrect, givenAnswer)
         dismissOptionsPanelBeforeResult()
 
         if (isCorrect) {

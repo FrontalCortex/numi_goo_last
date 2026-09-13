@@ -96,7 +96,7 @@ object AnalyticsLogger {
     private const val P_ATTEMPT_NO = "attempt_no"
     private const val P_ATTEMPT_BUCKET = "attempt_bucket"
     private const val P_IS_CORRECT = "is_correct"
-    private const val P_WRITTEN_VALUE = "written_value"
+    private const val P_WRONG_ANSWER = "wrong_answer"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -482,12 +482,15 @@ object AnalyticsLogger {
      * @param attemptNo Kaçıncı deneme (1'den başlar); [TutorialStepAnalytics.recordAttempt] verir.
      * @param isCorrect Metin olarak gönderilir; GA4'te boole parametreler boyut olarak
      *   süzülemiyor, `"true"` / `"false"` ise doğrudan süzgeç değeri oluyor.
-     * @param writtenValue Abaküs adımlarında kullanıcının abaküse yazdığı sayı. **Yalnızca yanlış
-     *   cevapta** gönderilir: doğru cevapta bu değer zaten beklenen cevaba eşittir ve adımın
-     *   kendisinden bilindiği için boyutu gereksiz yere şişirir. Yanlış değer ise soruyu anlatır —
-     *   4 yerine 40 yazılması, çocuğun boncuğu yanlış çubuğa koyduğunu söyler. Şık adımlarında
-     *   anlamsız olduğu için `null` geçilir. Sayı yerine metin gönderilir; GA4'te sayısal
-     *   parametre boyut olarak değil metrik olarak yorumlanmaya meyilli ve toplanması anlamsız.
+     * @param wrongAnswer Kullanıcının verdiği cevabın kendisi. **Yalnızca yanlış cevapta**
+     *   gönderilir: doğru cevapta bu değer zaten beklenen cevaba eşittir ve adımın kendisinden
+     *   bilindiği için boyutu gereksiz yere şişirir. Yanlış cevap ise soruyu anlatır — abaküs
+     *   adımında 4 yerine 40 yazılması çocuğun boncuğu yanlış çubuğa koyduğunu, şık adımında
+     *   hangi çeldiricinin seçildiği ise hangi kavramın karıştığını söyler.
+     *
+     *   İki adım türü de aynı parametreyi kullanır; hangisi olduğu `step_kind`'dan okunur. Ayrı
+     *   parametre açmak GA4'ün keşif başına 20 boyut bütçesinden ikinci bir slot yerdi ve
+     *   "verilen yanlış cevap" tablosunu iki ayrı tabloya bölerdi.
      */
     fun logTutorialStepAnswer(
         tutorialNumber: Int,
@@ -498,7 +501,7 @@ object AnalyticsLogger {
         lessonId: String?,
         attemptNo: Int,
         isCorrect: Boolean,
-        writtenValue: Int?,
+        wrongAnswer: String?,
     ) = safe { fa ->
         fa.logEvent(EV_TUTORIAL_STEP_ANSWER) {
             param(P_TUTORIAL_NO, tutorialNumber.toLong())
@@ -510,7 +513,7 @@ object AnalyticsLogger {
             param(P_IS_CORRECT, if (isCorrect) "true" else "false")
             if (!questionText.isNullOrBlank()) param(P_QUESTION_TEXT, sanitize(questionText))
             if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
-            if (!isCorrect && writtenValue != null) param(P_WRITTEN_VALUE, writtenValue.toString())
+            if (!isCorrect && !wrongAnswer.isNullOrBlank()) param(P_WRONG_ANSWER, sanitize(wrongAnswer))
         }
     }
 
