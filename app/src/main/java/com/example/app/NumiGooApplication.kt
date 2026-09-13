@@ -46,6 +46,21 @@ class NumiGooApplication : Application() {
     private var startedActivityCount = 0
 
     /**
+     * Görünür ekranların yığını.
+     *
+     * Dialog'lar yüzünden gerekli: bir [androidx.fragment.app.DialogFragment] kapandığında
+     * altındaki fragment yeniden `onResume`'a GİRMEZ — dialog host'u hiç pause etmediği için.
+     * Yığın olmadan [currentScreen] kapanan dialog'un adında takılı kalıyordu ve kullanıcı
+     * paneli kapatıp on dakika daha oynayıp çıksa bile çıkış o dialog'a yazılıyordu.
+     *
+     * Uygulamada dokuz DialogFragment var; en çok zarar gören ikisi ProDiffirentFragment ve
+     * PlanFragment, yani Pro hunisinin tamamı.
+     *
+     * Yalnızca ana iş parçacığından okunup yazılır (fragment yaşam döngüsü geri çağırımları).
+     */
+    private val screenStack = mutableListOf<String>()
+
+    /**
      * Fragment bazlı `screen_view`.
      *
      * Firebase'in otomatik ekran toplaması **Activity** adını kullanır. Bu uygulamada
@@ -60,9 +75,37 @@ class NumiGooApplication : Application() {
         override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
             val name = f::class.java.simpleName
             if (name.isEmpty() || name in ignoredFragments) return
+            // Aynı ad yığında birden fazla kez durmasın: arka plandan dönüşte görünür
+            // fragment'ların hepsi yeniden resume oluyor.
+            screenStack.remove(name)
+            screenStack.add(name)
             currentScreen = name
             currentScreenStartMs = SystemClock.elapsedRealtime()
             AnalyticsLogger.logScreenView(name)
+        }
+
+        /**
+         * Fragment görünümü yok edildi: kapatıldı ya da yerine başkası geldi. Üstteki ekran
+         * gidiyorsa altındaki geri yüklenir.
+         *
+         * **Neden `onFragmentPaused` değil:** uygulama arka plana geçerken fragment'lar da
+         * pause olur ama görünümleri yok edilmez. Pause'da yığını boşaltsaydık, arka plana
+         * geçişte üstteki ekranı düşürür ve `app_exit_screen`'i alttaki ekrana yazardık —
+         * düzeltmeye çalıştığımız hatanın aynısını ters yönde üretirdik.
+         *
+         * Uygulama gerçekten kapanırken sıralama `onPause → onStop → onDestroyView`; çıkış
+         * olayı `onActivityStopped`'ta, yani yığın bozulmadan ÖNCE kaydedilir.
+         */
+        override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
+            val name = f::class.java.simpleName
+            if (name.isEmpty() || name in ignoredFragments) return
+            screenStack.remove(name)
+            if (currentScreen != name) return
+            val restored = screenStack.lastOrNull() ?: return
+            currentScreen = restored
+            // Altındaki ekrana "yeniden gelinmiş" sayılır; dialog'un açık kaldığı süre
+            // o ekranın süresine eklenmemeli.
+            currentScreenStartMs = SystemClock.elapsedRealtime()
         }
     }
 

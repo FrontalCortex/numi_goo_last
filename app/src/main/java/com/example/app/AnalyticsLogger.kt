@@ -60,6 +60,8 @@ object AnalyticsLogger {
     private const val EV_ENERGY_BLOCKED = "energy_blocked"
     private const val EV_ENERGY_SPENT = "energy_spent"
     private const val EV_ENERGY_REFILL = "energy_refill"
+    private const val EV_AD_SKIP_SHOWN = "ad_skip_shown"
+    private const val EV_AD_SKIP_CLOSED = "ad_skip_closed"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -107,6 +109,10 @@ object AnalyticsLogger {
     private const val P_ENERGY_LEFT = "energy_left"
     private const val P_ENERGY_AFTER = "energy_after"
     private const val P_LESSONS_THIS_SESSION = "lessons_this_session"
+    private const val P_VIEW_NO = "view_no"
+    private const val P_DWELL_BUCKET = "dwell_bucket"
+    private const val P_DWELL_MS = "dwell_ms"
+    private const val P_OUTCOME = "outcome"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -135,6 +141,14 @@ object AnalyticsLogger {
     const val ENERGY_REFILL_AD = "ad"
     /** Mağazada anahtar harcanarak can alındı. */
     const val ENERGY_REFILL_KEYS = "keys"
+
+    // ── Reklam sonrası Pro paneli ([AdSkipFragment]) çıkış yolları ──────────
+    /** "Ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
+    const val AD_SKIP_TRY_FREE = "try_free"
+    /** "Hayır teşekkürler" düğmesi. */
+    const val AD_SKIP_NO_THANKS = "no_thanks"
+    /** Geri tuşu veya panel dışına dokunma. */
+    const val AD_SKIP_DISMISSED = "dismissed"
 
     // ── Sandık kaynakları ───────────────────────────────────────────────────
     // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
@@ -628,6 +642,55 @@ object AnalyticsLogger {
         fa.logEvent(EV_ENERGY_REFILL) {
             param(P_REFILL_SOURCE, sanitize(refillSource))
             param(P_ENERGY_AFTER, energyAfter.toLong())
+        }
+    }
+
+    // ── Reklam sonrası Pro paneli ──────────────────────────────────────────
+
+    /**
+     * Reklam kapandıktan sonra çıkan Pro paneli ([AdSkipFragment]) gösterildi.
+     *
+     * [logAdSkipClosed]'ın paydası. İkisinin kullanıcı sayısı arasındaki fark, paneli görüp
+     * kapatmadan uygulamadan çıkanlardır — panel açıkken arka plana geçen kullanıcıda kapanış
+     * olayı hiç tetiklenmez.
+     *
+     * @param viewNo Kullanıcının bu paneli kaçıncı görüşü, kova hâlinde ("01"…"09", "10+").
+     *   Kalıcı sayaçtan gelir; bkz. [AdSkipStats].
+     */
+    fun logAdSkipShown(viewNo: String) = safe { fa ->
+        fa.logEvent(EV_AD_SKIP_SHOWN) {
+            param(P_VIEW_NO, sanitize(viewNo))
+        }
+    }
+
+    /**
+     * Pro paneli kullanıcı tarafından kapatıldı.
+     *
+     * ## Neden tek olay, neden ayrı "süre" ve "tıklama" olayları değil
+     * Ekranda kalma süresi ile çıkış yolu aynı anın iki yüzü: "3 saniye bakıp Ücretsiz Dene'ye
+     * bastı" ile "3 saniye bakıp kapattı" bambaşka şeyler. İki ayrı olay gönderilseydi GA4'te
+     * bunları aynı görüşe ait diye birleştirmenin yolu olmazdı.
+     *
+     * ## Neden onDismiss değil de düğmeler + onCancel
+     * `onDismiss` yapılandırma değişikliğinde ve uygulama öldürülürken de tetikleniyor; o
+     * durumlarda sahte bir "kapattı" kaydı düşerdi. `onCancel` ise yalnızca geri tuşu ve panel
+     * dışına dokunmada çalışır, yani gerçek kullanıcı hareketidir.
+     *
+     * @param dwellMs Panelin açık kaldığı ham süre; ortalama alınabilsin diye kovanın yanında
+     *   ayrıca gönderilir (GA4 metin boyutunu ortalayamıyor).
+     * @param outcome [AD_SKIP_TRY_FREE], [AD_SKIP_NO_THANKS] veya [AD_SKIP_DISMISSED].
+     */
+    fun logAdSkipClosed(
+        viewNo: String,
+        dwellBucket: String,
+        dwellMs: Long,
+        outcome: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_AD_SKIP_CLOSED) {
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_DWELL_BUCKET, sanitize(dwellBucket))
+            param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
+            param(P_OUTCOME, sanitize(outcome))
         }
     }
 
