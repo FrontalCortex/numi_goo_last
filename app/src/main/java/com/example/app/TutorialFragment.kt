@@ -15256,7 +15256,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
      * [TutorialStepAnalytics.recordAttempt] tarafından `null` ile geri çevrilir: kullanıcı geri
      * tuşuyla dönüp yeniden (bilerek yanlış da olabilir) cevaplasa bile ölçüme girmez.
      */
-    private fun recordTutorialStepAnswer(isCorrect: Boolean) {
+    private fun recordTutorialStepAnswer(isCorrect: Boolean, writtenValue: Int?) {
         val info = stepAnalyticsInfo[currentStep] ?: return
         val ctx = context ?: return
         val attemptNo = TutorialStepAnalytics.recordAttempt(ctx, info.key, isCorrect) ?: return
@@ -15269,6 +15269,7 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
             lessonId = lessonItem?.stableId,
             attemptNo = attemptNo,
             isCorrect = isCorrect,
+            writtenValue = writtenValue,
         )
     }
 
@@ -15363,11 +15364,11 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
     }
 
     private fun showResultPanel() {
-        if (stepAnswerAlgorithm()) {
-            showResultPanelForOptions(isCorrect = true)
-        } else {
-            showResultPanelForOptions(isCorrect = false)
-        }
+        // DİKKAT: değeri stepAnswerAlgorithm()'den ÖNCE oku — o fonksiyon karşılaştırmayı
+        // yaptıktan sonra controlNumber'ı sıfırlıyor, sonrasında abaküse ne yazıldığı kaybolur.
+        val writtenValue = abacusController?.getCurrentValue()
+        val isCorrect = stepAnswerAlgorithm()
+        showResultPanelForOptions(isCorrect = isCorrect, writtenValue = writtenValue)
     }
 
     private fun resetOptionsSharedTextSizeToDimens() {
@@ -15528,8 +15529,12 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         binding.root.setOnClickListener { handleTutorialTapToAdvance() }
     }
 
-    private fun showResultPanelForOptions(isCorrect: Boolean) {
-        recordTutorialStepAnswer(isCorrect)
+    /**
+     * @param writtenValue Abaküs adımlarında kullanıcının abaküse yazdığı sayı; yalnızca ölçüme
+     *   gider, panelin görünümünü etkilemez. Şık adımlarında anlamsız olduğu için varsayılanı null.
+     */
+    private fun showResultPanelForOptions(isCorrect: Boolean, writtenValue: Int? = null) {
+        recordTutorialStepAnswer(isCorrect, writtenValue)
         dismissOptionsPanelBeforeResult()
 
         if (isCorrect) {
