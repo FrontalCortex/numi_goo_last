@@ -93,6 +93,8 @@ class NumiGooApplication : Application() {
             if (startedActivityCount == 0) {
                 // Öne dönüldü: arka planda geçen süre ekranın süresine yazılmasın.
                 currentScreenStartMs = SystemClock.elapsedRealtime()
+                // 30 dakikadan uzun sürdüyse yeni oturum sayılır; oturum içi ders sayacı sıfırlanır.
+                EnergySessionCounter.onAppForegrounded()
             }
             startedActivityCount++
         }
@@ -101,6 +103,8 @@ class NumiGooApplication : Application() {
             if (startedActivityCount > 0) startedActivityCount--
             if (startedActivityCount != 0) return
             if (activity.isChangingConfigurations) return
+
+            EnergySessionCounter.onAppBackgrounded()
 
             val screen = currentScreen ?: return
             val elapsed = (SystemClock.elapsedRealtime() - currentScreenStartMs).coerceAtLeast(0L)

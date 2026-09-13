@@ -57,6 +57,9 @@ object AnalyticsLogger {
     private const val EV_APP_EXIT_SCREEN = "app_exit_screen"
     private const val EV_TUTORIAL_STEP_REACHED = "tutorial_step_reached"
     private const val EV_TUTORIAL_STEP_ANSWER = "tutorial_step_answer"
+    private const val EV_ENERGY_BLOCKED = "energy_blocked"
+    private const val EV_ENERGY_SPENT = "energy_spent"
+    private const val EV_ENERGY_REFILL = "energy_refill"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -97,6 +100,13 @@ object AnalyticsLogger {
     private const val P_ATTEMPT_BUCKET = "attempt_bucket"
     private const val P_IS_CORRECT = "is_correct"
     private const val P_WRONG_ANSWER = "wrong_answer"
+    private const val P_BLOCK_SOURCE = "block_source"
+    private const val P_SPEND_SOURCE = "spend_source"
+    private const val P_REFILL_SOURCE = "refill_source"
+    private const val P_WAIT_SECONDS = "wait_seconds"
+    private const val P_ENERGY_LEFT = "energy_left"
+    private const val P_ENERGY_AFTER = "energy_after"
+    private const val P_LESSONS_THIS_SESSION = "lessons_this_session"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -107,6 +117,24 @@ object AnalyticsLogger {
     const val STEP_KIND_ABACUS = "abacus"
     /** Kullanıcı çoktan seçmeli şıklardan seçiyor (`options` + `correctOptionIndex` dolu). */
     const val STEP_KIND_OPTIONS = "options"
+
+    // ── Enerji (can) kaynakları ─────────────────────────────────────────────
+    /** Haritadan ders başlatılırken can yetmedi ([LessonAdapter]). */
+    const val ENERGY_BLOCK_LESSON = "lesson"
+    /** Kupa yarışı başlatılırken can yetmedi ([TasksFragment]). */
+    const val ENERGY_BLOCK_CUP = "cup"
+
+    /** Ders başlatıldı, 1 can gitti. */
+    const val ENERGY_SPEND_LESSON = "lesson"
+    /** Kupa modunda yanlış cevap verildi. */
+    const val ENERGY_SPEND_CUP_FAIL = "cup_fail"
+    /** Kupa yarışı yarıda bırakıldı (çıkış veya geri tuşu). */
+    const val ENERGY_SPEND_CUP_QUIT = "cup_quit"
+
+    /** Mağazada reklam izlenerek can alındı. */
+    const val ENERGY_REFILL_AD = "ad"
+    /** Mağazada anahtar harcanarak can alındı. */
+    const val ENERGY_REFILL_KEYS = "keys"
 
     // ── Sandık kaynakları ───────────────────────────────────────────────────
     // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
@@ -125,6 +153,12 @@ object AnalyticsLogger {
     const val CHEST_SOURCE_SHOP_AD = "shop_ad"
     /** Bülten kartından açılan sandık ([TasksFragment]); prefetch YAPILMAZ. */
     const val CHEST_SOURCE_BULLETIN = "bulletin"
+
+    /**
+     * Kullanıcı hayatında en az bir kez enerji duvarına çarptı. Bir kez "true" yazılır ve
+     * bir daha değişmez; Elde Tutma raporunda kırılım boyutu olarak kullanılır.
+     */
+    private const val USER_PROPERTY_ENERGY_WALL_HIT = "energy_wall_hit"
 
     /** Firebase kullanıcı özelliği: değer en fazla 36 karakter olabilir. */
     private const val USER_PROPERTY_MAX = 36
@@ -514,6 +548,86 @@ object AnalyticsLogger {
             if (!questionText.isNullOrBlank()) param(P_QUESTION_TEXT, sanitize(questionText))
             if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
             if (!isCorrect && !wrongAnswer.isNullOrBlank()) param(P_WRONG_ANSWER, sanitize(wrongAnswer))
+        }
+    }
+
+    // ── Enerji (can) sistemi ────────────────────────────────────────────────
+
+    /**
+     * Kullanıcı bir şey başlatmak istedi ama canı yetmedi — **duvara çarptı**.
+     *
+     * Enerji sisteminin kullanıcı kaybettirip kaybettirmediği sorusunun merkezinde bu olay
+     * var. Bugüne kadar bu an hiçbir yere kaydedilmiyordu: [LessonAdapter.showEnergyWarning]
+     * sessizce mağazayı açıyor ve çocuk ya reklam izliyor, ya anahtar harcıyor, ya da
+     * çıkıp gidiyor. Üçüncüsü, yani asıl önemli olan, tamamen görünmezdi.
+     *
+     * Ayrıca `energy_wall_hit` kullanıcı özelliğini yazar. Bu, Elde Tutma raporunda
+     * "duvara çarpanlar" ile "çarpmayanların" geri dönüş eğrilerini yan yana koymayı
+     * mümkün kılıyor — enerji sisteminin gerçek maliyeti oradan okunur.
+     *
+     * @param waitSeconds Sıradaki canın gelmesine kaç saniye kaldığı. Ekran adı tek başına
+     *   yetmiyor: 7 yaşındaki bir çocuk için 10 dakika beklemek ile 45 dakika beklemek
+     *   aynı şey değil, ikincisinde o gün geri gelmiyor.
+     * @param lessonsThisSession Duvara çarpmadan önce o oturumda kaç ders başlatmıştı
+     *   (kova: "0", "1-2", "3-4", "5+"). Bkz. [EnergySessionCounter].
+     */
+    fun logEnergyBlocked(
+        blockSource: String,
+        waitSeconds: Long,
+        lessonsThisSession: String,
+        partId: Int?,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_ENERGY_BLOCKED) {
+            param(P_BLOCK_SOURCE, sanitize(blockSource))
+            param(P_WAIT_SECONDS, waitSeconds.coerceAtLeast(0L))
+            param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
+            if (partId != null) param(P_PART_ID, partId.toLong())
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+        fa.setUserProperty(USER_PROPERTY_ENERGY_WALL_HIT, "true")
+    }
+
+    /**
+     * Can harcandı.
+     *
+     * [logEnergyBlocked]'ın paydası: kaç harcamaya karşılık kaç blok düştüğü, duvarın ne
+     * sıklıkta bağladığını söyler. Hiç blok yoksa enerji sistemi hiçbir şey yapmıyor
+     * demektir — ne gelir getiriyor ne tempo kuruyor, sadece kod ve arayüz karmaşıklığı.
+     *
+     * @param spendSource [ENERGY_SPEND_LESSON], [ENERGY_SPEND_CUP_FAIL] veya
+     *   [ENERGY_SPEND_CUP_QUIT]. Ayrımı önemli: canların çoğu `cup_fail`'den gidiyorsa
+     *   sistem canı en kötü yerden alıyor — çocuk zaten yarışı kaybetmiş, üstüne bir de
+     *   cezalandırılıyor.
+     * @param energyLeft Harcamadan SONRA kalan can.
+     */
+    fun logEnergySpent(
+        spendSource: String,
+        energyLeft: Int,
+        lessonsThisSession: String,
+        partId: Int?,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_ENERGY_SPENT) {
+            param(P_SPEND_SOURCE, sanitize(spendSource))
+            param(P_ENERGY_LEFT, energyLeft.toLong())
+            param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
+            if (partId != null) param(P_PART_ID, partId.toLong())
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Can kazanıldı (reklam veya anahtar).
+     *
+     * [logEnergyBlocked] ile birlikte huni kurar: duvara çarpanların yüzde kaçı can almaya
+     * gitti? Bu oran duvarın gelir verimidir. Çok düşükse duvar para kazandırmıyor, sadece
+     * kullanıcı kaçırıyor demektir.
+     */
+    fun logEnergyRefill(refillSource: String, energyAfter: Int) = safe { fa ->
+        fa.logEvent(EV_ENERGY_REFILL) {
+            param(P_REFILL_SOURCE, sanitize(refillSource))
+            param(P_ENERGY_AFTER, energyAfter.toLong())
         }
     }
 

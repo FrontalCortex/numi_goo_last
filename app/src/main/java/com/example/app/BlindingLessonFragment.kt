@@ -1144,7 +1144,7 @@ class BlindingLessonFragment : Fragment() {
                     GlobalValues.pendingCupDelta = -lossDelta
                 }
                 BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
-                (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+                spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
             }
             closeFragment()
         }
@@ -1182,7 +1182,7 @@ class BlindingLessonFragment : Fragment() {
                             GlobalValues.pendingCupDelta = -lossDelta
                         }
                         BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
-                        (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+                        spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
                     }
                     closeFragment()
                 }
@@ -2084,11 +2084,30 @@ class BlindingLessonFragment : Fragment() {
         }
     }
 
+    /**
+     * Kupa modunda (bölüm 9) can harcar ve ölçüme bildirir.
+     *
+     * Üç çağrı yeri var ve ikisi "yarışı yarıda bıraktı", biri "yanlış cevap verdi" demek.
+     * Ayrımı [spendSource] taşıyor: canların çoğu hangi yoldan gidiyor sorusu, duvarın
+     * çocuğu nerede vurduğunu söylüyor.
+     */
+    private fun spendCupEnergy(spendSource: String) {
+        val energyManager = (activity as? MainActivity)?.getEnergyManager() ?: return
+        energyManager.useEnergy(1)
+        AnalyticsLogger.logEnergySpent(
+            spendSource = spendSource,
+            energyLeft = energyManager.getCurrentEnergy(),
+            lessonsThisSession = EnergySessionCounter.bucket(),
+            partId = globalPartId,
+            lessonId = if (::lessonItem.isInitialized) lessonItem.stableId else null,
+        )
+    }
+
     private fun showLessonResultFalse(isChestFailure: Boolean = false) {
         // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
         if (globalPartId == 9) {
             // Delta ve Firestore yazma işlemi controlButtonListener'da optimistic UI olarak zaten yapıldı.
-            (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+            spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_FAIL)
             closeFragment()
             return
         }

@@ -1440,6 +1440,13 @@ class TasksFragment : Fragment() {
                     val isInfinite = (requireActivity() as? MainActivity)?.isInfiniteEnergy() == true
                     val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
                     if (!isInfinite && (energyManager?.getCurrentEnergy() ?: 0) <= 0) {
+                        AnalyticsLogger.logEnergyBlocked(
+                            blockSource = AnalyticsLogger.ENERGY_BLOCK_CUP,
+                            waitSeconds = (energyManager?.getTimeUntilNextEnergy() ?: 0L) / 1000L,
+                            lessonsThisSession = EnergySessionCounter.bucket(),
+                            partId = null,
+                            lessonId = null,
+                        )
                         dialog.dismiss()
                         GlobalValues.cupPathDialogRef?.get()?.dismiss()
                         (requireActivity() as? MainActivity)?.openShopFragment()

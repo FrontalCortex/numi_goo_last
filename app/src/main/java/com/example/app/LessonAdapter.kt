@@ -390,13 +390,31 @@ class LessonAdapter(
                     if (!energyManager.isInfiniteEnergy()) {
                         if (!energyManager.hasEnoughEnergy(1)) {
                             // Yeterli enerji yok, kullanıcıya uyarı göster
+                            AnalyticsLogger.logEnergyBlocked(
+                                blockSource = AnalyticsLogger.ENERGY_BLOCK_LESSON,
+                                waitSeconds = energyManager.getTimeUntilNextEnergy() / 1000L,
+                                lessonsThisSession = EnergySessionCounter.bucket(),
+                                partId = globalPartId,
+                                lessonId = item.stableId,
+                            )
                             behavior.isHideable = true; behavior.state = BottomSheetBehavior.STATE_HIDDEN; showEnergyWarning(context)
                             return@getCurrentPlan
                         }
                         // Enerjiyi kullan
                         energyManager.useEnergy(1)
+                        AnalyticsLogger.logEnergySpent(
+                            spendSource = AnalyticsLogger.ENERGY_SPEND_LESSON,
+                            energyLeft = energyManager.getCurrentEnergy(),
+                            lessonsThisSession = EnergySessionCounter.bucket(),
+                            partId = globalPartId,
+                            lessonId = item.stableId,
+                        )
                     }
-                    
+
+                    // Sayaç, olaylar gönderildikten SONRA artar: parametredeki değer "bu dersten
+                    // ÖNCE kaç ders yapılmıştı" olmalı.
+                    EnergySessionCounter.onLessonStarted()
+
                     // Ders başlat
                     continueWithLesson(item, behavior)
                 }

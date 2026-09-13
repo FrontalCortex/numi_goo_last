@@ -114,6 +114,10 @@ class ShopFragment : Fragment() {
                     adNonce = adNonce,
                     onResult = { fullTime ->
                         mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                        AnalyticsLogger.logEnergyRefill(
+                            refillSource = AnalyticsLogger.ENERGY_REFILL_AD,
+                            energyAfter = mainActivity.getEnergyManager().getCurrentEnergy(),
+                        )
                         if (!isAdded) return@claimAdEnergy
                         playHeartFlyAnimation(watchAdButton2)
                         updateEnergyUi()
@@ -188,6 +192,10 @@ class ShopFragment : Fragment() {
             onResult = { fullTime, keys ->
                 buyLifeInProgress = false
                 mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                AnalyticsLogger.logEnergyRefill(
+                    refillSource = AnalyticsLogger.ENERGY_REFILL_KEYS,
+                    energyAfter = mainActivity.getEnergyManager().getCurrentEnergy(),
+                )
                 if (!isAdded) return@buyWithKeys
                 keyText?.text = keys.toString()
                 playHeartFlyAnimation(buyButton)
