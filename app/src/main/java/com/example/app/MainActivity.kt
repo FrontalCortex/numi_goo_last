@@ -850,11 +850,21 @@ class MainActivity : AppCompatActivity() {
             true
         }
         
-        // Enerji test için uzun basma
-        binding.energyText.setOnLongClickListener {
-            // Test için enerjiyi sıfırla
-            energyManager.useEnergy(energyManager.getCurrentEnergy())
-            true
+        // Can sayacına uzun basınca canı sıfırlayan test kısayolu — SADECE debug derlemesinde.
+        //
+        // Release'de de açıktı ve yıkıcıydı: useEnergy() sunucuya spendEnergy çağrısı gönderip
+        // energy_full_time'ı yetkili olarak ileri itiyor, yani geri alınamıyor. Çocuklar ekranda
+        // gördükleri her şeye uzun basar; Free planda tek bir kazayla 50 dakikalık oyun hakkı
+        // gidiyordu. Üstelik bu, enerjinin gelir kaldıracı olduğu bir üründe kullanıcıya
+        // "uygulama canımı yedi" dedirtecek türden bir hata.
+        //
+        // BuildConfig.DEBUG derleme zamanı sabiti olduğu için blok release APK'sinde hiç yer
+        // almaz; çalışma zamanı kontrolü (FLAG_DEBUGGABLE) kodu APK'de bırakırdı.
+        if (BuildConfig.DEBUG) {
+            binding.energyText.setOnLongClickListener {
+                energyManager.useEnergy(energyManager.getCurrentEnergy())
+                true
+            }
         }
 
         // lessonPartBackButton: MapFragment'i kapat, PartSelectionFragment'e dön
