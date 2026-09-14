@@ -1,9 +1,11 @@
 package com.example.app
 
+import android.content.DialogInterface
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
@@ -18,6 +20,17 @@ class AskQuestionOpenFragment : DialogFragment() {
 
     private var _binding: FragmentAskQuestionOpenBinding? = null
     private val binding get() = _binding!!
+
+    /**
+     * Ekranı hangi durumun açtığı. [arguments] üzerinden taşınır, constructor'dan değil:
+     * sistem dialog'u kendi yeniden oluşturduğunda constructor parametresi kaybolurdu.
+     */
+    private val trigger: String
+        get() = arguments?.getString(ARG_TRIGGER) ?: AnalyticsLogger.PROMO_TRIGGER_AUTO
+
+    private var shownAtMs: Long = 0L
+    private var viewNoBucket: String = ""
+    private var closeLogged = false
 
     private var pop1: MediaPlayer? = null
     private var pop2: MediaPlayer? = null
@@ -47,6 +60,12 @@ class AskQuestionOpenFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewNoBucket = AskQuestionPromoStats.viewBucket(
+            AskQuestionPromoStats.nextViewNo(requireContext(), trigger),
+        )
+        shownAtMs = SystemClock.elapsedRealtime()
+        AnalyticsLogger.logAskQuestionPromoShown(trigger = trigger, viewNo = viewNoBucket)
+
         playSounds()
 
         val buttonText = "1 hafta ücretsiz dene"
@@ -61,8 +80,11 @@ class AskQuestionOpenFragment : DialogFragment() {
         binding.tryFreeText.text = spannable
 
         binding.btnTryFree.setOnClickListener {
+            logClosed(AnalyticsLogger.PROMO_TRY_FREE)
             // Yeni fragmenti hemen açıyoruz
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_ASK_QUESTION)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
 
             // Altında kalan bu fragmenti animasyon süresi kadar (yaklaşık 500ms) arkada bekletip,
             // daha sonra animasyonsuz ve sessizce kapatıyoruz. Böylece aradaki boşluk/bekleme hissi kayboluyor.
@@ -77,14 +99,37 @@ class AskQuestionOpenFragment : DialogFragment() {
         // Aboneliğe geçmek istemeyen kullanıcı krediyi tek seferlik de alabilir; soru sorma
         // hakkı artık plana değil krediye bağlı (bkz. AskQuestionButtonBinder).
         binding.btnBuyCredits.setOnClickListener {
+            logClosed(AnalyticsLogger.PROMO_BUY_CREDITS)
             val main = activity as? MainActivity
             dismiss()
             main?.openShopFragment()
         }
 
         binding.btnNoThanks.setOnClickListener {
+            logClosed(AnalyticsLogger.PROMO_NO_THANKS)
             dismiss()
         }
+    }
+
+    /**
+     * Geri tuşu ve panel dışına dokunma. `onDismiss` DEĞİL: o, yapılandırma değişikliğinde ve
+     * uygulama öldürülürken de çalışıp sahte "kapattı" kaydı düşürürdü.
+     */
+    override fun onCancel(dialog: DialogInterface) {
+        super.onCancel(dialog)
+        logClosed(AnalyticsLogger.PROMO_DISMISSED)
+    }
+
+    /** İlk çağrı kazanır: düğme kendi sonucunu bildirdikten sonra gelen `onCancel` sayılmaz. */
+    private fun logClosed(outcome: String) {
+        if (closeLogged || shownAtMs == 0L) return
+        closeLogged = true
+        AnalyticsLogger.logAskQuestionPromoClosed(
+            trigger = trigger,
+            viewNo = viewNoBucket,
+            outcome = outcome,
+            dwellMs = SystemClock.elapsedRealtime() - shownAtMs,
+        )
     }
 
     private fun playSounds() {
@@ -131,5 +176,23 @@ class AskQuestionOpenFragment : DialogFragment() {
         energicMusic = null
         crowdCheer = null
         _binding = null
+    }
+
+    companion object {
+        private const val ARG_TRIGGER = "trigger"
+
+        /**
+         * @param trigger [AnalyticsLogger.PROMO_TRIGGER_AUTO] (ders dönüşü sayacı doldu) ya da
+         *   [AnalyticsLogger.PROMO_TRIGGER_OUT_OF_CREDITS] (kullanıcı "öğretmene sor"a bastı
+         *   ama kredisi yoktu). Ölçümde bu ikisi asla birleştirilmemeli.
+         */
+        fun newInstance(trigger: String): AskQuestionOpenFragment {
+            // Fragment'ı alıcı yapan bir apply KULLANILMIYOR: blok içinde `trigger` hem
+            // parametre hem de aynı adlı property olurdu. Kotlin parametreyi seçer ama okuyan
+            // bunu her seferinde çözmek zorunda kalır.
+            val fragment = AskQuestionOpenFragment()
+            fragment.arguments = Bundle().apply { putString(ARG_TRIGGER, trigger) }
+            return fragment
+        }
     }
 }

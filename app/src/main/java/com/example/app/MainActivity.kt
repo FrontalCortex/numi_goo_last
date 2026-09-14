@@ -2968,7 +2968,9 @@ class MainActivity : AppCompatActivity() {
         }
         GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
         logMapTouchDiag("askQuestionPromo", "SHOW", "caller=$caller count=$count attempt=$attempt")
-        AskQuestionOpenFragment().show(supportFragmentManager, "AskQuestionOpen")
+        AskQuestionOpenFragment
+            .newInstance(AnalyticsLogger.PROMO_TRIGGER_AUTO)
+            .show(supportFragmentManager, "AskQuestionOpen")
         // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
         binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
     }

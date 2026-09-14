@@ -62,6 +62,9 @@ object AnalyticsLogger {
     private const val EV_ENERGY_REFILL = "energy_refill"
     private const val EV_AD_SKIP_SHOWN = "ad_skip_shown"
     private const val EV_AD_SKIP_CLOSED = "ad_skip_closed"
+    private const val EV_ASK_QUESTION_PROMO_SHOWN = "ask_question_promo_shown"
+    private const val EV_ASK_QUESTION_PROMO_CLOSED = "ask_question_promo_closed"
+    private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -120,6 +123,8 @@ object AnalyticsLogger {
     private const val P_DWELL_MS = "dwell_ms"
     private const val P_OUTCOME = "outcome"
     private const val P_PRODUCT_ID = "product_id"
+    private const val P_TRIGGER = "trigger"
+    private const val P_PRO_ENTRY_POINT = "pro_entry_point"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -156,6 +161,34 @@ object AnalyticsLogger {
     const val AD_SKIP_NO_THANKS = "no_thanks"
     /** Geri tuşu veya panel dışına dokunma. */
     const val AD_SKIP_DISMISSED = "dismissed"
+
+    // ── Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]) ────────────────
+    // Ekran iki bambaşka durumda çıkıyor ve "hayır teşekkürler" ikisinde zıt şey demek:
+    // otomatik tanıtımda reddetmek sıradan, kredisi bittiği için gelen kullanıcıda ise
+    // istediği şeyi önüne koyduğun hâlde almaması. Birleştirilirse oran anlamsızlaşır.
+    /** Ders dönüşü sayacı eşiğe ulaştı, ekran kendiliğinden açıldı. */
+    const val PROMO_TRIGGER_AUTO = "auto_promo"
+    /** Kullanıcı "öğretmene sor"a bastı ama kredisi yoktu. */
+    const val PROMO_TRIGGER_OUT_OF_CREDITS = "out_of_credits"
+
+    /** "1 hafta ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
+    const val PROMO_TRY_FREE = "try_free"
+    /** "Bunun yerine kredi al" — abonelik değil, tek seferlik kredi isteniyor. */
+    const val PROMO_BUY_CREDITS = "buy_credits"
+    /** "Hayır teşekkürler" düğmesi. */
+    const val PROMO_NO_THANKS = "no_thanks"
+    /** Geri tuşu veya panel dışına dokunma. */
+    const val PROMO_DISMISSED = "dismissed"
+
+    // ── Pro akışının giriş kapıları ────────────────────────────────────────
+    /** Reklam sonrası panel ([AdSkipFragment]). */
+    const val PRO_ENTRY_AD_SKIP = "ad_skip"
+    /** Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]). */
+    const val PRO_ENTRY_ASK_QUESTION = "ask_question"
+    /** Mağaza ([ShopFragment]). */
+    const val PRO_ENTRY_SHOP = "shop"
+    /** Kapı belirlenemedi (süreç akışın ortasında yeniden başlamış olabilir). */
+    const val PRO_ENTRY_UNKNOWN = "unknown"
 
     // ── Sandık kaynakları ───────────────────────────────────────────────────
     // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
@@ -704,6 +737,67 @@ object AnalyticsLogger {
     // ── Satın alma ──────────────────────────────────────────────────────────
 
     /**
+     * Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]) ekrana geldi.
+     *
+     * @param trigger [PROMO_TRIGGER_AUTO] veya [PROMO_TRIGGER_OUT_OF_CREDITS].
+     * @param viewNo Bu tetikleyici için kaçıncı görüş; bkz. [AskQuestionPromoStats.viewBucket].
+     */
+    fun logAskQuestionPromoShown(trigger: String, viewNo: String) = safe { fa ->
+        fa.logEvent(EV_ASK_QUESTION_PROMO_SHOWN) {
+            param(P_TRIGGER, sanitize(trigger))
+            param(P_VIEW_NO, sanitize(viewNo))
+        }
+    }
+
+    /**
+     * Tanıtım kapandı — hangi yoldan kapandığıyla birlikte.
+     *
+     * ## Neden üç çıkış yolu ayrı ayrı
+     * [PROMO_BUY_CREDITS] ayrı bir ürün sinyali: "şeyi istiyorum, aboneliği değil". Ağırlık
+     * oraya kayıyorsa ekranın "1 hafta ücretsiz dene" çerçevesi o an için yanlış demektir.
+     * Tek bir "kapattı" kaydı bu farkı yok ederdi.
+     *
+     * ## Neden onDismiss değil
+     * [AdSkipFragment] ile aynı gerekçe: `onDismiss` yapılandırma değişikliğinde ve uygulama
+     * öldürülürken de çalışıyor, sahte "kapattı" kaydı düşerdi. Düğmeler kendi sonuçlarını
+     * bildiriyor, `onCancel` ise yalnızca geri tuşu ve panel dışına dokunmada çalışıyor.
+     *
+     * @param dwellMs Ekranda kalınan ham süre. Bu ekran için kova üretilmiyor: [AdSkipFragment]
+     *   bir kesintiydi ve orada süre "okudu mu, refleksle mi kapattı" sorusunu cevaplıyordu;
+     *   burada [PROMO_TRIGGER_OUT_OF_CREDITS] durumunda kullanıcı ekrana bilerek geliyor, süre
+     *   ilgiyi değil okuma hızını ölçer. Ham değer yine de gidiyor ki ortalaması alınabilsin.
+     */
+    fun logAskQuestionPromoClosed(
+        trigger: String,
+        viewNo: String,
+        outcome: String,
+        dwellMs: Long,
+    ) = safe { fa ->
+        fa.logEvent(EV_ASK_QUESTION_PROMO_CLOSED) {
+            param(P_TRIGGER, sanitize(trigger))
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_OUTCOME, sanitize(outcome))
+            param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
+        }
+    }
+
+    /**
+     * Pro paneli ([ProDiffirentFragment]) açıldı — hunideki "kapı" adımı.
+     *
+     * ## Neden `screen_view` yetmiyor
+     * Panel dört ayrı yerden açılıyor (reklam sonrası, öğretmene sorma tanıtımı, mağazadaki iki
+     * düğme). Huni adımları ekran adıyla eşlendiğinden bu dördü tek havuzda toplanıyor ve
+     * "reklam sonrası panel işe yarıyor mu" sorusu ölçülüyor gibi görünüp ölçülmüyordu.
+     * Bu olay kapıyı taşıyor; aynı kapı [ProFlow] üzerinden satın alma olaylarına da gidiyor,
+     * böylece gösterim → ödeme ekranı → satın alma zinciri tek tabloda kapıya göre bölünebiliyor.
+     */
+    fun logProPanelShown(entryPoint: String) = safe { fa ->
+        fa.logEvent(EV_PRO_PANEL_SHOWN) {
+            param(P_PRO_ENTRY_POINT, sanitize(entryPoint))
+        }
+    }
+
+    /**
      * Play'in ödeme ekranı açıldı.
      *
      * [logPurchase]'ın paydası: ödeme ekranına kadar gidip vazgeçenlerin oranı. Pro hunisinin
@@ -714,6 +808,7 @@ object AnalyticsLogger {
     fun logPurchaseStarted(productId: String, value: Double?, currency: String?) = safe { fa ->
         fa.logEvent(EV_PURCHASE_STARTED) {
             param(P_PRODUCT_ID, sanitize(productId))
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
             if (value != null) param(FirebaseAnalytics.Param.VALUE, value)
             if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
         }
@@ -748,6 +843,7 @@ object AnalyticsLogger {
     ) = safe { fa ->
         fa.logEvent(FirebaseAnalytics.Event.PURCHASE) {
             param(P_PRODUCT_ID, sanitize(productId))
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
             if (!transactionId.isNullOrBlank()) {
                 param(FirebaseAnalytics.Param.TRANSACTION_ID, sanitize(transactionId))
             }

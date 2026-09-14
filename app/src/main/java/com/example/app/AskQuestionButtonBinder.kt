@@ -93,7 +93,9 @@ object AskQuestionButtonBinder {
                 showOutOfCreditsDialog(fragment)
             }
             !isTeacher && credits < 1 -> {
-                AskQuestionOpenFragment().show(fragment.requireActivity().supportFragmentManager, "AskQuestionOpen")
+                AskQuestionOpenFragment
+                    .newInstance(AnalyticsLogger.PROMO_TRIGGER_OUT_OF_CREDITS)
+                    .show(fragment.requireActivity().supportFragmentManager, "AskQuestionOpen")
             }
             else -> {
                 val main = fragment.activity as? MainActivity

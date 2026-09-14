@@ -67,7 +67,9 @@ class AdSkipFragment : DialogFragment() {
         binding.btnTryFree.setOnClickListener {
             logClosed(AnalyticsLogger.AD_SKIP_TRY_FREE)
             // Yeni fragmenti hemen açıyoruz
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_AD_SKIP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
             
             // Altında kalan bu fragmenti animasyon süresi kadar (yaklaşık 500ms) arkada bekletip,
             // daha sonra animasyonsuz ve sessizce kapatıyoruz. Böylece aradaki boşluk/bekleme hissi kayboluyor.

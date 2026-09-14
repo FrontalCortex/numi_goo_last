@@ -14,6 +14,13 @@ class ProDiffirentFragment : DialogFragment() {
     private var _binding: FragmentProDiffirentBinding? = null
     private val binding get() = _binding!!
 
+    /**
+     * Kullanıcının bu panele hangi kapıdan geldiği. [arguments] üzerinden taşınır, constructor'dan
+     * değil: sistem dialog'u kendi yeniden oluşturduğunda constructor parametresi kaybolurdu.
+     */
+    private val entryPoint: String
+        get() = arguments?.getString(ARG_ENTRY_POINT) ?: AnalyticsLogger.PRO_ENTRY_UNKNOWN
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
@@ -35,6 +42,10 @@ class ProDiffirentFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Kapı hem bu olaya hem de akışın devamındaki satın alma olaylarına yazılır; bkz. [ProFlow].
+        ProFlow.start(entryPoint)
+        AnalyticsLogger.logProPanelShown(entryPoint)
 
         // Title text formatting
         val titleHtml = "Pro ile daha hızlı öğren, daha fazla pratik yap!"
@@ -64,5 +75,22 @@ class ProDiffirentFragment : DialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val ARG_ENTRY_POINT = "pro_entry_point"
+
+        /**
+         * Paneli her zaman bununla aç.
+         *
+         * @param entryPoint [AnalyticsLogger.PRO_ENTRY_AD_SKIP], [AnalyticsLogger.PRO_ENTRY_ASK_QUESTION]
+         *   veya [AnalyticsLogger.PRO_ENTRY_SHOP]. Kapı bilgisi olmadan huni dört ayrı girişi tek
+         *   havuzda toplar ve hangi kapının dönüştüğü sorulamaz.
+         */
+        fun newInstance(entryPoint: String): ProDiffirentFragment {
+            val fragment = ProDiffirentFragment()
+            fragment.arguments = Bundle().apply { putString(ARG_ENTRY_POINT, entryPoint) }
+            return fragment
+        }
     }
 }

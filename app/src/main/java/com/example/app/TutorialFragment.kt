@@ -262,9 +262,9 @@ class TutorialFragment : Fragment() {
 
         /** TutorialFragment'ı her zaman bununla oluştur; doğrudan constructor tutorialNumber taşımaz. */
         fun newInstance(tutorialNumber: Int): TutorialFragment {
-            return TutorialFragment().apply {
-                arguments = Bundle().apply { putInt(ARG_TUTORIAL_NUMBER, tutorialNumber) }
-            }
+            val fragment = TutorialFragment()
+            fragment.arguments = Bundle().apply { putInt(ARG_TUTORIAL_NUMBER, tutorialNumber) }
+            return fragment
         }
     }
 

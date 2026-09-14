@@ -61,7 +61,9 @@ class ShopFragment : Fragment() {
         // (shopSuperCard ile aynı davranış). Kullanıcı neyi satın aldığını görmeden ödeme
         // akışına girmemeli.
         v.findViewById<View>(R.id.shopProCard).setOnClickListener {
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_SHOP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
         }
 
         val buyButton = v.findViewById<View>(R.id.shopBuyLifeButton)
@@ -70,7 +72,9 @@ class ShopFragment : Fragment() {
         // --- SUPER CARD ---
         val superCard = v.findViewById<View>(R.id.shopSuperCard)
         superCard?.setOnClickListener {
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_SHOP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
         }
 
         // --- Özel Teklifler ---
