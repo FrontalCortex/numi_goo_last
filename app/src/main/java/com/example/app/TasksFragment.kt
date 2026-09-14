@@ -1491,6 +1491,14 @@ class TasksFragment : Fragment() {
         forcedDigitSize: Int? = null
     ) {
         if (!isAdded) return
+
+        // Kupa yarışı da bir derstir. Buradan sayılmazsa yalnız kupa oynayan çocuk için sayaç
+        // hep 0'da kalır ve duvara çarptığında "hiç ders yapmadan engellendi" gibi görünür —
+        // ölçümde en alarm verici satır tam olarak budur, yani rapor yanlış tarafa bakar.
+        // Harita dersinden farklı olarak can yarışın başında değil sonunda (bırakma/yanlış)
+        // harcanır; bu yüzden artış burada, o olaylardan önce olur.
+        EnergySessionCounter.onLessonStarted()
+
         val activity = requireActivity()
         val lessonItem = CupRuleEngine.buildLessonItem(
             cupScore = cupScore, 

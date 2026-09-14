@@ -37,7 +37,12 @@ object EnergySessionCounter {
     @Volatile
     private var backgroundedAtMs: Long = 0L
 
-    /** Haritadan bir ders başlatıldı. Enerji harcansın harcanmasın sayılır. */
+    /**
+     * Bir ders başlatıldı. Enerji harcansın harcanmasın sayılır.
+     *
+     * İki çağrı yeri var ve ikisi de şart: haritadan açılan ders (bölüm 1-8) ve kupa yarışı
+     * (bölüm 9). Kupa tarafı eksik kalırsa yalnız kupa oynayan çocuk için sayaç hep 0'da kalır.
+     */
     fun onLessonStarted() {
         lessonsStarted++
     }
