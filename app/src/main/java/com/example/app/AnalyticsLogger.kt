@@ -62,6 +62,12 @@ object AnalyticsLogger {
     private const val EV_ENERGY_REFILL = "energy_refill"
     private const val EV_AD_SKIP_SHOWN = "ad_skip_shown"
     private const val EV_AD_SKIP_CLOSED = "ad_skip_closed"
+    /**
+     * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
+     * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
+     * bu yüzden özel bir ad uydurmuyoruz.
+     */
+    private const val EV_PURCHASE_STARTED = "purchase_started"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -113,6 +119,7 @@ object AnalyticsLogger {
     private const val P_DWELL_BUCKET = "dwell_bucket"
     private const val P_DWELL_MS = "dwell_ms"
     private const val P_OUTCOME = "outcome"
+    private const val P_PRODUCT_ID = "product_id"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -691,6 +698,61 @@ object AnalyticsLogger {
             param(P_DWELL_BUCKET, sanitize(dwellBucket))
             param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
             param(P_OUTCOME, sanitize(outcome))
+        }
+    }
+
+    // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Play'in ödeme ekranı açıldı.
+     *
+     * [logPurchase]'ın paydası: ödeme ekranına kadar gidip vazgeçenlerin oranı. Pro hunisinin
+     * son boşluğu burası — `PlanFragment`'e ulaşmakla parayı ödemek arasındaki fark.
+     *
+     * Hem abonelikler hem altın/anahtar paketleri buradan geçer; ayrımı [productId] taşır.
+     */
+    fun logPurchaseStarted(productId: String, value: Double?, currency: String?) = safe { fa ->
+        fa.logEvent(EV_PURCHASE_STARTED) {
+            param(P_PRODUCT_ID, sanitize(productId))
+            if (value != null) param(FirebaseAnalytics.Param.VALUE, value)
+            if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
+        }
+    }
+
+    /**
+     * Play satın almayı onayladı — asıl dönüşüm.
+     *
+     * ## Neden gerekli (Play Console zaten geliri gösteriyor)
+     * Play Console "kaç abone, ne kadar gelir" der ama satın almayı kullanıcının yolculuğuna
+     * bağlayamaz. Bu olay sayesinde "satın alanların kaçı enerji duvarına çarpmıştı", "kaçı Pro
+     * panelini üçüncü kez görmüştü", "hangi kanaldan gelmişlerdi" soruları sorulabilir hâle gelir.
+     *
+     * ## Nereden çağrıldığı önemli
+     * `BillingManager.onPurchasesUpdated` — Play'in "az önce bir satın alma işlemi bitti"
+     * geri çağırımı. `processPurchase`'tan çağrılamaz: `refreshPurchases()` uygulama her
+     * açıldığında Play'de duran AKTİF ABONELİĞİ tekrar oraya sokuyor, yani tek bir aboneden
+     * ayda otuz satın alma kaydedilirdi. `queryPurchasesAsync` bu geri çağırımı tetiklemez.
+     *
+     * Bedeli: uygulama kapalıyken tamamlanan (nadir) bir satın alma yalnızca
+     * `refreshPurchases` ile işlenir ve ölçüme girmez. Eksik saymak, otuz kat fazla saymaktan
+     * iyidir.
+     *
+     * @param transactionId Play sipariş numarası. GA4 aynı numaralı satın almaları tekilleştirir;
+     *   geri çağırım iki kez gelse bile gelir iki kez sayılmaz.
+     */
+    fun logPurchase(
+        productId: String,
+        transactionId: String?,
+        value: Double?,
+        currency: String?,
+    ) = safe { fa ->
+        fa.logEvent(FirebaseAnalytics.Event.PURCHASE) {
+            param(P_PRODUCT_ID, sanitize(productId))
+            if (!transactionId.isNullOrBlank()) {
+                param(FirebaseAnalytics.Param.TRANSACTION_ID, sanitize(transactionId))
+            }
+            if (value != null) param(FirebaseAnalytics.Param.VALUE, value)
+            if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
         }
     }
 

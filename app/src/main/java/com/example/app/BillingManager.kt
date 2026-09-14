@@ -186,6 +186,28 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
      * Aboneliklerde SON fiyat aşaması okunur: deneme/tanıtım aşamalarından sonraki, kullanıcının
      * asıl ödeyeceği tutar budur.
      */
+    /**
+     * Ürünün ham fiyatı (mikro cinsinden) ve para birimi; ölçümde `value`/`currency` için.
+     *
+     * [formattedPrice] ile aynı yapıyı izler: tek seferlik ürünlerde
+     * `oneTimePurchaseOfferDetails`, aboneliklerde [bestOffer]'ın SON fiyat aşaması — ücretsiz
+     * deneme ilk aşamada 0 olduğu için ilk aşamayı almak aboneliği bedava göstermiş olurdu.
+     */
+    private fun priceAmountOf(productId: String): Pair<Long, String>? {
+        val details = productDetails[productId] ?: return null
+        details.oneTimePurchaseOfferDetails?.let {
+            return it.priceAmountMicros to it.priceCurrencyCode
+        }
+        val phase = bestOffer(details)
+            ?.pricingPhases
+            ?.pricingPhaseList
+            ?.lastOrNull() ?: return null
+        return phase.priceAmountMicros to phase.priceCurrencyCode
+    }
+
+    /** Analytics'in beklediği birim: mikro değil, para biriminin kendisi. */
+    private fun microsToUnits(micros: Long): Double = micros / 1_000_000.0
+
     fun formattedPrice(productId: String): String? {
         val details = productDetails[productId] ?: return null
         details.oneTimePurchaseOfferDetails?.let { return it.formattedPrice }
@@ -361,7 +383,16 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
             Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
             onError?.invoke("Satın alma başlatılamadı.")
+            return
         }
+        // Ölçüm, ekranın gerçekten açıldığı yerde: yukarıdaki erken çıkışlar (ürün bilgisi yok,
+        // teklif token'ı yok, Play akışı reddetti) "vazgeçti" sayılmamalı, hiç başlamadılar.
+        val price = priceAmountOf(details.productId)
+        AnalyticsLogger.logPurchaseStarted(
+            productId = details.productId,
+            value = price?.first?.let { microsToUnits(it) },
+            currency = price?.second,
+        )
     }
 
     // ── Satın alma sonuçları ────────────────────────────────────────────────
@@ -369,7 +400,10 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                purchases?.forEach { processPurchase(it) }
+                purchases?.forEach { purchase ->
+                    logPurchaseToAnalytics(purchase)
+                    processPurchase(purchase)
+                }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit // sessiz
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
@@ -381,6 +415,27 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
                 onError?.invoke("Satın alma tamamlanamadı.")
             }
         }
+    }
+
+    /**
+     * Satın almayı ölçüme bildirir.
+     *
+     * **Yalnızca [onPurchasesUpdated]'dan çağrılır, [processPurchase]'tan DEĞİL.**
+     * [refreshPurchases] uygulama her açıldığında Play'de duran aktif aboneliği tekrar
+     * `processPurchase`'a sokuyor; ölçüm oraya konsaydı tek bir aboneden ayda otuz satın alma
+     * kaydedilirdi. `queryPurchasesAsync` bu geri çağırımı tetiklemez, `launchBillingFlow`
+     * tetikler — yani burası "az önce ödeme yapıldı" anlamına gelen tek yer.
+     */
+    private fun logPurchaseToAnalytics(purchase: Purchase) {
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        val productId = purchase.products.firstOrNull() ?: return
+        val price = priceAmountOf(productId)
+        AnalyticsLogger.logPurchase(
+            productId = productId,
+            transactionId = purchase.orderId,
+            value = price?.first?.let { microsToUnits(it) },
+            currency = price?.second,
+        )
     }
 
     /**
