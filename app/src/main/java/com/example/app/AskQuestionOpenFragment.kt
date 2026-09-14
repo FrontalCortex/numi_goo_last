@@ -6,10 +6,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.StyleSpan
-import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,16 +64,11 @@ class AskQuestionOpenFragment : DialogFragment() {
 
         playSounds()
 
-        val buttonText = "1 hafta ücretsiz dene"
-        val spannable = SpannableString(buttonText)
-        val boldStart = buttonText.indexOf("ücretsiz")
-        spannable.setSpan(
-            StyleSpan(Typeface.BOLD),
-            boldStart,
-            boldStart + "ücretsiz".length,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-        binding.tryFreeText.text = spannable
+        // Metin SABİT YAZILMAZ: Play ücretsiz denemeyi Google hesabı başına bir kez veriyor.
+        // Daha önce abone olmuş kullanıcı "1 hafta ücretsiz dene" yazan düğmeye bastığında ilk
+        // gün ücretlendiriliyordu — parayla ilgili yanlış bir vaat. [SubscriptionCta] tam olarak
+        // bunun için yazılmış ve diğer dört abonelik ekranında kullanılıyor; burası atlanmıştı.
+        SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.tryFreeText)
 
         binding.btnTryFree.setOnClickListener {
             logClosed(AnalyticsLogger.PROMO_TRY_FREE)
