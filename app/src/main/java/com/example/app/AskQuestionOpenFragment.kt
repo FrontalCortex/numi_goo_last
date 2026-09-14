@@ -28,6 +28,9 @@ class AskQuestionOpenFragment : DialogFragment() {
     private var viewNoBucket: String = ""
     private var closeLogged = false
 
+    /** Cihaz Pro hoş geldin kredisini hâlâ alabiliyor mu; ekranın düzenini bu belirliyor. */
+    private var welcomeCreditAvailable: Boolean = true
+
     private var pop1: MediaPlayer? = null
     private var pop2: MediaPlayer? = null
     private var energicMusic: MediaPlayer? = null
@@ -56,50 +59,101 @@ class AskQuestionOpenFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        welcomeCreditAvailable = WelcomeCreditEligibility.isEligible(requireContext())
+
         viewNoBucket = AskQuestionPromoStats.viewBucket(
             AskQuestionPromoStats.nextViewNo(requireContext(), trigger),
         )
         shownAtMs = SystemClock.elapsedRealtime()
-        AnalyticsLogger.logAskQuestionPromoShown(trigger = trigger, viewNo = viewNoBucket)
+        AnalyticsLogger.logAskQuestionPromoShown(
+            trigger = trigger,
+            viewNo = viewNoBucket,
+            welcomeCreditAvailable = welcomeCreditAvailable,
+        )
 
-        playSounds()
-
-        // Metin SABİT YAZILMAZ: Play ücretsiz denemeyi Google hesabı başına bir kez veriyor.
-        // Daha önce abone olmuş kullanıcı "1 hafta ücretsiz dene" yazan düğmeye bastığında ilk
-        // gün ücretlendiriliyordu — parayla ilgili yanlış bir vaat. [SubscriptionCta] tam olarak
-        // bunun için yazılmış ve diğer dört abonelik ekranında kullanılıyor; burası atlanmıştı.
-        SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.tryFreeText)
-
-        binding.btnTryFree.setOnClickListener {
-            logClosed(AnalyticsLogger.PROMO_TRY_FREE)
-            // Yeni fragmenti hemen açıyoruz
-            ProDiffirentFragment
-                .newInstance(AnalyticsLogger.PRO_ENTRY_ASK_QUESTION)
-                .show(requireActivity().supportFragmentManager, "ProDiffirent")
-
-            // Altında kalan bu fragmenti animasyon süresi kadar (yaklaşık 500ms) arkada bekletip,
-            // daha sonra animasyonsuz ve sessizce kapatıyoruz. Böylece aradaki boşluk/bekleme hissi kayboluyor.
-            handler.postDelayed({
-                try {
-                    dialog?.window?.setWindowAnimations(0)
-                    dismiss()
-                } catch (e: Exception) {}
-            }, 500)
+        // Kutlama YALNIZCA otomatik tanıtımda. Orada ekran beklenmedik bir hediye olarak
+        // beliriyor; diğer iki durumda kullanıcı "öğretmene sor"a basmış ve duvara çarpmış
+        // oluyor — o anda konfeti ve alkış "tebrikler, sana bir şey satacağım" gibi okunuyor.
+        if (trigger == AnalyticsLogger.PROMO_TRIGGER_AUTO) {
+            playSounds()
+        } else {
+            binding.confettiAnim.cancelAnimation()
+            binding.confettiAnim.visibility = View.GONE
         }
 
-        // Aboneliğe geçmek istemeyen kullanıcı krediyi tek seferlik de alabilir; soru sorma
-        // hakkı artık plana değil krediye bağlı (bkz. AskQuestionButtonBinder).
-        binding.btnBuyCredits.setOnClickListener {
-            logClosed(AnalyticsLogger.PROMO_BUY_CREDITS)
-            val main = activity as? MainActivity
-            dismiss()
-            main?.openShopFragment()
-        }
+        bindActions()
 
         binding.btnNoThanks.setOnClickListener {
             logClosed(AnalyticsLogger.PROMO_NO_THANKS)
             dismiss()
         }
+    }
+
+    /**
+     * Büyük düğmeye, kullanıcıya KREDİ GETİREN eylemi bağlar.
+     *
+     * ## Neden duruma göre değişiyor
+     * Pro aboneliği danışma kredisi olarak yalnızca bir kerelik hoş geldin kredisi veriyor
+     * (sunucuda `PRO_WELCOME_CREDITS = 1`) ve o da cihaz başına bir kez. Cihaz krediyi daha önce
+     * tükettiyse kullanıcı "Pro'ya geç"e basıp parayı öder ve **hâlâ 0 kredisi olur** — yani
+     * geldiği işi, öğretmene soru sormayı, yine yapamaz. Zaten Pro olan kullanıcı için de Pro
+     * satmanın anlamı yok.
+     *
+     * Bu yüzden kural tek: büyük düğme o an gerçekten kredi getiren eylem olur, diğeri ikincil
+     * satıra iner. Pro hiç kaybolmuyor, sadece vaadi karşılamadığı durumda öne çıkmıyor.
+     */
+    private fun bindActions() {
+        val isAlreadyPro = trigger == AnalyticsLogger.PROMO_TRIGGER_PRO_OUT_OF_CREDITS
+        val proDeliversCredit = welcomeCreditAvailable && !isAlreadyPro
+
+        if (proDeliversCredit) {
+            // Metin SABİT YAZILMAZ: Play ücretsiz denemeyi Google hesabı başına bir kez veriyor.
+            // Daha önce abone olmuş kullanıcıya "1 hafta ücretsiz dene" demek yanlış vaat olurdu.
+            SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.tryFreeText)
+            binding.btnTryFree.setOnClickListener { goToPro() }
+
+            binding.btnBuyCredits.setText(R.string.ask_promo_secondary_buy_credits)
+            binding.btnBuyCredits.setOnClickListener { goToShop() }
+            return
+        }
+
+        binding.tryFreeText.setText(R.string.ask_promo_cta_buy_credits)
+        binding.btnTryFree.setOnClickListener { goToShop() }
+
+        if (isAlreadyPro) {
+            binding.infoText.setText(R.string.ask_promo_info_pro_out_of_credits)
+            binding.btnBuyCredits.visibility = View.GONE
+            return
+        }
+
+        // Free ama hediye kredi alamıyor: Pro hâlâ teklif, ama abarttığımız bir vaat olmadan —
+        // paketlerdeki bonus gerçek ve doğrulanabilir tek fayda.
+        binding.btnBuyCredits.setText(R.string.ask_promo_secondary_pro_bonus)
+        binding.btnBuyCredits.setOnClickListener { goToPro() }
+    }
+
+    private fun goToPro() {
+        logClosed(AnalyticsLogger.PROMO_TRY_FREE)
+        // Yeni fragmenti hemen açıyoruz
+        ProDiffirentFragment
+            .newInstance(AnalyticsLogger.PRO_ENTRY_ASK_QUESTION)
+            .show(requireActivity().supportFragmentManager, "ProDiffirent")
+
+        // Altında kalan bu fragmenti animasyon süresi kadar (yaklaşık 500ms) arkada bekletip,
+        // daha sonra animasyonsuz ve sessizce kapatıyoruz. Böylece aradaki boşluk/bekleme hissi kayboluyor.
+        handler.postDelayed({
+            try {
+                dialog?.window?.setWindowAnimations(0)
+                dismiss()
+            } catch (e: Exception) {}
+        }, 500)
+    }
+
+    private fun goToShop() {
+        val main = activity as? MainActivity
+        logClosed(AnalyticsLogger.PROMO_BUY_CREDITS)
+        dismiss()
+        main?.openShopFragment()
     }
 
     /**
@@ -111,7 +165,12 @@ class AskQuestionOpenFragment : DialogFragment() {
         logClosed(AnalyticsLogger.PROMO_DISMISSED)
     }
 
-    /** İlk çağrı kazanır: düğme kendi sonucunu bildirdikten sonra gelen `onCancel` sayılmaz. */
+    /**
+     * İlk çağrı kazanır: düğme kendi sonucunu bildirdikten sonra gelen `onCancel` sayılmaz.
+     *
+     * [outcome] hangi VIEW'a basıldığına değil, nereye GİDİLDİĞİNE göre yazılır: düzen
+     * değiştiğinde büyük düğme mağazaya gidiyor ve o tıklama `buy_credits` sayılmalı.
+     */
     private fun logClosed(outcome: String) {
         if (closeLogged || shownAtMs == 0L) return
         closeLogged = true
@@ -120,6 +179,7 @@ class AskQuestionOpenFragment : DialogFragment() {
             viewNo = viewNoBucket,
             outcome = outcome,
             dwellMs = SystemClock.elapsedRealtime() - shownAtMs,
+            welcomeCreditAvailable = welcomeCreditAvailable,
         )
     }
 

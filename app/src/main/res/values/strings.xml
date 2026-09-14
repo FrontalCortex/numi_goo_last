@@ -131,4 +131,15 @@
          dizesiyle çözülemediği için (Pro'ya / Lite'a) ayrı ayrı tanımlı. -->
     <string name="sub_cta_no_trial_pro">PRO\'YA GEÇ</string>
     <string name="sub_cta_no_trial_lite">LITE\'A GEÇ</string>
+
+    <!-- Öğretmene sorma tanıtımı (AskQuestionOpenFragment) varyant metinleri.
+         Büyük düğme her zaman kullanıcıya KREDİ GETİREN eylemdir: hediye kredi alınabiliyorsa
+         Pro, alınamıyorsa doğrudan kredi satın alma. Aksi halde kullanıcı parasını ödeyip
+         geldiği işi yapamıyor. -->
+    <string name="ask_promo_cta_buy_credits">KREDİ AL</string>
+    <string name="ask_promo_secondary_buy_credits">BUNUN YERİNE KREDİ AL</string>
+    <string name="ask_promo_secondary_pro_bonus">PRO\'YA GEÇ · PAKETLERDE BONUS KREDİ</string>
+    <!-- Zaten Pro olan, kredisi biten kullanıcı için. Bonus rakamları sunucudaki
+         PRO_CREDIT_BONUS ile birlikte güncellenmelidir. -->
+    <string name="ask_promo_info_pro_out_of_credits">Danışma kredin kalmadı. Pro üyesi olduğun için 5\'li pakette 6, 10\'luda 12 kredi alırsın.</string>
 </resources>

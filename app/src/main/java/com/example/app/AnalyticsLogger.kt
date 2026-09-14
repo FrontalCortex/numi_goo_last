@@ -126,6 +126,7 @@ object AnalyticsLogger {
     private const val P_PRODUCT_ID = "product_id"
     private const val P_TRIGGER = "trigger"
     private const val P_PRO_ENTRY_POINT = "pro_entry_point"
+    private const val P_WELCOME_CREDIT = "welcome_credit"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -169,8 +170,16 @@ object AnalyticsLogger {
     // istediği şeyi önüne koyduğun hâlde almaması. Birleştirilirse oran anlamsızlaşır.
     /** Ders dönüşü sayacı eşiğe ulaştı, ekran kendiliğinden açıldı. */
     const val PROMO_TRIGGER_AUTO = "auto_promo"
-    /** Kullanıcı "öğretmene sor"a bastı ama kredisi yoktu. */
+    /** Free kullanıcı "öğretmene sor"a bastı ama kredisi yoktu. */
     const val PROMO_TRIGGER_OUT_OF_CREDITS = "out_of_credits"
+    /**
+     * PRO üyesi "öğretmene sor"a bastı ama kredisi yoktu.
+     *
+     * Ayrı bir değer çünkü bu kullanıcıya satılacak şey abonelik değil kredi; aynı kovaya
+     * konsaydı "tanıtımı görenlerin kaçı Pro'ya geçti" oranı, zaten Pro olanlarla sulanırdı.
+     * Bu durum şimdiye kadar düz bir AlertDialog'du ve hiçbir yere kaydedilmiyordu.
+     */
+    const val PROMO_TRIGGER_PRO_OUT_OF_CREDITS = "pro_out_of_credits"
 
     /** "1 hafta ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
     const val PROMO_TRY_FREE = "try_free"
@@ -742,11 +751,20 @@ object AnalyticsLogger {
      *
      * @param trigger [PROMO_TRIGGER_AUTO] veya [PROMO_TRIGGER_OUT_OF_CREDITS].
      * @param viewNo Bu tetikleyici için kaçıncı görüş; bkz. [AskQuestionPromoStats.viewBucket].
+     * @param welcomeCreditAvailable Cihaz hediye krediyi hâlâ alabiliyor mu. Ekranın hangi
+     *   düzenle açıldığını belirliyor (alabiliyorsa büyük düğme Pro, alamıyorsa kredi satın
+     *   alma). Bu ayrım kaydedilmezse `buy_credits` payındaki değişimin kullanıcı tercihinden
+     *   mi düzenden mi geldiği sonradan ayırt edilemez.
      */
-    fun logAskQuestionPromoShown(trigger: String, viewNo: String) = safe { fa ->
+    fun logAskQuestionPromoShown(
+        trigger: String,
+        viewNo: String,
+        welcomeCreditAvailable: Boolean,
+    ) = safe { fa ->
         fa.logEvent(EV_ASK_QUESTION_PROMO_SHOWN) {
             param(P_TRIGGER, sanitize(trigger))
             param(P_VIEW_NO, sanitize(viewNo))
+            param(P_WELCOME_CREDIT, if (welcomeCreditAvailable) "true" else "false")
         }
     }
 
@@ -773,12 +791,14 @@ object AnalyticsLogger {
         viewNo: String,
         outcome: String,
         dwellMs: Long,
+        welcomeCreditAvailable: Boolean,
     ) = safe { fa ->
         fa.logEvent(EV_ASK_QUESTION_PROMO_CLOSED) {
             param(P_TRIGGER, sanitize(trigger))
             param(P_VIEW_NO, sanitize(viewNo))
             param(P_OUTCOME, sanitize(outcome))
             param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
+            param(P_WELCOME_CREDIT, if (welcomeCreditAvailable) "true" else "false")
         }
     }
 

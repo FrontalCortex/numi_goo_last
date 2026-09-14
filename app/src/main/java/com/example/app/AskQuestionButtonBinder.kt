@@ -90,7 +90,12 @@ object AskQuestionButtonBinder {
                 showMessage(fragment, R.string.ask_question_teacher_not_approved)
             }
             !isTeacher && credits < 1 && hasProPlan -> {
-                showOutOfCreditsDialog(fragment)
+                // Pro üyesine de aynı ekran açılıyor, yalnızca kredi satın alma düzeniyle.
+                // Eskiden düz bir AlertDialog'du: tasarımsızdı ve hiçbir yere kaydedilmiyordu,
+                // yani kaç Pro üyesinin kredisiz kaldığı hiç görülmüyordu.
+                AskQuestionOpenFragment
+                    .newInstance(AnalyticsLogger.PROMO_TRIGGER_PRO_OUT_OF_CREDITS)
+                    .show(fragment.requireActivity().supportFragmentManager, "AskQuestionOpen")
             }
             !isTeacher && credits < 1 -> {
                 AskQuestionOpenFragment
@@ -103,27 +108,6 @@ object AskQuestionButtonBinder {
                 onAllowedClick()
             }
         }
-    }
-
-    /**
-     * Kredisi biten Pro üyesine gösterilir.
-     *
-     * Doğrudan mağazaya atmak yerine tek cümlelik bir açıklama veriliyor: kullanıcının
-     * niyeti soru sormaktı, açıklamasız bir sıçrama hata gibi görünür ve mağazanın hangi
-     * bölümüne bakması gerektiğini de bilemez.
-     */
-    private fun showOutOfCreditsDialog(fragment: Fragment) {
-        AlertDialog.Builder(fragment.requireContext())
-            .setTitle("Danışma kredin kalmadı")
-            .setMessage(
-                "Öğretmene soru sormak için krediye ihtiyacın var. " +
-                    "Pro üyesi olduğun için kredi paketlerinde bonus kredi kazanıyorsun."
-            )
-            .setNegativeButton("Vazgeç", null)
-            .setPositiveButton("Mağazaya git") { _, _ ->
-                (fragment.activity as? MainActivity)?.openShopFragment()
-            }
-            .show()
     }
 
     private fun showMessage(fragment: Fragment, messageResId: Int) {

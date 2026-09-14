@@ -2858,9 +2858,11 @@ class MainActivity : AppCompatActivity() {
      *
      * Son koşulun sebebi: AskQuestionOpenFragment'ın vaadi öğretmene soru sormak. Cihaz
      * krediyi daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı) kullanıcı denemeyi
-     * başlatsa bile kredi almıyor — Pro oluyor ama soru soramıyor, karşısına
-     * showOutOfCreditsDialog çıkıyor. O kullanıcıya bu tanıtımı OTOMATİK açmak, ekranın tek
-     * işlevini teslim etmemek olur.
+     * başlatsa bile kredi almıyor — Pro oluyor ama soru soramıyor. O kullanıcıya bu tanıtımı
+     * OTOMATİK açmak, ekranın tek işlevini teslim etmemek olur.
+     *
+     * Butonla açılan yolda ekran yine gösteriliyor ama düzeni değişiyor: büyük düğme Pro değil
+     * kredi satın alma oluyor (bkz. AskQuestionOpenFragment.bindActions).
      *
      * Butona basarak açma yolu (AskQuestionButtonBinder) bu koşula tabi değil: orada niyet
      * kullanıcıdan geliyor ve ekranın "BUNUN YERİNE KREDİ AL" seçeneği ona doğru yolu
