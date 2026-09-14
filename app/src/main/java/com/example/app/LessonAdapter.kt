@@ -369,7 +369,7 @@ class LessonAdapter(
             (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     activity.supportFragmentManager.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
 
@@ -484,7 +484,7 @@ class LessonAdapter(
                     (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 }
@@ -499,7 +499,7 @@ class LessonAdapter(
                     (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
                         .setCustomAnimations(slideIn, slideOut)
-                        .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+                        .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 }

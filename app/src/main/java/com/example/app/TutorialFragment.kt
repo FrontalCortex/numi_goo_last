@@ -48,7 +48,17 @@ import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
 import kotlin.math.roundToInt
 
-class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
+class TutorialFragment : Fragment() {
+    /**
+     * Hangi öğreticinin gösterileceği. Constructor parametresi DEĞİL, [arguments] üzerinden taşınır:
+     * sistem fragment'ı kendisi yeniden oluşturduğunda (arka planda süreç öldürülüp geri dönülmesi,
+     * "Etkinlikleri saklama" açıkken ekran değişimi) parametresiz constructor çağrılır ve
+     * constructor'a verilen değer kaybolurdu; kullanıcı yanlış öğreticinin adımlarını görür,
+     * ölçüm de yanlış tutorial numarasına yazılırdı. arguments ise kayıtla birlikte geri gelir.
+     */
+    private val tutorialNumber: Int
+        get() = arguments?.getInt(ARG_TUTORIAL_NUMBER, DEFAULT_TUTORIAL_NUMBER)
+            ?: DEFAULT_TUTORIAL_NUMBER
     private lateinit var currentTutorialSteps: List<TutorialStep>
     private var lessonItem: LessonItem? = null
     /** Soru adımlarının index → ölçüm kimliği eşlemesi; [buildStepAnalyticsInfo] doldurur. */
@@ -247,8 +257,14 @@ class TutorialFragment(private val tutorialNumber: Int = 1) : Fragment() {
         private val INFO_REQUEST_TINT_LIGHT = Color.parseColor("#DFF0D4")
         private const val INFO_REQUEST_BREATH_SCALE_DELTA = 0.14f
 
+        private const val ARG_TUTORIAL_NUMBER = "tutorial_number"
+        private const val DEFAULT_TUTORIAL_NUMBER = 1
+
+        /** TutorialFragment'ı her zaman bununla oluştur; doğrudan constructor tutorialNumber taşımaz. */
         fun newInstance(tutorialNumber: Int): TutorialFragment {
-            return TutorialFragment(tutorialNumber)
+            return TutorialFragment().apply {
+                arguments = Bundle().apply { putInt(ARG_TUTORIAL_NUMBER, tutorialNumber) }
+            }
         }
     }
 

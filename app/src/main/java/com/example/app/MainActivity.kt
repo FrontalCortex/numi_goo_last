@@ -772,7 +772,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.abacusFragmentContainer.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction()
-            .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+            .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
             .addToBackStack(null)
             .commit()
         logFirstTutorial(
