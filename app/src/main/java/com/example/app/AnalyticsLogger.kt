@@ -65,6 +65,7 @@ object AnalyticsLogger {
     private const val EV_ASK_QUESTION_PROMO_SHOWN = "ask_question_promo_shown"
     private const val EV_ASK_QUESTION_PROMO_CLOSED = "ask_question_promo_closed"
     private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
+    private const val EV_PLAN_SHOWN = "plan_shown"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -794,6 +795,24 @@ object AnalyticsLogger {
     fun logProPanelShown(entryPoint: String) = safe { fa ->
         fa.logEvent(EV_PRO_PANEL_SHOWN) {
             param(P_PRO_ENTRY_POINT, sanitize(entryPoint))
+        }
+    }
+
+    /**
+     * Plan seçme ekranı ([PlanFragment]) açıldı — hunideki panel ile ödeme arasındaki adım.
+     *
+     * ## Neden ayrı bir olay, `screen_view` dururken
+     * Huninin kapıya göre bölünebilmesi için HER adımın `pro_entry_point` taşıması gerekiyor:
+     * GA4 huni ayrıştırmasında bir adımı tamamlayan olay o boyutu taşımıyorsa o adım
+     * `(not set)` görünür ve ayrıştırma zincirin ortasında kopar. `screen_view` bu parametreyi
+     * taşıyamaz, çünkü merkezden ([NumiGooApplication]) gönderiliyor ve Pro akışını bilmiyor.
+     *
+     * Kapı [ProFlow]'dan okunuyor; [PlanFragment] yalnızca [ProDiffirentFragment]'tan
+     * açıldığı için değer her zaman o akışa ait.
+     */
+    fun logPlanShown() = safe { fa ->
+        fa.logEvent(EV_PLAN_SHOWN) {
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
         }
     }
 

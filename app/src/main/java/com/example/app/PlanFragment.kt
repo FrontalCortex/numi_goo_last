@@ -37,6 +37,8 @@ class PlanFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        AnalyticsLogger.logPlanShown()
+
         binding.cardBireysel.setOnClickListener {
             selectedPlan = "Pro"
             binding.cardBireysel.setBackgroundResource(R.drawable.bg_plan_bireysel)
