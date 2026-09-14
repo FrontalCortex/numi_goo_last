@@ -304,6 +304,7 @@
             app:layout_constraintTop_toBottomOf="@id/row5Text" />
 
         <TextView
+            android:id="@+id/row6Free"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
@@ -315,6 +316,7 @@
             app:layout_constraintTop_toTopOf="@id/row6Text" />
 
         <ImageView
+            android:id="@+id/row6Pro"
             android:layout_width="16dp"
             android:layout_height="16dp"
             android:src="@drawable/correct_ic2"
@@ -322,6 +324,15 @@
             app:layout_constraintEnd_toEndOf="@id/superColumnBg"
             app:layout_constraintStart_toStartOf="@id/superColumnBg"
             app:layout_constraintTop_toTopOf="@id/row6Text" />
+
+        <!-- Hoş geldin kredisi CİHAZ başına bir kez veriliyor. Cihaz krediyi tükettiyse bu
+             satır yerine getirilemeyecek bir vaat olur; ProDiffirentFragment gizliyor.
+             Group üç hücreyi birden kapatıyor: metin, Free sütunundaki "—" ve Pro tiki. -->
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/welcomeCreditRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:constraint_referenced_ids="row6Text,row6Free,row6Pro" />
 
         <!-- Button -->
         <FrameLayout

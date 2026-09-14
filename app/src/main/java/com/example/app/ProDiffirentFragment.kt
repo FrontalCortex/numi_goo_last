@@ -47,6 +47,14 @@ class ProDiffirentFragment : DialogFragment() {
         ProFlow.start(entryPoint)
         AnalyticsLogger.logProPanelShown(entryPoint)
 
+        // Hoş geldin kredisi CİHAZ başına bir kez veriliyor (sunucuda welcomeCreditGrants).
+        // Cihaz krediyi tükettiyse "Hoş geldin: 1 danışma kredisi" satırı yerine getirilemeyecek
+        // bir vaat olur: kullanıcı abone olur, krediyi alamaz, geldiği işi yapamaz. Düğme
+        // metninde düzelttiğimiz sorunun aynısı, sadece fayda listesinde.
+        if (!WelcomeCreditEligibility.isEligible(requireContext())) {
+            binding.welcomeCreditRow.visibility = View.GONE
+        }
+
         // Title text formatting
         val titleHtml = "Pro ile daha hızlı öğren, daha fazla pratik yap!"
         binding.tvTitle.text = Html.fromHtml(titleHtml, Html.FROM_HTML_MODE_LEGACY)

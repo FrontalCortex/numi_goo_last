@@ -138,7 +138,8 @@
          geldiği işi yapamıyor. -->
     <string name="ask_promo_cta_buy_credits">KREDİ AL</string>
     <string name="ask_promo_secondary_buy_credits">BUNUN YERİNE KREDİ AL</string>
-    <string name="ask_promo_secondary_pro_bonus">PRO\'YA GEÇ · PAKETLERDE BONUS KREDİ</string>
+    <!-- formatted="false": metindeki % aapt tarafından biçim belirteci sanılmasın. -->
+    <string name="ask_promo_secondary_pro_bonus" formatted="false">PRO\'YA GEÇ · KREDİLERDE %20 BONUS</string>
     <!-- Zaten Pro olan, kredisi biten kullanıcı için. Bonus rakamları sunucudaki
          PRO_CREDIT_BONUS ile birlikte güncellenmelidir. -->
     <string name="ask_promo_info_pro_out_of_credits">Danışma kredin kalmadı. Pro üyesi olduğun için 5\'li pakette 6, 10\'luda 12 kredi alırsın.</string>

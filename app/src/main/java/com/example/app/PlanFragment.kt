@@ -39,6 +39,14 @@ class PlanFragment : DialogFragment() {
 
         AnalyticsLogger.logPlanShown()
 
+        // Hoş geldin kredisi CİHAZ başına bir kez veriliyor (sunucuda welcomeCreditGrants).
+        // Cihaz krediyi tükettiyse "Hoş geldin: 1 danışma kredisi" satırı yerine getirilemeyecek
+        // bir vaat olur: kullanıcı abone olur, krediyi alamaz, geldiği işi yapamaz. Düğme
+        // metninde düzelttiğimiz sorunun aynısı, sadece fayda listesinde.
+        if (!WelcomeCreditEligibility.isEligible(requireContext())) {
+            binding.welcomeCreditRow.visibility = View.GONE
+        }
+
         binding.cardBireysel.setOnClickListener {
             selectedPlan = "Pro"
             binding.cardBireysel.setBackgroundResource(R.drawable.bg_plan_bireysel)

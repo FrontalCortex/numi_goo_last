@@ -144,7 +144,9 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <!-- Hoş geldin kredisi CİHAZ başına bir kez; cihaz tükettiyse PlanFragment gizler. -->
             <LinearLayout
+                android:id="@+id/welcomeCreditRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
