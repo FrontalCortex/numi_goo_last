@@ -7,13 +7,23 @@ import android.widget.ImageView
 import com.example.app.R
 
 /**
- * Geçici teşhis logları — sorun netleşince [ENABLED] = false yapın veya dosyayı kaldırın.
- * Logcat filtresi: TutorialBeadDiag
+ * Boncuk teşhis logları. Logcat filtresi: TutorialBeadDiag
+ *
+ * Yalnızca debug derlemesinde çalışır. [rod3Snapshot] / [rod4Snapshot] her çağrıda
+ * `getIdentifier` ile kaynak adı araması yapıyor; bu ucuz bir işlem değil ve release'de
+ * kullanıcıya hiçbir faydası yok.
  */
 object TutorialBeadDiagnostics {
     const val TAG = "TutorialBeadDiag"
-    /** Teşhis bitince false yapın. */
-    const val ENABLED = true
+
+    /**
+     * Debug'da açık, release'de kapalı.
+     *
+     * `const val` değil çünkü `BuildConfig.DEBUG` derleme zamanı sabiti değildir. Release'de
+     * değer false olduğu için gövdeler çalışmaz; R8 ayrıca çağrıları ve onlara verilen
+     * string birleştirmelerini eler.
+     */
+    val ENABLED = BuildConfig.DEBUG
 
     fun log(message: String) {
         if (ENABLED) Log.d(TAG, message)

@@ -199,18 +199,17 @@ class AbacusBeadController(
             topDown[rod] = digit >= 5
         }
         logInternalState("applyInternalStateFromValue($value) applyAppearance=$applyAppearance")
+        // Koşullarda teşhis bayrağı ARANMAZ. Daha önce ilk iki dal `&& ENABLED` taşıyordu;
+        // bayrak kapatılsaydı animasyon sırasında bile son dala düşülüp updateAllAppearance()
+        // çağrılırdı — yani erteleme mantığı log ayarına bağlı hâle gelmişti.
         when {
-            !applyAppearance && TutorialBeadDiagnostics.ENABLED -> {
-                TutorialBeadDiagnostics.log(
-                    "applyInternalStateFromValue: skipped updateAllAppearance",
-                )
-            }
-            shouldDeferAppearanceDuringSync() && TutorialBeadDiagnostics.ENABLED -> {
-                TutorialBeadDiagnostics.log(
-                    "applyInternalStateFromValue: skipped updateAllAppearance (animation)",
-                )
-            }
-            applyAppearance -> updateAllAppearance()
+            !applyAppearance -> TutorialBeadDiagnostics.log(
+                "applyInternalStateFromValue: skipped updateAllAppearance",
+            )
+            shouldDeferAppearanceDuringSync() -> TutorialBeadDiagnostics.log(
+                "applyInternalStateFromValue: skipped updateAllAppearance (animation)",
+            )
+            else -> updateAllAppearance()
         }
     }
 
@@ -303,18 +302,15 @@ class AbacusBeadController(
             }
         }
 
+        // Bayrak burada da koşuldan çıkarıldı; bkz. applyInternalStateFromValue.
         when {
-            !applyAppearance && TutorialBeadDiagnostics.ENABLED -> {
-                TutorialBeadDiagnostics.log(
-                    "syncStateFromUi: skipped updateAllAppearance (applyAppearance=false)",
-                )
-            }
-            shouldDeferAppearanceDuringSync() && TutorialBeadDiagnostics.ENABLED -> {
-                TutorialBeadDiagnostics.log(
-                    "syncStateFromUi: skipped updateAllAppearance (bead animation in progress)",
-                )
-            }
-            !shouldDeferAppearanceDuringSync() && applyAppearance -> {
+            !applyAppearance -> TutorialBeadDiagnostics.log(
+                "syncStateFromUi: skipped updateAllAppearance (applyAppearance=false)",
+            )
+            shouldDeferAppearanceDuringSync() -> TutorialBeadDiagnostics.log(
+                "syncStateFromUi: skipped updateAllAppearance (bead animation in progress)",
+            )
+            else -> {
                 // #region agent log
                 com.example.app.AgentDebugLog.log(
                     hypothesisId = "H4",
