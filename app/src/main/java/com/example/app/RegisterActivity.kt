@@ -39,6 +39,13 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         const val EXTRA_FORCE_TEACHER = "extra_force_teacher"
         const val EXTRA_FORCE_STUDENT = "extra_force_student"
         const val EXTRA_BIRTH_YEAR = "extra_birth_year"
+
+        /**
+         * Hesabın "az önce açıldı" sayılacağı pencere. Yeni kayıtta Auth kaydı saniyeler
+         * önce oluşur; mevcut bir hesapla giriş yapıldığında günler/aylar öncesidir. Pencere
+         * bol tutuldu çünkü ağ gecikmesi ve saat kayması araya girebiliyor.
+         */
+        private const val NEW_ACCOUNT_WINDOW_MS = 2 * 60 * 1000L
     }
 
     private var currentForcedRole: ForcedRole = ForcedRole.STUDENT
@@ -442,6 +449,34 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
     }
     
+    /**
+     * Google ile kayıt tamamlandıysa huninin son adımını bildirir.
+     *
+     * ## Neden gerekiyordu
+     * Google yolu OTP akışını tamamen atlıyor: [handleGoogleSignInResult] başarılı olunca
+     * doğrudan MainActivity'ye gidiliyor. Ölçüm yalnızca OTP dalında olduğu için Google ile
+     * kaydolan kullanıcı hunide "e-posta adımında düştü" görünüyordu — oysa hesabını açmıştı.
+     * Google ile kayıt yaygınsa son adım olduğundan düşük çıkar ve "OTP ekranında herkesi
+     * kaybediyorum" gibi yanlış bir sonuca götürür.
+     *
+     * ## Neden hesap yaşına bakılıyor
+     * Bu dal hem YENİ kayıt hem de mevcut bir Google hesabıyla GİRİŞ olabiliyor;
+     * `handleGoogleSignInResult` geri çağırımı ikisini ayırmıyor ve AuthManager'ın ortak
+     * imzasını bunun için değiştirmek istemedik. Firebase Auth'un `creationTimestamp`'i ayrımı
+     * zaten taşıyor: yeni açılan hesapta saniyeler, mevcut hesapta günler öncesi. Girişleri
+     * kayıt saymak huniyi şişirirdi — OTP dalında da aynı ayrımı yapıyoruz (zaten kayıtlı
+     * e-postaya kod gönderilmesi `otp_sent` üretmiyor).
+     */
+    private fun logSignupCompletedIfNewAccount() {
+        val createdAt = FirebaseAuth.getInstance().currentUser?.metadata?.creationTimestamp ?: return
+        val ageMs = System.currentTimeMillis() - createdAt
+        if (ageMs !in 0..NEW_ACCOUNT_WINDOW_MS) return
+        AnalyticsLogger.logSignupStep(
+            AnalyticsLogger.SIGNUP_COMPLETED,
+            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+        )
+    }
+
     private fun signInWithGoogle() {
         android.util.Log.d("RegisterActivity", "signInWithGoogle() çağrıldı - kayıt için")
         
@@ -510,6 +545,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (success) {
                     // Google Sign-In ile gelen kullanıcılar otomatik öğrenci olarak kaydedilir/giriş yapar
                     android.util.Log.d("RegisterActivity", "Google ile işlem başarılı, MainActivity'ye yönlendiriliyor")
+                    logSignupCompletedIfNewAccount()
                     setResult(RESULT_OK)
                     startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                     finish()
