@@ -29,30 +29,77 @@ object AskQuestionButtonBinder {
             return
         }
 
+        val uid = currentUser.uid
         FirebaseFirestore.getInstance()
             .collection("users")
-            .document(currentUser.uid)
+            .document(uid)
             .get()
             .addOnSuccessListener { doc ->
                 if (!fragment.isAdded) return@addOnSuccessListener
                 applyVisible(button, onVisibleChanged, onReadyForBounce)
-                button.setOnClickListener {
-                    SessionDeviceManager.requireLoggedInAndSingleDevice(fragment) {
-                        handleClick(fragment, doc, isTeacher, onAllowedClick)
-                    }
-                }
+                bindClick(fragment, button, uid, doc, isTeacher, onAllowedClick)
             }
             .addOnFailureListener {
                 if (!fragment.isAdded) return@addOnFailureListener
                 applyVisible(button, onVisibleChanged, onReadyForBounce)
-                button.setOnClickListener {
-                    SessionDeviceManager.requireLoggedInAndSingleDevice(fragment) {
-                        val main = fragment.activity as? MainActivity
-                        if (main?.isQuestionRecordingInProgress() == true) return@requireLoggedInAndSingleDevice
-                        onAllowedClick()
-                    }
-                }
+                bindClick(fragment, button, uid, cachedDoc = null, isTeacher = isTeacher, onAllowedClick = onAllowedClick)
             }
+    }
+
+    /**
+     * Tıklamayı bağlar ve kullanıcı dokümanını **tıklama anında** yeniden okur.
+     *
+     * ## Neden bağlanma anındaki kopya yetmiyor
+     * [bind] fragment'ın onViewCreated'ında çalışıyor, mağaza ise `.add()` ile açılıyor — yani
+     * harita altta canlı kalıyor ve geri dönüşte onViewCreated bir daha çalışmıyor. Doküman
+     * tıklama kapanışında donsaydı şu olurdu: çocuk krediyi satın alır, geri döner, "öğretmene
+     * sor"a basar ve donmuş kopya hâlâ "kredin yok" der. Parasını ödemiş kullanıcıya satın alma
+     * tanıtımını yeniden açmak.
+     *
+     * Aynı bayatlık iki yerde daha yanlış karar ürettiriyordu: Free → Pro geçişinin hemen
+     * ardından (kullanıcı Pro olduğu hâlde Pro tanıtımı görüyordu) ve oturum ortasında
+     * kısıtlanan hesapta.
+     *
+     * ## Bedeli ve yedeği
+     * Tıklama başına bir Firestore okuması ve onun gecikmesi. Buton nadir tıklandığı için yük
+     * önemsiz. Okuma başarısız olursa [cachedDoc] kullanılır; o da yoksa eski davranışa
+     * düşülüp kullanıcı akışa bırakılır — yani hiçbir durumda bugünkünden kötüye gitmiyor.
+     */
+    private fun bindClick(
+        fragment: Fragment,
+        button: View,
+        uid: String,
+        cachedDoc: DocumentSnapshot?,
+        isTeacher: Boolean,
+        onAllowedClick: () -> Unit,
+    ) {
+        var refreshing = false
+        button.setOnClickListener {
+            SessionDeviceManager.requireLoggedInAndSingleDevice(fragment) {
+                // Okuma sürerken ikinci dokunuş iki pencere açardı.
+                if (refreshing) return@requireLoggedInAndSingleDevice
+                refreshing = true
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(uid)
+                    .get()
+                    .addOnCompleteListener { task ->
+                        refreshing = false
+                        if (!fragment.isAdded) return@addOnCompleteListener
+                        val fresh = if (task.isSuccessful) task.result else null
+                        val doc = fresh?.takeIf { it.exists() } ?: cachedDoc
+                        if (doc == null) {
+                            val main = fragment.activity as? MainActivity
+                            if (main?.isQuestionRecordingInProgress() == true) {
+                                return@addOnCompleteListener
+                            }
+                            onAllowedClick()
+                            return@addOnCompleteListener
+                        }
+                        handleClick(fragment, doc, isTeacher, onAllowedClick)
+                    }
+            }
+        }
     }
 
     private fun applyVisible(
