@@ -245,6 +245,14 @@ class OtpVerificationFragment : Fragment() {
         (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
 
         val onVerifyFailed: (String?) -> Unit = { error ->
+            // Yalnızca kayıt akışında: giriş veya şifre sıfırlamadaki yanlış kod, kayıt
+            // hunisinin sürtünmesi değil.
+            if (isRegistration) {
+                AnalyticsLogger.logSignupStep(
+                    AnalyticsLogger.SIGNUP_OTP_WRONG,
+                    AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                )
+            }
             (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
             if (forPasswordReset && wrongAttemptCooldownTimer == null) {
                 updateResendButtonState()
@@ -289,6 +297,11 @@ class OtpVerificationFragment : Fragment() {
                     acquisitionSource = acquisitionSource,
                 ) { success, error ->
                     if (success) {
+                        // Huninin son adımı: hesap gerçekten oluştu.
+                        AnalyticsLogger.logSignupStep(
+                            AnalyticsLogger.SIGNUP_COMPLETED,
+                            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                        )
                         acquisitionSource?.let { AppStatisticsManager.incrementAcquisitionSource(it) }
                         requireActivity().setResult(Activity.RESULT_OK)
                         startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))

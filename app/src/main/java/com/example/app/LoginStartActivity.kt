@@ -32,6 +32,14 @@ class LoginStartActivity : AppCompatActivity() {
         })
 
         val isTeacherMode = intent.getBooleanExtra(EXTRA_TEACHER_MODE, false)
+        // Kayıt hunisinin paydası. Öğretmen/öğrenci geçişi bu activity'yi yeniden başlattığı
+        // için rol değiştirildiğinde tekrar düşer — istenen davranış: kullanıcı diğer akışa
+        // geçmiş oluyor.
+        AnalyticsLogger.logSignupStep(
+            stage = AnalyticsLogger.SIGNUP_START,
+            role = if (isTeacherMode) AnalyticsLogger.SIGNUP_ROLE_TEACHER
+                   else AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+        )
         setupUI(isTeacherMode)
     }
 

@@ -265,7 +265,20 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     private enum class ForcedRole { STUDENT, TEACHER }
 
+    /**
+     * Formu role göre kurar ve kayıt hunisinin form adımını bildirir.
+     *
+     * Ölçüm [showEmailStep] / [showTeacherStep] içinde DEĞİL: o ikisi yalnızca kod ekranından
+     * geri dönüldüğünde çağrılıyor, formun ilk göründüğü an değil. Oraya konsaydı huninin form
+     * adımı yalnızca geri dönenleri sayar ve neredeyse boş görünürdü.
+     */
     private fun updateUIForRole(role: ForcedRole) {
+        AnalyticsLogger.logSignupStep(
+            stage = if (role == ForcedRole.TEACHER) AnalyticsLogger.SIGNUP_TEACHER_FORM
+                    else AnalyticsLogger.SIGNUP_EMAIL,
+            role = if (role == ForcedRole.TEACHER) AnalyticsLogger.SIGNUP_ROLE_TEACHER
+                   else AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+        )
         when (role) {
             ForcedRole.STUDENT -> {
                 // Öğrenci kaydı: OTP akışı
@@ -406,6 +419,12 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     authManager.resendStudentVerificationCode(email, isRegistration = true) { success, error ->
                         reenableBackAndContinue()
                         if (success) {
+                            // YALNIZCA yeni kayıt dalında. Üstteki dal zaten kayıtlı e-posta
+                            // için kod gönderiyor; o bir giriş ve huniye katılırsa payda şişer.
+                            AnalyticsLogger.logSignupStep(
+                                AnalyticsLogger.SIGNUP_OTP_SENT,
+                                AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                            )
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
                             hideKeyboard()
                             showCodeStep()

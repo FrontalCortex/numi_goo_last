@@ -87,8 +87,15 @@ class UserInfoFragment : Fragment() {
         return binding.root
     }
 
+    /** Kayıt hunisinde bu ekranın rolü; öğretmen akışı ayrı sayılmalı. */
+    private val signupRole: String
+        get() = if (forceTeacher) AnalyticsLogger.SIGNUP_ROLE_TEACHER
+                else AnalyticsLogger.SIGNUP_ROLE_STUDENT
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_AGE, signupRole)
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -167,6 +174,8 @@ class UserInfoFragment : Fragment() {
                 validatedBirthYear = currentYear - age
                 
                 hideKeyboard()
+
+                AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_SOURCE, signupRole)
 
                 currentStep = Step.SOURCE
                 binding.ageContainer.visibility = View.GONE

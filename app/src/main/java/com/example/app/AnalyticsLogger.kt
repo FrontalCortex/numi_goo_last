@@ -66,6 +66,7 @@ object AnalyticsLogger {
     private const val EV_ASK_QUESTION_PROMO_CLOSED = "ask_question_promo_closed"
     private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
     private const val EV_PLAN_SHOWN = "plan_shown"
+    private const val EV_SIGNUP_STEP = "signup_step"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -127,6 +128,8 @@ object AnalyticsLogger {
     private const val P_TRIGGER = "trigger"
     private const val P_PRO_ENTRY_POINT = "pro_entry_point"
     private const val P_WELCOME_CREDIT = "welcome_credit"
+    private const val P_SIGNUP_STAGE = "signup_stage"
+    private const val P_SIGNUP_ROLE = "signup_role"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -189,6 +192,36 @@ object AnalyticsLogger {
     const val PROMO_NO_THANKS = "no_thanks"
     /** Geri tuşu veya panel dışına dokunma. */
     const val PROMO_DISMISSED = "dismissed"
+
+    // ── Kayıt hunisinin adımları ───────────────────────────────────────────
+    // Sıra: start -> age -> source -> email/teacher_form -> otp_sent -> completed.
+    // otp_wrong huninin bir adımı DEĞİL, sürtünme sinyali: aynı kullanıcıda hem otp_wrong
+    // hem completed olabilir.
+    /** Giriş/kayıt seçim ekranı açıldı — huninin paydası. */
+    const val SIGNUP_START = "start"
+    /** Yaş soruldu. */
+    const val SIGNUP_AGE = "age"
+    /** "Bizi nereden duydun" soruldu. */
+    const val SIGNUP_SOURCE = "source"
+    /** Öğrenci e-posta formu göründü. */
+    const val SIGNUP_EMAIL = "email"
+    /** Öğretmen kayıt formu göründü. */
+    const val SIGNUP_TEACHER_FORM = "teacher_form"
+    /**
+     * Doğrulama kodu gönderildi.
+     *
+     * Yalnızca YENİ kayıtta gönderilir. Zaten kayıtlı bir e-posta yazılırsa aynı ekran koda
+     * geçer ama o bir GİRİŞ'tir; huniye katılsaydı payda şişer ve o kullanıcılar "completed"
+     * olmadığı için sahte bir terk oranı üretirdi.
+     */
+    const val SIGNUP_OTP_SENT = "otp_sent"
+    /** Yanlış kod girildi. Adım değil, sürtünme ölçüsü. */
+    const val SIGNUP_OTP_WRONG = "otp_wrong"
+    /** Hesap oluştu. */
+    const val SIGNUP_COMPLETED = "completed"
+
+    const val SIGNUP_ROLE_STUDENT = "student"
+    const val SIGNUP_ROLE_TEACHER = "teacher"
 
     // ── Pro akışının giriş kapıları ────────────────────────────────────────
     /** Reklam sonrası panel ([AdSkipFragment]). */
@@ -745,6 +778,33 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Kayıt hunisinin bir adımına ulaşıldı.
+     *
+     * ## Neden gerekli
+     * Ölçtüğümüz her şey — dersler, enerji, Pro hunisi — uygulamaya çoktan girmiş kullanıcıyı
+     * anlatıyor. Kurulumların ne kadarının kapıdan geçemediği hiç görünmüyordu; o oran
+     * bilinmeden diğer bütün metriklerin paydası sessizce bozuk kalıyor.
+     *
+     * ## Neden tek olay, adım parametresiyle
+     * Her adım ayrı bir olay olsaydı GA4'te huni kurmak için altı ayrı olay adı gerekirdi ve
+     * araya yeni bir adım eklemek her raporu elden geçirmeyi gerektirirdi. Tek olay + [stage]
+     * ile huni adımları parametre koşuluyla seçiliyor.
+     *
+     * Adımlar kullanıcı bazında sayılır; ekran döndürme veya geri dönüp tekrar ilerleme aynı
+     * kullanıcıyı ikinci kez huniye sokmaz.
+     *
+     * @param stage `SIGNUP_*` sabitlerinden biri.
+     * @param role [SIGNUP_ROLE_STUDENT] veya [SIGNUP_ROLE_TEACHER]. Öğretmen kaydı ayrı bir
+     *   akış ve çok daha az sayıda; ayrılmazsa öğrenci hunisini kirletir.
+     */
+    fun logSignupStep(stage: String, role: String) = safe { fa ->
+        fa.logEvent(EV_SIGNUP_STEP) {
+            param(P_SIGNUP_STAGE, sanitize(stage))
+            param(P_SIGNUP_ROLE, sanitize(role))
+        }
+    }
 
     /**
      * Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]) ekrana geldi.
