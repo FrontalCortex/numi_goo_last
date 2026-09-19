@@ -67,6 +67,9 @@ object AnalyticsLogger {
     private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
     private const val EV_PLAN_SHOWN = "plan_shown"
     private const val EV_SIGNUP_STEP = "signup_step"
+    private const val EV_QUESTION_ASKED = "question_asked"
+    private const val EV_QUESTION_ANSWERED = "question_answered"
+    private const val EV_QUESTION_CHAT_OPENED = "question_chat_opened"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -130,6 +133,9 @@ object AnalyticsLogger {
     private const val P_WELCOME_CREDIT = "welcome_credit"
     private const val P_SIGNUP_STAGE = "signup_stage"
     private const val P_SIGNUP_ROLE = "signup_role"
+    private const val P_MEDIA_TYPE = "media_type"
+    private const val P_WAIT_HOURS = "wait_hours"
+    private const val P_QUESTION_STATUS = "question_status"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -222,6 +228,10 @@ object AnalyticsLogger {
 
     const val SIGNUP_ROLE_STUDENT = "student"
     const val SIGNUP_ROLE_TEACHER = "teacher"
+
+    // ── Öğretmene soru akışı ───────────────────────────────────────────────
+    const val QUESTION_MEDIA_IMAGE = "image"
+    const val QUESTION_MEDIA_VIDEO = "video"
 
     // ── Pro akışının giriş kapıları ────────────────────────────────────────
     /** Reklam sonrası panel ([AdSkipFragment]). */
@@ -778,6 +788,77 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Çocuk öğretmene soru gönderdi.
+     *
+     * ## Neden gerekli
+     * Satın almayı ölçüyoruz ama o kredinin KULLANILDIĞINI ölçmüyorduk. Kredi alıp hiç
+     * sormayan bir çocuk, parasını verip ürünü raftan indirmemiş demektir; bu sessiz kayıp
+     * `purchase` sayısına bakarak fark edilmiyor.
+     *
+     * @param mediaType [QUESTION_MEDIA_IMAGE] veya [QUESTION_MEDIA_VIDEO].
+     */
+    fun logQuestionAsked(mediaType: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_ASKED) {
+            param(P_MEDIA_TYPE, sanitize(mediaType))
+        }
+    }
+
+    /**
+     * Öğretmen bir soruya İLK cevabını gönderdi.
+     *
+     * ## Neden öğretmen tarafından ölçülüyor
+     * Gerçek cevap süresini yalnızca bu an biliyor: sorunun `createdAt`'i elde ve cevap şimdi
+     * gidiyor. Çocuk tarafından ölçülseydi "öğretmen ne zaman cevapladı" değil "çocuk ne zaman
+     * açtı" ölçülürdü — bambaşka bir soru.
+     *
+     * ## Neden önemli
+     * Sorular 48 saat cevapsız kalırsa sunucu krediyi iade edip soruyu `expired` yapıyor
+     * (bkz. `QUESTION_REFUND_AFTER_MS`). Kredi geri gelse de çocuk iki gün bekleyip eli boş
+     * kalmış oluyor. Bekleme süresi uzadıkça kredi değersizleşir ve Pro yenilenmez;
+     * bu olay olmadan durum ancak iptaller başlayınca fark edilir.
+     *
+     * @param waitHours [questionWaitBucket] ile üretilmiş kova.
+     */
+    fun logQuestionAnswered(waitHours: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_ANSWERED) {
+            param(P_WAIT_HOURS, sanitize(waitHours))
+        }
+    }
+
+    /**
+     * Çocuk bir soru sohbetini açtı.
+     *
+     * @param questionStatus Sunucudaki durum: `pending`, `claimed`, `resolved`, `expired`.
+     *   `expired` satırındaki her kullanıcı, iki gün bekleyip cevap alamamış bir çocuktur —
+     *   bu tablodaki en önemli satır odur.
+     */
+    fun logQuestionChatOpened(questionStatus: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_CHAT_OPENED) {
+            param(P_QUESTION_STATUS, sanitize(questionStatus))
+        }
+    }
+
+    /**
+     * Soru sorulduktan sonra geçen sürenin GA4 kovası.
+     *
+     * Başa sıfır konuyor: GA4 metin boyutlarını alfabetik sıralıyor, `"1-3"` ile `"12-24"`
+     * yan yana yanlış diziliyor. `48+` sınırı sunucunun iade eşiğiyle aynı — o kovaya düşen
+     * cevap, kredisi çoktan iade edilmiş bir soruya gelmiş demektir.
+     */
+    fun questionWaitBucket(waitMs: Long): String {
+        val hours = waitMs / 3_600_000.0
+        return when {
+            waitMs < 0L -> "00-01"
+            hours < 1 -> "00-01"
+            hours < 3 -> "01-03"
+            hours < 12 -> "03-12"
+            hours < 24 -> "12-24"
+            hours < 48 -> "24-48"
+            else -> "48+"
+        }
+    }
 
     /**
      * Kayıt hunisinin bir adımına ulaşıldı.

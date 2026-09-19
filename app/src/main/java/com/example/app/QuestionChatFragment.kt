@@ -67,6 +67,13 @@ class QuestionChatFragment : Fragment() {
     private var questionStudentUid: String = ""
     private var questionStatus: String = ""
     private var claimedByTeacherUid: String? = null
+
+    /** Sorunun oluşturulma anı; öğretmenin cevap süresi buradan hesaplanıyor. */
+    private var questionCreatedAtMs: Long = 0L
+    /** Sohbet açılışı görünüm başına bir kez bildirilir. */
+    private var chatOpenLogged = false
+    /** Öğretmenin ilk cevabı görünüm başına bir kez bildirilir. */
+    private var answerLogged = false
     private var isTeacher = false
     private var listener: ListenerRegistration? = null
     private var questionDocListener: ListenerRegistration? = null
@@ -218,6 +225,32 @@ class QuestionChatFragment : Fragment() {
         }
     }
 
+    /**
+     * Öğretmenin bu soruya İLK cevabını ölçer.
+     *
+     * ## Neden burada
+     * [startUploadService] bütün mesaj türlerinin (metin, ses, resim, video) tek geçtiği yer;
+     * dört ayrı gönderme fonksiyonuna kanca koymak yerine buraya bir kez kondu.
+     *
+     * ## "İlk" nasıl anlaşılıyor
+     * Sunucudan gelen listede daha önce öğretmen mesajı varsa bu bir devam mesajıdır, cevap
+     * süresi değil sohbet trafiğidir. Ölçmek istediğimiz şey çocuğun BEKLEDİĞİ süre.
+     *
+     * Soru dokümanı henüz yüklenmediyse süre hesaplanamaz; o durumda bayrak yakılmıyor ki
+     * doküman geldikten sonraki ilk gönderimde ölçüm yine yapılabilsin.
+     */
+    private fun maybeLogFirstTeacherAnswer(role: String) {
+        if (answerLogged) return
+        if (role != AuthManager.ROLE_TEACHER) return
+        if (serverMessageList.any { it.senderRole == AuthManager.ROLE_TEACHER }) return
+        val createdAt = questionCreatedAtMs
+        if (createdAt <= 0L) return
+        answerLogged = true
+        AnalyticsLogger.logQuestionAnswered(
+            AnalyticsLogger.questionWaitBucket(System.currentTimeMillis() - createdAt),
+        )
+    }
+
     private fun submitMergedList() {
         if (_binding == null || !isAdded) return
         val merged = (serverMessageList + pendingMessages).sortedBy { it.createdAt?.toDate()?.time ?: 0L }
@@ -335,6 +368,7 @@ class QuestionChatFragment : Fragment() {
     ) {
         val uid = auth.currentUser?.uid ?: return
         val role = authManager.getCurrentUserType()
+        maybeLogFirstTeacherAnswer(role)
         val appContext = requireContext().applicationContext
 
         GlobalValues.uploadMetaByClientId[clientId] = PendingUploadMeta(
@@ -516,6 +550,18 @@ class QuestionChatFragment : Fragment() {
                 questionStudentUid = doc.getString("studentUid") ?: questionStudentUid
                 val newStatus = doc.getString("status") ?: StudentQuestion.STATUS_CLAIMED
                 val newClaimedBy = doc.getString("claimedByTeacherUid")
+
+                // Aşağıdaki erken çıkıştan ÖNCE okunuyor: durum değişmediğinde oraya hiç
+                // gelinmiyor ve cevap süresi hesaplanamadan kalırdı.
+                doc.getTimestamp("createdAt")?.toDate()?.time?.let { questionCreatedAtMs = it }
+
+                // Sohbet açılışı burada bildiriliyor, onViewCreated'da değil: durum sunucudan
+                // asenkron geliyor, orada henüz boş olurdu.
+                if (!isTeacher && !chatOpenLogged) {
+                    chatOpenLogged = true
+                    AnalyticsLogger.logQuestionChatOpened(newStatus)
+                }
+
                 if (newStatus == questionStatus && newClaimedBy == claimedByTeacherUid) return@addSnapshotListener
                 questionStatus = newStatus
                 claimedByTeacherUid = newClaimedBy

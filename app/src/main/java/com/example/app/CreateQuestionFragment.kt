@@ -216,6 +216,7 @@ class CreateQuestionFragment : Fragment() {
                         previewText = previewText,
                         description = description,
                         onResult = { _, _ ->
+                            AnalyticsLogger.logQuestionAsked(AnalyticsLogger.QUESTION_MEDIA_IMAGE)
                             runStudentGolfBadgeThenClose("Soru gönderildi.")
                         },
                         onFailure = { e ->
@@ -274,6 +275,7 @@ class CreateQuestionFragment : Fragment() {
                         description = description.ifEmpty { null },
                         videoDurationSec = durationSec,
                         onResult = { _, _ ->
+                            AnalyticsLogger.logQuestionAsked(AnalyticsLogger.QUESTION_MEDIA_VIDEO)
                             // Offline yok: gönderim başarılıysa yerel cache videosunu temizle.
                             runCatching { File(videoPath).delete() }
                             runStudentGolfBadgeThenClose("Soru gönderildi.")
