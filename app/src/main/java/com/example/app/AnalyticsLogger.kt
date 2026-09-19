@@ -143,6 +143,7 @@ object AnalyticsLogger {
     private const val P_UNIT_TITLE = "unit_title"
     private const val P_CUP_RESULT = "cup_result"
     private const val P_CUP_MODE = "cup_mode"
+    private const val P_CUP_QUESTION = "cup_question"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -827,12 +828,23 @@ object AnalyticsLogger {
      * birleşimleri. Zorlukları birbirinden çok farklı; tek kovada toplanırsa "kupa zor" gibi
      * kullanılamaz bir sonuç çıkar, oysa sorun tek bir modda olabilir.
      *
+     * ## Neden [cupQuestion] ayrı
+     * Aynı mod içinde soru kupa aralığına göre değişiyor: basamak sayısı, gösterilen sayı adedi
+     * ve sayılar arası süre [CupRuleEngine] tablosundan geliyor. "Körleme zor" demek yetmez —
+     * hangi aralıktaki hangi soru şeklinin zor olduğunu görmek gerekiyor.
+     *
+     * [cupMode] kaba ve okunabilir (6 değer), [cupQuestion] ince ve çok değerli. Tabloyu modla
+     * okuyup şekille derinleşmek için ikisi birden var.
+     *
      * @param result [CUP_RESULT_WIN], [CUP_RESULT_LOSS] veya [CUP_RESULT_QUIT].
+     * @param cupQuestion `r200_d1_n5_i2400` biçiminde: kupa aralığının alt sınırı, basamak,
+     *   sayı adedi, sayılar arası süre (ms).
      */
-    fun logCupRaceResult(result: String, cupMode: String) = safe { fa ->
+    fun logCupRaceResult(result: String, cupMode: String, cupQuestion: String) = safe { fa ->
         fa.logEvent(EV_CUP_RACE_RESULT) {
             param(P_CUP_RESULT, sanitize(result))
             param(P_CUP_MODE, sanitize(cupMode))
+            param(P_CUP_QUESTION, sanitize(cupQuestion))
         }
     }
 

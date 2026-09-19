@@ -2125,7 +2125,25 @@ class BlindingLessonFragment : Fragment() {
     private fun logCupRaceResultOnce(result: String) {
         if (cupResultLogged) return
         cupResultLogged = true
-        AnalyticsLogger.logCupRaceResult(result, cupModeName())
+        AnalyticsLogger.logCupRaceResult(result, cupModeName(), cupQuestionShape())
+    }
+
+    /**
+     * Sorunun şekli: kupa aralığı + basamak + sayı adedi + sayılar arası süre.
+     *
+     * Aynı modda bile soru kupa skoruna göre değişiyor ([CupRuleEngine]); mod tek başına
+     * "körleme zor" demekten öteye gitmiyor, hangi şeklin zor olduğunu söylemiyor.
+     *
+     * Aralık, skorun yüzlüğe yuvarlanmasıyla bulunuyor — tablodaki bütün aralıklar 100 geniş.
+     * `CupRuleEngine.resolveConfigs` körleme modunda tabloyu hiç kullanmıyor, aralığı formülle
+     * hesaplıyor; yüzlük yuvarlama iki yolda da doğru sonucu veriyor.
+     */
+    private fun cupQuestionShape(): String {
+        val floor = ((GlobalValues.currentLessonOldCupScore ?: 0) / 100) * 100
+        return "r${floor}" +
+            "_d${lessonItem.cupDigitSize ?: 0}" +
+            "_n${lessonItem.cupNumberCount ?: 0}" +
+            "_i${lessonItem.timePeriod ?: 0L}"
     }
 
     /**
