@@ -724,7 +724,7 @@ class LessonAdapter(
         val closeButton = dialog.findViewById<View>(R.id.raceFastForwardClose)
         closeButton.setOnClickListener { dialog.dismiss() }
         dialog.findViewById<MaterialButton>(R.id.raceFastForwardDiamond).setOnClickListener {
-            if (main?.spendKeys(1) != true) {
+            if (main?.spendKeys(1, AnalyticsLogger.ITEM_RACE_FAST_FORWARD) != true) {
                 Toast.makeText(
                     context,
                     R.string.daily_question_insufficient_keys,

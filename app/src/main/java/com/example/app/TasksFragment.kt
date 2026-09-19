@@ -844,12 +844,16 @@ class TasksFragment : Fragment() {
         closeButton.setOnClickListener { dialog.dismiss() }
         dialog.findViewById<MaterialButton>(R.id.dailyQuestionContinueDiamond).setOnClickListener {
             val main = activity as? MainActivity
-            if (main?.spendKeys(DailyQuestionPeriod.KEY_CONTINUE_COST) != true) {
-                    Toast.makeText(
-                        requireContext(),
+            val spent = main?.spendKeys(
+                DailyQuestionPeriod.KEY_CONTINUE_COST,
+                AnalyticsLogger.ITEM_DAILY_QUESTION_CONTINUE,
+            )
+            if (spent != true) {
+                Toast.makeText(
+                    requireContext(),
                     R.string.daily_question_insufficient_keys,
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    Toast.LENGTH_SHORT,
+                ).show()
                 return@setOnClickListener
             }
             val slot = challenge.slotForPlay() ?: return@setOnClickListener

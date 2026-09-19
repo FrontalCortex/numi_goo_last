@@ -79,6 +79,8 @@ object AnalyticsLogger {
     private const val EV_AD_SHOW_FAILED = "ad_show_failed"
     private const val EV_AD_NOT_READY = "ad_not_ready"
     private const val EV_MISSION_CLAIMED = "mission_claimed"
+    private const val EV_GOLD_SPENT = "gold_spent"
+    private const val EV_KEY_SPENT = "key_spent"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -151,6 +153,23 @@ object AnalyticsLogger {
     private const val P_CUP_QUESTION = "cup_question"
     private const val P_AD_TYPE = "ad_type"
     private const val P_MISSION_ID = "mission_id"
+    /**
+     * DİKKAT: `item_id` DEĞİL. `item_id` Firebase'in önceden tanımlı e-ticaret parametresidir
+     * ve GA4'te ürün kapsamlı (item-scoped) yerleşik bir boyuta karşılık gelir; olay kapsamlı
+     * özel boyut olarak kaydedilmek istendiğinde çakışır. Kendi adımızı kullanıyoruz.
+     */
+    private const val P_SPEND_ITEM = "spend_item"
+    private const val P_AMOUNT = "amount"
+
+    // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
+    // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
+    // (`bead_` + [AbacusPreferences.BeadType], `frame_` + [AbacusPreferences.FrameType]);
+    // sabit olanlar burada.
+
+    /** Ders yarışını anahtarla hızlandırma ([LessonAdapter]). */
+    const val ITEM_RACE_FAST_FORWARD = "race_fast_forward"
+    /** Günlük soruya anahtarla devam etme ([TasksFragment]). */
+    const val ITEM_DAILY_QUESTION_CONTINUE = "daily_question_continue"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -850,6 +869,57 @@ object AnalyticsLogger {
     fun logMissionClaimed(missionId: String) = safe { fa ->
         fa.logEvent(EV_MISSION_CLAIMED) {
             param(P_MISSION_ID, sanitize(missionId))
+        }
+    }
+
+    // ── Altın / anahtar harcaması ───────────────────────────────────────
+
+    /**
+     * Kullanıcı altın harcadı (Firestore `users.currency` düştü).
+     *
+     * ## Neden gerekli
+     * Altının KAZANILDIĞI yer ölçülüyordu (sandık, görev, günlük soru) ama HARCANDIĞI yer hiç
+     * ölçülmüyordu. Harcama yoksa altın birikir ve ödül anlamsızlaşır: sandık açmak heyecan
+     * vermez, görev yapmak gereksizleşir. Bu olay ekonominin gider tarafıdır; kazanım
+     * olaylarıyla birlikte bakılınca "altın bir işe yarıyor mu" sorusu cevaplanır.
+     *
+     * ## Nasıl bakılır
+     * `spend_item` kırılımında hiç görünmeyen bir ürün ya çok pahalı ya da fark edilmiyor demektir.
+     * `begins with bead_` / `begins with frame_` ile kategori toplamları alınır.
+     *
+     * ## Ne zaman yazılır
+     * Sunucu harcamayı ONAYLADIKTAN sonra ([UserWalletFirestore] içindeki tek yakınsama
+     * noktasında). Bakiyesi yetmediği için reddedilen ya da iade edilen (`purchase_rollback`)
+     * işlemler buraya DÜŞMEZ.
+     *
+     * @param itemId Satın alınan şey: `bead_ANIMAL3`, `bead_color_ANIMAL3`, `frame_WOOD`,
+     *   `frame_color_WOOD` gibi. Kimlik üretilemezse `unknown` gelir — tabloda görünür,
+     *   yani yeni bir harcama noktasının bağlanmayı unuttuğu sessizce kaybolmaz.
+     * @param amount Harcanan altın (pozitif). GA4'te özel ölçüm olarak kaydedilirse toplam
+     *   ve ortalama harcama doğrudan raporlanabilir.
+     */
+    fun logGoldSpent(itemId: String, amount: Int) = safe { fa ->
+        fa.logEvent(EV_GOLD_SPENT) {
+            param(P_SPEND_ITEM, sanitize(itemId))
+            param(P_AMOUNT, amount.toLong())
+        }
+    }
+
+    /**
+     * Kullanıcı anahtar harcadı (Firestore `users.keys` düştü).
+     *
+     * Altından AYRI olay adı, çünkü iki para birimi ayrı ekonomilerdir ve aynı tabloda
+     * toplanırlarsa rakamlar anlamsız olur. Para birimini parametre yapmak bir boyut slotu
+     * daha harcardı; olay adı kotası (500) ise bol. Ayrıntı için bkz. [logGoldSpent].
+     *
+     * Anahtar iki yerde harcanır: yarışı hızlandırma ([ITEM_RACE_FAST_FORWARD]) ve günlük
+     * soruya devam etme ([ITEM_DAILY_QUESTION_CONTINUE]). Bunların sayısı, çocuğun beklemek
+     * yerine ödemeyi seçtiği anlardır — sabırsızlık ölçüsü.
+     */
+    fun logKeySpent(itemId: String, amount: Int) = safe { fa ->
+        fa.logEvent(EV_KEY_SPENT) {
+            param(P_SPEND_ITEM, sanitize(itemId))
+            param(P_AMOUNT, amount.toLong())
         }
     }
 

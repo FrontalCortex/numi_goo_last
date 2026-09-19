@@ -162,9 +162,10 @@ object UserWalletFirestore {
         delta: Int,
         reason: String,
         rollbackToken: String? = null,
+        itemId: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
-    ) = applyDelta(context, keyDelta = delta, currencyDelta = 0, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
+    ) = applyDelta(context, keyDelta = delta, currencyDelta = 0, reason = reason, rollbackToken = rollbackToken, itemId = itemId, onSuccess = onSuccess, onFailure = onFailure)
 
     /**
      * Altın bakiyesini [delta] kadar değiştirir. Gerekçe kuralları için bkz. [applyKeyDelta].
@@ -175,9 +176,10 @@ object UserWalletFirestore {
         delta: Int,
         reason: String,
         rollbackToken: String? = null,
+        itemId: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
-    ) = applyDelta(context, keyDelta = 0, currencyDelta = delta, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
+    ) = applyDelta(context, keyDelta = 0, currencyDelta = delta, reason = reason, rollbackToken = rollbackToken, itemId = itemId, onSuccess = onSuccess, onFailure = onFailure)
 
     private fun applyDelta(
         context: Context,
@@ -185,6 +187,7 @@ object UserWalletFirestore {
         currencyDelta: Int,
         reason: String,
         rollbackToken: String?,
+        itemId: String?,
         onSuccess: ((UserWallet) -> Unit)?,
         onFailure: ((Exception) -> Unit)?,
     ) {
@@ -205,6 +208,7 @@ object UserWalletFirestore {
                 val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
 
                 cacheLocally(context, keys, currency)
+                logSpend(keyDelta, currencyDelta, reason, itemId)
                 onSuccess?.invoke(
                     UserWallet(
                         keys = keys,
@@ -216,6 +220,29 @@ object UserWalletFirestore {
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
             }
+    }
+
+    /**
+     * Harcamayı ölçüme yazar. Altın/anahtar düşüren BÜTÜN ekranlar [applyKeyDelta] /
+     * [applyCurrencyDelta] üzerinden geçtiği için tek yakınsama noktası burasıdır; harcama
+     * ekranlarının her birine ayrı kanca takılsaydı yeni bir ekran eklendiğinde sessizce
+     * eksik kalırdı.
+     *
+     * Yalnızca sunucu işlemi ONAYLADIKTAN sonra çağırılır: reddedilen harcama harcama değildir.
+     *
+     * İki filtre var:
+     * - [WalletReason.PURCHASE_ROLLBACK] iadedir, harcama değil;
+     * - delta POZİTİFse bakiye artmış demektir (sandık/kristal ödülleri zaten bu yoldan hiç
+     *   geçmez, sunucuda yazılır).
+     *
+     * [itemId] null gelirse `unknown` yazılır — olayı hiç göndermemek, yeni bir harcama
+     * noktasının kimlik geçirmeyi unuttuğunu görünmez kılardı.
+     */
+    private fun logSpend(keyDelta: Int, currencyDelta: Int, reason: String, itemId: String?) {
+        if (reason != WalletReason.SPEND) return
+        val id = itemId ?: "unknown"
+        if (keyDelta < 0) AnalyticsLogger.logKeySpent(id, -keyDelta)
+        if (currencyDelta < 0) AnalyticsLogger.logGoldSpent(id, -currencyDelta)
     }
 
     fun getCachedKeys(context: Context): Int =

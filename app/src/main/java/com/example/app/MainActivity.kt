@@ -2034,8 +2034,12 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    /** Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`). */
-    fun spendDiamonds(amount: Int): Boolean {
+    /**
+     * Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`).
+     *
+     * @param itemId Neye harcandığı; ölçüme aynen gider (bkz. [AnalyticsLogger.logGoldSpent]).
+     */
+    fun spendDiamonds(amount: Int, itemId: String): Boolean {
         if (amount <= 0) return true
         val current = binding.currencyText.text.toString().toIntOrNull()
             ?: UserWalletFirestore.getCachedCurrency(this)
@@ -2051,6 +2055,7 @@ class MainActivity : AppCompatActivity() {
                 uid = uid,
                 delta = -amount,
                 reason = WalletReason.SPEND,
+                itemId = itemId,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
                 onFailure = { resyncWalletFromServer() },
             )
@@ -2058,8 +2063,12 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    /** Üst paneldeki anahtar bakiyesinden düşer (Firestore `users.keys`). */
-    fun spendKeys(amount: Int): Boolean {
+    /**
+     * Üst paneldeki anahtar bakiyesinden düşer (Firestore `users.keys`).
+     *
+     * @param itemId Neye harcandığı; ölçüme aynen gider (bkz. [AnalyticsLogger.logKeySpent]).
+     */
+    fun spendKeys(amount: Int, itemId: String): Boolean {
         if (amount <= 0) return true
         val current = binding.keyText.text.toString().toIntOrNull()
             ?: UserWalletFirestore.getCachedKeys(this)
@@ -2074,6 +2083,7 @@ class MainActivity : AppCompatActivity() {
                 uid = uid,
                 delta = -amount,
                 reason = WalletReason.SPEND,
+                itemId = itemId,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
                 onFailure = { resyncWalletFromServer() },
             )

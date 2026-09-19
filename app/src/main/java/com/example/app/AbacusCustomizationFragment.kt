@@ -500,12 +500,14 @@ class AbacusCustomizationFragment : Fragment() {
             if (isKeyCurrency) {
                 UserWalletFirestore.applyKeyDelta(
                     context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_${beadType.name}",
                     onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             } else {
                 UserWalletFirestore.applyCurrencyDelta(
                     context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_${beadType.name}",
                     onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
@@ -577,6 +579,7 @@ class AbacusCustomizationFragment : Fragment() {
                 uid = uid,
                 delta = -price,
                 reason = WalletReason.SPEND,
+                itemId = "bead_color_${beadType.name}",
                 onSuccess = {
                     BeadPurchaseFirestore.setColorFeatureActive(uid, beadType.name, onSuccess = {
                         val currentData = ownedBeads[beadType.name] ?: BeadData(0, false)
@@ -738,12 +741,14 @@ class AbacusCustomizationFragment : Fragment() {
             if (isKeyCurrency) {
                 UserWalletFirestore.applyKeyDelta(
                     context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_${beadType.name}",
                     onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
             } else {
                 UserWalletFirestore.applyCurrencyDelta(
                     context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_${beadType.name}",
                     onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
                     onFailure = { ::onDeltaFailure.invoke() }
                 )
@@ -1221,6 +1226,7 @@ class AbacusCustomizationFragment : Fragment() {
                 uid     = uid,
                 delta   = -price,
                 reason  = WalletReason.SPEND,
+                itemId  = "frame_${frameType.name}",
                 onSuccess = { wallet ->
                     FramePurchaseFirestore.markFrameOwned(uid, frameType,
                         onSuccess = {
@@ -1309,6 +1315,7 @@ class AbacusCustomizationFragment : Fragment() {
                 uid     = uid,
                 delta   = -price,
                 reason  = WalletReason.SPEND,
+                itemId  = "frame_color_${frameType.name}",
                 onSuccess = { wallet ->
                     FramePurchaseFirestore.setColorFeatureActive(uid, frameType,
                         onSuccess = {
