@@ -139,6 +139,7 @@ object AnalyticsLogger {
     private const val P_MEDIA_TYPE = "media_type"
     private const val P_WAIT_HOURS = "wait_hours"
     private const val P_QUESTION_STATUS = "question_status"
+    private const val P_UNIT_TITLE = "unit_title"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -458,12 +459,19 @@ object AnalyticsLogger {
      * Ankette bir şık seçildi.
      * @param surveyType [SURVEY_LESSON] veya [SURVEY_TUTORIAL].
      */
+    /**
+     * @param unitTitle Sorunun/dersin kartta görünen başlığı. Günlük soruda bu, kartın
+     *   üstündeki ünite adı ([DailyQuestionSlot.titleUnit]); o modda `lesson_id` tek başına
+     *   hangi soru olduğunu söylemiyordu. Normal derslerde gönderilmiyor — ders zaten
+     *   `lesson_id` ile tanımlı.
+     */
     fun logSurveyChoice(
         surveyType: String,
         partId: Int,
         lessonId: String,
         questionNo: Int,
         choice: Int,
+        unitTitle: String? = null,
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_CHOICE) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
@@ -471,6 +479,7 @@ object AnalyticsLogger {
             param(P_LESSON_ID, sanitize(lessonId))
             param(P_QUESTION_NO, questionNo.toLong())
             param(P_CHOICE, choice.toLong())
+            if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
         }
     }
 
@@ -484,12 +493,14 @@ object AnalyticsLogger {
         partId: Int,
         lessonId: String,
         questionNo: Int,
+        unitTitle: String? = null,
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_TEXT) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
             param(P_PART_ID, partId.toLong())
             param(P_LESSON_ID, sanitize(lessonId))
             param(P_QUESTION_NO, questionNo.toLong())
+            if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
         }
     }
 

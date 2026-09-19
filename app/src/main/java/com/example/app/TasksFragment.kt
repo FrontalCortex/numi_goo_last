@@ -821,6 +821,10 @@ class TasksFragment : Fragment() {
                 slotIndex = slotIndex,
                 displayIntervalMs = slot.displayIntervalMs,
                 partId = slot.partId,
+                // Kartın üstünde görünen ünite adı ve kaynağın liste sırası; ikisi de
+                // ölçüme gidiyor, yoksa bütün günlük sorular ayırt edilemez tek kovada kalıyor.
+                titleUnit = slot.titleUnit,
+                itemIndex = slot.itemIndex,
             ),
         )
     }

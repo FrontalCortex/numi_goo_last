@@ -50,6 +50,8 @@ class BlindingLessonFragment : Fragment() {
         private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
         private const val ARG_DAILY_INTERVAL_MS = "daily_interval_ms"
         private const val ARG_DAILY_PART_ID = "daily_part_id"
+        private const val ARG_DAILY_TITLE_UNIT = "daily_title_unit"
+        private const val ARG_DAILY_ITEM_INDEX = "daily_item_index"
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
 
         fun newDailyQuestionInstance(
@@ -58,6 +60,8 @@ class BlindingLessonFragment : Fragment() {
             slotIndex: Int,
             displayIntervalMs: Long?,
             partId: Int,
+            titleUnit: String = "",
+            itemIndex: Int = -1,
         ): BlindingLessonFragment {
             return BlindingLessonFragment().apply {
                 arguments = Bundle().apply {
@@ -66,6 +70,8 @@ class BlindingLessonFragment : Fragment() {
                     putString(ARG_DAILY_PERIOD_KEY, periodKey)
                     putInt(ARG_DAILY_SLOT_INDEX, slotIndex)
                     putInt(ARG_DAILY_PART_ID, partId)
+                    putString(ARG_DAILY_TITLE_UNIT, titleUnit)
+                    putInt(ARG_DAILY_ITEM_INDEX, itemIndex)
                     displayIntervalMs?.let { putLong(ARG_DAILY_INTERVAL_MS, it) }
                 }
             }
@@ -141,6 +147,10 @@ class BlindingLessonFragment : Fragment() {
     private val binding get() = _binding!!
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
+    /** Kartın üstünde görünen ünite adı; ankette hangi soruya cevap verildiğini bu söyler. */
+    private var dailyQuestionTitleUnit: String = ""
+    /** Kaynağın ders listesindeki sırası; [dailyQuestionPartId] ile birlikte kalıcı kimliği verir. */
+    private var dailyQuestionItemIndex: Int = -1
     private var isAbacusSettingsPanelOpen = false
     
     // Guide UI Variables
@@ -238,6 +248,8 @@ class BlindingLessonFragment : Fragment() {
                 ?: DailyQuestionPeriod.currentPeriodKey()
             dailyQuestionSlotIndex = arguments?.getInt(ARG_DAILY_SLOT_INDEX, 0)?.coerceIn(0, 2) ?: 0
             dailyQuestionPartId = arguments?.getInt(ARG_DAILY_PART_ID, -1) ?: -1
+            dailyQuestionTitleUnit = arguments?.getString(ARG_DAILY_TITLE_UNIT).orEmpty()
+            dailyQuestionItemIndex = arguments?.getInt(ARG_DAILY_ITEM_INDEX, -1) ?: -1
         }
         
         // Initialize operations first so we can check it
@@ -246,10 +258,13 @@ class BlindingLessonFragment : Fragment() {
         lessonItem = if (isDailyQuestionMode) {
             val hasMathOperation = operations.firstOrNull() is MathOperation
             LessonItem(
-                // Kalıcı değil: günlük soru bir ders item'ı değil, ilerlemesi saklanmaz.
-                stableId = "transient_daily_question",
+                // Günlük soru bir ders item'ı değil, ilerlemesi saklanmaz — ama kaynağı
+                // bellidir: hangi bölümün hangi sandığından üretildiği. Sabit bir yer tutucu
+                // kullanılsaydı bütün günlük soru anketleri tek kovada toplanır ve hangi
+                // soruya ait oldukları ayırt edilemezdi.
+                stableId = "daily_p${dailyQuestionPartId}_i$dailyQuestionItemIndex",
                 type = LessonItem.TYPE_LESSON,
-                title = "Günlük Soru",
+                title = dailyQuestionTitleUnit.ifEmpty { "Günlük Soru" },
                 offset = 0,
                 isCompleted = false,
                 stepCount = 1,
@@ -2007,6 +2022,7 @@ class BlindingLessonFragment : Fragment() {
             globalPartId = globalPartId,
             lessonId = lessonItem.stableId,
             lessonType = lessonItem.type,
+            lessonTitle = if (isDailyQuestionMode) dailyQuestionTitleUnit else "",
             currentTime = currentTime,
             worstCupTime = worstCupTime
         )
