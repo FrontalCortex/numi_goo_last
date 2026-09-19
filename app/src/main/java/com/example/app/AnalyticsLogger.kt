@@ -73,6 +73,7 @@ object AnalyticsLogger {
     private const val EV_DAILY_QUESTION_START = "daily_question_start"
     private const val EV_DAILY_QUESTION_RESULT = "daily_question_result"
     private const val EV_DAILY_QUESTION_CLAIM = "daily_question_claim"
+    private const val EV_CUP_RACE_RESULT = "cup_race_result"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -140,6 +141,8 @@ object AnalyticsLogger {
     private const val P_WAIT_HOURS = "wait_hours"
     private const val P_QUESTION_STATUS = "question_status"
     private const val P_UNIT_TITLE = "unit_title"
+    private const val P_CUP_RESULT = "cup_result"
+    private const val P_CUP_MODE = "cup_mode"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -232,6 +235,14 @@ object AnalyticsLogger {
 
     const val SIGNUP_ROLE_STUDENT = "student"
     const val SIGNUP_ROLE_TEACHER = "teacher"
+
+    // ── Kupa yarışı (bölüm 9) ──────────────────────────────────────────────
+    /** Doğru cevap: kupa puanı arttı. */
+    const val CUP_RESULT_WIN = "win"
+    /** Yanlış cevap: kupa puanı düştü. */
+    const val CUP_RESULT_LOSS = "loss"
+    /** Çıkış düğmesi veya geri tuşu: yarış bırakıldı, puan yine düşüyor. */
+    const val CUP_RESULT_QUIT = "quit"
 
     // ── Öğretmene soru akışı ───────────────────────────────────────────────
     const val QUESTION_MEDIA_IMAGE = "image"
@@ -802,6 +813,28 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Kupa yarışı sonuçlandı.
+     *
+     * ## Neden gerekli
+     * Kupa modunda yalnızca enerji harcaması ölçülüyordu; yarışın kazanılıp kazanılmadığı hiç
+     * gitmiyordu. Kayıp oranı yüksekse çocuk modu terk eder ve biz sadece "enerji harcandı"
+     * görürüz — terk sebebini göremeyiz.
+     *
+     * ## Neden [cupMode] ayrı
+     * Beş mod aynı ekranı paylaşıyor: normal, körleme, çarpma, çıkarma ve bunların körleme
+     * birleşimleri. Zorlukları birbirinden çok farklı; tek kovada toplanırsa "kupa zor" gibi
+     * kullanılamaz bir sonuç çıkar, oysa sorun tek bir modda olabilir.
+     *
+     * @param result [CUP_RESULT_WIN], [CUP_RESULT_LOSS] veya [CUP_RESULT_QUIT].
+     */
+    fun logCupRaceResult(result: String, cupMode: String) = safe { fa ->
+        fa.logEvent(EV_CUP_RACE_RESULT) {
+            param(P_CUP_RESULT, sanitize(result))
+            param(P_CUP_MODE, sanitize(cupMode))
+        }
+    }
 
     /**
      * Günün sorularından biri başlatıldı.

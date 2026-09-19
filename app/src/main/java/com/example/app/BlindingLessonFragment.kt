@@ -147,6 +147,8 @@ class BlindingLessonFragment : Fragment() {
     private val binding get() = _binding!!
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
+    /** Bir yarış için tek sonuç kaydedilir; bkz. [logCupRaceResultOnce]. */
+    private var cupResultLogged = false
     /** Kartın üstünde görünen ünite adı; ankette hangi soruya cevap verildiğini bu söyler. */
     private var dailyQuestionTitleUnit: String = ""
     /** Kaynağın ders listesindeki sırası; [dailyQuestionPartId] ile birlikte kalıcı kimliği verir. */
@@ -1063,6 +1065,10 @@ class BlindingLessonFragment : Fragment() {
                                 GlobalValues.pendingCupDelta = delta
                             }
                             BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                            logCupRaceResultOnce(
+                                if (isCorrect) AnalyticsLogger.CUP_RESULT_WIN
+                                else AnalyticsLogger.CUP_RESULT_LOSS,
+                            )
                             showResultPanel(isCorrect)
                             controlNumber = 0
                             binding.numberInput.setText("")
@@ -1159,6 +1165,7 @@ class BlindingLessonFragment : Fragment() {
                     GlobalValues.pendingCupDelta = -lossDelta
                 }
                 BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
                 spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
             }
             closeFragment()
@@ -1197,6 +1204,7 @@ class BlindingLessonFragment : Fragment() {
                             GlobalValues.pendingCupDelta = -lossDelta
                         }
                         BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                        logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
                         spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
                     }
                     closeFragment()
@@ -2107,6 +2115,34 @@ class BlindingLessonFragment : Fragment() {
      * Ayrımı [spendSource] taşıyor: canların çoğu hangi yoldan gidiyor sorusu, duvarın
      * çocuğu nerede vurduğunu söylüyor.
      */
+    /**
+     * Yarışın sonucunu bir kez bildirir.
+     *
+     * Cevap verildikten sonra sonuç paneli açıkken geri tuşuna basılırsa bırakma dalı da
+     * çalışabiliyor; korumasız bırakılsa aynı yarış hem `loss` hem `quit` sayılır ve bırakma
+     * oranı olduğundan yüksek görünürdü.
+     */
+    private fun logCupRaceResultOnce(result: String) {
+        if (cupResultLogged) return
+        cupResultLogged = true
+        AnalyticsLogger.logCupRaceResult(result, cupModeName())
+    }
+
+    /**
+     * Kupa modunun ölçüm adı.
+     *
+     * Sıralama, delta atayan if/else zincirleriyle BİREBİR aynı: körleme birleşimleri önce
+     * kontrol ediliyor, yoksa `isBlinding` tek başına eşleşip çarpma/çıkarma modlarını yutar.
+     */
+    private fun cupModeName(): String = when {
+        lessonItem.isMultiplication == true && lessonItem.isBlinding == true -> "blinding_multiplication"
+        lessonItem.isMultiplication == true -> "multiplication"
+        lessonItem.isExtraction == true && lessonItem.isBlinding == true -> "blinding_extraction"
+        lessonItem.isExtraction == true -> "extraction"
+        lessonItem.isBlinding == true -> "blinding"
+        else -> "normal"
+    }
+
     private fun spendCupEnergy(spendSource: String) {
         val energyManager = (activity as? MainActivity)?.getEnergyManager() ?: return
         energyManager.useEnergy(1)
