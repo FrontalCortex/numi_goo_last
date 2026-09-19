@@ -2642,7 +2642,7 @@ class MainActivity : AppCompatActivity() {
         // maybeShowAskQuestionPromo yalnızca bu durumda denenir (bkz. notifyMapVisibleAfterLessonClaim).
         isLessonTypeReturn: Boolean = false,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
+        BadgeDiagnostics.log("MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
         // scheduleSeasonGate'in post'u bizim post'umuzdan ÖNCE çalışıp reconcile üzerinden
@@ -2681,7 +2681,7 @@ class MainActivity : AppCompatActivity() {
         badgeStringPayloads: List<String> = emptyList(),
         isLessonTypeReturn: Boolean = false,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
+        BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
         // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
@@ -2692,7 +2692,7 @@ class MainActivity : AppCompatActivity() {
         }
         // Eğer reklam kontrolü zaten uçuştaysa ikinci çağrı sadece payload biriktirir, onDone tekrar tetiklenmez.
         if (adCheckForBadgeInProgress) {
-            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
+            BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
             return
         }
         adCheckForBadgeInProgress = true
@@ -2706,7 +2706,7 @@ class MainActivity : AppCompatActivity() {
             pendingBadgeStringPayloadsForAd = emptyList()
             val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
             pendingLessonTypeReturnForPromo = false
-            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
+            BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
             // Aşağıdaki zincirde promo dalına düşülmeyecekse (rozet/rating kazandı ya da bu dönüş
             // lesson dönüşü değil) erken kilit burada bırakılmalı; yoksa harita kilitli kalır.
             if (resolvedBadgePayloads.isNotEmpty() || resolvedBadgeStringPayloads.isNotEmpty() ||
@@ -2720,7 +2720,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    android.util.Log.d("DEBUG_BADGE", "MainActivity successfully opening BadgeFragment with STRING payloads: ${resolvedBadgeStringPayloads.size}")
+                    BadgeDiagnostics.log("MainActivity successfully opening BadgeFragment with STRING payloads: ${resolvedBadgeStringPayloads.size}")
                     supportFragmentManager.beginTransaction()
                         .setCustomAnimations(
                             R.anim.slide_in_right,

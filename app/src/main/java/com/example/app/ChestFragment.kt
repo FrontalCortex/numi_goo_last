@@ -320,7 +320,7 @@ class ChestFragment : Fragment() {
                                 "missionSnapLocalOnly=true",
                         )
                         if (hasMissionProgress) {
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing to MissionChestRewardFragment with levelUpPayloads=${levelUpPayloads.size}")
+                            BadgeDiagnostics.log("ChestFragment proceedWithResult routing to MissionChestRewardFragment with levelUpPayloads=${levelUpPayloads.size}")
                             LessonProgressDiag.recordClaim(
                                 mapIdx = mapFragmentStepIndex,
                                 partId = globalPartId,
@@ -364,7 +364,7 @@ class ChestFragment : Fragment() {
                                 "CLAIM_MAP_RETURN",
                                 "removeThenPrepare+finalize",
                             )
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
+                            BadgeDiagnostics.log("ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
                             // ChestFragment'in kendi ekranı zaten görünmez (bkz. chest_closed dinleyicisi);
                             // burada gösterilecek/kaydırılacak bir şey yok, harita dönüşü hemen yapılıyor.
                             if (isAdded) {
@@ -413,17 +413,17 @@ class ChestFragment : Fragment() {
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
                             GlobalValues.pendingBadgeFirestoreOperation = false
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment onDone finished with payloads=${payloads.size}")
+                            BadgeDiagnostics.log("ChestFragment onDone finished with payloads=${payloads.size}")
                             val main = findMain()
                             findMap(main)?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(safeHostContainerId) as? MissionChestRewardFragment
                                 if (missionFragment != null && missionFragment.isAdded) {
-                                    android.util.Log.d("DEBUG_BADGE", "ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
+                                    BadgeDiagnostics.log("ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
                                     missionFragment.setBadgePayloads(stringPayloads)
                                 } else if (main != null) {
-                                    android.util.Log.d("DEBUG_BADGE", "ChestFragment routing badge payloads directly to MainActivity queue")
+                                    BadgeDiagnostics.log("ChestFragment routing badge payloads directly to MainActivity queue")
                                     main.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
                             } else {

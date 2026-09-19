@@ -135,7 +135,7 @@ class MissionChestRewardFragment : Fragment() {
                             .commitNowAllowingStateLoss()
                     }
                     main?.prepareMapReturnAfterLessonClaim()
-                    android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
+                    BadgeDiagnostics.log("MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
                     main?.finalizeMapReturnAfterLessonClaim(
                         caller = "MissionChestReward.continue",
                         badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList(),

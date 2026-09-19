@@ -113,8 +113,7 @@ object BadgeProgressFirestore {
         payloads: List<BadgeLevelUpPayload>,
         seasonLeaderboardAckAfterQueue: Int? = null,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
-        android.util.Log.d("DEBUG_BADGE", "Trace:", java.lang.Exception("Stack trace"))
+        BadgeDiagnostics.log("BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
         if (payloads.isEmpty()) return
         fm.beginTransaction()
             .setCustomAnimations(
@@ -458,14 +457,19 @@ object BadgeProgressFirestore {
                     listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
-            onDone(payloads)
             payloads
         }.addOnSuccessListener { committed ->
-            // ÖLÇÜM BURADA, onDone'ın yanında DEĞİL. Üstteki blok bir Firestore işlemi (transaction)
-            // gövdesi: çakışma olursa Firestore onu yeniden çalıştırır ve içindeki her şey tekrar
-            // işler. Ölçümü oraya koysaydık aynı kademe birden fazla kez sayılırdı. Burası ise
-            // yalnızca yazım GERÇEKTEN işlendikten sonra, bir kez çalışır.
-            logLevelUps(committed)
+            // Sonuç BURADAN veriliyor, transaction gövdesinin içinden DEĞİL. İki sebebi var:
+            //
+            // 1. Transaction gövdesi yeniden çalıştırılabilir. Aynı dokümana eş zamanlı başka bir
+            //    yazım gelirse (örn. kupa rozeti senkronu) Firestore bloğu baştan çalıştırır.
+            //    [onDone] içeride olsaydı kutlama ekranı iki kez açılır, kademe iki kez sayılırdı.
+            // 2. Transaction gövdesi ana iş parçacığında DEĞİL arka planda çalışır; [onDone]
+            //    ise fragment işlemi açıyor ve o ana iş parçacığı ister.
+            //
+            // addOnSuccessListener her ikisini de çözüyor: yazım gerçekten işlendikten sonra,
+            // bir kez, ana iş parçacığında. Aynı dosyadaki altı kupa rozeti senkronu da böyle.
+            emitLevelUps(committed, onDone)
         }.addOnFailureListener { e ->
             Log.e(TAG, "badge progress update failed", e)
             onDone(emptyList())
