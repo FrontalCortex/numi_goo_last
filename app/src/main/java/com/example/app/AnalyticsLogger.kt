@@ -81,6 +81,7 @@ object AnalyticsLogger {
     private const val EV_MISSION_CLAIMED = "mission_claimed"
     private const val EV_GOLD_SPENT = "gold_spent"
     private const val EV_KEY_SPENT = "key_spent"
+    private const val EV_BADGE_LEVEL_UP = "badge_level_up"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -160,6 +161,8 @@ object AnalyticsLogger {
      */
     private const val P_SPEND_ITEM = "spend_item"
     private const val P_AMOUNT = "amount"
+    private const val P_BADGE_ID = "badge_id"
+    private const val P_BADGE_LEVEL = "badge_level"
 
     // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
     // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
@@ -920,6 +923,44 @@ object AnalyticsLogger {
         fa.logEvent(EV_KEY_SPENT) {
             param(P_SPEND_ITEM, sanitize(itemId))
             param(P_AMOUNT, amount.toLong())
+        }
+    }
+
+    // ── Rozet ──────────────────────────────────────────────────
+
+    /**
+     * Bir rozetin yeni kademesi kazanıldı.
+     *
+     * ## Neden gerekli
+     * 18 rozet var ve hiçbiri ölçülmüyordu. Rozetler uygulamanın en pahalı içeriği: her biri
+     * ayrı animasyon, ayrı ses, ayrı ilerleme mantığı. Bir rozet hiç kazanılmıyorsa o emeğin
+     * tamamı boşa gidiyor ve bunu görecek tek yer bu olay.
+     *
+     * ## Nasıl bakılır
+     * `badge_id` kırılımında **hiç görünmeyen rozet = ölü içerik**: ya eşiği çok yüksek ya da
+     * o davranışı kimse yapmıyor. Bir rozet görünüyor ama hep en düşük `badge_level` ile
+     * görünüyorsa ikinci kademe çok zor demektir — çocuk başlayıp bırakıyor.
+     *
+     * ## Kapsam
+     * Çocuğun kendi davranışıyla kazandığı 14 rozet: `dart`, `bowling`, `karate`, `rocket`,
+     * `golf`, `fishing`, `tornado`, `volcano`, `dino`, `crocodile`, `goat`, `eagle`, `fly`,
+     * `turtle`. Sezon sonu liderlik ödülleri (`cup`, `gold`, `silver`, `bronze`) BURADA YOK:
+     * onları sunucu sezon kapanışında yazıyor, istemci yalnızca toplatıyor ve istemcideki
+     * üretici saf bir yeniden hesaplama olduğu için birden fazla kez çalışabiliyor — oradan
+     * yazılan sayı şişik olurdu.
+     *
+     * @param badgeId Rozet kimliği, [BadgeKind] adının küçük harfli hali. Animasyon adı
+     *   ([BadgeFragment.BadgeAnimMode]) KULLANILMAZ; o adlar arayüze ait ve yanıltıcı
+     *   (örneğin `DAILY_ONLY` aslında Dart rozetidir).
+     * @param level Ulaşılan eşik (`reachedTarget`). Eşikler rozetten rozeğe çok farklı
+     *   (dart 3, dino 500); bu yüzden SATIR İÇİNDE anlamlıdır, rozetler arasında
+     *   karşılaştırılmaz. Özel ölçüm olarak kaydedilip ortalaması alınırsa "bu rozette
+     *   ortalama kaçıncı kademeye kadar gidiliyor" sorusunu cevaplar.
+     */
+    fun logBadgeLevelUp(badgeId: String, level: Int) = safe { fa ->
+        fa.logEvent(EV_BADGE_LEVEL_UP) {
+            param(P_BADGE_ID, sanitize(badgeId))
+            param(P_BADGE_LEVEL, level.toLong())
         }
     }
 

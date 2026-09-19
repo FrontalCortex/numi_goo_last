@@ -79,6 +79,35 @@ object BadgeProgressFirestore {
     fun payloadToQueueItem(payload: BadgeLevelUpPayload): String =
         "${payload.mode.name}|${payload.fromProgress}|${payload.toProgress}|${payload.reachedTarget}"
 
+    /**
+     * Ölçümde kullanılan rozet kimliği.
+     *
+     * [BadgeFragment.BadgeAnimMode] adları arayüze ait ve yanıltıcı (`DAILY_ONLY` aslında Dart,
+     * `CUP_GOOGLE` aslında Kupa). Tabloda ürünün kendi sözlüğü görünsün diye [BadgeKind]
+     * üzerinden çevriliyor.
+     */
+    private fun badgeIdOf(mode: BadgeFragment.BadgeAnimMode): String =
+        (BadgeKind.fromMode(mode)?.name ?: mode.name).lowercase()
+
+    /** Kazanılan her kademeyi ayrı olay olarak ölçüme yazar. Boş listede hiçbir şey yapmaz. */
+    private fun logLevelUps(payloads: List<BadgeLevelUpPayload>) {
+        payloads.forEach { AnalyticsLogger.logBadgeLevelUp(badgeIdOf(it.mode), it.reachedTarget) }
+    }
+
+    /**
+     * Kademeleri ölçüme yazıp sonucu çağırana iletir.
+     *
+     * Rozet kademesi 7 ayrı işlemden çıkıyor (bir genel artırma + altı kupa rozeti senkronu);
+     * hepsi sonucu bu biçimde veriyor. Tek geçiş noktası olsun diye ölçüm buraya kondu.
+     */
+    private fun emitLevelUps(
+        payloads: List<BadgeLevelUpPayload>,
+        onDone: (List<BadgeLevelUpPayload>) -> Unit,
+    ) {
+        logLevelUps(payloads)
+        onDone(payloads)
+    }
+
     fun openBadgeCelebration(
         fm: FragmentManager,
         payloads: List<BadgeLevelUpPayload>,
@@ -430,6 +459,13 @@ object BadgeProgressFirestore {
                 )?.let { payloads.add(it) }
             }
             onDone(payloads)
+            payloads
+        }.addOnSuccessListener { committed ->
+            // ÖLÇÜM BURADA, onDone'ın yanında DEĞİL. Üstteki blok bir Firestore işlemi (transaction)
+            // gövdesi: çakışma olursa Firestore onu yeniden çalıştırır ve içindeki her şey tekrar
+            // işler. Ölçümü oraya koysaydık aynı kademe birden fazla kez sayılırdı. Burası ise
+            // yalnızca yazım GERÇEKTEN işlendikten sonra, bir kez çalışır.
+            logLevelUps(committed)
         }.addOnFailureListener { e ->
             Log.e(TAG, "badge progress update failed", e)
             onDone(emptyList())
@@ -487,7 +523,7 @@ object BadgeProgressFirestore {
             }.addOnSuccessListener { (beforeDino, afterDino) ->
                 if (afterDino > beforeDino) {
                     val payloads = resolveDinoLevelUpChain(beforeDino, afterDino)
-                    onDone(payloads)
+                    emitLevelUps(payloads, onDone)
                 } else {
                     onDone(emptyList())
                 }
@@ -547,7 +583,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveCrocodileLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -603,7 +639,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveGoatLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -659,7 +695,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveEagleLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -715,7 +751,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveFlyLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -771,7 +807,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveTurtleLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
