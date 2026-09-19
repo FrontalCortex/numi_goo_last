@@ -85,7 +85,6 @@ class DailyQuestionRewardFragment : Fragment() {
             claimRewardInProgress = true
             binding.claimRewardButton.isEnabled = false
             try {
-                AnalyticsLogger.logDailyQuestionClaim()
                 // Ödül sunucuda zaten verildi (openCrystalReward); burada yalnızca akış devam eder.
                 if (dailyQuestionPeriodKey.isNotEmpty()) {
                     DailyQuestionRepository.markRewardClaimed(
