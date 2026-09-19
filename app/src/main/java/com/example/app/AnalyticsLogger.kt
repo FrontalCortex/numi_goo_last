@@ -78,6 +78,7 @@ object AnalyticsLogger {
     private const val EV_AD_LOAD_FAILED = "ad_load_failed"
     private const val EV_AD_SHOW_FAILED = "ad_show_failed"
     private const val EV_AD_NOT_READY = "ad_not_ready"
+    private const val EV_MISSION_CLAIMED = "mission_claimed"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -149,6 +150,7 @@ object AnalyticsLogger {
     private const val P_CUP_MODE = "cup_mode"
     private const val P_CUP_QUESTION = "cup_question"
     private const val P_AD_TYPE = "ad_type"
+    private const val P_MISSION_ID = "mission_id"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -825,6 +827,31 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Görev ödülü alındı.
+     *
+     * ## Neden yalnızca "alındı", "tamamlandı" değil
+     * Ödül alma, görevin tamamlandığının gözlenebilir kanıtı ve tek bir yerden geçiyor
+     * ([MissionsProgressStore.markMissionRewardClaimed]) — tamamlanma anını yakalamak için
+     * her sayaç artışını izlemek gerekirdi, karşılığı buna değmez.
+     *
+     * ## Ne söyler, ne söylemez
+     * Bir görev kimliği tabloda hiç görünmüyorsa o görev ya çok zor ya da fark edilmiyor;
+     * ikisi de tasarım hatasıdır ve düzeltmesi ucuzdur. Ama "kaç kişiye gösterildi"
+     * bilinmediği için oran hesaplanamaz: görevler periyot başına seçiliyor, nadir seçilen
+     * bir görev de az görünür. Haftalar içinde seçim dengelendiği için sayılar
+     * karşılaştırılabilir hale gelir.
+     *
+     * @param missionId `daily_finish_step_2` biçiminde: periyot + görev kimliği. İkisi tek
+     *   değerde çünkü aynı görev hem günlük hem haftalık listede olabiliyor ve ayrı bir
+     *   periyot boyutu bir slot daha harcardı. `begins with daily_` ile süzülür.
+     */
+    fun logMissionClaimed(missionId: String) = safe { fa ->
+        fa.logEvent(EV_MISSION_CLAIMED) {
+            param(P_MISSION_ID, sanitize(missionId))
+        }
+    }
 
     /**
      * Reklam ekrana geldi.
