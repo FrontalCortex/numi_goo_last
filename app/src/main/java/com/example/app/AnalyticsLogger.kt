@@ -74,6 +74,10 @@ object AnalyticsLogger {
     private const val EV_DAILY_QUESTION_RESULT = "daily_question_result"
     private const val EV_DAILY_QUESTION_CLAIM = "daily_question_claim"
     private const val EV_CUP_RACE_RESULT = "cup_race_result"
+    private const val EV_AD_SHOWN = "ad_shown"
+    private const val EV_AD_LOAD_FAILED = "ad_load_failed"
+    private const val EV_AD_SHOW_FAILED = "ad_show_failed"
+    private const val EV_AD_NOT_READY = "ad_not_ready"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -144,6 +148,7 @@ object AnalyticsLogger {
     private const val P_CUP_RESULT = "cup_result"
     private const val P_CUP_MODE = "cup_mode"
     private const val P_CUP_QUESTION = "cup_question"
+    private const val P_AD_TYPE = "ad_type"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -236,6 +241,12 @@ object AnalyticsLogger {
 
     const val SIGNUP_ROLE_STUDENT = "student"
     const val SIGNUP_ROLE_TEACHER = "teacher"
+
+    // ── Reklamlar ──────────────────────────────────────────────────────────
+    /** Ders/sandık arası geçiş reklamı; ardından bazen Pro paneli açılıyor. */
+    const val AD_TYPE_INTERSTITIAL = "interstitial"
+    /** Kullanıcının can veya sandık için izlediği ödüllü reklam. */
+    const val AD_TYPE_REWARDED = "rewarded"
 
     // ── Kupa yarışı (bölüm 9) ──────────────────────────────────────────────
     /** Doğru cevap: kupa puanı arttı. */
@@ -814,6 +825,44 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Reklam ekrana geldi.
+     *
+     * ## Neden gerekli
+     * Reklam SONRASI Pro panelini ölçüyorduk ama reklamın kendisini ölçmüyorduk. Reklam
+     * yüklenemezse panel de çıkmaz, ödüllü reklamla can da alınamaz — gelir ve enerji ekonomisi
+     * aynı anda sessizce durur ve sebebi hiçbir yerde görünmez.
+     *
+     * ## Neden hata sebebi ayrı olay
+     * `ad_load_failed`, `ad_show_failed` ve `ad_not_ready` ayrı olay adları; sebep parametre
+     * olsaydı bir boyut slotu daha harcanırdı. Olay adı kotası çok daha bol (500), boyut kotası
+     * dar — bu yüzden ayrım isimlere kondu.
+     */
+    fun logAdShown(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_SHOWN) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /** Reklam yüklenemedi (AdMob dolgu veremedi, ağ hatası vb.). Gösterim hiç denenmedi. */
+    fun logAdLoadFailed(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_LOAD_FAILED) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /** Reklam yüklüydü ama gösterilemedi. */
+    fun logAdShowFailed(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_SHOW_FAILED) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /**
+     * Reklam gösterilmesi istendi ama hazır değildi — en can sıkıcı hata.
+     *
+     * Ödüllü reklamda bu, çocuğun canını veya sandığını ALAMAMASI demek; ekranda
+     * "Reklam henüz yüklenmedi" yazısını görüyor. Geçiş reklamında ise hem gelir hem
+     * ardından açılacak Pro paneli kayboluyor.
+     */
+    fun logAdNotReady(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_NOT_READY) { param(P_AD_TYPE, sanitize(adType)) }
+    }
 
     /**
      * Kupa yarışı sonuçlandı.

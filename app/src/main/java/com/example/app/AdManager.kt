@@ -42,6 +42,7 @@ class AdManager(private val context: Context) {
         InterstitialAd.load(context, interstitialAdUnitId, adRequest, object : InterstitialAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 Log.d(TAG, "InterstitialAd failed to load: ${adError.message}")
+                AnalyticsLogger.logAdLoadFailed(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
                 interstitialAd = null
             }
 
@@ -74,6 +75,7 @@ class AdManager(private val context: Context) {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     Log.d(TAG, "InterstitialAd failed to show: ${adError.message}")
+                    AnalyticsLogger.logAdShowFailed(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
                     interstitialAd = null
                     preloadInterstitialAd() // Try to reload if it failed to show
                     onClosed()
@@ -81,6 +83,7 @@ class AdManager(private val context: Context) {
 
                 override fun onAdShowedFullScreenContent() {
                     Log.d(TAG, "InterstitialAd showed fullscreen content.")
+                    AnalyticsLogger.logAdShown(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
                     interstitialAd = null
                 }
             }
@@ -88,6 +91,7 @@ class AdManager(private val context: Context) {
             interstitialAd?.show(activity)
         } else {
             Log.d(TAG, "The interstitial ad wasn't ready yet.")
+            AnalyticsLogger.logAdNotReady(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
             preloadInterstitialAd() // Attempt to load it again
             onClosed()
         }
@@ -101,6 +105,7 @@ class AdManager(private val context: Context) {
         RewardedAd.load(context, adUnitId, adRequest, object : RewardedAdLoadCallback() {
             override fun onAdFailedToLoad(adError: LoadAdError) {
                 Log.d(TAG, "Ad failed to load: \${adError.message}")
+                AnalyticsLogger.logAdLoadFailed(AnalyticsLogger.AD_TYPE_REWARDED)
                 rewardedAd = null
             }
 
@@ -161,12 +166,14 @@ class AdManager(private val context: Context) {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     Log.d(TAG, "Ad failed to show: \${adError.message}")
+                    AnalyticsLogger.logAdShowFailed(AnalyticsLogger.AD_TYPE_REWARDED)
                     rewardedAd = null
                     preloadAd() // Try to reload if it failed to show
                 }
 
                 override fun onAdShowedFullScreenContent() {
                     Log.d(TAG, "Ad showed fullscreen content.")
+                    AnalyticsLogger.logAdShown(AnalyticsLogger.AD_TYPE_REWARDED)
                     // Ad is showing, we can nullify the current reference
                     rewardedAd = null
                 }
@@ -179,6 +186,8 @@ class AdManager(private val context: Context) {
             }
         } else {
             Log.d(TAG, "The rewarded ad wasn't ready yet.")
+            // Çocuk canını/sandığını alamadı; ekranda "Reklam henüz yüklenmedi" yazısını görüyor.
+            AnalyticsLogger.logAdNotReady(AnalyticsLogger.AD_TYPE_REWARDED)
             Toast.makeText(context, "Reklam henüz yüklenmedi, lütfen bekleyin.", Toast.LENGTH_SHORT).show()
             preloadAd() // Attempt to load it again
         }
