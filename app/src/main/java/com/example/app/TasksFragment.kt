@@ -806,6 +806,9 @@ class TasksFragment : Fragment() {
         slot: DailyQuestionSlot,
     ) {
         val slotIndex = challenge.playSlotIndex()
+        // Günün sorusunun başlatıldığı tek yer burası; kart tıklaması buraya kadar birçok
+        // kapıdan (ödül alınmış, gün tamamlanmış, elmasla devam bekliyor) eleniyor.
+        AnalyticsLogger.logDailyQuestionStart(questionNo = slotIndex + 1)
         val operationsList = if (slot.mathOperation != null) {
             listOf(slot.mathOperation)
         } else {

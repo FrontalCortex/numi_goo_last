@@ -2220,6 +2220,10 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         
+        AnalyticsLogger.logDailyQuestionResult(
+            questionNo = dailyQuestionSlotIndex + 1,
+            isCorrect = false,
+        )
         DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = false)
         
         DailyQuestionRepository.markPendingDiamondContinue(
@@ -2244,6 +2248,10 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         
+        AnalyticsLogger.logDailyQuestionResult(
+            questionNo = dailyQuestionSlotIndex + 1,
+            isCorrect = true,
+        )
         DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = true)
         
         DailyQuestionRepository.incrementSolvedCount(requireContext(), periodKey) { _ ->

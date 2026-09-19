@@ -70,6 +70,9 @@ object AnalyticsLogger {
     private const val EV_QUESTION_ASKED = "question_asked"
     private const val EV_QUESTION_ANSWERED = "question_answered"
     private const val EV_QUESTION_CHAT_OPENED = "question_chat_opened"
+    private const val EV_DAILY_QUESTION_START = "daily_question_start"
+    private const val EV_DAILY_QUESTION_RESULT = "daily_question_result"
+    private const val EV_DAILY_QUESTION_CLAIM = "daily_question_claim"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -788,6 +791,43 @@ object AnalyticsLogger {
     }
 
     // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Günün sorularından biri başlatıldı.
+     *
+     * ## Neden gerekli
+     * 24 saatte 3 soru, uygulamanın günlük geri dönüş mekanizması. Sunucuda bütün akış
+     * (`recordQuestionResult`, `incrementSolvedCount`, `markRewardClaimed`) çalışıyordu ama tek
+     * olay gönderilmiyordu: kaç çocuğun başladığını, kaçının üçünü de bitirdiğini, kaçının
+     * ödülü aldığını bilmiyorduk. Yani özelliğin işe yarayıp yaramadığına dair hiçbir kanıt yoktu.
+     *
+     * @param questionNo Günün kaçıncı sorusu (1-3). `question_no` parametresi anket
+     *   olaylarıyla PAYLAŞILIYOR — ikisi de "sıradaki kaçıncı soru" demek; raporda olay adıyla
+     *   filtrelemek şart.
+     */
+    fun logDailyQuestionStart(questionNo: Int) = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_START) {
+            param(P_QUESTION_NO, questionNo.toLong())
+        }
+    }
+
+    /**
+     * Günün sorusu sonuçlandı.
+     *
+     * Başlangıç ile sonuç arasındaki fark, soruyu açıp bitirmeden bırakanları verir.
+     * [isCorrect] false ise çocuk elmas harcayarak devam etme paneliyle karşılaşıyor.
+     */
+    fun logDailyQuestionResult(questionNo: Int, isCorrect: Boolean) = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_RESULT) {
+            param(P_QUESTION_NO, questionNo.toLong())
+            param(P_IS_CORRECT, if (isCorrect) "true" else "false")
+        }
+    }
+
+    /** Üç soru da bitti ve günün ödülü alındı — huninin son adımı. */
+    fun logDailyQuestionClaim() = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_CLAIM) {}
+    }
 
     /**
      * Çocuk öğretmene soru gönderdi.
