@@ -35,6 +35,7 @@ import com.example.app.abacus.AbacusPreferences.FrameType
 
 import com.google.android.material.card.MaterialCardView
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -65,6 +66,26 @@ class AbacusCustomizationFragment : Fragment() {
 
     private var currencyText: TextView? = null
     private var keyText: TextView? = null
+
+    /**
+     * Altın/anahtar bakiyesinin CANLI dinleyicisi.
+     *
+     * Bu ekranın kendi bakiye göstergesi var çünkü MainActivity'nin üst paneli burada gizli
+     * (bkz. MainActivity.updateCurrencyPanelVisibility). Ve mağaza bu fragment'in ÜSTÜNE
+     * `add` ile ekleniyor — `replace` değil — yani mağazadan dönerken ne onCreateView ne de
+     * onResume çalışıyor; tek seferlik okuma yapılırsa sayı satın almadan sonra eski kalıyor.
+     * Dinleyici, bakiye hangi sebeple değişirse değişsin (mağaza, ödüllü reklam, başka cihaz,
+     * sunucu iadesi) sayıyı kendiliğinden tazeler.
+     */
+    private var walletListener: ListenerRegistration? = null
+
+    /**
+     * Canlı dinleyiciden en az bir değer geldi mi?
+     *
+     * onCreateView'daki tek seferlik [UserWalletFirestore.loadWallet] ile dinleyici aynı anda
+     * başlıyor; geç gelen tek seferlik sonucun daha yeni canlı değeri ezmesini engeller.
+     */
+    private var walletLiveValueSeen = false
     private var previewController: AbacusBeadController? = null
     private var previewAbacusRoot: View? = null
 
@@ -122,9 +143,20 @@ class AbacusCustomizationFragment : Fragment() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
             UserWalletFirestore.loadWallet(requireContext(), uid, onResult = { wallet ->
+                if (walletLiveValueSeen) return@loadWallet
                 currencyText?.text = wallet.currency.toString()
                 keyText?.text = wallet.keys.toString()
             })
+            walletListener?.remove()
+            walletListener = UserWalletFirestore.listenToWallet(
+                context = requireContext().applicationContext,
+                uid = uid,
+                onUpdate = { wallet ->
+                    walletLiveValueSeen = true
+                    currencyText?.text = wallet.currency.toString()
+                    keyText?.text = wallet.keys.toString()
+                },
+            )
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
                 ownedBeads = owned
                 if (currentTab == 0) selectTab(0)
@@ -160,6 +192,9 @@ class AbacusCustomizationFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        walletListener?.remove()
+        walletListener = null
+        walletLiveValueSeen = false
         renderJob?.cancel()
         syncJob?.cancel()
         previewController = null

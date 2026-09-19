@@ -16,12 +16,28 @@ import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
 class ShopFragment : Fragment() {
 
     private var currencyText: TextView? = null
     private var keyText: TextView? = null
     private var energyText: TextView? = null
+
+    /**
+     * Altın/anahtar bakiyesinin CANLI dinleyicisi.
+     *
+     * Satın alma tamamlandığında ([BillingManager.onPurchaseGranted]) bakiyeyi SUNUCU yazıyor;
+     * yerel önbelleğe kimse dokunmuyor. Önbelleği ancak bir Firestore anlık görüntüsü tazeliyor
+     * (bkz. [UserWalletFirestore.listenToWallet] -> `cacheLocally`). Bu yüzden satın alma
+     * geri çağrısında önbellekten okumak yarış demek: Play'in "tüketildi" geri çağrısı
+     * anlık görüntüden önce gelirse başlıkta ESKİ sayı kalır ve onu tazeleyen başka bir şey
+     * olmaz. Dinleyici bu yarışı tamamen ortadan kaldırıyor.
+     */
+    private var walletListener: ListenerRegistration? = null
+
+    /** Canlı dinleyiciden en az bir değer geldi mi? Geç gelen tek seferlik okumayı eler. */
+    private var walletLiveValueSeen = false
 
     /** Anahtar karşılığı can alımı sürerken tekrar tıklamayı engeller. */
     private var buyLifeInProgress = false
@@ -51,9 +67,20 @@ class ShopFragment : Fragment() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
             UserWalletFirestore.loadWallet(ctx, uid, onResult = { wallet ->
+                if (walletLiveValueSeen) return@loadWallet
                 currencyText?.text = wallet.currency.toString()
                 keyText?.text = wallet.keys.toString()
             })
+            walletListener?.remove()
+            walletListener = UserWalletFirestore.listenToWallet(
+                context = ctx.applicationContext,
+                uid = uid,
+                onUpdate = { wallet ->
+                    walletLiveValueSeen = true
+                    currencyText?.text = wallet.currency.toString()
+                    keyText?.text = wallet.keys.toString()
+                },
+            )
         }
 
         // --- Can (Energy) Bölümü ---
@@ -248,6 +275,9 @@ class ShopFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        walletListener?.remove()
+        walletListener = null
+        walletLiveValueSeen = false
         updateRunnable?.let { handler.removeCallbacks(it) }
         // Geri çağrıları MainActivity'ye devret; mağaza kapalıyken tamamlanan satın almalar
         // da işlensin ve bu fragment'e sızıntı kalmasın.
