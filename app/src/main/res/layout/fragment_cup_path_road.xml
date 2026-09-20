@@ -124,6 +124,15 @@
             android:layout_gravity="start|center_vertical"
             android:contentDescription="@null" />
 
+        <View
+            android:id="@+id/cupPathRoadProgressShine"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/mission_progress_shine_height"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+            android:layout_marginTop="@dimen/mission_progress_shine_top"
+            android:contentDescription="@null" />
+
         <TextView
             android:id="@+id/tvCupPathRoadProgress"
             android:layout_width="match_parent"
@@ -169,18 +178,5 @@
             android:layout_gravity="center" />
 
     </FrameLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#0D1C24"
-        android:gravity="center"
-        android:paddingStart="20dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="10dp"
-        android:text="Her 100 kupada bir sandık kazanırsın. Sandık açılırken şansına göre Ender, Destansı ya da Efsanevi'ye yükselebilir."
-        android:textColor="#93A5B3"
-        android:textSize="12sp" />
 
 </LinearLayout>

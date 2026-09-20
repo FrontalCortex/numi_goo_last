@@ -40,6 +40,14 @@ class CupPathRoadFragment : Fragment() {
     /** Liste ilk dolduğunda kullanıcının bulunduğu yere bir kez kaydırılır, sonra dokunulmaz. */
     private var scrolledToCurrent = false
 
+    /**
+     * Kapalı sandık çizimi kendi kutusunun ortasının altında duruyor; yolun şeridine göre
+     * ortalanması için bu kadar yukarı kaydırılıyor. Açık sandıkta bu sorun yok.
+     */
+    private val closedChestLiftPx: Float by lazy {
+        resources.getDimensionPixelSize(R.dimen.cup_path_road_chest_center_offset).toFloat()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         cupField = arguments?.getString(ARG_CUP_FIELD).orEmpty()
@@ -92,19 +100,20 @@ class CupPathRoadFragment : Fragment() {
         }
 
         binding.tvCupPathRoadProgress.text = state.label
-        binding.cupPathRoadProgressFill.setBackgroundResource(
-            if (state.claimable) R.drawable.daily_question_progress_fill_complete
-            else R.drawable.daily_question_progress_fill
-        )
+        // Dolgu, parlama ve renkler karttakiyle aynı yardımcıdan geçiyor; genişlik ölçüm
+        // bitmeden bilinmediği için post ile ölçüm sonrasına bırakılıyor.
         val zone = binding.cupPathRoadProgressZone
         val fill = binding.cupPathRoadProgressFill
+        val shine = binding.cupPathRoadProgressShine
         zone.post {
-            if (_binding == null) return@post
-            val full = zone.width
-            if (full <= 0) return@post
-            val lp = fill.layoutParams
-            lp.width = (full * state.fraction).toInt().coerceIn(0, full)
-            fill.layoutParams = lp
+            if (_binding == null || zone.width <= 0) return@post
+            applyDailyQuestionProgressOverlayNow(
+                widthHost = zone,
+                fill = fill,
+                shine = shine,
+                percent = state.fraction * 100f,
+                complete = state.claimable,
+            )
         }
 
         val milestones = state.milestones()
@@ -214,7 +223,9 @@ class CupPathRoadFragment : Fragment() {
             when (milestone.status) {
                 CupPathRewardRepository.MilestoneStatus.CLAIMED -> {
                     chestBox.setBackgroundResource(0)
-                    chest.setImageResource(R.drawable.new_chest_open_ic2)
+                    chest.setImageResource(R.drawable.new_chest_open_ic1)
+                    // Açık sandık çizimi kendi kutusunda zaten ortalı; kaydırmaya gerek yok.
+                    chest.translationY = 0f
                     chest.alpha = 0.6f
                     done.visibility = View.VISIBLE
                     status.text = "ALINDI"
@@ -222,7 +233,8 @@ class CupPathRoadFragment : Fragment() {
                 }
                 CupPathRewardRepository.MilestoneStatus.CLAIMABLE -> {
                     chestBox.setBackgroundResource(R.drawable.bg_cup_path_milestone_ready)
-                    chest.setImageResource(R.drawable.new_chest_close_ic2)
+                    chest.setImageResource(R.drawable.new_chest_close_ic1)
+                    chest.translationY = -closedChestLiftPx
                     chest.alpha = 1f
                     done.visibility = View.GONE
                     status.text = "HAZIR"
@@ -230,7 +242,8 @@ class CupPathRoadFragment : Fragment() {
                 }
                 CupPathRewardRepository.MilestoneStatus.LOCKED -> {
                     chestBox.setBackgroundResource(0)
-                    chest.setImageResource(R.drawable.new_chest_close_ic2)
+                    chest.setImageResource(R.drawable.new_chest_close_ic1)
+                    chest.translationY = -closedChestLiftPx
                     chest.alpha = 0.45f
                     done.visibility = View.GONE
                     status.text = ""

@@ -38,7 +38,7 @@
                 android:adjustViewBounds="true"
                 android:contentDescription="@null"
                 android:scaleType="fitCenter"
-                android:src="@drawable/new_chest_close_ic2" />
+                android:src="@drawable/new_chest_close_ic1" />
 
             <ImageView
                 android:id="@+id/milestoneDone"

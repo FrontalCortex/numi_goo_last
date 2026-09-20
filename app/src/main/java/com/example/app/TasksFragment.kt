@@ -112,6 +112,12 @@ class TasksFragment : Fragment() {
         private const val VIEW_TYPE_DAILY_QUESTION = 1
         private const val DAILY_PROGRESS_ANIM_DURATION_MS = 2800L
         private const val CLAIM_READY_VISUAL_PERCENT = 99.5f
+
+        /**
+         * Kupa sayacı ve kupa yolu çubuğu aynı anda akar; ikisi aynı süreyi kullanıyor ki
+         * sayı yerine oturduğunda çubuk da oturmuş olsun.
+         */
+        private const val CUP_SCORE_ANIM_MS = 1000L
     }
 
     private sealed class BulletinRow {
@@ -1699,7 +1705,7 @@ class TasksFragment : Fragment() {
         deltaTextView.setTextColor(if (delta > 0) android.graphics.Color.parseColor("#4CAF50") else android.graphics.Color.parseColor("#F44336"))
         
         val animator = android.animation.ValueAnimator.ofInt(oldScore, newScore)
-        animator.duration = 1000
+        animator.duration = CUP_SCORE_ANIM_MS
         animator.addUpdateListener { anim ->
             textView.text = anim.animatedValue.toString()
         }
@@ -1764,7 +1770,15 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                                         setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
                                         setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
 
-                                        bindCupPathRewards(contentView, dialog)
+                                        // Ders sonrası tazeleme: hangi kart değiştiyse onun çubuğu da kupa sayısıyla
+                                        // birlikte akıyor. Kart → kupa alanı eşleşmesi cupPathRewardViews'te duruyor.
+                                        bindCupPathRewards(
+                                            contentView,
+                                            dialog,
+                                            animatedCupField = cupPathRewardViews.firstOrNull { it.cupValueId == updatedCardId }?.cupField,
+                                            animatedScore = updatedScore,
+                                            delta = delta ?: 0,
+                                        )
 
                                         contentView.findViewById<View>(R.id.card1View)?.apply { isClickable = active1; isEnabled = active1 }
                                         contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = active2; isEnabled = active2 }
@@ -2127,11 +2141,18 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
     // ── Kupa yolu sandıkları (Trophy Road) ──────────────────────────────
 
-    /** Bir kupa yolu kartındaki ödül satırının görünümleri ve ait olduğu kupa alanı. */
+    /**
+     * Bir kupa yolu kartındaki ödül satırının görünümleri ve ait olduğu kupa alanı.
+     *
+     * [cupValueId] de burada çünkü ders sonrası tazelemede hangi kartın değiştiği bu id ile
+     * bildiriliyor; kart → kupa alanı eşleşmesi tek yerde kalsın diye listeye eklendi.
+     */
     private data class CupPathRewardViews(
         val cupField: String,
+        val cupValueId: Int,
         val zoneId: Int,
         val fillId: Int,
+        val shineId: Int,
         val textId: Int,
         val chestId: Int,
     )
@@ -2143,43 +2164,79 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
      */
     private val cupPathRewardViews = listOf(
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_ADDITION,
-            R.id.card1RewardZone, R.id.card1RewardFill, R.id.card1RewardText, R.id.card1RewardChest,
+            CupPathRewardRepository.FIELD_ADDITION, R.id.card1CupValue,
+            R.id.card1RewardZone, R.id.card1RewardFill, R.id.card1RewardShine,
+            R.id.card1RewardText, R.id.card1RewardChest,
         ),
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_EXTRACTION,
-            R.id.card2RewardZone, R.id.card2RewardFill, R.id.card2RewardText, R.id.card2RewardChest,
+            CupPathRewardRepository.FIELD_EXTRACTION, R.id.card2CupValue,
+            R.id.card2RewardZone, R.id.card2RewardFill, R.id.card2RewardShine,
+            R.id.card2RewardText, R.id.card2RewardChest,
         ),
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_IMPACT,
-            R.id.card3RewardZone, R.id.card3RewardFill, R.id.card3RewardText, R.id.card3RewardChest,
+            CupPathRewardRepository.FIELD_IMPACT, R.id.card3CupValue,
+            R.id.card3RewardZone, R.id.card3RewardFill, R.id.card3RewardShine,
+            R.id.card3RewardText, R.id.card3RewardChest,
         ),
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_BLINDING_ADDITION,
-            R.id.card4RewardZone, R.id.card4RewardFill, R.id.card4RewardText, R.id.card4RewardChest,
+            CupPathRewardRepository.FIELD_BLINDING_ADDITION, R.id.card4CupValue,
+            R.id.card4RewardZone, R.id.card4RewardFill, R.id.card4RewardShine,
+            R.id.card4RewardText, R.id.card4RewardChest,
         ),
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_BLINDING_EXTRACTION,
-            R.id.card5RewardZone, R.id.card5RewardFill, R.id.card5RewardText, R.id.card5RewardChest,
+            CupPathRewardRepository.FIELD_BLINDING_EXTRACTION, R.id.card5CupValue,
+            R.id.card5RewardZone, R.id.card5RewardFill, R.id.card5RewardShine,
+            R.id.card5RewardText, R.id.card5RewardChest,
         ),
         CupPathRewardViews(
-            CupPathRewardRepository.FIELD_BLINDING_IMPACT,
-            R.id.card6RewardZone, R.id.card6RewardFill, R.id.card6RewardText, R.id.card6RewardChest,
+            CupPathRewardRepository.FIELD_BLINDING_IMPACT, R.id.card6CupValue,
+            R.id.card6RewardZone, R.id.card6RewardFill, R.id.card6RewardShine,
+            R.id.card6RewardText, R.id.card6RewardChest,
         ),
     )
+
+    /**
+     * Süren çubuk animasyonları, kupa alanına göre. Panel animasyon bitmeden tekrar
+     * tazelenirse eski animasyon iptal ediliyor; yoksa iki animasyon aynı çubuğu çekiştirir.
+     */
+    private val cupPathBarAnimators = mutableMapOf<String, ValueAnimator>()
 
     /**
      * Altı kartın ödül çubuğunu doldurur.
      *
      * Tek çağrı iki Firestore dokümanı okuyor (kupa puanları + ödül defteri), altı değil:
      * ikisi de tek dokümanda tutuluyor.
+     *
+     * Ders bitip panele dönüldüğünde [animatedCupField] verilir: o kartın çubuğu, kupa
+     * sayısının yanındaki +N / -N ile aynı anda ve aynı sürede eski değerden yenisine akar.
+     * Kupa düşmüşse çubuk geri çekilir.
      */
-    private fun bindCupPathRewards(root: View, dialog: android.app.Dialog) {
+    private fun bindCupPathRewards(
+        root: View,
+        dialog: android.app.Dialog,
+        animatedCupField: String? = null,
+        animatedScore: Int? = null,
+        delta: Int = 0,
+    ) {
         CupPathRewardRepository.fetchStates { states ->
             if (!isAdded) return@fetchStates
             cupPathRewardViews.forEach { views ->
-                val state = states[views.cupField] ?: return@forEach
-                bindCupPathRewardCard(root, views, state, dialog)
+                val fetched = states[views.cupField] ?: return@forEach
+                val animated = views.cupField == animatedCupField
+                // Ders biter bitmez yapılan okuma yeni puanı henüz görmeyebilir. Kartın
+                // üstündeki sayı ile çubuk ayrışmasın diye, o kart için ekrana yazılan puan
+                // esas alınıyor; defter (hangi eşik alındı) yine okunandan geliyor.
+                val state = if (animated && animatedScore != null) {
+                    fetched.copy(cupScore = animatedScore.coerceAtLeast(0))
+                } else {
+                    fetched
+                }
+                val from = if (animated && delta != 0) {
+                    state.copy(cupScore = (state.cupScore - delta).coerceAtLeast(0))
+                } else {
+                    null
+                }
+                bindCupPathRewardCard(root, views, state, dialog, from)
             }
         }
     }
@@ -2189,30 +2246,16 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         views: CupPathRewardViews,
         state: CupPathRewardRepository.CupPathState,
         dialog: android.app.Dialog,
+        from: CupPathRewardRepository.CupPathState? = null,
     ) {
         val zone = root.findViewById<View>(views.zoneId) ?: return
         val fill = root.findViewById<View>(views.fillId) ?: return
+        val shine = root.findViewById<View>(views.shineId) ?: return
         val text = root.findViewById<TextView>(views.textId) ?: return
         val chest = root.findViewById<ImageView>(views.chestId) ?: return
 
-        text.text = state.label
-        fill.setBackgroundResource(
-            if (state.claimable) R.drawable.daily_question_progress_fill_complete
-            else R.drawable.daily_question_progress_fill
-        )
-
-        // Dolgunun genişliği piksel cinsinden veriliyor ama çubuğun kendi genişliği ölçüm
-        // bitmeden bilinmiyor; ilk karede 0 gelir. Bu yüzden post ile ölçüm sonrasına bırakılıyor.
-        zone.post {
-            val full = zone.width
-            if (full <= 0) return@post
-            val lp = fill.layoutParams
-            lp.width = (full * state.fraction).toInt().coerceIn(0, full)
-            fill.layoutParams = lp
-        }
-
-        // Hak edilen sandık dikkat çeksin, edilmeyen sönük dursun.
-        chest.alpha = if (state.claimable) 1f else 0.55f
+        // Sandık hak edilmemişken de net duruyor: soluk sandık "bozuk" izlenimi veriyordu.
+        chest.alpha = 1f
 
         // Çubuk ile sandık ayrı davranıyor: hazır sandığa dokunan kullanıcı ödülü istiyor,
         // çubuğa dokunan ise ileride ne kazanacağını merak ediyor.
@@ -2220,6 +2263,64 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         zone.setOnClickListener { openCupPathRoad(state.cupField, dialog) }
         chest.isClickable = true
         chest.setOnClickListener { onCupPathChestTapped(state, dialog) }
+
+        cupPathBarAnimators.remove(views.cupField)?.cancel()
+        text.text = (from ?: state).label
+
+        // Dolgu ve parlama genişliği piksel cinsinden veriliyor ama çubuğun kendi genişliği
+        // ölçüm bitmeden bilinmiyor; ilk karede 0 gelir. Bu yüzden post ile ölçüm sonrasına
+        // bırakılıyor — animasyon da ancak orada anlamlı.
+        zone.post {
+            if (!isAdded || zone.width <= 0) return@post
+            if (from == null) {
+                applyCupPathProgress(zone, fill, shine, text, state)
+                return@post
+            }
+            val animator = ValueAnimator.ofInt(from.cupScore, state.cupScore).apply {
+                duration = CUP_SCORE_ANIM_MS
+                addUpdateListener { anim ->
+                    if (!isAdded) {
+                        anim.cancel()
+                        return@addUpdateListener
+                    }
+                    applyCupPathProgress(
+                        zone, fill, shine, text,
+                        state.copy(cupScore = anim.animatedValue as Int),
+                    )
+                }
+                addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        cupPathBarAnimators.remove(views.cupField)
+                        if (isAdded) applyCupPathProgress(zone, fill, shine, text, state)
+                    }
+                })
+            }
+            cupPathBarAnimators[views.cupField] = animator
+            animator.start()
+        }
+    }
+
+    /**
+     * Çubuğu tek bir duruma göre çizer.
+     *
+     * Dolgu, parlama ve renkler görevlerdeki/günlük sorudaki çubukla aynı yardımcıdan
+     * geçiyor ([applyDailyQuestionProgressOverlayNow]); böylece üç yerde aynı görünüyorlar.
+     */
+    private fun applyCupPathProgress(
+        zone: View,
+        fill: View,
+        shine: View,
+        text: TextView,
+        state: CupPathRewardRepository.CupPathState,
+    ) {
+        text.text = state.label
+        applyDailyQuestionProgressOverlayNow(
+            widthHost = zone,
+            fill = fill,
+            shine = shine,
+            percent = state.fraction * 100f,
+            complete = state.claimable,
+        )
     }
 
     /**

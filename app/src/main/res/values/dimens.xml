@@ -381,6 +381,19 @@
     <dimen name="chat_media_min_height">120dp</dimen>
     <dimen name="daily_question_progress_crystal_size">48dp</dimen>
     <dimen name="daily_question_progress_height">28dp</dimen>
+
+    <!--
+      Kupa yolu sandığının alt payı.
+
+      Kapalı sandık çiziminin viewBox'ında üstte boşluk var: çizim, kutusunun tam ortasının
+      yaklaşık %15 altında duruyor. Görünüm ortalanınca sandık çubuğun altına kaymış gibi
+      duruyordu. Dikey olarak ortalanmış bir görünümde alt pay, görünümü payın YARISI kadar
+      yukarı taşır; 48dp'lik sandık için gereken 7.5dp'yi vermek üzere 15dp kullanılıyor.
+    -->
+    <dimen name="cup_path_chest_center_offset">15dp</dimen>
+
+    <!-- Kupa yolu ekranındaki sandık için aynı düzeltme; orada kaydırma koddan yapılıyor. -->
+    <dimen name="cup_path_road_chest_center_offset">7dp</dimen>
     <dimen name="daily_question_progress_width">200dp</dimen>
     <dimen name="map_lesson_inner_card_corner_radius">20dp</dimen>
     <dimen name="map_lesson_inner_card_size">40dp</dimen>
