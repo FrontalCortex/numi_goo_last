@@ -129,13 +129,16 @@ service cloud.firestore {
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     //
-    // `badgeProgress` BU KURALIN DIŞINDA. Sezon madalyaları oraya yazılıyor ve onları
-    // yalnızca sunucu üretebilmeli; ayrı kuralı hemen aşağıda. (Firestore kuralları VEYA'lı:
-    // daha özel bir eşleşme, geniş bir kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna
-    // burada, kaynağında yazılı olmak zorunda.)
+    // İKİ ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü ikisini de yalnızca sunucu üretebilmeli:
+    //   • `badgeProgress` — sezon madalyaları
+    //   • `cupPathRewards` — kupa yolunda hangi sandığın alındığı defteri
+    // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
+    // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
+    // zorunda.)
     match /users/{userId}/{subcollection}/{document=**} {
       allow read: if isSelf(userId);
-      allow write: if isSelf(userId) && subcollection != 'badgeProgress';
+      allow write: if isSelf(userId)
+        && !(subcollection in ['badgeProgress', 'cupPathRewards']);
     }
 
     // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.
@@ -174,6 +177,22 @@ service cloud.firestore {
     }
     match /users/{userId}/cupWayProgress/{doc} {
       allow read: if isSignedIn();
+    }
+
+    // Kupa yolu sandık defteri: her yolda en son hangi kupa eşiğinin ödülü alındığı.
+    //
+    // YAZMA TAMAMEN KAPALI. Defteri yalnızca claimCupPathChest (Admin SDK, kuralları atlar)
+    // ilerletiyor ve bunu sandığı verdiği transaction'ın içinde yapıyor.
+    //
+    // SİLME DE KAPALI — bu önemli: defteri silebilen biri `lastClaimed`'i başlangıca
+    // döndürüp bütün eşikleri yeniden ödetebilirdi. Hesap silindiğinde temizliği
+    // cleanupUserOnDelete yapıyor (recursiveDelete, Admin SDK).
+    //
+    // Okuma yalnızca sahibine: ilerleme çubuğu ve kupa yolu ekranı bu defteri gösteriyor.
+    // Başkasının kaçıncı sandığı aldığını görmesi gerekmiyor.
+    match /users/{userId}/cupPathRewards/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
     }
     match /users/{userId}/cupHistory/{doc} {
       allow read: if isSignedIn();

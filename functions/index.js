@@ -3388,6 +3388,135 @@ exports.openChest = functions.https.onCall(async (data, context) => {
   };
 });
 
+// ─── Kupa Yolu sandıkları (Trophy Road) ──────────────────────────────────────
+//
+// Kullanıcı kupa biriktirdikçe belirli eşiklerde sandık kazanır. Altı kupa yolunun her
+// birinin kendi eşik dizisi ve kendi defteri var.
+//
+// GÜVENLİK NOTU
+//   Kupa puanı (`cupWayProgress/progress`) şu an İSTEMCİDEN yazılabiliyor. Bu yüzden
+//   "hangi eşiğin alındığı" defteri istemciye kapalı ayrı bir koleksiyonda tutuluyor
+//   (`cupPathRewards`, bkz. firestore.rules) ve ilerletilmesi ile sandığın verilmesi AYNI
+//   transaction içinde oluyor. Böylece aynı eşik iki kez ödetilemiyor.
+//
+//   Defter güvenli ama dayandığı kupa puanı henüz değil: puanını yükselten biri hak
+//   etmediği eşikleri geçebilir. Kupa yazımını sunucuya taşımak ayrı bir iş; o yapılana
+//   kadar tek fren günlük sandık tavanı (CHEST_DAILY_LIMIT).
+
+/** Kupa yolu alanları. İstemcideki altı repository ile birebir aynı olmalı. */
+const CUP_PATH_FIELDS = [
+  'addition_abacus_cup',
+  'extraction_abacus_cup',
+  'impact_abacus_cup',
+  'blinding_addition_abacus_cup',
+  'blinding_extraction_abacus_cup',
+  'blinding_impact_abacus_cup',
+];
+
+/** Kupa yollarının başlangıç puanı (istemcideki DEFAULT_CUP_SCORE ile aynı). */
+const CUP_PATH_START = 200;
+
+/** Her kaç kupada bir sandık. */
+const CUP_PATH_STEP = 100;
+
+/**
+ * [lastClaimed]'den sonraki eşik.
+ *
+ * Başlangıç puanı 200 olduğu için ilk eşik 300'dür: 100 ve 200 hiç oynamadan geçilmiş
+ * sayılırdı ve ilk açılışta iki bedava sandık demek olurdu.
+ */
+function nextCupPathMilestone(lastClaimed) {
+  const base =
+    Number.isFinite(lastClaimed) && lastClaimed > CUP_PATH_START ? lastClaimed : CUP_PATH_START;
+  return base + CUP_PATH_STEP;
+}
+
+/**
+ * Kupa yolunda hak edilmiş BİR sandığı açar.
+ *
+ * Çağrı başına tek eşik ilerletilir; birikmiş birden fazla sandık varsa istemci tekrar
+ * çağırır. Sandık openChest ile aynı yoldan çekilir (COMMON başlar, nadirlik ve ödül
+ * sunucuda yuvarlanır), cevap biçimi de aynıdır — istemci aynı sandık animasyonunu oynatır.
+ */
+exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const cupField = typeof (data && data.cupField) === 'string' ? data.cupField.trim() : '';
+  if (!CUP_PATH_FIELDS.includes(cupField)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa yolu.');
+  }
+
+  const cupRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
+  const ledgerRef = db.collection('users').doc(uid).collection('cupPathRewards').doc('progress');
+
+  // Nadirlik ve ödül transaction'dan ÖNCE yuvarlanıyor: transaction yeniden çalıştırılırsa
+  // kullanıcı aynı çağrıda ikinci bir şans kazanmasın.
+  const startRarity = 'COMMON';
+  const rarityPath = [];
+  let rarity = startRarity;
+  for (let i = 0; i < CHEST_TAP_COUNT; i++) {
+    rarity = rollRarityUpgrade(rarity);
+    rarityPath.push(rarity);
+  }
+  const reward = rollChestReward(rarity);
+
+  let claimedMilestone = 0;
+
+  const balances = await grantRolledReward(
+    uid,
+    reward,
+    'chests',
+    CHEST_DAILY_LIMIT,
+    async (transaction) => {
+      const cupSnap = await transaction.get(cupRef);
+      const ledgerSnap = await transaction.get(ledgerRef);
+
+      const cupData = cupSnap.exists ? cupSnap.data() || {} : {};
+      const rawScore = Number(cupData[cupField]);
+      const cupScore = Number.isFinite(rawScore) ? Math.trunc(rawScore) : CUP_PATH_START;
+
+      const ledgerData = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+      const rawClaimed = Number((ledgerData[cupField] || {}).lastClaimed);
+      const lastClaimed = Number.isFinite(rawClaimed) ? Math.trunc(rawClaimed) : CUP_PATH_START;
+
+      const milestone = nextCupPathMilestone(lastClaimed);
+      if (cupScore < milestone) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu sandık için yeterli kupan yok.'
+        );
+      }
+      claimedMilestone = milestone;
+
+      // Firestore transaction'larında tüm okumalar yazmalardan önce gelmeli; yazmayı
+      // grantRolledReward kendi okumalarını bitirdikten sonra bu fonksiyonla yapıyor.
+      return (writeTransaction) => {
+        writeTransaction.set(
+          ledgerRef,
+          { [cupField]: { lastClaimed: milestone } },
+          { merge: true }
+        );
+      };
+    }
+  );
+
+  return {
+    success: true,
+    cupField,
+    milestone: claimedMilestone,
+    startRarity,
+    rarityPath,
+    finalRarity: rarity,
+    rewardType: reward.type,
+    rewardAmount: reward.amount,
+    keys: balances.keys,
+    currency: balances.currency,
+  };
+});
+
 /**
  * Kristal (günlük soru / görev) ödülü açar. Hangi videonun oynayacağını ve ödülü
  * sunucu çeker.
