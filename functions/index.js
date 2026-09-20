@@ -1354,9 +1354,42 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
   }
 });
 
+/**
+ * Liderlik tablosunda gösterilebilecek avatar adresleri.
+ *
+ * Bu adres, tahtayı açan HER ÇOCUĞUN cihazında indiriliyor (RecordFragment /
+ * RecordLeaderboardAdapter → Glide). Serbest bırakılsaydı, kendi sunucusunu adres olarak
+ * yazan biri tabloyu gören her çocuğun IP adresini toplayabilirdi. Bu yüzden yalnızca
+ * kimlik sağlayıcısının barındırdığı adresler kabul ediliyor.
+ *
+ * Uygulama profil fotoğrafı yüklemeye başlarsa (şu an avatarlar yerel çizimler,
+ * bkz. publicProfiles.selectedAvatar) buraya 'firebasestorage.googleapis.com' eklenmeli.
+ */
+const LEADERBOARD_AVATAR_HOSTS = new Set([
+  'lh3.googleusercontent.com',
+  'lh4.googleusercontent.com',
+  'lh5.googleusercontent.com',
+  'lh6.googleusercontent.com',
+]);
+
+/** Beyaz listede olmayan ya da bozuk adres için boş döner; istemci harf rozetine düşer. */
+function safeLeaderboardAvatarUrl(raw) {
+  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 511) return '';
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch (e) {
+    return '';
+  }
+  if (parsed.protocol !== 'https:') return '';
+  if (!LEADERBOARD_AVATAR_HOSTS.has(parsed.hostname)) return '';
+  return parsed.toString();
+}
+
 // Liderlik Tablosu Skor Gönderme Fonksiyonu
 // İstemciden gelen season parametresi tamamen görmezden gelinir.
 // Sunucu kendi saat/tarihine göre doğru sezonu hesaplar → cihaz saati manipülasyonuna karşı koruma.
+// İsim ve avatar da istemciden ALINMAZ (bkz. aşağısı).
 exports.submitLeaderboardScore = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
@@ -1372,8 +1405,6 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   const lessonKey = /^[a-z0-9_]{1,120}$/.test(lessonKeyRaw) ? lessonKeyRaw : null;
   const lessonIndex = parseInt(data.lessonIndex);
   const recordScore = parseInt(data.recordScore);
-  const displayName = typeof data.displayName === 'string' ? data.displayName.trim().slice(0, 127) || 'Kullanıcı' : 'Kullanıcı';
-  const photoUrl = typeof data.photoUrl === 'string' ? data.photoUrl.slice(0, 511) : '';
   const titleUnit = typeof data.titleUnit === 'string' ? data.titleUnit.trim().slice(0, 127) || null : null;
 
   if (!Number.isFinite(partId)) {
@@ -1385,6 +1416,23 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   if (!Number.isFinite(recordScore) || recordScore <= 0 || recordScore > 2000) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz recordScore (1-2000 aralığında olmalı).');
   }
+
+  // İSİM VE AVATAR İSTEMCİDEN ALINMAZ.
+  //
+  // İkisi de başka çocukların ekranında gösteriliyor. Eskiden ikisi de istek gövdesinden
+  // geliyordu; yani kullanıcı kendi profiliyle hiç ilgisi olmayan bir ad ve istediği bir
+  // adresi tahtaya yazdırabiliyordu.
+  //
+  // Ad, sunucunun yazdığı publicProfiles aynasından okunuyor (istemci yazımı kapalı,
+  // bkz. mirrorPublicProfile). Ayna henüz oluşmamışsa kimlik jetonundaki ada düşülüyor.
+  const publicSnap = await db.collection('publicProfiles').doc(uid).get();
+  const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
+  const authToken = context.auth.token || {};
+  const nameFromProfile = typeof publicData.name === 'string' ? publicData.name.trim() : '';
+  const nameFromToken = typeof authToken.name === 'string' ? authToken.name.trim() : '';
+  const displayName =
+    nameFromProfile.slice(0, 127) || nameFromToken.slice(0, 127) || 'Kullanıcı';
+  const photoUrl = safeLeaderboardAvatarUrl(authToken.picture);
 
   // Sezonu SUNUCU saatine göre hesapla — istemciye güvenilmez.
   const { currentSeason } = require('./seasonCalendar');

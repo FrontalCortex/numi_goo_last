@@ -128,14 +128,49 @@ service cloud.firestore {
     }
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
+    //
+    // `badgeProgress` BU KURALIN DIŞINDA. Sezon madalyaları oraya yazılıyor ve onları
+    // yalnızca sunucu üretebilmeli; ayrı kuralı hemen aşağıda. (Firestore kuralları VEYA'lı:
+    // daha özel bir eşleşme, geniş bir kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna
+    // burada, kaynağında yazılı olmak zorunda.)
     match /users/{userId}/{subcollection}/{document=**} {
-      allow read, write: if isSelf(userId);
+      allow read: if isSelf(userId);
+      allow write: if isSelf(userId) && subcollection != 'badgeProgress';
     }
 
-    // Rozet, Kupa Yolu ve Ders İlerlemesi: başkasının profilini görüntülemek için okunabilir.
-    // Bu dokümanlar kişisel veri içermez (yalnızca ilerleme sayaçları).
+    // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.
+    //
+    // YAZMA İKİYE BÖLÜNDÜ. Bu dokümanda iki farklı sahibi olan alanlar bir arada duruyor:
+    //
+    //   • İlerleme sayaçları (`user*Progress`, seri alanları): istemci hesaplıyor ve yazıyor.
+    //   • SEZON ÖDÜLLERİ (`goldMedalPiece`, `silverMedalPiece`, `bronzeMedalPiece`,
+    //     `cupPiece`): sezon sonunda finalizeSeasonLeaderboardMedals (Admin SDK, kuralları
+    //     atlar) yazıyor.
+    //
+    // İkincisi istemciye açık kalamaz. Liderlik tahtaları ve girişleri zaten kapalı ve skor
+    // yalnızca submitLeaderboardScore üzerinden yazılıyor; ama ÖDÜLÜN İNDİĞİ doküman açık
+    // olsaydı bir kullanıcı hiç yarışmadan kendine her sezon için altın madalya yazabilirdi —
+    // rozetler başkalarının profilinde de göründüğü için bunun bir karşılığı da var.
+    //
+    // `pendingLeaderboardRewardSeason` bilerek AÇIK: ödülü toplayan istemci onu siliyor
+    // (MainActivity.onSeasonLeaderboardBadgeCelebrationFinished). Uydurulması zararsız,
+    // çünkü kutlama kuyruğu madalya SATIRLARINDAN üretiliyor: satır yoksa kapı boş açılıp
+    // kendini kapatıyor.
     match /users/{userId}/badgeProgress/{doc} {
+      // finalizeSeasonLeaderboardMedals'ın yazdığı, istemcinin dokunamayacağı alanlar.
+      function seasonAwardFields() {
+        return ['goldMedalPiece', 'silverMedalPiece', 'bronzeMedalPiece', 'cupPiece'];
+      }
+
       allow read: if isSignedIn();
+      // Doküman yokken: ödül alanları hiç gönderilmemeli (changed() burada kullanılamaz,
+      // resource.data yok).
+      allow create: if isSelf(userId)
+        && !request.resource.data.keys().hasAny(seasonAwardFields());
+      allow update: if isSelf(userId)
+        && !changed().hasAny(seasonAwardFields());
+      // Hesap silme akışı (AccountDeletionHelper) bu dokümanı siliyor.
+      allow delete: if isSelf(userId);
     }
     match /users/{userId}/cupWayProgress/{doc} {
       allow read: if isSignedIn();

@@ -127,12 +127,14 @@ object LessonLeaderboardRepository {
             return
         }
 
+        // Ad ve avatar GÖNDERİLMEZ: ikisi de başka çocukların ekranında gösteriliyor, bu yüzden
+        // sunucu onları publicProfiles aynasından ve kimlik jetonundan kendisi çözüyor
+        // (bkz. functions/index.js → submitLeaderboardScore). Eski sürüm istemciler hâlâ
+        // gönderebilir; sunucu yok sayıyor.
         val data = hashMapOf<String, Any>(
             "partId" to partId,
             "lessonKey" to lessonKey,
             "recordScore" to recordScore,
-            "displayName" to (user.displayName?.trim()?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
-            "photoUrl" to (user.photoUrl?.toString() ?: ""),
         )
         val titleTrimmed = titleUnit?.trim()?.take(127)?.takeIf { it.isNotEmpty() }
         if (titleTrimmed != null) {
