@@ -172,6 +172,14 @@ class NumiGooApplication : Application() {
         } catch (e: Throwable) {
             Log.w(TAG, "Ekran takibi kurulamadı", e)
         }
+
+        // Sezon saatinin kalıcı sapmasını yükle. Ağ çağrısı yok, yalnızca disk okuması;
+        // sunucuyla eşitleme oturum açıldıktan sonra MainActivity'de yapılıyor.
+        try {
+            SeasonClock.init(this)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Sezon saati kurulamadı", e)
+        }
     }
 
     /** [Application.ActivityLifecycleCallbacks]'in yalnızca bir metodunu ezebilmek için boş taban. */

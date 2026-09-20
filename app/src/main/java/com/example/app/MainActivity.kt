@@ -3297,6 +3297,9 @@ class MainActivity : AppCompatActivity() {
         }
         if (hasExistingLogin) {
             refreshWalletFromFirestore()
+            // Sezon saatini sunucuya göre düzelt. Saatte bir defadan sık istek atmıyor,
+            // bu yüzden her onResume'da çağırmak serbest.
+            SeasonClock.refreshFromServer()
             SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
                 SessionDeviceManager.startSessionHeartbeat(this)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&

@@ -94,6 +94,9 @@ class RecordFragment : Fragment() {
 
         bindLeaderboardListener(SeasonClock.currentSeason())
         SeasonClock.addSeasonChangeListener(onSeasonAdvanced)
+        // Sezonun doğruluğu asıl burada önemli: yanlış sezon = başka tahta = boş liste.
+        // Sapma düzelince sezon değişirse yukarıdaki dinleyici doğru tahtaya yeniden bağlar.
+        SeasonClock.refreshFromServer()
         startCountdownTicker()
     }
 

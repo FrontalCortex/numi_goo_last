@@ -1386,6 +1386,34 @@ function safeLeaderboardAvatarUrl(raw) {
   return parsed.toString();
 }
 
+/**
+ * Sunucu saatine göre sezon bilgisi.
+ *
+ * NEDEN VAR
+ *   Skor yazılırken sezonu sunucu hesaplıyor, ama liderlik tablosu OKUNURKEN sezon
+ *   istemcide hesaplanıyor ve tahta kimliğine giriyor. Cihazın tarihi yanlışsa kullanıcı
+ *   yazdığından başka bir tahtayı okur; ekran sonsuza kadar boş kalır ve hiçbir hata
+ *   görünmez. İstemci ([SeasonClock]) buradan öğrendiği anla kendi saatini düzeltiyor.
+ *
+ * Okuma yapmaz, yazma yapmaz — yalnızca saati söyler. İstemci saatte bir defadan sık
+ * çağırmaz.
+ */
+exports.getSeasonInfo = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const {
+    currentSeason,
+    millisUntilCurrentSeasonEnds,
+  } = require('./seasonCalendar');
+  const now = Date.now();
+  return {
+    serverNowMs: now,
+    season: currentSeason(now),
+    millisUntilSeasonEnds: millisUntilCurrentSeasonEnds(now),
+  };
+});
+
 // Liderlik Tablosu Skor Gönderme Fonksiyonu
 // İstemciden gelen season parametresi tamamen görmezden gelinir.
 // Sunucu kendi saat/tarihine göre doğru sezonu hesaplar → cihaz saati manipülasyonuna karşı koruma.
