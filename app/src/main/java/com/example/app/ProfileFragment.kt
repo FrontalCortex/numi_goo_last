@@ -815,22 +815,10 @@ class ProfileFragment : Fragment() {
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
         }
-        val spec = when (kind) {
-            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(3, 5, 10, 15, 20) to 5
-            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-            else -> return 0
-        }
+        // Eşikler tek kaynaktan: [BadgeProgressEngine.levelSpec]. Burası eskiden kendi
+        // kopyasını tutuyordu ve roket rozetinde rozet ızgarasından FARKLI bir tablo
+        // kullanıyordu. Kademesi olmayan rozetlerde (kupa, madalya, siyah kuşak) null gelir.
+        val spec = BadgeProgressEngine.levelSpec(kind) ?: return 0
         val (levels, step) = spec
         val rawCapped = raw.coerceAtLeast(0)
         val first = levels.first()
@@ -861,22 +849,10 @@ class ProfileFragment : Fragment() {
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
         }
-        val spec = when (kind) {
-            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(3, 5, 10, 15, 20) to 5
-            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-            else -> return 0.0
-        }
+        // Eşikler tek kaynaktan: [BadgeProgressEngine.levelSpec]. Burası eskiden kendi
+        // kopyasını tutuyordu ve roket rozetinde rozet ızgarasından FARKLI bir tablo
+        // kullanıyordu. Kademesi olmayan rozetlerde (kupa, madalya, siyah kuşak) null gelir.
+        val spec = BadgeProgressEngine.levelSpec(kind) ?: return 0.0
         val (levels, step) = spec
         val rawCapped = raw.coerceAtLeast(0)
         val first = levels.first()

@@ -156,12 +156,19 @@ object BadgeProgressFirestore {
         return after to currentPeriodKey
     }
 
+    /**
+     * Eşikler [BadgeProgressEngine.levelSpec]'ten okunur; çağıran taraf liste geçmez.
+     *
+     * Eskiden her çağrı eşik listesini kendisi yazıyordu. Rozet ekranının eşikleri
+     * değiştirilip burası unutulduğunda kutlama eskilere göre çalışıyor, fark da hiçbir
+     * yerde görünmüyordu — rozet "kazanıldı" görünüp kutlama oynamaması demek.
+     */
     private fun resolveLevelUpPayload(
         mode: BadgeFragment.BadgeAnimMode,
         before: Int,
         after: Int,
-        levels: List<Int>,
     ): BadgeLevelUpPayload? {
+        val levels = BadgeProgressEngine.levelSpec(mode)?.first ?: return null
         val nextTargetBefore = levels.firstOrNull { it > before } ?: return null
         if (nextTargetBefore > levels.last()) return null
         if (after < nextTargetBefore) return null
@@ -422,7 +429,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.BOWLING_WITH_BASE,
                     beforeBowling,
                     afterBowling,
-                    listOf(5, 10, 20, 50, 100),
                 )?.let { payloads.add(it) }
             }
             if (incrementDart) {
@@ -430,7 +436,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.DAILY_ONLY,
                     beforeDart,
                     afterDart,
-                    listOf(3, 10, 20, 30, 50),
                 )?.let { payloads.add(it) }
             }
             if (incrementKarate) {
@@ -442,7 +447,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.GOLF_WITH_BASE,
                     beforeGolf,
                     afterGolf,
-                    listOf(3, 5, 10, 15, 20),
                 )?.let { payloads.add(it) }
             }
             if (incrementFishing) {
@@ -453,7 +457,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.TORNADO,
                     beforeTornado,
                     afterTornado,
-                    listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
             if (incrementVolcano) {
@@ -461,7 +464,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.VOLCANO,
                     beforeVolcano,
                     afterVolcano,
-                    listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
             committedPayloads.set(payloads.toList())
