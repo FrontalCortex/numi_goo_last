@@ -153,6 +153,46 @@ object ServerRewards {
             }
     }
 
+    /**
+     * Kupa yolunda hak edilmiş bir sandığı açar (`claimCupPathChest`).
+     *
+     * Sunucu kupa puanını ve "en son hangi eşik alındı" defterini kendisi okur; istemci
+     * yalnızca hangi kupa yolu olduğunu söyler. Sonuç biçimi [openChest] ile aynı, bu yüzden
+     * aynı sandık ekranı hiç değişmeden oynatılıyor.
+     *
+     * [prefetchChest] önbelleğine DOKUNMAZ: o önbellek ders/reklam sandığına ait ve bu çağrı
+     * onu tüketirse ders sandığı ikinci kez ağa gitmek zorunda kalırdı.
+     */
+    fun claimCupPathChest(
+        cupField: String,
+        onResult: (ChestOutcome) -> Unit,
+        onFailure: (Exception) -> Unit,
+    ) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("claimCupPathChest")
+            .call(hashMapOf("cupField" to cupField))
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *>
+                if (data == null) {
+                    onFailure(IllegalStateException("claimCupPathChest boş yanıt döndürdü"))
+                    return@addOnSuccessListener
+                }
+                val path = (data["rarityPath"] as? List<*>)?.mapNotNull { it as? String }.orEmpty()
+                onResult(
+                    ChestOutcome(
+                        rarityPath = path,
+                        finalRarity = data["finalRarity"] as? String ?: "COMMON",
+                        rewardType = data["rewardType"] as? String ?: "GOLD",
+                        rewardAmount = (data["rewardAmount"] as? Number)?.toInt() ?: 0,
+                    )
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "claimCupPathChest başarısız", e)
+                onFailure(e)
+            }
+    }
+
     fun openCrystal(
         onResult: (CrystalOutcome) -> Unit,
         onFailure: (Exception) -> Unit,

@@ -319,6 +319,9 @@ object AnalyticsLogger {
     /** Bülten kartından açılan sandık ([TasksFragment]); prefetch YAPILMAZ. */
     const val CHEST_SOURCE_BULLETIN = "bulletin"
 
+    /** Kupa yolu kartındaki sandık (Trophy Road). */
+    const val CHEST_SOURCE_CUP_PATH = "cup_path"
+
     /**
      * Kullanıcı hayatında en az bir kez enerji duvarına çarptı. Bir kez "true" yazılır ve
      * bir daha değişmez; Elde Tutma raporunda kırılım boyutu olarak kullanılır.

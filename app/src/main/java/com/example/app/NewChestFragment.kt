@@ -76,6 +76,12 @@ class NewChestFragment : Fragment() {
         private const val ARG_START_RARITY = "start_rarity"
         private const val ARG_AD_NONCE = "ad_nonce"
         private const val ARG_SOURCE = "chest_source"
+
+        /**
+         * Doluysa sandık kupa yolundan geliyor demektir ve `claimCupPathChest` ile açılır
+         * (bkz. [CupPathRewardRepository]). Boşsa normal `openChest` yolu kullanılır.
+         */
+        private const val ARG_CUP_FIELD = "cup_field"
         const val RESULT_EARNED_GOLD = "earned_gold"
         const val RESULT_EARNED_KEY = "earned_key"
 
@@ -93,12 +99,14 @@ class NewChestFragment : Fragment() {
             startRarity: ChestRarity = ChestRarity.COMMON,
             adNonce: String? = null,
             source: String,
+            cupField: String? = null,
         ): NewChestFragment {
             return NewChestFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_START_RARITY, startRarity.name)
                     if (adNonce != null) putString(ARG_AD_NONCE, adNonce)
                     putString(ARG_SOURCE, source)
+                    if (cupField != null) putString(ARG_CUP_FIELD, cupField)
                 }
             }
         }
@@ -230,42 +238,59 @@ class NewChestFragment : Fragment() {
      * ödül verilmediği için kullanıcı bir şey kaybetmez, tekrar deneyebilir.
      */
     private fun requestOutcomeFromServer() {
+        fun handleOutcome(outcome: ServerRewards.ChestOutcome) {
+            if (!isAdded || _binding == null) return
+            serverRarityPath = outcome.rarityPath.mapNotNull { name ->
+                try { ChestRarity.valueOf(name) } catch (e: IllegalArgumentException) { null }
+            }
+            serverRewardType = outcome.rewardType
+            serverRewardAmount = outcome.rewardAmount
+            outcomeReady = true
+            binding.chestLoadingSpinner.visibility = View.GONE
+            // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
+            (activity as? MainActivity)?.refreshWalletUi()
+
+            outcomeReadyAtMs = android.os.SystemClock.elapsedRealtime()
+            AnalyticsLogger.logChestOpenStart(
+                startRarity = currentRarity.name,
+                finalRarity = outcome.finalRarity,
+                chestSource = chestSource,
+            )
+        }
+
+        fun handleFailure(message: String) {
+            // Sunucu hatası "kullanıcı sıkılıp bıraktı" demek değil; sandık hiç açılabilir
+            // hâle gelmedi. Bayrağı burada set ederek onDestroyView'ın bunu terk olarak
+            // saymasını engelliyoruz — aksi halde chest_abandoned oranı şişerdi.
+            outcomeLogged = true
+            if (!isAdded || _binding == null) return
+            binding.chestLoadingSpinner.visibility = View.GONE
+            android.widget.Toast.makeText(
+                requireContext(),
+                message,
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+            closeFragment()
+        }
+
+        // Kupa yolu sandığı ayrı bir çağrıdan geliyor: sunucu kupa puanını ve "en son hangi
+        // eşik alındı" defterini kendisi doğruluyor, sonuç biçimi aynı olduğu için ekranın
+        // geri kalanı hiç değişmiyor.
+        val cupField = arguments?.getString(ARG_CUP_FIELD)
+        if (!cupField.isNullOrBlank()) {
+            ServerRewards.claimCupPathChest(
+                cupField = cupField,
+                onResult = { outcome -> handleOutcome(outcome) },
+                onFailure = { handleFailure("Sandık açılamadı. Tekrar deneyin.") },
+            )
+            return
+        }
+
         ServerRewards.openChest(
             startRarity = currentRarity.name,
             adNonce = arguments?.getString(ARG_AD_NONCE),
-            onResult = { outcome ->
-                if (!isAdded || _binding == null) return@openChest
-                serverRarityPath = outcome.rarityPath.mapNotNull { name ->
-                    try { ChestRarity.valueOf(name) } catch (e: IllegalArgumentException) { null }
-                }
-                serverRewardType = outcome.rewardType
-                serverRewardAmount = outcome.rewardAmount
-                outcomeReady = true
-                binding.chestLoadingSpinner.visibility = View.GONE
-                // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
-                (activity as? MainActivity)?.refreshWalletUi()
-
-                outcomeReadyAtMs = android.os.SystemClock.elapsedRealtime()
-                AnalyticsLogger.logChestOpenStart(
-                    startRarity = currentRarity.name,
-                    finalRarity = outcome.finalRarity,
-                    chestSource = chestSource,
-                )
-            },
-            onFailure = {
-                // Sunucu hatası "kullanıcı sıkılıp bıraktı" demek değil; sandık hiç açılabilir
-                // hâle gelmedi. Bayrağı burada set ederek onDestroyView'ın bunu terk olarak
-                // saymasını engelliyoruz — aksi halde chest_abandoned oranı şişerdi.
-                outcomeLogged = true
-                if (!isAdded || _binding == null) return@openChest
-                binding.chestLoadingSpinner.visibility = View.GONE
-                android.widget.Toast.makeText(
-                    requireContext(),
-                    "Sandık açılamadı. Tekrar deneyin.",
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
-                closeFragment()
-            },
+            onResult = { outcome -> handleOutcome(outcome) },
+            onFailure = { handleFailure("Sandık açılamadı. Tekrar deneyin.") },
         )
     }
 

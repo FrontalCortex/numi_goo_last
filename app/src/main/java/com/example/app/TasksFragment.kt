@@ -1167,6 +1167,8 @@ class TasksFragment : Fragment() {
         setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
         setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
 
+        bindCupPathRewards(contentView, dialog)
+
         // Cancel lottie animations on dismiss
         dialog.setOnDismissListener {
             listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
@@ -1762,6 +1764,8 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                                         setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, active5)
                                         setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
 
+                                        bindCupPathRewards(contentView, dialog)
+
                                         contentView.findViewById<View>(R.id.card1View)?.apply { isClickable = active1; isEnabled = active1 }
                                         contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = active2; isEnabled = active2 }
                                         contentView.findViewById<View>(R.id.card3View)?.apply { isClickable = active3; isEnabled = active3 }
@@ -2033,6 +2037,8 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         setupCupPathCard(contentView, R.id.card5View, R.id.card5Title, R.id.card5CupIcon, R.id.card5CupValue, R.id.card5DinoAnim, if (revealPartId == 5) false else active5)
         setupCupPathCard(contentView, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, if (revealPartId == 6) false else active6)
 
+        bindCupPathRewards(contentView, dialog)
+
         dialog.setOnDismissListener {
             listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
                 contentView.findViewById<LottieAnimationView>(id)?.cancelAnimation()
@@ -2117,6 +2123,136 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                 releaseLaunchTouchBlocker()
             }
         }, 1000L)
+    }
+
+    // ── Kupa yolu sandıkları (Trophy Road) ──────────────────────────────
+
+    /** Bir kupa yolu kartındaki ödül satırının görünümleri ve ait olduğu kupa alanı. */
+    private data class CupPathRewardViews(
+        val cupField: String,
+        val zoneId: Int,
+        val fillId: Int,
+        val textId: Int,
+        val chestId: Int,
+    )
+
+    /**
+     * Kart sırası panel_cup_path.xml ile aynı. Eşleştirme, kartların tıklama davranışındaki
+     * repository seçimiyle birebir: card1 toplama, card2 çıkarma, card3 çarpma, card4-6
+     * bunların körleme hâlleri.
+     */
+    private val cupPathRewardViews = listOf(
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_ADDITION,
+            R.id.card1RewardZone, R.id.card1RewardFill, R.id.card1RewardText, R.id.card1RewardChest,
+        ),
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_EXTRACTION,
+            R.id.card2RewardZone, R.id.card2RewardFill, R.id.card2RewardText, R.id.card2RewardChest,
+        ),
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_IMPACT,
+            R.id.card3RewardZone, R.id.card3RewardFill, R.id.card3RewardText, R.id.card3RewardChest,
+        ),
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_BLINDING_ADDITION,
+            R.id.card4RewardZone, R.id.card4RewardFill, R.id.card4RewardText, R.id.card4RewardChest,
+        ),
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_BLINDING_EXTRACTION,
+            R.id.card5RewardZone, R.id.card5RewardFill, R.id.card5RewardText, R.id.card5RewardChest,
+        ),
+        CupPathRewardViews(
+            CupPathRewardRepository.FIELD_BLINDING_IMPACT,
+            R.id.card6RewardZone, R.id.card6RewardFill, R.id.card6RewardText, R.id.card6RewardChest,
+        ),
+    )
+
+    /**
+     * Altı kartın ödül çubuğunu doldurur.
+     *
+     * Tek çağrı iki Firestore dokümanı okuyor (kupa puanları + ödül defteri), altı değil:
+     * ikisi de tek dokümanda tutuluyor.
+     */
+    private fun bindCupPathRewards(root: View, dialog: android.app.Dialog) {
+        CupPathRewardRepository.fetchStates { states ->
+            if (!isAdded) return@fetchStates
+            cupPathRewardViews.forEach { views ->
+                val state = states[views.cupField] ?: return@forEach
+                bindCupPathRewardCard(root, views, state, dialog)
+            }
+        }
+    }
+
+    private fun bindCupPathRewardCard(
+        root: View,
+        views: CupPathRewardViews,
+        state: CupPathRewardRepository.CupPathState,
+        dialog: android.app.Dialog,
+    ) {
+        val zone = root.findViewById<View>(views.zoneId) ?: return
+        val fill = root.findViewById<View>(views.fillId) ?: return
+        val text = root.findViewById<TextView>(views.textId) ?: return
+        val chest = root.findViewById<ImageView>(views.chestId) ?: return
+
+        text.text = state.label
+        fill.setBackgroundResource(
+            if (state.claimable) R.drawable.daily_question_progress_fill_complete
+            else R.drawable.daily_question_progress_fill
+        )
+
+        // Dolgunun genişliği piksel cinsinden veriliyor ama çubuğun kendi genişliği ölçüm
+        // bitmeden bilinmiyor; ilk karede 0 gelir. Bu yüzden post ile ölçüm sonrasına bırakılıyor.
+        zone.post {
+            val full = zone.width
+            if (full <= 0) return@post
+            val lp = fill.layoutParams
+            lp.width = (full * state.fraction).toInt().coerceIn(0, full)
+            fill.layoutParams = lp
+        }
+
+        // Hak edilen sandık dikkat çeksin, edilmeyen sönük dursun.
+        chest.alpha = if (state.claimable) 1f else 0.55f
+
+        val onTap = View.OnClickListener { onCupPathRewardTapped(state, dialog) }
+        zone.isClickable = true
+        zone.setOnClickListener(onTap)
+        chest.isClickable = true
+        chest.setOnClickListener(onTap)
+    }
+
+    /**
+     * Sandığa ya da çubuğa dokunuldu.
+     *
+     * Ödül hazırsa en kısa yol: panel kapanır, sandık ekranı açılır. Hazır değilse kaç kupa
+     * kaldığı söylenir — ileride buraya kupa yolu ekranı gelecek.
+     *
+     * Buradaki hak ediş kontrolü YALNIZCA görünüm için. Asıl doğrulamayı sunucu yapıyor
+     * (claimCupPathChest), yani ekrandaki veri eskimiş olsa bile hak edilmemiş ödül verilmiyor.
+     */
+    private fun onCupPathRewardTapped(
+        state: CupPathRewardRepository.CupPathState,
+        dialog: android.app.Dialog,
+    ) {
+        if (!isAdded) return
+        if (!state.claimable) {
+            val remaining = (state.nextMilestone - state.cupScore).coerceAtLeast(1)
+            Toast.makeText(
+                requireContext(),
+                "Sonraki sandık için $remaining kupa daha lazım",
+                Toast.LENGTH_SHORT,
+            ).show()
+            return
+        }
+        dialog.dismiss()
+        GlobalValues.cupPathDialogRef?.get()?.dismiss()
+        openAbacusContainerFragment(
+            NewChestFragment.newInstance(
+                NewChestFragment.ChestRarity.COMMON,
+                source = AnalyticsLogger.CHEST_SOURCE_CUP_PATH,
+                cupField = state.cupField,
+            )
+        )
     }
 
     private fun setupCupPathCard(

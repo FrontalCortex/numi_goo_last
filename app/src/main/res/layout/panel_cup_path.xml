@@ -148,8 +148,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card1TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card1TitleRow">
 
                         <ImageView
                             android:id="@+id/card1CupIcon"
@@ -183,6 +182,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card1RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card1RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card1CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card1RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card1RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card1RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card1RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card1RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card1RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card1DinoAnim"
@@ -245,8 +299,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card2TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card2TitleRow">
 
                         <ImageView
                             android:id="@+id/card2CupIcon"
@@ -280,6 +333,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card2RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card2RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card2CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card2RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card2RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card2RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card2RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card2RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card2RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card2DinoAnim"
@@ -343,8 +451,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card3TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card3TitleRow">
 
                         <ImageView
                             android:id="@+id/card3CupIcon"
@@ -378,6 +485,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card3RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card3RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card3CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card3RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card3RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card3RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card3RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card3RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card3RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card3DinoAnim"
@@ -439,8 +601,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card4TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card4TitleRow">
 
                         <ImageView
                             android:id="@+id/card4CupIcon"
@@ -474,6 +635,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card4RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card4RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card4CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card4RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card4RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card4RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card4RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card4RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card4RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card4DinoAnim"
@@ -535,8 +751,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card5TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card5TitleRow">
 
                         <ImageView
                             android:id="@+id/card5CupIcon"
@@ -570,6 +785,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card5RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card5RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card5CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card5RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card5RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card5RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card5RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card5RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card5RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card5DinoAnim"
@@ -631,8 +901,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card6TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card6TitleRow">
 
                         <ImageView
                             android:id="@+id/card6CupIcon"
@@ -666,6 +935,61 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card6RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card6RewardChest"
+                        app:layout_constraintTop_toBottomOf="@id/card6CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card6RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card6RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card6RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/card6RewardChest"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic2"
+                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
+                        app:layout_constraintTop_toTopOf="@id/card6RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card6RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card6DinoAnim"
