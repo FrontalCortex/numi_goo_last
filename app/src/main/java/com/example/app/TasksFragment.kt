@@ -2214,38 +2214,33 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         // Hak edilen sandık dikkat çeksin, edilmeyen sönük dursun.
         chest.alpha = if (state.claimable) 1f else 0.55f
 
-        val onTap = View.OnClickListener { onCupPathRewardTapped(state, dialog) }
+        // Çubuk ile sandık ayrı davranıyor: hazır sandığa dokunan kullanıcı ödülü istiyor,
+        // çubuğa dokunan ise ileride ne kazanacağını merak ediyor.
         zone.isClickable = true
-        zone.setOnClickListener(onTap)
+        zone.setOnClickListener { openCupPathRoad(state.cupField, dialog) }
         chest.isClickable = true
-        chest.setOnClickListener(onTap)
+        chest.setOnClickListener { onCupPathChestTapped(state, dialog) }
     }
 
     /**
-     * Sandığa ya da çubuğa dokunuldu.
+     * Karttaki sandığa dokunuldu.
      *
-     * Ödül hazırsa en kısa yol: panel kapanır, sandık ekranı açılır. Hazır değilse kaç kupa
-     * kaldığı söylenir — ileride buraya kupa yolu ekranı gelecek.
+     * Ödül hazırsa en kısa yol: panel kapanır, sandık ekranı açılır. Hazır değilse kupa yolu
+     * ekranı açılır — "daha yok" demek yerine kullanıcıya neyin ne zaman geleceğini gösteriyor.
      *
      * Buradaki hak ediş kontrolü YALNIZCA görünüm için. Asıl doğrulamayı sunucu yapıyor
      * (claimCupPathChest), yani ekrandaki veri eskimiş olsa bile hak edilmemiş ödül verilmiyor.
      */
-    private fun onCupPathRewardTapped(
+    private fun onCupPathChestTapped(
         state: CupPathRewardRepository.CupPathState,
         dialog: android.app.Dialog,
     ) {
         if (!isAdded) return
         if (!state.claimable) {
-            val remaining = (state.nextMilestone - state.cupScore).coerceAtLeast(1)
-            Toast.makeText(
-                requireContext(),
-                "Sonraki sandık için $remaining kupa daha lazım",
-                Toast.LENGTH_SHORT,
-            ).show()
+            openCupPathRoad(state.cupField, dialog)
             return
         }
-        dialog.dismiss()
-        GlobalValues.cupPathDialogRef?.get()?.dismiss()
+        dismissCupPathPanel(dialog)
         openAbacusContainerFragment(
             NewChestFragment.newInstance(
                 NewChestFragment.ChestRarity.COMMON,
@@ -2253,6 +2248,25 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                 cupField = state.cupField,
             )
         )
+    }
+
+    /** Kupa yolu (Trophy Road) ekranını açar. */
+    private fun openCupPathRoad(cupField: String, dialog: android.app.Dialog) {
+        if (!isAdded) return
+        dismissCupPathPanel(dialog)
+        openAbacusContainerFragment(CupPathRoadFragment.newInstance(cupField))
+    }
+
+    /**
+     * Paneli kapatır.
+     *
+     * İki kapatma var çünkü panel iki ayrı yoldan açılabiliyor ve elimizdeki referans her
+     * zaman ekranda duranı göstermiyor; ikisini de kapatmak panelin arkada açık kalmasını
+     * önlüyor. Aynı kalıp panelin diğer çıkışlarında da kullanılıyor.
+     */
+    private fun dismissCupPathPanel(dialog: android.app.Dialog) {
+        dialog.dismiss()
+        GlobalValues.cupPathDialogRef?.get()?.dismiss()
     }
 
     private fun setupCupPathCard(

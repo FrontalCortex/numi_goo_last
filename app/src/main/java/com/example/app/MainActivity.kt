@@ -2465,7 +2465,8 @@ class MainActivity : AppCompatActivity() {
         val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
-            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment -> overlay
+            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment,
+            is CupPathRoadFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {

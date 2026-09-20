@@ -26,6 +26,12 @@ object CupPathRewardRepository {
     /** Her kaç kupada bir sandık. */
     const val STEP = 100
 
+    /** Kupa yolu ekranında ileriye doğru kaç eşik gösterilsin. */
+    private const val FUTURE_MILESTONES = 20
+
+    /** Listenin üst sınırı — bkz. [CupPathState.milestones]. */
+    private const val MAX_MILESTONES = 60
+
     // Firestore alan adları — sunucudaki CUP_PATH_FIELDS ile birebir aynı olmalı.
     const val FIELD_ADDITION = "addition_abacus_cup"
     const val FIELD_EXTRACTION = "extraction_abacus_cup"
@@ -87,8 +93,88 @@ object CupPathRewardRepository {
                 return (cupScore - milestoneStart).toFloat() / STEP.toFloat()
             }
 
-        /** Çubuğun üstünde yazan metin, ör. "250 / 300". */
-        val label: String get() = "$cupScore / $nextMilestone"
+        /**
+         * Alınmayı bekleyen sandık sayısı.
+         *
+         * Birden fazla olabiliyor: sunucu her çağrıda yalnızca sıradaki eşiği veriyor, oysa
+         * kullanıcı arada birkaç eşiği birden geçmiş olabilir.
+         */
+        val pendingChests: Int
+            get() = ((cupScore - lastClaimed) / STEP).coerceAtLeast(0)
+
+        /**
+         * Çubuğun üstünde yazan metin, ör. "250 / 300".
+         *
+         * Sandık hak edildiğinde sayı yazılmıyor: kupa eşiği geçmiş olacağı için "350 / 300"
+         * gibi, hata izlenimi veren bir metin çıkıyordu.
+         */
+        val label: String
+            get() = if (claimable) "Sandık hazır!" else "$cupScore / $nextMilestone"
+
+        /**
+         * Kupa yolu ekranında gösterilecek eşikler: geçilmiş olanlar, bir de ileriye doğru
+         * [future] tane.
+         *
+         * Liste her zaman ilk taştan (300) başlayıp [STEP]'er artıyor; eşikler böylece kupa
+         * puanı ne olursa olsun sunucunun verdiği sayılara oturuyor. Uzunluk
+         * [MAX_MILESTONES] ile sınırlı — binlerce kupası olan kullanıcıda yüzlerce satır
+         * üretmenin kimseye faydası yok. Sınır dolunca BAŞTAN kırpılıyor, çünkü kullanıcının
+         * bulunduğu yer listenin sonuna yakın.
+         */
+        fun milestones(future: Int = FUTURE_MILESTONES): List<Milestone> {
+            val end = maxOf(nextMilestone, cupScore) + future * STEP
+            val all = ArrayList<Milestone>()
+            var value = START + STEP
+            while (value <= end) {
+                val status = when {
+                    value <= lastClaimed -> MilestoneStatus.CLAIMED
+                    value <= cupScore -> MilestoneStatus.CLAIMABLE
+                    else -> MilestoneStatus.LOCKED
+                }
+                all.add(Milestone(value, status))
+                value += STEP
+            }
+            if (all.size <= MAX_MILESTONES) return all
+            return ArrayList(all.subList(all.size - MAX_MILESTONES, all.size))
+        }
+    }
+
+    /** Kupa yolu ekranındaki tek bir eşik. */
+    data class Milestone(val cupValue: Int, val status: MilestoneStatus)
+
+    /**
+     * Bir eşiğin durumu.
+     *
+     * [CLAIMABLE] "kupası yetiyor ama daha alınmadı" demek; kullanıcıda birden fazla olabilir
+     * çünkü sunucu her çağrıda yalnızca sıradaki eşiği veriyor. Hangisine dokunulursa
+     * dokunulsun sıradaki alınır — sandıklar birbirinin aynısı olduğu için bu fark edilmez.
+     */
+    enum class MilestoneStatus { CLAIMED, CLAIMABLE, LOCKED }
+
+    /**
+     * Kartların başlıkları. panel_cup_path.xml'deki metinlerle birebir aynı olmalı, yoksa
+     * kullanıcı karttan girdiği ekranda başka bir isim görür.
+     */
+    fun titleOf(cupField: String): String = when (cupField) {
+        FIELD_ADDITION -> "Toplama Kupa Yolu"
+        FIELD_EXTRACTION -> "Çıkarma Kupa Yolu"
+        FIELD_IMPACT -> "Çarpma Kupa Yolu"
+        FIELD_BLINDING_ADDITION -> "Toplama Kupa Yolu - Körleme"
+        FIELD_BLINDING_EXTRACTION -> "Çıkarma Kupa Yolu - Körleme"
+        FIELD_BLINDING_IMPACT -> "Çarpma Kupa Yolu - Körleme"
+        else -> "Kupa Yolu"
+    }
+
+    /**
+     * Tek bir yolun durumunu okur.
+     *
+     * [fetchStates] zaten altısını da tek okumada getiriyor; burada yalnızca istenen yol
+     * seçiliyor. Okuma başarısızsa varsayılan durum dönüyor, çağıran taraf boş kalmıyor.
+     */
+    fun fetchState(cupField: String, onResult: (CupPathState) -> Unit) {
+        fetchStates { states ->
+            onResult(states[cupField] ?: CupPathState(cupField, START, START))
+        }
     }
 
     /**
