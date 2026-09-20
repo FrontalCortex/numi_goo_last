@@ -193,6 +193,10 @@ class AddFriendFragment : Fragment() {
             val seen = mutableSetOf<String>()
             val finalResults = accumulatedResults.filter { seen.add(it.firebaseUid) }
 
+            // Yalnızca ilk arama ölçülür; "daha fazla yükle" ayrı bir arama değildir ve
+            // biriken sonuç listesi yüzünden her zaman "sonuç var" görünürdü.
+            if (!isLoadMore) AnalyticsLogger.logFriendSearchResult(finalResults.isNotEmpty())
+
             if (finalResults.isEmpty()) {
                 binding.layoutEmptyState.visibility = View.VISIBLE
                 binding.rvFriendResults.visibility = View.GONE
@@ -326,6 +330,8 @@ class AddFriendFragment : Fragment() {
 
                 batch.commit()
                     .addOnSuccessListener {
+                        // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                        AnalyticsLogger.logFriendAddedFromSearch()
                         if (!isAdded) return@addOnSuccessListener
                         Toast.makeText(
                             requireContext(),

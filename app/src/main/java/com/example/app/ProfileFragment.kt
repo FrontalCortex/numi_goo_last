@@ -429,6 +429,8 @@ class ProfileFragment : Fragment() {
         binding.btnAddFriend.isEnabled = false
         batch.commit()
             .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                AnalyticsLogger.logFriendAddedFromProfile()
                 if (!isAdded) return@addOnSuccessListener
                 binding.btnAddFriend.text = "TAKİP EDİLİYOR"
                 binding.btnAddFriend.alpha = 0.5f
@@ -1153,6 +1155,10 @@ class ProfileFragment : Fragment() {
 
     private fun setupClickListeners() {
         if (isOtherUser) {
+            // Bu fonksiyon onViewCreated'dan bir kez çağrılıyor, yani görüntüleme başına tek olay.
+            // `screen_view` kendi profili ile başkasınınkini ayırt edemiyor; ikisi de ProfileFragment.
+            AnalyticsLogger.logOtherProfileViewed()
+
             // --- Başkasının profili ---
             // Ayarlar gizli
             binding.btnAccountSettings.visibility = View.GONE

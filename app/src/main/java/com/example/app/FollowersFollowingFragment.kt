@@ -229,23 +229,30 @@ class FollowersFollowingFragment : Fragment() {
         val myFollowingRef = firestore.collection("users").document(myFirebaseUid)
             .collection("following").document(targetUid)
 
-        val followData = mapOf(
-            "userId" to user.userId,
-            "name" to user.name,
-            "followedAt" to Timestamp.now()
-        )
-        val myData = mapOf(
+        // DİKKAT: Hangi bilginin hangi dokümana yazıldığı buradaki tek incelik ve ters
+        // yazılmıştı. Doküman KENDİSİ kimi temsil ediyorsa onun bilgileri yazılır:
+        //   users/{hedef}/followers/{ben}  -> BENİM bilgilerim (hedefin takipçi listesindeki satır ben'im)
+        //   users/{ben}/following/{hedef}  -> HEDEFİN bilgileri (benim takip listemdeki satır hedef)
+        // Aynı eşleştirme [AddFriendFragment] ve [ProfileFragment] içinde de var.
+        val myRowInTargetFollowers = mapOf(
             "userId" to myUserId,
             "name" to myName,
             "followedAt" to Timestamp.now()
         )
+        val targetRowInMyFollowing = mapOf(
+            "userId" to user.userId,
+            "name" to user.name,
+            "followedAt" to Timestamp.now()
+        )
 
         // Sayaçlar sunucudaki takip trigger'ları tarafından güncelleniyor (bkz. AddFriendFragment).
-        batch.set(myFollowerRef, followData)
-        batch.set(myFollowingRef, myData)
+        batch.set(myFollowerRef, myRowInTargetFollowers)
+        batch.set(myFollowingRef, targetRowInMyFollowing)
 
         batch.commit()
             .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                AnalyticsLogger.logFriendAddedFromList()
                 if (!isAdded) return@addOnSuccessListener
                 myFollowingUids.add(targetUid)
                 Toast.makeText(requireContext(), "${user.name} takip edildi", Toast.LENGTH_SHORT).show()

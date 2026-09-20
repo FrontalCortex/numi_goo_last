@@ -82,6 +82,12 @@ object AnalyticsLogger {
     private const val EV_GOLD_SPENT = "gold_spent"
     private const val EV_KEY_SPENT = "key_spent"
     private const val EV_BADGE_LEVEL_UP = "badge_level_up"
+    private const val EV_FRIEND_ADDED_SEARCH = "friend_added_search"
+    private const val EV_FRIEND_ADDED_LIST = "friend_added_list"
+    private const val EV_FRIEND_ADDED_PROFILE = "friend_added_profile"
+    private const val EV_FRIEND_SEARCH_HIT = "friend_search_hit"
+    private const val EV_FRIEND_SEARCH_EMPTY = "friend_search_empty"
+    private const val EV_PROFILE_OTHER_VIEWED = "profile_other_viewed"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
      * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
@@ -963,6 +969,53 @@ object AnalyticsLogger {
             param(P_BADGE_LEVEL, level.toLong())
         }
     }
+
+    // ── Sosyal (takip) ───────────────────────────────────────────
+
+    /*
+     * ## Neden hepsi ayrı OLAY ADI, tek olay + parametre değil
+     * Boyut kotası 48/50; olay adı kotası (500) ise neredeyse boş. Ayrıca `Event name`
+     * GA4'ün YERLEŞİK boyutu: kırılımı olay adına koyunca tablo ücretsiz geliyor, özel
+     * boyut kaydetmeye hiç gerek kalmıyor. Toplam için `matches regex ^friend_added`.
+     *
+     * ## Neden ekran görüntülemesi yetmiyor
+     * `screen_view` zaten her fragment için gidiyor, yani "arkadaş ekle ekranı açıldı"
+     * biliniyor. Bilinmeyen, o ekranın BİR İŞE YARAYIP yaramadığı: arama yapıldı mı,
+     * sonuç döndü mü, takip gerçekleşti mi. Sosyal graf pahalı bir özellik; kimse
+     * kullanmıyorsa bunu bilmek gerekir.
+     */
+
+    /** Arama sonuçlarından takip edildi ([AddFriendFragment]). */
+    fun logFriendAddedFromSearch() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_SEARCH) {} }
+
+    /** Takipçi listesinden takip edildi ([FollowersFollowingFragment]). */
+    fun logFriendAddedFromList() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_LIST) {} }
+
+    /** Başkasının profilinden takip edildi ([ProfileFragment]). */
+    fun logFriendAddedFromProfile() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_PROFILE) {} }
+
+    /**
+     * Kullanıcı arama yaptı ve sonuç geldi.
+     *
+     * "Daha fazla yükle" adımları SAYILMAZ, yalnızca ilk arama. Yoksa her sayfa bir arama
+     * gibi görünür ve sonuçsuz arama oranı olduğundan iyi çıkar.
+     *
+     * Boş sonucun ayrı olay olması önemli: arama adı ve kullanıcı koduna ön ek eşleşmesiyle
+     * bakıyor, yani "ahmet" yazanın "Ahmet"i bulamaması mümkün. Boş oranı yüksekse sorun
+     * ilgisizlik değil, aramaNıN KENDİSİdİr — ve ikisi tamamen farklı çözüm ister.
+     */
+    fun logFriendSearchResult(hasResults: Boolean) = safe { fa ->
+        fa.logEvent(if (hasResults) EV_FRIEND_SEARCH_HIT else EV_FRIEND_SEARCH_EMPTY) {}
+    }
+
+    /**
+     * Başka bir kullanıcının profili açıldı.
+     *
+     * `screen_view` kendi profili ile başkasının profilini ayırt edemiyor (ikisi de
+     * [ProfileFragment]). Merak sinyali bu: çocuk başka bir çocuğun rozetlerine,
+     * kupalarına bakıyor mu?
+     */
+    fun logOtherProfileViewed() = safe { fa -> fa.logEvent(EV_PROFILE_OTHER_VIEWED) {} }
 
     /**
      * Reklam ekrana geldi.
