@@ -156,21 +156,25 @@ object ServerRewards {
     /**
      * Kupa yolunda hak edilmiş bir sandığı açar (`claimCupPathChest`).
      *
-     * Sunucu kupa puanını ve "en son hangi eşik alındı" defterini kendisi okur; istemci
-     * yalnızca hangi kupa yolu olduğunu söyler. Sonuç biçimi [openChest] ile aynı, bu yüzden
-     * aynı sandık ekranı hiç değişmeden oynatılıyor.
+     * İstemci hangi yolun hangi eşiğini açtığını söyler; kupa puanını ve defteri sunucu
+     * kendisi okuyup doğrular. Sonuç biçimi [openChest] ile aynı, bu yüzden aynı sandık
+     * ekranı hiç değişmeden oynatılıyor.
+     *
+     * [milestone] tek tek gönderiliyor çünkü biriken sandıklar sırayla alınmak zorunda değil:
+     * ekranda 500'e dokunan kullanıcı 500'ü almalı, 300'ü değil.
      *
      * [prefetchChest] önbelleğine DOKUNMAZ: o önbellek ders/reklam sandığına ait ve bu çağrı
      * onu tüketirse ders sandığı ikinci kez ağa gitmek zorunda kalırdı.
      */
     fun claimCupPathChest(
         cupField: String,
+        milestone: Int,
         onResult: (ChestOutcome) -> Unit,
         onFailure: (Exception) -> Unit,
     ) {
         FirebaseFunctions.getInstance()
             .getHttpsCallable("claimCupPathChest")
-            .call(hashMapOf("cupField" to cupField))
+            .call(hashMapOf("cupField" to cupField, "milestone" to milestone))
             .addOnSuccessListener { result ->
                 val data = result.data as? Map<*, *>
                 if (data == null) {

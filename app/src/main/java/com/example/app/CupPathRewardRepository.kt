@@ -55,14 +55,25 @@ object CupPathRewardRepository {
     private const val COL_LEDGER = "cupPathRewards"
     private const val DOC_LEDGER = "progress"
     private const val F_LAST_CLAIMED = "lastClaimed"
+    private const val F_CLAIMED = "claimed"
 
     /** Tek bir kupa yolunun ödül durumu. */
     data class CupPathState(
         val cupField: String,
         /** Kullanıcının o yoldaki güncel kupa puanı. */
         val cupScore: Int,
-        /** O yolda ödülü alınmış son eşik; hiç alınmadıysa [START]. */
+        /**
+         * Bu değere kadarki BÜTÜN eşikler alınmış (su seviyesi); hiç alınmadıysa [START].
+         */
         val lastClaimed: Int,
+        /**
+         * Su seviyesinin üstünde, tek tek alınmış eşikler.
+         *
+         * Kullanıcı biriken sandıkları sırayla almak zorunda değil: 300, 400 ve 500
+         * birikmişken 500'e dokunabiliyor. O zaman su seviyesi 200'de kalıyor, 500 buraya
+         * giriyor. Aradaki boşluk kapanınca sunucu seviyeyi yükseltip listeyi boşaltıyor.
+         */
+        val claimedAbove: Set<Int> = emptySet(),
     ) {
         /**
          * Bir sonraki sandığın kupa eşiği.
@@ -75,6 +86,10 @@ object CupPathRewardRepository {
 
         /** Sandık hak edildi mi (alınmayı bekliyor mu). */
         val claimable: Boolean get() = cupScore >= nextMilestone
+
+        /** O eşiğin ödülü alınmış mı. */
+        fun isClaimed(milestone: Int): Boolean =
+            milestone <= lastClaimed || milestone in claimedAbove
 
         /** Bu eşiğin başladığı kupa puanı — ilerleme çubuğunun sol ucu. */
         val milestoneStart: Int get() = nextMilestone - STEP
@@ -100,7 +115,15 @@ object CupPathRewardRepository {
          * kullanıcı arada birkaç eşiği birden geçmiş olabilir.
          */
         val pendingChests: Int
-            get() = ((cupScore - lastClaimed) / STEP).coerceAtLeast(0)
+            get() {
+                var count = 0
+                var value = START + STEP
+                while (value <= cupScore) {
+                    if (!isClaimed(value)) count++
+                    value += STEP
+                }
+                return count
+            }
 
         /**
          * Çubuğun üstünde yazan metin, ör. "250 / 300".
@@ -127,7 +150,7 @@ object CupPathRewardRepository {
             var value = START + STEP
             while (value <= end) {
                 val status = when {
-                    value <= lastClaimed -> MilestoneStatus.CLAIMED
+                    isClaimed(value) -> MilestoneStatus.CLAIMED
                     value <= cupScore -> MilestoneStatus.CLAIMABLE
                     else -> MilestoneStatus.LOCKED
                 }
@@ -173,7 +196,7 @@ object CupPathRewardRepository {
      */
     fun fetchState(cupField: String, onResult: (CupPathState) -> Unit) {
         fetchStates { states ->
-            onResult(states[cupField] ?: CupPathState(cupField, START, START))
+            onResult(states[cupField] ?: CupPathState(cupField, START, START, emptySet()))
         }
     }
 
@@ -209,6 +232,15 @@ object CupPathRewardRepository {
             val score = ((cupDoc?.get(field) as? Number)?.toInt() ?: START).coerceAtLeast(0)
             val entry = ledgerDoc?.get(field) as? Map<*, *>
             val claimed = (entry?.get(F_LAST_CLAIMED) as? Number)?.toInt() ?: START
-            CupPathState(cupField = field, cupScore = score, lastClaimed = claimed)
+            val above = (entry?.get(F_CLAIMED) as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toInt() }
+                ?.toSet()
+                .orEmpty()
+            CupPathState(
+                cupField = field,
+                cupScore = score,
+                lastClaimed = claimed,
+                claimedAbove = above,
+            )
         }
 }

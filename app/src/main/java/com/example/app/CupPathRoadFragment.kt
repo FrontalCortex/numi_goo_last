@@ -41,6 +41,14 @@ class CupPathRoadFragment : Fragment() {
     private var scrolledToCurrent = false
 
     /**
+     * Sandık açılıp geri dönüldüğünde görünümün yeniden kurulması listeyi başa atıyordu.
+     * Ayrılırken ilk görünen eşik buraya yazılıyor, liste dolunca oraya geri dönülüyor.
+     * Konum indeks yerine EŞİK DEĞERİ olarak saklanıyor: liste penceresi kayarsa indeks
+     * başka bir eşiğe denk gelirdi.
+     */
+    private var pendingScrollMilestone: Int? = null
+
+    /**
      * Kapalı sandık çizimi kendi kutusunun ortasının altında duruyor; yolun şeridine göre
      * ortalanması için bu kadar yukarı kaydırılıyor. Açık sandıkta bu sorun yok.
      */
@@ -74,6 +82,18 @@ class CupPathRoadFragment : Fragment() {
         binding.cupPathRoadList.layoutManager =
             LinearLayoutManager(requireContext(), RecyclerView.HORIZONTAL, false)
         binding.cupPathRoadList.adapter = adapter
+
+        // Sandıktan dönüldü: liste elimizdeki verilerle zaten dolu, o yüzden okuma
+        // beklenmeden eski konuma dönülüyor. Beklenseydi liste bir an başa atlar, sonra
+        // yerine sıçrardı. [pendingScrollMilestone] temizlenmiyor; taze veri gelince
+        // [render] konumu son listeye göre bir kez daha oturtuyor.
+        pendingScrollMilestone?.let { restore ->
+            val index = adapter.indexOfMilestone(restore)
+            if (index >= 0) {
+                (binding.cupPathRoadList.layoutManager as? LinearLayoutManager)
+                    ?.scrollToPositionWithOffset(index, 0)
+            }
+        }
     }
 
     override fun onResume() {
@@ -119,7 +139,14 @@ class CupPathRoadFragment : Fragment() {
         val milestones = state.milestones()
         adapter.submit(milestones)
 
-        if (!scrolledToCurrent) {
+        val layoutManager = binding.cupPathRoadList.layoutManager as? LinearLayoutManager
+        val restore = pendingScrollMilestone
+        if (restore != null) {
+            pendingScrollMilestone = null
+            scrolledToCurrent = true
+            val index = milestones.indexOfFirst { it.cupValue == restore }
+            if (index >= 0) layoutManager?.scrollToPositionWithOffset(index, 0)
+        } else if (!scrolledToCurrent) {
             // Kullanıcının bulunduğu eşik: ilk alınmamış olan. Hepsi alınmışsa liste sonu.
             val index = milestones.indexOfFirst {
                 it.status != CupPathRewardRepository.MilestoneStatus.CLAIMED
@@ -128,8 +155,7 @@ class CupPathRoadFragment : Fragment() {
                 scrolledToCurrent = true
                 // Sola bir öğelik pay bırakılıyor ki kullanıcı geçtiği eşiği de görsün ve
                 // listenin devam ettiği anlaşılsın.
-                (binding.cupPathRoadList.layoutManager as? LinearLayoutManager)
-                    ?.scrollToPositionWithOffset(maxOf(0, index - 1), 0)
+                layoutManager?.scrollToPositionWithOffset(maxOf(0, index - 1), 0)
             }
         }
     }
@@ -138,13 +164,19 @@ class CupPathRoadFragment : Fragment() {
         if (!isAdded) return
         when (milestone.status) {
             CupPathRewardRepository.MilestoneStatus.CLAIMABLE -> {
+                // Sandık geri yığına eklenerek açılıyor: kapanınca bu ekran geri geliyor,
+                // kullanıcı yolun neresinde kaldıysa orada devam ediyor. Adı
+                // NewChestFragment de tanıyor (görev/mağaza sandıklarındaki kalıbın aynısı).
                 (activity as? MainActivity)?.showAbacusOverlayFragment(
                     NewChestFragment.newInstance(
                         NewChestFragment.ChestRarity.COMMON,
                         source = AnalyticsLogger.CHEST_SOURCE_CUP_PATH,
                         cupField = cupField,
+                        cupMilestone = milestone.cupValue,
                     )
-                )
+                ) {
+                    addToBackStack(NewChestFragment.BACK_STACK_CUP_PATH_ROAD)
+                }
             }
             CupPathRewardRepository.MilestoneStatus.CLAIMED -> {
                 android.widget.Toast.makeText(
@@ -174,6 +206,11 @@ class CupPathRoadFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Sandık açılırken görünüm yok ediliyor; geri dönüşte aynı yere dönebilmek için
+        // ekrandaki ilk eşik saklanıyor.
+        val first = (binding.cupPathRoadList.layoutManager as? LinearLayoutManager)
+            ?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
+        pendingScrollMilestone = adapter.milestoneAt(first)
         binding.cupPathRoadList.adapter = null
         _binding = null
     }
@@ -196,6 +233,12 @@ class CupPathRoadFragment : Fragment() {
         }
 
         override fun getItemCount(): Int = items.size
+
+        /** Konumdaki eşik değeri; konum geçersizse null. */
+        fun milestoneAt(position: Int): Int? = items.getOrNull(position)?.cupValue
+
+        /** Eşiğin listedeki sırası; listede yoksa -1. */
+        fun indexOfMilestone(milestone: Int): Int = items.indexOfFirst { it.cupValue == milestone }
 
         override fun onBindViewHolder(holder: MilestoneHolder, position: Int) {
             holder.bind(items[position])

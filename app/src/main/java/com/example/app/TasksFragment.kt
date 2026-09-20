@@ -1666,8 +1666,11 @@ class TasksFragment : Fragment() {
                         if (attempts < 100) { // Maksimum 5 saniye bekle (50ms * 100)
                             handler.postDelayed(this, 50)
                         } else {
-                            // Timeout: çok uzun sürdü, es geç
+                            // Timeout: çok uzun sürdü, es geç. Liste geç gelirse sahipsiz
+                            // kalmasın diye temizleniyor; yoksa bir sonraki derste yanlış
+                            // kutlama açardı.
                             releaseLaunchTouchBlocker()
+                            GlobalValues.pendingCupBadgePayloads = null
                             loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
                         }
                     }
@@ -2202,6 +2205,15 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
     private val cupPathBarAnimators = mutableMapOf<String, ValueAnimator>()
 
     /**
+     * Panelin son okuduğu kupa yolu durumları.
+     *
+     * Ders sonrası dönüşte çubuğun animasyonunu ağ cevabını beklemeden başlatmak için var;
+     * cevap gelince tazeleniyor. Boşsa (uygulama yeniden kurulmuş) animasyon eskisi gibi
+     * cevaptan sonra başlar.
+     */
+    private var cupPathStatesCache: Map<String, CupPathRewardRepository.CupPathState> = emptyMap()
+
+    /**
      * Altı kartın ödül çubuğunu doldurur.
      *
      * Tek çağrı iki Firestore dokümanı okuyor (kupa puanları + ödül defteri), altı değil:
@@ -2218,11 +2230,40 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         animatedScore: Int? = null,
         delta: Int = 0,
     ) {
+        val cacheBefore = cupPathStatesCache
+
+        // Animasyon ağ cevabı beklenmeden başlıyor: çubuğun çizilmesi için gereken tek
+        // bilinmeyen defter (hangi eşikler alındı) ve o, ders oynanırken değişemez. Panelin
+        // önceki açılışından kalan kopya bu yüzden güvenli. Beklenseydi sayı çoktan artmış
+        // olurken çubuk bir süre sonra hareket etmeye başlıyordu.
+        val animatedViews = cupPathRewardViews.firstOrNull { it.cupField == animatedCupField }
+        if (animatedViews != null && animatedScore != null && delta != 0) {
+            cacheBefore[animatedViews.cupField]?.let { cached ->
+                val target = cached.copy(cupScore = animatedScore.coerceAtLeast(0))
+                bindCupPathRewardCard(
+                    root, animatedViews, target, dialog,
+                    from = target.copy(cupScore = (target.cupScore - delta).coerceAtLeast(0)),
+                )
+            }
+        }
+
         CupPathRewardRepository.fetchStates { states ->
             if (!isAdded) return@fetchStates
+            cupPathStatesCache = states
             cupPathRewardViews.forEach { views ->
                 val fetched = states[views.cupField] ?: return@forEach
                 val animated = views.cupField == animatedCupField
+
+                // Süren animasyonun ortasına girmiyoruz: görünür bir sıçrama olurdu. Yalnızca
+                // defter beklediğimizden farklıysa (ör. başka bir cihazdan sandık alınmış)
+                // yeniden bağlanıyor.
+                if (animated && cupPathBarAnimators.containsKey(views.cupField)) {
+                    val cached = cacheBefore[views.cupField]
+                    if (cached != null && cached.copy(cupScore = fetched.cupScore) == fetched) {
+                        return@forEach
+                    }
+                }
+
                 // Ders biter bitmez yapılan okuma yeni puanı henüz görmeyebilir. Kartın
                 // üstündeki sayı ile çubuk ayrışmasın diye, o kart için ekrana yazılan puan
                 // esas alınıyor; defter (hangi eşik alındı) yine okunandan geliyor.
@@ -2342,11 +2383,14 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
             return
         }
         dismissCupPathPanel(dialog)
+        // Karttaki sandık her zaman SIRADAKİ eşiği açıyor: kartta tek bir çubuk var ve o
+        // çubuk sıradaki eşiği gösteriyor. Belirli bir eşiği seçmek kupa yolu ekranının işi.
         openAbacusContainerFragment(
             NewChestFragment.newInstance(
                 NewChestFragment.ChestRarity.COMMON,
                 source = AnalyticsLogger.CHEST_SOURCE_CUP_PATH,
                 cupField = state.cupField,
+                cupMilestone = state.nextMilestone,
             )
         )
     }

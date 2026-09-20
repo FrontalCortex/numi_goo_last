@@ -3431,12 +3431,61 @@ function nextCupPathMilestone(lastClaimed) {
   return base + CUP_PATH_STEP;
 }
 
+/** Sayı gerçek bir eşik mi (300, 400, 500, ...). */
+function isCupPathMilestone(value) {
+  return (
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value > CUP_PATH_START &&
+    (value - CUP_PATH_START) % CUP_PATH_STEP === 0
+  );
+}
+
+/**
+ * Bir kupa yolunun defter kaydını okunabilir hâle getirir.
+ *
+ * Defter iki parçadan oluşuyor:
+ * - `lastClaimed`: bu değere kadarki BÜTÜN eşikler alınmış (su seviyesi).
+ * - `claimed`: su seviyesinin üstünde, tek tek alınmış eşikler.
+ *
+ * İkili yapının sebebi: kullanıcı biriken sandıkları sırayla almak zorunda değil. 300, 400
+ * ve 500 birikmişken 500'ü açabiliyor; o zaman su seviyesi 200'de kalır, 500 listeye girer.
+ * Liste şişmesin diye, su seviyesinin hemen üstü dolduğunda seviye yükseltilip o eşikler
+ * listeden çıkarılıyor (bkz. [compactCupPathEntry]).
+ *
+ * Eski kayıtlarda yalnızca `lastClaimed` vardı; o biçim olduğu gibi okunuyor.
+ */
+function readCupPathEntry(ledgerData, cupField) {
+  const raw = (ledgerData && ledgerData[cupField]) || {};
+  const rawLast = Number(raw.lastClaimed);
+  const lastClaimed = Number.isFinite(rawLast) ? Math.trunc(rawLast) : CUP_PATH_START;
+  const claimed = Array.isArray(raw.claimed)
+    ? raw.claimed.map((v) => Math.trunc(Number(v))).filter((v) => isCupPathMilestone(v))
+    : [];
+  return { lastClaimed, claimed };
+}
+
+/** Su seviyesinin hemen üstündeki ardışık eşikleri seviyeye katar. */
+function compactCupPathEntry(entry) {
+  const set = new Set(entry.claimed);
+  let lastClaimed = entry.lastClaimed;
+  while (set.has(nextCupPathMilestone(lastClaimed))) {
+    const next = nextCupPathMilestone(lastClaimed);
+    set.delete(next);
+    lastClaimed = next;
+  }
+  return { lastClaimed, claimed: Array.from(set).sort((a, b) => a - b) };
+}
+
 /**
  * Kupa yolunda hak edilmiş BİR sandığı açar.
  *
- * Çağrı başına tek eşik ilerletilir; birikmiş birden fazla sandık varsa istemci tekrar
- * çağırır. Sandık openChest ile aynı yoldan çekilir (COMMON başlar, nadirlik ve ödül
- * sunucuda yuvarlanır), cevap biçimi de aynıdır — istemci aynı sandık animasyonunu oynatır.
+ * İstemci hangi eşiği açtığını `milestone` ile söyler; o eşik alınır. Kullanıcı biriken
+ * sandıkları sırayla almak zorunda değil — ekranda 500'e dokunduysa 500 açılır, 300 değil.
+ * `milestone` gelmezse sıradaki eşik alınır (eski istemciler için).
+ *
+ * Sandık openChest ile aynı yoldan çekilir (COMMON başlar, nadirlik ve ödül sunucuda
+ * yuvarlanır), cevap biçimi de aynıdır — istemci aynı sandık animasyonunu oynatır.
  */
 exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -3447,6 +3496,13 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
   const cupField = typeof (data && data.cupField) === 'string' ? data.cupField.trim() : '';
   if (!CUP_PATH_FIELDS.includes(cupField)) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa yolu.');
+  }
+
+  const rawMilestone = data && data.milestone;
+  const requestedMilestone =
+    rawMilestone === undefined || rawMilestone === null ? null : Math.trunc(Number(rawMilestone));
+  if (requestedMilestone !== null && !isCupPathMilestone(requestedMilestone)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa eşiği.');
   }
 
   const cupRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
@@ -3479,10 +3535,17 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
       const cupScore = Number.isFinite(rawScore) ? Math.trunc(rawScore) : CUP_PATH_START;
 
       const ledgerData = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
-      const rawClaimed = Number((ledgerData[cupField] || {}).lastClaimed);
-      const lastClaimed = Number.isFinite(rawClaimed) ? Math.trunc(rawClaimed) : CUP_PATH_START;
+      const entry = readCupPathEntry(ledgerData, cupField);
 
-      const milestone = nextCupPathMilestone(lastClaimed);
+      const milestone =
+        requestedMilestone === null ? nextCupPathMilestone(entry.lastClaimed) : requestedMilestone;
+
+      if (milestone <= entry.lastClaimed || entry.claimed.includes(milestone)) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'Bu sandığı zaten aldın.'
+        );
+      }
       if (cupScore < milestone) {
         throw new functions.https.HttpsError(
           'failed-precondition',
@@ -3491,12 +3554,21 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
       }
       claimedMilestone = milestone;
 
+      const updated = compactCupPathEntry({
+        lastClaimed: entry.lastClaimed,
+        claimed: entry.claimed.concat([milestone]),
+      });
+
       // Firestore transaction'larında tüm okumalar yazmalardan önce gelmeli; yazmayı
       // grantRolledReward kendi okumalarını bitirdikten sonra bu fonksiyonla yapıyor.
+      //
+      // merge yalnızca bu kupa yolunun iki alanını değiştiriyor, diğer yollara dokunmuyor.
+      // Dizi alanları merge'de birleştirilmez, olduğu gibi yazılır — sıkıştırma sonrası
+      // listeden eleman çıktığı için bize gereken de bu.
       return (writeTransaction) => {
         writeTransaction.set(
           ledgerRef,
-          { [cupField]: { lastClaimed: milestone } },
+          { [cupField]: { lastClaimed: updated.lastClaimed, claimed: updated.claimed } },
           { merge: true }
         );
       };

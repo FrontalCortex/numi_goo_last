@@ -82,6 +82,18 @@ class NewChestFragment : Fragment() {
          * (bkz. [CupPathRewardRepository]). Boşsa normal `openChest` yolu kullanılır.
          */
         private const val ARG_CUP_FIELD = "cup_field"
+
+        /** Kupa yolu sandığının eşiği (300, 400, ...). Yalnızca [ARG_CUP_FIELD] ile anlamlı. */
+        private const val ARG_CUP_MILESTONE = "cup_milestone"
+
+        /**
+         * Kupa yolu ekranından açılan sandığın geri yığını adı.
+         *
+         * Sandık bu adla yığına eklendiğinde kapanışta yığın bu ada kadar (dahil)
+         * boşaltılıyor ve altındaki kupa yolu ekranı geri geliyor — görev ve mağaza
+         * sandıklarındaki davranışın aynısı. Adı [CupPathRoadFragment] de kullanıyor.
+         */
+        const val BACK_STACK_CUP_PATH_ROAD = "cup_path_road"
         const val RESULT_EARNED_GOLD = "earned_gold"
         const val RESULT_EARNED_KEY = "earned_key"
 
@@ -100,13 +112,17 @@ class NewChestFragment : Fragment() {
             adNonce: String? = null,
             source: String,
             cupField: String? = null,
+            cupMilestone: Int = 0,
         ): NewChestFragment {
             return NewChestFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_START_RARITY, startRarity.name)
                     if (adNonce != null) putString(ARG_AD_NONCE, adNonce)
                     putString(ARG_SOURCE, source)
-                    if (cupField != null) putString(ARG_CUP_FIELD, cupField)
+                    if (cupField != null) {
+                        putString(ARG_CUP_FIELD, cupField)
+                        putInt(ARG_CUP_MILESTONE, cupMilestone)
+                    }
                 }
             }
         }
@@ -280,6 +296,7 @@ class NewChestFragment : Fragment() {
         if (!cupField.isNullOrBlank()) {
             ServerRewards.claimCupPathChest(
                 cupField = cupField,
+                milestone = arguments?.getInt(ARG_CUP_MILESTONE) ?: 0,
                 onResult = { outcome -> handleOutcome(outcome) },
                 onFailure = { handleFailure("Sandık açılamadı. Tekrar deneyin.") },
             )
@@ -694,7 +711,7 @@ class NewChestFragment : Fragment() {
         // hale getiriyor. Bu yüzden önce NewChestFragment'i senkron olarak (Immediate) kaldırıp,
         // altındaki ekran zaten "dinlenme" halindeyken sonucu gönderiyoruz — aksi halde alttaki
         // fragment daha NewChestFragment tam kalkmadan animasyona başlayıp tuhaf bir "dönüşme" görüntüsü oluşuyordu.
-        if (topName == "mission_chest" || topName == "shop_chest") {
+        if (topName == "mission_chest" || topName == "shop_chest" || topName == BACK_STACK_CUP_PATH_ROAD) {
             fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         } else {
             val main = activity as? MainActivity
