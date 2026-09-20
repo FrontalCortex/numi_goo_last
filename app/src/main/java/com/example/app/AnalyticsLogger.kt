@@ -87,6 +87,7 @@ object AnalyticsLogger {
     private const val EV_FRIEND_ADDED_PROFILE = "friend_added_profile"
     private const val EV_FRIEND_SEARCH_HIT = "friend_search_hit"
     private const val EV_FRIEND_SEARCH_EMPTY = "friend_search_empty"
+    private const val EV_FRIEND_REMOVED = "friend_removed"
     private const val EV_PROFILE_OTHER_VIEWED = "profile_other_viewed"
     /**
      * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
@@ -1007,6 +1008,15 @@ object AnalyticsLogger {
     fun logFriendSearchResult(hasResults: Boolean) = safe { fa ->
         fa.logEvent(if (hasResults) EV_FRIEND_SEARCH_HIT else EV_FRIEND_SEARCH_EMPTY) {}
     }
+
+    /**
+     * Takip bırakıldı ([ProfileFragment]).
+     *
+     * `friend_added_*` sayılarının paydası. İkisi birbirine yakınsa sosyal graf BÜYÜMÜYOR
+     * demektir: çocuklar takip ediyor, sonra vazgeçiyor. Sadece "kaç takip ekle" sayısına
+     * bakmak bu durumu tamamen gizlerdi.
+     */
+    fun logFriendRemoved() = safe { fa -> fa.logEvent(EV_FRIEND_REMOVED) {} }
 
     /**
      * Başka bir kullanıcının profili açıldı.

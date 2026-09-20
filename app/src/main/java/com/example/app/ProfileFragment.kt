@@ -376,7 +376,7 @@ class ProfileFragment : Fragment() {
             }
     }
 
-    /** Hedef kullanıcıyı takip edip etmediğimizi kontrol ederek TAKİP ET butonunu günceller */
+    /** Hedef kullanıcıyı takip edip etmediğimizi okuyup butonu günceller. */
     private fun updateFollowButtonState(targetUid: String) {
         val myUid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(targetUid)
@@ -384,16 +384,97 @@ class ProfileFragment : Fragment() {
             .get()
             .addOnSuccessListener { doc ->
                 if (!isAdded) return@addOnSuccessListener
-                if (doc.exists()) {
-                    binding.btnAddFriend.text = "TAKİP EDİLİYOR"
-                    binding.btnAddFriend.isEnabled = false
-                    binding.btnAddFriend.alpha = 0.5f
-                } else {
-                    binding.btnAddFriend.text = "TAKİP ET"
-                    binding.btnAddFriend.isEnabled = true
-                    binding.btnAddFriend.alpha = 1f
-                }
+                applyFollowButtonState(targetUid, following = doc.exists())
             }
+    }
+
+    /**
+     * Takip butonunun hem GÖRÜNÜMÜNÜ hem DAVRANIŞINI tek yerden kurar.
+     *
+     * İkisi ayrı yerlerde kurulsaydı "TAKİP EDİLİYOR" yazarken takip eden bir butona
+     * düşmek mümkün olurdu; metin ve tıklama her zaman birlikte değişmeli.
+     *
+     * Takip edilirken buton artık KAPALI değil: ikinci dokunuş takibi bırakıyor. Bu yüzden
+     * yarı saydamlık da kaldırıldı — o, dokunulamayan bir buton demekti.
+     */
+    private fun applyFollowButtonState(targetUid: String, following: Boolean) {
+        binding.btnAddFriend.isEnabled = true
+        binding.btnAddFriend.alpha = 1f
+        if (following) {
+            binding.btnAddFriend.text = "TAKİP EDİLİYOR"
+            binding.btnAddFriend.setOnClickListener { confirmUnfollow(targetUid) }
+        } else {
+            binding.btnAddFriend.text = "TAKİP ET"
+            binding.btnAddFriend.setOnClickListener { followTargetUser(targetUid) }
+        }
+    }
+
+    /**
+     * Takibi bırakmadan önce sorar.
+     *
+     * Buton aynı yerde, aynı büyüklükte ve az önce takip etmek için kullanılmıştı; onay
+     * sorulmasaydı yanlışlıkla bırakmak çok kolay olurdu. Geri alınabilir bir işlem ama
+     * hedef kitle çocuk ve "arkadaşımı kaybettim" hissi ucuz değil.
+     */
+    private fun confirmUnfollow(targetUid: String) {
+        val targetName = binding.tvTopLeftName.text.toString()
+        AlertDialog.Builder(requireContext())
+            .setMessage("$targetName adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?")
+            .setNegativeButton("Takibi bırak") { dialog, _ ->
+                dialog.dismiss()
+                unfollowTargetUser(targetUid)
+            }
+            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    /**
+     * Takibi bırakır: iki takip kaydını da siler.
+     *
+     * Sunucuda yapılacak bir şey YOK. firestore.rules zaten kendi takip satırını silmeye
+     * izin veriyor ve onFollowerDeleted / onFollowingDeleted trigger'ları sayaçları
+     * düşürüyor — ikisi de hesap silme akışı için zaten yazılmıştı.
+     */
+    private fun unfollowTargetUser(targetUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        val batch = firestore.batch()
+        batch.delete(
+            firestore.collection("users").document(targetUid)
+                .collection("followers").document(myUid)
+        )
+        batch.delete(
+            firestore.collection("users").document(myUid)
+                .collection("following").document(targetUid)
+        )
+
+        binding.btnAddFriend.isEnabled = false
+        batch.commit()
+            .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip bırakıldı.
+                AnalyticsLogger.logFriendRemoved()
+                if (!isAdded) return@addOnSuccessListener
+                applyFollowButtonState(targetUid, following = false)
+                nudgeFollowersCount(-1)
+                Toast.makeText(requireContext(), "Takip bırakıldı.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                binding.btnAddFriend.isEnabled = true
+                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    /**
+     * Ekrandaki takipçi sayısını hemen düzeltir.
+     *
+     * Gerçek sayaç sunucudaki takip trigger'larıyla güncelleniyor ve bu birkaç saniye
+     * sürebiliyor. O aralıkta kullanıcı bastığı butonun karşılığını göremezse işlem
+     * olmamış gibi görünür.
+     */
+    private fun nudgeFollowersCount(delta: Int) {
+        val shown = binding.tvFollowersCount.text.toString().toIntOrNull() ?: return
+        binding.tvFollowersCount.text = (shown + delta).coerceAtLeast(0).toString()
     }
 
     /** Başkasını takip etme işlemi */
@@ -432,8 +513,8 @@ class ProfileFragment : Fragment() {
                 // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
                 AnalyticsLogger.logFriendAddedFromProfile()
                 if (!isAdded) return@addOnSuccessListener
-                binding.btnAddFriend.text = "TAKİP EDİLİYOR"
-                binding.btnAddFriend.alpha = 0.5f
+                applyFollowButtonState(targetUid, following = true)
+                nudgeFollowersCount(+1)
                 Toast.makeText(requireContext(), "Takip edildi!", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
@@ -1173,12 +1254,10 @@ class ProfileFragment : Fragment() {
             // Avatar tıklanamaz
             binding.imgProfilePhoto.isClickable = false
 
-            // Arkadaş Ekle butonu → TAKİP ET (ilk render; asıl durum loadUserData içinde güncellenir)
-            binding.btnAddFriend.text = "TAKİP ET"
-            binding.btnAddFriend.setOnClickListener {
-                val uid = targetUid ?: return@setOnClickListener
-                followTargetUser(uid)
-            }
+            // Arkadaş Ekle butonu → TAKİP ET. Metin ve tıklama davranışı tek yerden kuruluyor
+            // (bkz. applyFollowButtonState); asıl durum loadUserData -> updateFollowButtonState
+            // ile geliyor, burası yalnızca ilk render.
+            targetUid?.let { applyFollowButtonState(it, following = false) }
 
             // Takipçi / Takip edilen sayaçlara basmak bu modda bir şey açmayacak
             binding.followingCount.setOnClickListener(null)
