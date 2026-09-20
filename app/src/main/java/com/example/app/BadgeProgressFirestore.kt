@@ -442,7 +442,7 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.GOLF_WITH_BASE,
                     beforeGolf,
                     afterGolf,
-                    listOf(5, 10, 20, 50, 100),
+                    listOf(3, 5, 10, 15, 20),
                 )?.let { payloads.add(it) }
             }
             if (incrementFishing) {

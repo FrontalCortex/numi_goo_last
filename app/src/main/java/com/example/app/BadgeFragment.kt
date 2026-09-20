@@ -88,7 +88,7 @@ class BadgeFragment : Fragment() {
             BadgeAnimMode.DAILY_ONLY to "Bu rozeti kazanmak için 3 dersi hatasız tamamlayarak başarı elde et.",
             BadgeAnimMode.ROCKET_WITH_BASE to "Bu rozeti kazanmak için 3 dersi 1 günde tamamlayarak başarı elde et.",
             BadgeAnimMode.BOWLING_WITH_BASE to "Bu rozeti kazanmak için 5 günlük görevi tamamlayarak başarı elde et.",
-            BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 5 kere öğretmene danış.",
+            BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 3 kere öğretmene danış.",
             BadgeAnimMode.FISHING_WITH_BASE to "Bu rozeti kazanmak için 3 gün üst üste Günlük Soru mücadelesini çözerek başarı elde et.",
             BadgeAnimMode.DINO to "Bu rozeti kazanmak için Toplama Kupa Yolunda 500 kupaya ulaş.",
             BadgeAnimMode.TORNADO to "Bu rozeti kazanmak için Toplama Ustalık Yolunda 1 adımı tamamla.",

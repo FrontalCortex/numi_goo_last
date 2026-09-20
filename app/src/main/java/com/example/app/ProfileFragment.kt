@@ -735,7 +735,7 @@ class ProfileFragment : Fragment() {
         val spec = when (kind) {
             BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
             BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
+            BadgeKind.GOLF -> listOf(3, 5, 10, 15, 20) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
@@ -781,7 +781,7 @@ class ProfileFragment : Fragment() {
         val spec = when (kind) {
             BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
             BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
+            BadgeKind.GOLF -> listOf(3, 5, 10, 15, 20) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500

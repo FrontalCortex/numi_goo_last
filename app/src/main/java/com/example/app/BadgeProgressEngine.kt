@@ -102,7 +102,17 @@ enum class BadgeLevelTone {
 
 object BadgeProgressEngine {
     private val dartLevel = listOf(3, 10, 20, 30, 50)
-    private val golfLevel = listOf(5, 10, 20, 50, 100)
+    /**
+     * DIKKAT: Golf eşikleri bu dosyaya ÖZGÜ DEĞİL. Aynı liste şu beş yerde daha duruyor ve
+     * hepsi birlikte değişmek zorunda; biri unutulursa ekranlar birbirini tutmaz:
+     * - [BadgeProgressRepository.getProgressWindowByMode] (ilerleme halkası)
+     * - [BadgeProgressRepository.getLevelSpecByMode] (kademe oranı, gösterilen değer)
+     * - [BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp] (kutlamanın
+     *   tetiklendiği yer — burada unutulursa rozet ekranı yeni eşikleri gösterir ama
+     *   kutlama eskilere göre çalışır)
+     * - [ProfileFragment] içinde getBadgeLevel ve getBadgeSortingWeight
+     */
+    private val golfLevel = listOf(3, 5, 10, 15, 20)
     private val rocketLevel = listOf(3, 10, 15, 25, 30)
     private val bowlingLevel = listOf(5, 10, 20, 50, 100)
     private val fishingLevel = listOf(3, 5, 15, 25, 50)
@@ -564,7 +574,7 @@ object BadgeProgressRepository {
                 val target = BadgeProgressEngine.fishingNextThreshold(currentUserProgress.userFishingProgress)
                 BadgeProgressWindow(current = streak, target = target)
             }
-            BadgeKind.GOLF -> leveledProgressWindow(currentUserProgress.userGolfProgress, listOf(5, 10, 20, 50, 100), 5)
+            BadgeKind.GOLF -> leveledProgressWindow(currentUserProgress.userGolfProgress, listOf(3, 5, 10, 15, 20), 5)
             BadgeKind.TORNADO -> BadgeProgressEngine.tornadoProgressWindow(currentUserProgress.userTornadoProgress)
             BadgeKind.VOLCANO -> BadgeProgressEngine.volcanoProgressWindow(currentUserProgress.userVolcanoProgress)
             BadgeKind.DINO -> BadgeProgressEngine.dinoProgressWindow(currentUserProgress.userDinoProgress)
@@ -613,7 +623,7 @@ object BadgeProgressRepository {
         return when (BadgeKind.fromMode(mode)) {
             BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
             BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
+            BadgeKind.GOLF -> listOf(3, 5, 10, 15, 20) to 5
             BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
             BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
