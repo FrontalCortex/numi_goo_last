@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.app.auth.AuthManager
@@ -75,7 +76,8 @@ class FollowersFollowingFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = FollowUserAdapter(
             onFollowClick = { user -> followUser(user) },
-            onItemClick = { user -> openUserProfile(user.firebaseUid) }
+            onItemClick = { user -> openUserProfile(user.firebaseUid) },
+            onUnfollowClick = { user -> confirmUnfollow(user) }
         )
         binding.rvFollowList.layoutManager = LinearLayoutManager(requireContext())
         binding.rvFollowList.adapter = adapter
@@ -188,7 +190,10 @@ class FollowersFollowingFragment : Fragment() {
                                 name = name,
                                 userId = userId,
                                 selectedAvatar = avatarMap[uid] ?: 0,
-                                showFollowButton = showFollowButton
+                                showFollowButton = showFollowButton,
+                                // X yalnızca "Takip Edilen" sekmesinde: oradaki herkesi zaten
+                                // takip ediyorum, yani X'in anlamı tek. Bkz. [FollowUser].
+                                showUnfollowButton = (tab == TAB_FOLLOWING)
                             )
                         }
 
@@ -257,6 +262,61 @@ class FollowersFollowingFragment : Fragment() {
                 myFollowingUids.add(targetUid)
                 Toast.makeText(requireContext(), "${user.name} takip edildi", Toast.LENGTH_SHORT).show()
                 // Refresh list to hide the "+" button for this user
+                loadTab(currentTab)
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // ----- Unfollow action -----
+
+    /**
+     * Takibi bırakmadan önce sorar.
+     *
+     * Profildeki onayla aynı sebep: liste satırları küçük ve alt alta; yanlışlıkla
+     * dokunmak kolay. Geri alınabilir bir işlem ama hedef kitle çocuk.
+     */
+    private fun confirmUnfollow(user: FollowUser) {
+        AlertDialog.Builder(requireContext())
+            .setMessage("${user.name} adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?")
+            .setNegativeButton("Takibi bırak") { dialog, _ ->
+                dialog.dismiss()
+                unfollowUser(user)
+            }
+            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    /**
+     * Takibi bırakır: iki takip kaydını da siler.
+     *
+     * Sunucuda yapılacak bir şey yok; sayaçları onFollowerDeleted / onFollowingDeleted
+     * trigger'ları düşürüyor (aynısı ProfileFragment.unfollowTargetUser içinde).
+     */
+    private fun unfollowUser(user: FollowUser) {
+        if (myFirebaseUid.isEmpty()) return
+        val targetUid = user.firebaseUid
+
+        val batch = firestore.batch()
+        batch.delete(
+            firestore.collection("users").document(targetUid)
+                .collection("followers").document(myFirebaseUid)
+        )
+        batch.delete(
+            firestore.collection("users").document(myFirebaseUid)
+                .collection("following").document(targetUid)
+        )
+
+        batch.commit()
+            .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip bırakıldı.
+                AnalyticsLogger.logFriendRemoved()
+                if (!isAdded) return@addOnSuccessListener
+                myFollowingUids.remove(targetUid)
+                Toast.makeText(requireContext(), "${user.name} takipten çıkarıldı", Toast.LENGTH_SHORT).show()
+                // Listeyi tazele: satır "Takip Edilen"den düşsün, "Takipçi"de "+" geri gelsin.
                 loadTab(currentTab)
             }
             .addOnFailureListener { e ->

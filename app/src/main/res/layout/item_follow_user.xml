@@ -63,4 +63,16 @@
         android:visibility="gone"
         app:tint="@android:color/white" />
 
+    <!-- Takibi bırakma butonu (yalnızca "Takip Edilen" sekmesinde gösterilir) -->
+    <ImageButton
+        android:id="@+id/btnUnfollow"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_unfollow_btn"
+        android:contentDescription="Takibi Bırak"
+        android:padding="12dp"
+        android:src="@drawable/ic_close_black"
+        android:visibility="gone"
+        app:tint="#93A5B3" />
+
 </LinearLayout>

@@ -17,12 +17,21 @@ data class FollowUser(
     /** 1–12 → show avatar_ic{N} drawable; 0 → show letter circle */
     val selectedAvatar: Int = 0,
     /** true → this person is NOT followed back yet → show "+" button */
-    val showFollowButton: Boolean = false
+    val showFollowButton: Boolean = false,
+    /**
+     * true → bu kişiyi takip ediyorum → "X" (takibi bırak) butonu görünsün.
+     *
+     * Yalnızca "Takip Edilen" sekmesinde açılır. "Takipçi" sekmesinde de açılsaydı X,
+     * "bu takipçiyi listemden çıkar" gibi okunurdu — oysa yaptığı şey benim onu takip
+     * etmeyi bırakmam. İki sekme, iki net anlam: X = takibi bırak, + = geri takip et.
+     */
+    val showUnfollowButton: Boolean = false
 )
 
 class FollowUserAdapter(
     private val onFollowClick: (FollowUser) -> Unit,
-    private val onItemClick: (FollowUser) -> Unit = {}
+    private val onItemClick: (FollowUser) -> Unit = {},
+    private val onUnfollowClick: (FollowUser) -> Unit = {}
 ) : ListAdapter<FollowUser, FollowUserAdapter.ViewHolder>(DiffCallback) {
 
     private val avatarColors = listOf(
@@ -77,6 +86,16 @@ class FollowUserAdapter(
                 }
             } else {
                 binding.btnFollowBack.visibility = View.GONE
+            }
+
+            if (item.showUnfollowButton) {
+                binding.btnUnfollow.visibility = View.VISIBLE
+                // Buton burada KAPATILMIYOR ("+" butonunun aksine): araya onay diyaloğu
+                // giriyor ve kullanıcı iptal ederse buton kapalı kalırdı. Diyalog zaten
+                // modal, yani ikinci dokunuş satıra inmiyor.
+                binding.btnUnfollow.setOnClickListener { onUnfollowClick(item) }
+            } else {
+                binding.btnUnfollow.visibility = View.GONE
             }
         }
 
