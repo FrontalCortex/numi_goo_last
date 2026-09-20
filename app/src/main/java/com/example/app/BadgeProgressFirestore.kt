@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import java.util.concurrent.atomic.AtomicReference
 
 data class BadgeLevelUpPayload(
     val mode: BadgeFragment.BadgeAnimMode,
@@ -255,6 +256,12 @@ object BadgeProgressFirestore {
             .collection("badgeProgress")
             .document("state")
 
+        // Kademeler işlem (transaction) gövdesinde hesaplanıyor ama sonuç buradan, yani
+        // gövdenin DIŞINDAN veriliyor. Gövde yeniden çalıştırılabilir olduğu için her denemede
+        // üzerine yazılıyor; en son yazılan, gerçekten işlenen denemenin sonucudur.
+        // Yazım arka plandaki işlem iplikinden, okuma ana iplikten olduğu için AtomicReference.
+        val committedPayloads = AtomicReference<List<BadgeLevelUpPayload>>(emptyList())
+
         FirebaseFirestore.getInstance().runTransaction { transaction ->
             val snapshot = transaction.get(docRef)
             val beforeDart = (snapshot.getLong("userDartProgress") ?: 0L).toInt().coerceAtLeast(0)
@@ -457,8 +464,8 @@ object BadgeProgressFirestore {
                     listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
-            payloads
-        }.addOnSuccessListener { committed ->
+            committedPayloads.set(payloads.toList())
+        }.addOnSuccessListener {
             // Sonuç BURADAN veriliyor, transaction gövdesinin içinden DEĞİL. İki sebebi var:
             //
             // 1. Transaction gövdesi yeniden çalıştırılabilir. Aynı dokümana eş zamanlı başka bir
@@ -469,7 +476,7 @@ object BadgeProgressFirestore {
             //
             // addOnSuccessListener her ikisini de çözüyor: yazım gerçekten işlendikten sonra,
             // bir kez, ana iş parçacığında. Aynı dosyadaki altı kupa rozeti senkronu da böyle.
-            emitLevelUps(committed, onDone)
+            emitLevelUps(committedPayloads.get(), onDone)
         }.addOnFailureListener { e ->
             Log.e(TAG, "badge progress update failed", e)
             onDone(emptyList())
