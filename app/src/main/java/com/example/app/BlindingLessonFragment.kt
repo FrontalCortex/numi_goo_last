@@ -185,6 +185,20 @@ class BlindingLessonFragment : Fragment() {
     private var dailyQuestionPartId: Int = -1
     private var lessonStarted = false
 
+    /**
+     * Kupa sonucu bu tur için gönderildi mi.
+     *
+     * Üç ayrı yol aynı turun sonucunu göndermeye çalışabiliyor: cevap verme, çıkış düğmesi
+     * ve geri tuşu. [lessonStarted] cevaptan sonra da true kaldığı için, cevabını verip
+     * ekranı geri tuşuyla kapatan kullanıcı kupasını hem kazanıp hem kaybediyordu — üstelik
+     * çıkış için ikinci kez enerji ödüyordu.
+     *
+     * Sunucudaki hız koruması ikinci çağrıyı reddedip logda "Çok hızlı gönderildi"
+     * bırakıyordu; yani hata görünür oldu ama sebebi burada. İki çağrı arasında 3 saniyeden
+     * fazla geçseydi ikisi de uygulanacaktı.
+     */
+    private var cupResultSubmitted = false
+
     private var isShowingSequence = false
     private var currentSequenceIndex = 0
     private var currentSequence: List<Int> = emptyList()
@@ -296,6 +310,7 @@ class BlindingLessonFragment : Fragment() {
 
         questionSessionStartMs = System.currentTimeMillis()
         hasSubmittedAnyAnswer = false
+        cupResultSubmitted = false
         if (isLessonSuccessRateScope()) {
             LessonSuccessRateRepository.recordQuestionEntry(globalPartId, mapFragmentStepIndex, lessonItem.currentStep)
         }
@@ -1050,21 +1065,7 @@ class BlindingLessonFragment : Fragment() {
                         if (globalPartId == 9) {
                             val winDelta = lessonItem.cupWinDelta ?: 10
                             val lossDelta = lessonItem.cupLossDelta ?: 30
-                            val delta = if (isCorrect) winDelta else -lossDelta
-                            if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingImpactCupDelta = delta
-                            } else if (lessonItem.isMultiplication == true) {
-                                GlobalValues.pendingImpactCupDelta = delta
-                            } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingExtractionCupDelta = delta
-                            } else if (lessonItem.isExtraction == true) {
-                                GlobalValues.pendingExtractionCupDelta = delta
-                            } else if (lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingCupDelta = delta
-                            } else {
-                                GlobalValues.pendingCupDelta = delta
-                            }
-                            BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                            submitCupResultOnce(if (isCorrect) winDelta else -lossDelta)
                             logCupRaceResultOnce(
                                 if (isCorrect) AnalyticsLogger.CUP_RESULT_WIN
                                 else AnalyticsLogger.CUP_RESULT_LOSS,
@@ -1143,28 +1144,43 @@ class BlindingLessonFragment : Fragment() {
         }
     }
 
+    /**
+     * Kupa sonucunu tur başına bir kez bildirir.
+     *
+     * Kupa alanı seçimi üç çağrı yerinde birebir aynı if-else zinciriyle tekrarlanıyordu;
+     * artık tek yerde. Miktarı sunucu hesaplıyor (bkz. [CupScoreService]), buradan yalnızca
+     * işaret ve hangi yol olduğu gidiyor.
+     */
+    private fun submitCupResultOnce(delta: Int) {
+        if (cupResultSubmitted) return
+        cupResultSubmitted = true
+        when {
+            lessonItem.isMultiplication == true && lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingImpactCupDelta = delta
+            lessonItem.isMultiplication == true ->
+                GlobalValues.pendingImpactCupDelta = delta
+            lessonItem.isExtraction == true && lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingExtractionCupDelta = delta
+            lessonItem.isExtraction == true ->
+                GlobalValues.pendingExtractionCupDelta = delta
+            lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingCupDelta = delta
+            else ->
+                GlobalValues.pendingCupDelta = delta
+        }
+        BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+    }
+
     private fun setupQuitButton() {
         binding.quitButton.setOnClickListener {
             if (isDailyQuestionMode && lessonStarted) {
                 handleDailyQuestionWrongAnswer()
                 return@setOnClickListener
             }
-            if (globalPartId == 9 && lessonStarted) {
-                val lossDelta = lessonItem.cupLossDelta ?: 30
-                if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
-                } else if (lessonItem.isMultiplication == true) {
-                    GlobalValues.pendingImpactCupDelta = -lossDelta
-                } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
-                } else if (lessonItem.isExtraction == true) {
-                    GlobalValues.pendingExtractionCupDelta = -lossDelta
-                } else if (lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingCupDelta = -lossDelta
-                } else {
-                    GlobalValues.pendingCupDelta = -lossDelta
-                }
-                BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+            // cupResultSubmitted: cevabını verip ekranı kapatan kullanıcı "terk etti"
+            // sayılmamalı — ne ikinci kez kupa kaybetmeli ne de ikinci kez enerji ödemeli.
+            if (globalPartId == 9 && lessonStarted && !cupResultSubmitted) {
+                submitCupResultOnce(-(lessonItem.cupLossDelta ?: 30))
                 logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
                 spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
             }
@@ -1188,22 +1204,10 @@ class BlindingLessonFragment : Fragment() {
                         handleDailyQuestionWrongAnswer()
                         return
                     }
-                    if (globalPartId == 9 && lessonStarted) {
-                        val lossDelta = lessonItem.cupLossDelta ?: 30
-                        if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
-                        } else if (lessonItem.isMultiplication == true) {
-                            GlobalValues.pendingImpactCupDelta = -lossDelta
-                        } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
-                        } else if (lessonItem.isExtraction == true) {
-                            GlobalValues.pendingExtractionCupDelta = -lossDelta
-                        } else if (lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingCupDelta = -lossDelta
-                        } else {
-                            GlobalValues.pendingCupDelta = -lossDelta
-                        }
-                        BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                    // cupResultSubmitted: cevabını verip ekranı kapatan kullanıcı "terk etti"
+                    // sayılmamalı — ne ikinci kez kupa kaybetmeli ne de ikinci kez enerji ödemeli.
+                    if (globalPartId == 9 && lessonStarted && !cupResultSubmitted) {
+                        submitCupResultOnce(-(lessonItem.cupLossDelta ?: 30))
                         logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
                         spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
                     }
