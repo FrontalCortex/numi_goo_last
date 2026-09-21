@@ -2,35 +2,20 @@ package com.example.app
 
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-import com.google.firebase.firestore.Transaction
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Kupa skorlarının günlük geçmişini `users/{uid}/cupHistory/{yyyy-MM-dd}` altında tutar.
  *
  * Her doküman, o günün son değerlerini `cupWayProgress/progress` ile aynı alan adlarıyla saklar.
- * Aynı gün içindeki tekrarlı güncellemeler [SetOptions.merge] ile üzerine yazılır.
+ *
+ * Burada yalnızca OKUMA var: kaydı kupa puanıyla aynı transaction'da sunucu yazıyor
+ * (`submitCupResult`), böylece puan ilerleyip grafik geride kalmıyor. Koleksiyon istemciye
+ * yazmaya kapalı.
  */
 object CupHistoryRepository {
 
     private const val COLLECTION = "users"
     private const val SUBCOLLECTION = "cupHistory"
-
-    private fun todayId(): String =
-        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-
-    /** Mevcut bir transaction içinde bugünün kupa değerini geçmişe yazar. */
-    fun recordSnapshot(tx: Transaction, uid: String, field: String, value: Int) {
-        val ref = FirebaseFirestore.getInstance()
-            .collection(COLLECTION)
-            .document(uid)
-            .collection(SUBCOLLECTION)
-            .document(todayId())
-        tx.set(ref, mapOf(field to value), SetOptions.merge())
-    }
 
     /**
      * Belirtilen kullanıcının, belirtilen kupa alanına ait TÜM geçmiş noktalarını okur.

@@ -3443,6 +3443,32 @@ function nextCupPathMilestone(lastClaimed) {
   return base + CUP_PATH_STEP;
 }
 
+/**
+ * Kupa dersi sonucunun kupa puanına etkisi — CupRuleEngine.buildLessonItem ile BİREBİR aynı.
+ *
+ * Zorluk yükseldikçe kazanç artıyor, kayıp azalıyor: daha zor soru daha çok ödül, daha az ceza.
+ * Kullanıcı zorluğu kendisi seçtiği için istemcinin kademe bildirmesi bir açık değil; buradaki
+ * asıl mesele MİKTARIN istemcide hesaplanmaması.
+ */
+const CUP_WIN_BY_LEVEL = [10, 17, 24, 31, 38];
+const CUP_LOSS_BY_LEVEL = [30, 25, 20, 15, 10];
+
+/** Çarpma kupa modu kademesiz: TasksFragment.launchCupModeLesson ile aynı. */
+const CUP_MULTIPLICATION_WIN = 30;
+const CUP_MULTIPLICATION_LOSS = 20;
+
+/**
+ * İki kupa sonucu arasındaki en kısa süre.
+ *
+ * Kazanılan kupa dersi enerji harcamıyor (enerji yalnızca kaybedince ve terk edince gidiyor),
+ * yani ekonomi tarafında bir fren yok. Gerçek bir ders en az birkaç saniye sürüyor; bu eşik
+ * insan hızının çok altında kalıyor ama betiği saniyede bir çağrıdan alıkoyuyor.
+ */
+const CUP_RESULT_MIN_GAP_MS = 3000;
+
+/** Günlük kupa sonucu tavanı. En hevesli kullanıcının çok üstünde, betiğin çok altında. */
+const CUP_RESULT_DAILY_LIMIT = 300;
+
 /** Sayı gerçek bir eşik mi (300, 400, 500, ...). */
 function isCupPathMilestone(value) {
   return (
@@ -3599,6 +3625,93 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
     keys: balances.keys,
     currency: balances.currency,
   };
+});
+
+/**
+ * Bir kupa dersinin sonucunu işler: kupa puanını günceller ve günlük geçmişe yazar.
+ *
+ * ## Neden sunucuda
+ * Kupa puanı yalnızca bir skor değil, bir MUSLUK: kupa yolu sandıkları (claimCupPathChest)
+ * ve kupa rozetleri ona bakıyor. İstemci doğrudan yazabildiği sürece "kupamı 999999 yap"
+ * demek bedava sandık demekti. Artık koleksiyon istemciye kapalı; puan yalnızca buradan
+ * değişiyor ve DEĞİŞİM MİKTARINI sunucu kendi tablosundan hesaplıyor.
+ *
+ * ## Neyi korumuyor
+ * Dersin gerçekten kazanılıp kazanılmadığını sunucu bilmiyor; soru istemcide üretiliyor ve
+ * cevap istemcide doğrulanıyor. Yani hile hâlâ mümkün ama artık "tek çağrıda sınırsız kupa"
+ * değil, "insan hızında, adım adım, günlük tavanla sınırlı". Tam koruma sorunun sunucuda
+ * üretilip cevabın sunucuda doğrulanmasını gerektirir; bu ayrı ve büyük bir iş.
+ */
+exports.submitCupResult = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const cupField = typeof (data && data.cupField) === 'string' ? data.cupField.trim() : '';
+  if (!CUP_PATH_FIELDS.includes(cupField)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa yolu.');
+  }
+
+  const won = !!(data && data.won);
+  const isMultiplication = !!(data && data.isMultiplication);
+  const rawLevel = Math.trunc(Number(data && data.difficultyLevel));
+  const level = Number.isFinite(rawLevel) ? Math.min(4, Math.max(0, rawLevel)) : 0;
+
+  const delta = isMultiplication
+    ? (won ? CUP_MULTIPLICATION_WIN : -CUP_MULTIPLICATION_LOSS)
+    : (won ? CUP_WIN_BY_LEVEL[level] : -CUP_LOSS_BY_LEVEL[level]);
+
+  // Geçmiş grafiğinin günü istemcinin YEREL tarihinden geliyor: sunucu UTC kullansaydı
+  // Türkiye'de gece yarısından sonraki dersler bir önceki güne yazılırdı. Uydurulması
+  // hâlinde zarar kullanıcının kendi grafiğiyle sınırlı, o yüzden biçim kontrolü yeterli.
+  const rawDayId = typeof (data && data.dayId) === 'string' ? data.dayId.trim() : '';
+  const dayId = /^\d{4}-\d{2}-\d{2}$/.test(rawDayId)
+    ? rawDayId
+    : new Date().toISOString().slice(0, 10);
+
+  const progressRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
+  const historyRef = db.collection('users').doc(uid).collection('cupHistory').doc(dayId);
+
+  const result = await db.runTransaction(async (t) => {
+    const snap = await t.get(progressRef);
+    const d = snap.exists ? snap.data() || {} : {};
+    const now = Date.now();
+
+    const lastMs = Number(d.lastResultMs);
+    const sinceLast = Number.isFinite(lastMs) ? now - lastMs : Number.MAX_SAFE_INTEGER;
+    // Negatif fark = sunucu saati değil, bozuk kayıt. Kilitlememek için geçerli sayılıyor.
+    if (sinceLast >= 0 && sinceLast < CUP_RESULT_MIN_GAP_MS) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı gönderildi.');
+    }
+
+    const countedDay = typeof d.resultDayId === 'string' ? d.resultDayId : '';
+    const dayCount = countedDay === dayId ? Math.trunc(Number(d.resultDayCount)) || 0 : 0;
+    if (dayCount >= CUP_RESULT_DAILY_LIMIT) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Günlük kupa sınırına ulaşıldı.');
+    }
+
+    const rawCurrent = Number(d[cupField]);
+    const current = Number.isFinite(rawCurrent) ? Math.trunc(rawCurrent) : CUP_PATH_START;
+    const updated = Math.max(0, current + delta);
+
+    t.set(
+      progressRef,
+      {
+        [cupField]: updated,
+        lastResultMs: now,
+        resultDayId: dayId,
+        resultDayCount: dayCount + 1,
+      },
+      { merge: true }
+    );
+    // Geçmiş aynı transaction'da yazılıyor: puan ilerleyip grafik geride kalmasın.
+    t.set(historyRef, { [cupField]: updated }, { merge: true });
+
+    return { oldScore: current, newScore: updated };
+  });
+
+  return { success: true, cupField, delta, oldScore: result.oldScore, newScore: result.newScore };
 });
 
 /**

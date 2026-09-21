@@ -129,16 +129,18 @@ service cloud.firestore {
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     //
-    // İKİ ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü ikisini de yalnızca sunucu üretebilmeli:
-    //   • `badgeProgress` — sezon madalyaları
-    //   • `cupPathRewards` — kupa yolunda hangi sandığın alındığı defteri
+    // DÖRT ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü dördünü de yalnızca sunucu üretebilmeli:
+    //   • `badgeProgress`   — sezon madalyaları
+    //   • `cupPathRewards`  — kupa yolunda hangi sandığın alındığı defteri
+    //   • `cupWayProgress`  — kupa puanı
+    //   • `cupHistory`      — kupa puanının günlük geçmişi
     // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
     // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
     // zorunda.)
     match /users/{userId}/{subcollection}/{document=**} {
       allow read: if isSelf(userId);
       allow write: if isSelf(userId)
-        && !(subcollection in ['badgeProgress', 'cupPathRewards']);
+        && !(subcollection in ['badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory']);
     }
 
     // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.
@@ -194,8 +196,26 @@ service cloud.firestore {
       allow read: if isSelf(userId);
       allow write: if false;
     }
+    // Kupa puanı: yalnızca sunucudaki `submitCupResult` yazar.
+    //
+    // NEDEN: puan sadece bir skor değil, bir musluk. Kupa yolu sandıkları (claimCupPathChest)
+    // ve kupa rozetleri ona bakıyor; istemci doğrudan yazabildiği sürece "kupamı 999999 yap"
+    // demek bedava sandık demekti.
+    //
+    // SİLME AÇIK: hesap silme akışı bu dokümanı istemciden siliyor
+    // (AccountDeletionHelper). Silmek bir kazanç sağlamıyor — puan varsayılana döner, alınmış
+    // sandıkların defteri (cupPathRewards) ayrı ve silinemez durumda.
+    match /users/{userId}/cupWayProgress/{doc} {
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
+    }
+
+    // Kupa puanının günlük geçmişi: kaydı puanla aynı transaction'da sunucu yazıyor.
+    // Okuma imzalı herkese açık (başkasının grafiği), silme yine hesap silme akışı için.
     match /users/{userId}/cupHistory/{doc} {
       allow read: if isSignedIn();
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
     }
     match /users/{userId}/lessonProgress/{doc} {
       allow read: if isSignedIn();

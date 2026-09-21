@@ -31,15 +31,6 @@ object BadgePrecalcHelper {
         // temiz başlıyor, böylece eski bir kutlama yanlış derse yapışmıyor.
         GlobalValues.pendingCupBadgePayloads = null
 
-        val updateFn: (Int, ((Int, Int) -> Unit)?) -> Unit = when {
-            lessonItem.isMultiplication == true && lessonItem.isBlinding == true -> BlindingImpactCupRepository::updateCupScore
-            lessonItem.isMultiplication == true -> ImpactCupRepository::updateCupScore
-            lessonItem.isExtraction == true && lessonItem.isBlinding == true -> BlindingExtractionCupRepository::updateCupScore
-            lessonItem.isExtraction == true -> ExtractionCupRepository::updateCupScore
-            lessonItem.isBlinding == true -> BlindingAdditionCupRepository::updateCupScore
-            else -> AbacusCupRepository::updateCupScore
-        }
-
         // Kutlamayı tetikleyecek kademe listesi buradan geliyor. Ders biter bitmez
         // başlatıldığı için kullanıcı Görevler'e döndüğünde cevap çoktan gelmiş oluyor;
         // gelmemişse TasksFragment kısa bir süre bekliyor.
@@ -47,8 +38,15 @@ object BadgePrecalcHelper {
             GlobalValues.pendingCupBadgePayloads = payloads
         }
 
-        // Firestore güncellemesini arka planda sessizce yap
-        updateFn(delta) { _, calculatedNewScore ->
+        // Kupa puanını sunucu yazıyor (bkz. CupScoreService). Buradan yalnızca dersin
+        // kazanılıp kazanılmadığı, zorluk kademesi ve modu gidiyor; kaç kupa değişeceğine
+        // sunucu kendi tablosuna bakarak karar veriyor.
+        CupScoreService.submitResult(
+            cupField = CupScoreService.cupFieldFor(lessonItem),
+            won = delta > 0,
+            difficultyLevel = lessonItem.cupDifficultyLevel ?: 0,
+            isMultiplication = lessonItem.isMultiplication == true,
+        ) { _, calculatedNewScore ->
             when {
                 lessonItem.isMultiplication == true && lessonItem.isBlinding == true -> {
                     BadgeProgressFirestore.syncTurtleProgressAndDetectLevelUp(uid, calculatedNewScore, publish)
