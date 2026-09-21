@@ -1217,6 +1217,14 @@ class BlindingLessonFragment : Fragment() {
         )
     }
     private fun closeFragment() {
+        // Fragment zaten kaldırılmışsa çık.
+        //
+        // Buraya iki yoldan birden gelinebiliyor: kullanıcının çıkış/geri hareketi ve sonuç
+        // panelinin kapanış animasyonunun bitiş geri çağrısı. Kullanıcı animasyon sürerken
+        // (200 ms) çıkarsa fragment önce kalkıyor, sonra geri çağrı çalışıyor ve
+        // `parentFragmentManager` "fragment manager'a bağlı değil" diye patlıyordu.
+        if (!isAdded) return
+
         if (isDailyQuestionMode) {
             (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
                 ?: parentFragmentManager.popBackStack()
@@ -1684,6 +1692,8 @@ class BlindingLessonFragment : Fragment() {
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
+                                        // Animasyon fragment kapandıktan sonra da bitebilir.
+                                        if (!isAdded || _binding == null) return@withEndAction
                                         incorrectPanel.visibility = View.GONE
                                         showLessonResultFalse()
                                     }
@@ -2178,6 +2188,11 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun showLessonResultFalse(isChestFailure: Boolean = false) {
+        // Sonuç ekranları animasyon/gecikme geri çağrılarından da açılıyor; o sırada
+        // fragment kapanmış olabilir. [closeFragment] kendi kapısını koruyor ama buradaki
+        // doğrudan transaction'lar da aynı korumaya muhtaç.
+        if (!isAdded) return
+
         // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
         if (globalPartId == 9) {
             // Delta ve Firestore yazma işlemi controlButtonListener'da optimistic UI olarak zaten yapıldı.
@@ -2336,6 +2351,11 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun showLessonResult() {
+        // Sonuç ekranları animasyon/gecikme geri çağrılarından da açılıyor; o sırada
+        // fragment kapanmış olabilir. [closeFragment] kendi kapısını koruyor ama buradaki
+        // doğrudan transaction'lar da aynı korumaya muhtaç.
+        if (!isAdded) return
+
         val lessonResultFragment = LessonResult()
         lessonResultFragment.arguments = lessonResultArgs()
         parentFragmentManager.beginTransaction()
