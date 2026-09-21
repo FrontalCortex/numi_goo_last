@@ -129,6 +129,66 @@ function competitionRanksFromTopDocs(docs) {
   return ranks;
 }
 
+/**
+ * Aynı anda kaç tahtanın ilk 100'ü okunsun.
+ *
+ * Okumalar birbirinden bağımsız; sıralı yapmanın tek sonucu her tahtanın gidiş-dönüş
+ * süresini toplamaktı.
+ */
+const BOARD_READ_CONCURRENCY = 10;
+
+/**
+ * Aynı anda kaç kullanıcının ödülü yazılsın.
+ *
+ * Darboğaz buydu: her kullanıcı için ayrı bir transaction var ve bunlar sırayla
+ * çalışıyordu. İşlem başına ~150 ms ile 300 saniyeye ancak iki bine yakın kullanıcı
+ * sığıyordu; üst sınır `tahta × 100` olduğu için tahta sayısı arttıkça o sınıra dayanacaktı.
+ * Her kullanıcı ayrı dokümana yazdığı için paralellik Firestore açısından sorun değil;
+ * 25 aynı anda, kotaya yüklenmeden marjı on katına çıkarıyor.
+ */
+const USER_AWARD_CONCURRENCY = 25;
+
+/** Aynı anda kaç tahta silinsin. Her silme kendi içinde birden fazla batch commit'i yapıyor. */
+const BOARD_DELETE_CONCURRENCY = 5;
+
+/**
+ * Bir çalışmanın kendine ayırdığı iş süresi.
+ *
+ * Fonksiyonun sınırı 300 saniye; 240'ta durup son yazmalara ve loglara yer bırakıyoruz.
+ * Süre dolarsa iş yarıda kalmıyor, imleç ilerlemiyor ve 5 dakika sonraki çalışma aynı
+ * sezonu baştan alıyor.
+ */
+const FINALIZE_BUDGET_MS = 240_000;
+
+/**
+ * [items] üzerinde en fazla [limit] iş aynı anda çalışacak şekilde gezer.
+ *
+ * [shouldStop] her işten önce sorulur; true dönerse kalan işler yapılmaz ve fonksiyon
+ * `false` döner. Böylece süresi dolan bir çalışma yarıda temiz durabiliyor.
+ *
+ * @returns Bütün işler yapıldıysa true.
+ */
+async function forEachWithConcurrency(items, limit, worker, shouldStop) {
+  const list = Array.from(items);
+  let nextIndex = 0;
+  let stopped = false;
+  const workerCount = Math.max(1, Math.min(limit, list.length));
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      for (;;) {
+        if (shouldStop && shouldStop()) {
+          stopped = true;
+          return;
+        }
+        const index = nextIndex++;
+        if (index >= list.length) return;
+        await worker(list[index]);
+      }
+    }),
+  );
+  return !stopped;
+}
+
 /** Firestore batch limiti altında güvenli pay. */
 async function deleteEntriesInBatches(db, entriesColRef, batchSize = 450) {
   while (true) {
@@ -149,11 +209,12 @@ async function deleteLeaderboardBoard(db, boardRef) {
  * Sezon S bitti sayılır: uygulama içi [currentSeason] = S+1 veya daha büyükken S ödüllendirilir.
  * Kullanıcı rozet alanları yazıldıktan sonra bu sezona ait lessonLeaderboards dokümanları silinir (depolama).
  */
-async function finalizeSeason(db, season) {
+async function finalizeSeason(db, season, deadlineMs) {
+  const outOfTime = () => Date.now() >= deadlineMs;
   const boardsSnap = await db.collection('lessonLeaderboards').where('season', '==', season).get();
   if (boardsSnap.empty) {
     console.log(`finalizeSeasonLeaderboardMedals: no board docs with meta.season=${season}`);
-    return;
+    return true;
   }
 
   /** @type {Map<string, { gold: any[], silver: any[], bronze: any[], cup: any[] }>} */
@@ -170,7 +231,9 @@ async function finalizeSeason(db, season) {
     b.cup.push(...part.cup);
   }
 
-  for (const boardDoc of boardsSnap.docs) {
+  // acc paylaşılan Map'i değiştiriyor ama içinde await yok: JS tek iş parçacıklı olduğu
+  // için paralel okumalar arasında bölünmüyor.
+  await forEachWithConcurrency(boardsSnap.docs, BOARD_READ_CONCURRENCY, async (boardDoc) => {
     const meta = boardDoc.data() || {};
     const titleFromMeta =
       meta.titleUnit != null && String(meta.titleUnit).trim() ? String(meta.titleUnit).trim() : null;
@@ -191,67 +254,112 @@ async function finalizeSeason(db, season) {
       const piece = rowsForRank(titleUnit, season, rank);
       acc(uid, piece);
     });
-  }
+  });
 
   console.log(
     `finalizeSeasonLeaderboardMedals: season=${season} boards=${boardsSnap.docs.length} users=${byUid.size}`,
   );
 
-  for (const [uid, inc] of byUid) {
-    if (!uid) continue;
-    if (uid.startsWith('seed_lb_')) continue;
-    const userRef = db.collection('users').doc(uid);
-    const stateRef = userRef.collection('badgeProgress').doc('state');
-    try {
-      // Hesabını sezon bitmeden/finalize öncesi silmiş kullanıcıya ödül yazıp
-      // users/{uid}/badgeProgress/state dokümanını hayalet olarak yeniden oluşturmamak için kontrol.
-      const userSnap = await userRef.get();
-      if (!userSnap.exists) {
-        console.log(`finalizeSeasonLeaderboardMedals: uid=${uid} kullanıcısı artık yok, ödül atlanıyor`);
-        continue;
-      }
-      await db.runTransaction(async (t) => {
-        const stateSnap = await t.get(stateRef);
-        const d = stateSnap.data() || {};
-        const exGold = stateSnap.exists ? parseMedalList(d.goldMedalPiece) : [];
-        const exSilver = stateSnap.exists ? parseMedalList(d.silverMedalPiece) : [];
-        const exBronze = stateSnap.exists ? parseMedalList(d.bronzeMedalPiece) : [];
-        const exCup = stateSnap.exists ? parseCupList(d.cupPiece) : [];
+  const uids = Array.from(byUid.keys()).filter((uid) => uid && !uid.startsWith('seed_lb_'));
 
-        const mergedGold = mergeMedals(exGold, inc.gold);
-        const mergedSilver = mergeMedals(exSilver, inc.silver);
-        const mergedBronze = mergeMedals(exBronze, inc.bronze);
-        const mergedCup = mergeCups(exCup, inc.cup);
-
-        const payload = {
-          goldMedalPiece: medalToFs(mergedGold),
-          silverMedalPiece: medalToFs(mergedSilver),
-          bronzeMedalPiece: medalToFs(mergedBronze),
-          cupPiece: cupToFs(mergedCup),
-        };
-        if (hasLeaderboardRewardInc(inc)) {
-          payload.pendingLeaderboardRewardSeason = season;
+  const awardsDone = await forEachWithConcurrency(
+    uids,
+    USER_AWARD_CONCURRENCY,
+    async (uid) => {
+      const inc = byUid.get(uid);
+      const userRef = db.collection('users').doc(uid);
+      const stateRef = userRef.collection('badgeProgress').doc('state');
+      try {
+        // Hesabını sezon bitmeden/finalize öncesi silmiş kullanıcıya ödül yazıp
+        // users/{uid}/badgeProgress/state dokümanını hayalet olarak yeniden oluşturmamak için kontrol.
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+          console.log(`finalizeSeasonLeaderboardMedals: uid=${uid} kullanıcısı artık yok, ödül atlanıyor`);
+          return;
         }
+        await db.runTransaction(async (t) => {
+          const stateSnap = await t.get(stateRef);
+          const d = stateSnap.data() || {};
+          const exGold = stateSnap.exists ? parseMedalList(d.goldMedalPiece) : [];
+          const exSilver = stateSnap.exists ? parseMedalList(d.silverMedalPiece) : [];
+          const exBronze = stateSnap.exists ? parseMedalList(d.bronzeMedalPiece) : [];
+          const exCup = stateSnap.exists ? parseCupList(d.cupPiece) : [];
 
-        t.set(stateRef, payload, { merge: true });
-      });
-    } catch (e) {
-      console.error(`finalizeSeasonLeaderboardMedals: uid=${uid}`, e);
-    }
+          const mergedGold = mergeMedals(exGold, inc.gold);
+          const mergedSilver = mergeMedals(exSilver, inc.silver);
+          const mergedBronze = mergeMedals(exBronze, inc.bronze);
+          const mergedCup = mergeCups(exCup, inc.cup);
+
+          const payload = {
+            goldMedalPiece: medalToFs(mergedGold),
+            silverMedalPiece: medalToFs(mergedSilver),
+            bronzeMedalPiece: medalToFs(mergedBronze),
+            cupPiece: cupToFs(mergedCup),
+          };
+
+          // Ödül kapısı yalnızca GERÇEKTEN yeni satır eklendiyse açılıyor.
+          //
+          // Yarıda kalmış bir çalışma tekrarlandığında ödülü çoktan toplamış kullanıcıya
+          // kapı ikinci kez açılıyordu; kuyruk boş olduğu için hemen kapanıyordu ama
+          // kullanıcıya sebepsiz bir ekran gösteriyordu. Birleştirme zaten tekrarı
+          // eklemediği için uzunluk karşılaştırması "yeni bir şey oldu mu"nun tam karşılığı.
+          const addedSomething =
+            mergedGold.length !== exGold.length ||
+            mergedSilver.length !== exSilver.length ||
+            mergedBronze.length !== exBronze.length ||
+            mergedCup.length !== exCup.length;
+          if (addedSomething && hasLeaderboardRewardInc(inc)) {
+            payload.pendingLeaderboardRewardSeason = season;
+          }
+
+          t.set(stateRef, payload, { merge: true });
+        });
+      } catch (e) {
+        console.error(`finalizeSeasonLeaderboardMedals: uid=${uid}`, e);
+      }
+    },
+    outOfTime,
+  );
+
+  if (!awardsDone) {
+    console.warn(
+      `finalizeSeasonLeaderboardMedals: season=${season} ödül yazımı süreye sığmadı; imleç ilerletilmiyor, kalanı bir sonraki çalışmada`,
+    );
+    return false;
   }
 
-  for (const boardDoc of boardsSnap.docs) {
-    await deleteLeaderboardBoard(db, boardDoc.ref);
+  // Silme ancak ödüllerin TAMAMI yazıldıktan sonra: yarıda silinen bir tahta, ödülünü
+  // henüz almamış kullanıcıların sırasını sonsuza kadar kaybettirirdi.
+  const deletesDone = await forEachWithConcurrency(
+    boardsSnap.docs,
+    BOARD_DELETE_CONCURRENCY,
+    (boardDoc) => deleteLeaderboardBoard(db, boardDoc.ref),
+    outOfTime,
+  );
+
+  if (!deletesDone) {
+    // İmleç ilerlemiyor: bir sonraki çalışma ödülleri yeniden yazacak (birleştirme tekrarı
+    // eklemiyor) ve silmeye kaldığı yerden devam edecek — silinmiş girdiler zaten yok.
+    console.warn(
+      `finalizeSeasonLeaderboardMedals: season=${season} tahta silme süreye sığmadı; bir sonraki çalışmada devam edilecek`,
+    );
+    return false;
   }
+
   console.log(
     `finalizeSeasonLeaderboardMedals: deleted ${boardsSnap.docs.length} lessonLeaderboards for season=${season}`,
   );
+  return true;
 }
 
-async function runOnce(db, admin) {
+async function runOnce(db, admin, deadlineMs) {
   const cursorRef = db.doc(SYSTEM_CURSOR);
   const maxCatchUp = 50;
   for (let i = 0; i < maxCatchUp; i++) {
+    if (Date.now() >= deadlineMs) {
+      console.warn('finalizeSeasonLeaderboardMedals: süre doldu, kalan sezonlar bir sonraki çalışmada');
+      return;
+    }
     const snap = await cursorRef.get();
     let last = snap.exists ? Number(snap.data().lastFinalizedSeason || 0) : 0;
     if (!Number.isFinite(last) || last < 0) last = 0;
@@ -282,7 +390,10 @@ async function runOnce(db, admin) {
     if (latestEnded < 1 || latestEnded <= last) return;
 
     const seasonToProcess = last + 1;
-    await finalizeSeason(db, seasonToProcess);
+    // İmleç yalnızca sezon TAM bittiğinde ilerliyor. Yarıda kalırsa bir sonraki çalışma
+    // aynı sezonu baştan alıyor; ödül birleştirmesi tekrarı eklemediği için bu güvenli.
+    const completed = await finalizeSeason(db, seasonToProcess, deadlineMs);
+    if (!completed) return;
     await cursorRef.set(
       {
         lastFinalizedSeason: seasonToProcess,
@@ -314,7 +425,10 @@ function scheduleFinalize(functions, admin, db) {
     .pubsub.schedule('every 5 minutes')
     .timeZone('Etc/UTC')
     .onRun(async () => {
-      await runOnce(db, admin);
+      // Fonksiyonun 300 saniyesinden pay ayrılıyor: iş bütçesi dolunca çalışma kendi
+      // isteğiyle duruyor ve imleci ilerletmiyor. Zorla kesilseydi de veri bozulmazdı
+      // (imleç zaten ilerlemezdi) ama son log satırları ve temizlik yarıda kalırdı.
+      await runOnce(db, admin, Date.now() + FINALIZE_BUDGET_MS);
       return null;
     });
 }
