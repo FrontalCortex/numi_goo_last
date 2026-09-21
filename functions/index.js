@@ -3458,15 +3458,15 @@ const CUP_MULTIPLICATION_WIN = 30;
 const CUP_MULTIPLICATION_LOSS = 20;
 
 /**
- * İki kupa sonucu arasındaki en kısa süre.
+ * İki kupa KAZANCI arasındaki en kısa süre.
  *
  * Kazanılan kupa dersi enerji harcamıyor (enerji yalnızca kaybedince ve terk edince gidiyor),
- * yani ekonomi tarafında bir fren yok. Gerçek bir ders en az birkaç saniye sürüyor; bu eşik
- * insan hızının çok altında kalıyor ama betiği saniyede bir çağrıdan alıkoyuyor.
+ * yani ekonomi tarafında bir fren yok. Soruyu gerçekten cevaplamak saniyeler sürdüğü için bu
+ * eşik insan hızının çok altında kalıyor ama betiği saniyede bir çağrıdan alıkoyuyor.
  */
 const CUP_RESULT_MIN_GAP_MS = 3000;
 
-/** Günlük kupa sonucu tavanı. En hevesli kullanıcının çok üstünde, betiğin çok altında. */
+/** Günlük kupa KAZANCI tavanı. En hevesli kullanıcının çok üstünde, betiğin çok altında. */
 const CUP_RESULT_DAILY_LIMIT = 300;
 
 /** Sayı gerçek bir eşik mi (300, 400, 500, ...). */
@@ -3678,30 +3678,44 @@ exports.submitCupResult = functions.https.onCall(async (data, context) => {
     const d = snap.exists ? snap.data() || {} : {};
     const now = Date.now();
 
-    const lastMs = Number(d.lastResultMs);
-    const sinceLast = Number.isFinite(lastMs) ? now - lastMs : Number.MAX_SAFE_INTEGER;
-    // Negatif fark = sunucu saati değil, bozuk kayıt. Kilitlememek için geçerli sayılıyor.
-    if (sinceLast >= 0 && sinceLast < CUP_RESULT_MIN_GAP_MS) {
-      throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı gönderildi.');
-    }
-
+    // Frenler YALNIZCA KAZANCA uygulanıyor.
+    //
+    // Korumanın amacı kupa şişirmek; kayıp zaten kullanıcının aleyhine, hızlıca art arda
+    // kaybetmenin kötüye kullanımı yok. Dahası kaybı reddetmek TERS etki yapıyordu: dersi
+    // başlatıp hemen çıkan kullanıcı, iki çıkışı arka arkaya yaptığında ikinci cezadan
+    // muaf kalıyordu. Kaybın hızlı gelmesi de doğal — çıkmak bir saniye sürüyor, oysa
+    // kazanmak için soruyu cevaplamak gerekiyor.
+    const isGain = delta > 0;
     const countedDay = typeof d.resultDayId === 'string' ? d.resultDayId : '';
     const dayCount = countedDay === dayId ? Math.trunc(Number(d.resultDayCount)) || 0 : 0;
-    if (dayCount >= CUP_RESULT_DAILY_LIMIT) {
-      throw new functions.https.HttpsError('resource-exhausted', 'Günlük kupa sınırına ulaşıldı.');
+
+    if (isGain) {
+      const lastMs = Number(d.lastResultMs);
+      const sinceLast = Number.isFinite(lastMs) ? now - lastMs : Number.MAX_SAFE_INTEGER;
+      // Negatif fark = sunucu saati değil, bozuk kayıt. Kilitlememek için geçerli sayılıyor.
+      if (sinceLast >= 0 && sinceLast < CUP_RESULT_MIN_GAP_MS) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı gönderildi.');
+      }
+      if (dayCount >= CUP_RESULT_DAILY_LIMIT) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Günlük kupa sınırına ulaşıldı.');
+      }
     }
 
     const rawCurrent = Number(d[cupField]);
     const current = Number.isFinite(rawCurrent) ? Math.trunc(rawCurrent) : CUP_PATH_START;
     const updated = Math.max(0, current + delta);
 
+    // Sayaçlar da yalnızca kazançla ilerliyor: kaybın sayacı ileri itmesi, hemen ardından
+    // gelen meşru bir kazancı sebepsiz reddettirirdi.
+    const gates = isGain
+      ? { lastResultMs: now, resultDayId: dayId, resultDayCount: dayCount + 1 }
+      : {};
+
     t.set(
       progressRef,
       {
         [cupField]: updated,
-        lastResultMs: now,
-        resultDayId: dayId,
-        resultDayCount: dayCount + 1,
+        ...gates,
       },
       { merge: true }
     );
