@@ -3198,19 +3198,31 @@ function rollInt(min, max) {
  *   RARE   -> %10 LEGENDARY, %20 EPIC, %70 RARE
  *   EPIC   -> %10 LEGENDARY, %90 EPIC
  */
+/**
+ * Tek bir dokunuşun nadirlik yükseltme zarı.
+ *
+ * DİKKAT: bu tablo dokunuş BAŞINA. Sandık SIRADAN başlıyor ve kullanıcı [CHEST_TAP_COUNT]
+ * kez dokunduğu için zar üç kez atılıyor; yani buradaki %5, akışın sonunda %5 değil.
+ * Üç dokunuşun sonundaki dağılım:
+ *
+ *   SIRADAN %51.2 | ENDER %28.8 | DESTANSI %17.2 | EFSANEVİ %2.8
+ *
+ * Tabloyu değiştirirken bu bileşik etkiyi hesaba kat: yükseltme olasılığını iki katına
+ * çıkarmak sondaki destansı+efsanevi payını iki katından fazla artırıyor.
+ */
 function rollRarityUpgrade(current) {
   const rand = rollInt(1, 100);
   switch (current) {
     case 'COMMON':
       if (rand <= 5) return 'EPIC';
-      if (rand <= 25) return 'RARE';
+      if (rand <= 20) return 'RARE';
       return 'COMMON';
     case 'RARE':
-      if (rand <= 10) return 'LEGENDARY';
-      if (rand <= 30) return 'EPIC';
+      if (rand <= 5) return 'LEGENDARY';
+      if (rand <= 20) return 'EPIC';
       return 'RARE';
     case 'EPIC':
-      if (rand <= 10) return 'LEGENDARY';
+      if (rand <= 5) return 'LEGENDARY';
       return 'EPIC';
     default:
       return 'LEGENDARY';
