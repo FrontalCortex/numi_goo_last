@@ -191,11 +191,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card1RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card1CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -231,25 +231,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card1RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card1RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card1RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card1RewardZone" />
 
@@ -357,11 +364,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card2RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card2CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -397,25 +404,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card2RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card2RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card2RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card2RewardZone" />
 
@@ -524,11 +538,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card3RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card3CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -564,25 +578,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card3RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card3RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card3RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card3RewardZone" />
 
@@ -689,11 +710,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card4RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card4CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -729,25 +750,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card4RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card4RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card4RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card4RewardZone" />
 
@@ -854,11 +882,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card5RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card5CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -894,25 +922,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card5RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card5RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card5RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card5RewardZone" />
 
@@ -1019,11 +1054,11 @@
                         android:layout_width="0dp"
                         android:layout_height="@dimen/daily_question_progress_height"
                         android:layout_marginTop="10dp"
-                        android:layout_marginEnd="2dp"
+                        android:layout_marginEnd="16dp"
                         android:clipChildren="false"
                         android:clipToPadding="false"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/card6RewardChest"
+                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
                         app:layout_constraintTop_toBottomOf="@id/card6CupInfoRow"
                         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -1059,25 +1094,32 @@
                             android:elevation="2dp"
                             android:gravity="center"
                             android:outlineProvider="none"
+                            android:paddingEnd="32dp"
                             android:text="200 / 300"
                             android:textColor="@android:color/white"
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </FrameLayout>
 
-                    <!-- alt boşluk: kapalı sandık çiziminin üstünde boşluk var, görsel olarak
-                         çubuğun ortasına gelsin diye yukarı alınıyor (günlük soru kartındaki
-                         sandıkta da aynı pay var). -->
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
                     <ImageView
                         android:id="@+id/card6RewardChest"
                         android:layout_width="@dimen/daily_question_progress_crystal_size"
                         android:layout_height="@dimen/daily_question_progress_crystal_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
-                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
+                        app:layout_constraintEnd_toEndOf="@id/card6RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card6RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card6RewardZone" />
 

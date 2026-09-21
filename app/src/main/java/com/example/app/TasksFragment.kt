@@ -118,6 +118,13 @@ class TasksFragment : Fragment() {
          * sayı yerine oturduğunda çubuk da oturmuş olsun.
          */
         private const val CUP_SCORE_ANIM_MS = 1000L
+
+        /** Sayaç oturduktan sonra rozet kutlamasına geçmeden önceki kısa es. */
+        private const val CUP_CELEBRATION_GAP_MS = 350L
+
+        /** Rozet listesi için en fazla bu kadar beklenir; sonrası "rozet yok" sayılır. */
+        private const val CUP_BADGE_WAIT_MS = 5000L
+        private const val CUP_BADGE_POLL_MS = 50L
     }
 
     private sealed class BulletinRow {
@@ -1638,60 +1645,82 @@ class TasksFragment : Fragment() {
         GlobalValues.pendingBlindingImpactCupDelta = null
 
         val newScore = (GlobalValues.currentLessonOldCupScore ?: 0) + delta
-        val payloads = GlobalValues.pendingCupBadgePayloads
 
-        if (payloads == null) {
-            // Asenkron işlem (Firestore) internet hızı nedeniyle henüz bitmemiş, bitmesini bekle
-            addLaunchTouchBlocker()
-            val handler = android.os.Handler(android.os.Looper.getMainLooper())
-            var attempts = 0
-            val runnable = object : Runnable {
-                override fun run() {
-                    val p = GlobalValues.pendingCupBadgePayloads
-                    if (p != null) {
-                        releaseLaunchTouchBlocker()
-                        GlobalValues.pendingCupBadgePayloads = null
-                        if (p.isNotEmpty() && isAdded) {
-                            GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                            GlobalValues.cupPathDialogRef = null
-                            BadgeProgressFirestore.openBadgeCelebration(
-                                requireActivity().supportFragmentManager,
-                                p
-                            )
-                        } else {
-                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
-                        }
-                    } else {
-                        attempts++
-                        if (attempts < 100) { // Maksimum 5 saniye bekle (50ms * 100)
-                            handler.postDelayed(this, 50)
-                        } else {
-                            // Timeout: çok uzun sürdü, es geç. Liste geç gelirse sahipsiz
-                            // kalmasın diye temizleniyor; yoksa bir sonraki derste yanlış
-                            // kutlama açardı.
-                            releaseLaunchTouchBlocker()
-                            GlobalValues.pendingCupBadgePayloads = null
-                            loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
-                        }
-                    }
-                }
-            }
-            handler.postDelayed(runnable, 50)
-        } else {
-            GlobalValues.pendingCupBadgePayloads = null
-            if (payloads.isNotEmpty() && isAdded) {
-                GlobalValues.cupPathDialogRef?.get()?.dismiss()
-                GlobalValues.cupPathDialogRef = null
-                BadgeProgressFirestore.openBadgeCelebration(
-                    requireActivity().supportFragmentManager,
-                    payloads
-                )
-            } else {
-                loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
-            }
+        // Panel HEMEN açılıyor. Testten dönen kullanıcının beklediği ilk şey kupa yolu:
+        // sayaç ve çubuk akmaya başlasın diye rozet listesi beklenmiyor.
+        //
+        // Eskiden önce liste beklenir, rozet varsa panel hiç açılmadan kutlamaya geçilirdi.
+        // Liste yerel olarak hesaplandığı sürece bu anlıktı; artık sunucudan geldiği için
+        // (bkz. BadgePrecalcHelper) beklemek panelin geç açılması demek oluyordu.
+        loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
+        val panelShownAtMs = android.os.SystemClock.elapsedRealtime()
+        awaitCupBadgePayloads { payloads ->
+            openCupBadgeCelebrationAfterAnimation(payloads, panelShownAtMs)
         }
 
         return true
+    }
+
+    /**
+     * Rozet kademesi listesini bekler ve bir kez [onReady]'e verir.
+     *
+     * Liste sunucudan geliyor ([BadgePrecalcHelper]); ders biter bitmez başlatıldığı için
+     * genelde hazır. Hazır değilse kısa aralıklarla yoklanıyor, [CUP_BADGE_WAIT_MS] dolunca
+     * boş kabul edilip vazgeçiliyor. Vazgeçerken değer temizleniyor: geç gelen bir liste
+     * sahipsiz kalıp bir sonraki derste yanlış kutlama açardı.
+     */
+    private fun awaitCupBadgePayloads(onReady: (List<BadgeLevelUpPayload>) -> Unit) {
+        GlobalValues.pendingCupBadgePayloads?.let { ready ->
+            GlobalValues.pendingCupBadgePayloads = null
+            onReady(ready)
+            return
+        }
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val deadline = android.os.SystemClock.elapsedRealtime() + CUP_BADGE_WAIT_MS
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                if (!isAdded) return
+                val ready = GlobalValues.pendingCupBadgePayloads
+                if (ready != null) {
+                    GlobalValues.pendingCupBadgePayloads = null
+                    onReady(ready)
+                    return
+                }
+                if (android.os.SystemClock.elapsedRealtime() >= deadline) {
+                    GlobalValues.pendingCupBadgePayloads = null
+                    onReady(emptyList())
+                    return
+                }
+                handler.postDelayed(this, CUP_BADGE_POLL_MS)
+            }
+        }, CUP_BADGE_POLL_MS)
+    }
+
+    /**
+     * Rozet kutlamasını, kupa sayacı yerine oturduktan sonra açar.
+     *
+     * Kutlama animasyonun ortasında açılsaydı kullanıcı kupasının eşiği geçtiğini göremeden
+     * ekran değişirdi — oysa rozetin sebebi tam olarak o. Liste zaten hazır geldiyse de
+     * animasyon kadar bekleniyor.
+     */
+    private fun openCupBadgeCelebrationAfterAnimation(
+        payloads: List<BadgeLevelUpPayload>,
+        panelShownAtMs: Long,
+    ) {
+        if (payloads.isEmpty() || !isAdded) return
+        val elapsed = android.os.SystemClock.elapsedRealtime() - panelShownAtMs
+        val wait = (CUP_SCORE_ANIM_MS + CUP_CELEBRATION_GAP_MS - elapsed).coerceAtLeast(0L)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            // isHidden: kullanıcı bu arada başka bir ekrana geçtiyse kutlama onun üstüne
+            // açılmasın. Rozet yine kazanılmış olur, yalnızca kutlaması oynamaz.
+            if (!isAdded || isHidden) return@postDelayed
+            GlobalValues.cupPathDialogRef?.get()?.dismiss()
+            GlobalValues.cupPathDialogRef = null
+            BadgeProgressFirestore.openBadgeCelebration(
+                requireActivity().supportFragmentManager,
+                payloads,
+            )
+        }, wait)
     }
 
 
