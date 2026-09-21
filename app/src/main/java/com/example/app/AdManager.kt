@@ -22,17 +22,18 @@ class AdManager(private val context: Context) {
     private var rewardedAd: RewardedAd? = null
     private val TAG = "AdManager"
 
-    // Gerçek ödüllü reklam birimi (SSV bu birim üzerinde yapılandırıldı).
-    // Test etmek için AdMob konsolunda cihazınızı "Test devices" olarak işaretleyin —
-    // aksi halde kendi reklamınıza tıklamak hesabın askıya alınmasına yol açabilir.
-    private val adUnitId = "ca-app-pub-8436855856536384/7535644549"
+    /**
+     * Ödüllü reklam birimi. SSV (sunucu tarafı doğrulama) GERÇEK birim üzerinde
+     * yapılandırıldı; sandık ödülleri o doğrulamaya bağlı.
+     */
+    private val adUnitId =
+        if (BuildConfig.DEBUG) TEST_REWARDED_AD_UNIT else REAL_REWARDED_AD_UNIT
 
-    
     private var interstitialAd: InterstitialAd? = null
-    // DİKKAT: Bu hâlâ Google'ın PAYLAŞIMLI TEST ID'si — henüz gerçek bir geçiş reklamı
-    // (interstitial) birimi oluşturulmadı. Yayına çıkmadan önce AdMob konsolunda ayrı bir
-    // interstitial birim açılıp buraya girilmeli.
-    private val interstitialAdUnitId = "ca-app-pub-3940256099942544/1033173712"
+
+    /** Ders dönüşlerinde gösterilen geçiş reklamı birimi. */
+    private val interstitialAdUnitId =
+        if (BuildConfig.DEBUG) TEST_INTERSTITIAL_AD_UNIT else REAL_INTERSTITIAL_AD_UNIT
 
     fun preloadInterstitialAd() {
         if (interstitialAd != null) {
@@ -199,4 +200,28 @@ class AdManager(private val context: Context) {
             preloadAd() // Attempt to load it again
         }
     }
+
+    companion object {
+        /**
+         * GERÇEK reklam birimleri yalnızca release derlemelerinde kullanılıyor.
+         *
+         * ## Neden ayrım kodda
+         * Geçiş reklamı aylarca Google'ın paylaşımlı test kimliğiyle kaldı; o hâliyle yayına
+         * çıkılsaydı reklamlar görünür, sayılır ama hiç gelir getirmezdi ve AdMob panelinde
+         * de bir şey görünmediği için fark etmek haftalar alırdı.
+         *
+         * Ters yön de önemli: geliştirme sırasında gerçek birime dokunmak istemiyoruz. Kendi
+         * reklamına tıklamak "geçersiz trafik" sayılıyor ve tekrarlarsa hesap askıya
+         * alınabiliyor. Cihazı AdMob'da "test cihazı" olarak işaretlemek de koruyor ama o
+         * koruma cihaz başına; yeni bir telefonda derleme aldığında yoktur. Ayrım kodda
+         * olunca hangi cihazda çalıştığından bağımsız.
+         */
+        private const val REAL_REWARDED_AD_UNIT = "ca-app-pub-8436855856536384/7535644549"
+        private const val REAL_INTERSTITIAL_AD_UNIT = "ca-app-pub-8436855856536384/8539721523"
+
+        /** Google'ın herkese açık örnek birimleri; tıklansa da bir yere yazılmıyor. */
+        private const val TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+        private const val TEST_INTERSTITIAL_AD_UNIT = "ca-app-pub-3940256099942544/1033173712"
+    }
+
 }
