@@ -61,9 +61,11 @@ class AdManager(private val context: Context) {
                     interstitialAd = null
                     preloadInterstitialAd() // Preload the next ad
                     
-                    GlobalValues.interstitialAdShownCount++
-                    
-                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity && GlobalValues.interstitialAdShownCount % 3 == 1) {
+                    // Panelin sıklığı [AdSkipPolicy]'de; sayaç diskte tutuluyor ki uygulama
+                    // kapatılıp açıldığında sıfırlanmasın.
+                    if (activity is androidx.fragment.app.FragmentActivity &&
+                        AdSkipPolicy.onAdClosed(activity, eligible = showAdSkipAfter)
+                    ) {
                         try {
                             AdSkipFragment().show(activity.supportFragmentManager, "AdSkip")
                         } catch (e: Exception) {
@@ -155,7 +157,12 @@ class AdManager(private val context: Context) {
                     rewardedAd = null
                     preloadAd() // Preload the next ad
                     
-                    if (showAdSkipAfter && activity is androidx.fragment.app.FragmentActivity) {
+                    // Ödüllü reklam da aynı sayaca giriyor: kullanıcı açısından ikisi de
+                    // "izlediğim reklam". Burada hiç sayaç yoktu, yani showAdSkipAfter true
+                    // verildiğinde panel her ödüllü reklamdan sonra çıkardı.
+                    if (activity is androidx.fragment.app.FragmentActivity &&
+                        AdSkipPolicy.onAdClosed(activity, eligible = showAdSkipAfter)
+                    ) {
                         try {
                             AdSkipFragment().show(activity.supportFragmentManager, "AdSkip")
                         } catch (e: Exception) {

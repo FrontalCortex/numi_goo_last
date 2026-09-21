@@ -11,10 +11,12 @@ import android.util.Log
  * tekrar gördükçe oluşan panel körlüğü. Sayaç bellekte tutulsaydı her uygulama açılışında
  * sıfırlanır ve herkes sonsuza kadar "1. görüş" olarak görünürdü.
  *
- * Bu tuzağın canlı bir örneği kodda zaten var: `GlobalValues.interstitialAdShownCount`
- * bellekte duran düz bir `var`. `AdManager` panelin çıkma koşulunu ona bakarak
- * `sayaç % 3 == 1` diye yazmış, yani niyet "her üç reklamda bir". Sayaç her açılışta
- * sıfırlandığı için pratikte panel **her oturumun ilk interstitial'ından sonra** çıkıyor.
+ * Aynı tuzak panelin çıkma sıklığında da vardı: karar bellekteki bir sayaca bakıyordu ve
+ * niyet "her üç reklamda bir" olmasına rağmen panel her oturumun ilk reklamından sonra
+ * çıkıyordu. O sayaç da diske taşındı, bkz. [AdSkipPolicy].
+ *
+ * Buradaki sayaç panelin KAÇ KEZ GÖSTERİLDİĞİNİ sayıyor, [AdSkipPolicy]'deki ise panelden
+ * beri kaç reklam geçtiğini. İkisi ayrı: biri ölçüm, diğeri karar.
  */
 object AdSkipStats {
 
