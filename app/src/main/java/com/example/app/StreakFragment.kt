@@ -122,6 +122,10 @@ class StreakFragment : Fragment() {
             trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
             selected = StreakRepository.goalMinutes(requireContext()),
         ) { value ->
+            // Aynı değere tekrar dokunmak bir değişiklik değil; ölçüme de öyle gitmemeli.
+            if (value != StreakRepository.goalMinutes(requireContext())) {
+                AnalyticsLogger.logStreakGoalSet(value, AnalyticsLogger.STREAK_SOURCE_SETTINGS)
+            }
             StreakRepository.setGoalMinutes(requireContext(), value)
         }
     }
@@ -135,6 +139,12 @@ class StreakFragment : Fragment() {
             trailing = listOf("Başlangıç", "İyi gidiyor", "Alışkanlık oluşuyor"),
             selected = StreakRepository.challengeDays(requireContext()),
         ) { value ->
+            if (value != StreakRepository.challengeDays(requireContext())) {
+                AnalyticsLogger.logStreakChallengeSet(
+                    value,
+                    AnalyticsLogger.STREAK_SOURCE_SETTINGS,
+                )
+            }
             StreakRepository.setChallengeDays(requireContext(), value)
         }
     }

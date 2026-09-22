@@ -92,6 +92,14 @@ class MainActivity : AppCompatActivity() {
 
 
     companion object {
+        /**
+         * Hedef kutlaması şeridinin ekranda kalma süresi.
+         *
+         * Okunacak kadar uzun, yolu kapatacak kadar değil; dokunulduğunda zaten seri
+         * ekranına gidiyor.
+         */
+        private const val STREAK_CELEBRATION_MS = 4000L
+
         const val EXTRA_FROM_LOGIN = "from_login"
         const val EXTRA_START_DESTINATION = "start_destination"
         const val START_DESTINATION_MAP = "map"
@@ -2030,6 +2038,10 @@ class MainActivity : AppCompatActivity() {
     fun refreshStreakUi() {
         if (!::binding.isInitialized) return
         val state = StreakRepository.refresh(this)
+        // refresh() hedefi tutturan günü burada ilerletiyor; kutlama da aynı yerden
+        // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
+        // burası: ekran dönüşleri, geri yığını değişimi ve süre değişimi hepsi buradan geçiyor.
+        maybeShowStreakCelebration()
         binding.streakText.text = state.current.toString()
         val alive = state.current > 0
         binding.streakIcon.alpha = if (alive) 1f else 0.45f
@@ -3335,6 +3347,19 @@ class MainActivity : AppCompatActivity() {
             }
     }
     
+    /**
+     * Her dokunuş ve tuş olayı buradan geçiyor; çalışma süresi sayacı bunu kullanıyor.
+     *
+     * Ders ekranlarının içine tek tek kanca koymanın alternatifiydi: dört ekranda dört ayrı
+     * doğruluk sorusu yerine tek kapı. Ders ekranlarının hepsi bu activity'de yaşıyor
+     * (abacusFragmentContainer / resultFragmentContainer / fragmentContainerID), yani başka
+     * bir activity'de aynı kancaya ihtiyaç yok.
+     */
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        StudyTimeTracker.onUserInteraction()
+    }
+
     override fun onResume() {
         super.onResume()
         currentActivity = this
@@ -3467,6 +3492,98 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    // ── Günlük hedef kutlaması ──────────────────────────────────────────
+
+    /** Şerit ekranda mı; otomatik gizleme zamanlayıcısı bununla birlikte yönetiliyor. */
+    private var streakCelebrationShowing = false
+
+    private val streakCelebrationHideRunnable = Runnable { hideStreakCelebration() }
+
+    /**
+     * Hedef tutturulduysa kutlama şeridini uygun anda gösterir.
+     *
+     * Kutlama ders ekranındayken hak ediliyor ama orada gösterilmiyor: soru çözen çocuğun
+     * önünü kesmek, kutlamayı ödül olmaktan çıkarıp engel yapardı. Bunun yerine
+     * [StreakRepository] kuyruğa alıyor, burası güvenli bir ekrana dönüldüğünde açıyor.
+     */
+    private fun maybeShowStreakCelebration() {
+        if (!::binding.isInitialized) return
+        val blocked = streakCelebrationBlockReason() != null
+        if (streakCelebrationShowing) {
+            // Şerit açıkken üstüne bir ders/rozet ekranı geldiyse çekilsin.
+            if (blocked) hideStreakCelebration()
+            return
+        }
+        if (blocked) return
+        val streak = StreakRepository.pendingCelebration(this)
+        if (streak <= 0) return
+        StreakRepository.clearPendingCelebration(this)
+        showStreakCelebration(streak)
+    }
+
+    /**
+     * Kutlamanın şu an gösterilememe sebebi; gösterilebiliyorsa null.
+     *
+     * İlk koşul listeyi büyük ölçüde gereksiz kılıyor: `currencyPanel` yalnızca harita,
+     * bölüm seçimi, görevler ve misyonlar ekranlarında görünüyor — yani kullanıcının
+     * "ev"inde. Yine de ders ve kutlama katmanları ayrıca eleniyor, çünkü bunlar taban
+     * ekranın ÜSTÜNDE açılıyor ve tabanı değiştirmiyor.
+     */
+    private fun streakCelebrationBlockReason(): String? {
+        val fm = supportFragmentManager
+        if (binding.currencyPanel.visibility != View.VISIBLE) return "not_home_screen"
+        if (binding.abacusFragmentContainer.visibility == View.VISIBLE) return "lesson_overlay"
+        if (binding.resultFragmentContainer.visibility == View.VISIBLE) return "result_overlay"
+        if (fm.findFragmentById(R.id.badgeFragmentContainter) != null) return "badge_overlay"
+        if (binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE) return "season_gate"
+        if (binding.createQuestionOverlayContainer.visibility == View.VISIBLE) return "create_question"
+        return null
+    }
+
+    private fun showStreakCelebration(streak: Int) {
+        val view = binding.streakCelebration
+        streakCelebrationShowing = true
+        binding.streakCelebrationTitle.text = "Bugünkü hedefini tamamladın!"
+        binding.streakCelebrationSub.text =
+            if (streak <= 1) "Serin başladı" else "$streak günlük seri"
+        binding.streakCelebrationLottie.playAnimation()
+
+        view.setOnClickListener {
+            hideStreakCelebration()
+            openStreakFragment()
+        }
+
+        view.animate().cancel()
+        view.alpha = 0f
+        view.translationY = -40f * resources.displayMetrics.density
+        view.visibility = View.VISIBLE
+        view.animate().alpha(1f).translationY(0f).setDuration(260).start()
+
+        view.removeCallbacks(streakCelebrationHideRunnable)
+        view.postDelayed(streakCelebrationHideRunnable, STREAK_CELEBRATION_MS)
+    }
+
+    private fun hideStreakCelebration() {
+        if (!::binding.isInitialized) return
+        val view = binding.streakCelebration
+        view.removeCallbacks(streakCelebrationHideRunnable)
+        if (!streakCelebrationShowing) return
+        streakCelebrationShowing = false
+        view.animate()
+            .alpha(0f)
+            .translationY(-40f * resources.displayMetrics.density)
+            .setDuration(200)
+            .withEndAction {
+                // Gizlenme animasyonu biterken şerit yeniden açılmış olabilir; o durumda
+                // burada gizlemek az önce gösterilen şeridi kapatırdı.
+                if (!streakCelebrationShowing) {
+                    view.visibility = View.GONE
+                    binding.streakCelebrationLottie.cancelAnimation()
+                }
+            }
+            .start()
+    }
+
     /**
      * Günlük seri ekranını açar.
      *

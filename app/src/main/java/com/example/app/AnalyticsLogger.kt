@@ -95,6 +95,12 @@ object AnalyticsLogger {
      * bu yüzden özel bir ad uydurmuyoruz.
      */
     private const val EV_PURCHASE_STARTED = "purchase_started"
+    private const val EV_STREAK_SETUP_STEP = "streak_setup_step"
+    private const val EV_STREAK_GOAL_SET = "streak_goal_set"
+    private const val EV_STREAK_CHALLENGE_SET = "streak_challenge_set"
+    private const val EV_STREAK_DAY_DONE = "streak_day_done"
+    private const val EV_STREAK_BROKEN = "streak_broken"
+    private const val EV_STREAK_CHALLENGE_DONE = "streak_challenge_done"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -170,6 +176,11 @@ object AnalyticsLogger {
     private const val P_AMOUNT = "amount"
     private const val P_BADGE_ID = "badge_id"
     private const val P_BADGE_LEVEL = "badge_level"
+    private const val P_STREAK_STAGE = "streak_stage"
+    private const val P_STREAK_DAYS = "streak_days"
+    private const val P_GOAL_MINUTES = "goal_minutes"
+    private const val P_CHALLENGE_DAYS = "challenge_days"
+    private const val P_MISSED_DAYS = "missed_days"
 
     // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
     // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
@@ -272,6 +283,18 @@ object AnalyticsLogger {
 
     const val SIGNUP_ROLE_STUDENT = "student"
     const val SIGNUP_ROLE_TEACHER = "teacher"
+
+    // ── Günlük seri ────────────────────────────────────────────────────────
+    /** Kurulum akışının adımları ([StreakOnboardingFragment]); huni bunlarla kuruluyor. */
+    const val STREAK_STAGE_INTRO = "intro"
+    const val STREAK_STAGE_GOAL = "goal"
+    const val STREAK_STAGE_CHALLENGE = "challenge"
+    const val STREAK_STAGE_DONE = "done"
+
+    /** Hedef ilk kez kurulum akışında seçildi. */
+    const val STREAK_SOURCE_ONBOARDING = "onboarding"
+    /** Hedef sonradan seri ekranından değiştirildi. */
+    const val STREAK_SOURCE_SETTINGS = "settings"
 
     // ── Reklamlar ──────────────────────────────────────────────────────────
     /** Ders/sandık arası geçiş reklamı; ardından bazen Pro paneli açılıyor. */
@@ -1233,6 +1256,90 @@ object AnalyticsLogger {
         fa.logEvent(EV_SIGNUP_STEP) {
             param(P_SIGNUP_STAGE, sanitize(stage))
             param(P_SIGNUP_ROLE, sanitize(role))
+        }
+    }
+
+    // ── Günlük seri ────────────────────────────────────────────────────────
+    //
+    // NEDEN BU ALTI OLAY
+    //   Seri, uygulamanın geri dönüş vaadi. Ölçülmezse yalnızca "kaç kişi açtı" bilinir;
+    //   asıl sorular cevapsız kalır: kurulum akışını kaç kişi bitiriyor, hangi hedefi
+    //   seçiyorlar, kaçı ikinci güne geliyor, seriler kaç günde kırılıyor ve kaç gün
+    //   kaçırılarak kırılıyor. Sonuncusu seri dondurma kararının tek girdisi: kırılmaların
+    //   çoğu TEK gün kaçırmadan geliyorsa dondurma işe yarar, gelmiyorsa yaramaz.
+
+    /**
+     * Kurulum akışında bir adım görüldü.
+     *
+     * Kayıt hunisiyle aynı desen: tek olay + [stage]. Adım başına ayrı olay açmak GA4'te
+     * dört ayrı huni adımı tanımlamak demekti.
+     *
+     * @param stage `STREAK_STAGE_*` sabitlerinden biri.
+     */
+    fun logStreakSetupStep(stage: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_SETUP_STEP) {
+            param(P_STREAK_STAGE, sanitize(stage))
+        }
+    }
+
+    /**
+     * Günlük hedef seçildi ya da değiştirildi.
+     *
+     * @param source [STREAK_SOURCE_ONBOARDING] veya [STREAK_SOURCE_SETTINGS]. Ayrımı önemli:
+     *   ilk seçim niyeti, sonraki değişiklik ise seçimin tutmadığını gösterir. Hedefini
+     *   düşürenlerin oranı, varsayılanın yanlış olup olmadığını söyler.
+     */
+    fun logStreakGoalSet(minutes: Int, source: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_GOAL_SET) {
+            param(P_GOAL_MINUTES, minutes.toLong())
+            param(P_SOURCE, sanitize(source))
+        }
+    }
+
+    /** Meydan okuma (kaç gün üst üste) seçildi ya da değiştirildi. */
+    fun logStreakChallengeSet(days: Int, source: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_CHALLENGE_SET) {
+            param(P_CHALLENGE_DAYS, days.toLong())
+            param(P_SOURCE, sanitize(source))
+        }
+    }
+
+    /**
+     * Günlük hedef tutturuldu; seri bir gün ilerledi.
+     *
+     * Günde en fazla bir kez gönderilir (bkz. [StreakRepository.refresh]).
+     *
+     * @param streakDays Yeni seri değeri. 1 = bugün başladı.
+     */
+    fun logStreakDayDone(streakDays: Int, goalMinutes: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_DAY_DONE) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_GOAL_MINUTES, goalMinutes.toLong())
+        }
+    }
+
+    /**
+     * Seri kırıldı.
+     *
+     * @param streakDays Kaybedilen serinin uzunluğu — kırılmanın maliyeti.
+     * @param missedDays Kaç gün kaçırıldığı; 31 = otuz günden eski.
+     */
+    fun logStreakBroken(streakDays: Int, missedDays: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_BROKEN) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_MISSED_DAYS, missedDays.toLong())
+        }
+    }
+
+    /**
+     * Meydan okuma tamamlandı: kullanıcı verdiği sözü tuttu.
+     *
+     * Kurulum akışının işe yarayıp yaramadığının tek doğrudan ölçüsü bu; taahhüt alınıp
+     * tutulmuyorsa soru sormanın anlamı yok.
+     */
+    fun logStreakChallengeDone(days: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_CHALLENGE_DONE) {
+            param(P_CHALLENGE_DAYS, days.toLong())
         }
     }
 

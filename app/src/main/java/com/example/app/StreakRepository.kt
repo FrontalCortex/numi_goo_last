@@ -32,6 +32,9 @@ object StreakRepository {
     private const val KEY_LAST_DAY = "last_goal_day"
     private const val KEY_ACHIEVED_DAYS = "achieved_days"
     private const val KEY_ONBOARDING_DONE = "onboarding_done"
+    private const val KEY_CELEBRATION_DAY = "celebration_day"
+    private const val KEY_CELEBRATION_STREAK = "celebration_streak"
+    private const val KEY_CHALLENGE_LOGGED = "challenge_logged"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -88,6 +91,37 @@ object StreakRepository {
         prefs(context)?.edit()?.putInt(KEY_CHALLENGE_DAYS, value)?.apply()
     }
 
+    // ── Kutlama kuyruğu ─────────────────────────────────────────────────
+    //
+    // Hedef ders ekranındayken doluyor. Kutlamayı oracıkta göstermek dersin ortasına
+    // dalmak olurdu; bu yüzden kuyruğa alınıp güvenli bir ekrana dönüldüğünde gösteriliyor
+    // (bkz. MainActivity.maybeShowStreakCelebration).
+    //
+    // Diskte tutuluyor: hedefi tutturup uygulamayı hemen kapatan kullanıcı kutlamayı bir
+    // sonraki açılışta görür. Günü de saklanıyor ki üç gün sonra açan biri bayat bir
+    // kutlamayla karşılaşmasın.
+
+    private fun queueCelebration(context: Context, streak: Int, day: String) {
+        prefs(context)?.edit()
+            ?.putString(KEY_CELEBRATION_DAY, day)
+            ?.putInt(KEY_CELEBRATION_STREAK, streak)
+            ?.apply()
+    }
+
+    /** Bekleyen kutlamanın seri değeri; yoksa ya da bayatsa 0. Okumak temizlemez. */
+    fun pendingCelebration(context: Context): Int {
+        val p = prefs(context) ?: return 0
+        if (p.getString(KEY_CELEBRATION_DAY, "") != StudyTimeTracker.dayId()) return 0
+        return p.getInt(KEY_CELEBRATION_STREAK, 0)
+    }
+
+    fun clearPendingCelebration(context: Context) {
+        prefs(context)?.edit()
+            ?.remove(KEY_CELEBRATION_DAY)
+            ?.remove(KEY_CELEBRATION_STREAK)
+            ?.apply()
+    }
+
     /**
      * Seri kurulum akışı (hedef + meydan okuma) tamamlandı mı.
      *
@@ -113,6 +147,7 @@ object StreakRepository {
     fun refresh(context: Context): StreakState {
         val p = prefs(context)
         val goal = goalMinutes(context)
+        val challenge = challengeDays(context)
         val seconds = StudyTimeTracker.secondsToday(context)
         val today = StudyTimeTracker.dayId()
         val yesterday = StudyTimeTracker.dayId(-1)
@@ -129,20 +164,63 @@ object StreakRepository {
             lastDay = today
             achieved = achieved + today
             writeState(context, current, longest, lastDay, achieved)
+
+            // Bu dal günde yalnızca bir kez çalışıyor (koşuldaki `lastDay != today` onu
+            // garanti ediyor), yani hem olay hem kutlama tam olarak bir kez tetikleniyor.
+            AnalyticsLogger.logStreakDayDone(current, goal)
+            queueCelebration(context, current, today)
+            logChallengeDoneOnce(context, current, challenge)
         }
 
-        // Kırılma yazılmıyor, okunurken hesaplanıyor: kullanıcı uygulamayı hiç açmadan da
-        // seriyi kırabilir, o anda çalışan bir kodumuz yok.
-        val effectiveCurrent = if (lastDay == today || lastDay == yesterday) current else 0
+        // ── Kırılma ──
+        //
+        // Kullanıcı uygulamayı hiç açmadan da seriyi kırabilir; kırıldığı anda çalışan bir
+        // kodumuz yok. Bu yüzden kırılma OKUNURKEN hesaplanıyor.
+        //
+        // Ama artık hesaplayıp geçmiyoruz, YAZIYORUZ: yazılmasaydı `streak_broken` olayı
+        // ekran her tazelendiğinde tekrar gönderilirdi ve kaç serinin kırıldığı değil kaç kez
+        // ekrana bakıldığı ölçülürdü.
+        if (current > 0 && lastDay.isNotEmpty() && lastDay != today && lastDay != yesterday) {
+            AnalyticsLogger.logStreakBroken(current, daysSince(lastDay))
+            current = 0
+            writeState(context, current, longest, lastDay, achieved)
+        }
 
         return StreakState(
-            current = effectiveCurrent,
+            current = current,
             longest = longest,
             goalMinutes = goal,
-            challengeDays = challengeDays(context),
+            challengeDays = challenge,
             secondsToday = seconds,
             achievedDays = achieved,
         )
+    }
+
+    /**
+     * [dayId] üzerinden kaç gün geçtiği; 30'dan eskisi için 31.
+     *
+     * Tarih ayrıştırmak yerine [StudyTimeTracker.dayId] geriye doğru taranıyor: gün kimliğini
+     * üreten kodun aynısı karşılaştırmayı da yapıyor, yani ikinci bir tarih biçimi yorumu
+     * (ve onun hata payı) hiç doğmuyor.
+     */
+    private fun daysSince(dayId: String): Int {
+        for (i in 1..30) if (StudyTimeTracker.dayId(-i) == dayId) return i
+        return 31
+    }
+
+    /**
+     * Meydan okuma tamamlandığında bir kez olay gönderir.
+     *
+     * Hangi değer için gönderildiği saklanıyor: kullanıcı 3 günü bitirip 7'ye yükseltirse
+     * 7'yi bitirdiğinde ikinci kez gönderilmeli, ama 3'te kaldığı sürece bir daha
+     * gönderilmemeli.
+     */
+    private fun logChallengeDoneOnce(context: Context, current: Int, challenge: Int) {
+        if (challenge <= 0 || current < challenge) return
+        val p = prefs(context) ?: return
+        if (p.getInt(KEY_CHALLENGE_LOGGED, 0) == challenge) return
+        p.edit().putInt(KEY_CHALLENGE_LOGGED, challenge).apply()
+        AnalyticsLogger.logStreakChallengeDone(challenge)
     }
 
     private fun writeState(

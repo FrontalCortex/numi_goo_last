@@ -36,6 +36,14 @@ class StreakOnboardingFragment : Fragment() {
     private var goalMinutes = 0
     private var challengeDays = 0
 
+    /**
+     * Ölçüme en son bildirilen adım.
+     *
+     * [render] aynı adım için tekrar tekrar çağrılıyor (her seçenek dokunuşunda), bu yüzden
+     * olay orada koşulsuz gönderilseydi huni seçim sayısıyla şişerdi.
+     */
+    private var loggedStep: Step? = null
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -69,10 +77,18 @@ class StreakOnboardingFragment : Fragment() {
             Step.INTRO -> render(Step.GOAL)
             Step.GOAL -> {
                 StreakRepository.setGoalMinutes(requireContext(), goalMinutes)
+                AnalyticsLogger.logStreakGoalSet(
+                    goalMinutes,
+                    AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
+                )
                 render(Step.CHALLENGE)
             }
             Step.CHALLENGE -> {
                 StreakRepository.setChallengeDays(requireContext(), challengeDays)
+                AnalyticsLogger.logStreakChallengeSet(
+                    challengeDays,
+                    AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
+                )
                 render(Step.DONE)
             }
             Step.DONE -> finish()
@@ -92,6 +108,17 @@ class StreakOnboardingFragment : Fragment() {
 
     private fun render(next: Step) {
         step = next
+        if (loggedStep != next) {
+            loggedStep = next
+            AnalyticsLogger.logStreakSetupStep(
+                when (next) {
+                    Step.INTRO -> AnalyticsLogger.STREAK_STAGE_INTRO
+                    Step.GOAL -> AnalyticsLogger.STREAK_STAGE_GOAL
+                    Step.CHALLENGE -> AnalyticsLogger.STREAK_STAGE_CHALLENGE
+                    Step.DONE -> AnalyticsLogger.STREAK_STAGE_DONE
+                },
+            )
+        }
         val b = binding
         b.streakOnboardingProgress.progress = when (step) {
             Step.INTRO -> 25

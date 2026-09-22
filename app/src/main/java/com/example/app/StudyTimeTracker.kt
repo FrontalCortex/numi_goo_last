@@ -22,10 +22,16 @@ import java.util.Locale
  * (ekran ölçümü için). Aynı geçişler buraya da bildiriliyor; ikinci bir dinleyici kurmak aynı
  * hatayı iki yerde yapma riski demekti.
  *
- * ## Parça sınırı
- * Ekran açık kalıp kullanıcı uzaklaşırsa süre şişerdi. Tek bir kesintisiz parça
- * [MAX_SEGMENT_MS] ile sınırlı: gerçek bir soru bu kadar sürmüyor, ama unutulan bir ekran
- * saatlerce sayardı.
+ * ## Boşta kalma sınırı
+ * Ekran açık kalıp kullanıcı uzaklaşırsa süre şişerdi. Çözüm ekranın ne kadar açık kaldığına
+ * değil, ETKİLEŞİME bakmak: son dokunuştan sonra en fazla [MAX_IDLE_MS] kadarı yazılır,
+ * gerisi yazılmaz.
+ *
+ * Eskiden tek bir kesintisiz parça on dakikayla sınırlıydı. Bu, unutulan ekranı doğru
+ * kesiyordu ama gerçekten çalışanı da kesiyordu: aynı ekranda yirmi dakika çalışan birine
+ * on dakika yazılıyordu, yani yirmi dakikalık hedef tek oturumda ulaşılamaz hale geliyordu.
+ * Boşta kalma sınırı ikisini ayırıyor — çalışan ne kadar çalışırsa o kadar yazılır,
+ * unutulan ekran [MAX_IDLE_MS] sonra durur.
  */
 object StudyTimeTracker {
 
@@ -36,8 +42,13 @@ object StudyTimeTracker {
     /** Kaç günlük kayıt tutulsun. Seri yalnızca dün ve bugüne bakıyor; gerisi arşiv değil çöp. */
     private const val KEEP_DAYS = 8
 
-    /** Tek bir kesintisiz çalışma parçasının üst sınırı. */
-    private const val MAX_SEGMENT_MS = 10L * 60 * 1000
+    /**
+     * Son dokunuştan sonra süre saymaya devam edilen en uzun aralık.
+     *
+     * Beş dakika: zor bir soruda düşünmek ya da sesli/körleme dersinde sayıları izlemek bu
+     * sürenin altında kalıyor, ama telefonu bırakıp gitmek kalmıyor.
+     */
+    private const val MAX_IDLE_MS = 5L * 60 * 1000
 
     /**
      * Çalışma sayılan ekranlar — kullanıcının soru çözdüğü ya da abaküs kullandığı yerler.
@@ -60,6 +71,9 @@ object StudyTimeTracker {
     /** Açık parçanın başlangıcı (monoton saat). 0 = sayım kapalı. */
     @Volatile private var segmentStartMs = 0L
 
+    /** Son kullanıcı etkileşimi (monoton saat). Parça açılırken de tazeleniyor. */
+    @Volatile private var lastInteractionMs = 0L
+
     /** Süre değiştiğinde haberdar olmak isteyenler (üst bardaki alev). */
     private var listener: (() -> Unit)? = null
 
@@ -77,16 +91,46 @@ object StudyTimeTracker {
     fun setActiveScreen(context: Context, screen: String?) {
         closeSegment(context)
         if (isStudyScreen(screen)) {
-            segmentStartMs = SystemClock.elapsedRealtime()
+            val now = SystemClock.elapsedRealtime()
+            segmentStartMs = now
+            // Ekrana yeni girildi: ilk dokunuşu beklemeden sayım başlasın. Soru okunurken
+            // geçen ilk saniyeler de çalışmadır.
+            lastInteractionMs = now
         }
+    }
+
+    /**
+     * Kullanıcı ekrana dokundu.
+     *
+     * Activity'den geliyor ([android.app.Activity.onUserInteraction]): her dokunuş ve tuş
+     * olayı oradan geçiyor, yani ders ekranlarının hiçbirine tek satır eklemeye gerek yok.
+     * Ders içi tek tek kancalar kurulsaydı dört ekranda dört ayrı doğruluk sorusu olurdu.
+     *
+     * Çok sık çağrılıyor; gövdesi bu yüzden tek atamadan ibaret, disk yazımı yok.
+     */
+    fun onUserInteraction() {
+        if (segmentStartMs <= 0L) return
+        lastInteractionMs = SystemClock.elapsedRealtime()
+    }
+
+    /**
+     * Açık parçanın şu ana kadar yazılabilir süresi (ms).
+     *
+     * Boştaki kuyruk atılıyor: son dokunuştan [MAX_IDLE_MS] sonrasına kadar sayılır.
+     */
+    private fun creditableMs(now: Long): Long {
+        val start = segmentStartMs
+        if (start <= 0L) return 0L
+        val idleDeadline = lastInteractionMs + MAX_IDLE_MS
+        val end = if (now < idleDeadline) now else idleDeadline
+        return (end - start).coerceAtLeast(0L)
     }
 
     /** Açık parçayı kapatıp süresini bugüne ekler. */
     private fun closeSegment(context: Context) {
-        val start = segmentStartMs
+        if (segmentStartMs <= 0L) return
+        val elapsed = creditableMs(SystemClock.elapsedRealtime())
         segmentStartMs = 0L
-        if (start <= 0L) return
-        val elapsed = (SystemClock.elapsedRealtime() - start).coerceIn(0L, MAX_SEGMENT_MS)
         val seconds = (elapsed / 1000L).toInt()
         if (seconds <= 0) return
         addSeconds(context, seconds)
@@ -98,9 +142,8 @@ object StudyTimeTracker {
      */
     fun secondsToday(context: Context): Int {
         val stored = prefs(context)?.getInt(KEY_PREFIX + dayId(), 0) ?: 0
-        val start = segmentStartMs
-        if (start <= 0L) return stored
-        val open = ((SystemClock.elapsedRealtime() - start).coerceIn(0L, MAX_SEGMENT_MS) / 1000L).toInt()
+        if (segmentStartMs <= 0L) return stored
+        val open = (creditableMs(SystemClock.elapsedRealtime()) / 1000L).toInt()
         return stored + open
     }
 
