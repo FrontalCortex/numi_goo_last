@@ -3,6 +3,7 @@ package com.example.app
 import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 
 /**
@@ -41,6 +42,40 @@ object StreakSyncService {
     } catch (e: Throwable) {
         Log.w(TAG, "Oturum okunamadı", e)
         null
+    }
+
+    /**
+     * Sunucudaki seri durumunu okur ve yerel duruma işler.
+     *
+     * Eşitlemenin okuma yönü. Yazma yönü tek başına yetmiyordu: yeni bir telefona kurulum
+     * yapan kullanıcının serisi cihazda olmadığı için sıfırdan başlardı — oysa senkronun
+     * varlık sebebi tam olarak buydu. Ödül satırları da sunucunun bildiğini göremezdi.
+     *
+     * Doğrudan Firestore okuması yapılıyor, fonksiyon çağrısı değil: kurallar bu dokümanı
+     * sahibine okumaya zaten açıyor ve okuma yazmadan ucuz.
+     */
+    fun refreshFromServer(context: Context, onDone: (() -> Unit)? = null) {
+        val uid = uid() ?: return
+        FirebaseFirestore.getInstance()
+            .collection("users").document(uid)
+            .collection("streak").document("state")
+            .get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) return@addOnSuccessListener
+                val current = (doc.get("current") as? Number)?.toInt() ?: 0
+                val longest = (doc.get("longest") as? Number)?.toInt() ?: 0
+                val lastDay = doc.getString("lastDay").orEmpty()
+                val claimed = (doc.get("claimed") as? List<*>)
+                    ?.mapNotNull { (it as? Number)?.toInt() }
+                    ?.toSet()
+                    .orEmpty()
+                StreakRepository.adoptServerState(context, current, longest, lastDay, claimed)
+                onDone?.invoke()
+            }
+            .addOnFailureListener { e ->
+                // Sessiz: seri yerelde çalışmaya devam ediyor.
+                Log.w(TAG, "Seri durumu okunamadı", e)
+            }
     }
 
     /**

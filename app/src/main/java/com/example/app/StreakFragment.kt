@@ -60,6 +60,11 @@ class StreakFragment : Fragment() {
         StreakSyncService.syncPendingDays(requireContext()) {
             if (isAdded) render()
         }
+        // Okuma yönü: ödül satırlarının dayandığı seri sunucuda tutuluyor, bu ekran her
+        // açıldığında oradan tazeleniyor. Gönderecek gün olmadığında tek güncelleme yolu bu.
+        StreakSyncService.refreshFromServer(requireContext()) {
+            if (isAdded) render()
+        }
     }
 
     private fun close() {

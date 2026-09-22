@@ -174,6 +174,51 @@ object StreakRepository {
             ?.apply()
     }
 
+    /**
+     * Sunucudan okunan durumu yerel duruma işler.
+     *
+     * ## Neden gerekli
+     * Eşitleme tek yönlü olsaydı (yalnızca istemci → sunucu) senkronun asıl amacı
+     * karşılanmazdı: yeni bir telefona kurulum yapan kullanıcının otuz günlük serisi
+     * cihazda olmadığı için sıfırdan başlardı. Ödül satırları da sunucunun bildiğini
+     * göremezdi.
+     *
+     * ## Neden yalnızca "sunucu ilerideyse"
+     * Yerel sayaç meşru olarak önde olabilir: bugün tutturuldu ama henüz bildirilmedi.
+     * O durumda sunucunun eski değerini yazmak, kullanıcının bugününü silmek olurdu.
+     *
+     * [lastDay] de birlikte alınıyor — alınmasaydı seri 30'a yükselir ama son gün boş
+     * kalırdı ve bir sonraki [refresh] "ardışık değil" deyip seriyi 1'e düşürürdü.
+     */
+    fun adoptServerState(
+        context: Context,
+        current: Int,
+        longest: Int,
+        lastDay: String,
+        claimed: Set<Int>,
+    ) {
+        val p = prefs(context) ?: return
+        val editor = p.edit()
+            .putInt(KEY_SERVER_CURRENT, current)
+            .putInt(KEY_SERVER_LONGEST, longest)
+            .putString(KEY_SERVER_CLAIMED, claimed.sorted().joinToString(","))
+
+        // Sunucunun son günü dünden eskiyse o seri ZATEN kırılmış. Yerel sayaca almak
+        // düzeltmiyor, döngü üretiyordu: al → [refresh] kırıldı der → 0 yaz → bir sonraki
+        // okumada yine al… Her turda bir `streak_broken` olayı gidiyordu. Bayat durum
+        // yalnızca önbelleğe yazılıyor (ödül satırları için), yerel sayaca değil.
+        val today = StudyTimeTracker.dayId()
+        val serverFresh = lastDay == today || lastDay == StudyTimeTracker.dayId(-1)
+        val localCurrent = p.getInt(KEY_CURRENT, 0)
+        if (current > localCurrent && serverFresh) {
+            editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, lastDay)
+        }
+        val localLongest = p.getInt(KEY_LONGEST, 0)
+        if (longest > localLongest) editor.putInt(KEY_LONGEST, longest)
+
+        editor.apply()
+    }
+
     /** Sunucunun bildiği seri. Ödül satırları buna bakıyor; hiç eşitlenmediyse 0. */
     fun serverCurrent(context: Context): Int = prefs(context)?.getInt(KEY_SERVER_CURRENT, 0) ?: 0
 

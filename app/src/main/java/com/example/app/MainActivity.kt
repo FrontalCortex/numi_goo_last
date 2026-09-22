@@ -3368,6 +3368,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         currentActivity = this
         refreshStreakUi()
+        // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
+        // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
+        StreakSyncService.refreshFromServer(this) { runOnUiThread { refreshStreakUi() } }
         // Ders ekranından çıkıldığında çalışma süresi yazılıyor; alev o anda güncellensin.
         StudyTimeTracker.setOnChangedListener { runOnUiThread { refreshStreakUi() } }
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
