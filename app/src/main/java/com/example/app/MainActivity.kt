@@ -384,6 +384,10 @@ class MainActivity : AppCompatActivity() {
             // Re-evaluate bottom nav visibility with current fragment state.
             binding.bottomNavigationID.requestApplyInsets()
             updateCurrencyPanelVisibility()
+            // Seri ekranında hedef değiştirilmiş olabilir: hedef düşünce bugün zaten
+            // tutturulmuş sayılabiliyor ve alev orada yanıyor. Üst bar geri dönüşte
+            // güncel olmalı; activity onResume'a girmediği için tek yer burası.
+            refreshStreakUi()
 
             // FM transaction ortasında çağrılır — restore'u bir sonraki kareye ertele.
             val topOverlay = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
@@ -885,6 +889,10 @@ class MainActivity : AppCompatActivity() {
         binding.keyText.setOnClickListener(openShop)
         binding.creditIcon.setOnClickListener(openShop)
         binding.creditText.setOnClickListener(openShop)
+
+        // Alev: seri ekranını aç. Üst bardaki diğer göstergeler mağazaya gidiyor, bu
+        // gitmiyor — seri bir bakiye değil, kendi ekranı var.
+        binding.streakContainer.setOnClickListener { openStreakFragment() }
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
@@ -3441,6 +3449,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Günlük seri ekranını açar.
+     *
+     * Mağaza ile aynı yol: üstüne ekleniyor (altındaki ekran canlı kalsın) ve geri yığınına
+     * giriyor, böylece telefonun geri tuşu doğal olarak kapatıyor.
+     */
+    fun openStreakFragment() {
+        if (MainActivityChromeBlocker.currentLockDepth() > 0) return
+        val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (current is StreakFragment) return
+
+        dismissMapLessonOverlayChrome()
+
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
+            .add(R.id.fragmentContainerID, StreakFragment())
+            .addToBackStack(null)
+            .commit()
+        binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
+    }
+
     fun openShopFragment() {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)

@@ -1,19 +1,12 @@
 package com.example.app
 
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentStreakOnboardingBinding
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 /**
  * Seri kurulumu: ilk ders bittikten sonra, kayıt ekranına gitmeden önce açılır.
@@ -129,7 +122,8 @@ class StreakOnboardingFragment : Fragment() {
                 b.streakOnboardingSubtitle.text = "Bu hedefi istediğin zaman değiştirebilirsin"
                 b.streakOnboardingContinue.text = "Devam et"
                 b.streakOnboardingOptions.visibility = View.VISIBLE
-                buildOptions(
+                StreakViews.buildOptionRows(
+                    container = b.streakOnboardingOptions,
                     values = StreakRepository.GOAL_OPTIONS,
                     labels = listOf("Rahat", "Düzenli", "Ciddi"),
                     trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
@@ -147,7 +141,8 @@ class StreakOnboardingFragment : Fragment() {
                     "Günde $goalMinutes dakika. Seni zorlamayacak bir hedef seç."
                 b.streakOnboardingContinue.text = "Hedefimi onayla"
                 b.streakOnboardingOptions.visibility = View.VISIBLE
-                buildOptions(
+                StreakViews.buildOptionRows(
+                    container = b.streakOnboardingOptions,
                     values = StreakRepository.CHALLENGE_OPTIONS,
                     labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
                     trailing = listOf("Başlangıç", "İyi gidiyor", "Alışkanlık oluşuyor"),
@@ -169,7 +164,7 @@ class StreakOnboardingFragment : Fragment() {
                 b.streakOnboardingContinue.text = "Devam et"
                 setContinueEnabled(true)
                 b.streakOnboardingWeekStrip.visibility = View.VISIBLE
-                buildWeekStrip(state.achievedDays)
+                StreakViews.buildWeekStrip(b.streakOnboardingWeekStrip, state.achievedDays)
                 b.streakOnboardingChallengeCard.visibility = View.VISIBLE
                 b.streakOnboardingChallengeTitle.text = "$challengeDays Günlük Meydan Okuma"
                 // Kullanıcı bu ekrana ilk dersini bitirir bitirmez geliyor; günlük hedefi
@@ -185,118 +180,6 @@ class StreakOnboardingFragment : Fragment() {
     private fun setContinueEnabled(enabled: Boolean) {
         binding.streakOnboardingContinue.isEnabled = enabled
         binding.streakOnboardingContinue.alpha = if (enabled) 1f else 0.6f
-    }
-
-    /**
-     * Seçenek satırlarını üretir. Satırlar yinelenen öğeler olduğu için XML'de değil burada:
-     * aksi halde her satır için ayrı kimlik ve ayrı dinleyici taşımak gerekirdi.
-     */
-    private fun buildOptions(
-        values: List<Int>,
-        labels: List<String>,
-        trailing: List<String>,
-        selected: Int,
-        onPick: (Int) -> Unit,
-    ) {
-        val container = binding.streakOnboardingOptions
-        val density = resources.displayMetrics.density
-        values.forEachIndexed { index, value ->
-            val row = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setBackgroundResource(
-                    if (value == selected) R.drawable.bg_streak_option_selected
-                    else R.drawable.bg_streak_option,
-                )
-                val pad = (16 * density).toInt()
-                setPadding(pad, pad, pad, pad)
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { if (index > 0) topMargin = (12 * density).toInt() }
-                setOnClickListener { onPick(value) }
-            }
-            row.addView(
-                TextView(requireContext()).apply {
-                    text = labels.getOrElse(index) { "" }
-                    setTextColor(android.graphics.Color.WHITE)
-                    textSize = 17f
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                },
-            )
-            row.addView(
-                TextView(requireContext()).apply {
-                    text = trailing.getOrElse(index) { "" }
-                    setTextColor(android.graphics.Color.parseColor("#93A5B3"))
-                    textSize = 15f
-                },
-            )
-            container.addView(row)
-        }
-    }
-
-    /**
-     * Haftanın günleri, pazartesiden pazara.
-     *
-     * Son 7 gün değil takvim haftası gösteriliyor: kullanıcı "bu hafta neredeyim" diye
-     * bakıyor, "son yedi günde" diye değil.
-     */
-    private fun buildWeekStrip(achieved: Set<String>) {
-        val container = binding.streakOnboardingWeekStrip
-        container.removeAllViews()
-        val density = resources.displayMetrics.density
-        val today = StudyTimeTracker.dayId()
-        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-
-        val cal = Calendar.getInstance()
-        cal.firstDayOfWeek = Calendar.MONDAY
-        // Calendar.DAY_OF_WEEK: Pazar=1 … Cumartesi=7. Pazartesi başlangıç için kaydırma.
-        val shift = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
-        cal.add(Calendar.DAY_OF_YEAR, -shift)
-
-        val letters = listOf("P", "S", "Ç", "P", "C", "C", "P")
-        for (i in 0 until 7) {
-            val dayId = format.format(Date(cal.timeInMillis))
-            val done = dayId in achieved
-            val isToday = dayId == today
-
-            val cell = LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            cell.addView(
-                TextView(requireContext()).apply {
-                    text = if (done) "✓" else ""
-                    gravity = Gravity.CENTER
-                    setTextColor(android.graphics.Color.WHITE)
-                    textSize = 14f
-                    setBackgroundResource(
-                        when {
-                            done -> R.drawable.bg_streak_day_done
-                            isToday -> R.drawable.bg_streak_day_today
-                            else -> R.drawable.bg_streak_day_empty
-                        },
-                    )
-                    layoutParams = LinearLayout.LayoutParams((28 * density).toInt(), (28 * density).toInt())
-                },
-            )
-            cell.addView(
-                TextView(requireContext()).apply {
-                    text = letters[i]
-                    gravity = Gravity.CENTER
-                    setTextColor(android.graphics.Color.parseColor(if (isToday) "#FF9800" else "#93A5B3"))
-                    textSize = 12f
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ).apply { topMargin = (6 * density).toInt() }
-                },
-            )
-            container.addView(cell)
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-        }
     }
 
     override fun onDestroyView() {
