@@ -223,8 +223,13 @@ object StreakRepository {
         if (current > localCurrent && serverFresh) {
             editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, lastDay)
         }
+        // Rekor, güncel seriden küçük olamaz. Sunucudan 30 günlük bir seri geri yüklenip
+        // rekor 2'de kalsaydı ekran "şu an 30 gün, en uzun 7 gün" gibi kendi kendisiyle
+        // çelişirdi.
+        val adoptedCurrent = if (current > localCurrent && serverFresh) current else 0
+        val targetLongest = maxOf(longest, adoptedCurrent)
         val localLongest = p.getInt(KEY_LONGEST, 0)
-        if (longest > localLongest) editor.putInt(KEY_LONGEST, longest)
+        if (targetLongest > localLongest) editor.putInt(KEY_LONGEST, targetLongest)
 
         // Hafta şeridi: sunucunun bildiği günler yerel arşivle BİRLEŞTİRİLİYOR, onun yerine
         // geçmiyor. Yerelde bugün tutturulmuş ama henüz bildirilmemiş olabilir; sunucunun
@@ -305,7 +310,19 @@ object StreakRepository {
         var lastDay = p?.getString(KEY_LAST_DAY, "").orEmpty()
         var achieved = readAchievedDays(context)
 
-        if (seconds >= goal * 60 && lastDay != today) {
+        // Son gün bugünden İLERİDEYSE o gün zaten sayılmış demektir: ne ilerletilir ne
+        // kırılır, takvim yetişene kadar olduğu gibi durur.
+        //
+        // İleri bir son gün uydurma bir durum değil. Sunucu gün kimliğini ±1 gün toleransla
+        // kabul ediyor, yani doğu saat dilimindeki bir kullanıcının kaydı bu cihazın
+        // bugününden ileride olabilir; batıya uçan biri de aynı duruma düşer. Bu kontrol
+        // olmadan "ardışık değil" denip seri 1'e düşüyordu — sunucudan geri yüklenen seri de
+        // benimsendiği anda aynı şekilde siliniyordu.
+        //
+        // yyyy-MM-dd biçiminde sözlük sırası tarih sırasıyla aynı, ayrıştırmaya gerek yok.
+        val lastDayInFuture = lastDay > today
+
+        if (seconds >= goal * 60 && lastDay != today && !lastDayInFuture) {
             // Dün de tutturulmuşsa seri devam eder, yoksa bugünden yeniden başlar.
             current = if (lastDay == yesterday) current + 1 else 1
             longest = maxOf(longest, current)
@@ -331,7 +348,9 @@ object StreakRepository {
         // Ama artık hesaplayıp geçmiyoruz, YAZIYORUZ: yazılmasaydı `streak_broken` olayı
         // ekran her tazelendiğinde tekrar gönderilirdi ve kaç serinin kırıldığı değil kaç kez
         // ekrana bakıldığı ölçülürdü.
-        if (current > 0 && lastDay.isNotEmpty() && lastDay != today && lastDay != yesterday) {
+        if (current > 0 && lastDay.isNotEmpty() && !lastDayInFuture &&
+            lastDay != today && lastDay != yesterday
+        ) {
             AnalyticsLogger.logStreakBroken(current, daysSince(lastDay))
             current = 0
             writeState(context, current, longest, lastDay, achieved)
