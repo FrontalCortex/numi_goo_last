@@ -1994,6 +1994,32 @@ class MainActivity : AppCompatActivity() {
         binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
     }
 
+    /**
+     * Üst bardaki günlük seri göstergesini tazeler.
+     *
+     * Seri kırıkken alev gri ve sayı 0: "bugün yapılacak bir şey var" mesajı, hiç
+     * göstermemekten daha etkili. Gizlemek yerine söndürmek, Duolingo ve Mimo'nun da
+     * yaptığı şey.
+     */
+    fun refreshStreakUi() {
+        if (!::binding.isInitialized) return
+        val state = StreakRepository.refresh(this)
+        binding.streakText.text = state.current.toString()
+        val alive = state.current > 0
+        binding.streakIcon.alpha = if (alive) 1f else 0.45f
+        binding.streakIcon.colorFilter = if (alive) {
+            null
+        } else {
+            android.graphics.PorterDuffColorFilter(
+                android.graphics.Color.parseColor("#78909C"),
+                android.graphics.PorterDuff.Mode.SRC_IN,
+            )
+        }
+        binding.streakText.setTextColor(
+            android.graphics.Color.parseColor(if (alive) "#FF9800" else "#78909C"),
+        )
+    }
+
 
     /**
      * Billing geri çağrılarını varsayılan (ekran bağımsız) haline döndürür.
@@ -3286,6 +3312,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         currentActivity = this
+        refreshStreakUi()
+        // Ders ekranından çıkıldığında çalışma süresi yazılıyor; alev o anda güncellensin.
+        StudyTimeTracker.setOnChangedListener { runOnUiThread { refreshStreakUi() } }
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = auth.currentUser != null
@@ -3330,6 +3359,8 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         SessionDeviceManager.stopSessionHeartbeat()
         currentActivity = null
+        // Dinleyici Activity'ye referans tutuyor; ekran arkaya geçerken bırakılıyor.
+        StudyTimeTracker.setOnChangedListener(null)
         // Uygulama background'a geçtiğinde süre takibini durdur
         TimeTracker.stopTracking()
     }

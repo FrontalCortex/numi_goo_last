@@ -46,6 +46,19 @@ class NumiGooApplication : Application() {
     private var startedActivityCount = 0
 
     /**
+     * Açık ekranı değiştirir.
+     *
+     * Ekran ölçümü ile çalışma süresi ölçümü ([StudyTimeTracker]) aynı geçişleri dinliyor.
+     * İkinci bir yaşam döngüsü dinleyicisi kurmak yerine tek kapı: böylece "arka plana
+     * geçince süre işlememeli" gibi kurallar iki yerde ayrı ayrı doğrulanmak zorunda kalmıyor.
+     */
+    private fun setCurrentScreen(name: String?) {
+        currentScreen = name
+        currentScreenStartMs = SystemClock.elapsedRealtime()
+        StudyTimeTracker.setActiveScreen(this, name)
+    }
+
+    /**
      * Görünür ekranların yığını.
      *
      * Dialog'lar yüzünden gerekli: bir [androidx.fragment.app.DialogFragment] kapandığında
@@ -79,8 +92,7 @@ class NumiGooApplication : Application() {
             // fragment'ların hepsi yeniden resume oluyor.
             screenStack.remove(name)
             screenStack.add(name)
-            currentScreen = name
-            currentScreenStartMs = SystemClock.elapsedRealtime()
+            setCurrentScreen(name)
             AnalyticsLogger.logScreenView(name)
         }
 
@@ -102,10 +114,9 @@ class NumiGooApplication : Application() {
             screenStack.remove(name)
             if (currentScreen != name) return
             val restored = screenStack.lastOrNull() ?: return
-            currentScreen = restored
             // Altındaki ekrana "yeniden gelinmiş" sayılır; dialog'un açık kaldığı süre
             // o ekranın süresine eklenmemeli.
-            currentScreenStartMs = SystemClock.elapsedRealtime()
+            setCurrentScreen(restored)
         }
     }
 
@@ -128,14 +139,15 @@ class NumiGooApplication : Application() {
             //
             // Bu olmadan reklam açıkken uygulamadan çıkılınca exit_screen bir önceki DERSİN
             // adını gösteriyordu — reklam terkleri derslerin üstüne yazılıyordu.
-            currentScreen = activity::class.java.simpleName
-            currentScreenStartMs = SystemClock.elapsedRealtime()
+            setCurrentScreen(activity::class.java.simpleName)
         }
 
         override fun onActivityStarted(activity: Activity) {
             if (startedActivityCount == 0) {
                 // Öne dönüldü: arka planda geçen süre ekranın süresine yazılmasın.
-                currentScreenStartMs = SystemClock.elapsedRealtime()
+                // Aynı ekrana dönülüyor, o yüzden ad değişmiyor — yalnızca sayaçlar yeniden
+                // başlatılıyor.
+                setCurrentScreen(currentScreen)
                 // 30 dakikadan uzun sürdüyse yeni oturum sayılır; oturum içi ders sayacı sıfırlanır.
                 EnergySessionCounter.onAppForegrounded()
             }
@@ -148,6 +160,10 @@ class NumiGooApplication : Application() {
             if (activity.isChangingConfigurations) return
 
             EnergySessionCounter.onAppBackgrounded()
+
+            // Arka planda çalışma süresi işlemez; açık parça burada kapanıyor. Ekran ADI
+            // korunuyor ki öne dönüldüğünde aynı yerden devam edilebilsin.
+            StudyTimeTracker.setActiveScreen(this@NumiGooApplication, null)
 
             val screen = currentScreen ?: return
             val elapsed = (SystemClock.elapsedRealtime() - currentScreenStartMs).coerceAtLeast(0L)

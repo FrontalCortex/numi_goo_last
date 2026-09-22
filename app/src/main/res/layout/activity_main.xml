@@ -62,6 +62,44 @@
             android:visibility="gone"
             app:tint="@android:color/white" />
 
+        <!--
+          Günlük seri. Barın BAŞINDA duruyor, para birimlerinin arasında değil: seri bir
+          kaynak değil, bir durum — kullanıcının ilk göreceği şey o olsun. Dokununca seri
+          ekranı açılıyor.
+        -->
+        <LinearLayout
+            android:id="@+id/streakContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingEnd="6dp">
+
+            <ImageView
+                android:id="@+id/streakIcon"
+                android:layout_width="@dimen/main_energy_icon_size"
+                android:layout_height="@dimen/main_energy_icon_size"
+                android:contentDescription="Günlük seri"
+                android:src="@drawable/streak_flame_ic" />
+
+            <TextView
+                android:id="@+id/streakText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="0"
+                android:textColor="#FF9800"
+                android:textSize="@dimen/main_energy_text_size"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
         <ImageView
             android:id="@+id/diamondID"
             android:layout_width="wrap_content"
