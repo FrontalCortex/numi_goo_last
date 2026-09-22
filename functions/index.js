@@ -3818,6 +3818,15 @@ const STREAK_MAX_DAYS_PER_CALL = 7;
 const STREAK_CLAIM_DAILY_LIMIT = 10;
 
 /**
+ * Sunucuda saklanan "tutturulmuş gün" sayısı.
+ *
+ * Seri sayısı tek başına yetmiyor: cihaz değiştiren kullanıcının hafta şeridi bomboş
+ * çıkıyordu — alev "30 gün" derken şeritte tek bir gün işaretli değildi. İstemcideki
+ * arşivle aynı uzunluk (StreakRepository.ACHIEVED_HISTORY_DAYS).
+ */
+const STREAK_RECENT_DAYS_KEPT = 21;
+
+/**
  * Sabit kilometre taşları. Sonrası 30'un katlarında devam ediyor.
  *
  * DİKKAT: bu tablonun bir ikizi istemcide, `StreakMilestones.kt` içinde. Orası yalnızca
@@ -3868,11 +3877,15 @@ function readStreakState(snap) {
   const claimed = Array.isArray(data.claimed)
     ? data.claimed.map((v) => Math.trunc(Number(v))).filter((v) => Number.isInteger(v) && v > 0)
     : [];
+  const recentDays = Array.isArray(data.recentDays)
+    ? data.recentDays.filter((v) => typeof v === 'string' && STREAK_DAY_RE.test(v))
+    : [];
   return {
     current: Math.max(0, Math.trunc(Number(data.current) || 0)),
     longest: Math.max(0, Math.trunc(Number(data.longest) || 0)),
     lastDay: typeof data.lastDay === 'string' ? data.lastDay : '',
     claimed,
+    recentDays,
     goalMinutes: Math.trunc(Number(data.goalMinutes) || 0),
     challengeDays: Math.trunc(Number(data.challengeDays) || 0),
   };
@@ -3954,6 +3967,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       longest: state.longest,
       lastDay: state.lastDay,
       claimed: state.claimed,
+      recentDays: state.recentDays,
     };
   }
 
@@ -3968,18 +3982,25 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     const state = readStreakState(snap);
     const next = applyStreakDays(state, days);
 
+    // Tutturulmuş günler: hafta şeridi cihaz değişiminden sonra da dolu gelsin diye.
+    // Diziler merge'de birleştirilmediği için birleştirme burada yapılıyor.
+    const recentDays = Array.from(new Set(state.recentDays.concat(days)))
+      .sort()
+      .slice(-STREAK_RECENT_DAYS_KEPT);
+
     const patch = {
       current: next.current,
       longest: next.longest,
       lastDay: next.lastDay,
       claimed: next.claimed,
+      recentDays,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
     if (challengeDays > 0 && challengeDays <= 400) patch.challengeDays = challengeDays;
 
     transaction.set(ref, patch, { merge: true });
-    return next;
+    return Object.assign({}, next, { recentDays });
   });
 
   return {
@@ -3988,6 +4009,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     longest: result.longest,
     lastDay: result.lastDay,
     claimed: result.claimed,
+    recentDays: result.recentDays,
   };
 });
 

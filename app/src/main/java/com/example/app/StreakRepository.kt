@@ -196,6 +196,7 @@ object StreakRepository {
         longest: Int,
         lastDay: String,
         claimed: Set<Int>,
+        recentDays: Set<String> = emptySet(),
     ) {
         val p = prefs(context) ?: return
         val editor = p.edit()
@@ -207,14 +208,32 @@ object StreakRepository {
         // düzeltmiyor, döngü üretiyordu: al → [refresh] kırıldı der → 0 yaz → bir sonraki
         // okumada yine al… Her turda bir `streak_broken` olayı gidiyordu. Bayat durum
         // yalnızca önbelleğe yazılıyor (ödül satırları için), yerel sayaca değil.
-        val today = StudyTimeTracker.dayId()
-        val serverFresh = lastDay == today || lastDay == StudyTimeTracker.dayId(-1)
+        // Pencere üç gün: dün, bugün ve YARIN. Yarın da dahil, çünkü sunucu gün kimliğini
+        // ±1 gün toleransla kabul ediyor — başka bir saat diliminden (ya da saati ileri
+        // alınmış bir cihazdan) bildirilen gün, bu cihazın bugününden bir gün ileride
+        // olabilir. Dar pencere o durumda seriyi geri yüklemiyor ve kullanıcı ödülü
+        // toplayabildiği halde üst barda 1 görüyordu.
+        val fresh = setOf(
+            StudyTimeTracker.dayId(1),
+            StudyTimeTracker.dayId(),
+            StudyTimeTracker.dayId(-1),
+        )
+        val serverFresh = lastDay in fresh
         val localCurrent = p.getInt(KEY_CURRENT, 0)
         if (current > localCurrent && serverFresh) {
             editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, lastDay)
         }
         val localLongest = p.getInt(KEY_LONGEST, 0)
         if (longest > localLongest) editor.putInt(KEY_LONGEST, longest)
+
+        // Hafta şeridi: sunucunun bildiği günler yerel arşivle BİRLEŞTİRİLİYOR, onun yerine
+        // geçmiyor. Yerelde bugün tutturulmuş ama henüz bildirilmemiş olabilir; sunucunun
+        // listesini olduğu gibi yazmak o günü şeritten silerdi.
+        if (recentDays.isNotEmpty()) {
+            val cutoff = (0 until ACHIEVED_HISTORY_DAYS).map { StudyTimeTracker.dayId(-it) }.toSet()
+            val merged = (readAchievedDays(context) + recentDays).intersect(cutoff)
+            editor.putString(KEY_ACHIEVED_DAYS, merged.sorted().joinToString(","))
+        }
 
         editor.apply()
     }

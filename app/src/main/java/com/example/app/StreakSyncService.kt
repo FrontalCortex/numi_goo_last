@@ -69,7 +69,13 @@ object StreakSyncService {
                     ?.mapNotNull { (it as? Number)?.toInt() }
                     ?.toSet()
                     .orEmpty()
-                StreakRepository.adoptServerState(context, current, longest, lastDay, claimed)
+                val recentDays = (doc.get("recentDays") as? List<*>)
+                    ?.mapNotNull { it as? String }
+                    ?.toSet()
+                    .orEmpty()
+                StreakRepository.adoptServerState(
+                    context, current, longest, lastDay, claimed, recentDays,
+                )
                 onDone?.invoke()
             }
             .addOnFailureListener { e ->
@@ -111,9 +117,17 @@ object StreakSyncService {
                     ?.mapNotNull { (it as? Number)?.toInt() }
                     ?.toSet()
                     .orEmpty()
+                val recentDays = (data["recentDays"] as? List<*>)
+                    ?.mapNotNull { it as? String }
+                    ?.toSet()
+                    .orEmpty()
+                val lastDay = (data["lastDay"] as? String).orEmpty()
                 // Gönderilen günler kabul edildi; kuyruktan yalnızca ONLAR siliniyor.
                 // Arada yeni bir gün eklenmiş olabilir, o gitmemeli.
                 StreakRepository.onSyncAccepted(context, days, current, longest, claimed)
+                StreakRepository.adoptServerState(
+                    context, current, longest, lastDay, claimed, recentDays,
+                )
                 onDone?.invoke()
             }
             .addOnFailureListener { e ->
