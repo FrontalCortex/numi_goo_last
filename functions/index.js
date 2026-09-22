@@ -3929,20 +3929,33 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       throw new functions.https.HttpsError('invalid-argument', 'Geçersiz gün.');
     }
     // İleriye zıplama yok: istemci en fazla bir gün ileride olabilir (saat dilimi payı).
-    if (dayNo > serverDayNo + STREAK_DAY_TOLERANCE_DAYS) {
-      throw new functions.https.HttpsError('invalid-argument', 'Gün ileride.');
-    }
+    // Fazlası ELENİYOR, çağrıyı reddetmiyor: reddetseydik saati ileri alınmış bir cihazda
+    // kuyruktaki tek ileri tarihli gün, yanındaki geçerli günlerin de hiç işlenmemesine yol
+    // açardı — ve kuyruk boşalmadığı için bu durum kendiliğinden düzelmezdi.
+    if (dayNo > serverDayNo + STREAK_DAY_TOLERANCE_DAYS) continue;
     // Çok eski günler seriye işlenmez; zaten kırılmış bir seriyi diriltemezler.
     if (dayNo < serverDayNo - STREAK_MAX_DAYS_PER_CALL) continue;
     days.push(raw);
-  }
-  if (days.length === 0) {
-    throw new functions.https.HttpsError('invalid-argument', 'Gün listesi boş.');
   }
   if (days.length > STREAK_MAX_DAYS_PER_CALL) {
     throw new functions.https.HttpsError('invalid-argument', 'Çok fazla gün.');
   }
   days.sort();
+
+  // Gönderilen günlerin hepsi elendi (hepsi çok eski ya da ileri tarihli). Hata değil:
+  // istemci kuyruğu temizleyebilsin diye mevcut durum olduğu gibi dönülüyor. Hata
+  // dönseydi istemci aynı işe yaramaz günleri sonsuza kadar yeniden denerdi.
+  if (days.length === 0) {
+    const snap = await streakDocRef(uid).get();
+    const state = readStreakState(snap);
+    return {
+      success: true,
+      current: state.current,
+      longest: state.longest,
+      lastDay: state.lastDay,
+      claimed: state.claimed,
+    };
+  }
 
   // Hedef ve meydan okuma yalnızca taşınsın diye saklanıyor (cihaz değişince geri gelsin).
   // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
