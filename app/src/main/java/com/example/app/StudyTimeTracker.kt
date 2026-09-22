@@ -39,13 +39,22 @@ object StudyTimeTracker {
     /** Tek bir kesintisiz çalışma parçasının üst sınırı. */
     private const val MAX_SEGMENT_MS = 10L * 60 * 1000
 
-    /** Çalışma sayılan ekranlar. Menü, mağaza, profil vb. sayılmaz. */
+    /**
+     * Çalışma sayılan ekranlar — kullanıcının soru çözdüğü ya da abaküs kullandığı yerler.
+     *
+     * Dışarıda kalanlar bilerek dışarıda:
+     * - Anket ekranları (`TutorialQuestionPanelFragment`, `QuestionPanelFragment`) ders
+     *   aralarında açılıyor ama orada öğrenme olmuyor; okuyup "atla"ya basmak dakika
+     *   kazandırmamalı.
+     * - Sonuç, sandık, ödül ve kutlama ekranları da aynı sebeple dışarıda: süre geçiyor ama
+     *   çalışılmıyor.
+     * - Menü, mağaza, profil, liderlik zaten çalışma değil.
+     */
     private val STUDY_SCREENS = setOf(
-        "BlindingLessonFragment",
         "AbacusFragment",
         "AbacusPracticeFragment",
+        "BlindingLessonFragment",
         "TutorialFragment",
-        "TutorialQuestionPanelFragment",
     )
 
     /** Açık parçanın başlangıcı (monoton saat). 0 = sayım kapalı. */
