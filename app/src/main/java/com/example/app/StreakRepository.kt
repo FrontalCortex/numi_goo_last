@@ -362,8 +362,45 @@ object StreakRepository {
             goalMinutes = goal,
             challengeDays = challenge,
             secondsToday = seconds,
-            achievedDays = achieved,
+            achievedDays = achieved + daysOfStreak(current, lastDay),
         )
+    }
+
+    /**
+     * Serinin kapsadığı günler.
+     *
+     * ## Neden türetiliyor
+     * Hafta şeridi önce yalnızca KAYDEDİLMİŞ günlere bakıyordu ve bu, serinin kendisiyle
+     * çelişebiliyordu: alev "30 gün" derken şeritte tek bir gün işaretli olmuyordu. Kaydın
+     * eksik kalması normal — cihaz değiştiren kullanıcının cihazında hiç kayıt yok, bu
+     * güncellemeden önce seri tutmuş kullanıcıların sunucusunda da yok.
+     *
+     * Oysa kayda gerek yok: N günlük bir seri, [lastDay]'de biten N günün tutturulduğu
+     * ANLAMINA GELİR. Seri zaten o günlerin kanıtı.
+     *
+     * Kaydedilmiş günler yine de kullanılıyor (ikisinin birleşimi alınıyor): seri kırılmadan
+     * önce tutturulan günler seriye dahil değil ama aynı takvim haftasında olabilirler ve
+     * şeritte görünmeleri gerekir.
+     *
+     * ## Neden tarih ayrıştırılmıyor
+     * [StudyTimeTracker.dayId] geriye doğru taranıp [lastDay]'in bugüne göre kaydırması
+     * bulunuyor. Gün kimliğini üreten kodun aynısı hesabı da yapıyor, yani ikinci bir tarih
+     * biçimi yorumu ve onun hata payı hiç doğmuyor.
+     */
+    private fun daysOfStreak(current: Int, lastDay: String): Set<String> {
+        if (current <= 0 || lastDay.isEmpty()) return emptySet()
+        // Son gün bugünden bir gün ileride olabilir (saat dilimi); tarama oradan başlıyor.
+        val lastOffset = (1 downTo -ACHIEVED_HISTORY_DAYS)
+            .firstOrNull { StudyTimeTracker.dayId(it) == lastDay }
+            ?: return emptySet()
+        val span = minOf(current, ACHIEVED_HISTORY_DAYS)
+        // Bugünden sonrası işaretlenmiyor: son gün bir gün ileride olabiliyor ve gelecekteki
+        // bir güne "tamamlandı" tiki koymak hatalı görünürdü. O gün takvim yetişince gelir.
+        val today = StudyTimeTracker.dayId()
+        return (0 until span)
+            .map { StudyTimeTracker.dayId(lastOffset - it) }
+            .filter { it <= today }
+            .toSet()
     }
 
     /**
