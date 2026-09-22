@@ -104,6 +104,20 @@ object StudyTimeTracker {
         return stored + open
     }
 
+    /**
+     * Yalnızca debug derlemesi: bugüne süre ekler.
+     *
+     * Seriyi elle test etmek aksi halde her tur için gerçek dakikalar bekletiyor; gün
+     * değişimini denerken bu iş çekilmez hale geliyor. Release'de gövde hiçbir şey yapmaz —
+     * çağıran taraf zaten `BuildConfig.DEBUG` bloğunun içinde olduğu için o kod release
+     * APK'sine hiç girmiyor, buradaki kontrol ikinci bir emniyet.
+     */
+    fun addSecondsForDebug(context: Context, seconds: Int) {
+        if (!BuildConfig.DEBUG) return
+        if (seconds <= 0) return
+        addSeconds(context, seconds)
+    }
+
     private fun addSeconds(context: Context, seconds: Int) {
         val p = prefs(context) ?: return
         try {

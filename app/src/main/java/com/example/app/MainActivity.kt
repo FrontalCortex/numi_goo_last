@@ -893,6 +893,24 @@ class MainActivity : AppCompatActivity() {
         // Alev: seri ekranını aç. Üst bardaki diğer göstergeler mağazaya gidiyor, bu
         // gitmiyor — seri bir bakiye değil, kendi ekranı var.
         binding.streakContainer.setOnClickListener { openStreakFragment() }
+
+        // Debug kısayolu: aleve uzun basınca bugüne bir dakika eklenir. Enerji metnindeki
+        // kısayolla aynı gerekçe — blok derleme zamanında elendiği için release APK'sinde
+        // hiç yer almaz. Seriyi test etmek aksi halde her tur için gerçek dakikalar bekletiyor.
+        if (BuildConfig.DEBUG) {
+            binding.streakContainer.setOnLongClickListener {
+                StudyTimeTracker.addSecondsForDebug(this, 60)
+                refreshStreakUi()
+                val seconds = StudyTimeTracker.secondsToday(this)
+                val goal = StreakRepository.goalMinutes(this)
+                Toast.makeText(
+                    this,
+                    "Bugün ${seconds / 60} dk ${seconds % 60} sn / $goal dk",
+                    Toast.LENGTH_SHORT,
+                ).show()
+                true
+            }
+        }
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
