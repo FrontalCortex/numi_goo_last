@@ -3309,8 +3309,36 @@ function utcDayKey(nowMs) {
 /**
  * Ödülü kullanıcının bakiyesine yazar ve günlük sayacı aynı transaction'da artırır.
  * Tavan aşılmışsa ödül verilmez.
+ *
+ * Sandıklar tek tip ödül veriyor (ya anahtar ya altın); seri kilometre taşları ikisini
+ * birden verebiliyor. Bu yüzden asıl iş [grantWalletDelta] içinde ve bu fonksiyon onun
+ * "tek tip ödül" kabuğu — cüzdana yazan tek bir yol kalsın diye.
  */
 async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGrant) {
+  return grantWalletDelta(
+    uid,
+    {
+      keys: reward.type === 'KEY' ? reward.amount : 0,
+      gold: reward.type === 'GOLD' ? reward.amount : 0,
+    },
+    counterField,
+    dailyLimit,
+    beforeGrant
+  );
+}
+
+/**
+ * Cüzdana anahtar ve/veya altın ekler; günlük tavan sayacını aynı transaction'da artırır.
+ *
+ * @param delta {{keys: number, gold: number}} Eklenecek miktarlar (negatif olamaz).
+ * @param counterField `rewardGuard` içindeki günlük sayaç alanı.
+ * @param dailyLimit null ise tavan yok.
+ * @param beforeGrant Aynı transaction içinde ek doğrulama; YALNIZCA okur ve yazma işini
+ *   döndürdüğü fonksiyonla yapar (Firestore: tüm okumalar yazmalardan önce).
+ */
+async function grantWalletDelta(uid, delta, counterField, dailyLimit, beforeGrant) {
+  const addKeys = Math.max(0, Math.trunc(Number(delta && delta.keys) || 0));
+  const addGold = Math.max(0, Math.trunc(Number(delta && delta.gold) || 0));
   const userRef = db.collection('users').doc(uid);
   const now = Date.now();
   const dayKey = utcDayKey(now);
@@ -3342,9 +3370,8 @@ async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGr
     nextGuard.dayKey = dayKey;
     nextGuard[counterField] = used;
 
-    const keys = (Number.parseInt(userData.keys, 10) || 0) + (reward.type === 'KEY' ? reward.amount : 0);
-    const currency =
-      (Number.parseInt(userData.currency, 10) || 0) + (reward.type === 'GOLD' ? reward.amount : 0);
+    const keys = (Number.parseInt(userData.keys, 10) || 0) + addKeys;
+    const currency = (Number.parseInt(userData.currency, 10) || 0) + addGold;
 
     if (commitBeforeGrant) commitBeforeGrant(transaction);
     transaction.update(userRef, { keys, currency, rewardGuard: nextGuard });
@@ -3757,6 +3784,263 @@ exports._rollRarityUpgrade = rollRarityUpgrade;
 exports._rollChestReward = rollChestReward;
 exports._rollCrystalVideo = rollCrystalVideo;
 exports._rollCrystalReward = rollCrystalReward;
+
+// ─── Günlük seri (streak) — sunucu taraflı ──────────────────────────────────
+//
+// NEDEN SUNUCUDA
+//   Seri artık ödül dağıtıyor. Seri istemcide tutulsaydı "serim 30 oldu" demek on anahtar
+//   demek olurdu; cüzdan alanları (`keys`, `currency`) kurallarda sunucuya özel olduğu için
+//   ödülü zaten yalnızca bir fonksiyon yazabilir, ama fonksiyonun da DOĞRULAYACAK bir şeye
+//   ihtiyacı var. Bu yüzden seri sayacı buraya taşındı: istemci yalnızca "bugün hedefimi
+//   tutturdum" diyebiliyor, sayacı sunucu kendisi ilerletiyor.
+//
+// NEYİ KORUMUYOR
+//   Çocuğun gerçekten çalışıp çalışmadığını sunucu bilmiyor; çalışma süresi cihazda
+//   ölçülüyor. Yani "hiç çalışmadan gün bildirmek" hâlâ mümkün. Ama artık tek çağrıda
+//   sıçramak mümkün değil: otuz günlük ödül için otuz ayrı GÜN boyunca, günde bir kez
+//   bildirmek gerekiyor. Bu da günde beş dakika çalışmakla aşağı yukarı aynı emek.
+//
+// YEREL GÜN, UTC DEĞİL
+//   Seri kullanıcının takvim gününe göre işliyor (bkz. StudyTimeTracker.dayId). Sunucu UTC
+//   çalıştığı için gün kimliği istemciden geliyor ve sunucunun UTC gününe ±1 gün uzaklıkta
+//   olmak zorunda: bütün saat dilimlerini kapsar, ama ileriye zıplamaya izin vermez.
+
+/** Gün kimliği biçimi: yyyy-MM-dd. */
+const STREAK_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** İstemcinin yerel günü sunucunun UTC gününden en fazla bu kadar sapabilir. */
+const STREAK_DAY_TOLERANCE_DAYS = 1;
+
+/** Tek çağrıda bildirilebilecek en fazla gün (çevrimdışı birikmiş günler için). */
+const STREAK_MAX_DAYS_PER_CALL = 7;
+
+/** Günde en fazla kaç kilometre taşı toplanabilir; birikmiş taşları toplamaya yeter. */
+const STREAK_CLAIM_DAILY_LIMIT = 10;
+
+/**
+ * Sabit kilometre taşları. Sonrası 30'un katlarında devam ediyor.
+ *
+ * DİKKAT: bu tablonun bir ikizi istemcide, `StreakMilestones.kt` içinde. Orası yalnızca
+ * GÖSTERİM için (kullanıcı toplamadan önce ne kazanacağını görsün); ödülü veren taraf
+ * burası. İkisi ayrılırsa kullanıcı bir şey görüp başka bir şey alır — biri değişirse
+ * diğeri de değişmeli.
+ */
+const STREAK_FIXED_REWARDS = {
+  3: { keys: 3, gold: 0 },
+  7: { keys: 3, gold: 2000 },
+  14: { keys: 0, gold: 5000 },
+  30: { keys: 10, gold: 0 },
+};
+
+/** Kilometre taşı olarak kabul edilen en büyük gün — sonsuz döngüye karşı üst sınır. */
+const STREAK_MAX_MILESTONE = 3600;
+
+/**
+ * Bir kilometre taşının ödülü; geçerli bir taş değilse null.
+ *
+ * 30'dan sonra her 30 günde bir ödül var ve sırayla dönüyor: 60 altın, 90 anahtar,
+ * 120 altın… Merdiven 30'da bitseydi altmışıncı günündeki çocuk için seri anlamsızlaşırdı.
+ */
+function streakRewardFor(milestone) {
+  if (!Number.isInteger(milestone) || milestone <= 0 || milestone > STREAK_MAX_MILESTONE) {
+    return null;
+  }
+  if (STREAK_FIXED_REWARDS[milestone]) return STREAK_FIXED_REWARDS[milestone];
+  if (milestone % 30 !== 0) return null;
+  const step = milestone / 30; // 30 → 1, 60 → 2, 90 → 3 …
+  return step % 2 === 0 ? { keys: 0, gold: 5000 } : { keys: 10, gold: 0 };
+}
+
+/** `yyyy-MM-dd` → epoch gün sayısı. Geçersizse null. */
+function streakDayNumber(dayId) {
+  if (typeof dayId !== 'string' || !STREAK_DAY_RE.test(dayId)) return null;
+  const ms = Date.parse(`${dayId}T00:00:00Z`);
+  if (!Number.isFinite(ms)) return null;
+  return Math.floor(ms / 86400000);
+}
+
+function streakDocRef(uid) {
+  return db.collection('users').doc(uid).collection('streak').doc('state');
+}
+
+function readStreakState(snap) {
+  const data = snap && snap.exists ? snap.data() || {} : {};
+  const claimed = Array.isArray(data.claimed)
+    ? data.claimed.map((v) => Math.trunc(Number(v))).filter((v) => Number.isInteger(v) && v > 0)
+    : [];
+  return {
+    current: Math.max(0, Math.trunc(Number(data.current) || 0)),
+    longest: Math.max(0, Math.trunc(Number(data.longest) || 0)),
+    lastDay: typeof data.lastDay === 'string' ? data.lastDay : '',
+    claimed,
+    goalMinutes: Math.trunc(Number(data.goalMinutes) || 0),
+    challengeDays: Math.trunc(Number(data.challengeDays) || 0),
+  };
+}
+
+/**
+ * Tutturulmuş günleri seri sayacına işler.
+ *
+ * Aynı gün ikinci kez bildirilirse hiçbir şey olmaz; ardışık olmayan bir gün seriyi
+ * bugünden yeniden başlatır ve toplanmış kilometre taşları sıfırlanır — yeni bir seri, yeni
+ * bir merdiven demek.
+ */
+function applyStreakDays(state, days) {
+  let { current, longest, lastDay, claimed } = state;
+  for (const day of days) {
+    if (lastDay === day) continue;
+    const lastNo = streakDayNumber(lastDay);
+    const dayNo = streakDayNumber(day);
+    if (lastNo !== null && dayNo === lastNo + 1) {
+      current += 1;
+    } else if (lastNo !== null && dayNo <= lastNo) {
+      // Geçmiş bir gün sonradan bildirildi: seriyi geri almaz, ileri de götürmez.
+      continue;
+    } else {
+      current = 1;
+      claimed = [];
+    }
+    longest = Math.max(longest, current);
+    lastDay = day;
+  }
+  return { current, longest, lastDay, claimed };
+}
+
+/**
+ * "Bugün hedefimi tutturdum" bildirimi.
+ *
+ * Birden çok gün kabul ediliyor: kullanıcı çevrimdışıyken de seri işliyor, bağlantı gelince
+ * biriken günler tek çağrıda kapanabilsin diye. Sunucu yine de her günü tek tek ve sırayla
+ * işliyor, yani yedi gün göndermek yedi günlük seri kazandırmıyor — günlerin ardışık olması
+ * gerekiyor.
+ */
+exports.submitStreakDay = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const rawDays = Array.isArray(data && data.days) ? data.days : [];
+  const serverDayNo = Math.floor(Date.now() / 86400000);
+  const days = [];
+  for (const raw of rawDays) {
+    const dayNo = streakDayNumber(raw);
+    if (dayNo === null) {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz gün.');
+    }
+    // İleriye zıplama yok: istemci en fazla bir gün ileride olabilir (saat dilimi payı).
+    if (dayNo > serverDayNo + STREAK_DAY_TOLERANCE_DAYS) {
+      throw new functions.https.HttpsError('invalid-argument', 'Gün ileride.');
+    }
+    // Çok eski günler seriye işlenmez; zaten kırılmış bir seriyi diriltemezler.
+    if (dayNo < serverDayNo - STREAK_MAX_DAYS_PER_CALL) continue;
+    days.push(raw);
+  }
+  if (days.length === 0) {
+    throw new functions.https.HttpsError('invalid-argument', 'Gün listesi boş.');
+  }
+  if (days.length > STREAK_MAX_DAYS_PER_CALL) {
+    throw new functions.https.HttpsError('invalid-argument', 'Çok fazla gün.');
+  }
+  days.sort();
+
+  // Hedef ve meydan okuma yalnızca taşınsın diye saklanıyor (cihaz değişince geri gelsin).
+  // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
+  const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
+  const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
+
+  const ref = streakDocRef(uid);
+  const result = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const state = readStreakState(snap);
+    const next = applyStreakDays(state, days);
+
+    const patch = {
+      current: next.current,
+      longest: next.longest,
+      lastDay: next.lastDay,
+      claimed: next.claimed,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
+    if (challengeDays > 0 && challengeDays <= 400) patch.challengeDays = challengeDays;
+
+    transaction.set(ref, patch, { merge: true });
+    return next;
+  });
+
+  return {
+    success: true,
+    current: result.current,
+    longest: result.longest,
+    lastDay: result.lastDay,
+    claimed: result.claimed,
+  };
+});
+
+/**
+ * Kilometre taşı ödülünü toplar.
+ *
+ * Toplananlar seri kırılınca sıfırlanıyor: yeni seri yeni merdiven. Yani aynı ödül tekrar
+ * alınabilir ama bunun için seriyi baştan kurmak gerekiyor — üç günlük ödülü ikinci kez
+ * almak üç gün daha demek.
+ */
+exports.claimStreakReward = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const milestone = Math.trunc(Number(data && data.milestone));
+  const reward = streakRewardFor(milestone);
+  if (!reward) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kilometre taşı.');
+  }
+
+  const ref = streakDocRef(uid);
+  const balances = await grantWalletDelta(
+    uid,
+    reward,
+    'streakRewards',
+    STREAK_CLAIM_DAILY_LIMIT,
+    async (transaction) => {
+      const snap = await transaction.get(ref);
+      const state = readStreakState(snap);
+
+      if (state.current < milestone) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu ödül için serin yeterli değil.'
+        );
+      }
+      if (state.claimed.includes(milestone)) {
+        throw new functions.https.HttpsError('already-exists', 'Bu ödülü zaten aldın.');
+      }
+
+      // Diziler merge'de birleştirilmiyor, olduğu gibi yazılıyor — istediğimiz de bu.
+      return (writeTransaction) => {
+        writeTransaction.set(
+          ref,
+          { claimed: state.claimed.concat([milestone]) },
+          { merge: true }
+        );
+      };
+    }
+  );
+
+  return {
+    success: true,
+    milestone,
+    rewardKeys: reward.keys,
+    rewardGold: reward.gold,
+    keys: balances.keys,
+    currency: balances.currency,
+  };
+});
+
+// Testler için.
+exports._streakRewardFor = streakRewardFor;
+exports._applyStreakDays = applyStreakDays;
 
 // ─── AdMob ödüllü reklam sunucu taraflı doğrulama (SSV) ─────────────────────
 //

@@ -2042,6 +2042,10 @@ class MainActivity : AppCompatActivity() {
         // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
         // burası: ekran dönüşleri, geri yığını değişimi ve süre değişimi hepsi buradan geçiyor.
         maybeShowStreakCelebration()
+        // Ödüller sunucudaki sayaca bakıyor. Eşitleme burada tetikleniyor çünkü gün ders
+        // ekranındayken tutturuluyor ve activity o sırada onResume'a girmiyor; kuyruk boşsa
+        // ya da bir deneme sürüyorsa çağrı kendini eliyor.
+        StreakSyncService.syncPendingDays(this)
         binding.streakText.text = state.current.toString()
         val alive = state.current > 0
         binding.streakIcon.alpha = if (alive) 1f else 0.45f

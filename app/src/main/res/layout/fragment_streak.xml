@@ -238,6 +238,24 @@
 
             </LinearLayout>
 
+            <!-- Ödüller -->
+            <TextView
+                android:id="@+id/streakRewardsTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:layout_marginBottom="2dp"
+                android:text="Seri Ödülleri"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/streakRewards"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
             <!-- En uzun seri -->
             <LinearLayout
                 android:layout_width="match_parent"

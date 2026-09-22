@@ -80,6 +80,96 @@ object StreakViews {
     }
 
     /**
+     * Kilometre taşı satırlarını çizer.
+     *
+     * Toplanmış taşlar listelenmiyor: ekranda yer kaplayıp ilgiyi asıl iki şeyden —
+     * toplanacak ödül ve sıradaki hedef — uzaklaştırırlardı.
+     *
+     * @param streak SUNUCUNUN bildiği seri. Yerel sayaç değil: ödülü veren taraf sunucu,
+     *   bu yüzden "toplanabilir" kararı da onun değerine bakmalı, yoksa kullanıcıya
+     *   basılabilir ama her seferinde hata veren bir düğme göstermiş oluruz.
+     */
+    fun buildMilestoneRows(
+        container: ViewGroup,
+        streak: Int,
+        claimed: Set<Int>,
+        onClaim: (Int) -> Unit,
+    ) {
+        container.removeAllViews()
+        val context = container.context
+        val density = context.resources.displayMetrics.density
+
+        StreakMilestones.visible(streak, claimed).forEach { milestone ->
+            val reward = StreakMilestones.rewardFor(milestone) ?: return@forEach
+            val claimable = milestone <= streak
+
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(
+                    if (claimable) R.drawable.bg_streak_option_selected
+                    else R.drawable.bg_streak_option,
+                )
+                val pad = (14 * density).toInt()
+                setPadding(pad, pad, pad, pad)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (10 * density).toInt() }
+            }
+
+            val texts = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams =
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            texts.addView(
+                TextView(context).apply {
+                    text = "$milestone gün"
+                    setTextColor(Color.WHITE)
+                    textSize = 15f
+                    setTypeface(typeface, Typeface.BOLD)
+                },
+            )
+            texts.addView(
+                TextView(context).apply {
+                    text = reward.label
+                    setTextColor(Color.parseColor(if (claimable) COLOR_ACCENT else COLOR_MUTED))
+                    textSize = 13f
+                },
+            )
+            row.addView(texts)
+
+            if (claimable) {
+                row.addView(
+                    TextView(context).apply {
+                        text = "Topla"
+                        setTextColor(Color.parseColor("#1B2B31"))
+                        textSize = 14f
+                        setTypeface(typeface, Typeface.BOLD)
+                        gravity = Gravity.CENTER
+                        setBackgroundResource(R.drawable.bg_streak_claim)
+                        val padH = (18 * density).toInt()
+                        val padV = (8 * density).toInt()
+                        setPadding(padH, padV, padH, padV)
+                        setOnClickListener { onClaim(milestone) }
+                    },
+                )
+            } else {
+                row.addView(
+                    TextView(context).apply {
+                        val left = milestone - streak
+                        text = "$left gün kaldı"
+                        setTextColor(Color.parseColor(COLOR_MUTED))
+                        textSize = 13f
+                    },
+                )
+            }
+            container.addView(row)
+        }
+    }
+
+    /**
      * Haftanın günlerini pazartesiden pazara [container] içine çizer.
      *
      * Son 7 gün değil TAKVİM HAFTASI gösteriliyor: kullanıcı "bu hafta neredeyim" diye

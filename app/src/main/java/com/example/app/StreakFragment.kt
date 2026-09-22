@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentStreakBinding
@@ -54,6 +55,11 @@ class StreakFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         render()
+        // Bekleyen gün varsa (çevrimdışı tutturulmuş olabilir) burada kapanıyor; dönünce
+        // ödül satırları da tazeleniyor.
+        StreakSyncService.syncPendingDays(requireContext()) {
+            if (isAdded) render()
+        }
     }
 
     private fun close() {
@@ -109,6 +115,36 @@ class StreakFragment : Fragment() {
         }
 
         b.streakLongest.text = "${state.longest} gün"
+
+        renderRewards(b)
+    }
+
+    /**
+     * Ödül satırları.
+     *
+     * SUNUCUNUN bildiği seriye bakıyor, yerel sayaca değil: ödülü veren taraf sunucu, yerel
+     * sayaç ondan ileride olabilir (henüz eşitlenmemiş gün) ve o durumda basılabilir ama her
+     * seferinde hata veren bir "Topla" düğmesi göstermiş olurduk.
+     */
+    private fun renderRewards(b: FragmentStreakBinding) {
+        val serverStreak = StreakRepository.serverCurrent(requireContext())
+        val claimed = StreakRepository.claimedMilestones(requireContext())
+        StreakViews.buildMilestoneRows(b.streakRewards, serverStreak, claimed) { milestone ->
+            claimMilestone(milestone)
+        }
+    }
+
+    private fun claimMilestone(milestone: Int) {
+        if (!isAdded) return
+        StreakSyncService.claimReward(requireContext(), milestone) { success, message, _, _ ->
+            if (!isAdded) return@claimReward
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            if (success) {
+                // Cüzdan değişti: üst bardaki altın/anahtar da tazelensin.
+                (activity as? MainActivity)?.refreshWalletUi()
+                render()
+            }
+        }
     }
 
     // ── Seçim penceresi ─────────────────────────────────────────────────

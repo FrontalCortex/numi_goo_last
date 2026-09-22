@@ -129,18 +129,21 @@ service cloud.firestore {
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     //
-    // DÖRT ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü dördünü de yalnızca sunucu üretebilmeli:
+    // BEŞ ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü beşini de yalnızca sunucu üretebilmeli:
     //   • `badgeProgress`   — sezon madalyaları
     //   • `cupPathRewards`  — kupa yolunda hangi sandığın alındığı defteri
     //   • `cupWayProgress`  — kupa puanı
     //   • `cupHistory`      — kupa puanının günlük geçmişi
+    //   • `streak`          — günlük seri sayacı ve toplanan kilometre taşları
     // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
     // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
     // zorunda.)
     match /users/{userId}/{subcollection}/{document=**} {
       allow read: if isSelf(userId);
       allow write: if isSelf(userId)
-        && !(subcollection in ['badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory']);
+        && !(subcollection in [
+          'badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory', 'streak'
+        ]);
     }
 
     // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.
@@ -193,6 +196,22 @@ service cloud.firestore {
     // Okuma yalnızca sahibine: ilerleme çubuğu ve kupa yolu ekranı bu defteri gösteriyor.
     // Başkasının kaçıncı sandığı aldığını görmesi gerekmiyor.
     match /users/{userId}/cupPathRewards/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
+
+    // Günlük seri: sayaç, en uzun seri ve toplanan kilometre taşları.
+    //
+    // YAZMA TAMAMEN KAPALI. Sayacı yalnızca submitStreakDay, defteri yalnızca
+    // claimStreakReward ilerletiyor (ikisi de Admin SDK, kuralları atlar). İstemci yazabilse
+    // "serim 30" demek on anahtar demek olurdu.
+    //
+    // SİLME DE KAPALI: `claimed` listesini silebilen biri bütün kilometre taşlarını yeniden
+    // ödetebilirdi — kupa yolu defterindeki ile birebir aynı tuzak. Hesap silindiğinde
+    // temizliği cleanupUserOnDelete yapıyor (recursiveDelete, Admin SDK).
+    //
+    // Okuma yalnızca sahibine: seri ekranı ve ödül düğmesi buradan besleniyor.
+    match /users/{userId}/streak/{doc} {
       allow read: if isSelf(userId);
       allow write: if false;
     }

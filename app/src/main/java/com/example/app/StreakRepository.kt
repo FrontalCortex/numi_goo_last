@@ -35,6 +35,10 @@ object StreakRepository {
     private const val KEY_CELEBRATION_DAY = "celebration_day"
     private const val KEY_CELEBRATION_STREAK = "celebration_streak"
     private const val KEY_CHALLENGE_LOGGED = "challenge_logged"
+    private const val KEY_PENDING_SYNC_DAYS = "pending_sync_days"
+    private const val KEY_SERVER_CURRENT = "server_current"
+    private const val KEY_SERVER_LONGEST = "server_longest"
+    private const val KEY_SERVER_CLAIMED = "server_claimed"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -48,6 +52,9 @@ object StreakRepository {
 
     /** Hafta şeridi için saklanan gün sayısı. */
     private const val ACHIEVED_HISTORY_DAYS = 21
+
+    /** Eşitleme kuyruğunda en fazla kaç gün beklesin; sunucu da bundan fazlasını almıyor. */
+    private const val MAX_PENDING_SYNC_DAYS = 7
 
     /** Seri ekranında gösterilecek durum. */
     data class StreakState(
@@ -115,6 +122,83 @@ object StreakRepository {
         return p.getInt(KEY_CELEBRATION_STREAK, 0)
     }
 
+    // ── Sunucu eşitlemesi ───────────────────────────────────────────────
+    //
+    // Yerel sayaç arayüzün hızlı yolu: kayıttan önce de, çevrimdışı da çalışıyor. Ama ÖDÜL
+    // kararları yalnızca sunucudan gelen değere bakıyor ([serverCurrent]) — yerel sayaç
+    // cihazdaki bir dosya, ödül dağıtan bir sayı olamaz.
+    //
+    // Tutturulan günler kuyruğa yazılıyor ve bağlantı geldiğinde toplu gönderiliyor; sunucu
+    // her günü tek tek ve ardışıklık şartıyla işlediği için toplu göndermek avantaj değil.
+
+    private fun queueSyncDay(context: Context, day: String) {
+        val days = (pendingSyncDays(context) + day).distinct().sorted().takeLast(MAX_PENDING_SYNC_DAYS)
+        prefs(context)?.edit()?.putString(KEY_PENDING_SYNC_DAYS, days.joinToString(","))?.apply()
+    }
+
+    /**
+     * Gönderilmeyi bekleyen günler.
+     *
+     * Eskiyenler burada eleniyor: sunucu bir haftadan eski günleri seriye işlemiyor ve hepsi
+     * elenirse çağrıyı hata ile reddediyor. Elenmeselerdi kuyruk asla kabul edilmeyen
+     * günlerle dolu kalır ve her ekran değişiminde başarısız bir çağrı denenirdi.
+     */
+    fun pendingSyncDays(context: Context): List<String> {
+        val recent = (0..MAX_PENDING_SYNC_DAYS).map { StudyTimeTracker.dayId(-it) }.toSet()
+        return prefs(context)?.getString(KEY_PENDING_SYNC_DAYS, "")
+            .orEmpty()
+            .split(",")
+            .filter { it.isNotBlank() && it in recent }
+            .sorted()
+    }
+
+    /**
+     * Sunucu [sentDays]'i kabul etti; kuyruktan yalnızca onlar siliniyor.
+     *
+     * Gönderim sırasında yeni bir gün kuyruğa girmiş olabilir (gece yarısını geçen uzun bir
+     * oturum); kuyruğu tamamen temizlemek o günü kaybederdi.
+     */
+    fun onSyncAccepted(
+        context: Context,
+        sentDays: List<String>,
+        current: Int,
+        longest: Int,
+        claimed: Set<Int>,
+    ) {
+        val remaining = pendingSyncDays(context) - sentDays.toSet()
+        prefs(context)?.edit()
+            ?.putString(KEY_PENDING_SYNC_DAYS, remaining.joinToString(","))
+            ?.putInt(KEY_SERVER_CURRENT, current)
+            ?.putInt(KEY_SERVER_LONGEST, longest)
+            ?.putString(KEY_SERVER_CLAIMED, claimed.sorted().joinToString(","))
+            ?.apply()
+    }
+
+    /** Sunucunun bildiği seri. Ödül satırları buna bakıyor; hiç eşitlenmediyse 0. */
+    fun serverCurrent(context: Context): Int = prefs(context)?.getInt(KEY_SERVER_CURRENT, 0) ?: 0
+
+    fun serverLongest(context: Context): Int = prefs(context)?.getInt(KEY_SERVER_LONGEST, 0) ?: 0
+
+    fun claimedMilestones(context: Context): Set<Int> =
+        prefs(context)?.getString(KEY_SERVER_CLAIMED, "")
+            .orEmpty()
+            .split(",")
+            .mapNotNull { it.trim().toIntOrNull() }
+            .toSet()
+
+    /**
+     * Toplanan taşı yerel önbelleğe de işler.
+     *
+     * Sunucu zaten yazdı; buradaki kayıt yalnızca ekranın bir sonraki eşitlemeyi beklemeden
+     * doğru görünmesi için.
+     */
+    fun markMilestoneClaimed(context: Context, milestone: Int) {
+        val updated = claimedMilestones(context) + milestone
+        prefs(context)?.edit()
+            ?.putString(KEY_SERVER_CLAIMED, updated.sorted().joinToString(","))
+            ?.apply()
+    }
+
     fun clearPendingCelebration(context: Context) {
         prefs(context)?.edit()
             ?.remove(KEY_CELEBRATION_DAY)
@@ -170,6 +254,9 @@ object StreakRepository {
             AnalyticsLogger.logStreakDayDone(current, goal)
             queueCelebration(context, current, today)
             logChallengeDoneOnce(context, current, challenge)
+            // Ödüller sunucudaki sayaca bakıyor; gün oraya da bildirilmeli. Kuyruğa
+            // alınıyor çünkü tam o anda internet olmayabilir.
+            queueSyncDay(context, today)
         }
 
         // ── Kırılma ──
