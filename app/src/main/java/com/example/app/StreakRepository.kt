@@ -31,6 +31,7 @@ object StreakRepository {
     private const val KEY_LONGEST = "longest"
     private const val KEY_LAST_DAY = "last_goal_day"
     private const val KEY_ACHIEVED_DAYS = "achieved_days"
+    private const val KEY_ONBOARDING_DONE = "onboarding_done"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -85,6 +86,20 @@ object StreakRepository {
     fun setChallengeDays(context: Context, days: Int) {
         val value = if (days in CHALLENGE_OPTIONS) days else DEFAULT_CHALLENGE_DAYS
         prefs(context)?.edit()?.putInt(KEY_CHALLENGE_DAYS, value)?.apply()
+    }
+
+    /**
+     * Seri kurulum akışı (hedef + meydan okuma) tamamlandı mı.
+     *
+     * Akış ilk dersten sonra, KAYITTAN ÖNCE açıldığı için kullanıcının uid'i yok; bayrak
+     * bu yüzden cihazda. Kullanıcı uygulamayı silip kurarsa akışı yeniden görür — zararsız,
+     * çünkü hedefini yeniden seçmiş olur.
+     */
+    fun isOnboardingDone(context: Context): Boolean =
+        prefs(context)?.getBoolean(KEY_ONBOARDING_DONE, false) ?: false
+
+    fun markOnboardingDone(context: Context) {
+        prefs(context)?.edit()?.putBoolean(KEY_ONBOARDING_DONE, true)?.apply()
     }
 
     // ── Seri ────────────────────────────────────────────────────────────

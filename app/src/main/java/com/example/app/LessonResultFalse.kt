@@ -121,10 +121,16 @@ class LessonResultFalse : Fragment() {
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 GlobalValues.currentTutorialNumber = 0
-                loginLauncher.launch(
-                    Intent(requireContext(), LoginStartActivity::class.java)
-                        .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
-                )
+
+                // Kayıt ekranından önce seri kurulumu — bkz. ChestFragment'teki aynı kapı.
+                // İlk ders başarısız bitse de alışkanlık sorusu sorulacak an burası.
+                val openLogin = {
+                    loginLauncher.launch(
+                        Intent(requireContext(), LoginStartActivity::class.java)
+                            .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
+                    )
+                }
+                if (!StreakOnboardingLauncher.showIfNeeded(this, openLogin)) openLogin()
                 return@setOnClickListener
             }
 

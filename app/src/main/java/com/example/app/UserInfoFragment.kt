@@ -97,14 +97,13 @@ class UserInfoFragment : Fragment() {
 
         AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_AGE, signupRole)
 
+        showStep(Step.AGE)
+
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                // Ekranda geri butonu yok; geri gitmenin tek yolu telefonun kendi tuşu.
                 if (currentStep == Step.SOURCE) {
-                    currentStep = Step.AGE
-                    binding.sourceContainer.visibility = View.GONE
-                    binding.ageContainer.visibility = View.VISIBLE
-                    val age = binding.etAge.text?.toString()?.trim()?.toIntOrNull()
-                    updateContinueButton(enabled = age != null && age in 1..120)
+                    showStep(Step.AGE)
                 } else {
                     isEnabled = false
                     parentFragmentManager.popBackStack()
@@ -148,18 +147,6 @@ class UserInfoFragment : Fragment() {
             }
         }
 
-        binding.btnBack.setOnClickListener {
-            if (currentStep == Step.SOURCE) {
-                currentStep = Step.AGE
-                binding.sourceContainer.visibility = View.GONE
-                binding.ageContainer.visibility = View.VISIBLE
-                val age = binding.etAge.text?.toString()?.trim()?.toIntOrNull()
-                updateContinueButton(enabled = age != null && age in 1..120)
-            } else {
-                parentFragmentManager.popBackStack()
-            }
-        }
-
         binding.btnContinue.setOnClickListener {
             if (currentStep == Step.AGE) {
                 val ageText = binding.etAge.text?.toString()?.trim() ?: ""
@@ -177,10 +164,7 @@ class UserInfoFragment : Fragment() {
 
                 AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_SOURCE, signupRole)
 
-                currentStep = Step.SOURCE
-                binding.ageContainer.visibility = View.GONE
-                binding.sourceContainer.visibility = View.VISIBLE
-                updateContinueButton(enabled = selectedSource != null)
+                showStep(Step.SOURCE)
 
             } else if (currentStep == Step.SOURCE) {
                 val birthYear = validatedBirthYear ?: return@setOnClickListener
@@ -189,6 +173,26 @@ class UserInfoFragment : Fragment() {
                 hideKeyboard()
                 saveBirthYearAndProceed(birthYear, source)
             }
+        }
+    }
+
+    /**
+     * Adımı değiştirir: görünürlük, ilerleme çubuğu ve devam butonu tek yerden.
+     *
+     * Eskiden bu üç iş, ileri ve geri geçişlerde ayrı ayrı yazılıydı; ilerleme çubuğu
+     * eklenince aynı satırların dördüncü kopyası gerekecekti.
+     */
+    private fun showStep(step: Step) {
+        currentStep = step
+        val isAge = step == Step.AGE
+        binding.ageContainer.visibility = if (isAge) View.VISIBLE else View.GONE
+        binding.sourceContainer.visibility = if (isAge) View.GONE else View.VISIBLE
+        binding.userInfoProgress.progress = if (isAge) 50 else 100
+        if (isAge) {
+            val age = binding.etAge.text?.toString()?.trim()?.toIntOrNull()
+            updateContinueButton(enabled = age != null && age in 1..120)
+        } else {
+            updateContinueButton(enabled = selectedSource != null)
         }
     }
 

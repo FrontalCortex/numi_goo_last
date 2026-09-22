@@ -120,10 +120,18 @@ class ChestFragment : Fragment() {
             .putBoolean("tutorial1_login_flow_pending", true)
             .apply()
         GlobalValues.currentTutorialNumber = 0
-        loginLauncher.launch(
-            Intent(requireContext(), LoginStartActivity::class.java)
-                .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
-        )
+
+        // Kayıt ekranından ÖNCE seri kurulumu: kullanıcı az önce ilk dersini bitirdi,
+        // "yarın da gel" demenin en inandırıcı anı bu. Akış açıldıysa burada duruluyor;
+        // kayıt ekranı akış bitince açılıyor.
+        val openLogin = {
+            loginLauncher.launch(
+                Intent(requireContext(), LoginStartActivity::class.java)
+                    .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
+            )
+        }
+        if (StreakOnboardingLauncher.showIfNeeded(this, openLogin)) return
+        openLogin()
     }
 
     /** [NewChestFragment] kapanış kayma animasyonuna başlamadan hemen önce çağrılır: ChestFragment'in
