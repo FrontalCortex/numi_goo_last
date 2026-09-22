@@ -23,11 +23,20 @@ class AdManager(private val context: Context) {
     private val TAG = "AdManager"
 
     /**
-     * Ödüllü reklam birimi. SSV (sunucu tarafı doğrulama) GERÇEK birim üzerinde
-     * yapılandırıldı; sandık ödülleri o doğrulamaya bağlı.
+     * Ödüllü reklam birimi — debug'da da GERÇEK birim. Geçiş reklamındaki gibi bir
+     * debug/release ayrımı burada YAPILAMAZ.
+     *
+     * Sebebi SSV: ödül, AdMob'un sunucumuzu imzalı olarak çağırmasıyla doğrulanıyor
+     * (`admobRewardCallback` → `adRewards/{nonce}`) ve bu geri arama adresi AdMob konsolunda
+     * REKLAM BİRİMİ BAŞINA ayarlanıyor. Google'ın paylaşımlı test birimi bize ait olmadığı
+     * için adresi oraya yazamıyoruz; test birimiyle reklam izlendiğinde geri arama hiç
+     * gelmiyor, `adRewards` kaydı oluşmuyor ve ödül "alınamadı" diye reddediliyor.
+     *
+     * Geliştirme sırasındaki koruma bu yüzden AdMob konsolundaki "test cihazı" kaydı:
+     * geliştirdiğin her cihazı oraya ekle, yoksa kendi reklamına tıklamak geçersiz trafik
+     * sayılır.
      */
-    private val adUnitId =
-        if (BuildConfig.DEBUG) TEST_REWARDED_AD_UNIT else REAL_REWARDED_AD_UNIT
+    private val adUnitId = REAL_REWARDED_AD_UNIT
 
     private var interstitialAd: InterstitialAd? = null
 
@@ -215,12 +224,18 @@ class AdManager(private val context: Context) {
          * alınabiliyor. Cihazı AdMob'da "test cihazı" olarak işaretlemek de koruyor ama o
          * koruma cihaz başına; yeni bir telefonda derleme aldığında yoktur. Ayrım kodda
          * olunca hangi cihazda çalıştığından bağımsız.
+         *
+         * Bu ayrım YALNIZCA geçiş reklamında mümkün; ödüllü reklamın neden dışarıda kaldığı
+         * [adUnitId]'de yazıyor.
          */
         private const val REAL_REWARDED_AD_UNIT = "ca-app-pub-8436855856536384/7535644549"
         private const val REAL_INTERSTITIAL_AD_UNIT = "ca-app-pub-8436855856536384/8539721523"
 
-        /** Google'ın herkese açık örnek birimleri; tıklansa da bir yere yazılmıyor. */
-        private const val TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+        /**
+         * Google'ın herkese açık örnek birimi; tıklansa da bir yere yazılmıyor.
+         *
+         * Yalnızca geçiş reklamı için var. Ödüllü reklamda kullanılamaz — sebebi [adUnitId].
+         */
         private const val TEST_INTERSTITIAL_AD_UNIT = "ca-app-pub-3940256099942544/1033173712"
     }
 
