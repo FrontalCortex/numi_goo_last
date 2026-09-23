@@ -28,3 +28,7 @@ ui-debug.log
 # Firestore emülatörü her çalıştığında yeniden yazıyor; testler çalışma ağacını
 # kirletmesin (bkz. functions/scripts/test-*.js).
 firestore-debug.log
+
+# Kural testi bağımlılıkları (yalnızca yerel)
+tools/rules-test/node_modules/
+tools/rules-test/package-lock.json

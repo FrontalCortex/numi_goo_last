@@ -4,10 +4,11 @@
  * Kurallar tek bir dosyada yüzlerce satır ve birbirine VEYA'lı bağlı; elle okuyarak
  * "bu yazım geçer mi" sorusuna güvenle cevap verilemiyor. Emülatör gerçek cevabı veriyor.
  *
- * ÇALIŞTIRMA (proje kökünde):
- *   npm --prefix functions install
- *   npx firebase-tools emulators:exec --only firestore --project rules-test \
- *     "node functions/scripts/test-firestore-rules.mjs"
+ * ÇALIŞTIRMA:
+ *   cd tools/rules-test && npm install && npm test
+ *
+ * Bağımlılıkları BİLEREK functions/ dışında: orada olsalardı deploy sırasında Cloud Build'in
+ * bağımlılık çözümüne girer ve derlemeyi kırarlardı (bir kez kırdılar).
  *
  * Not: emülatör reddetmeleri "evaluation error" diye raporluyor; bu bir kural hatası değil,
  * yalnızca reddin raporlanma biçimi. Doğrulama assertFails/assertSucceeds ile yapılıyor.
