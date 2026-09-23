@@ -4,11 +4,9 @@ import android.util.Log
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.functions.FirebaseFunctions
 
 /**
@@ -32,23 +30,14 @@ object LessonLeaderboardRepository {
     private const val META_PART_ID = "partId"
     private const val META_SEASON = "season"
 
-    /** Kupa liderliği → rozet [abacusLeaderboardRank] senkronu: bu parttaki ilk [LessonItem.TYPE_CHEST] satırının liste indeksi. */
-    const val ABACUS_BADGE_LEADERBOARD_PART_ID = 1
-    const val ABACUS_BADGE_LEADERBOARD_TOP_N = 100L
-
     /** Kayıt ekranı liderlik listesi: Firestore sorgu limiti (tahta seed ile uyumlu, max 100). */
     const val LEADERBOARD_LIST_QUERY_LIMIT = 100L
 
-    /** Şablonda [partId] için ilk Chest satırının 0-tabanlı indeksi; yoksa null (senkron; rozet için [GlobalLessonData.resolveFirstChestLessonIndexForUser] tercih edin). */
+    /** Şablonda [partId] için ilk Chest satırının 0-tabanlı indeksi; yoksa null. */
     fun firstChestLessonIndexForPart(partId: Int): Int? {
         val idx = GlobalLessonData.createLessonItems(partId).indexOfFirst { it.type == LessonItem.TYPE_CHEST }
         return idx.takeIf { it >= 0 }
     }
-
-    private const val USERS = "users"
-    private const val BADGE_PROGRESS = "badgeProgress"
-    private const val BADGE_STATE = "state"
-    private const val F_ABACUS_LEADERBOARD_RANK = "abacusLeaderboardRank"
 
     /**
      * Sezon bazlı tahta doküman id'si (`lessonLeaderboards/{id}/entries/...`).
@@ -154,151 +143,6 @@ object LessonLeaderboardRepository {
             }
     }
 
-
-    /**
-     * İlk [topLimit] içindeki ödül sırası (beraberlikte paylaşılan en iyi sıra; sezon sonu rozet ile uyumlu).
-     * Listede yoksa [rank]=null. [querySucceeded] false ise Firestore sorgusu başarısızdır ([rank] anlamsız).
-     */
-    fun fetchUserRankInLessonLeaderboard(
-        partId: Int,
-        lessonKey: String,
-        userId: String,
-        topLimit: Long = ABACUS_BADGE_LEADERBOARD_TOP_N,
-        season: Int = SeasonClock.currentSeason(),
-        onResult: (rank: Int?, querySucceeded: Boolean) -> Unit,
-    ) {
-        val db = FirebaseFirestore.getInstance()
-        val boardId = leaderboardDocumentId(partId, lessonKey, season)
-        val uidNorm = userId.trim()
-        Log.d(
-            TAG,
-            "fetchRank START collection=$COLLECTION board=$boardId entries order=$F_SCORE DESC limit=$topLimit " +
-                "uidPrefix=${uidNorm.take(8)} uidLen=${uidNorm.length}",
-        )
-        db.collection(COLLECTION)
-            .document(boardId)
-            .collection(ENTRIES)
-            .orderBy(F_SCORE, Query.Direction.DESCENDING)
-            .limit(topLimit)
-            .get()
-            .addOnSuccessListener { snap ->
-                val docs = snap.documents
-                Log.d(TAG, "fetchRank snapshot size=${docs.size} board=$boardId")
-                val preview = docs.take(12).mapIndexed { i, d ->
-                    val sc = d.get(F_SCORE)
-                    "#${i + 1} idLen=${d.id.length} id=${d.id.take(10)}.. score=$sc (${sc?.javaClass?.simpleName})"
-                }
-                Log.d(TAG, "fetchRank TOP: $preview")
-
-                val idxTrim = docs.indexOfFirst { it.id.trim() == uidNorm }
-                val idxRaw = docs.indexOfFirst { it.id == userId }
-                val idx = when {
-                    idxTrim >= 0 -> idxTrim
-                    idxRaw >= 0 -> idxRaw
-                    else -> -1
-                }
-                val ranks = competitionRanksForOrderedDocs(docs)
-                if (idx < 0) {
-                    Log.w(
-                        TAG,
-                        "fetchRank USER_NOT_IN_TOP board=$boardId idxTrim=$idxTrim idxRaw=$idxRaw " +
-                            "(yanlış lessonKey / farklı uid / kayıt orderBy dışında kaldı mı?)",
-                    )
-                    // Aynı path'te kullanıcı dokümanı var mı + ham skor tipi (orderBy dışı kalma teşhisi)
-                    db.collection(COLLECTION).document(boardId).collection(ENTRIES).document(userId).get()
-                        .addOnSuccessListener { udoc ->
-                            if (!udoc.exists()) {
-                                Log.w(TAG, "fetchRank direct entry: doc yok (hiç submit edilmemiş olabilir) board=$boardId")
-                            } else {
-                                val raw = udoc.get(F_SCORE)
-                                Log.w(
-                                    TAG,
-                                    "fetchRank direct entry: EXISTS score=$raw (${raw?.javaClass?.simpleName}) " +
-                                        "— sorgu sonucunda yoksa recordScore alanı/tipi veya indeks uyuşmazlığı şüphesi",
-                                )
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            Log.e(TAG, "fetchRank direct entry read failed", e)
-                        }
-                } else {
-                    Log.d(TAG, "fetchRank MATCH competitionRank=${ranks[idx]} board=$boardId (0-based idx=$idx)")
-                }
-                onResult(if (idx >= 0) ranks[idx] else null, true)
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "fetchRank QUERY_FAILED part=$partId lesson=$lessonKey board=$boardId", e)
-                onResult(null, false)
-            }
-    }
-
-    /**
-     * Part 1'deki ilk Chest ([LessonItem.TYPE_CHEST]) dersinin liderliğinde ilk 100 içindeki sırayı
-     * `users/{uid}/badgeProgress/state.abacusLeaderboardRank` alanına yazar.
-     * İlk 100'de yoksa [Int.MAX_VALUE] yazar. Partta Chest yoksa veya sorgu/yazım başarısızsa alanı güncellemez.
-     */
-    fun syncAbacusLeaderboardRankToBadgeProgress(uid: String, onFinished: () -> Unit) {
-        if (uid.isBlank()) {
-            onFinished()
-            return
-        }
-        GlobalLessonData.resolveFirstChestLessonIndexForUser(uid, ABACUS_BADGE_LEADERBOARD_PART_ID) { chestIndex ->
-            if (chestIndex == null) {
-                Log.w(TAG, "syncAbacusLeaderboardRankToBadgeProgress: no TYPE_CHEST in part ${ABACUS_BADGE_LEADERBOARD_PART_ID}")
-                onFinished()
-                return@resolveFirstChestLessonIndexForUser
-            }
-            val partId = ABACUS_BADGE_LEADERBOARD_PART_ID
-            // Konum yalnızca sandığı BULMAK için; tahta anahtarı kalıcı kimlik.
-            val lessonKey = GlobalLessonData.stableIdAt(partId, chestIndex)
-            if (lessonKey == null) {
-                Log.w(TAG, "syncAbacusLeaderboardRankToBadgeProgress: idx=$chestIndex için stableId yok")
-                onFinished()
-                return@resolveFirstChestLessonIndexForUser
-            }
-            GlobalLessonData.backfillLeaderboardFromStoredChest(uid, partId, chestIndex) {
-                fetchUserRankInLessonLeaderboard(
-                    partId = partId,
-                    lessonKey = lessonKey,
-                    userId = uid,
-                    topLimit = ABACUS_BADGE_LEADERBOARD_TOP_N,
-                ) { rank, querySucceeded ->
-                if (!querySucceeded) {
-                    Log.w(TAG, "syncAbacusRank: fetchRank query başarısız, badge yazılmıyor")
-                    onFinished()
-                    return@fetchUserRankInLessonLeaderboard
-                }
-                if (rank == null) {
-                    Log.w(
-                        TAG,
-                        "syncAbacusRank: rank=null (snapshot'ta yok) → abacusLeaderboardRank=${Int.MAX_VALUE} yazılacak chestIndex=$chestIndex",
-                    )
-                }
-                val rankToStore = rank ?: Int.MAX_VALUE
-                val badgeRef = FirebaseFirestore.getInstance()
-                    .collection(USERS)
-                    .document(uid)
-                    .collection(BADGE_PROGRESS)
-                    .document(BADGE_STATE)
-                badgeRef.set(
-                    mapOf(F_ABACUS_LEADERBOARD_RANK to rankToStore),
-                    SetOptions.merge(),
-                )
-                    .addOnSuccessListener {
-                        Log.d(
-                            TAG,
-                            "syncAbacusLeaderboardRankToBadgeProgress uid=${uid.take(8)} part=${ABACUS_BADGE_LEADERBOARD_PART_ID} chestIndex=$chestIndex rank=$rank stored=$rankToStore",
-                        )
-                        onFinished()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e(TAG, "syncAbacusLeaderboardRankToBadgeProgress write failed", e)
-                        onFinished()
-                    }
-                }
-            }
-        }
-    }
 
     data class LeaderboardEntry(
         val userId: String,

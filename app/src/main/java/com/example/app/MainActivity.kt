@@ -2332,7 +2332,6 @@ class MainActivity : AppCompatActivity() {
         is ChestFragment,
         is NewChestFragment,
         is RecordFragment,
-        is DailyQuestionRewardFragment,
         is CreateQuestionFragment,
         -> true
         else -> false

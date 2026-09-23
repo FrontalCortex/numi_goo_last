@@ -939,8 +939,7 @@ class TasksFragment : Fragment() {
             }
             val badgeQueue = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
             
-            // Ödülün gerçekten alındığı tek yer burası. Ölçüm DailyQuestionRewardFragment'te
-            // değil: o ekranın newInstance'ını çağıran kimse yok, yani hiç açılmıyor.
+            // Ödülün gerçekten alındığı tek yer burası.
             AnalyticsLogger.logDailyQuestionClaim()
             DailyQuestionRepository.markRewardClaimed(requireContext(), periodKey) { _ -> }
             

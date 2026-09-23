@@ -21,7 +21,6 @@ object BadgeProgressFirestore {
     /** `users/{uid}/badgeProgress/state` dokümanından tam rozet durumu (profil ve sezon ödül kapısı için). */
     fun userBadgeProgressFromStateSnapshot(doc: DocumentSnapshot): UserBadgeProgress {
         if (!doc.exists()) return UserBadgeProgress()
-        val abacusRank = (doc.get("abacusLeaderboardRank") as? Number)?.toInt() ?: Int.MAX_VALUE
         val progress = UserBadgeProgress(
             userDartProgress = (doc.get("userDartProgress") as? Number)?.toInt() ?: 0,
             userKarateProgress = (doc.get("userKarateProgress") as? Number)?.toInt() ?: 0,
@@ -41,7 +40,6 @@ object BadgeProgressFirestore {
             userGoatProgress = (doc.get("userGoatProgress") as? Number)?.toInt() ?: 0,
             userEagleProgress = (doc.get("userEagleProgress") as? Number)?.toInt() ?: 0,
             userFlyProgress = (doc.get("userFlyProgress") as? Number)?.toInt() ?: 0,
-            abacusLeaderboardRank = abacusRank,
             goldMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("goldMedalPiece")),
             silverMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("silverMedalPiece")),
             bronzeMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("bronzeMedalPiece")),

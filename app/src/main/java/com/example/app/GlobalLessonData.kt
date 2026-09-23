@@ -496,64 +496,6 @@ object GlobalLessonData {
     }
 
     /**
-     * lessonProgress'ta ilk Chest tamamlanmış ve mevcut sezon için [LessonItem.leaderboardSubmitScore] doluysa
-     * liderlik girişini yazar (tüm zamanlar rekoru [record] ile karıştırılmaz).
-     * Oyun içinde hiç [submitBestIfNeeded] tetiklenmediyse (veya veri silindiyse) profil senkronu sıralamayı düzeltir.
-     * Yalnızca [uid] == oturum uid iken çalışır.
-     */
-    fun backfillLeaderboardFromStoredChest(uid: String, partId: Int, chestIndex: Int, onDone: () -> Unit) {
-        if (uid.isBlank()) {
-            onDone()
-            return
-        }
-        val sessionUid = FirebaseAuth.getInstance().currentUser?.uid
-        if (sessionUid != uid) {
-            Log.d(LOG_TAG, "backfillLeaderboard: skip session uid != target uid")
-            onDone()
-            return
-        }
-        readLessonItemsFromFirestore(uid, partId) { items, error ->
-            if (error != null) {
-                Log.e(LOG_TAG, "backfillLeaderboard load failed part=$partId", error)
-                onDone()
-                return@readLessonItemsFromFirestore
-            }
-            if (items == null) {
-                Log.d(LOG_TAG, "backfillLeaderboard: no items part=$partId")
-                onDone()
-                return@readLessonItemsFromFirestore
-            }
-            val item = items.getOrNull(chestIndex)
-            if (item == null || item.type != LessonItem.TYPE_CHEST) {
-                Log.d(LOG_TAG, "backfillLeaderboard: no chest at idx=$chestIndex part=$partId")
-                onDone()
-                return@readLessonItemsFromFirestore
-            }
-            if (!item.stepIsFinish) {
-                Log.d(LOG_TAG, "backfillLeaderboard: chest not finished idx=$chestIndex")
-                onDone()
-                return@readLessonItemsFromFirestore
-            }
-            val seasonNow = SeasonClock.currentSeason()
-            val r = item.leaderboardSubmitScore(seasonNow)
-            if (r == null || r <= 0) {
-                Log.d(LOG_TAG, "backfillLeaderboard: no seasonal leaderboard score idx=$chestIndex part=$partId")
-                onDone()
-                return@readLessonItemsFromFirestore
-            }
-            Log.d(LOG_TAG, "backfillLeaderboard: submitBest part=$partId idx=$chestIndex seasonalScore=$r")
-            LessonLeaderboardRepository.submitBestIfNeeded(
-                partId,
-                item.stableId,
-                r,
-                season = seasonNow,
-                titleUnit = item.titleUnit?.trim()?.take(127),
-                onComplete = onDone,
-            )
-        }
-    }
-
-    /**
      * Global state'i değiştirmeden (globalPartId/_lessonItems), belirli part/index için kullanıcıya ait lesson item'ı döndürür.
      * Kaynak olarak Firestore kullanılır (giriş yoksa default liste).
      */

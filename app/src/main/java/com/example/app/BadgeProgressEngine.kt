@@ -36,8 +36,6 @@ data class UserBadgeProgress(
     val userEagleProgress: Int = 0,
     val userFlyProgress: Int = 0,
     val userTurtleProgress: Int = 0,
-    /** Eski alan; rozet mantığında kullanılmıyor, geriye dönük okuma için tutulabilir. */
-    val abacusLeaderboardRank: Int = Int.MAX_VALUE,
     val goldMedalPiece: List<MedalPieceRow> = emptyList(),
     val silverMedalPiece: List<MedalPieceRow> = emptyList(),
     val bronzeMedalPiece: List<MedalPieceRow> = emptyList(),
