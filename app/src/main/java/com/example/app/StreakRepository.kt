@@ -39,6 +39,7 @@ object StreakRepository {
     private const val KEY_SERVER_CURRENT = "server_current"
     private const val KEY_SERVER_LONGEST = "server_longest"
     private const val KEY_SERVER_CLAIMED = "server_claimed"
+    private const val KEY_LAST_PING_DAY = "last_ping_day"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -241,6 +242,22 @@ object StreakRepository {
         }
 
         editor.apply()
+    }
+
+    /**
+     * Bugün sunucuya "buradayım" denmiş mi.
+     *
+     * Akşam hatırlatması kullanıcının saat dilimini ve son görülme zamanını bilmek zorunda;
+     * ikisi de yalnızca gün bildirimiyle güncellenseydi, hedefini hiç tutturmayan kullanıcı
+     * — yani hatırlatmaya en çok ihtiyacı olan kişi — hiç kaydedilmezdi.
+     *
+     * Günde bir kez: bildirim saati gün içinde değişmiyor.
+     */
+    fun needsDailyPing(context: Context): Boolean =
+        prefs(context)?.getString(KEY_LAST_PING_DAY, "") != StudyTimeTracker.dayId()
+
+    fun markDailyPing(context: Context) {
+        prefs(context)?.edit()?.putString(KEY_LAST_PING_DAY, StudyTimeTracker.dayId())?.apply()
     }
 
     /** Sunucunun bildiği seri. Ödül satırları buna bakıyor; hiç eşitlenmediyse 0. */

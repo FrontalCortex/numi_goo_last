@@ -37,6 +37,15 @@ object StreakSyncService {
 
     private const val RETRY_BACKOFF_MS = 60_000L
 
+    /**
+     * Cihazın UTC farkı (dakika). Türkiye için +180.
+     *
+     * Yaz saati uygulayan yerlerde yılda iki kez değişiyor; günlük bildirim bu yüzden her gün
+     * yeniden gönderiliyor ve hatırlatma saati kendiliğinden düzeliyor.
+     */
+    private fun utcOffsetMinutes(): Int =
+        java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
+
     private fun uid(): String? = try {
         FirebaseAuth.getInstance().currentUser?.uid
     } catch (e: Throwable) {
@@ -96,13 +105,19 @@ object StreakSyncService {
         if (syncing) return
         if (android.os.SystemClock.elapsedRealtime() < retryAfterMs) return
         val days = StreakRepository.pendingSyncDays(context)
-        if (days.isEmpty()) return
+        // Gönderilecek gün yoksa bile günde bir kez gidiliyor: akşam hatırlatması kullanıcının
+        // saat dilimini ve son görülme zamanını bilmek zorunda ve bunlar yalnızca gün
+        // bildirimiyle güncellenseydi, hedefini hiç tutturmayan kullanıcı — hatırlatmaya en
+        // çok ihtiyacı olan kişi — sunucuda hiç görünmezdi.
+        if (days.isEmpty() && !StreakRepository.needsDailyPing(context)) return
 
         syncing = true
         val payload = hashMapOf(
             "days" to days,
             "goalMinutes" to StreakRepository.goalMinutes(context),
             "challengeDays" to StreakRepository.challengeDays(context),
+            // Hatırlatmanın yerel saate denk gelmesi için; sunucu bundan UTC saatini üretiyor.
+            "utcOffsetMinutes" to utcOffsetMinutes(),
         )
         FirebaseFunctions.getInstance()
             .getHttpsCallable("submitStreakDay")
@@ -122,6 +137,7 @@ object StreakSyncService {
                     ?.toSet()
                     .orEmpty()
                 val lastDay = (data["lastDay"] as? String).orEmpty()
+                StreakRepository.markDailyPing(context)
                 // Gönderilen günler kabul edildi; kuyruktan yalnızca ONLAR siliniyor.
                 // Arada yeni bir gün eklenmiş olabilir, o gitmemeli.
                 StreakRepository.onSyncAccepted(context, days, current, longest, claimed)

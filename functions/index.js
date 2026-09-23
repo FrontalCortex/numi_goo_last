@@ -10,6 +10,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const seasonLeaderboardFinalize = require('./seasonLeaderboardFinalize');
+const { reminderHourUtc, streakReminderDecision } = require('./streakReminder');
 exports.finalizeSeasonLeaderboardMedals =
   seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
 
@@ -767,25 +768,8 @@ exports.onMessageCreated = functions.firestore
     const recipientSnap = await db.collection('users').doc(recipientUid).get();
     if (!recipientSnap.exists) return null;
     const recipientData = recipientSnap.data() || {};
-    let tokens = [];
-
-    // Yeni yapı: fcmDevices (her eleman { deviceId, token, updatedAt })
-    if (Array.isArray(recipientData.fcmDevices)) {
-      tokens = recipientData.fcmDevices
-        .map((d) => d && typeof d.token === 'string' ? d.token.trim() : '')
-        .filter((t) => t.length > 0);
-    } else if (Array.isArray(recipientData.fcmTokens)) {
-      // Geriye dönük uyumluluk: eski dizi alanı
-      tokens = recipientData.fcmTokens.filter((t) => typeof t === 'string' && t.trim().length > 0);
-    } else if (recipientData.fcmToken) {
-      // Tekil alan (en son token)
-      tokens = [recipientData.fcmToken];
-    }
+    const tokens = fcmTokensFor(recipientData);
     if (!tokens.length) return null;
-    // Güvenlik için: her hesap en fazla 2 cihaz - sadece son 2 token'a gönder.
-    if (tokens.length > 2) {
-      tokens = tokens.slice(-2);
-    }
 
     let senderName = 'Kullanıcı';
     try {
@@ -3301,6 +3285,30 @@ function rollCrystalReward(videoName) {
   return { type: 'GOLD', amount: rollInt(range[0], range[1]) };
 }
 
+/**
+ * Bir kullanıcı dokümanından bildirim gönderilecek token'lar.
+ *
+ * Üç biçim birden destekleniyor çünkü alan zaman içinde değişti: güncel yapı `fcmDevices`,
+ * öncesinde `fcmTokens` dizisi, en eskisinde tekil `fcmToken`. Eski cihazlar güncellenene
+ * kadar üçü de sahada.
+ *
+ * Hesap başına en fazla iki cihaz: istemci de aynı sınırı uyguluyor.
+ */
+function fcmTokensFor(userData) {
+  const d = userData || {};
+  let tokens = [];
+  if (Array.isArray(d.fcmDevices)) {
+    tokens = d.fcmDevices
+      .map((x) => (x && typeof x.token === 'string' ? x.token.trim() : ''))
+      .filter((t) => t.length > 0);
+  } else if (Array.isArray(d.fcmTokens)) {
+    tokens = d.fcmTokens.filter((t) => typeof t === 'string' && t.trim().length > 0);
+  } else if (typeof d.fcmToken === 'string' && d.fcmToken.trim()) {
+    tokens = [d.fcmToken.trim()];
+  }
+  return tokens.length > 2 ? tokens.slice(-2) : tokens;
+}
+
 /** UTC gün anahtarı — günlük tavan sayacı için. */
 function utcDayKey(nowMs) {
   return new Date(nowMs).toISOString().slice(0, 10);
@@ -3885,6 +3893,21 @@ function streakDayNumber(dayId) {
   return Math.floor(ms / 86400000);
 }
 
+/**
+ * Hatırlatma alanları: UTC saati, saat dilimi farkı ve son görülme.
+ *
+ * Fark gelmemişse null dönüyor — eski bir istemci sürümü alanı hiç göndermiyor olabilir ve
+ * o kullanıcının kaydını yanlış bir saatle bozmaktansa hiç dokunmamak doğru.
+ */
+function reminderPatch(utcOffsetMinutes) {
+  if (utcOffsetMinutes === null) return null;
+  return {
+    reminderHourUtc: reminderHourUtc(utcOffsetMinutes),
+    utcOffsetMinutes,
+    lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
 function streakDocRef(uid) {
   return db.collection('users').doc(uid).collection('streak').doc('state');
 }
@@ -3976,8 +3999,13 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   // istemci kuyruğu temizleyebilsin diye mevcut durum olduğu gibi dönülüyor. Hata
   // dönseydi istemci aynı işe yaramaz günleri sonsuza kadar yeniden denerdi.
   if (days.length === 0) {
-    const snap = await streakDocRef(uid).get();
+    // İstemci günlük "buradayım" bildirimini de bu çağrıyla yapıyor (bkz. StreakSyncService):
+    // hatırlatma saati ve son görülme böylece hedef tutturulmasa da güncel kalıyor.
+    const ref = streakDocRef(uid);
+    const snap = await ref.get();
     const state = readStreakState(snap);
+    const patch = reminderPatch(utcOffsetMinutes);
+    if (patch && snap.exists) await ref.set(patch, { merge: true });
     return {
       success: true,
       current: state.current,
@@ -3992,6 +4020,13 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
   const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
   const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
+
+  // Akşam hatırlatmasının saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının
+  // yerel saatiyle ~19:00'a denk gelen UTC saatini hesaplıyor. Böylece saatlik tarama
+  // "şu anda yerel saati akşam olanlar" sorgusunu indeksli tek bir eşitlikle yapabiliyor.
+  const rawOffset = Number(data && data.utcOffsetMinutes);
+  const utcOffsetMinutes =
+    Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
 
   const ref = streakDocRef(uid);
   const result = await db.runTransaction(async (transaction) => {
@@ -4015,6 +4050,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     };
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
     if (challengeDays > 0 && challengeDays <= 400) patch.challengeDays = challengeDays;
+    Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
 
     transaction.set(ref, patch, { merge: true });
     return Object.assign({}, next, { recentDays });
@@ -4093,6 +4129,135 @@ exports.claimStreakReward = functions.https.onCall(async (data, context) => {
 // Testler için.
 exports._streakRewardFor = streakRewardFor;
 exports._applyStreakDays = applyStreakDays;
+
+// ─── Akşam hatırlatması ─────────────────────────────────────────────────────
+//
+// NEDEN
+//   Seri mekaniğini gerçekten çalıştıran şey hatırlatmadır: sayaç, kullanıcı o gün
+//   uygulamayı açmayı unuttuğunda kırılıyor ve kırılmanın ardından geri dönüş oranı düşük.
+//   Kırılmayı ONLEMEK, kırıldıktan sonra onarmaktan hem ucuz hem etkili.
+//
+// NASIL SEÇİLİYOR
+//   Saatte bir çalışıp "yerel saati şu anda akşam olan" kullanıcıları buluyor. Bunu tüm
+//   kullanıcıları tarayarak değil, submitStreakDay'in yazdığı `reminderHourUtc` alanına
+//   indeksli tek bir eşitlikle soruyor.
+//
+// KİME GÖNDERİLMİYOR
+//   • Bugün hedefini zaten tutturmuşlara — hatırlatmanın konusu kalmamış.
+//   • Bugün zaten hatırlatılmışlara — günde bir bildirim.
+//   • Bir haftadır uygulamayı hiç açmamışlara — giden kullanıcıyı dürtmek geri getirmiyor,
+//     kaldırtıyor. Bu sınır, bildirimi "faydalı" ile "rahatsız edici" arasındaki çizginin
+//     doğru tarafında tutuyor.
+//
+// TON
+//   Davet, korku değil: "bugün 5 dakikan var mı" / "SERİN BİTMEK ÜZERE!" değil. Kullanıcı
+//   kitlesi 7–10 yaş; kaygı üretmek bu yaşta motivasyondan çok bırakma üretiyor.
+
+/** Tek taramada işlenecek en fazla kullanıcı. */
+const STREAK_REMINDER_SCAN_LIMIT = 5000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const STREAK_REMINDER_CONCURRENCY = 25;
+
+/** Fonksiyonun kendine ayırdığı süre; aşarsa kalanları bir sonraki saate bırakıyor. */
+const STREAK_REMINDER_BUDGET_MS = 480_000;
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runStreakReminderScan(hourUtc, nowMs) {
+  const deadline = Date.now() + STREAK_REMINDER_BUDGET_MS;
+  const snap = await db
+    .collectionGroup('streak')
+    .where('reminderHourUtc', '==', hourUtc)
+    .limit(STREAK_REMINDER_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, noToken: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += STREAK_REMINDER_CONCURRENCY) {
+    if (Date.now() > deadline) {
+      console.warn('sendStreakReminders: süre doldu, kalanlar bir sonraki saate', counts);
+      break;
+    }
+    const chunk = docs.slice(i, i + STREAK_REMINDER_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        const uid = doc.ref.parent.parent && doc.ref.parent.parent.id;
+        if (!uid) return;
+        const d = doc.data() || {};
+        const lastSeen = d.lastSeenAt && typeof d.lastSeenAt.toMillis === 'function'
+          ? d.lastSeenAt.toMillis()
+          : null;
+
+        const decision = streakReminderDecision(
+          {
+            utcOffsetMinutes: d.utcOffsetMinutes,
+            lastDay: typeof d.lastDay === 'string' ? d.lastDay : '',
+            reminderSentDay: typeof d.reminderSentDay === 'string' ? d.reminderSentDay : '',
+            lastSeenMs: lastSeen,
+            current: Math.max(0, Math.trunc(Number(d.current) || 0)),
+            goalMinutes: Math.trunc(Number(d.goalMinutes) || 0),
+          },
+          nowMs
+        );
+        if (!decision.send) {
+          counts.skipped++;
+          return;
+        }
+
+        let tokens = [];
+        try {
+          const userSnap = await db.collection('users').doc(uid).get();
+          if (!userSnap.exists) return;
+          tokens = fcmTokensFor(userSnap.data());
+        } catch (e) {
+          counts.failed++;
+          return;
+        }
+        if (!tokens.length) {
+          counts.noToken++;
+          return;
+        }
+
+        // Data-only: istemci gösterip göstermeyeceğine kendisi karar veriyor (uygulama içi
+        // bildirim tercihi ve oturumdaki hesap kontrolü orada).
+        const payload = {
+          type: 'streak_reminder',
+          recipientUid: String(uid),
+          title: decision.text.title,
+          body: decision.text.body,
+        };
+        try {
+          await Promise.all(
+            tokens.map((token) => admin.messaging().send({ data: payload, token }))
+          );
+          counts.sent++;
+          // Gönderim başarılıysa işaretle: başarısızsa bir sonraki saatte yeniden denenir.
+          await doc.ref.set({ reminderSentDay: decision.today }, { merge: true });
+        } catch (e) {
+          counts.failed++;
+        }
+      })
+    );
+  }
+
+  console.log('sendStreakReminders tamamlandı', { hourUtc, ...counts });
+  return counts;
+}
+
+exports.sendStreakReminders = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const now = Date.now();
+    await runStreakReminderScan(new Date(now).getUTCHours(), now);
+    return null;
+  });
+
+// Testler için.
+exports._runStreakReminderScan = runStreakReminderScan;
+
 
 // ─── AdMob ödüllü reklam sunucu taraflı doğrulama (SSV) ─────────────────────
 //

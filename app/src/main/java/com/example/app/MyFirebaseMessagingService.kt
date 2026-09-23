@@ -33,6 +33,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val title = data["title"] ?: data["senderName"] ?: getString(R.string.app_name)
         val body = data["body"] ?: data["messagePreview"] ?: ""
+
+        // Seri hatırlatması: bir soru sohbetine ait değil, bu yüzden aşağıdaki questionId
+        // zorunluluğundan önce ayrılıyor. Kendi kanalı ve kendi tek bildirim kimliği var.
+        if (data["type"] == TYPE_STREAK_REMINDER) {
+            showStreakReminder(data["recipientUid"], title, body)
+            return
+        }
+
         val questionId = data["questionId"] ?: run {
             Log.w(TAG, "onMessageReceived: missing questionId in data")
             return
@@ -223,14 +231,78 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         nm.notify(notificationId, notification)
     }
 
-    private fun createChannelIfNeeded(channelId: String) {
+    /**
+     * Akşam seri hatırlatması.
+     *
+     * Sohbet bildirimlerinin yolundan ayrı: biriktirme (InboxStyle) yok, sabit tek bildirim
+     * kimliği var — günde bir tane geliyor ve yenisi eskisinin yerini alıyor.
+     *
+     * Sohbet bildirimlerindeki iki kontrol burada da var ve olmak zorunda: bildirim başka bir
+     * hesabın cihazına düşmemeli, ve uygulama içinden bildirimleri kapatmış kullanıcıya
+     * gönderilmemeli. Sunucu data-only gönderdiği için bu kararı veren taraf burası.
+     */
+    private fun showStreakReminder(recipientUid: String?, title: String, body: String) {
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUid == null || currentUid != recipientUid) {
+            Log.d(TAG, "streak reminder: alıcı bu cihazdaki hesap değil, atlanıyor")
+            return
+        }
+        val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("notifications_enabled", true)) {
+            Log.d(TAG, "streak reminder: bildirimler kapalı, atlanıyor")
+            return
+        }
+
+        createChannelIfNeeded(
+            channelId = CHANNEL_ID_STREAK,
+            name = getString(R.string.notification_channel_streak_name),
+            description = getString(R.string.notification_channel_streak_desc),
+            // Sohbet mesajı değil, günlük bir hatırlatma: sesle/titreşimle araya girmesin.
+            importance = NotificationManager.IMPORTANCE_DEFAULT,
+        )
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            NOTIFICATION_ID_STREAK,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID_STREAK)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .build()
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(NOTIFICATION_ID_STREAK, notification)
+    }
+
+    /**
+     * Kanalı gerekiyorsa oluşturur.
+     *
+     * İki kanal var ve ayrı olmaları önemli: kullanıcı seri hatırlatmasını Android
+     * ayarlarından kapatırken sohbet mesajlarını kapatmak zorunda kalmamalı.
+     */
+    private fun createChannelIfNeeded(
+        channelId: String,
+        name: String = getString(R.string.notification_channel_messages_name),
+        description: String = getString(R.string.notification_channel_messages_desc),
+        importance: Int = NotificationManager.IMPORTANCE_HIGH,
+    ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            channelId,
-            getString(R.string.notification_channel_messages_name),
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = getString(R.string.notification_channel_messages_desc)
+        val channel = NotificationChannel(channelId, name, importance).apply {
+            this.description = description
             setShowBadge(true)
         }
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
@@ -286,6 +358,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
         private const val TAG = "FCMService"
         const val CHANNEL_ID_MESSAGES = "messages"
+        const val CHANNEL_ID_STREAK = "streak_reminder"
+
+        /** Sunucunun gönderdiği tür etiketi (functions/index.js: sendStreakReminders). */
+        private const val TYPE_STREAK_REMINDER = "streak_reminder"
+
+        /** Sabit: günde bir hatırlatma geliyor, yenisi eskisinin yerini alsın. */
+        private const val NOTIFICATION_ID_STREAK = 90_001
         private const val PREFS_NAME_THREADS = "notification_threads"
         private const val MAX_INBOX_LINES = 7
 
