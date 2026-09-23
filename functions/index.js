@@ -3732,6 +3732,22 @@ exports.submitCupResult = functions.https.onCall(async (data, context) => {
     const current = Number.isFinite(rawCurrent) ? Math.trunc(rawCurrent) : CUP_PATH_START;
     const updated = Math.max(0, current + delta);
 
+    // Tüm zamanların zirvesi.
+    //
+    // NEDEN
+    //   Kupa tabanlı rozetler (dino, timsah, keçi, kartal, sinek, kaplumbağa) kupa puanının
+    //   EN YÜKSEK değerini saklıyor; kupa puanı ise kayıplarla düşebiliyor. Yani rozetin
+    //   güncel puandan büyük olması meşru ve "rozet <= güncel puan" diye bir kural
+    //   yazılamıyor. Zirve burada tutulunca kural tam olarak yazılabiliyor
+    //   (bkz. firestore.rules, badgeProgress): rozet zirveyi AŞAMAZ.
+    //
+    //   Alanı olmayan eski kullanıcılarda zirve güncel puandan başlıyor. Bu kimseyi
+    //   engellemiyor: istemci rozete her zaman bu fonksiyonun döndürdüğü yeni puanı yazıyor
+    //   ve zirve tanımı gereği ondan küçük olamıyor.
+    const peakField = `max_${cupField}`;
+    const rawPeak = Number(d[peakField]);
+    const peak = Math.max(Number.isFinite(rawPeak) ? Math.trunc(rawPeak) : current, updated);
+
     // Sayaçlar da yalnızca kazançla ilerliyor: kaybın sayacı ileri itmesi, hemen ardından
     // gelen meşru bir kazancı sebepsiz reddettirirdi.
     const gates = isGain
@@ -3742,6 +3758,7 @@ exports.submitCupResult = functions.https.onCall(async (data, context) => {
       progressRef,
       {
         [cupField]: updated,
+        [peakField]: peak,
         ...gates,
       },
       { merge: true }

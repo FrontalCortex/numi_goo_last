@@ -12,7 +12,8 @@
     "verify:leaderboard": "node scripts/verify-lesson-leaderboard.js",
     "delete:leaderboard-seeds": "node scripts/delete-lesson-leaderboard-seeds.js",
     "delete:leaderboards:by-prefix": "node scripts/delete-lesson-leaderboards-by-prefix.js",
-    "delete:seed-users": "node scripts/delete-seed-user-ghosts.js"
+    "delete:seed-users": "node scripts/delete-seed-user-ghosts.js",
+    "test:rules": "firebase emulators:exec --only firestore --project rules-test \"node scripts/test-firestore-rules.mjs\""
   },
   "dependencies": {
     "dotenv": "^16.6.1",
@@ -20,5 +21,9 @@
     "firebase-functions": "^5.0.0",
     "googleapis": "^144.0.0",
     "nodemailer": "^6.9.13"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^12.0.0"
   }
 }

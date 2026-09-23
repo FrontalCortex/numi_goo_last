@@ -170,16 +170,105 @@ service cloud.firestore {
         return ['goldMedalPiece', 'silverMedalPiece', 'bronzeMedalPiece', 'cupPiece'];
       }
 
+      // ── Sayaçların korunması ──────────────────────────────────────────
+      //
+      // İlerleme sayaçlarını istemci hesaplıyor, çünkü girdileri (ders bitirme, günlük soru)
+      // de istemcide. Sunucuya taşımak sorunu çözmezdi: sunucunun doğrulayacak bir şeyi yok,
+      // yalnızca aynı güveni başka bir yere taşırdık.
+      //
+      // Bu yüzden kural, yazmayı engellemek yerine ŞEKLİNİ kısıtlıyor:
+      //   • Sayaçlar geri gidemez  → "sıfırla, baştan çiftle" tekrarı kapanıyor.
+      //   • Tek yazımda en fazla COUNTER_MAX_STEP artabilir → "99999 yaz" tek hamlede
+      //     bitiyor; rozeti doldurmak için onlarca kasıtlı yazım gerekiyor.
+      //
+      // KUPA TABANLI ROZETLER AYRI: onların kaynağı sunucunun yazdığı kupa puanı, yani
+      // gerçekten doğrulanabiliyorlar. Aşağıda kupa zirvesiyle karşılaştırılıyorlar.
+      //
+      // Rozetler para vermiyor; kazanç yalnızca profilde görünen bir rozet. Bu yüzden
+      // "tam koruma" değil "ucuz ve oransal koruma" hedefleniyor.
+
+      function COUNTER_MAX_STEP() { return 10; }
+
+      /** Kupa puanının zirvesini saklayan rozetler. */
+      function cupCounterFields() {
+        return [
+          'userDinoProgress', 'userCrocodileProgress', 'userGoatProgress',
+          'userEagleProgress', 'userFlyProgress', 'userTurtleProgress',
+        ];
+      }
+
+      /**
+       * Bir sayaç geri gitmiyor ve adım sınırını aşmıyor mu.
+       *
+       * Alan dokümanda HENÜZ YOKSA serbest: hesabın ilk yazımı sıfırdan başlıyor ve
+       * sınırlamanın oraya bir faydası yok.
+       */
+      function counterOk(field) {
+        return !(field in resource.data)
+          || (request.resource.data.get(field, 0) >= resource.data.get(field, 0)
+              && request.resource.data.get(field, 0)
+                 <= resource.data.get(field, 0) + COUNTER_MAX_STEP());
+      }
+
+      function activityCountersOk() {
+        return counterOk('userDartProgress')
+          && counterOk('userKarateProgress')
+          && counterOk('userGolfProgress')
+          && counterOk('userBowlingProgress')
+          && counterOk('userFishingProgress')
+          && counterOk('userRocketProgress')
+          && counterOk('userTornadoProgress')
+          && counterOk('userVolcanoProgress');
+      }
+
+      /**
+       * Kupa yolu ilerlemesi — tek yerden okunup altı rozete birden bakılıyor.
+       *
+       * `max_*` alanlarını submitCupResult yazıyor ve koleksiyon istemciye kapalı, yani bu
+       * sayı uydurulamaz. Rozet tanım gereği kupa puanının zirvesi olduğu için meşru yazım
+       * her zaman bu sınırın altında kalıyor.
+       *
+       * Doküman yoksa boş map dönülüyor: o kullanıcının hiç kupa sonucu yok demektir, yani
+       * sıfırdan büyük bir kupa rozeti de olamaz.
+       */
+      function cupPeaks() {
+        return exists(/databases/$(database)/documents/users/$(userId)/cupWayProgress/progress)
+          ? get(/databases/$(database)/documents/users/$(userId)/cupWayProgress/progress).data
+          : {};
+      }
+
+      function cupCounterOk(field, cupField, peaks) {
+        return !(field in request.resource.data)
+          || request.resource.data.get(field, 0) <= peaks.get('max_' + cupField, 0);
+      }
+
+      function cupCountersOk(peaks) {
+        return cupCounterOk('userDinoProgress', 'addition_abacus_cup', peaks)
+          && cupCounterOk('userCrocodileProgress', 'extraction_abacus_cup', peaks)
+          && cupCounterOk('userGoatProgress', 'impact_abacus_cup', peaks)
+          && cupCounterOk('userEagleProgress', 'blinding_addition_abacus_cup', peaks)
+          && cupCounterOk('userFlyProgress', 'blinding_extraction_abacus_cup', peaks)
+          && cupCounterOk('userTurtleProgress', 'blinding_impact_abacus_cup', peaks);
+      }
+
       allow read: if isSignedIn();
       // Doküman yokken: ödül alanları hiç gönderilmemeli (changed() burada kullanılamaz,
-      // resource.data yok).
+      // resource.data yok). Sayaç kuralları da burada işlemiyor; ilk yazım zaten sıfırdan
+      // başlıyor, kupa rozetleri ise yine zirveyle sınırlı.
       allow create: if isSelf(userId)
-        && !request.resource.data.keys().hasAny(seasonAwardFields());
+        && !request.resource.data.keys().hasAny(seasonAwardFields())
+        && (!request.resource.data.keys().hasAny(cupCounterFields())
+            || cupCountersOk(cupPeaks()));
       allow update: if isSelf(userId)
-        && !changed().hasAny(seasonAwardFields());
+        && !changed().hasAny(seasonAwardFields())
+        && activityCountersOk()
+        // get() yalnızca gerçekten kupa rozeti değiştiyse çalışsın; && kısa devre yapıyor.
+        && (!changed().hasAny(cupCounterFields())
+            || cupCountersOk(cupPeaks()));
       // Hesap silme akışı (AccountDeletionHelper) bu dokümanı siliyor.
       allow delete: if isSelf(userId);
     }
+
     match /users/{userId}/cupWayProgress/{doc} {
       allow read: if isSignedIn();
     }
