@@ -117,6 +117,15 @@ class MainActivity : AppCompatActivity() {
         private const val POST_LESSON_SPINNER_DELAY_MS = 350L
 
         /**
+         * Devir teslim penceresinin en uzun süresi.
+         *
+         * Normalde çok daha kısa: pencere `finalizeMapReturnAfterLessonClaim` çalışınca
+         * kapanıyor (ölçümde ~460 ms). Bu sınır yalnızca o hiç gelmezse zeminin asılı
+         * kalmaması için — sandığın kayma animasyonunu (300 ms) rahatça kapsıyor.
+         */
+        private const val POST_LESSON_HANDOFF_GRACE_MS = 1_500L
+
+        /**
          * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
          * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
          */
@@ -2690,6 +2699,10 @@ class MainActivity : AppCompatActivity() {
         // tablosu kapatılınca da çağrılıyor ve o zaman "ders bitti" ekranları açılmamalı.
         fromLessonFinish: Boolean = true,
     ) {
+        // Devir teslim penceresi burada kapanıyor: artık ne gösterileceği belli (rozet
+        // kontrolü başladıysa bayrağı set edilmiş durumda). Bundan sonra zeminin ömrünü
+        // normal kural belirliyor: bekleyen iş varsa duruyor, yoksa iniyor.
+        postLessonHandoffUntilMs = 0L
         // Yeni tur sorusu burada KUYRUĞA giriyor, açılmıyor. Açma kararı kuyruğun
         // ([pumpPostLessonQueue]) — sırası gelip kapı açıldığı anda.
         if (fromLessonFinish && StreakRepository.needsNewStreakPrompt(this)) {
@@ -3636,7 +3649,8 @@ class MainActivity : AppCompatActivity() {
      * pencerenin parçası.
      */
     private fun postLessonQueueBusy(): Boolean =
-        hasPostLessonQueueWork() ||
+        postLessonHandoffActive() ||
+            hasPostLessonQueueWork() ||
             GlobalValues.pendingBadgeFirestoreOperation ||
             adCheckForBadgeInProgress
 
@@ -3666,10 +3680,27 @@ class MainActivity : AppCompatActivity() {
      * turunda zemini indiriyor ve harita yumuşakça geliyor.
      */
     fun raisePostLessonBackdropForChestHandoff() {
+        // Devir teslim penceresi: bu süre boyunca kuyruk "boş" görünse bile zemin inmiyor.
+        //
+        // Bu olmadan devir teslim kendi kuralımıza takılıyordu: zemin kalkıyor, hemen
+        // ardından kuyruk "bekleyen bir şey yok" deyip 12 ms sonra indiriyor, rozet kontrolü
+        // ise ancak 300 ms sonra başlıyordu. Aradaki boşlukta harita açığa çıkıyordu.
+        //
+        // Pencere ne olacağı BELİRLENİNCE kapanıyor ([finalizeMapReturnAfterLessonClaim]);
+        // buradaki süre yalnızca o hiç gelmezse (ör. mağaza sandığı) zeminin asılı
+        // kalmaması için.
+        postLessonHandoffUntilMs =
+            android.os.SystemClock.elapsedRealtime() + POST_LESSON_HANDOFF_GRACE_MS
         acquirePostLessonQueueTouchLock(force = true)
-        // Ne gösterileceği hemen değerlendirilsin: bekleyen yoksa zemin inip harita gelmeli.
         pumpPostLessonQueue("chestHandoff")
     }
+
+    /** Devir teslim penceresinin bitiş anı (monoton saat); 0 = pencere kapalı. */
+    private var postLessonHandoffUntilMs = 0L
+
+    private fun postLessonHandoffActive(): Boolean =
+        postLessonHandoffUntilMs > 0L &&
+            android.os.SystemClock.elapsedRealtime() < postLessonHandoffUntilMs
 
     private fun acquirePostLessonQueueTouchLock(force: Boolean = false) {
         if (postLessonQueueLockHeld) return
