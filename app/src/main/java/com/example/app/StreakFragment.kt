@@ -171,14 +171,23 @@ class StreakFragment : Fragment() {
         // "Topla" düğmesi gösterirdik.
         val days = StreakRepository.chosenChallengeDays(requireContext())
         val reward = StreakMilestones.challengeReward(days)
-        if (days <= 0 || reward <= 0) {
+        val claimedDays = StreakRepository.challengeClaimed(requireContext())
+
+        // Ödül alındıktan sonra kart O GÜNÜN sonuna kadar duruyor, ertesi gün gidiyor.
+        //
+        // Hemen kaldırmak kutlamayı çalıyor: çocuk "Topla"ya bastığı anda sözünü tuttuğunun
+        // izi ekrandan siliniyordu. Sürekli bırakmak da yanlış: meydan okuma bir kez
+        // seçiliyor, yani bitmiş kart bir daha asla değişmeyecek ölü bir kutu olarak kalır ve
+        // ekranın asıl işini — bugün ne yapmalı — aşağı iter.
+        val claimedToday = claimedDays > 0 &&
+            StreakRepository.challengeClaimedDay(requireContext()) == StudyTimeTracker.dayId()
+        if (days <= 0 || reward <= 0 || (claimedDays > 0 && !claimedToday)) {
             b.streakChallengeCard.visibility = View.GONE
             return
         }
         b.streakChallengeCard.visibility = View.VISIBLE
 
         val done = state.current.coerceIn(0, days)
-        val claimedDays = StreakRepository.challengeClaimed(requireContext())
         val serverStreak = StreakRepository.serverCurrent(requireContext())
         val complete = state.current >= days
         val claimable = claimedDays <= 0 && serverStreak >= days

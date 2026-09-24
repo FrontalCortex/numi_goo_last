@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.FirebaseFunctionsException
 
 /**
  * Seri sayacını sunucuyla eşitler (`submitStreakDay`) ve ödülleri toplar
@@ -203,6 +204,32 @@ object StreakSyncService {
     }
 
     /**
+     * Başarısız toplama için kullanıcıya gösterilecek mesaj.
+     *
+     * Eskiden her hata "İnternetini kontrol et" diyordu. Sunucu aslında ne olup bittiğini
+     * söylüyor — "bu ödülü zaten aldın", "serin yeterli değil", "günlük sınıra ulaştın" —
+     * ve bunları internete bağlamak kullanıcıyı olmayan bir sorunu kovalamaya gönderiyordu.
+     *
+     * Taşıma katmanına ait kodlar ayrı tutuluyor: onlarda sunucunun mesajı ya yok ya da
+     * İngilizce bir yığın izi oluyor, çocuğa gösterilecek bir şey değil.
+     */
+    private fun claimErrorMessage(e: Exception): String {
+        val code = (e as? FirebaseFunctionsException)?.code
+            ?: return "Ödül alınamadı. İnternetini kontrol edip tekrar dene."
+        return when (code) {
+            FirebaseFunctionsException.Code.UNAVAILABLE,
+            FirebaseFunctionsException.Code.DEADLINE_EXCEEDED,
+            -> "Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene."
+            FirebaseFunctionsException.Code.INTERNAL,
+            FirebaseFunctionsException.Code.UNKNOWN,
+            -> "Ödül alınamadı. İnternetini kontrol edip tekrar dene."
+            // Geri kalanı sunucunun kendi Türkçe açıklaması (HttpsError mesajı).
+            else -> e.message?.takeIf { it.isNotBlank() }
+                ?: "Ödül alınamadı. Birazdan tekrar dene."
+        }
+    }
+
+    /**
      * İki ödül türünün ortak yolu: çağrı, kazanılanın metne dönüşü ve hata mesajı aynı.
      *
      * @param markClaimed Başarıda yerel işaret; sunucudan dönen gövdeyi alıyor.
@@ -234,7 +261,7 @@ object StreakSyncService {
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "claimStreakReward başarısız", e)
-                onResult(false, "Ödül alınamadı. İnternetini kontrol edip tekrar dene.", 0, 0)
+                onResult(false, claimErrorMessage(e), 0, 0)
             }
     }
 }

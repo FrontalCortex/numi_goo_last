@@ -42,6 +42,7 @@ object StreakRepository {
     private const val KEY_LAST_PING_DAY = "last_ping_day"
     private const val KEY_OWNER_UID = "owner_uid"
     private const val KEY_CHALLENGE_CLAIMED = "challenge_claimed"
+    private const val KEY_CHALLENGE_CLAIMED_DAY = "challenge_claimed_day"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -126,8 +127,21 @@ object StreakRepository {
     fun challengeClaimed(context: Context): Int =
         prefs(context)?.getInt(KEY_CHALLENGE_CLAIMED, 0) ?: 0
 
+    /**
+     * Ödülün alındığı gün (`yyyy-MM-dd`); alınmadıysa boş.
+     *
+     * Kartın ne zaman kaybolacağını belirliyor: alındığı günün sonuna kadar "TAMAMLANDI"
+     * olarak duruyor, ertesi gün gidiyor. Cihaz değiştiren kullanıcıda boş kalıyor ve kart
+     * hemen gizleniyor — doğru olan da bu: yeni cihazda kutlanacak taze bir şey yok.
+     */
+    fun challengeClaimedDay(context: Context): String =
+        prefs(context)?.getString(KEY_CHALLENGE_CLAIMED_DAY, "").orEmpty()
+
     fun markChallengeClaimed(context: Context, days: Int) {
-        prefs(context)?.edit()?.putInt(KEY_CHALLENGE_CLAIMED, days)?.apply()
+        prefs(context)?.edit()
+            ?.putInt(KEY_CHALLENGE_CLAIMED, days)
+            ?.putString(KEY_CHALLENGE_CLAIMED_DAY, StudyTimeTracker.dayId())
+            ?.apply()
     }
 
     // ── Kutlama kuyruğu ─────────────────────────────────────────────────
