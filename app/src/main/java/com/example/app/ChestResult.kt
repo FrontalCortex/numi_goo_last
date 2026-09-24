@@ -248,6 +248,9 @@ class ChestResult : Fragment() {
                     // haritayı erkenden kilitle (bkz. ChestFragment'teki aynı düzeltme).
                     (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
                         ?.lockTouchForPendingOverlay()
+                    // Zemin de şimdi kalksın: bu ekran birazdan görünmez olacak ve rozet
+                    // gelene kadar arada harita açığa çıkıyor (bkz. ChestFragment'teki aynı düzeltme).
+                    safeActivity?.raisePostLessonQueueOverlayEarly()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,

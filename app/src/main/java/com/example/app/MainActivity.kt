@@ -3632,6 +3632,19 @@ class MainActivity : AppCompatActivity() {
             GlobalValues.pendingBadgeFirestoreOperation ||
             adCheckForBadgeInProgress
 
+    /**
+     * Zemini ve kilidi ERKEN kaldırır; sandık rozet işlemini başlatırken çağırıyor.
+     *
+     * Kuyruk zemini `finalizeMapReturn` anında kaldırıyordu ama sandığın kendi ekranı daha
+     * ÖNCE görünmez oluyor (bkz. ChestFragment'teki chest_closed dinleyicisi). Aradaki
+     * birkaç karede harita açığa çıkıyor ve rozet gelene kadar görünüyordu.
+     *
+     * İş yolda değilse hiçbir şey yapmıyor, iki kez çağırmak da zararsız.
+     */
+    fun raisePostLessonQueueOverlayEarly() {
+        acquirePostLessonQueueTouchLock()
+    }
+
     private fun acquirePostLessonQueueTouchLock() {
         if (postLessonQueueLockHeld) return
         if (!postLessonQueueBusy()) return

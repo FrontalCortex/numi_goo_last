@@ -410,6 +410,10 @@ class ChestFragment : Fragment() {
                     fun findMap(main: MainActivity?): MapFragment? =
                         main?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment
                     findMap(findMain())?.lockTouchForPendingOverlay()
+                    // Zemini de şimdi kaldır: sandığın ekranı birazdan görünmez olacak ve
+                    // rozet gelene kadar arada harita açığa çıkıyor. Kuyruğun kendi zamanı
+                    // (finalizeMapReturn) bunun için çok geç kalıyor.
+                    findMain()?.raisePostLessonQueueOverlayEarly()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = shouldIncrementDartProgress,
                         incrementBowlingBy = completedMissionCount,
