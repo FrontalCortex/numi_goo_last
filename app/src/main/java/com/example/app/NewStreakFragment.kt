@@ -19,6 +19,12 @@ import com.example.app.databinding.FragmentNewStreakBinding
  * Önce niyet ("bir alışkanlık kazanalım"), sonra soru. Soru doğrudan gelseydi çocuk neyi
  * neden seçtiğini bilmeden bir sayı seçerdi.
  *
+ * ## Nerede açılıyor
+ * Haritaya dönüş zincirinden ÖNCE: rozet, görev yönlendirmesi, reklam, sezon kapısı ve
+ * tanıtımların hepsi `MainActivity.finalizeMapReturnAfterLessonClaim` üzerinden akıyor ve
+ * bu ekran oraya girmeden açılıyor. Böylece o sıranın içine karışmıyor, üstüne binmiyor,
+ * onları geciktirmiyor — yalnızca kendisi kapanınca zincir kaldığı yerden başlıyor.
+ *
  * ## Neden kapatılabiliyor
  * Zorunlu tutmak, dersten çıkışı bir kapıya çeviriyordu. Cevaplamayan kullanıcı eski
  * meydan okumasıyla devam ediyor ve soru o gün bir daha sorulmuyor
@@ -139,6 +145,16 @@ class NewStreakFragment : DialogFragment() {
         // işaretini sildiği için bu çağrı gerçekten gönderiliyor.
         StreakSyncService.syncPendingDays(requireContext())
         dismissAllowingStateLoss()
+    }
+
+    /**
+     * Ekran nasıl kapanırsa kapansın (Başla, geri tuşu, sistem) ertelenmiş harita
+     * dönüşü sürdürülüyor. Yalnızca "Başla"ya bağlansaydı geri tuşuyla çıkan
+     * kullanıcı ders sonunda asılı kalırdı.
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.onNewStreakPromptClosed()
     }
 
     override fun onDestroyView() {
