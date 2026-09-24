@@ -3554,7 +3554,14 @@ class MainActivity : AppCompatActivity() {
         //
         // Kural tek cümle: kilit, bekleyen iş VARKEN duruyor. Kapının ne dediğinden
         // bağımsız.
-        if (!hasPostLessonQueueWork()) releasePostLessonQueueTouchLock(caller)
+        // Kilit/zemin her turda yeniden değerlendiriliyor. Yalnızca `finalizeMapReturn`
+        // anında karar vermek yetmiyordu: o an boş görünen kuyruğa bir saniye sonra rozet
+        // düşüyor ve aradaki boşlukta harita ortaya çıkıyordu.
+        if (postLessonQueueBusy()) {
+            acquirePostLessonQueueTouchLock()
+        } else {
+            releasePostLessonQueueTouchLock(caller)
+        }
 
         val block = postLessonQueueBlockReason()
         if (block != null) {
@@ -3608,9 +3615,26 @@ class MainActivity : AppCompatActivity() {
      */
     private var postLessonQueueLockHeld = false
 
+    /**
+     * Kuyruk meşgul mü — henüz ELDE OLMAYAN ama yolda olanlar dahil.
+     *
+     * [hasPostLessonQueueWork] yalnızca "şu an gösterilmeyi bekleyen" şeyleri sayar.
+     * Rozetler ise asenkron geliyor: `finalizeMapReturn` anında payload'lar henüz boş,
+     * Firestore işlemi uçuşta ve rozet bir saniye sonra düşüyor. Zemin kararı yalnızca
+     * eldekine bakınca, sandık + rozet olan bir derste zemin hiç açılmıyor ve rozet
+     * gelene kadar harita görünüyordu.
+     *
+     * Reklam kontrolü de burada: reklam kapanıp rozet açılana kadarki boşluk da aynı
+     * pencerenin parçası.
+     */
+    private fun postLessonQueueBusy(): Boolean =
+        hasPostLessonQueueWork() ||
+            GlobalValues.pendingBadgeFirestoreOperation ||
+            adCheckForBadgeInProgress
+
     private fun acquirePostLessonQueueTouchLock() {
         if (postLessonQueueLockHeld) return
-        if (!hasPostLessonQueueWork()) return
+        if (!postLessonQueueBusy()) return
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
             ?: return
         postLessonQueueLockHeld = true
@@ -3726,7 +3750,7 @@ class MainActivity : AppCompatActivity() {
         // Bekçi yalnızca bekleyen ekran için değil, BİRAKILMAMIŞ KİLİT için de çalışıyor:
         // kilit askıda kalırsa kullanıcı haritaya hiç dokunamıyor ve bu, bir ekranın
         // gösterilememesinden daha kötü.
-        if (!hasPostLessonQueueWork() && !postLessonQueueLockHeld) {
+        if (!postLessonQueueBusy() && !postLessonQueueLockHeld) {
             postLessonQueueWatchdogDeadlineMs = 0L
             binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
             return
