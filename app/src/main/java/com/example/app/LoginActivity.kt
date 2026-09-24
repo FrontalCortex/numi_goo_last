@@ -167,12 +167,10 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         binding.btnGoogleSignIn.visibility = View.GONE
         binding.btnBack.visibility = View.GONE
 
+        // Kap artık kökteki dolgunun dışında ve XML'de zaten match_parent; boyutu elle
+        // ayarlamaya gerek yok (eski kod ConstraintLayout.LayoutParams'a cast ediyordu,
+        // yeni kökte o cast çalışmaz).
         binding.userInfoFragmentContainer.visibility = View.VISIBLE
-        binding.userInfoFragmentContainer.layoutParams =
-            (binding.userInfoFragmentContainer.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams).also {
-                it.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-                it.height = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-            }
 
         val fragment = UserInfoFragment.newInstance(
             forceTeacher = false,

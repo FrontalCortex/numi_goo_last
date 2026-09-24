@@ -1,134 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  Kök FrameLayout: kayıt soruları ekranı 24dp dolgudan etkilenmesin diye içerik ayrı bir katmanda.
+-->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dark_background"
-    android:padding="24dp">
+    android:background="@color/dark_background">
 
-    <ImageButton
-        android:id="@+id/btnBack"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@android:color/transparent"
-        android:contentDescription="Geri"
-        android:tint="@color/dark_text"
-        app:srcCompat="@drawable/ic_back_arrow"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/loginContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/dark_background"
+        android:padding="24dp">
 
-    <LinearLayout
-        android:id="@+id/emailStepContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintTop_toBottomOf="@id/btnBack"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp">
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="Geri"
+            android:tint="@color/dark_text"
+            app:srcCompat="@drawable/ic_back_arrow"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/emailStepContainer"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="12dp"
-            android:text="E-posta ile devam et"
-            android:textColor="@color/dark_text"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:orientation="vertical"
+            app:layout_constraintTop_toBottomOf="@id/btnBack"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilEmail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:boxBackgroundColor="@color/dark_surface"
-            app:hintTextColor="@color/dark_text_secondary"
-            app:startIconTint="@color/dark_primary">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="12dp"
+                android:text="E-posta ile devam et"
+                android:textColor="@color/dark_text"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etEmail"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="E-posta"
-                android:inputType="textEmailAddress"
-                android:textColor="@color/dark_text" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_marginTop="24dp"
+                app:boxBackgroundColor="@color/dark_surface"
+                app:hintTextColor="@color/dark_text_secondary"
+                app:startIconTint="@color/dark_primary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="E-posta"
+                    android:inputType="textEmailAddress"
+                    android:textColor="@color/dark_text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnContinue"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="16dp"
+                android:text="Devam Et"
+                android:textSize="16sp"
+                app:backgroundTint="@color/dark_primary"
+                app:cornerRadius="8dp" />
+
+        </LinearLayout>
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/fragmentContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/btnBack"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/loginBarrier"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="emailStepContainer,fragmentContainer" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnContinue"
-            android:layout_width="match_parent"
+            android:id="@+id/btnGoogleSignIn"
+            android:layout_width="0dp"
             android:layout_height="56dp"
-            android:layout_marginTop="16dp"
-            android:text="Devam Et"
+            android:text="Google ile Giriş Yap"
             android:textSize="16sp"
-            app:backgroundTint="@color/dark_primary"
-            app:cornerRadius="8dp" />
+            android:textColor="#453535"
+            app:backgroundTint="@android:color/white"
+            app:cornerRadius="8dp"
+            app:strokeColor="@color/dark_text_secondary"
+            app:strokeWidth="1dp"
+            app:icon="@drawable/ic_google"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp"
+            app:iconTint="@null"
+            app:layout_constraintTop_toBottomOf="@id/loginBarrier"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    </LinearLayout>
+        <!-- Tüm dokunuşları engelleyen overlay (DOĞRULA / Google giriş işlemi sırasında) -->
+        <View
+            android:id="@+id/touchBlockOverlay"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            android:elevation="16dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/fragmentContainer"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnBack"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="12dp" />
+        <!-- UserInfoFragment için container (başlangıçta gizli) -->
 
-    <androidx.constraintlayout.widget.Barrier
-        android:id="@+id/loginBarrier"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:barrierDirection="bottom"
-        app:constraint_referenced_ids="emailStepContainer,fragmentContainer" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnGoogleSignIn"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:text="Google ile Giriş Yap"
-        android:textSize="16sp"
-        android:textColor="#453535"
-        app:backgroundTint="@android:color/white"
-        app:cornerRadius="8dp"
-        app:strokeColor="@color/dark_text_secondary"
-        app:strokeWidth="1dp"
-        app:icon="@drawable/ic_google"
-        app:iconGravity="textStart"
-        app:iconPadding="12dp"
-        app:iconTint="@null"
-        app:layout_constraintTop_toBottomOf="@id/loginBarrier"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <!--
+      Kayıt soruları ekranı — kökteki 24dp dolgunun DIŞINDA.
 
-    <!-- Tüm dokunuşları engelleyen overlay (DOĞRULA / Google giriş işlemi sırasında) -->
-    <View
-        android:id="@+id/touchBlockOverlay"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="@android:color/transparent"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone"
-        android:elevation="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- UserInfoFragment için container (başlangıçta gizli) -->
+      Eskiden dolgulu ConstraintLayout'un çocuğuydu ve adım ekranları kenarlardan boşluklu
+      duruyordu. ConstraintLayout negatif kenar boşluğunu yok saydığı için tek doğru çözüm
+      kabı dolgulu düzenin dışına almaktı.
+    -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/userInfoFragmentContainer"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

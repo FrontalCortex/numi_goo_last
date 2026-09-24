@@ -84,12 +84,10 @@ class LoginStartActivity : AppCompatActivity() {
 
     private fun showUserInfoFragment(isTeacherMode: Boolean) {
         // Fragment container'ı göster, ana içeriği gizle
+        // Kap artık kökteki dolgunun dışında ve XML'de zaten match_parent; boyutu elle
+        // ayarlamaya gerek yok (eski kod ConstraintLayout.LayoutParams'a cast ediyordu,
+        // yeni kökte o cast çalışmaz).
         binding.userInfoFragmentContainer.visibility = android.view.View.VISIBLE
-        binding.userInfoFragmentContainer.layoutParams =
-            (binding.userInfoFragmentContainer.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams).also {
-                it.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT
-                it.height = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT
-            }
 
         // Ana görünümü gizle
         setMainContentVisible(false)

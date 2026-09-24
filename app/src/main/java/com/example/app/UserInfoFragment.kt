@@ -1,8 +1,10 @@
 package com.example.app
 
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -55,12 +57,20 @@ class UserInfoFragment : Fragment() {
      * değiştirildiğini sayardı.
      */
     private var loggedStreakStep: Step? = null
+
+    /** Adım geçişi sürüyor; bu sırada ileri/geri girdileri yok sayılıyor. */
+    private var animating = false
     private var goalMinutes = 0
     private var challengeDays = 0
     private lateinit var sourceCards: List<MaterialCardView>
     private val sourceNames = listOf("Facebook", "Instagram", "Youtube", "Google Araması", "Arkadaş/Aile", "TikTok", "Uygulama Mağazası", "Diğer")
 
     companion object {
+        private const val TAG = "UserInfoFragment"
+
+        /** Adım geçişi ve ilerleme çubuğu animasyon süresi. */
+        private const val STEP_ANIM_MS = 220L
+
         private const val ARG_FORCE_TEACHER = "arg_force_teacher"
         private const val ARG_FORCE_STUDENT = "arg_force_student"
         private const val ARG_PREFILL_EMAIL = "arg_prefill_email"
@@ -133,20 +143,30 @@ class UserInfoFragment : Fragment() {
             !forceTeacher && !StreakRepository.isOnboardingDone(requireContext())
         if (streakStepsEnabled) goalMinutes = StreakRepository.goalMinutes(requireContext())
 
-        showStep(Step.AGE)
+        showStep(Step.AGE, animate = false)
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Ekranda geri butonu yok; geri gitmenin tek yolu telefonun kendi tuşu.
-                when (currentStep) {
-                    Step.CHALLENGE -> showStep(Step.GOAL)
-                    Step.GOAL -> showStep(Step.SOURCE)
-                    Step.SOURCE -> showStep(Step.AGE)
-                    Step.AGE -> {
-                        isEnabled = false
-                        parentFragmentManager.popBackStack()
-                    }
+                // Bu satır tanı içindir: geri tuşu çalışmıyorsa, buranın hiç çağrılmadığını
+                // mı yoksa adımın değişmediğini mi gördüğümüz logcat'ten anlaşılsın.
+                Log.d(TAG, "geri tuşu: adım=$currentStep animating=$animating")
+                if (animating) return
+
+                val previous = when (currentStep) {
+                    Step.CHALLENGE -> Step.GOAL
+                    Step.GOAL -> Step.SOURCE
+                    Step.SOURCE -> Step.AGE
+                    Step.AGE -> null
                 }
+                if (previous != null) {
+                    showStep(previous, forward = false)
+                    return
+                }
+                // İlk adımdayız: fragment'in kendisi kapanıyor. `isEnabled` bilerek
+                // kapatılmıyor — pop başarısız olursa dinleyici kalıcı olarak ölür ve
+                // sonraki geri tuşları activity'nin geri tuşunu yutan dinleyicisine düşerdi.
+                parentFragmentManager.popBackStack()
             }
         })
 
@@ -187,6 +207,7 @@ class UserInfoFragment : Fragment() {
         }
 
         binding.btnContinue.setOnClickListener {
+            if (animating) return@setOnClickListener
             if (currentStep == Step.AGE) {
                 val ageText = binding.etAge.text?.toString()?.trim() ?: ""
                 val age = ageText.toIntOrNull()
@@ -236,23 +257,116 @@ class UserInfoFragment : Fragment() {
      * Eskiden bu üç iş, ileri ve geri geçişlerde ayrı ayrı yazılıydı; ilerleme çubuğu
      * eklenince aynı satırların dördüncü kopyası gerekecekti.
      */
-    private fun showStep(step: Step) {
+    /**
+     * Adımı değiştirir: kaydırma animasyonu, ilerleme çubuğu, içerik ve devam butonu
+     * tek yerden.
+     *
+     * @param forward İleri gidiliyorsa mevcut soru sola, yeni soru sağdan kayar; geri
+     *   gidiliyorsa ters yön. Yön olmadan geçişler "nereye gittim" hissini kaybediyor.
+     * @param animate İlk çizimde false: ekran açılırken kayma olmaz.
+     */
+    private fun showStep(step: Step, forward: Boolean = true, animate: Boolean = true) {
+        val from = containerFor(currentStep)
+        val to = containerFor(step)
+        val sameStep = step == currentStep
         currentStep = step
-        binding.ageContainer.visibility = if (step == Step.AGE) View.VISIBLE else View.GONE
-        binding.sourceContainer.visibility = if (step == Step.SOURCE) View.VISIBLE else View.GONE
-        val isStreak = step == Step.GOAL || step == Step.CHALLENGE
-        binding.streakContainer.visibility = if (isStreak) View.VISIBLE else View.GONE
 
-        // Çubuk adım SAYISINDAN hesaplanıyor: öğretmen akışında seri adımları yok ve
-        // sabit yüzdeler orada yanlış bir ilerleme gösterirdi.
+        setProgress(progressFor(step), animate = animate)
+
+        if (!animate || sameStep) {
+            if (from !== to) from.visibility = View.GONE
+            bindStep(step)
+            to.visibility = View.VISIBLE
+            return
+        }
+        slideTo(from, to, forward) { bindStep(step) }
+    }
+
+    private fun containerFor(step: Step): View = when (step) {
+        Step.AGE -> binding.ageContainer
+        Step.SOURCE -> binding.sourceContainer
+        // Hedef ve meydan okuma AYNI kabı kullanıyor; geçişte kap önce çıkıp sonra yeni
+        // içerikle geri giriyor (bkz. slideTo).
+        Step.GOAL, Step.CHALLENGE -> binding.streakContainer
+    }
+
+    /**
+     * Yüzde adım SAYISINDAN hesaplanıyor: öğretmen akışında seri adımları yok ve sabit
+     * yüzdeler orada yanlış bir ilerleme gösterirdi.
+     */
+    private fun progressFor(step: Step): Int {
         val total = if (streakStepsEnabled) 4 else 2
-        binding.userInfoProgress.progress = (step.ordinal + 1) * 100 / total
+        return (step.ordinal + 1) * 100 / total
+    }
 
+    /**
+     * Çubuk zıplamasın: mevcut değerden hedefe doğru akar, geri giderken de öyle.
+     *
+     * İlk çizimde animasyon yok: XML'deki başlangıç değeri ile gerçek ilk adımın yüzdesi
+     * farklı olabiliyor ve ekran açılır açılmaz geriye akan bir çubuk görünüyordu.
+     */
+    private fun setProgress(target: Int, animate: Boolean) {
+        val bar = binding.userInfoProgress
+        if (!animate) {
+            bar.progress = target
+            return
+        }
+        ObjectAnimator.ofInt(bar, "progress", bar.progress, target).apply {
+            duration = STEP_ANIM_MS
+            start()
+        }
+    }
+
+    /**
+     * Kaydırma geçişi.
+     *
+     * Çıkan görünüm yönün tersine kayıp saydamlaşıyor, ardından içerik yenilenip giren
+     * görünüm karşı taraftan geliyor. [from] ile [to] aynı görünüm olabilir (hedef ve
+     * meydan okuma adımları aynı kabı paylaşıyor) — o durumda aynı kap çıkıp yeni içerikle
+     * geri giriyor.
+     */
+    private fun slideTo(from: View, to: View, forward: Boolean, bind: () -> Unit) {
+        val width = binding.root.width.toFloat()
+        if (width <= 0f) {
+            // Ölçüm bitmemiş: animasyonsuz geç, yarım bir geçiş göstermektense.
+            if (from !== to) from.visibility = View.GONE
+            bind()
+            to.visibility = View.VISIBLE
+            return
+        }
+        val dir = if (forward) -1f else 1f
+        animating = true
+        from.animate()
+            .translationX(dir * width)
+            .alpha(0f)
+            .setDuration(STEP_ANIM_MS)
+            .withEndAction {
+                if (_binding == null) return@withEndAction
+                from.translationX = 0f
+                from.alpha = 1f
+                if (from !== to) from.visibility = View.GONE
+
+                bind()
+                to.visibility = View.VISIBLE
+                to.translationX = -dir * width
+                to.alpha = 0f
+                to.animate()
+                    .translationX(0f)
+                    .alpha(1f)
+                    .setDuration(STEP_ANIM_MS)
+                    .withEndAction { animating = false }
+                    .start()
+            }
+            .start()
+    }
+
+    /** Adımın içeriği: başlık, seçenekler, buton yazısı ve buton durumu. */
+    private fun bindStep(step: Step) {
         binding.btnContinue.text =
             if (step == Step.CHALLENGE) "Hedefimi onayla" else "Devam Et"
 
         // Ölçüm adım GEÇİŞİNE bağlı, çizime değil.
-        if (isStreak && loggedStreakStep != step) {
+        if ((step == Step.GOAL || step == Step.CHALLENGE) && loggedStreakStep != step) {
             loggedStreakStep = step
             AnalyticsLogger.logStreakSetupStep(
                 if (step == Step.GOAL) AnalyticsLogger.STREAK_STAGE_GOAL
