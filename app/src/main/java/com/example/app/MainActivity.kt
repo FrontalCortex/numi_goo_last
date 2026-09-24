@@ -3499,6 +3499,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runPostLessonQueue(caller: String) {
+        // Tek satırda bütün tablo: kim bekliyor, kapı açık mı. Bir ekranın neden
+        // çıkmadığı sorusunun cevabı burada — "bekleyen yok" ile "kapı kapalı" apayrı
+        // sorunlar ve ikisini ayırt etmeden tahmin yürütmek zaman kaybettiriyor.
+        Log.d(
+            TAG_QUEUE,
+            "tur | caller=$caller " +
+                "rozet=${pendingBadgePayloadsForAd.size + pendingBadgeStringPayloadsForAd.size} " +
+                "yeniSeri=$newStreakPromptQueued " +
+                "promo=$pendingLessonTypeReturnForPromo " +
+                "rating=$justFinishedChestForRating " +
+                "rehber=${MarathonGuideStore.isPending(this)} " +
+                "kupaYolu=${GlobalValues.pendingCupPathRevealPartId != null}",
+        )
         val block = postLessonQueueBlockReason()
         if (block != null) {
             Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
@@ -3583,7 +3596,13 @@ class MainActivity : AppCompatActivity() {
 
     /** B11 — maraton rehberi (yalnızca haritada). */
     private fun showMarathonGuideStep(caller: String): Boolean {
-        if (!MarathonGuideStore.isPending(this)) return false
+        if (!MarathonGuideStore.isPending(this)) {
+            // Bekleyen rehber YOK. Kuyruk onu engellemedi — hiç sıraya girmemiş.
+            // Sebebi MarathonGuide etiketindeki "schedule REJECT" satırında yazıyor
+            // (rehber tek seferlik ve yalnızca 1. bölümün ilk sandığında).
+            Log.d(TAG_QUEUE, "rehber ATLANDI | caller=$caller reason=pending_degil")
+            return false
+        }
         MarathonGuideStore.logPrefsSnapshot(this, "queue:$caller")
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
         if (map == null || !map.isAdded) {
