@@ -20,10 +20,10 @@ import com.example.app.databinding.FragmentNewStreakBinding
  * neden seçtiğini bilmeden bir sayı seçerdi.
  *
  * ## Nerede açılıyor
- * Haritaya dönüş zincirinden ÖNCE: rozet, görev yönlendirmesi, reklam, sezon kapısı ve
- * tanıtımların hepsi `MainActivity.finalizeMapReturnAfterLessonClaim` üzerinden akıyor ve
- * bu ekran oraya girmeden açılıyor. Böylece o sıranın içine karışmıyor, üstüne binmiyor,
- * onları geciktirmiyor — yalnızca kendisi kapanınca zincir kaldığı yerden başlıyor.
+ * Haritada açılan diğer şeylerle (rozet, reklam, sezon kapısı, maraton rehberi, kupa yolu
+ * yönlendirmesi) AYNI kapıyı paylaşıyor: `MainActivity.marathonGuideMapBlockReason`.
+ * Ekran o kapı açıkken açılıyor ve açıkken kapıyı kapatıyor, yani diğerleri de bunu
+ * bekliyor. Böylece "önce şu sonra bu" diye bir sıra tanımlamak gerekmedi.
  *
  * ## Neden kapatılabiliyor
  * Zorunlu tutmak, dersten çıkışı bir kapıya çeviriyordu. Cevaplamayan kullanıcı eski

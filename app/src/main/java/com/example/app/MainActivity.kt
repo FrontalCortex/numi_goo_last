@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
 
         /** Kapı kapalıyken iki deneme arası. */
         private const val STREAK_CELEBRATION_RETRY_MS = 400L
+        private const val TAG_NEW_STREAK = "NewStreakPrompt"
 
         /**
          * Yeniden denemelerin toplam süresi.
@@ -2625,6 +2626,10 @@ class MainActivity : AppCompatActivity() {
      */
     fun prepareMapReturnAfterLessonClaim() {
         if (!::binding.isInitialized) return
+        // Yeni tur ekranı burada KUYRUĞA giriyor, açılmıyor: bütün ders bitiş yolları
+        // (sonuç, sandık, görev sandığı, rekor…) buradan geçiyor. Açma kararını
+        // [tryShowNewStreakPrompt] veriyor — ortak kapı açıldığı anda.
+        if (StreakRepository.needsNewStreakPrompt(this)) newStreakPromptQueued = true
         logMapTouchDiag("prepareMapReturn", "ENTER", "forcingDismiss=true host→GONE hedefleniyor")
         // [canConsumePendingLessonProgressAnimations] + [LessonManager.refreshLessonsFromGlobalData] burada
         // çağrılmasın: Chest / MissionChest / LessonResult overlay altında Map RV yenilenince progress animasyonu
@@ -2688,24 +2693,6 @@ class MainActivity : AppCompatActivity() {
         // maybeShowAskQuestionPromo yalnızca bu durumda denenir (bkz. notifyMapVisibleAfterLessonClaim).
         isLessonTypeReturn: Boolean = false,
     ) {
-        // Yeni tur ekranı buradan ÖNCE açılıyor: haritaya dönüşte açılabilecek her şey
-        // (rozet, görev yönlendirmesi, reklam, sezon kapısı, maraton rehberi, öğretmene
-        // sorma tanıtımı) bu fonksiyondan akıyor. Ekran onlardan sonra açılsaydı sıraya
-        // karışır, aralarına girer ya da üstüne biner.
-        //
-        // Duran şey tek: bu fonksiyonun GÖVDESİ. Çağrı aynı argümanlarla ertelenip ekran
-        // kapanınca aynen tekrarlanıyor, yani zincirin kendisi hiç değişmiyor.
-        if (deferForNewStreakPrompt {
-                finalizeMapReturnAfterLessonClaim(
-                    caller,
-                    badgePayloads,
-                    badgeStringPayloads,
-                    isLessonTypeReturn,
-                )
-            }
-        ) {
-            return
-        }
         BadgeDiagnostics.log("MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
@@ -2865,6 +2852,12 @@ class MainActivity : AppCompatActivity() {
         val badge = fm.findFragmentById(R.id.badgeFragmentContainter)
         if (badge != null) {
             return "badge_overlay:${badge.javaClass.simpleName}"
+        }
+
+        // Yeni seri ekranı da bu kapıdan geçiyor (bkz. tryShowNewStreakPrompt). Burada
+        // listelenmeseydi rehber onun üstüne açılırdı — ilk denemede tam bu oldu.
+        if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) {
+            return "new_streak_prompt"
         }
 
         if (GlobalValues.pendingBadgeFirestoreOperation) {
@@ -3056,6 +3049,11 @@ class MainActivity : AppCompatActivity() {
             Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=binding_not_initialized")
             return
         }
+
+        // Yeni seri ekranı sıraya ilk giriyor: ders biter bitmez soruluyor ve tek seferlik.
+        // Açıldıysa buradan çıkılıyor; kapanınca [onNewStreakPromptClosed] bu fonksiyonu
+        // yeniden çağırıyor ve rehber/kupa yolu kaldığı yerden devam ediyor.
+        if (tryShowNewStreakPrompt(caller)) return
 
         // Kupa yolu panel açılış emri varsa, tüm ödül/görev/rozet overlay'leri kapandığında
         // haritada maraton rehberi göstermek yerine 0.5 saniye bekleyip TasksFragment'a (explore sekmesine) geç.
@@ -3362,7 +3360,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         currentActivity = this
-        resumeNewStreakPromptContinuationIfOrphaned()
         refreshStreakUi()
         // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
         // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
@@ -3504,52 +3501,61 @@ class MainActivity : AppCompatActivity() {
 
     // ── Yeni seri turu ────────────────────────────────────
 
-    /** Yeni tur ekranı kapanınca sürdürülecek harita dönüşü; yoksa null. */
-    private var newStreakPromptContinuation: (() -> Unit)? = null
+    /** Ders bitti, serisi olmayan kullanıcıya yeni tur sorulacak. */
+    private var newStreakPromptQueued = false
 
     /**
-     * Serisi olmayan kullanıcıya yeni tur ekranını açar ve harita dönüşünü erteler.
+     * Serisi olmayan kullanıcıya yeni tur ekranını güvenli bir anda açar.
      *
-     * @param continuation Ekran kapanınca aynen çalışacak olan; ertelenen çağrının kendisi.
-     * @return true ise ekran açıldı ve ÇAĞIRAN DURMALI.
+     * ## Neden kendi sıralaması yok
+     * İlk denemede bu ekran haritaya dönüş zincirinin önüne kondu ve zincir ertelendi.
+     * İşe yaramadı: haritada açılan şeyler tek bir yerden akmıyor — maraton rehberi
+     * dokuz ayrı yerden, reklam ve rozet kendi yollarından tetikleniyor. Ekran reklamın
+     * altında kaldı ve rehberle aynı anda açıldı.
      *
-     * Ekran açılamayacak her durumda false dönüyor (durum kaydedilmiş, activity kapanıyor,
-     * ekran zaten açık, sıra değil): ekranı gösterememek harita dönüşünü engellememeli,
-     * yoksa kullanıcı ders sonunda hiçbir yere gidemeden asılı kalırdı.
+     * ## Çözüm: var olan kapıya katılmak
+     * [marathonGuideMapBlockReason] tam olarak bu sorunu çözmüş durumda: ders katmanları,
+     * rozet, rozet öncesi reklam kontrolü, sezon kapısı ve Firestore beklemesi orada
+     * zaten listeli. Ekran aynı kapıyı kullanıyor VE kendisi de o kapıya eklendi, yani
+     * rehber de bunu bekliyor. Kimse kimsenin üstüne binmiyor ve "önce şu sonra bu" diye
+     * bir sıra tanımlamak gerekmedi.
+     *
+     * Tetikleme de aynı yerden ([tryShowPendingMarathonGuideOnMap]): o fonksiyon işler
+     * yatıştıkça dokuz yerden çağrılıyor, yani "şimdi uygun mu" sorusu bedavaya geliyor.
+     *
+     * @return true ise ekran açıldı (ya da zaten açık) ve ÇAĞIRAN DURMALI.
      */
-    private fun deferForNewStreakPrompt(continuation: () -> Unit): Boolean {
-        if (isFinishing || isDestroyed) return false
-        if (!StreakRepository.needsNewStreakPrompt(this)) return false
+    private fun tryShowNewStreakPrompt(caller: String): Boolean {
         val fm = supportFragmentManager
-        if (fm.isStateSaved) return false
-        if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) return false
-        newStreakPromptContinuation = continuation
-        // showNow: `show` işlemi kuyruğa alıyor ve bu sırada harita bir kare görünüp
-        // kayboluyordu — tam da önlemek istediğimiz "önce haritaya döndü" hissi.
+        if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) return true
+        if (!newStreakPromptQueued) return false
+        // Reklam açıkken activity duraklatılıyor. Bu kontrol olmadan ekran reklamın
+        // ALTINDA açılıyor ve reklam kapanınca ortaya çıkıyordu.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            return false
+        }
+        if (fm.isStateSaved || isFinishing || isDestroyed) return false
+        val block = marathonGuideMapBlockReason()
+        if (block != null) {
+            Log.d(TAG_NEW_STREAK, "bekliyor | caller=$caller block=$block")
+            return false
+        }
+        newStreakPromptQueued = false
+        if (!StreakRepository.needsNewStreakPrompt(this)) return false
+        Log.d(TAG_NEW_STREAK, "aciliyor | caller=$caller")
         NewStreakFragment().showNow(fm, NewStreakFragment.TAG)
         return true
     }
 
     /**
-     * Yeni tur ekranı kapandı: ertelenen harita dönüşünü sürdürür.
+     * Yeni tur ekranı kapandı: sırada bekleyen diğerlerine yol verir.
      *
-     * Tek atımlık: ekran açılırken o günün sorusu sorulmuş sayıldığı için tekrarlanan
-     * çağrı [deferForNewStreakPrompt]'tan false alıyor ve zincir normal akıyor.
+     * Ekran açıkken [marathonGuideMapBlockReason] kapalı olduğu için rehber (ve kupa yolu
+     * yönlendirmesi) bekliyordu; kapanınca onları bir kez daha denemek gerekiyor, yoksa
+     * bir sonraki tesadüfi tetiklemeye kadar asılı kalırlardı.
      */
     fun onNewStreakPromptClosed() {
-        val next = newStreakPromptContinuation ?: return
-        newStreakPromptContinuation = null
-        next()
-    }
-
-    /**
-     * Ekran ortadan kalktığı halde sürücü çağrılmadıysa (ör. activity yeniden kuruldu)
-     * harita dönüşünü burada sürdürür. Kullanıcıyı yarım kalmış bir dönüşte bırakmamak için.
-     */
-    private fun resumeNewStreakPromptContinuationIfOrphaned() {
-        if (newStreakPromptContinuation == null) return
-        if (supportFragmentManager.findFragmentByTag(NewStreakFragment.TAG) != null) return
-        onNewStreakPromptClosed()
+        tryShowPendingMarathonGuideOnMap("NewStreakFragment.dismiss")
     }
 
     /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */
