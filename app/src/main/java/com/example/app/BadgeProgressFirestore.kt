@@ -115,11 +115,14 @@ object BadgeProgressFirestore {
         BadgeDiagnostics.log("BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
         if (payloads.isEmpty()) return
         fm.beginTransaction()
+            // Rozet kutlaması ders sonrası kuyruğunda yeni seri ekranıyla art arda
+            // geliyor; ikisinin aynı süre ve eğriyle hareket etmesi gerekiyor. Aynı ekran
+            // başka yerlerden de açılıyor ve orada da tutarlı olması doğru.
             .setCustomAnimations(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(
                 R.id.badgeFragmentContainter,

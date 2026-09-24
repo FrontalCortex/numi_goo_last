@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ders sonrası kuyruğundaki ekranların ÇIKIŞI: sola itilerek.
+
+  Süresi queue_screen_in ile aynı; eğri hızlanan, çünkü çıkan ekran sahneyi bırakıyor,
+  giren ekran ise yavaşlayarak yerine oturuyor. İkisi birlikte tek bir itme hareketi
+  okunuyor.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/accelerate_interpolator"
+    android:shareInterpolator="true">
+    <translate
+        android:duration="300"
+        android:fromXDelta="0%"
+        android:toXDelta="-100%" />
+</set>

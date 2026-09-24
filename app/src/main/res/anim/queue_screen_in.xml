@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ders sonrası kuyruğundaki ekranların GİRİŞİ.
+
+  Neden ayrı bir çizim: paylaşılan slide_in_right 500 ms sürüyor, alpha ile soluyor ve
+  çıkış çizimleri 300 ms. Giren ekran yavaşça belirirken çıkan hızla gidiyor, üstelik
+  alpha yüzünden arkadaki zemin girişin ortasında görünüyordu — art arda gelen iki ekran
+  tek bir akış gibi okunmuyordu. slide_in_right on ayrı yerde kullanıldığı için
+  değiştirilmedi; kuyruk kendi çiftini kullanıyor.
+
+  Süre ve eğri queue_screen_out ile eşleşiyor: biri girerken diğeri aynı hızda çıkıyor.
+-->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/decelerate_interpolator"
+    android:shareInterpolator="true">
+    <translate
+        android:duration="300"
+        android:fromXDelta="100%"
+        android:toXDelta="0%" />
+</set>

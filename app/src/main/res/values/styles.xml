@@ -10,4 +10,15 @@
         <item name="android:windowEnterAnimation">@anim/slide_in_right</item>
         <item name="android:windowExitAnimation">@anim/slide_out_right</item>
     </style>
+    <!--
+      Ders sonrası kuyruğundaki dialog ekranları (bkz. NewStreakFragment).
+
+      Rozet kutlamasıyla AYNI çizimleri kullanıyor: art arda gelen ekranların hareket
+      dili ortak olmazsa — biri 500 ms solarak, diğeri 300 ms kayarak — tek bir akış
+      gibi okunmuyor.
+    -->
+    <style name="QueueScreenAnimation">
+        <item name="android:windowEnterAnimation">@anim/queue_screen_in</item>
+        <item name="android:windowExitAnimation">@anim/queue_screen_out</item>
+    </style>
 </resources>

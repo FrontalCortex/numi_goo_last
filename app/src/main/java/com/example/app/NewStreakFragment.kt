@@ -44,16 +44,16 @@ class NewStreakFragment : DialogFragment() {
     }
 
     /**
-     * Sağdan kayarak geliyor.
+     * Sağdan kayarak geliyor, sola itilerek gidiyor.
      *
-     * Aynı çizimler rozet kutlamasında da kullanılıyor (`slide_in_right` /
-     * `slide_out_right`): ders sonrası kuyruğundaki ekranlar art arda geldiği için
-     * hareket dilinin ortak olması gerekiyor. Ekranın aniden belirmesi, önceki ekranın
-     * kayarak gitmesinden sonra kopuk duruyordu.
+     * Rozet kutlamasıyla AYNI çizimler ([R.style.QueueScreenAnimation]): ders sonrası
+     * kuyruğundaki ekranlar art arda geldiği için hareket dilinin ortak olması gerekiyor.
+     * Paylasılan `slide_in_right` kullanılmıyordu çünkü 500 ms sürüp alpha ile soluyor,
+     * çıkış çizimleri ise 300 ms — iki ekran farklı hızda hareket edince kopuk duruyordu.
      */
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.DialogAnimationSlideRight)
+        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
     }
 
     override fun onCreateView(

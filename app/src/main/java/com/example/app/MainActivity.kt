@@ -3791,11 +3791,13 @@ class MainActivity : AppCompatActivity() {
         } else {
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 supportFragmentManager.beginTransaction()
+                    // Yeni seri ekranıyla aynı çizimler: kuyruktaki ekranlar art arda
+                    // geliyor ve farklı hızda hareket etmeleri akışı koparıyordu.
                     .setCustomAnimations(
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_left,
-                        R.anim.slide_in_left,
-                        R.anim.slide_out_right,
+                        R.anim.queue_screen_in,
+                        R.anim.queue_screen_out,
+                        R.anim.queue_screen_in,
+                        R.anim.queue_screen_out,
                     )
                     .replace(
                         R.id.badgeFragmentContainter,
