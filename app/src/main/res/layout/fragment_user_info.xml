@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dark_background">
@@ -303,6 +304,69 @@
 
             </LinearLayout>
         </ScrollView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--
+      Seri hedefi adımı.
+
+      Yaş ve kaynak adımlarıyla AYNI ekranda, aynı ilerleme çubuğunun altında: sorular tek
+      bir yerde sorulsun diye. Eskiden ayrı bir fragment olarak üste ekleniyordu ve kendi
+      ilerleme çubuğuyla ikinci bir akış gibi görünüyordu.
+
+      Satırlar XML'de değil [StreakViews.buildOptionRows] ile üretiliyor — seri ekranındaki
+      seçeneklerle birebir aynı görünsünler diye.
+    -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/streakContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="40dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnContinue"
+        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
+
+        <TextView
+            android:id="@+id/streakStepTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:gravity="center"
+            android:textColor="@color/dark_text"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Her gün ne kadar öğrenmek istersin?" />
+
+        <TextView
+            android:id="@+id/streakStepSubtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="24dp"
+            android:gravity="center"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/streakStepTitle"
+            tools:text="Bu hedefi istediğin zaman değiştirebilirsin" />
+
+        <LinearLayout
+            android:id="@+id/streakOptions"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginEnd="24dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/streakStepSubtitle" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Devam Et Butonu -->

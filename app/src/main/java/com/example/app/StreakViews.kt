@@ -14,7 +14,7 @@ import java.util.Locale
 /**
  * Seri ekranlarının ortak parçaları: seçenek satırları ve hafta şeridi.
  *
- * İkisi de hem kurulum akışında ([StreakOnboardingFragment]) hem seri ekranında
+ * İkisi de hem kayıt akışındaki seri adımlarında ([UserInfoFragment]) hem seri ekranında
  * ([StreakFragment]) görünüyor. XML'de tutulsalardı her satır için ayrı kimlik gerekirdi ve
  * iki ekranda iki kopya olurdu; burada tek kaynak.
  */

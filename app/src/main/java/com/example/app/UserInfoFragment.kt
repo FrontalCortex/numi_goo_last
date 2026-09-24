@@ -32,10 +32,31 @@ class UserInfoFragment : Fragment() {
     private var googleEmail: String? = null
     private var googleName: String? = null
 
-    private enum class Step { AGE, SOURCE }
+    /**
+     * Kayıt soruları tek bir akışta.
+     *
+     * Seri hedefi ve meydan okuma eskiden ayrı bir fragment'ti ve kendi ilerleme çubuğuyla
+     * ikinci bir akış gibi görünüyordu. Sorular tek yerde sorulsun diye buraya alındı.
+     */
+    private enum class Step { AGE, SOURCE, GOAL, CHALLENGE }
+
     private var currentStep = Step.AGE
     private var selectedSource: String? = null
     private var validatedBirthYear: Int? = null
+
+    /** Seri adımları bu akışta sorulacak mı; akışın başında bir kez belirleniyor. */
+    private var streakStepsEnabled = false
+
+    /**
+     * Ölçüme en son bildirilen seri adımı.
+     *
+     * Adım ekranları her seçenek dokunuşunda yeniden çiziliyor; olay çizim fonksiyonunda
+     * koşulsuz gönderilseydi huni, kaç kişinin o adımı gördüğünü değil kaç kez seçenek
+     * değiştirildiğini sayardı.
+     */
+    private var loggedStreakStep: Step? = null
+    private var goalMinutes = 0
+    private var challengeDays = 0
     private lateinit var sourceCards: List<MaterialCardView>
     private val sourceNames = listOf("Facebook", "Instagram", "Youtube", "Google Araması", "Arkadaş/Aile", "TikTok", "Uygulama Mağazası", "Diğer")
 
@@ -97,16 +118,34 @@ class UserInfoFragment : Fragment() {
 
         AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_AGE, signupRole)
 
+        // Seri adımlarının sorulup sorulmayacağı EN BAŞTA belirleniyor, çünkü ilerleme
+        // çubuğu toplam adım sayısından hesaplanıyor. Sonradan karar verilseydi çubuk
+        // 50 → 100 → 75 diye geri giderdi.
+        //
+        // Bu fragment'e girmek "yeni hesap açılıyor" demektir: cihazda başka bir hesabın
+        // seri verisi varsa burada siliniyor, yoksa yeni hesap onu devralır ve kurulum
+        // akışı da ona sorulmazdı.
+        //
+        // Öğretmene sorulmuyor: seri bir öğrenme alışkanlığı ölçüsü, öğretmen uygulamayı
+        // ders çalışmak için kullanmıyor.
+        if (!forceTeacher) StreakRepository.prepareForNewAccount(requireContext())
+        streakStepsEnabled =
+            !forceTeacher && !StreakRepository.isOnboardingDone(requireContext())
+        if (streakStepsEnabled) goalMinutes = StreakRepository.goalMinutes(requireContext())
+
         showStep(Step.AGE)
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Ekranda geri butonu yok; geri gitmenin tek yolu telefonun kendi tuşu.
-                if (currentStep == Step.SOURCE) {
-                    showStep(Step.AGE)
-                } else {
-                    isEnabled = false
-                    parentFragmentManager.popBackStack()
+                when (currentStep) {
+                    Step.CHALLENGE -> showStep(Step.GOAL)
+                    Step.GOAL -> showStep(Step.SOURCE)
+                    Step.SOURCE -> showStep(Step.AGE)
+                    Step.AGE -> {
+                        isEnabled = false
+                        parentFragmentManager.popBackStack()
+                    }
                 }
             }
         })
@@ -167,29 +206,26 @@ class UserInfoFragment : Fragment() {
                 showStep(Step.SOURCE)
 
             } else if (currentStep == Step.SOURCE) {
-                val birthYear = validatedBirthYear ?: return@setOnClickListener
-                val source = selectedSource ?: return@setOnClickListener
-
+                if (validatedBirthYear == null || selectedSource == null) return@setOnClickListener
                 hideKeyboard()
+                if (streakStepsEnabled) showStep(Step.GOAL) else finishUserInfo()
 
-                // Seri kurulumu kayıt yolunun içinde: hedef ve meydan okuma yalnızca YENİ
-                // hesap açana sorulsun diye. Zaten hesabı olup yeni cihaza kurulum yapan
-                // kullanıcı giriş yapıyor, buraya hiç uğramıyor.
-                //
-                // Öğretmene sorulmuyor: seri bir öğrenme alışkanlığı ölçüsü, öğretmen
-                // uygulamayı ders çalışmak için kullanmıyor.
-                if (forceTeacher) {
-                    saveBirthYearAndProceed(birthYear, source)
-                    return@setOnClickListener
-                }
-                // Cihazda başka bir hesabın seri verisi varsa burada siliniyor: yeni hesap
-                // öncekinin serisini devralmamalı ve kurulum akışı ona da sorulmalı.
-                StreakRepository.prepareForNewAccount(requireContext())
-                val shown = StreakOnboardingLauncher.showIfNeeded(
-                    fragment = this,
-                    containerId = R.id.userInfoFragmentContainer,
-                ) { saveBirthYearAndProceed(birthYear, source) }
-                if (!shown) saveBirthYearAndProceed(birthYear, source)
+            } else if (currentStep == Step.GOAL) {
+                StreakRepository.setGoalMinutes(requireContext(), goalMinutes)
+                AnalyticsLogger.logStreakGoalSet(
+                    goalMinutes,
+                    AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
+                )
+                showStep(Step.CHALLENGE)
+
+            } else if (currentStep == Step.CHALLENGE) {
+                StreakRepository.setChallengeDays(requireContext(), challengeDays)
+                AnalyticsLogger.logStreakChallengeSet(
+                    challengeDays,
+                    AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
+                )
+                StreakRepository.markOnboardingDone(requireContext())
+                finishUserInfo()
             }
         }
     }
@@ -202,16 +238,78 @@ class UserInfoFragment : Fragment() {
      */
     private fun showStep(step: Step) {
         currentStep = step
-        val isAge = step == Step.AGE
-        binding.ageContainer.visibility = if (isAge) View.VISIBLE else View.GONE
-        binding.sourceContainer.visibility = if (isAge) View.GONE else View.VISIBLE
-        binding.userInfoProgress.progress = if (isAge) 50 else 100
-        if (isAge) {
-            val age = binding.etAge.text?.toString()?.trim()?.toIntOrNull()
-            updateContinueButton(enabled = age != null && age in 1..120)
-        } else {
-            updateContinueButton(enabled = selectedSource != null)
+        binding.ageContainer.visibility = if (step == Step.AGE) View.VISIBLE else View.GONE
+        binding.sourceContainer.visibility = if (step == Step.SOURCE) View.VISIBLE else View.GONE
+        val isStreak = step == Step.GOAL || step == Step.CHALLENGE
+        binding.streakContainer.visibility = if (isStreak) View.VISIBLE else View.GONE
+
+        // Çubuk adım SAYISINDAN hesaplanıyor: öğretmen akışında seri adımları yok ve
+        // sabit yüzdeler orada yanlış bir ilerleme gösterirdi.
+        val total = if (streakStepsEnabled) 4 else 2
+        binding.userInfoProgress.progress = (step.ordinal + 1) * 100 / total
+
+        binding.btnContinue.text =
+            if (step == Step.CHALLENGE) "Hedefimi onayla" else "Devam Et"
+
+        // Ölçüm adım GEÇİŞİNE bağlı, çizime değil.
+        if (isStreak && loggedStreakStep != step) {
+            loggedStreakStep = step
+            AnalyticsLogger.logStreakSetupStep(
+                if (step == Step.GOAL) AnalyticsLogger.STREAK_STAGE_GOAL
+                else AnalyticsLogger.STREAK_STAGE_CHALLENGE,
+            )
         }
+
+        when (step) {
+            Step.AGE -> {
+                val age = binding.etAge.text?.toString()?.trim()?.toIntOrNull()
+                updateContinueButton(enabled = age != null && age in 1..120)
+            }
+            Step.SOURCE -> updateContinueButton(enabled = selectedSource != null)
+            Step.GOAL -> renderGoalStep()
+            Step.CHALLENGE -> renderChallengeStep()
+        }
+    }
+
+    private fun renderGoalStep() {
+        binding.streakStepTitle.text = "Her gün ne kadar öğrenmek istersin?"
+        binding.streakStepSubtitle.text = "Bu hedefi istediğin zaman değiştirebilirsin"
+        StreakViews.buildOptionRows(
+            container = binding.streakOptions,
+            values = StreakRepository.GOAL_OPTIONS,
+            labels = listOf("Rahat", "Düzenli", "Ciddi"),
+            trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
+            selected = goalMinutes,
+        ) { value ->
+            goalMinutes = value
+            renderGoalStep()
+        }
+        updateContinueButton(enabled = goalMinutes in StreakRepository.GOAL_OPTIONS)
+    }
+
+    private fun renderChallengeStep() {
+        binding.streakStepTitle.text = "Kaç gün üst üste öğreneceksin?"
+        binding.streakStepSubtitle.text =
+            "Günde $goalMinutes dakika. Seni zorlamayacak bir hedef seç."
+        StreakViews.buildOptionRows(
+            container = binding.streakOptions,
+            values = StreakRepository.CHALLENGE_OPTIONS,
+            labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
+            trailing = listOf("Başlangıç", "İyi gidiyor", "Alışkanlık oluşuyor"),
+            selected = challengeDays,
+        ) { value ->
+            challengeDays = value
+            renderChallengeStep()
+        }
+        // Meydan okuma bilerek ön seçimsiz: kullanıcı bu sözü kendisi vermeli.
+        updateContinueButton(enabled = challengeDays in StreakRepository.CHALLENGE_OPTIONS)
+    }
+
+    /** Yaş ve kaynak kaydedilip kayıt ekranına geçilir. */
+    private fun finishUserInfo() {
+        val birthYear = validatedBirthYear ?: return
+        val source = selectedSource ?: return
+        saveBirthYearAndProceed(birthYear, source)
     }
 
     private fun updateSourceSelection() {

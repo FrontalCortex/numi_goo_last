@@ -285,11 +285,9 @@ object AnalyticsLogger {
     const val SIGNUP_ROLE_TEACHER = "teacher"
 
     // ── Günlük seri ────────────────────────────────────────────────────────
-    /** Kurulum akışının adımları ([StreakOnboardingFragment]); huni bunlarla kuruluyor. */
-    const val STREAK_STAGE_INTRO = "intro"
+    /** Kayıt akışındaki seri adımları ([UserInfoFragment]); huni bunlarla kuruluyor. */
     const val STREAK_STAGE_GOAL = "goal"
     const val STREAK_STAGE_CHALLENGE = "challenge"
-    const val STREAK_STAGE_DONE = "done"
 
     /** Hedef ilk kez kurulum akışında seçildi. */
     const val STREAK_SOURCE_ONBOARDING = "onboarding"
