@@ -190,51 +190,140 @@
                 android:paddingEnd="8dp"
                 android:paddingBottom="14dp" />
 
-            <!-- Meydan okuma -->
+            <!--
+              Meydan okuma.
+
+              Tıklanabilir DEĞİL: meydan okuma kayıt akışında bir kez seçiliyor ve
+              değişmiyor. Değiştirilebilseydi kullanıcı 3 günlük sözün 500 altınını alıp
+              hemen 7 güne çıkarak 1500'ü de alabilirdi.
+            -->
             <LinearLayout
                 android:id="@+id/streakChallengeCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:background="@drawable/bg_streak_option"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="16dp">
 
-                <ImageView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/streak_flame_ic" />
-
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/streakChallengeTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/white"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        tools:text="3 Günlük Meydan Okuma" />
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/streak_flame_ic" />
 
-                    <TextView
-                        android:id="@+id/streakChallengeSub"
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:textColor="#93A5B3"
-                        android:textSize="13sp"
-                        tools:text="3 GÜNÜN 1. GÜNÜ" />
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/streakChallengeTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="3 Günlük Meydan Okuma" />
+
+                        <TextView
+                            android:id="@+id/streakChallengeSub"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:textColor="#93A5B3"
+                            android:textSize="13sp"
+                            tools:text="3 GÜNÜN 1. GÜNÜ" />
+
+                    </LinearLayout>
+
+                    <!-- Ödül rozeti: sözün karşılığı başından belli olsun. -->
+                    <LinearLayout
+                        android:id="@+id/streakChallengeReward"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_streak_reward_badge"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="10dp"
+                        android:paddingTop="5dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="5dp">
+
+                        <TextView
+                            android:id="@+id/streakChallengeRewardText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="#FFC107"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            tools:text="+500" />
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginStart="4dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/gold_ic" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/streakChallengeZone"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/daily_question_progress_height"
+                    android:layout_marginTop="14dp">
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/daily_question_progress_track"
+                        android:contentDescription="@null" />
+
+                    <View
+                        android:id="@+id/streakChallengeFill"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="start|center_vertical"
+                        android:contentDescription="@null" />
+
+                    <View
+                        android:id="@+id/streakChallengeShine"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/mission_progress_shine_height"
+                        android:layout_gravity="top|start"
+                        android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                        android:layout_marginTop="@dimen/mission_progress_shine_top"
+                        android:contentDescription="@null" />
+
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/streakChallengeClaim"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_streak_claim"
+                    android:gravity="center"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="11dp"
+                    android:text="Ödülü topla"
+                    android:textColor="#1B2B31"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
 
             </LinearLayout>
 

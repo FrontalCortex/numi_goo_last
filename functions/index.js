@@ -3343,10 +3343,10 @@ async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGr
  * @param dailyLimit null ise tavan yok.
  * @param beforeGrant Aynı transaction içinde ek doğrulama; YALNIZCA okur ve yazma işini
  *   döndürdüğü fonksiyonla yapar (Firestore: tüm okumalar yazmalardan önce).
+ * @param resolveDelta Verilirse nihai miktar `delta` yerine bundan alınır; miktarı ancak
+ *   `beforeGrant` okuduktan sonra bilinen ödüller için (ör. meydan okuma).
  */
-async function grantWalletDelta(uid, delta, counterField, dailyLimit, beforeGrant) {
-  const addKeys = Math.max(0, Math.trunc(Number(delta && delta.keys) || 0));
-  const addGold = Math.max(0, Math.trunc(Number(delta && delta.gold) || 0));
+async function grantWalletDelta(uid, delta, counterField, dailyLimit, beforeGrant, resolveDelta) {
   const userRef = db.collection('users').doc(uid);
   const now = Date.now();
   const dayKey = utcDayKey(now);
@@ -3355,6 +3355,13 @@ async function grantWalletDelta(uid, delta, counterField, dailyLimit, beforeGran
     // Ek doğrulama (ör. reklam hakkını tüket) bakiye yazımıyla AYNI transaction icinde olmalı.
     // beforeGrant yalnızca OKUR ve doğrular; yazma işini döndürdüğü fonksiyon yapar.
     const commitBeforeGrant = beforeGrant ? await beforeGrant(transaction) : null;
+
+    // Miktar bazı ödüllerde ancak transaction içinde okunabiliyor (meydan okuma ödülü
+    // sunucudaki kayıtlı güne bağlı). resolveDelta verildiyse nihai miktar ondan alınıyor;
+    // transaction yeniden çalışırsa beforeGrant da yeniden çalıştığı için değer tazeleniyor.
+    const finalDelta = resolveDelta ? resolveDelta() : delta;
+    const addKeys = Math.max(0, Math.trunc(Number(finalDelta && finalDelta.keys) || 0));
+    const addGold = Math.max(0, Math.trunc(Number(finalDelta && finalDelta.gold) || 0));
 
     const doc = await transaction.get(userRef);
     if (!doc.exists) {
@@ -3870,6 +3877,17 @@ const STREAK_FIXED_REWARDS = {
 const STREAK_MAX_MILESTONE = 3600;
 
 /**
+ * Meydan okuma ödülleri (altın).
+ *
+ * Kilometre taşlarından AYRI: taşlar herkese aynı, meydan okuma ise kullanıcının kayıt
+ * sırasında kendi verdiği söz. Beş günlük sözün hiçbir taşa denk gelmemesi, tutulan bir
+ * taahhüdün karşılıksız kalması demekti.
+ *
+ * Bir kez alınıyor: meydan okuma da bir kez seçiliyor (bkz. challengeDays kilidi).
+ */
+const STREAK_CHALLENGE_REWARDS = { 3: 500, 5: 1000, 7: 1500 };
+
+/**
  * Bir kilometre taşının ödülü; geçerli bir taş değilse null.
  *
  * 30'dan sonra her 30 günde bir ödül var ve sırayla dönüyor: 60 altın, 90 anahtar,
@@ -3928,6 +3946,7 @@ function readStreakState(snap) {
     recentDays,
     goalMinutes: Math.trunc(Number(data.goalMinutes) || 0),
     challengeDays: Math.trunc(Number(data.challengeDays) || 0),
+    challengeClaimed: Math.trunc(Number(data.challengeClaimed) || 0),
   };
 }
 
@@ -4013,6 +4032,9 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       lastDay: state.lastDay,
       claimed: state.claimed,
       recentDays: state.recentDays,
+      goalMinutes: state.goalMinutes,
+      challengeDays: state.challengeDays,
+      challengeClaimed: state.challengeClaimed,
     };
   }
 
@@ -4049,11 +4071,24 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
-    if (challengeDays > 0 && challengeDays <= 400) patch.challengeDays = challengeDays;
+    // Meydan okuma BİR KEZ yazılıyor. Değiştirilebilseydi kullanıcı 3 günlüğü seçip 500
+    // altını alır, sonra 7'ye çıkarıp 1500'ü de alabilirdi. İstemci de değiştirmeye
+    // izin vermiyor ama ödül dağıtan karar istemciye bırakılamaz.
+    if (challengeDays > 0 && challengeDays <= 400 && !(state.challengeDays > 0)) {
+      patch.challengeDays = challengeDays;
+    }
     Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
 
     transaction.set(ref, patch, { merge: true });
-    return Object.assign({}, next, { recentDays });
+    // Hedef/meydan okuma da dönüyor: cihaz değiştiren kullanıcının istemcisi bunları
+    // buradan öğreniyor. Yazılan değer varsa o, yoksa kayıtlı olan — yani istemcinin
+    // gönderdiği meydan okuma kilitliyse geri gelen kayıtlı olanıdır.
+    return Object.assign({}, next, {
+      recentDays,
+      goalMinutes: patch.goalMinutes || state.goalMinutes,
+      challengeDays: patch.challengeDays || state.challengeDays,
+      challengeClaimed: state.challengeClaimed,
+    });
   });
 
   return {
@@ -4063,6 +4098,9 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     lastDay: result.lastDay,
     claimed: result.claimed,
     recentDays: result.recentDays,
+    goalMinutes: result.goalMinutes,
+    challengeDays: result.challengeDays,
+    challengeClaimed: result.challengeClaimed,
   };
 });
 
@@ -4079,21 +4117,59 @@ exports.claimStreakReward = functions.https.onCall(async (data, context) => {
   }
   const uid = context.auth.uid;
 
-  const milestone = Math.trunc(Number(data && data.milestone));
-  const reward = streakRewardFor(milestone);
-  if (!reward) {
+  // İki ödül türü tek fonksiyonda: kilometre taşı (herkese aynı) ve meydan okuma
+  // (kullanıcının kendi verdiği söz). İkisi de aynı cüzdan yolundan ve aynı günlük
+  // tavandan geçsin diye ayrı bir callable açılmadı.
+  const isChallenge = data && data.kind === 'challenge';
+
+  const milestone = isChallenge ? 0 : Math.trunc(Number(data && data.milestone));
+  const reward = isChallenge ? null : streakRewardFor(milestone);
+  if (!isChallenge && !reward) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kilometre taşı.');
   }
 
   const ref = streakDocRef(uid);
+  let grantedGold = 0;
+  let grantedKeys = 0;
+  let claimedChallenge = 0;
+
   const balances = await grantWalletDelta(
     uid,
-    reward,
+    // Meydan okuma ödülü sunucudaki kayıtlı güne göre belirleniyor; istemciden gün
+    // gelmiyor, dolayısıyla "7 günlük ödülü iste" diye bir istek de kurulamıyor.
+    // Miktar transaction içinde okunacağı için burada yer tutucu veriliyor ve
+    // beforeGrant'ten sonra gerçek değer yazılıyor.
+    reward || { keys: 0, gold: 0 },
     'streakRewards',
     STREAK_CLAIM_DAILY_LIMIT,
     async (transaction) => {
       const snap = await transaction.get(ref);
       const state = readStreakState(snap);
+
+      if (isChallenge) {
+        const days = state.challengeDays;
+        const gold = STREAK_CHALLENGE_REWARDS[days];
+        if (!gold) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Meydan okuma seçilmemiş.'
+          );
+        }
+        if (state.current < days) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Meydan okuma henüz tamamlanmadı.'
+          );
+        }
+        if (state.challengeClaimed > 0) {
+          throw new functions.https.HttpsError('already-exists', 'Bu ödülü zaten aldın.');
+        }
+        grantedGold = gold;
+        claimedChallenge = days;
+        return (writeTransaction) => {
+          writeTransaction.set(ref, { challengeClaimed: days }, { merge: true });
+        };
+      }
 
       if (state.current < milestone) {
         throw new functions.https.HttpsError(
@@ -4104,6 +4180,8 @@ exports.claimStreakReward = functions.https.onCall(async (data, context) => {
       if (state.claimed.includes(milestone)) {
         throw new functions.https.HttpsError('already-exists', 'Bu ödülü zaten aldın.');
       }
+      grantedKeys = reward.keys;
+      grantedGold = reward.gold;
 
       // Diziler merge'de birleştirilmiyor, olduğu gibi yazılıyor — istediğimiz de bu.
       return (writeTransaction) => {
@@ -4113,14 +4191,17 @@ exports.claimStreakReward = functions.https.onCall(async (data, context) => {
           { merge: true }
         );
       };
-    }
+    },
+    // Meydan okumada miktar ancak transaction içinde biliniyor.
+    () => ({ keys: grantedKeys, gold: grantedGold })
   );
 
   return {
     success: true,
     milestone,
-    rewardKeys: reward.keys,
-    rewardGold: reward.gold,
+    challengeDays: claimedChallenge,
+    rewardKeys: grantedKeys,
+    rewardGold: grantedGold,
     keys: balances.keys,
     currency: balances.currency,
   };

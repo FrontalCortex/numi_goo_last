@@ -41,6 +41,7 @@ object StreakRepository {
     private const val KEY_SERVER_CLAIMED = "server_claimed"
     private const val KEY_LAST_PING_DAY = "last_ping_day"
     private const val KEY_OWNER_UID = "owner_uid"
+    private const val KEY_CHALLENGE_CLAIMED = "challenge_claimed"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -64,7 +65,6 @@ object StreakRepository {
         val current: Int,
         val longest: Int,
         val goalMinutes: Int,
-        val challengeDays: Int,
         val secondsToday: Int,
         /** Hedefi tutturulmuş günler (`yyyy-MM-dd`), hafta şeridi için. */
         val achievedDays: Set<String>,
@@ -92,12 +92,42 @@ object StreakRepository {
         prefs(context)?.edit()?.putInt(KEY_GOAL_MINUTES, value)?.apply()
     }
 
-    fun challengeDays(context: Context): Int =
-        prefs(context)?.getInt(KEY_CHALLENGE_DAYS, DEFAULT_CHALLENGE_DAYS) ?: DEFAULT_CHALLENGE_DAYS
+    /**
+     * Kullanıcının seçtiği meydan okuma; hiç seçmemişse 0.
+     *
+     * Varsayılana DÜŞÜLMÜYOR. Meydan okuma ödül dağıtan bir söz ve yalnızca kayıt
+     * akışında veriliyor; bu özellikten ÖNCE kayıt olmuş kullanıcı hiçbir söz vermedi.
+     * Varsayılan dönseydi ona üç ayrı yerde yalan söylerdik: sunucuya gönderip vermediği
+     * sözü kilitlerdik, kartta basıldığında hata veren bir "Topla" düğmesi gösterirdik ve
+     * "meydan okumasını tamamladı" ölçümünü şişirirdik.
+     */
+    fun chosenChallengeDays(context: Context): Int =
+        prefs(context)?.getInt(KEY_CHALLENGE_DAYS, 0) ?: 0
 
+    /**
+     * Meydan okumayı yazar. Yalnızca kayıt akışı çağırıyor.
+     *
+     * ## Kilit neden burada değil
+     * Meydan okuma bir kez seçiliyor: değiştirilebilseydi kullanıcı 3 günlüğün 500 altınını
+     * alıp hemen 7'ye çıkarak 1500'ü de alabilirdi. Ama kilidi buraya koymak yanlıştı:
+     * kayıt son adımda (ör. internet kesilmesi) başarısız olup tekrarlandığında
+     * kullanıcının YENİ seçimi sessizce yutuluyordu.
+     *
+     * Kilidi sunucu tutuyor: `submitStreakDay` `challengeDays`'i yalnızca kayıtlı değer
+     * yokken yazıyor ve ödülü veren de o. Arayüz tarafında da değiştirecek bir yer yok —
+     * seri ekranındaki seçim penceresi bu yüzden kaldırıldı.
+     */
     fun setChallengeDays(context: Context, days: Int) {
         val value = if (days in CHALLENGE_OPTIONS) days else DEFAULT_CHALLENGE_DAYS
         prefs(context)?.edit()?.putInt(KEY_CHALLENGE_DAYS, value)?.apply()
+    }
+
+    /** Meydan okuma ödülü alındıysa alınan gün sayısı; alınmadıysa 0. */
+    fun challengeClaimed(context: Context): Int =
+        prefs(context)?.getInt(KEY_CHALLENGE_CLAIMED, 0) ?: 0
+
+    fun markChallengeClaimed(context: Context, days: Int) {
+        prefs(context)?.edit()?.putInt(KEY_CHALLENGE_CLAIMED, days)?.apply()
     }
 
     // ── Kutlama kuyruğu ─────────────────────────────────────────────────
@@ -257,6 +287,7 @@ object StreakRepository {
         recentDays: Set<String> = emptySet(),
         goalMinutes: Int = 0,
         challengeDays: Int = 0,
+        challengeClaimed: Int = 0,
     ) {
         val p = prefs(context) ?: return
 
@@ -268,13 +299,18 @@ object StreakRepository {
         // ekranından yaptığı değişiklik, bir sonraki okumada sunucunun eski değeriyle
         // ezilirdi — değişiklik ancak ertesi gün sunucuya gidiyor.
         if (!isOnboardingDone(context) && goalMinutes > 0) {
-            p.edit()
-                .putInt(KEY_GOAL_MINUTES, goalMinutes)
-                .apply()
-            if (challengeDays > 0) {
-                p.edit().putInt(KEY_CHALLENGE_DAYS, challengeDays).apply()
-            }
+            p.edit().putInt(KEY_GOAL_MINUTES, goalMinutes).apply()
             markOnboardingDone(context)
+        }
+        if (challengeClaimed > 0) {
+            p.edit().putInt(KEY_CHALLENGE_CLAIMED, challengeClaimed).apply()
+        }
+        // Sunucuda kayıtlı bir meydan okuma varsa yerel de ONA uyuyor. Sunucu bu değeri bir
+        // kez yazıp bir daha değiştirmiyor, yani tek doğru kaynak o: cihaz değiştiren
+        // kullanıcıya sözü geri geliyor, yerelde bir sapma olduysa da kendiliğinden düzeliyor.
+        // Sunucunun değeri yokken (kayıt bitti, ilk gün henüz bildirilmedi) yerel korunuyor.
+        if (challengeDays > 0) {
+            p.edit().putInt(KEY_CHALLENGE_DAYS, challengeDays).apply()
         }
         val editor = p.edit()
             .putInt(KEY_SERVER_CURRENT, current)
@@ -393,7 +429,7 @@ object StreakRepository {
     fun refresh(context: Context): StreakState {
         val p = prefs(context)
         val goal = goalMinutes(context)
-        val challenge = challengeDays(context)
+        val challenge = chosenChallengeDays(context)
         val seconds = StudyTimeTracker.secondsToday(context)
         val today = StudyTimeTracker.dayId()
         val yesterday = StudyTimeTracker.dayId(-1)
@@ -453,7 +489,6 @@ object StreakRepository {
             current = current,
             longest = longest,
             goalMinutes = goal,
-            challengeDays = challenge,
             secondsToday = seconds,
             achievedDays = achieved + daysOfStreak(current, lastDay),
         )

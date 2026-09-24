@@ -417,13 +417,18 @@ class UserInfoFragment : Fragment() {
     private fun renderChallengeStep() {
         binding.streakStepTitle.text = "Kaç gün üst üste öğreneceksin?"
         binding.streakStepSubtitle.text =
-            "Günde $goalMinutes dakika. Seni zorlamayacak bir hedef seç."
+            "Günde $goalMinutes dakika. Bu seçim sonradan değişmiyor, iyi düşün."
         StreakViews.buildOptionRows(
             container = binding.streakOptions,
             values = StreakRepository.CHALLENGE_OPTIONS,
             labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
-            trailing = listOf("Başlangıç", "İyi gidiyor", "Alışkanlık oluşuyor"),
+            // Ödül burada yazıyor çünkü seçim burada yapılıyor ve bir daha
+            // değiştirilemiyor: neyin karşılığında söz verdiğini seçerken görmeli.
+            trailing = StreakRepository.CHALLENGE_OPTIONS.map {
+                "+${StreakMilestones.challengeReward(it)} altın"
+            },
             selected = challengeDays,
+            trailingColor = StreakViews.COLOR_GOLD,
         ) { value ->
             challengeDays = value
             renderChallengeStep()

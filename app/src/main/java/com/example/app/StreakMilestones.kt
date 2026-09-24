@@ -32,6 +32,22 @@ object StreakMilestones {
             ).joinToString(" + ")
     }
 
+    /**
+     * Meydan okuma ödülleri (altın).
+     *
+     * Kilometre taşlarından ayrı: taşlar herkese aynı, meydan okuma kullanıcının kayıt
+     * sırasında kendi verdiği söz. Beş günlük söz hiçbir taşa denk gelmiyordu ve tutulan
+     * bir taahhüt karşılıksız kalıyordu.
+     *
+     * DİKKAT: ikizi sunucuda (`STREAK_CHALLENGE_REWARDS`). Buradaki yalnızca gösterim.
+     */
+    fun challengeReward(days: Int): Int = when (days) {
+        3 -> 500
+        5 -> 1000
+        7 -> 1500
+        else -> 0
+    }
+
     fun rewardFor(milestone: Int): Reward? = when {
         milestone == 3 -> Reward(keys = 3, gold = 0)
         milestone == 7 -> Reward(keys = 3, gold = 2000)

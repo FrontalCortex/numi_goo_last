@@ -7,8 +7,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 
 /**
- * Seri sayacını sunucuyla eşitler (`submitStreakDay`) ve kilometre taşı ödülünü toplar
- * (`claimStreakReward`).
+ * Seri sayacını sunucuyla eşitler (`submitStreakDay`) ve ödülleri toplar
+ * (`claimStreakReward`: hem kilometre taşları hem meydan okuma).
  *
  * ## Neden sayaç sunucuda
  * Seri artık ödül dağıtıyor ve cüzdan alanları kurallarda sunucuya özel. Ödülü veren
@@ -89,6 +89,9 @@ object StreakSyncService {
                     // Bunlar okunmasaydı varsayılan 5 dakikaya düşerdi.
                     goalMinutes = (doc.get("goalMinutes") as? Number)?.toInt() ?: 0,
                     challengeDays = (doc.get("challengeDays") as? Number)?.toInt() ?: 0,
+                    // Ödül alındı bilgisi de sunucudan: cihaz değiştiren kullanıcıya aynı
+                    // meydan okuma ödülünü ikinci kez toplatmaya çalıştırmamak için.
+                    challengeClaimed = (doc.get("challengeClaimed") as? Number)?.toInt() ?: 0,
                 )
                 onDone?.invoke()
             }
@@ -120,7 +123,7 @@ object StreakSyncService {
         val payload = hashMapOf(
             "days" to days,
             "goalMinutes" to StreakRepository.goalMinutes(context),
-            "challengeDays" to StreakRepository.challengeDays(context),
+            "challengeDays" to StreakRepository.chosenChallengeDays(context),
             // Hatırlatmanın yerel saate denk gelmesi için; sunucu bundan UTC saatini üretiyor.
             "utcOffsetMinutes" to utcOffsetMinutes(),
         )
@@ -148,6 +151,11 @@ object StreakSyncService {
                 StreakRepository.onSyncAccepted(context, days, current, longest, claimed)
                 StreakRepository.adoptServerState(
                     context, current, longest, lastDay, claimed, recentDays,
+                    // Okuma yolu burada da açık: seri ekranı açılmasa bile cihaz değiştiren
+                    // kullanıcının hedefi ve meydan okuması ilk eşitlemede geri geliyor.
+                    goalMinutes = (data["goalMinutes"] as? Number)?.toInt() ?: 0,
+                    challengeDays = (data["challengeDays"] as? Number)?.toInt() ?: 0,
+                    challengeClaimed = (data["challengeClaimed"] as? Number)?.toInt() ?: 0,
                 )
                 onDone?.invoke()
             }
@@ -170,20 +178,54 @@ object StreakSyncService {
         milestone: Int,
         onResult: (success: Boolean, message: String, keys: Int, currency: Int) -> Unit,
     ) {
+        claim(hashMapOf("milestone" to milestone), onResult) {
+            StreakRepository.markMilestoneClaimed(context, milestone)
+        }
+    }
+
+    /**
+     * Meydan okuma ödülünü toplar.
+     *
+     * Hangi gün sayısının ödülü olduğu GÖNDERİLMİYOR: sunucu kendi kaydındaki `challengeDays`
+     * değerine bakıyor. Gönderilseydi "7 günün ödülünü ver" diyen bir istek kurulabilirdi.
+     */
+    fun claimChallengeReward(
+        context: Context,
+        onResult: (success: Boolean, message: String, keys: Int, currency: Int) -> Unit,
+    ) {
+        val days = StreakRepository.chosenChallengeDays(context)
+        claim(hashMapOf("kind" to "challenge"), onResult) { data ->
+            // Sunucu hangi günü ödüllendirdiğini döndürüyor; yerelde de onu işaretliyoruz ki
+            // düğme, bir sonraki sunucu okumasını beklemeden kaybolsun.
+            val claimed = (data?.get("challengeDays") as? Number)?.toInt() ?: days
+            StreakRepository.markChallengeClaimed(context, claimed)
+        }
+    }
+
+    /**
+     * İki ödül türünün ortak yolu: çağrı, kazanılanın metne dönüşü ve hata mesajı aynı.
+     *
+     * @param markClaimed Başarıda yerel işaret; sunucudan dönen gövdeyi alıyor.
+     */
+    private fun claim(
+        payload: Map<String, Any>,
+        onResult: (success: Boolean, message: String, keys: Int, currency: Int) -> Unit,
+        markClaimed: (data: Map<*, *>?) -> Unit,
+    ) {
         if (uid() == null) {
             onResult(false, "Ödülü almak için giriş yapman gerekiyor.", 0, 0)
             return
         }
         FirebaseFunctions.getInstance()
             .getHttpsCallable("claimStreakReward")
-            .call(hashMapOf("milestone" to milestone))
+            .call(payload)
             .addOnSuccessListener { result ->
                 val data = result.data as? Map<*, *>
                 val keys = (data?.get("keys") as? Number)?.toInt() ?: 0
                 val currency = (data?.get("currency") as? Number)?.toInt() ?: 0
                 val rewardKeys = (data?.get("rewardKeys") as? Number)?.toInt() ?: 0
                 val rewardGold = (data?.get("rewardGold") as? Number)?.toInt() ?: 0
-                StreakRepository.markMilestoneClaimed(context, milestone)
+                markClaimed(data)
                 val what = listOfNotNull(
                     if (rewardKeys > 0) "$rewardKeys anahtar" else null,
                     if (rewardGold > 0) "$rewardGold altın" else null,

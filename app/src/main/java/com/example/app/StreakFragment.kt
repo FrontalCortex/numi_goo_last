@@ -19,11 +19,13 @@ import com.example.app.databinding.FragmentStreakBinding
  * Serinin kaç gün olduğu, bugünkü hedefin ne kadarının tamamlandığı, haftanın hangi
  * günlerinin tutturulduğu ve meydan okumanın durumu.
  *
- * ## Neden buradan hedef değiştirilebiliyor
+ * ## Neden hedef değiştirilebiliyor ama meydan okuma değiştirilemiyor
  * Kurulum akışı kullanıcıya "Bu hedefi istediğin zaman değiştirebilirsin" diyor. O sözün
- * karşılığı bu ekran; başka bir yerde ayar yok. Meydan okuma da aynı pencereden
- * değiştirilebiliyor: hedef tuttuktan sonra "3 gün" hedefinde takılı kalmak motive edici
- * değil, kullanıcı çıtayı kendisi yükseltebilmeli.
+ * karşılığı bu ekran; başka bir yerde ayar yok.
+ *
+ * Meydan okuma ise bir kez seçiliyor çünkü ÖDÜLÜ var: değiştirilebilseydi kullanıcı üç
+ * günlük sözün 500 altınını alıp hemen yedi güne çıkarak 1500'ü de alabilirdi. Aynı
+ * kilit sunucuda da var; buradaki yalnızca arayüzün tutarlı durması için.
  *
  * ## Neden süre dinleyicisi kurulmuyor
  * [StudyTimeTracker] yalnızca ders ekranlarında sayıyor; bu ekran açıkken süre zaten
@@ -49,7 +51,7 @@ class StreakFragment : Fragment() {
 
         binding.btnStreakBack.setOnClickListener { close() }
         binding.streakChangeGoal.setOnClickListener { showGoalPicker() }
-        binding.streakChallengeCard.setOnClickListener { showChallengePicker() }
+        binding.streakChallengeClaim.setOnClickListener { claimChallenge() }
     }
 
     override fun onResume() {
@@ -112,12 +114,7 @@ class StreakFragment : Fragment() {
 
         StreakViews.buildWeekStrip(b.streakWeekStrip, state.achievedDays)
 
-        b.streakChallengeTitle.text = "${state.challengeDays} Günlük Meydan Okuma"
-        b.streakChallengeSub.text = when {
-            state.current <= 0 -> "BUGÜN BAŞLIYOR"
-            state.current >= state.challengeDays -> "TAMAMLANDI — yeni hedef için dokun"
-            else -> "${state.challengeDays} GÜNÜN ${state.current}. GÜNÜ"
-        }
+        renderChallenge(b, state)
 
         b.streakLongest.text = "${state.longest} gün"
 
@@ -152,12 +149,101 @@ class StreakFragment : Fragment() {
         }
     }
 
-    // ── Seçim penceresi ─────────────────────────────────────────────────
+    // ── Meydan okuma ──────────────────────────────────
 
+    /**
+     * Meydan okuma kartı: verilen söz, ödül rozeti, ilerleme çubuğu ve hak edildiyse
+     * toplama düğmesi.
+     *
+     * İlerleme YEREL seriden çiziliyor — ekranın tepesindeki büyük sayı da oradan geliyor,
+     * ikisi ayrı kaynaklardan beslenseydi aynı ekran kendi kendisiyle çelişirdi. Ödülün
+     * toplanabilirliği ise SUNUCUNUN serisine bakıyor: ödülü veren taraf o, yoksa basılabilen
+     * ama her seferinde hata veren bir düğme göstermiş olurduk.
+     *
+     * İkisinin ayrıştığı tek durum — yerelde tamamlandı, henüz sunucuya gitmedi — sessiz
+     * bırakılmıyor: "ödülün hazırlanıyor" satırı onu anlatıyor. Yoksa çocuk sözünü tuttuğunu
+     * görüp karşılığını bulamazdı.
+     */
+    private fun renderChallenge(b: FragmentStreakBinding, state: StreakRepository.StreakState) {
+        // Seçilmiş değer, varsayılan değil: bu özellikten ÖNCE kayıt olmuş kullanıcı hiçbir
+        // söz vermedi, sunucu da onun için bir meydan okuma tanımıyor. Kart varsayılanla
+        // çizilseydi o kullanıcıya basıldığında "meydan okuma seçilmemiş" hatası veren bir
+        // "Topla" düğmesi gösterirdik.
+        val days = StreakRepository.chosenChallengeDays(requireContext())
+        val reward = StreakMilestones.challengeReward(days)
+        if (days <= 0 || reward <= 0) {
+            b.streakChallengeCard.visibility = View.GONE
+            return
+        }
+        b.streakChallengeCard.visibility = View.VISIBLE
+
+        val done = state.current.coerceIn(0, days)
+        val claimedDays = StreakRepository.challengeClaimed(requireContext())
+        val serverStreak = StreakRepository.serverCurrent(requireContext())
+        val complete = state.current >= days
+        val claimable = claimedDays <= 0 && serverStreak >= days
+
+        b.streakChallengeTitle.text = "$days Günlük Meydan Okuma"
+        b.streakChallengeSub.text = when {
+            claimedDays > 0 -> "TAMAMLANDI ✓"
+            claimable -> "TAMAMLANDI — ödülünü topla"
+            complete -> "TAMAMLANDI — ödülün hazırlanıyor"
+            state.current <= 0 -> "BUGÜN BAŞLIYOR"
+            else -> "$days GÜNÜN $done. GÜNÜ"
+        }
+
+        // Ödül alındıysa rozet kalkıyor: artık bir vaat değil, olmuş bitmiş bir şey.
+        b.streakChallengeReward.visibility = if (claimedDays > 0) View.GONE else View.VISIBLE
+        b.streakChallengeRewardText.text = "+$reward"
+        b.streakChallengeClaim.visibility = if (claimable) View.VISIBLE else View.GONE
+
+        val fraction = (done.toFloat() / days).coerceIn(0f, 1f)
+        val zone = b.streakChallengeZone
+        zone.post {
+            val live = _binding ?: return@post
+            if (zone.width <= 0) return@post
+            applyDailyQuestionProgressOverlayNow(
+                widthHost = zone,
+                fill = live.streakChallengeFill,
+                shine = live.streakChallengeShine,
+                percent = fraction * 100f,
+                complete = complete,
+            )
+        }
+    }
+
+    private fun claimChallenge() {
+        if (!isAdded) return
+        StreakSyncService.claimChallengeReward(requireContext()) { success, message, _, _ ->
+            if (!isAdded) return@claimChallengeReward
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            if (success) {
+                (activity as? MainActivity)?.refreshWalletUi()
+                render()
+            }
+        }
+    }
+
+    // ── Hedef penceresi ──────────────────────────────────
+
+    /**
+     * Günlük hedef seçimi. Ekrandaki tek ayar bu; meydan okuma bir kez seçildiği için
+     * buradan değiştirilemiyor (bkz. sınıf açıklaması).
+     *
+     * Seçim yapılır yapılmaz kaydedilip pencere kapanıyor: "onayla" düğmesi tek seçimli bir
+     * listede fazladan bir adım olurdu.
+     */
     private fun showGoalPicker() {
-        showPicker(
-            title = "Günlük hedefin",
-            subtitle = "Her gün ne kadar öğrenmek istersin?",
+        if (!isAdded) return
+        val view = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Günlük hedefin"
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            "Her gün ne kadar öğrenmek istersin?"
+        StreakViews.buildOptionRows(
+            container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
             values = StreakRepository.GOAL_OPTIONS,
             labels = listOf("Rahat", "Düzenli", "Ciddi"),
             trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
@@ -168,59 +254,6 @@ class StreakFragment : Fragment() {
                 AnalyticsLogger.logStreakGoalSet(value, AnalyticsLogger.STREAK_SOURCE_SETTINGS)
             }
             StreakRepository.setGoalMinutes(requireContext(), value)
-        }
-    }
-
-    private fun showChallengePicker() {
-        showPicker(
-            title = "Meydan okuman",
-            subtitle = "Kaç gün üst üste öğreneceksin?",
-            values = StreakRepository.CHALLENGE_OPTIONS,
-            labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
-            trailing = listOf("Başlangıç", "İyi gidiyor", "Alışkanlık oluşuyor"),
-            selected = StreakRepository.challengeDays(requireContext()),
-        ) { value ->
-            if (value != StreakRepository.challengeDays(requireContext())) {
-                AnalyticsLogger.logStreakChallengeSet(
-                    value,
-                    AnalyticsLogger.STREAK_SOURCE_SETTINGS,
-                )
-            }
-            StreakRepository.setChallengeDays(requireContext(), value)
-        }
-    }
-
-    /**
-     * Seçenek penceresi. İki seçim de aynı pencereyi kullanıyor; tek fark başlık, satırlar
-     * ve kaydeden satır.
-     *
-     * Seçim yapılır yapılmaz kaydedilip pencere kapanıyor: "onayla" düğmesi tek seçimli bir
-     * listede fazladan bir adım olurdu.
-     */
-    private fun showPicker(
-        title: String,
-        subtitle: String,
-        values: List<Int>,
-        labels: List<String>,
-        trailing: List<String>,
-        selected: Int,
-        onPick: (Int) -> Unit,
-    ) {
-        if (!isAdded) return
-        val view = layoutInflater.inflate(R.layout.dialog_streak_options, null)
-        val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        view.findViewById<TextView>(R.id.streakOptionsTitle).text = title
-        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text = subtitle
-        StreakViews.buildOptionRows(
-            container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
-            values = values,
-            labels = labels,
-            trailing = trailing,
-            selected = selected,
-        ) { value ->
-            onPick(value)
             dialog.dismiss()
             render()
         }

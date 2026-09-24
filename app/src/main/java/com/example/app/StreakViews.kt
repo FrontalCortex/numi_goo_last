@@ -23,6 +23,9 @@ object StreakViews {
     private const val COLOR_MUTED = "#93A5B3"
     private const val COLOR_ACCENT = "#FF9800"
 
+    /** Sağ taraftaki metin bir ÖDÜL olduğunda; sönük gri onu açıklama gibi gösterirdi. */
+    const val COLOR_GOLD = "#FFC107"
+
     /**
      * Seçenek satırlarını [container] içine üretir (önce içini boşaltır).
      *
@@ -30,6 +33,7 @@ object StreakViews {
      * @param labels Sol taraftaki ana metin.
      * @param trailing Sağ taraftaki açıklama.
      * @param selected Seçili değer; hiçbiri seçili değilse [values] dışında bir sayı verin.
+     * @param trailingColor Sağ taraftaki metnin rengi; ödül yazıyorsa [COLOR_GOLD].
      */
     fun buildOptionRows(
         container: ViewGroup,
@@ -37,6 +41,7 @@ object StreakViews {
         labels: List<String>,
         trailing: List<String>,
         selected: Int,
+        trailingColor: String = COLOR_MUTED,
         onPick: (Int) -> Unit,
     ) {
         container.removeAllViews()
@@ -71,7 +76,7 @@ object StreakViews {
             row.addView(
                 TextView(context).apply {
                     text = trailing.getOrElse(index) { "" }
-                    setTextColor(Color.parseColor(COLOR_MUTED))
+                    setTextColor(Color.parseColor(trailingColor))
                     textSize = 15f
                 },
             )
