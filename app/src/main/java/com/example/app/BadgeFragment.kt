@@ -1689,13 +1689,16 @@ class BadgeFragment : Fragment() {
         }
         val mainRef = activity as? MainActivity
         parentFragmentManager.beginTransaction()
+            // Sağdan gir, sola çık — zincirin geri kalanıyla aynı yön. Eskiden sağa
+            // çıkıyordu ve bir sonraki ekran da sağdan geldiği için ikisi çakışıyordu.
+            // Süre değişmedi (300 ms), aşağıdaki 350 ms'lik bekleme geçerli.
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .remove(this@BadgeFragment)
             .commit()
-        // slide_out_right animasyonu 300ms. Animasyon bitmeden kupa yolu açılmasın diye
+        // Çıkış animasyonu 300ms. Animasyon bitmeden kupa yolu açılmasın diye
         // 350ms bekleyip tetikliyoruz. onDestroyView da çağırır, bu ikincil bir güvencedir.
         view?.postDelayed({
             mainRef?.tryShowPendingMarathonGuideOnMap("BadgeFragment.closeCelebration.afterSlide")

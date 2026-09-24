@@ -42,9 +42,18 @@ class AskQuestionOpenFragment : DialogFragment() {
         setStyle(STYLE_NORMAL, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
     }
 
+    /**
+     * Ders sonrası kuyruğundaki diğer ekranlarla AYNI çizimler
+     * ([R.style.QueueScreenAnimation]): sağdan girer, SOLA çıkar.
+     *
+     * Paylaşılan [R.style.DialogAnimationSlideRight] sağa çıkıyordu; bu ekranın hemen
+     * ardından gelen ekran da sağdan girdiği için ikisi aynı kenardan çakışıyor ve akış
+     * geri gidiyormuş gibi okunuyordu. Paylaşılan çizim kuyruk dışındaki ekranlarda
+     * kullanıldığı için değiştirilmedi, bu ekran kuyruğun çiftine geçti.
+     */
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.DialogAnimationSlideRight)
+        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
     }
 
     override fun onCreateView(

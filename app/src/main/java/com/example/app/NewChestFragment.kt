@@ -704,7 +704,10 @@ class NewChestFragment : Fragment() {
             }
             val rootView = binding.root
             rootView.animate()
-                .translationX(rootView.width.toFloat())
+                // SOLA çıkıyor: zincirdeki her ekran sağdan girip sola çıkıyor ve böylece
+                // sandık → rozet → yeni seri tek bir ileri hareket gibi okunuyor. Eskiden
+                // sağa kayıyordu, yani bir sonraki ekranla aynı yönden çakışıyordu.
+                .translationX(-rootView.width.toFloat())
                 .setDuration(300L)
                 .withEndAction { finishClose() }
                 .start()

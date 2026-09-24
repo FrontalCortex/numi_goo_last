@@ -39,7 +39,10 @@ class AdSkipFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.DialogAnimationSlideRight)
+        // Kuyruğun çizimleri: sağdan girer, SOLA çıkar. Bu ekran yalnızca reklam
+        // akışından açılıyor ve kapanınca sıradaki kuyruk ekranı sağdan geliyor; eskiden
+        // sağa çıktığı için ikisi aynı kenarda çakışıyordu.
+        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
     }
 
     override fun onCreateView(

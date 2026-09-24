@@ -11,11 +11,14 @@
         <item name="android:windowExitAnimation">@anim/slide_out_right</item>
     </style>
     <!--
-      Ders sonrası kuyruğundaki dialog ekranları (bkz. NewStreakFragment).
+      Ders sonrası kuyruğundaki dialog ekranları: AdSkipFragment, NewStreakFragment,
+      AskQuestionOpenFragment. Fragment olarak eklenen kuyruk ekranları (sandık, rozet,
+      görev ödülü) aynı çizimleri setCustomAnimations ile kullanıyor.
 
-      Rozet kutlamasıyla AYNI çizimleri kullanıyor: art arda gelen ekranların hareket
-      dili ortak olmazsa — biri 500 ms solarak, diğeri 300 ms kayarak — tek bir akış
-      gibi okunmuyor.
+      Kural: her ekran SAĞDAN girer, SOLA çıkar. Yön ortak olmazsa çıkan ekranla giren
+      ekran aynı kenarda çakışıyor ve akış ileri değil geri gidiyormuş gibi okunuyor.
+      Süre ve eğri de ortak: biri 500 ms solarak diğeri 300 ms kayarak hareket ederse
+      art arda gelen ekranlar tek bir akış gibi görünmüyor.
     -->
     <style name="QueueScreenAnimation">
         <item name="android:windowEnterAnimation">@anim/queue_screen_in</item>

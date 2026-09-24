@@ -89,8 +89,8 @@ class ChestFragment : Fragment() {
             (activity as? MainActivity)?.notifyMapVisibleAfterLessonClaim("ChestFragment.loginReturn")
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_left
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                 )
                 .remove(this@ChestFragment)
                 .commit()
@@ -339,9 +339,12 @@ class ChestFragment : Fragment() {
                                 tutorialNumber = GlobalValues.currentTutorialNumber,
                             )
                             fm.beginTransaction()
+                                // Görev ilerlemesi paneli de zincirin parçası: sağdan girer,
+                                // sola çıkar. Eskiden SOLDAN giriyordu, yani sandık sola
+                                // çıkarken bu da soldan geliyor ve ikisi çakışıyordu.
                                 .setCustomAnimations(
-                                    R.anim.slide_in_left,
-                                    R.anim.slide_out_left,
+                                    R.anim.queue_screen_in,
+                                    R.anim.queue_screen_out,
                                 )
                                 .replace(
                                     hostContainerId,
@@ -495,7 +498,9 @@ class ChestFragment : Fragment() {
 
         val containerId = (requireView().parent as View).id
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, 0)
+            // Ders sonrası zincirindeki her ekran gibi: sağdan girer, sola çıkar.
+            // Tek yönlü akış, art arda gelen ekranları tek bir ilerleme gibi okutuyor.
+            .setCustomAnimations(R.anim.queue_screen_in, 0)
             .add(
                 containerId,
                 NewChestFragment.newInstance(
