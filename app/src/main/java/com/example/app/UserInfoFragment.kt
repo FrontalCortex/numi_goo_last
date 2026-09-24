@@ -4,7 +4,6 @@ import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -66,8 +65,6 @@ class UserInfoFragment : Fragment() {
     private val sourceNames = listOf("Facebook", "Instagram", "Youtube", "Google Araması", "Arkadaş/Aile", "TikTok", "Uygulama Mağazası", "Diğer")
 
     companion object {
-        private const val TAG = "UserInfoFragment"
-
         /** Adım geçişi ve ilerleme çubuğu animasyon süresi. */
         private const val STEP_ANIM_MS = 220L
 
@@ -256,7 +253,6 @@ class UserInfoFragment : Fragment() {
      */
     fun onBackStep(): Boolean {
         if (!isAdded || _binding == null) return false
-        Log.d(TAG, "geri: adım=$currentStep animating=$animating")
         if (animating) return true
 
         val previous = when (currentStep) {

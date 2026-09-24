@@ -100,6 +100,19 @@ class MainActivity : AppCompatActivity() {
          */
         private const val STREAK_CELEBRATION_MS = 4000L
 
+        /** Kapı kapalıyken iki deneme arası. */
+        private const val STREAK_CELEBRATION_RETRY_MS = 400L
+
+        /**
+         * Yeniden denemelerin toplam süresi.
+         *
+         * Ders dönüşünde katmanların kapanması saniyeler sürebiliyor (reklam, sandık
+         * animasyonu, rozet kutlaması). Bu süre dolduğunda vazgeçiliyor: kutlama diskte
+         * duruyor ve bir sonraki doğal tetiklemede (ekran dönüşü, uygulama öne gelmesi)
+         * yine denenecek.
+         */
+        private const val STREAK_CELEBRATION_RETRY_BUDGET_MS = 20_000L
+
         const val EXTRA_FROM_LOGIN = "from_login"
         const val EXTRA_START_DESTINATION = "start_destination"
         const val START_DESTINATION_MAP = "map"
@@ -3508,6 +3521,12 @@ class MainActivity : AppCompatActivity() {
 
     private val streakCelebrationHideRunnable = Runnable { hideStreakCelebration() }
 
+    /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */
+    private val streakCelebrationRetryRunnable = Runnable { maybeShowStreakCelebration(fromRetry = true) }
+
+    /** Yeniden denemenin biteceği an (monoton saat); 0 = deneme sürmüyor. */
+    private var streakCelebrationDeadlineMs = 0L
+
     /**
      * Hedef tutturulduysa kutlama şeridini uygun anda gösterir.
      *
@@ -3515,19 +3534,60 @@ class MainActivity : AppCompatActivity() {
      * önünü kesmek, kutlamayı ödül olmaktan çıkarıp engel yapardı. Bunun yerine
      * [StreakRepository] kuyruğa alıyor, burası güvenli bir ekrana dönüldüğünde açıyor.
      */
-    private fun maybeShowStreakCelebration() {
+    /**
+     * @param fromRetry Yeniden deneme zamanlayıcısından geldiyse true; süre bütçesi
+     *   yalnızca yeni bir tetiklemede sıfırlanmalı.
+     */
+    private fun maybeShowStreakCelebration(fromRetry: Boolean = false) {
         if (!::binding.isInitialized) return
+        if (!fromRetry) streakCelebrationDeadlineMs = 0L
+
         val blocked = streakCelebrationBlockReason() != null
         if (streakCelebrationShowing) {
             // Şerit açıkken üstüne bir ders/rozet ekranı geldiyse çekilsin.
             if (blocked) hideStreakCelebration()
             return
         }
-        if (blocked) return
+        if (blocked) {
+            scheduleStreakCelebrationRetry()
+            return
+        }
+        streakCelebrationDeadlineMs = 0L
+        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+
         val streak = StreakRepository.pendingCelebration(this)
         if (streak <= 0) return
         StreakRepository.clearPendingCelebration(this)
         showStreakCelebration(streak)
+    }
+
+    /**
+     * Kapı kapalıyken kısa aralıklarla yeniden dener.
+     *
+     * ## Neden gerekli
+     * Kutlama ders ekranında hak ediliyor ve dönüşte gösteriliyor. Ama ders katmanlarının
+     * kapanması EŞZAMANSIZ: geri yığını değiştiğinde ders/sonuç kapları hâlâ görünür
+     * oluyor, kapı kapalı kalıyor ve bir daha denenmiyordu. Kutlama ancak kullanıcı başka
+     * bir ekrana gidip dönünce — yani tesadüfen yeni bir tetikleme olunca — çıkıyordu.
+     *
+     * ## Neden zamanlayıcı, kanca değil
+     * Katmanların kapanışı tek bir yerden akmıyor (ders, sandık, rozet, sezon kapısı
+     * kendi yollarından kapanıyor). Hepsine kanca takmak, yarın eklenecek bir katmanı
+     * unutmak demekti. Bütçeli yeniden deneme hangi yoldan gelinirse gelinsin çalışıyor
+     * ve bekleyen kutlama yoksa hiç kurulmuyor.
+     */
+    private fun scheduleStreakCelebrationRetry() {
+        if (StreakRepository.pendingCelebration(this) <= 0) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (streakCelebrationDeadlineMs == 0L) {
+            streakCelebrationDeadlineMs = now + STREAK_CELEBRATION_RETRY_BUDGET_MS
+        }
+        if (now >= streakCelebrationDeadlineMs) return
+        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+        binding.streakCelebration.postDelayed(
+            streakCelebrationRetryRunnable,
+            STREAK_CELEBRATION_RETRY_MS,
+        )
     }
 
     /**
