@@ -1,9 +1,11 @@
 package com.example.app
 
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import java.text.SimpleDateFormat
@@ -136,13 +138,7 @@ object StreakViews {
                     setTypeface(typeface, Typeface.BOLD)
                 },
             )
-            texts.addView(
-                TextView(context).apply {
-                    text = reward.label
-                    setTextColor(Color.parseColor(if (claimable) COLOR_ACCENT else COLOR_MUTED))
-                    textSize = 13f
-                },
-            )
+            texts.addView(rewardStrip(context, reward, claimable))
             row.addView(texts)
 
             if (claimable) {
@@ -172,6 +168,61 @@ object StreakViews {
             }
             container.addView(row)
         }
+    }
+
+    /**
+     * Ödülü ikonla yazar: [🔑] 3 ya da [🪙] 5000.
+     *
+     * "3 anahtar" yazısı yerine ikon kullanılıyor çünkü kitle 7-10 yaş ve çocuk anahtarı
+     * üst bardan zaten bu ikonla tanıyor. Aynı çizimler kullanılıyor (`key`, `gold_ic`);
+     * başka bir ikon seçmek "bu başka bir şey mi" sorusunu doğurudu.
+     *
+     * İki türü birden veren bir basamak şu anki merdivende yok ama kod ikisini de çiziyor:
+     * tablo değiştiğinde burasının da değişmesi gerekmesin.
+     */
+    private fun rewardStrip(
+        context: Context,
+        reward: StreakMilestones.Reward,
+        claimable: Boolean,
+    ): LinearLayout {
+        val density = context.resources.displayMetrics.density
+        val strip = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = (3 * density).toInt() }
+        }
+        val parts = listOfNotNull(
+            if (reward.keys > 0) R.drawable.key to reward.keys else null,
+            if (reward.gold > 0) R.drawable.gold_ic to reward.gold else null,
+        )
+        parts.forEachIndexed { index, (iconRes, amount) ->
+            strip.addView(
+                ImageView(context).apply {
+                    setImageResource(iconRes)
+                    contentDescription = null
+                    layoutParams = LinearLayout.LayoutParams(
+                        (18 * density).toInt(),
+                        (18 * density).toInt(),
+                    ).apply { if (index > 0) marginStart = (10 * density).toInt() }
+                },
+            )
+            strip.addView(
+                TextView(context).apply {
+                    text = amount.toString()
+                    setTextColor(Color.parseColor(if (claimable) COLOR_ACCENT else COLOR_MUTED))
+                    textSize = 14f
+                    setTypeface(typeface, Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply { marginStart = (5 * density).toInt() }
+                },
+            )
+        }
+        return strip
     }
 
     /**

@@ -22,15 +22,14 @@ object StreakMilestones {
     /** Üst sınır: sonsuz döngüye karşı. Sunucudaki karşılığıyla aynı. */
     private const val MAX_MILESTONE = 3600
 
-    /** Bir kilometre taşının ödülü. */
-    data class Reward(val keys: Int, val gold: Int) {
-        /** "3 anahtar", "5000 altın", "3 anahtar + 2000 altın". */
-        val label: String
-            get() = listOfNotNull(
-                if (keys > 0) "$keys anahtar" else null,
-                if (gold > 0) "$gold altın" else null,
-            ).joinToString(" + ")
-    }
+    /**
+     * Bir kilometre taşının ödülü.
+     *
+     * İkisi birden dolu olabilir diye duruyor: şu anki merdivende her basamak tek tür
+     * veriyor ama tablo değiştiğinde çizim tarafını da değiştirmek zorunda kalmayalım
+     * (bkz. [StreakViews.buildMilestoneRows]).
+     */
+    data class Reward(val keys: Int, val gold: Int)
 
     /**
      * Meydan okuma ödülleri (altın).
@@ -50,13 +49,13 @@ object StreakMilestones {
 
     fun rewardFor(milestone: Int): Reward? = when {
         milestone == 3 -> Reward(keys = 3, gold = 0)
-        milestone == 7 -> Reward(keys = 3, gold = 2000)
-        milestone == 14 -> Reward(keys = 0, gold = 5000)
+        milestone == 7 -> Reward(keys = 0, gold = 2000)
+        milestone == 14 -> Reward(keys = 5, gold = 0)
         milestone <= 0 || milestone > MAX_MILESTONE -> null
         milestone % REPEAT_STEP != 0 -> null
-        // 30 → anahtar, 60 → altın, 90 → anahtar… Merdiven 30'da bitseydi altmışıncı
+        // 30 altın, 60 anahtar, 90 altın, 120 anahtar… Merdiven 30'da bitseydi altmışıncı
         // günündeki çocuk için serinin bir karşılığı kalmazdı.
-        (milestone / REPEAT_STEP) % 2 == 1 -> Reward(keys = 10, gold = 0)
+        (milestone / REPEAT_STEP) % 2 == 0 -> Reward(keys = 10, gold = 0)
         else -> Reward(keys = 0, gold = 5000)
     }
 

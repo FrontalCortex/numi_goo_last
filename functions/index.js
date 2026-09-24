@@ -3869,9 +3869,9 @@ const STREAK_RECENT_DAYS_KEPT = 21;
  */
 const STREAK_FIXED_REWARDS = {
   3: { keys: 3, gold: 0 },
-  7: { keys: 3, gold: 2000 },
-  14: { keys: 0, gold: 5000 },
-  30: { keys: 10, gold: 0 },
+  7: { keys: 0, gold: 2000 },
+  14: { keys: 5, gold: 0 },
+  30: { keys: 0, gold: 5000 },
 };
 
 /** Kilometre taşı olarak kabul edilen en büyük gün — sonsuz döngüye karşı üst sınır. */
@@ -3900,8 +3900,10 @@ function streakRewardFor(milestone) {
   }
   if (STREAK_FIXED_REWARDS[milestone]) return STREAK_FIXED_REWARDS[milestone];
   if (milestone % 30 !== 0) return null;
+  // 30 altın (yukarıdaki sabit tabloda), 60 anahtar, 90 altın, 120 anahtar …
+  // Çift adım anahtar veriyor çünkü merdiven 30'da altınla bitiyor.
   const step = milestone / 30; // 30 → 1, 60 → 2, 90 → 3 …
-  return step % 2 === 0 ? { keys: 0, gold: 5000 } : { keys: 10, gold: 0 };
+  return step % 2 === 0 ? { keys: 10, gold: 0 } : { keys: 0, gold: 5000 };
 }
 
 /** `yyyy-MM-dd` → epoch gün sayısı. Geçersizse null. */
