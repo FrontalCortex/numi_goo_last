@@ -2707,10 +2707,7 @@ class MainActivity : AppCompatActivity() {
         // gösterilecekken kilit hiç uygulanmıyor ve iki pencere arasında harita açık
         // kalıyordu. Burada TEK acquire var — ChromeBlocker sayıcılı, ikinci bir kilit
         // noktası eklemek dengesizlik üretirdi.
-        if (hasPostLessonQueueWork()) {
-            (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
-                ?.lockTouchForPendingOverlay()
-        }
+        acquirePostLessonQueueTouchLock()
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
@@ -2808,7 +2805,7 @@ class MainActivity : AppCompatActivity() {
 
         // Kuyruğun açtığı yeni seri ekranı da burada listeli: listelenmeseydi rehber
         // onun üstüne açılırdı — ilk denemede tam bu oldu.
-        if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) {
+        if (dialogStillShowing(NewStreakFragment.TAG)) {
             return "new_streak_prompt"
         }
 
@@ -3472,8 +3469,8 @@ class MainActivity : AppCompatActivity() {
         if (fm.isStateSaved) return "state_saved"
         marathonGuideMapBlockReason()?.let { return it }
         if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
-        if (fm.findFragmentByTag("RatingDialog") != null) return "rating_showing"
-        if (fm.findFragmentByTag("AskQuestionOpen") != null) return "promo_showing"
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
         val map = fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment
         if (map != null && map.isAdded && map.view != null &&
             map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
@@ -3481,6 +3478,23 @@ class MainActivity : AppCompatActivity() {
             return "guide_panel_visible"
         }
         return null
+    }
+
+    /**
+     * Bu etiketli dialog GERÇEKTEN ekranda mı.
+     *
+     * `findFragmentByTag != null` yetmiyor: `onDismiss`, fragment'i kaldıran işlem commit
+     * EDİLMEDEN ÖNCE çalışıyor. Kapanan ekran kuyruğu dürttüğünde kendisini hâlâ
+     * FragmentManager'da buluyor ve "açığım" diyerek sıradakini engelliyordu.
+     *
+     * Pencerenin kendisine bakılıyor: dialog kapandığı anda `isShowing` false oluyor, yani
+     * kare saymaya gerek kalmıyor.
+     */
+    private fun dialogStillShowing(tag: String): Boolean {
+        val fragment = supportFragmentManager.findFragmentByTag(tag) ?: return false
+        if (fragment.isRemoving) return false
+        val dialog = (fragment as? androidx.fragment.app.DialogFragment)?.dialog ?: return true
+        return dialog.isShowing
     }
 
     /** Bir sonraki karede çalışacak kuyruk turu; bkz. [pumpPostLessonQueue]. */
@@ -3525,6 +3539,17 @@ class MainActivity : AppCompatActivity() {
                 "rehber=${MarathonGuideStore.isPending(this)} " +
                 "kupaYolu=${GlobalValues.pendingCupPathRevealPartId != null}",
         )
+        // Kilit kararı KAPIDAN ÖNCE veriliyor.
+        //
+        // Eskiden kilit yalnızca kuyruk "bos" dalına ulaştığında bırakılıyordu. Son ekran
+        // kapanırken kapı onu hâlâ "açık" saydığı için erken dönülüyor, bekleyen iş de
+        // kalmadığı için bekçi kendini iptal ediyor ve kilidi bırakacak kimse kalmıyordu —
+        // kullanıcı haritaya hiç dokunamıyordu.
+        //
+        // Kural tek cümle: kilit, bekleyen iş VARKEN duruyor. Kapının ne dediğinden
+        // bağımsız.
+        if (!hasPostLessonQueueWork()) releasePostLessonQueueTouchLock(caller)
+
         val block = postLessonQueueBlockReason()
         if (block != null) {
             Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
@@ -3539,16 +3564,70 @@ class MainActivity : AppCompatActivity() {
         if (showRatingStep(caller)) return
         if (showMarathonGuideStep(caller)) return
         if (showCupPathStep(caller)) return
-        // Kuyruk boşaldı: harita kilidi tam burada bırakılıyor.
-        //
-        // Kilidi süre dolunca bırakmak yanlıştı: kuyruk üç ekran gösteriyorsa bu birkaç
-        // saniyeden uzun sürüyor ve harita aradaki ekranların ARKASINDA tıklanabilir hale
-        // geliyordu. Artık ölçüt süre değil, kuyruğun kendisi.
+        // Kilit yukarıda bırakıldı (bekleyen iş yoktu), burada yalnızca iz düşüyor.
         Log.d(TAG_QUEUE, "bos | caller=$caller")
-        binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
-        postLessonQueueWatchdogDeadlineMs = 0L
+    }
+
+    /**
+     * Harita dokunma kilidini bırakır ve bekçiyi durdurur.
+     *
+     * Ölçüt süre değil kuyruğun kendisi: kuyrukta iş varken kilit duruyor, iş bitince
+     * bırakılıyor. Boşa çağrılması zararsız — [MapFragment.enableMapTouchRouting] kendi
+     * guard'larını da uyguluyor ve ChromeBlocker fazladan release'i yok sayıyor.
+     */
+    /**
+     * Kuyruğun harita kilidi şu anda BİZİM tarafımızdan tutuluyor mu.
+     *
+     * [MainActivityChromeBlocker] sayıcılı: acquire ve release birebir eşleşmeli. Bu bayrak
+     * olmadan kuyruk, başka bir akışın (sandık, görev paneli) kilidini düşürebilirdi —
+     * boş bir kuyruk turu her ekran dönüşünde yaşanabiliyor.
+     */
+    private var postLessonQueueLockHeld = false
+
+    private fun acquirePostLessonQueueTouchLock() {
+        if (postLessonQueueLockHeld) return
+        if (!hasPostLessonQueueWork()) return
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-        map?.enableMapTouchRouting()
+            ?: return
+        postLessonQueueLockHeld = true
+        Log.d(TAG_QUEUE, "kilit aliniyor")
+        map.lockTouchForPendingOverlay()
+    }
+
+    /**
+     * Harita dokunma kilidini bırakır ve bekçiyi durdurur.
+     *
+     * Ölçüt süre değil kuyruğun kendisi: kuyrukta iş varken kilit duruyor, iş bitince
+     * bırakılıyor. Yalnızca kendi aldığımız kilit bırakılıyor (bkz.
+     * [postLessonQueueLockHeld]).
+     */
+    private fun releasePostLessonQueueTouchLock(caller: String) {
+        if (!::binding.isInitialized) return
+        if (!postLessonQueueLockHeld) {
+            binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+            postLessonQueueWatchdogDeadlineMs = 0L
+            return
+        }
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null) {
+            Log.d(TAG_QUEUE, "kilit BIRAKILAMADI | caller=$caller reason=map_yok")
+            schedulePostLessonQueueWatchdog()
+            return
+        }
+        // enableMapTouchRouting kendi guard'larını da uyguluyor (rozet Firestore beklemesi,
+        // promo kilidi…) ve bırakmayabilir. Bayrağı körü körüne düşürmek borç kaybetmek
+        // olurdu: ChromeBlocker sayıcılı, bırakılmayan bir acquire haritayı kalıcı olarak
+        // kilitli bırakır. Bu yüzden sayaca bakılıyor ve düşmediyse tekrar denenecek.
+        val before = MainActivityChromeBlocker.currentLockDepth()
+        map.enableMapTouchRouting()
+        val after = MainActivityChromeBlocker.currentLockDepth()
+        if (after < before) {
+            postLessonQueueLockHeld = false
+            Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller depth=$before->$after")
+            return
+        }
+        Log.d(TAG_QUEUE, "kilit BIRAKILAMADI | caller=$caller guard engelledi, tekrar denenecek")
+        schedulePostLessonQueueWatchdog()
     }
 
     /**
@@ -3585,7 +3664,10 @@ class MainActivity : AppCompatActivity() {
      */
     private fun schedulePostLessonQueueWatchdog() {
         if (!::binding.isInitialized) return
-        if (!hasPostLessonQueueWork()) {
+        // Bekçi yalnızca bekleyen ekran için değil, BİRAKILMAMIŞ KİLİT için de çalışıyor:
+        // kilit askıda kalırsa kullanıcı haritaya hiç dokunamıyor ve bu, bir ekranın
+        // gösterilememesinden daha kötü.
+        if (!hasPostLessonQueueWork() && !postLessonQueueLockHeld) {
             postLessonQueueWatchdogDeadlineMs = 0L
             binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
             return
@@ -3598,8 +3680,12 @@ class MainActivity : AppCompatActivity() {
             // Pes ederken haritayı kilitli bırakmamak şart: bekleyen ekran hiç açılamadıysa
             // ve kilit de açılmazsa kullanıcı hiçbir yere dokunamayan bir haritada kalır.
             Log.w(TAG_QUEUE, "bekci BIRAKTI | sure doldu, harita kilidi aciliyor")
-            val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-            map?.releaseMapTouchAfterQueueGaveUp()
+            if (postLessonQueueLockHeld) {
+                postLessonQueueLockHeld = false
+                val map =
+                    supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                map?.releaseMapTouchAfterQueueGaveUp()
+            }
             return
         }
         binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
