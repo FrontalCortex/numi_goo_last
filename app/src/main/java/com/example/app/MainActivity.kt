@@ -2698,12 +2698,16 @@ class MainActivity : AppCompatActivity() {
         }
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
-        // Rozet veya rehber gösterileceği burada zaten kesinse (payload'lar dolu / rehber
-        // pending), asıl gösterim reklam kontrolü gibi asenkron bir gecikme yüzünden hemen
-        // gelmeyebilir — o gecikme boyunca harita tıklanabilir kalmasın diye erkenden kilitle.
-        // notifyMapVisibleAfterLessonClaim → enableMapTouchRouting bu kilidi gösterim
-        // netleştiğinde (ya da gösterilmeyecekse hemen) kaldırır.
-        if (badgePayloads.isNotEmpty() || badgeStringPayloads.isNotEmpty() || MarathonGuideStore.isPending(this)) {
+        // Kuyrukta gösterilecek bir şey varsa harita ERKENDEN kilitleniyor: ekranlar
+        // asenkron gecikmelerle (reklam kontrolü, Firestore) geldiği için aradaki boşlukta
+        // harita tıklanabilir kalıyordu. Kilidi kuyruk boşalınca bırakıyor
+        // (bkz. runPostLessonQueue).
+        //
+        // Şart önceden yalnızca "rozet ya da rehber var mı" idi; yeni seri ya da rating
+        // gösterilecekken kilit hiç uygulanmıyor ve iki pencere arasında harita açık
+        // kalıyordu. Burada TEK acquire var — ChromeBlocker sayıcılı, ikinci bir kilit
+        // noktası eklemek dengesizlik üretirdi.
+        if (hasPostLessonQueueWork()) {
             (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
                 ?.lockTouchForPendingOverlay()
         }
