@@ -3915,6 +3915,33 @@ function streakDayNumber(dayId) {
 }
 
 /**
+ * Meydan okuma alanlarının yazılıp yazılmayacağı.
+ *
+ * ## Kural: tur başında serbest, tur içinde kilitli
+ * Meydan okuma ödül dağıtıyor. Seri YAŞARKEN değiştirilebilseydi kullanıcı üç
+ * günlüğün 500 altınını alır, aynı gün 7'ye çıkıp 1500'ü de alabilirdi. Bu yüzden
+ * yazma yalnızca serinin BAŞINDA (0 ya da 1. gün) serbest.
+ *
+ * Neden sonsuza kadar kilitli değil: seri kırıldığında kullanıcı ders sonunda yeni bir
+ * söz veriyor ve o sözün de bir karşılığı olmalı. Kilometre taşlarında da aynı kural
+ * işliyor (`claimed` seri kırılınca sıfırlanıyor): yeni seri, yeni merdiven.
+ *
+ * Sömürülemez, çünkü ödül en az 3 günlük seri istiyor: sıfırlamak için seriyi
+ * kaybetmek, yeniden almak için üç gün daha çalışmak gerekiyor.
+ *
+ * @param runDay Serinin bu çağrıdan SONRAKİ uzunluğu (günsüz çağrıda mevcut uzunluk).
+ */
+function challengePatch(runDay, challengeDays, state) {
+  if (!(challengeDays > 0) || challengeDays > 400) return {};
+  if (runDay > 1) return {};
+  // Aynı değer zaten yazılıysa ve ödül henüz alınmadıysa dokunma: değiştirmeyen
+  // bir yazımın bedelini ödemenin anlamı yok, her gün tekrarlanıyor.
+  if (state.challengeDays === challengeDays && state.challengeClaimed === 0) return {};
+  // Yeni tur, yeni ödül hakkı.
+  return { challengeDays, challengeClaimed: 0 };
+}
+
+/**
  * Hatırlatma alanları: UTC saati, saat dilimi farkı ve son görülme.
  *
  * Fark gelmemişse null dönüyor — eski bir istemci sürümü alanı hiç göndermiyor olabilir ve
@@ -4026,8 +4053,12 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     const ref = streakDocRef(uid);
     const snap = await ref.get();
     const state = readStreakState(snap);
-    const patch = reminderPatch(utcOffsetMinutes);
-    if (patch && snap.exists) await ref.set(patch, { merge: true });
+    const patch = Object.assign({}, reminderPatch(utcOffsetMinutes) || {});
+    // Seri kırıldıktan sonra kullanıcı ders sonunda yeni bir meydan okuma seçiyor
+    // (bkz. NewStreakFragment) ve cevabı günün ilk bildiriminden SONRA gelebiliyor.
+    // Bu yüzden günsüz çağrı da yazabiliyor — aynı "tur başı" şartıyla.
+    Object.assign(patch, challengePatch(state.current, challengeDays, state));
+    if (Object.keys(patch).length > 0 && snap.exists) await ref.set(patch, { merge: true });
     return {
       success: true,
       current: state.current,
@@ -4036,8 +4067,11 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       claimed: state.claimed,
       recentDays: state.recentDays,
       goalMinutes: state.goalMinutes,
-      challengeDays: state.challengeDays,
-      challengeClaimed: state.challengeClaimed,
+      // Az önce YAZILAN değer dönüyor, okunan değil. Bayat değer dönseydi istemci
+      // kullanıcının yeni seçimini kendi üzerine yazdığımız eski değerle ezerdi
+      // (bkz. StreakRepository.adoptServerState).
+      challengeDays: patch.challengeDays ?? state.challengeDays,
+      challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
     };
   }
 
@@ -4074,12 +4108,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
-    // Meydan okuma BİR KEZ yazılıyor. Değiştirilebilseydi kullanıcı 3 günlüğü seçip 500
-    // altını alır, sonra 7'ye çıkarıp 1500'ü de alabilirdi. İstemci de değiştirmeye
-    // izin vermiyor ama ödül dağıtan karar istemciye bırakılamaz.
-    if (challengeDays > 0 && challengeDays <= 400 && !(state.challengeDays > 0)) {
-      patch.challengeDays = challengeDays;
-    }
+    Object.assign(patch, challengePatch(next.current, challengeDays, state));
     Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
 
     transaction.set(ref, patch, { merge: true });
@@ -4103,9 +4132,11 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     // gönderdiği meydan okuma kilitliyse geri gelen kayıtlı olanıdır.
     return Object.assign({}, next, {
       recentDays,
-      goalMinutes: patch.goalMinutes || state.goalMinutes,
-      challengeDays: patch.challengeDays || state.challengeDays,
-      challengeClaimed: state.challengeClaimed,
+      // Yazılan değer varsa o, yoksa kayıtlı olan. `??` kullanılıyor çünkü yeni turda
+      // yazılan challengeClaimed SIFIR ve `||` onu bayat değere düşürürdü.
+      goalMinutes: patch.goalMinutes ?? state.goalMinutes,
+      challengeDays: patch.challengeDays ?? state.challengeDays,
+      challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
     });
   });
 

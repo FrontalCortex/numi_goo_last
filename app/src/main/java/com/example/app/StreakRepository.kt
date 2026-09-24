@@ -43,6 +43,7 @@ object StreakRepository {
     private const val KEY_OWNER_UID = "owner_uid"
     private const val KEY_CHALLENGE_CLAIMED = "challenge_claimed"
     private const val KEY_CHALLENGE_CLAIMED_DAY = "challenge_claimed_day"
+    private const val KEY_NEW_STREAK_PROMPT_DAY = "new_streak_prompt_day"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -106,17 +107,17 @@ object StreakRepository {
         prefs(context)?.getInt(KEY_CHALLENGE_DAYS, 0) ?: 0
 
     /**
-     * Meydan okumayı yazar. Yalnızca kayıt akışı çağırıyor.
+     * Meydan okumayı yazar. Yalnızca kayıt akışı çağırıyor; seri kırıldıktan sonraki
+     * yeni tur için [startNewChallenge] var.
      *
      * ## Kilit neden burada değil
-     * Meydan okuma bir kez seçiliyor: değiştirilebilseydi kullanıcı 3 günlüğün 500 altınını
+     * Meydan okuma seri YAŞARKEN değiştirilebilseydi kullanıcı 3 günlüğün 500 altınını
      * alıp hemen 7'ye çıkarak 1500'ü de alabilirdi. Ama kilidi buraya koymak yanlıştı:
      * kayıt son adımda (ör. internet kesilmesi) başarısız olup tekrarlandığında
      * kullanıcının YENİ seçimi sessizce yutuluyordu.
      *
-     * Kilidi sunucu tutuyor: `submitStreakDay` `challengeDays`'i yalnızca kayıtlı değer
-     * yokken yazıyor ve ödülü veren de o. Arayüz tarafında da değiştirecek bir yer yok —
-     * seri ekranındaki seçim penceresi bu yüzden kaldırıldı.
+     * Kilidi sunucu tutuyor ve şartı "bir kez" değil "tur içinde": `challengePatch`
+     * yazmaya yalnızca serinin başında (0 ya da 1. gün) izin veriyor. Ödülü veren de o.
      */
     fun setChallengeDays(context: Context, days: Int) {
         val value = if (days in CHALLENGE_OPTIONS) days else DEFAULT_CHALLENGE_DAYS
@@ -141,6 +142,45 @@ object StreakRepository {
         prefs(context)?.edit()
             ?.putInt(KEY_CHALLENGE_CLAIMED, days)
             ?.putString(KEY_CHALLENGE_CLAIMED_DAY, StudyTimeTracker.dayId())
+            ?.apply()
+    }
+
+    /**
+     * Ders dönüşünde yeni seri sorusu sorulsun mu.
+     *
+     * İki şart: seri şu anda YOK ve bugün bu soru henüz sorulmadı. Günde bir kez, çünkü
+     * her ders sonunda çıkan bir ekran ödül değil engel olurdu.
+     */
+    fun needsNewStreakPrompt(context: Context): Boolean {
+        val p = prefs(context) ?: return false
+        if (p.getInt(KEY_CURRENT, 0) > 0) return false
+        return p.getString(KEY_NEW_STREAK_PROMPT_DAY, "") != StudyTimeTracker.dayId()
+    }
+
+    fun markNewStreakPromptShown(context: Context) {
+        prefs(context)?.edit()
+            ?.putString(KEY_NEW_STREAK_PROMPT_DAY, StudyTimeTracker.dayId())
+            ?.apply()
+    }
+
+    /**
+     * Seri kırıldıktan sonra seçilen yeni meydan okumayı yazar.
+     *
+     * Ödül işareti de siliniyor: yeni tur yeni ödül hakkı demek (sunucu da aynı kuralı
+     * uyguluyor, bkz. `challengePatch`). Silinmeseydi kart "TAMAMLANDI ✓" diye açılır ve
+     * çocuk yeni sözünün karşılığını göremezdi.
+     *
+     * Günlük bildirim işareti de siliniyor: sunucu bu seçimi ancak bir çağrıyla öğreniyor
+     * ve günün bildirimi çoktan yapılmış olabilir. Silinmeseydi seçim yarına kalır, o
+     * zamana kadar seri 2. güne geçer ve sunucu artık kabul etmezdi.
+     */
+    fun startNewChallenge(context: Context, days: Int) {
+        val value = if (days in CHALLENGE_OPTIONS) days else DEFAULT_CHALLENGE_DAYS
+        prefs(context)?.edit()
+            ?.putInt(KEY_CHALLENGE_DAYS, value)
+            ?.remove(KEY_CHALLENGE_CLAIMED)
+            ?.remove(KEY_CHALLENGE_CLAIMED_DAY)
+            ?.remove(KEY_LAST_PING_DAY)
             ?.apply()
     }
 
@@ -318,6 +358,15 @@ object StreakRepository {
         }
         if (challengeClaimed > 0) {
             p.edit().putInt(KEY_CHALLENGE_CLAIMED, challengeClaimed).apply()
+        } else if (current <= 1) {
+            // Sunucu ödül hakkını iade etti: yeni tur başladı. Yerel işaret silinmeseydi
+            // kart "TAMAMLANDI ✓" diye açılıp yeni turun ödülünü gizlerdi.
+            //
+            // Şart current <= 1: ödül en az 3 günlük seri istiyor, yani 0 gelen bir yanıt
+            // uzun bir seride ancak BAYAT olabilir (toplama anından önce yola çıkmış bir
+            // okuma). O yanıtın yerel işareti silmesi, az önce toplanmış ödülün düğmesini
+            // geri getirirdi.
+            p.edit().remove(KEY_CHALLENGE_CLAIMED).remove(KEY_CHALLENGE_CLAIMED_DAY).apply()
         }
         // Sunucuda kayıtlı bir meydan okuma varsa yerel de ONA uyuyor. Sunucu bu değeri bir
         // kez yazıp bir daha değiştirmiyor, yani tek doğru kaynak o: cihaz değiştiren

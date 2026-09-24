@@ -287,12 +287,24 @@ object AnalyticsLogger {
     // ── Günlük seri ────────────────────────────────────────────────────────
     /** Kayıt akışındaki seri adımları ([UserInfoFragment]); huni bunlarla kuruluyor. */
     const val STREAK_STAGE_GOAL = "goal"
+    const val STREAK_STAGE_CHALLENGE_INTRO = "challenge_intro"
     const val STREAK_STAGE_CHALLENGE = "challenge"
+
+    /**
+     * Seri kırıldıktan sonra ders dönüşünde açılan yeni tur ekranı
+     * ([NewStreakFragment]). Kayıt hunisinden AYRI sayılıyor: biri "başladı mı", diğeri
+     * "geri döndü mü" sorusunu ölçüyor ve ikisi tek sayaca karışırsa ikisi de okunmaz
+     * hale gelir.
+     */
+    const val STREAK_STAGE_NEW_RUN_INTRO = "new_run_intro"
+    const val STREAK_STAGE_NEW_RUN_CHALLENGE = "new_run_challenge"
 
     /** Hedef ilk kez kurulum akışında seçildi. */
     const val STREAK_SOURCE_ONBOARDING = "onboarding"
     /** Hedef sonradan seri ekranından değiştirildi. */
     const val STREAK_SOURCE_SETTINGS = "settings"
+    /** Seri kırıldıktan sonra ders dönüşünde yeni bir tur başlatıldı. */
+    const val STREAK_SOURCE_NEW_RUN = "new_run"
 
     // ── Reklamlar ──────────────────────────────────────────────────────────
     /** Ders/sandık arası geçiş reklamı; ardından bazen Pro paneli açılıyor. */

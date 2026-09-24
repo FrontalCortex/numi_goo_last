@@ -369,6 +369,52 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!--
+      Meydan okuma sorusundan önceki niyet ekranı.
+
+      Soru doğrudan gelseydi çocuk neyi neden seçtiğini bilmeden bir sayı seçerdi.
+      Ders dönüşündeki yeni tur ekranı (fragment_new_streak) aynı metni ve aynı alevi
+      kullanıyor: ikisi de aynı sözü istiyor, farklı görünmeleri için sebep yok.
+    -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/challengeIntroContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="40dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnContinue"
+        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/challengeIntroLottie"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:lottie_autoPlay="true"
+            app:lottie_fileName="fire_anim.json"
+            app:lottie_loop="true" />
+
+        <TextView
+            android:id="@+id/challengeIntroText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginEnd="28dp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:text="Şimdi bir öğrenme alışkanlığı kazanmana yardım edelim."
+            android:textColor="@color/dark_text"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/challengeIntroLottie" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <!-- Devam Et Butonu -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnContinue"

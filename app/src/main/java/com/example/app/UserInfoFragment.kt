@@ -39,7 +39,7 @@ class UserInfoFragment : Fragment() {
      * Seri hedefi ve meydan okuma eskiden ayrı bir fragment'ti ve kendi ilerleme çubuğuyla
      * ikinci bir akış gibi görünüyordu. Sorular tek yerde sorulsun diye buraya alındı.
      */
-    private enum class Step { AGE, SOURCE, GOAL, CHALLENGE }
+    private enum class Step { AGE, SOURCE, GOAL, CHALLENGE_INTRO, CHALLENGE }
 
     private var currentStep = Step.AGE
     private var selectedSource: String? = null
@@ -218,6 +218,9 @@ class UserInfoFragment : Fragment() {
                     goalMinutes,
                     AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
                 )
+                showStep(Step.CHALLENGE_INTRO)
+
+            } else if (currentStep == Step.CHALLENGE_INTRO) {
                 showStep(Step.CHALLENGE)
 
             } else if (currentStep == Step.CHALLENGE) {
@@ -256,7 +259,8 @@ class UserInfoFragment : Fragment() {
         if (animating) return true
 
         val previous = when (currentStep) {
-            Step.CHALLENGE -> Step.GOAL
+            Step.CHALLENGE -> Step.CHALLENGE_INTRO
+            Step.CHALLENGE_INTRO -> Step.GOAL
             Step.GOAL -> Step.SOURCE
             Step.SOURCE -> Step.AGE
             Step.AGE -> null
@@ -298,6 +302,7 @@ class UserInfoFragment : Fragment() {
     private fun containerFor(step: Step): View = when (step) {
         Step.AGE -> binding.ageContainer
         Step.SOURCE -> binding.sourceContainer
+        Step.CHALLENGE_INTRO -> binding.challengeIntroContainer
         // Hedef ve meydan okuma AYNI kabı kullanıyor; geçişte kap önce çıkıp sonra yeni
         // içerikle geri giriyor (bkz. slideTo).
         Step.GOAL, Step.CHALLENGE -> binding.streakContainer
@@ -308,7 +313,7 @@ class UserInfoFragment : Fragment() {
      * yüzdeler orada yanlış bir ilerleme gösterirdi.
      */
     private fun progressFor(step: Step): Int {
-        val total = if (streakStepsEnabled) 4 else 2
+        val total = if (streakStepsEnabled) 5 else 2
         return (step.ordinal + 1) * 100 / total
     }
 
@@ -379,12 +384,15 @@ class UserInfoFragment : Fragment() {
             if (step == Step.CHALLENGE) "Hedefimi onayla" else "Devam Et"
 
         // Ölçüm adım GEÇİŞİNE bağlı, çizime değil.
-        if ((step == Step.GOAL || step == Step.CHALLENGE) && loggedStreakStep != step) {
+        val stage = when (step) {
+            Step.GOAL -> AnalyticsLogger.STREAK_STAGE_GOAL
+            Step.CHALLENGE_INTRO -> AnalyticsLogger.STREAK_STAGE_CHALLENGE_INTRO
+            Step.CHALLENGE -> AnalyticsLogger.STREAK_STAGE_CHALLENGE
+            else -> null
+        }
+        if (stage != null && loggedStreakStep != step) {
             loggedStreakStep = step
-            AnalyticsLogger.logStreakSetupStep(
-                if (step == Step.GOAL) AnalyticsLogger.STREAK_STAGE_GOAL
-                else AnalyticsLogger.STREAK_STAGE_CHALLENGE,
-            )
+            AnalyticsLogger.logStreakSetupStep(stage)
         }
 
         when (step) {
@@ -394,6 +402,8 @@ class UserInfoFragment : Fragment() {
             }
             Step.SOURCE -> updateContinueButton(enabled = selectedSource != null)
             Step.GOAL -> renderGoalStep()
+            // Soru yok, seçim yok: düğme her zaman açık.
+            Step.CHALLENGE_INTRO -> updateContinueButton(enabled = true)
             Step.CHALLENGE -> renderChallengeStep()
         }
     }

@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         private const val STREAK_CELEBRATION_MS = 4000L
 
         /** Kapı kapalıyken iki deneme arası. */
-        private const val STREAK_CELEBRATION_RETRY_MS = 400L
+        private const val STREAK_OVERLAY_RETRY_MS = 400L
 
         /**
          * Yeniden denemelerin toplam süresi.
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
          * duruyor ve bir sonraki doğal tetiklemede (ekran dönüşü, uygulama öne gelmesi)
          * yine denenecek.
          */
-        private const val STREAK_CELEBRATION_RETRY_BUDGET_MS = 20_000L
+        private const val STREAK_OVERLAY_RETRY_BUDGET_MS = 20_000L
 
         const val EXTRA_FROM_LOGIN = "from_login"
         const val EXTRA_START_DESTINATION = "start_destination"
@@ -2020,6 +2020,7 @@ class MainActivity : AppCompatActivity() {
         // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
         // burası: ekran dönüşleri, geri yığını değişimi ve süre değişimi hepsi buradan geçiyor.
         maybeShowStreakCelebration()
+        maybeShowNewStreakPrompt()
         // Ödüller sunucudaki sayaca bakıyor. Eşitleme burada tetikleniyor çünkü gün ders
         // ekranındayken tutturuluyor ve activity o sırada onResume'a girmiyor; kuyruk boşsa
         // ya da bir deneme sürüyorsa çağrı kendini eliyor.
@@ -2625,6 +2626,11 @@ class MainActivity : AppCompatActivity() {
      */
     fun prepareMapReturnAfterLessonClaim() {
         if (!::binding.isInitialized) return
+        // Serisi olmayan kullanıcıya yeni tur sorusu burada kuyruğa giriyor: bütün ders
+        // bitiş yolları (sonuç, sandık, görev sandığı, rekor…) buradan geçiyor. Ekranın
+        // kendisi burada AÇILMIYOR çünkü ders katmanları henüz kapanmadı; açma işi
+        // kutlama şeridiyle aynı kapıdan (bkz. maybeShowNewStreakPrompt).
+        if (StreakRepository.needsNewStreakPrompt(this)) newStreakPromptQueued = true
         logMapTouchDiag("prepareMapReturn", "ENTER", "forcingDismiss=true host→GONE hedefleniyor")
         // [canConsumePendingLessonProgressAnimations] + [LessonManager.refreshLessonsFromGlobalData] burada
         // çağrılmasın: Chest / MissionChest / LessonResult overlay altında Map RV yenilenince progress animasyonu
@@ -3483,11 +3489,45 @@ class MainActivity : AppCompatActivity() {
 
     private val streakCelebrationHideRunnable = Runnable { hideStreakCelebration() }
 
-    /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */
-    private val streakCelebrationRetryRunnable = Runnable { maybeShowStreakCelebration(fromRetry = true) }
+    /** Ders bitti, serisi olmayan kullanıcıya yeni tur sorulacak. */
+    private var newStreakPromptQueued = false
+
+    /**
+     * Seri kırıkken ders dönüşünde yeni tur ekranını açar.
+     *
+     * Kutlama şeridiyle AYNI kapıyı kullanıyor ([streakCelebrationBlockReason]): ders,
+     * sonuç, sandık ve rozet katmanları kapanmadan açılırsa çocuğun önünü keser. Kapı
+     * kapalıysa kuyrukta bekliyor; katmanlar kapandığında burası zaten yeniden çağrılıyor
+     * (her ekran dönüşü [refreshStreakUi]'den geçiyor).
+     *
+     * Kutlamayla çakışması mümkün değil: biri hedef TUTTURULDUĞUNDA, diğeri seri
+     * YOKKEN çıkıyor.
+     */
+    private fun maybeShowNewStreakPrompt() {
+        if (!newStreakPromptQueued) return
+        if (streakCelebrationBlockReason() != null) {
+            // Ders katmanları henüz kapanmadı. Bayrak duruyor ve zamanlayıcı tekrar
+            // deniyor — kutlama şeridinde aynı eksik yüzünden ekran hiç açılmamıştı.
+            scheduleStreakOverlayRetry()
+            return
+        }
+        if (supportFragmentManager.isStateSaved) return
+        if (supportFragmentManager.findFragmentByTag(NewStreakFragment.TAG) != null) return
+        // Kuyruk buradan boşaltılıyor: ekran açıldıktan sonra bayrak kalırsa kapatılır
+        // kapatılmaz yeniden açılırdı.
+        newStreakPromptQueued = false
+        if (!StreakRepository.needsNewStreakPrompt(this)) return
+        NewStreakFragment().show(supportFragmentManager, NewStreakFragment.TAG)
+    }
+
+    /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakOverlayRetry]. */
+    private val streakOverlayRetryRunnable = Runnable {
+        maybeShowStreakCelebration(fromRetry = true)
+        maybeShowNewStreakPrompt()
+    }
 
     /** Yeniden denemenin biteceği an (monoton saat); 0 = deneme sürmüyor. */
-    private var streakCelebrationDeadlineMs = 0L
+    private var streakOverlayDeadlineMs = 0L
 
     /**
      * Hedef tutturulduysa kutlama şeridini uygun anda gösterir.
@@ -3502,7 +3542,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun maybeShowStreakCelebration(fromRetry: Boolean = false) {
         if (!::binding.isInitialized) return
-        if (!fromRetry) streakCelebrationDeadlineMs = 0L
+        if (!fromRetry) streakOverlayDeadlineMs = 0L
 
         val blocked = streakCelebrationBlockReason() != null
         if (streakCelebrationShowing) {
@@ -3511,11 +3551,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (blocked) {
-            scheduleStreakCelebrationRetry()
+            scheduleStreakOverlayRetry()
             return
         }
-        streakCelebrationDeadlineMs = 0L
-        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+        streakOverlayDeadlineMs = 0L
+        binding.streakCelebration.removeCallbacks(streakOverlayRetryRunnable)
 
         val streak = StreakRepository.pendingCelebration(this)
         if (streak <= 0) return
@@ -3537,18 +3577,22 @@ class MainActivity : AppCompatActivity() {
      * kendi yollarından kapanıyor). Hepsine kanca takmak, yarın eklenecek bir katmanı
      * unutmak demekti. Bütçeli yeniden deneme hangi yoldan gelinirse gelinsin çalışıyor
      * ve bekleyen kutlama yoksa hiç kurulmuyor.
+     *
+     * Aynı zamanlayıcıyı yeni tur ekranı da kullanıyor ([maybeShowNewStreakPrompt]):
+     * ikisi de aynı kapının ([streakCelebrationBlockReason]) açılmasını bekliyor,
+     * ikinci bir zamanlayıcı aynı işi iki kez yapardı.
      */
-    private fun scheduleStreakCelebrationRetry() {
-        if (StreakRepository.pendingCelebration(this) <= 0) return
+    private fun scheduleStreakOverlayRetry() {
+        if (StreakRepository.pendingCelebration(this) <= 0 && !newStreakPromptQueued) return
         val now = android.os.SystemClock.elapsedRealtime()
-        if (streakCelebrationDeadlineMs == 0L) {
-            streakCelebrationDeadlineMs = now + STREAK_CELEBRATION_RETRY_BUDGET_MS
+        if (streakOverlayDeadlineMs == 0L) {
+            streakOverlayDeadlineMs = now + STREAK_OVERLAY_RETRY_BUDGET_MS
         }
-        if (now >= streakCelebrationDeadlineMs) return
-        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+        if (now >= streakOverlayDeadlineMs) return
+        binding.streakCelebration.removeCallbacks(streakOverlayRetryRunnable)
         binding.streakCelebration.postDelayed(
-            streakCelebrationRetryRunnable,
-            STREAK_CELEBRATION_RETRY_MS,
+            streakOverlayRetryRunnable,
+            STREAK_OVERLAY_RETRY_MS,
         )
     }
 

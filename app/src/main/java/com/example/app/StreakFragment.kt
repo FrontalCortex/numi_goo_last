@@ -23,9 +23,11 @@ import com.example.app.databinding.FragmentStreakBinding
  * Kurulum akışı kullanıcıya "Bu hedefi istediğin zaman değiştirebilirsin" diyor. O sözün
  * karşılığı bu ekran; başka bir yerde ayar yok.
  *
- * Meydan okuma ise bir kez seçiliyor çünkü ÖDÜLÜ var: değiştirilebilseydi kullanıcı üç
- * günlük sözün 500 altınını alıp hemen yedi güne çıkarak 1500'ü de alabilirdi. Aynı
- * kilit sunucuda da var; buradaki yalnızca arayüzün tutarlı durması için.
+ * Meydan okuma ise seri boyunca değişmiyor çünkü ÖDÜLÜ var: değiştirilebilseydi
+ * kullanıcı üç günlük sözün 500 altınını alıp hemen yedi güne çıkarak 1500'ü de
+ * alabilirdi. Yeni bir söz ancak seri kırıldıktan sonra, ders dönüşünde veriliyor
+ * (bkz. [NewStreakFragment]). Aynı kural sunucuda da var; buradaki yalnızca arayüzün
+ * tutarlı durması için.
  *
  * ## Neden süre dinleyicisi kurulmuyor
  * [StudyTimeTracker] yalnızca ders ekranlarında sayıyor; bu ekran açıkken süre zaten

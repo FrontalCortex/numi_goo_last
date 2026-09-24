@@ -13,7 +13,8 @@
     "delete:leaderboard-seeds": "node scripts/delete-lesson-leaderboard-seeds.js",
     "delete:leaderboards:by-prefix": "node scripts/delete-lesson-leaderboards-by-prefix.js",
     "delete:seed-users": "node scripts/delete-seed-user-ghosts.js",
-    "test:reminder": "node scripts/test-streak-reminder.js"
+    "test:reminder": "node scripts/test-streak-reminder.js",
+    "test:challenge-lock": "node scripts/test-streak-challenge-lock.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
