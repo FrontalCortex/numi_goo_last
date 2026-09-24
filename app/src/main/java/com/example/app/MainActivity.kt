@@ -3535,12 +3535,26 @@ class MainActivity : AppCompatActivity() {
         if (showRatingStep(caller)) return
         if (showMarathonGuideStep(caller)) return
         if (showCupPathStep(caller)) return
+        // Kuyruk boşaldı: harita kilidi tam burada bırakılıyor.
+        //
+        // Kilidi süre dolunca bırakmak yanlıştı: kuyruk üç ekran gösteriyorsa bu birkaç
+        // saniyeden uzun sürüyor ve harita aradaki ekranların ARKASINDA tıklanabilir hale
+        // geliyordu. Artık ölçüt süre değil, kuyruğun kendisi.
         Log.d(TAG_QUEUE, "bos | caller=$caller")
         binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+        postLessonQueueWatchdogDeadlineMs = 0L
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        map?.enableMapTouchRouting()
     }
 
-    /** Kuyrukta gösterilmeyi bekleyen bir şey var mı. */
-    private fun hasPostLessonQueueWork(): Boolean =
+    /**
+     * Kuyrukta gösterilmeyi bekleyen bir şey var mı.
+     *
+     * Harita dokunma kilidi de buna bakıyor ([MapFragment.enableMapTouchRouting]): kuyrukta
+     * iş varken harita tıklanabilir olmamalı, yoksa çocuk sıradaki ekran gelmeden bir derse
+     * girebiliyor.
+     */
+    fun hasPostLessonQueueWork(): Boolean =
         pendingBadgePayloadsForAd.isNotEmpty() ||
             pendingBadgeStringPayloadsForAd.isNotEmpty() ||
             newStreakPromptQueued ||
@@ -3577,7 +3591,11 @@ class MainActivity : AppCompatActivity() {
             postLessonQueueWatchdogDeadlineMs = now + QUEUE_WATCHDOG_BUDGET_MS
         }
         if (now >= postLessonQueueWatchdogDeadlineMs) {
-            Log.w(TAG_QUEUE, "bekci BIRAKTI | sure doldu, kalanlar bir sonraki derse")
+            // Pes ederken haritayı kilitli bırakmamak şart: bekleyen ekran hiç açılamadıysa
+            // ve kilit de açılmazsa kullanıcı hiçbir yere dokunamayan bir haritada kalır.
+            Log.w(TAG_QUEUE, "bekci BIRAKTI | sure doldu, harita kilidi aciliyor")
+            val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+            map?.releaseMapTouchAfterQueueGaveUp()
             return
         }
         binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)

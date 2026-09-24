@@ -1740,9 +1740,13 @@ class MapFragment : Fragment() {
         // ChestFragment/ChestResult — GlobalValues.pendingBadgeFirestoreOperation).
         // AskQuestionOpen promosu da aynı sebeple bekliyor olabilir (reklam kontrolü + haritanın
         // temizlenmesi); promo ekrana gelene kadar kilit açılmamalı.
+        // Kuyrukta bekleyen ekran varken kilit açılmamalı: kullanıcı rozet/yeni seri/rating
+        // ekranlarının ARKASINDAKİ haritaya dokunup başka bir derse girebiliyordu. Kuyruk
+        // boşaldığında kilidi kendisi bırakıyor (bkz. MainActivity.runPostLessonQueue).
         if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE ||
             MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation ||
-            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true ||
+            (activity as? MainActivity)?.hasPostLessonQueueWork() == true
         ) {
             android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending, badge check in flight or ask-question promo pending")
             return
@@ -1751,9 +1755,18 @@ class MapFragment : Fragment() {
         forceEnableMapTouchRouting()
     }
 
-    /** [enableMapTouchRouting]'in guard'larını atlayıp kilidi doğrudan kaldırır — yalnızca
-     * rehber retry'ları tükendiğinde (bkz. [scheduleMarathonGuideRetriesAfterMapVisible]) güvenlik
-     * ağı olarak kullanılır; aksi halde harita kalıcı olarak kilitli kalabilir. */
+    /**
+     * Ders sonrası kuyruğu pes ettiğinde kilidi zorla açar (bkz.
+     * `MainActivity.schedulePostLessonQueueWatchdog`).
+     *
+     * Kuyruğun dışından çağırmayın: guard'ları atladığı için bekleyen bir ekranın
+     * arkasındaki haritayı tıklanabilir bırakır.
+     */
+    fun releaseMapTouchAfterQueueGaveUp() {
+        forceEnableMapTouchRouting()
+    }
+
+    /** Guard'ları atlayıp kilidi doğrudan kaldırır; yalnızca kuyruk pes ettiğinde. */
     private fun forceEnableMapTouchRouting() {
         if (!isAdded || view == null) return
         enableMapFragmentViews()
@@ -1857,19 +1870,11 @@ class MapFragment : Fragment() {
                     ?.pumpPostLessonQueue("MapFragment.guideRetry@${delay}ms")
             }, delay)
         }
-        // Güvenlik ağı: son retry'dan sonra rehber hâlâ pending ise (kalıcı bir block_reason
-        // yüzünden hiç gösterilemediyse) [enableMapTouchRouting]'in isPending guard'ı haritayı
-        // süresiz kilitli bırakır — burada zorla açıyoruz.
-        view?.postDelayed({
-            if (!isAdded || view == null) return@postDelayed
-            if (MarathonGuideStore.isPending(requireContext())) {
-                LessonProgressDiag.log(
-                    "MapFragment.guideRetry",
-                    "safety-net@3200ms still pending → force unlock touch",
-                )
-                forceEnableMapTouchRouting()
-            }
-        }, 3_200L)
+        // Eskiden burada 3.2 saniye sonra kilidi ZORLA açan bir güvenlik ağı vardı.
+        // Kaldırıldı: kuyruk üç ekran gösteriyorsa bu süre normal olarak aşılıyor ve kilit
+        // ekranların ARKASINDAKİ haritayı tıklanabilir bırakıyordu. Aynı işi artık kuyruğun
+        // bekçisi yapıyor: süreye değil "bekleyen iş kaldı mı" sorusuna bakıyor ve pes
+        // ederken kilidi açıyor (bkz. MainActivity.schedulePostLessonQueueWatchdog).
     }
 
     /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
