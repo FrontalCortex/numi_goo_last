@@ -1756,13 +1756,18 @@ class MapFragment : Fragment() {
     }
 
     /**
-     * Ders sonrası kuyruğu pes ettiğinde kilidi zorla açar (bkz.
-     * `MainActivity.schedulePostLessonQueueWatchdog`).
+     * Ders sonrası kuyruğunun aldığı kilidi bırakır.
      *
-     * Kuyruğun dışından çağırmayın: guard'ları atladığı için bekleyen bir ekranın
-     * arkasındaki haritayı tıklanabilir bırakır.
+     * Guard'ları BİLEREK atlıyor: bu çağrı kuyruğun kendi `acquire`'ıyla birebir
+     * eşleşiyor ve [MainActivityChromeBlocker] sayıcılı — başka bir akış kilidi hâlâ
+     * istiyorsa kendi acquire'ı duruyor, bizimki düşünce sayacı sıfıra inmiyor.
+     *
+     * Guard'lı [enableMapTouchRouting] burada kullanılamıyor: bırakmayı reddettiğinde
+     * kuyruğun borcu ödenmemiş kalıyor ve harita kalıcı olarak kilitli kalabiliyor.
+     *
+     * Kuyruğun dışından çağırmayın.
      */
-    fun releaseMapTouchAfterQueueGaveUp() {
+    fun releasePostLessonQueueTouchLock() {
         forceEnableMapTouchRouting()
     }
 

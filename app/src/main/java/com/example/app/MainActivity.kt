@@ -3529,16 +3529,19 @@ class MainActivity : AppCompatActivity() {
         // Tek satırda bütün tablo: kim bekliyor, kapı açık mı. Bir ekranın neden
         // çıkmadığı sorusunun cevabı burada — "bekleyen yok" ile "kapı kapalı" apayrı
         // sorunlar ve ikisini ayırt etmeden tahmin yürütmek zaman kaybettiriyor.
-        Log.d(
-            TAG_QUEUE,
-            "tur | caller=$caller " +
-                "rozet=${pendingBadgePayloadsForAd.size + pendingBadgeStringPayloadsForAd.size} " +
-                "yeniSeri=$newStreakPromptQueued " +
-                "promo=$pendingLessonTypeReturnForPromo " +
-                "rating=$justFinishedChestForRating " +
-                "rehber=${MarathonGuideStore.isPending(this)} " +
-                "kupaYolu=${GlobalValues.pendingCupPathRevealPartId != null}",
-        )
+        //
+        // Bekçi turları saniyede bir geldiği için yalnızca DEĞİŞEN durum yazılıyor: aynı
+        // satırın yetmiş kez tekrarı log'u okunmaz hale getiriyor ve asıl olayı gömmüş oluyor.
+        val snapshot = "rozet=${pendingBadgePayloadsForAd.size + pendingBadgeStringPayloadsForAd.size} " +
+            "yeniSeri=$newStreakPromptQueued " +
+            "promo=$pendingLessonTypeReturnForPromo " +
+            "rating=$justFinishedChestForRating " +
+            "rehber=${MarathonGuideStore.isPending(this)} " +
+            "kupaYolu=${GlobalValues.pendingCupPathRevealPartId != null}"
+        if (snapshot != lastQueueSnapshot) {
+            lastQueueSnapshot = snapshot
+            Log.d(TAG_QUEUE, "tur | caller=$caller $snapshot")
+        }
         // Kilit kararı KAPIDAN ÖNCE veriliyor.
         //
         // Eskiden kilit yalnızca kuyruk "bos" dalına ulaştığında bırakılıyordu. Son ekran
@@ -3552,21 +3555,39 @@ class MainActivity : AppCompatActivity() {
 
         val block = postLessonQueueBlockReason()
         if (block != null) {
-            Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            if (block != lastQueueBlockReason) {
+                lastQueueBlockReason = block
+                Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            }
             schedulePostLessonQueueWatchdog()
             return
         }
+        lastQueueBlockReason = null
         // Bir adım çalıştıysa ilerleme var: bekçinin süresi baştan başlasın.
         postLessonQueueWatchdogDeadlineMs = 0L
-        if (showBadgeStep(caller)) return
-        if (showNewStreakStep(caller)) return
-        if (showAskQuestionPromoStep(caller)) return
-        if (showRatingStep(caller)) return
-        if (showMarathonGuideStep(caller)) return
-        if (showCupPathStep(caller)) return
+        // `||` kısa devre yaptığı için sıra aynen korunuyor: ilk true dönen adım
+        // gösteriyor, alttakiler o tur hiç denenmiyor.
+        val shown = showBadgeStep(caller) ||
+            showNewStreakStep(caller) ||
+            showAskQuestionPromoStep(caller) ||
+            showRatingStep(caller) ||
+            showMarathonGuideStep(caller) ||
+            showCupPathStep(caller)
+        if (shown) {
+            queueLoggedEmpty = false
+            return
+        }
         // Kilit yukarıda bırakıldı (bekleyen iş yoktu), burada yalnızca iz düşüyor.
-        Log.d(TAG_QUEUE, "bos | caller=$caller")
+        if (!queueLoggedEmpty) {
+            queueLoggedEmpty = true
+            Log.d(TAG_QUEUE, "bos | caller=$caller")
+        }
     }
+
+    /** Log tekrarını önleyen son durumlar; teşhis değeri aynı, gürültü yok. */
+    private var lastQueueSnapshot = ""
+    private var lastQueueBlockReason: String? = null
+    private var queueLoggedEmpty = false
 
     /**
      * Harita dokunma kilidini bırakır ve bekçiyi durdurur.
@@ -3614,20 +3635,19 @@ class MainActivity : AppCompatActivity() {
             schedulePostLessonQueueWatchdog()
             return
         }
-        // enableMapTouchRouting kendi guard'larını da uyguluyor (rozet Firestore beklemesi,
-        // promo kilidi…) ve bırakmayabilir. Bayrağı körü körüne düşürmek borç kaybetmek
-        // olurdu: ChromeBlocker sayıcılı, bırakılmayan bir acquire haritayı kalıcı olarak
-        // kilitli bırakır. Bu yüzden sayaca bakılıyor ve düşmediyse tekrar denenecek.
-        val before = MainActivityChromeBlocker.currentLockDepth()
-        map.enableMapTouchRouting()
-        val after = MainActivityChromeBlocker.currentLockDepth()
-        if (after < before) {
-            postLessonQueueLockHeld = false
-            Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller depth=$before->$after")
-            return
-        }
-        Log.d(TAG_QUEUE, "kilit BIRAKILAMADI | caller=$caller guard engelledi, tekrar denenecek")
-        schedulePostLessonQueueWatchdog()
+        // Bırakma guard'SİZ ve koşulsuz: çağrı kuyruğun kendi acquire'ıyla birebir
+        // eşleşiyor. İki denemem de yanlıştı:
+        //
+        //   • Guard'lı enableMapTouchRouting bırakmayı reddedince borç ödenmemiş kalıyordu.
+        //   • Sayaca bakarak "bırakıldı mı" anlamaya çalışmak da tutmadı:
+        //     ensureUnlockedForMapReturn sayacı zorla sıfırlayabiliyor, o zaman fark
+        //     oluşmuyor ve bekçi boşa saniyede bir dönüp duruyordu.
+        //
+        // ChromeBlocker sayıcılı olduğu için tek bir release yalnızca BİZİM kilidi düşürüyor;
+        // başka bir akış kilidi hâlâ istiyorsa kendi acquire'ı sayacı ayakta tutuyor.
+        postLessonQueueLockHeld = false
+        Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller")
+        map.releasePostLessonQueueTouchLock()
     }
 
     /**
@@ -3684,7 +3704,7 @@ class MainActivity : AppCompatActivity() {
                 postLessonQueueLockHeld = false
                 val map =
                     supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-                map?.releaseMapTouchAfterQueueGaveUp()
+                map?.releasePostLessonQueueTouchLock()
             }
             return
         }
@@ -3766,7 +3786,6 @@ class MainActivity : AppCompatActivity() {
             // Bekleyen rehber YOK. Kuyruk onu engellemedi — hiç sıraya girmemiş.
             // Sebebi MarathonGuide etiketindeki "schedule REJECT" satırında yazıyor
             // (rehber tek seferlik ve yalnızca 1. bölümün ilk sandığında).
-            Log.d(TAG_QUEUE, "rehber ATLANDI | caller=$caller reason=pending_degil")
             return false
         }
         MarathonGuideStore.logPrefsSnapshot(this, "queue:$caller")
