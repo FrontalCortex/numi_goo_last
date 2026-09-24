@@ -3660,6 +3660,18 @@ class MainActivity : AppCompatActivity() {
         view.animate().cancel()
         view.alpha = 1f
         view.visibility = View.VISIBLE
+        // Zeminin GERÇEK durumu. "Gösteriyorum" demek yetmiyor: haritanın görünmesinin
+        // iki apayrı sebebi olabilir ve çözümleri de farklı — zemin haritanın ALTINDA
+        // kalıyor olabilir (z-sırası) ya da çizilmeden önce harita bir süre görünüyor
+        // olabilir (zamanlama). Bu satır ikisini ayırıyor.
+        view.post {
+            Log.d(
+                TAG_QUEUE,
+                "zemin | gorunur=${view.isShown} olcu=${view.width}x${view.height} " +
+                    "z=${view.elevation} alpha=${view.alpha} " +
+                    "ekli=${view.isAttachedToWindow}",
+            )
+        }
     }
 
     private fun hidePostLessonBackdrop() {
