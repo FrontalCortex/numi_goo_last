@@ -1194,11 +1194,10 @@ class MapFragment : Fragment() {
                     "Panel kapandı ama enableMapFragmentViews henüz çağrılmamış olabilir",
                 )
             }
-            val act = activity as? MainActivity
-            if (act != null && act.justFinishedChestForRating) {
-                act.justFinishedChestForRating = false
-                AppRatingManager.checkAndShowRatingPrompt(act, 1)
-            }
+            // Rating artık doğrudan çağrılmıyor: ders sonrası kuyruğu dürtülüyor ve
+            // sırası geldiyse rating'i o açıyor. Doğrudan çağrı rating'in üç ayrı
+            // tetikleyicisinden biriydi ve diğer ekranların üstüne binebiliyordu.
+            (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.guidePanelHidden")
         }
         
         // GuidePanel'in son adımına gelindiğinde recordLayout animasyonunu başlat
@@ -1304,11 +1303,10 @@ class MapFragment : Fragment() {
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
             enableMapTouchRouting()
-            val act = activity as? MainActivity
-            if (act != null && act.justFinishedChestForRating) {
-                act.justFinishedChestForRating = false
-                AppRatingManager.checkAndShowRatingPrompt(act, 1)
-            }
+            // Rating artık doğrudan çağrılmıyor: ders sonrası kuyruğu dürtülüyor ve
+            // sırası geldiyse rating'i o açıyor. Doğrudan çağrı rating'in üç ayrı
+            // tetikleyicisinden biriydi ve diğer ekranların üstüne binebiliyordu.
+            (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.guidePanelHidden")
         }
         
         // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
@@ -1835,7 +1833,10 @@ class MapFragment : Fragment() {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
         binding.lessonsRecyclerView.invalidate()
-        maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss")
+        // Rehber doğrudan değil kuyruktan açılıyor: harita görünür olduğunda rozet ya
+        // da yeni seri ekranı henüz sırasını beklemiyor olabilir ve rehber onların
+        // önüne geçerdi. Kuyruk sırayı biliyor.
+        (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.notifyVisibleAfterOverlayDismiss")
         scheduleMarathonGuideRetriesAfterMapVisible()
     }
 
@@ -1852,7 +1853,8 @@ class MapFragment : Fragment() {
                     "MapFragment.guideRetry",
                     "delay=${delay}ms pending still true → maybeShow",
                 )
-                maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss+retry@${delay}ms")
+                (activity as? MainActivity)
+                    ?.pumpPostLessonQueue("MapFragment.guideRetry@${delay}ms")
             }, delay)
         }
         // Güvenlik ağı: son retry'dan sonra rehber hâlâ pending ise (kalıcı bir block_reason

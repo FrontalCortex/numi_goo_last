@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
 
         /** Kapı kapalıyken iki deneme arası. */
         private const val STREAK_CELEBRATION_RETRY_MS = 400L
-        private const val TAG_NEW_STREAK = "NewStreakPrompt"
+        private const val TAG_QUEUE = "PostLessonQueue"
 
         /**
          * Yeniden denemelerin toplam süresi.
@@ -2626,10 +2626,6 @@ class MainActivity : AppCompatActivity() {
      */
     fun prepareMapReturnAfterLessonClaim() {
         if (!::binding.isInitialized) return
-        // Yeni tur ekranı burada KUYRUĞA giriyor, açılmıyor: bütün ders bitiş yolları
-        // (sonuç, sandık, görev sandığı, rekor…) buradan geçiyor. Açma kararını
-        // [tryShowNewStreakPrompt] veriyor — ortak kapı açıldığı anda.
-        if (StreakRepository.needsNewStreakPrompt(this)) newStreakPromptQueued = true
         logMapTouchDiag("prepareMapReturn", "ENTER", "forcingDismiss=true host→GONE hedefleniyor")
         // [canConsumePendingLessonProgressAnimations] + [LessonManager.refreshLessonsFromGlobalData] burada
         // çağrılmasın: Chest / MissionChest / LessonResult overlay altında Map RV yenilenince progress animasyonu
@@ -2656,32 +2652,11 @@ class MainActivity : AppCompatActivity() {
     ) {
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
-        if (!adCheckForBadgeInProgress) {
-            val resolvedBadgePayloads = pendingBadgePayloadsForAd
-            val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
-            pendingBadgePayloadsForAd = emptyList()
-            pendingBadgeStringPayloadsForAd = emptyList()
-            if (resolvedBadgePayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
-                }
-            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_right,
-                            R.anim.slide_out_left,
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_right,
-                        )
-                        .replace(
-                            R.id.badgeFragmentContainter,
-                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
-                        )
-                        .commit()
-                }
-            }
-        }
+        // Eskiden rozet burada DOĞRUDAN açılıyordu ve bu, kuyruktan habersiz ikinci bir
+        // yoldu — yeni seri ekranının reklamın altında kalması gibi çakışmaların
+        // kaynaklarından biri. Artık yalnızca bayrak yazılıp kuyruk dürtülüyor; açma
+        // kararı tek yerde.
+        pumpPostLessonQueue("enqueuePendingBadgePayloads")
     }
 
     /** [prepareMapReturnAfterLessonClaim] sonrası: chrome + sezon reconcile (tek kaynak). */
@@ -2690,9 +2665,18 @@ class MainActivity : AppCompatActivity() {
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
         badgeStringPayloads: List<String> = emptyList(),
         // true: bu dönüş türü LESSON olan (chest hariç) bir item'ın claim'inden geliyor —
-        // maybeShowAskQuestionPromo yalnızca bu durumda denenir (bkz. notifyMapVisibleAfterLessonClaim).
+        // öğretmene sorma tanıtımı yalnızca bu durumda deneniyor.
         isLessonTypeReturn: Boolean = false,
+        // false: bu çağrı bir ders/sandık bitişinden DEĞİL, başka bir overlay'in
+        // kapanışından geliyor (bkz. RecordFragment). Ayrım şart: bu fonksiyon liderlik
+        // tablosu kapatılınca da çağrılıyor ve o zaman "ders bitti" ekranları açılmamalı.
+        fromLessonFinish: Boolean = true,
     ) {
+        // Yeni tur sorusu burada KUYRUĞA giriyor, açılmıyor. Açma kararı kuyruğun
+        // ([pumpPostLessonQueue]) — sırası gelip kapı açıldığı anda.
+        if (fromLessonFinish && StreakRepository.needsNewStreakPrompt(this)) {
+            newStreakPromptQueued = true
+        }
         BadgeDiagnostics.log("MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
@@ -2750,66 +2734,21 @@ class MainActivity : AppCompatActivity() {
         checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim") {
             adCheckForBadgeInProgress = false
             if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
-            // Biriktirilen payloads'ı oku ve temizle
+            // Bayraklar burada TÜKETİLMİYOR: artık her birini kuyruktaki kendi adımı
+            // okuyup siliyor. Burada silinselerdi kuyruk sırası gelince gösterecek bir şey
+            // bulamazdı.
             val resolvedBadgePayloads = pendingBadgePayloadsForAd
             val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
-            pendingBadgePayloadsForAd = emptyList()
-            pendingBadgeStringPayloadsForAd = emptyList()
             val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
-            pendingLessonTypeReturnForPromo = false
             BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
-            // Aşağıdaki zincirde promo dalına düşülmeyecekse (rozet/rating kazandı ya da bu dönüş
-            // lesson dönüşü değil) erken kilit burada bırakılmalı; yoksa harita kilitli kalır.
-            if (resolvedBadgePayloads.isNotEmpty() || resolvedBadgeStringPayloads.isNotEmpty() ||
-                justFinishedChestForRating || !resolvedLessonTypeReturn
-            ) {
-                releaseAskQuestionPromoLock("otherBranch:$caller")
+            // Promo kilidi: promo HİÇ çalışmayacaksa burada bırakılıyor, yoksa harita
+            // kilitli kalır. Eskiden rozet ya da rating varsa da bırakılıyordu çünkü o
+            // durumda promo ATLANIYORDU; kuyrukta atlanmıyor, sırasını bekliyor.
+            if (!resolvedLessonTypeReturn) {
+                releaseAskQuestionPromoLock("noPromoBranch:$caller")
             }
-            if (resolvedBadgePayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
-                }
-            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    BadgeDiagnostics.log("MainActivity successfully opening BadgeFragment with STRING payloads: ${resolvedBadgeStringPayloads.size}")
-                    supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_right,
-                            R.anim.slide_out_left,
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_right,
-                        )
-                        .replace(
-                            R.id.badgeFragmentContainter,
-                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
-                        )
-                        .commit()
-                }
-            } else if (justFinishedChestForRating) {
-                val isAdSkipShowing = supportFragmentManager.findFragmentByTag("AdSkip") != null
-                val isTasksRedirectionPending = GlobalValues.pendingCupPathRevealPartId != null
-                if (isAdSkipShowing || isTasksRedirectionPending) {
-                    justFinishedChestForRating = false
-                } else {
-                    val mapFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-                    val isGuideActiveOrPending = MarathonGuideStore.isPending(this@MainActivity) ||
-                        (mapFragment != null && mapFragment.isAdded && mapFragment.view != null &&
-                            (mapFragment.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE))
-
-                    if (!isGuideActiveOrPending) {
-                        justFinishedChestForRating = false
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            AppRatingManager.checkAndShowRatingPrompt(this@MainActivity, 1)
-                        }
-                    }
-                }
-            } else if (resolvedLessonTypeReturn) {
-                // Chest dönüşleri (guide/rozet/rating/tasks yönlendirmesi) yukarıdaki dallarda
-                // ele alındığı için buraya asla düşmez — bu dal sadece türü LESSON olan item'lardan.
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    maybeShowAskQuestionPromo("notifyMapVisibleAfterLessonClaim:$caller")
-                }
-            }
+            // Ne gösterileceğine ve hangi sırayla gösterileceğine tek yer karar veriyor.
+            pumpPostLessonQueue("notifyMapVisible:$caller")
             val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
             if (map == null || !map.isAdded) {
                 LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")
@@ -2854,8 +2793,8 @@ class MainActivity : AppCompatActivity() {
             return "badge_overlay:${badge.javaClass.simpleName}"
         }
 
-        // Yeni seri ekranı da bu kapıdan geçiyor (bkz. tryShowNewStreakPrompt). Burada
-        // listelenmeseydi rehber onun üstüne açılırdı — ilk denemede tam bu oldu.
+        // Kuyruğun açtığı yeni seri ekranı da burada listeli: listelenmeseydi rehber
+        // onun üstüne açılırdı — ilk denemede tam bu oldu.
         if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) {
             return "new_streak_prompt"
         }
@@ -3044,53 +2983,16 @@ class MainActivity : AppCompatActivity() {
         binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
     }
 
+    /**
+     * Eskiden yalnızca maraton rehberini denerdi; artık ders sonrası kuyruğunu dürtüyor.
+     *
+     * Adı ve imzası korundu: bu fonksiyon DOKUZ ayrı yerden çağrılıyor (MapFragment,
+     * BadgeFragment, ChestFragment, ChestResult…) ve hepsi aslında aynı şeyi söylüyor:
+     * "bir şeyler yatıştı, sırada ne varsa gösterilebilir". Dokuz çağrı yerini
+     * değiştirmek yerine anlamı tek yerde genişletmek hem daha az riskli hem daha doğru.
+     */
     fun tryShowPendingMarathonGuideOnMap(caller: String) {
-        if (!::binding.isInitialized) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=binding_not_initialized")
-            return
-        }
-
-        // Yeni seri ekranı sıraya ilk giriyor: ders biter bitmez soruluyor ve tek seferlik.
-        // Açıldıysa buradan çıkılıyor; kapanınca [onNewStreakPromptClosed] bu fonksiyonu
-        // yeniden çağırıyor ve rehber/kupa yolu kaldığı yerden devam ediyor.
-        if (tryShowNewStreakPrompt(caller)) return
-
-        // Kupa yolu panel açılış emri varsa, tüm ödül/görev/rozet overlay'leri kapandığında
-        // haritada maraton rehberi göstermek yerine 0.5 saniye bekleyip TasksFragment'a (explore sekmesine) geç.
-        if (GlobalValues.pendingCupPathRevealPartId != null && isMapBaseReadyForMarathonGuide()) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow ROUTE | caller=$caller routing to TasksFragment for Cup Path in 500ms")
-            // Dokunmaları Activity düzeyinde (Pencere - Window seviyesinde) engelle
-            window.setFlags(
-                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            )
-
-            binding.root.postDelayed({
-                binding.bottomNavigationID.selectedItemId = R.id.explore
-            }, 500L)
-            return
-        }
-
-        MarathonGuideStore.logPrefsSnapshot(this, "tryShow:$caller")
-        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-        if (map == null) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_fragment_missing")
-            return
-        }
-        if (!map.isAdded) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_not_added")
-            return
-        }
-        if (map.view == null) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow WAIT | caller=$caller reason=map_view_null → post")
-        }
-        map.view?.post {
-            if (map.isAdded) {
-                map.maybeShowPendingMarathonGuide(caller)
-            } else {
-                Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_detached_before_post")
-            }
-        } ?: map.maybeShowPendingMarathonGuide(caller)
+        pumpPostLessonQueue(caller)
     }
 
     /** LessonResult → ChestFragment: result overlay host'u görünür yap. */
@@ -3499,63 +3401,198 @@ class MainActivity : AppCompatActivity() {
 
     private val streakCelebrationHideRunnable = Runnable { hideStreakCelebration() }
 
-    // ── Yeni seri turu ────────────────────────────────────
+    // ── Ders sonrası ekran kuyruğu ───────────────────────────────────────────
+    //
+    // NEDEN VAR
+    //   Ders bitince haritaya dönüşe kadar sekiz ayrı şey açılabiliyor. Her biri kendi
+    //   yolundan, kendi guard'ıyla tetikleniyordu: rozet İKİ ayrı yoldan, rating ÜÇ ayrı
+    //   yerden, maraton rehberi DOKUZ ayrı yerden. Kimse kimseden haberdar değildi, yani
+    //   hangisinin görüneceği "kim önce yetişirse"ye kalıyordu: ekranlar birbirinin
+    //   üstüne biniyor, reklamın altında kalıyor ya da hiç görünmüyordu.
+    //
+    // NASIL ÇALIŞIYOR
+    //   Her ekranın zaten bir "bekliyor" durumu var (rozet payload'ları,
+    //   justFinishedChestForRating, MarathonGuideStore.isPending…). Kuyruk bunları okuyup
+    //   SIRAYLA tek tek gösteriyor. Bir şey açıkken kapı ([postLessonQueueBlockReason])
+    //   kapalı oluyor ve kuyruk bekliyor; o ekran kapanınca kuyruk yeniden dürtülüyor.
+    //
+    //   Tetikleme noktası ekranların zaten çağırdığı yerler: tryShowPendingMarathonGuideOnMap
+    //   dokuz yerden çağrılıyordu ve artık doğrudan kuyruğu dürtüyor. Yani "işler yatıştı"
+    //   sinyali bedavaya geldi, dokuz çağrı yerinin hiçbirine dokunulmadı.
+    //
+    // SIRA (kullanıcının belirlediği)
+    //   reklam → sezon kapısı → rozet → yeni seri → öğretmene sorma → rating →
+    //   maraton rehberi → kupa yolu/Tasks
+    //
+    //   İlk ikisi kuyruğun İÇİNDE değil, ÖNÜNDE: reklam kontrolü
+    //   (adCheckForBadgeInProgress) ve sezon kapısı zaten kapıda listeli, yani ikisi de
+    //   varken kuyruk hiç başlamıyor. Kendi akışları doğru çalışıyordu; sırayı bozmadan
+    //   dokunmamak en az riskli yol.
 
-    /** Ders bitti, serisi olmayan kullanıcıya yeni tur sorulacak. */
+    /** Ders/sandık bitti, serisi olmayan kullanıcıya yeni tur sorulacak. */
     private var newStreakPromptQueued = false
 
     /**
-     * Serisi olmayan kullanıcıya yeni tur ekranını güvenli bir anda açar.
+     * Kuyruk şu an bir şey gösterebilir mi; gösteremiyorsa sebebi.
      *
-     * ## Neden kendi sıralaması yok
-     * İlk denemede bu ekran haritaya dönüş zincirinin önüne kondu ve zincir ertelendi.
-     * İşe yaramadı: haritada açılan şeyler tek bir yerden akmıyor — maraton rehberi
-     * dokuz ayrı yerden, reklam ve rozet kendi yollarından tetikleniyor. Ekran reklamın
-     * altında kaldı ve rehberle aynı anda açıldı.
+     * [marathonGuideMapBlockReason] üzerine kuruluyor — ders katmanları, rozet, reklam
+     * kontrolü, sezon kapısı ve Firestore beklemesi orada zaten listeli. Üzerine kuyruğun
+     * kendi açtığı ekranlar ekleniyor.
      *
-     * ## Çözüm: var olan kapıya katılmak
-     * [marathonGuideMapBlockReason] tam olarak bu sorunu çözmüş durumda: ders katmanları,
-     * rozet, rozet öncesi reklam kontrolü, sezon kapısı ve Firestore beklemesi orada
-     * zaten listeli. Ekran aynı kapıyı kullanıyor VE kendisi de o kapıya eklendi, yani
-     * rehber de bunu bekliyor. Kimse kimsenin üstüne binmiyor ve "önce şu sonra bu" diye
-     * bir sıra tanımlamak gerekmedi.
-     *
-     * Tetikleme de aynı yerden ([tryShowPendingMarathonGuideOnMap]): o fonksiyon işler
-     * yatıştıkça dokuz yerden çağrılıyor, yani "şimdi uygun mu" sorusu bedavaya geliyor.
-     *
-     * @return true ise ekran açıldı (ya da zaten açık) ve ÇAĞIRAN DURMALI.
+     * DİKKAT: burada yalnızca "şu an bir şey GÖRÜNÜYOR" durumları var. "Bekliyor"
+     * durumları (rating bekliyor, rehber bekliyor, kupa yolu bekliyor) BURAYA GİRMEZ —
+     * onlar kuyruğun göstereceği şeyler; kapıya koysaydık kuyruk kendi işini kendisi
+     * engellerdi.
      */
-    private fun tryShowNewStreakPrompt(caller: String): Boolean {
-        val fm = supportFragmentManager
-        if (fm.findFragmentByTag(NewStreakFragment.TAG) != null) return true
-        if (!newStreakPromptQueued) return false
-        // Reklam açıkken activity duraklatılıyor. Bu kontrol olmadan ekran reklamın
-        // ALTINDA açılıyor ve reklam kapanınca ortaya çıkıyordu.
+    private fun postLessonQueueBlockReason(): String? {
+        if (!::binding.isInitialized) return "binding_not_initialized"
+        // Reklam açıkken activity duraklatılıyor; bu kontrol olmadan ekranlar reklamın
+        // ALTINDA açılıp reklam kapanınca ortaya çıkıyordu.
         if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-            return false
+            return "not_resumed"
         }
-        if (fm.isStateSaved || isFinishing || isDestroyed) return false
-        val block = marathonGuideMapBlockReason()
+        if (isFinishing || isDestroyed) return "activity_gone"
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return "state_saved"
+        marathonGuideMapBlockReason()?.let { return it }
+        if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (fm.findFragmentByTag("RatingDialog") != null) return "rating_showing"
+        if (fm.findFragmentByTag("AskQuestionOpen") != null) return "promo_showing"
+        val map = fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map != null && map.isAdded && map.view != null &&
+            map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
+        ) {
+            return "guide_panel_visible"
+        }
+        return null
+    }
+
+    /**
+     * Kuyruğu dürter: kapı açıksa sıradaki bekleyen ekranı açar.
+     *
+     * "Bir şeyler yatıştı" diyen her yerden çağrılabilir; boşa çağrılması zararsız.
+     * Adımların sırası buradaki SIRA: yukarıdaki bir çağrı true dönerse aşağıdakiler o
+     * tur denenmiyor — açılan ekran kapanınca kuyruk yeniden dürtülüyor.
+     */
+    fun pumpPostLessonQueue(caller: String) {
+        val block = postLessonQueueBlockReason()
         if (block != null) {
-            Log.d(TAG_NEW_STREAK, "bekliyor | caller=$caller block=$block")
-            return false
+            Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            return
         }
+        if (showBadgeStep(caller)) return
+        if (showNewStreakStep(caller)) return
+        if (showAskQuestionPromoStep(caller)) return
+        if (showRatingStep(caller)) return
+        if (showMarathonGuideStep(caller)) return
+        if (showCupPathStep(caller)) return
+        Log.d(TAG_QUEUE, "bos | caller=$caller")
+    }
+
+    /** B4 — rozet kutlaması. */
+    private fun showBadgeStep(caller: String): Boolean {
+        val payloads = pendingBadgePayloadsForAd
+        val stringPayloads = pendingBadgeStringPayloadsForAd
+        if (payloads.isEmpty() && stringPayloads.isEmpty()) return false
+        pendingBadgePayloadsForAd = emptyList()
+        pendingBadgeStringPayloadsForAd = emptyList()
+        Log.d(TAG_QUEUE, "rozet | caller=$caller")
+        if (payloads.isNotEmpty()) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, payloads)
+            }
+        } else {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right,
+                    )
+                    .replace(
+                        R.id.badgeFragmentContainter,
+                        BadgeFragment.newLevelUpSequenceInstance(stringPayloads, 0),
+                    )
+                    .commit()
+            }
+        }
+        return true
+    }
+
+    /** B9 — seri kırıksa yeni tur sorusu. */
+    private fun showNewStreakStep(caller: String): Boolean {
+        if (!newStreakPromptQueued) return false
         newStreakPromptQueued = false
         if (!StreakRepository.needsNewStreakPrompt(this)) return false
-        Log.d(TAG_NEW_STREAK, "aciliyor | caller=$caller")
-        NewStreakFragment().showNow(fm, NewStreakFragment.TAG)
+        Log.d(TAG_QUEUE, "yeni seri | caller=$caller")
+        NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
         return true
     }
 
     /**
-     * Yeni tur ekranı kapandı: sırada bekleyen diğerlerine yol verir.
+     * B8 — öğretmene sorma tanıtımı (yalnızca LESSON türü dönüşlerde).
      *
-     * Ekran açıkken [marathonGuideMapBlockReason] kapalı olduğu için rehber (ve kupa yolu
-     * yönlendirmesi) bekliyordu; kapanınca onları bir kez daha denemek gerekiyor, yoksa
-     * bir sonraki tesadüfi tetiklemeye kadar asılı kalırlardı.
+     * Kendi uygunluk kontrolü ve sayacı var; uygun değilse hiç açılmıyor ve harita
+     * kilidini kendisi bırakıyor. Bu yüzden "açıldı mı" bilgisi burada yok: denendikten
+     * sonra kuyruk bir kez daha dürtülüyor, açılmışsa kapı kapalı olduğu için zaten
+     * duruyor, açılmamışsa sıradakine geçiliyor.
      */
+    private fun showAskQuestionPromoStep(caller: String): Boolean {
+        if (!pendingLessonTypeReturnForPromo) return false
+        pendingLessonTypeReturnForPromo = false
+        Log.d(TAG_QUEUE, "ogretmene sorma | caller=$caller")
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            maybeShowAskQuestionPromo("queue:$caller")
+            binding.root.post { pumpPostLessonQueue("afterPromo:$caller") }
+        }
+        return true
+    }
+
+    /** B7 — uygulamayı puanlama. Gösterilmediyse kuyruk devam ediyor. */
+    private fun showRatingStep(caller: String): Boolean {
+        if (!justFinishedChestForRating) return false
+        justFinishedChestForRating = false
+        Log.d(TAG_QUEUE, "rating | caller=$caller")
+        return AppRatingManager.checkAndShowRatingPrompt(this, 1)
+    }
+
+    /** B11 — maraton rehberi (yalnızca haritada). */
+    private fun showMarathonGuideStep(caller: String): Boolean {
+        if (!MarathonGuideStore.isPending(this)) return false
+        MarathonGuideStore.logPrefsSnapshot(this, "queue:$caller")
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null || !map.isAdded) {
+            Log.d(TAG_QUEUE, "rehber ATLANDI | caller=$caller reason=map_yok")
+            return false
+        }
+        Log.d(TAG_QUEUE, "rehber | caller=$caller")
+        val show = Runnable {
+            if (map.isAdded) map.maybeShowPendingMarathonGuide(caller)
+        }
+        map.view?.post(show) ?: show.run()
+        return true
+    }
+
+    /** B6 — kupa yolu açıldıysa Tasks sekmesine geç. Kuyruğun sonu: haritadan çıkıyoruz. */
+    private fun showCupPathStep(caller: String): Boolean {
+        if (GlobalValues.pendingCupPathRevealPartId == null) return false
+        if (!isMapBaseReadyForMarathonGuide()) return false
+        Log.d(TAG_QUEUE, "kupa yolu | caller=$caller")
+        // Geçiş sırasında dokunmaları pencere düzeyinde engelle.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+        )
+        binding.root.postDelayed({
+            binding.bottomNavigationID.selectedItemId = R.id.explore
+        }, 500L)
+        return true
+    }
+
+    /** Yeni tur ekranı kapandı: kuyruğa devam. [NewStreakFragment.onDismiss] çağırıyor. */
     fun onNewStreakPromptClosed() {
-        tryShowPendingMarathonGuideOnMap("NewStreakFragment.dismiss")
+        pumpPostLessonQueue("NewStreakFragment.dismiss")
     }
 
     /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */

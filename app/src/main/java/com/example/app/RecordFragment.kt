@@ -49,7 +49,13 @@ class RecordFragment : Fragment() {
         // FragmentManager'ın kendi zamanlamasına (bir sonraki frame) bırakıyoruz.
         Handler(Looper.getMainLooper()).postDelayed({
             main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
+            // fromLessonFinish = false: burada bir ders bitmedi, kullanıcı yalnızca
+            // liderlik tablosunu kapattı. True kalsaydı "ders bitti" kuyruğu (yeni seri
+            // sorusu vb.) tabloya bakıp çıkan herkese açılırdı.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "RecordFragment.back",
+                fromLessonFinish = false,
+            )
         }, 300L)
     }
 
