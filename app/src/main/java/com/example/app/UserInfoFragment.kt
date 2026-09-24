@@ -169,9 +169,27 @@ class UserInfoFragment : Fragment() {
             } else if (currentStep == Step.SOURCE) {
                 val birthYear = validatedBirthYear ?: return@setOnClickListener
                 val source = selectedSource ?: return@setOnClickListener
-                
+
                 hideKeyboard()
-                saveBirthYearAndProceed(birthYear, source)
+
+                // Seri kurulumu kayıt yolunun içinde: hedef ve meydan okuma yalnızca YENİ
+                // hesap açana sorulsun diye. Zaten hesabı olup yeni cihaza kurulum yapan
+                // kullanıcı giriş yapıyor, buraya hiç uğramıyor.
+                //
+                // Öğretmene sorulmuyor: seri bir öğrenme alışkanlığı ölçüsü, öğretmen
+                // uygulamayı ders çalışmak için kullanmıyor.
+                if (forceTeacher) {
+                    saveBirthYearAndProceed(birthYear, source)
+                    return@setOnClickListener
+                }
+                // Cihazda başka bir hesabın seri verisi varsa burada siliniyor: yeni hesap
+                // öncekinin serisini devralmamalı ve kurulum akışı ona da sorulmalı.
+                StreakRepository.prepareForNewAccount(requireContext())
+                val shown = StreakOnboardingLauncher.showIfNeeded(
+                    fragment = this,
+                    containerId = R.id.userInfoFragmentContainer,
+                ) { saveBirthYearAndProceed(birthYear, source) }
+                if (!shown) saveBirthYearAndProceed(birthYear, source)
             }
         }
     }

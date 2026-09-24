@@ -3,20 +3,30 @@ package com.example.app
 import androidx.fragment.app.Fragment
 
 /**
- * Seri kurulum akışını gerektiğinde araya sokar.
+ * Seri kurulum akışını kayıt yolunun içine sokar.
  *
- * İlk dersi bitiren kullanıcı iki ayrı ekrandan kayıt akışına gönderiliyor (dersi bitirince
- * ve başarısız olunca). Karar iki yerde tekrar edilmesin diye tek kapı: çağıran taraf
- * "kayıt ekranını açmadan önce bunu sor" diyor, akışın gerekip gerekmediğine burası karar
- * veriyor.
+ * ## Neden kayıt anına bağlı
+ * Akış eskiden ilk dersten hemen sonra açılıyordu. Bu, yalnızca temiz kurulumdan gelen
+ * kullanıcıyı yakalıyordu: aynı cihazda ikinci hesap açan ya da tutorial'a hiç uğramadan
+ * kayıt olan kimseye sorular sorulmuyordu.
+ *
+ * Şimdi tetikleyici "kayıt olma" olayının kendisi. Bu, bir soruyu da kendiliğinden çözüyor:
+ * zaten hesabı olup yeni cihaza kurulum yapan kullanıcı GİRİŞ yapıyor, kayıt olmuyor — ona
+ * hedef sorulmuyor, hedefi sunucudan geliyor.
+ *
+ * Yeni kurulumda kayıt zaten tutorial ve ilk dersten SONRA geldiği için, "kullanıcı ürünü
+ * denemeden söz vermesin" kuralı da korunuyor.
  */
 object StreakOnboardingLauncher {
 
     /**
      * Akış gerekiyorsa açar ve `true` döner — bu durumda çağıran taraf DURMALI, [onDone]
      * akış bitince çalışır. Gerekmiyorsa `false` döner ve çağıran kendi yoluna devam eder.
+     *
+     * @param containerId Akışın ekleneceği tam ekran kap. Kayıt akışı MainActivity'de
+     *   yaşamadığı için sabit bir kimlik varsayılamıyor.
      */
-    fun showIfNeeded(fragment: Fragment, onDone: () -> Unit): Boolean {
+    fun showIfNeeded(fragment: Fragment, containerId: Int, onDone: () -> Unit): Boolean {
         val context = fragment.context ?: return false
         if (StreakRepository.isOnboardingDone(context)) return false
         if (!fragment.isAdded) return false
@@ -29,10 +39,8 @@ object StreakOnboardingLauncher {
             fragment.viewLifecycleOwner,
         ) { _, _ -> onDone() }
 
-        // Rozet kutlamasının kabı kullanılıyor: tam ekran ve diğer her şeyin üstünde.
-        // İlk ders sonrası bir rozet kutlaması kuyrukta olmadığı için çakışma yok.
         fm.beginTransaction()
-            .add(R.id.badgeFragmentContainter, StreakOnboardingFragment())
+            .add(containerId, StreakOnboardingFragment())
             .commitAllowingStateLoss()
         return true
     }

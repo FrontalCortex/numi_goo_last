@@ -40,6 +40,7 @@ object StreakRepository {
     private const val KEY_SERVER_LONGEST = "server_longest"
     private const val KEY_SERVER_CLAIMED = "server_claimed"
     private const val KEY_LAST_PING_DAY = "last_ping_day"
+    private const val KEY_OWNER_UID = "owner_uid"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -123,6 +124,62 @@ object StreakRepository {
         return p.getInt(KEY_CELEBRATION_STREAK, 0)
     }
 
+    // ── Hesap sahipliği ─────────────────────────────────────────────────
+
+    /**
+     * Yerel seri verisini oturumdaki hesaba bağlar; sahibi değiştiyse her şeyi siler.
+     *
+     * ## Neden gerekli
+     * Bu dosya cihaza ait, uid'ye değil. Kullanıcı çıkış yapıp aynı telefonda başka bir hesap
+     * açtığında yeni hesap öncekinin serisini, hedefini, hafta şeridini ve toplanan ödül
+     * önbelleğini devralıyordu. Sunucudan okuma da kurtarmıyordu: yeni hesabın dokümanı
+     * olmadığı için okuma sessizce geri dönüyor ve yerel veri olduğu gibi kalıyordu.
+     *
+     * ## Neden "sahipsizse devral"
+     * Seri kayıttan ÖNCE, ilk ders sırasında başlıyor; o anda uid yok, dolayısıyla sahip
+     * alanı boş. Kayıt biter bitmez o veri az önce açılan hesabın hakkı — silinmemeli.
+     * Silinen yalnızca BAŞKA bir hesaba ait olduğu kesin olan veri.
+     *
+     * Çalışma süresi de siliniyor: o da güne göre anahtarlı ve uid'den bağımsız, yani
+     * temizlenmeseydi yeni kullanıcı öncekinin dakikalarıyla seri ilerletirdi.
+     */
+    fun bindToUser(context: Context, uid: String?) {
+        if (uid.isNullOrBlank()) return
+        val p = prefs(context) ?: return
+        val owner = p.getString(KEY_OWNER_UID, "").orEmpty()
+        if (owner == uid) return
+
+        if (owner.isNotEmpty()) {
+            Log.i(TAG, "Hesap değişti, yerel seri verisi siliniyor")
+            wipe(context)
+        }
+        prefs(context)?.edit()?.putString(KEY_OWNER_UID, uid)?.apply()
+    }
+
+    /**
+     * Kayıt akışına girildi: veri başka bir hesaba aitse şimdi siliniyor.
+     *
+     * [bindToUser] tek başına yetmiyordu, çünkü o ancak KAYIT BİTTİKTEN sonra, kullanıcı
+     * MainActivity'ye geldiğinde çalışıyor. Oysa kurulum akışının gösterilip
+     * gösterilmeyeceğine kayıt SIRASINDA karar veriliyor ve o anda `isOnboardingDone`
+     * bayrağı hâlâ önceki kullanıcıdan kalma "true" oluyordu — yani aynı cihazda ikinci
+     * hesap açan kimseye sorular yine sorulmuyordu.
+     *
+     * Sahip boşsa dokunulmuyor: o veri, kayıttan önce ilk derste kazanılmış demektir ve az
+     * önce açılmakta olan hesabın hakkıdır.
+     */
+    fun prepareForNewAccount(context: Context) {
+        val p = prefs(context) ?: return
+        if (p.getString(KEY_OWNER_UID, "").orEmpty().isEmpty()) return
+        Log.i(TAG, "Yeni hesap kaydı, önceki hesabın seri verisi siliniyor")
+        wipe(context)
+    }
+
+    private fun wipe(context: Context) {
+        prefs(context)?.edit()?.clear()?.apply()
+        StudyTimeTracker.clearAll(context)
+    }
+
     // ── Sunucu eşitlemesi ───────────────────────────────────────────────
     //
     // Yerel sayaç arayüzün hızlı yolu: kayıttan önce de, çevrimdışı da çalışıyor. Ama ÖDÜL
@@ -198,8 +255,27 @@ object StreakRepository {
         lastDay: String,
         claimed: Set<Int>,
         recentDays: Set<String> = emptySet(),
+        goalMinutes: Int = 0,
+        challengeDays: Int = 0,
     ) {
         val p = prefs(context) ?: return
+
+        // Hedef ve meydan okuma YALNIZCA bu cihazda kurulum akışı hiç görülmediyse
+        // sunucudan alınıyor. Bu, "hesabı var, yeni cihaza kurulum yaptı" durumu: kayıt
+        // akışından geçmediği için hedefi sorulmuyor, sunucudaki seçimi geri geliyor.
+        //
+        // Alındıktan sonra akış yapılmış sayılıyor. Bu bayrak olmasaydı kullanıcının seri
+        // ekranından yaptığı değişiklik, bir sonraki okumada sunucunun eski değeriyle
+        // ezilirdi — değişiklik ancak ertesi gün sunucuya gidiyor.
+        if (!isOnboardingDone(context) && goalMinutes > 0) {
+            p.edit()
+                .putInt(KEY_GOAL_MINUTES, goalMinutes)
+                .apply()
+            if (challengeDays > 0) {
+                p.edit().putInt(KEY_CHALLENGE_DAYS, challengeDays).apply()
+            }
+            markOnboardingDone(context)
+        }
         val editor = p.edit()
             .putInt(KEY_SERVER_CURRENT, current)
             .putInt(KEY_SERVER_LONGEST, longest)

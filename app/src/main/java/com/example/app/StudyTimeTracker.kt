@@ -148,6 +148,19 @@ object StudyTimeTracker {
     }
 
     /**
+     * Cihazdaki tüm çalışma süresi kayıtlarını siler.
+     *
+     * Hesap değişiminde çağrılıyor (bkz. [StreakRepository.bindToUser]): süre kovaları uid'ye
+     * değil yalnızca güne göre anahtarlanıyor, yani temizlenmeseydi yeni kullanıcı öncekinin
+     * dakikalarını devralır ve hiç çalışmadan serisini ilerletirdi.
+     */
+    fun clearAll(context: Context) {
+        prefs(context)?.edit()?.clear()?.apply()
+        segmentStartMs = 0L
+        lastInteractionMs = 0L
+    }
+
+    /**
      * Yalnızca debug derlemesi: bugüne süre ekler.
      *
      * Seriyi elle test etmek aksi halde her tur için gerçek dakikalar bekletiyor; gün

@@ -84,6 +84,11 @@ object StreakSyncService {
                     .orEmpty()
                 StreakRepository.adoptServerState(
                     context, current, longest, lastDay, claimed, recentDays,
+                    // Hedef/meydan okuma da geri geliyor: hesabı olup yeni cihaza kurulum
+                    // yapan kullanıcı kayıt akışından geçmiyor, yani hedefi sorulmuyor.
+                    // Bunlar okunmasaydı varsayılan 5 dakikaya düşerdi.
+                    goalMinutes = (doc.get("goalMinutes") as? Number)?.toInt() ?: 0,
+                    challengeDays = (doc.get("challengeDays") as? Number)?.toInt() ?: 0,
                 )
                 onDone?.invoke()
             }

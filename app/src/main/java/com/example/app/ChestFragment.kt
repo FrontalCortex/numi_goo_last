@@ -121,17 +121,12 @@ class ChestFragment : Fragment() {
             .apply()
         GlobalValues.currentTutorialNumber = 0
 
-        // Kayıt ekranından ÖNCE seri kurulumu: kullanıcı az önce ilk dersini bitirdi,
-        // "yarın da gel" demenin en inandırıcı anı bu. Akış açıldıysa burada duruluyor;
-        // kayıt ekranı akış bitince açılıyor.
-        val openLogin = {
-            loginLauncher.launch(
-                Intent(requireContext(), LoginStartActivity::class.java)
-                    .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
-            )
-        }
-        if (StreakOnboardingLauncher.showIfNeeded(this, openLogin)) return
-        openLogin()
+        // Seri kurulumu artık burada değil, kayıt akışının içinde (bkz. UserInfoFragment):
+        // burada sorulduğunda yalnızca temiz kurulumdan gelen kullanıcı yakalanıyordu.
+        loginLauncher.launch(
+            Intent(requireContext(), LoginStartActivity::class.java)
+                .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
+        )
     }
 
     /** [NewChestFragment] kapanış kayma animasyonuna başlamadan hemen önce çağrılır: ChestFragment'in

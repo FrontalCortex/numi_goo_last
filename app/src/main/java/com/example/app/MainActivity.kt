@@ -2037,6 +2037,9 @@ class MainActivity : AppCompatActivity() {
      */
     fun refreshStreakUi() {
         if (!::binding.isInitialized) return
+        // Yerel seri verisi cihaza ait, uid'ye değil. Oturumdaki hesap değiştiyse önceki
+        // kullanıcının verisi burada siliniyor — yoksa yeni hesap onun serisini devralırdı.
+        StreakRepository.bindToUser(this, auth.currentUser?.uid)
         val state = StreakRepository.refresh(this)
         // refresh() hedefi tutturan günü burada ilerletiyor; kutlama da aynı yerden
         // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
