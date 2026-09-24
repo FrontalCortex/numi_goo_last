@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity() {
             append(" dest=").append(intent?.getStringExtra(EXTRA_START_DESTINATION) ?: "null")
             append(" fromLogin=").append(intent?.getBooleanExtra(EXTRA_FROM_LOGIN, false) == true)
             append(" auth=").append(auth.currentUser?.uid?.take(8) ?: "null")
-            append(" firstShown=").append(FirstTutorialShownStore.readLocal(this@MainActivity))
+            append(" hadAccount=").append(DeviceAccountStore.hasEverHadAccount(this@MainActivity))
             append(" base=").append(base)
             append(" abacusFrag=").append(abacusFrag)
             append(" abacusVis=").append(abacusVis)
@@ -478,7 +478,7 @@ class MainActivity : AppCompatActivity() {
             logFirstTutorial(
                 "onCreate.deleteAllLessonItems",
                 "after clear lessonItems=${GlobalLessonData.lessonItems.size} " +
-                    "first_tutorial_shown=${FirstTutorialShownStore.readLocal(this)}",
+                    "account_ever_created=${DeviceAccountStore.hasEverHadAccount(this)}",
             )
         }
         coin = binding.currencyText
@@ -538,57 +538,19 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> {
                     logFirstTutorial("onCreate.route", "prepared=null -> fallback auth check")
-                    val currentUser = auth.currentUser
-                    if (currentUser == null) {
-                        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
-                        if (firstTutorialShown) {
-                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=true -> Map only")
-                            supportFragmentManager.beginTransaction().apply {
-                                replace(R.id.fragmentContainerID, PartSelectionFragment())
-                                addToBackStack(null)
-                                commit()
-                            }
-                        } else {
-                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=false -> showFirstTutorial")
-                            showFirstTutorial()
+                    // Tek şart: bu cihazda daha önce hesap açıldı mı. Girişli kullanıcıda
+                    // zaten true döner, yani ayrı bir dal gerekmiyor.
+                    val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
+                    if (hadAccount) {
+                        logFirstTutorial("onCreate.route", "account_ever_created=true -> Map only")
+                        supportFragmentManager.beginTransaction().apply {
+                            replace(R.id.fragmentContainerID, PartSelectionFragment())
+                            addToBackStack(null)
+                            commit()
                         }
                     } else {
-                        logFirstTutorial("onCreate.route", "uid=${currentUser.uid.take(8)} -> Firestore first_tutorial_shown")
-                        firestore.collection("users")
-                            .document(currentUser.uid)
-                            .get()
-                            .addOnSuccessListener { doc ->
-                                val firestoreRaw =
-                                    if (doc.exists()) doc.getBoolean("first_tutorial_shown") else null
-                                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                                    this@MainActivity,
-                                    firestoreRaw,
-                                    "Main.onCreate.firestore",
-                                )
-                                if (firstTutorialShown) {
-                                    FirstTutorialShownStore.repairFirestoreIfLocalShown(
-                                        this@MainActivity,
-                                        "Main.onCreate.firestore",
-                                    )
-                                }
-                                logFirstTutorial(
-                                    "onCreate.firestore",
-                                    "exists=${doc.exists()} firestoreRaw=$firestoreRaw resolved=$firstTutorialShown",
-                                )
-                                if (firstTutorialShown) {
-                                    supportFragmentManager.beginTransaction().apply {
-                                        replace(R.id.fragmentContainerID, PartSelectionFragment())
-                                        addToBackStack(null)
-                                        commit()
-                                    }
-                                } else {
-                                    showFirstTutorial()
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                logFirstTutorial("onCreate.firestore", "FAIL -> showFirstTutorial err=${e.message}")
-                                showFirstTutorial()
-                            }
+                        logFirstTutorial("onCreate.route", "account_ever_created=false -> showFirstTutorial")
+                        showFirstTutorial()
                     }
                 }
             }
@@ -1731,7 +1693,7 @@ class MainActivity : AppCompatActivity() {
         // Hiç fragment yoksa, bu muhtemelen uygulamanın offline olarak açıldığı ilk durumdur.
         // Normal başlangıç akışını tekrar uygula (Map/Tutorial).
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
+        val firstTutorialShown = DeviceAccountStore.hasEverHadAccount(this)
 
         if (firstTutorialShown) {
             fm.beginTransaction().apply {
@@ -1839,7 +1801,7 @@ class MainActivity : AppCompatActivity() {
         if (firstTutorialOverlayBootstrapActive) return false
         if (activeMapTutorialOverlayFromLesson) return false
         // İlk tutorial henüz bitmediyse (renderFirstTutorial) hayalet sayma.
-        if (!FirstTutorialShownStore.readLocal(this)) return false
+        if (!DeviceAccountStore.hasEverHadAccount(this)) return false
         return true
     }
 

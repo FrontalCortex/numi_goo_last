@@ -116,13 +116,13 @@ class SplashActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = FirebaseAuth.getInstance().currentUser != null
-        val firstTutorialShownLocal = FirstTutorialShownStore.readLocal(this)
+        val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
         val questionId = intent?.getStringExtra(MainActivity.EXTRA_OPEN_QUESTION_ID)
         val recipientUid = intent?.getStringExtra(MainActivity.EXTRA_NOTIFICATION_RECIPIENT_UID)
         logFirstTutorial(
             "Splash.checkLoginStatus",
             "online=${isOnline()} loginStartEverShown=$loginStartEverShown hasAuth=$hasExistingLogin " +
-                "first_tutorial_shown(local)=$firstTutorialShownLocal questionId=${questionId?.take(8)}",
+                "account_ever_created=$hadAccount questionId=${questionId?.take(8)}",
         )
         if (!isOnline()) {
             logFirstTutorial("Splash.route", "offline -> MainActivity (no start_destination)")
@@ -177,15 +177,17 @@ class SplashActivity : AppCompatActivity() {
         }
 
         if (!hasExistingLogin) {
-            val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
-            val destination = if (firstTutorialShown) {
+            // Şart tek: bu cihazda daha önce hesap açıldı mı. Açıldıysa oturum kapalı olsa
+            // bile tutorial gösterilmiyor.
+            val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
+            val destination = if (hadAccount) {
                 MainActivity.START_DESTINATION_MAP
             } else {
                 MainActivity.START_DESTINATION_TUTORIAL
             }
             logFirstTutorial(
                 "Splash.prepareStartup.guest",
-                "first_tutorial_shown=$firstTutorialShown destination=$destination",
+                "account_ever_created=$hadAccount destination=$destination",
             )
             prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
             return
@@ -214,43 +216,32 @@ class SplashActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
                 
-                val firestoreRaw = doc.getBoolean("first_tutorial_shown")
-                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                    this@SplashActivity,
-                    firestoreRaw,
-                    "Splash.firestore",
-                )
-                if (firstTutorialShown) {
-                    FirstTutorialShownStore.repairFirestoreIfLocalShown(this@SplashActivity, "Splash.firestore")
-                }
-                val destination = if (firstTutorialShown) {
-                    MainActivity.START_DESTINATION_MAP
-                } else {
-                    MainActivity.START_DESTINATION_TUTORIAL
-                }
+                // Oturum açık: bu cihazda hesap var, yani tutorial gösterilmiyor. Firestore
+                // okuması artık yalnızca yukarıdaki "hesap silinmiş mi" kontrolü için
+                // yapılıyor; hedef kararı ona bağlı değil.
+                DeviceAccountStore.hasEverHadAccount(this@SplashActivity)
                 logFirstTutorial(
                     "Splash.prepareStartup.firestore",
-                    "uid=${uid.take(8)} exists=${doc.exists()} firestoreRaw=$firestoreRaw " +
-                        "resolved=$firstTutorialShown destination=$destination",
+                    "uid=${uid.take(8)} exists=${doc.exists()} -> MAP",
                 )
-                prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
+                prepareTutorialDataIfNeededAndLaunch(
+                    MainActivity.START_DESTINATION_MAP,
+                    questionId,
+                    recipientUid,
+                )
             }
             .addOnFailureListener { e ->
-                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                    this@SplashActivity,
-                    firestoreValue = null,
-                    logSource = "Splash.firestore.FAIL",
-                )
-                val destination = if (firstTutorialShown) {
-                    MainActivity.START_DESTINATION_MAP
-                } else {
-                    MainActivity.START_DESTINATION_TUTORIAL
-                }
+                // Okuma başarısız oldu ama oturum açık; hesabın varlığından şüphe yok.
+                DeviceAccountStore.hasEverHadAccount(this@SplashActivity)
                 logFirstTutorial(
                     "Splash.prepareStartup.firestore",
-                    "FAIL resolved=$firstTutorialShown destination=$destination err=${e.message}",
+                    "FAIL -> MAP err=${e.message}",
                 )
-                prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
+                prepareTutorialDataIfNeededAndLaunch(
+                    MainActivity.START_DESTINATION_MAP,
+                    questionId,
+                    recipientUid,
+                )
             }
     }
 

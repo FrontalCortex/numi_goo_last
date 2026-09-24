@@ -471,11 +471,13 @@ class TutorialFragment : Fragment() {
             binding.abacusContainer.visibility = View.INVISIBLE
         }
         if (tutorialNumber == 1) {
-            val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-            val firstTutorialShown = prefs.getBoolean("first_tutorial_shown", false)
+            // Çıkış düğmesi, hesabı olmayan kullanıcının ilk tutorial'inde gizleniyor:
+            // akışın sonundaki kayıt adımına ulaşması gerekiyor. Şart eskiden
+            // `first_tutorial_shown` idi; o bayrak artık yazılmıyor (bkz. DeviceAccountStore).
+            val firstTutorialShown = DeviceAccountStore.hasEverHadAccount(requireContext())
             Log.d(
                 MainActivity.FIRST_TUTORIAL_LOG_TAG,
-                "TutorialFragment.onViewCreated | tutorialNumber=1 first_tutorial_shown=$firstTutorialShown " +
+                "TutorialFragment.onViewCreated | tutorialNumber=1 hadAccount=$firstTutorialShown " +
                     "isAdded=$isAdded view=${view != null}",
             )
             if (!firstTutorialShown) {

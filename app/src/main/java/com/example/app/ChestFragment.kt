@@ -114,7 +114,11 @@ class ChestFragment : Fragment() {
      * devam etmesi için [GlobalLessonData] tarafından okunuyor.
      */
     private fun redirectToLoginForFirstTutorial(source: String) {
-        FirstTutorialShownStore.markShown(requireContext(), source)
+        // `first_tutorial_shown` artık yazılmıyor: tutorial'in gösterilme şartı bu bayrak
+        // değil, cihazda hiç hesap açılıp açılmadığı (bkz. DeviceAccountStore). Eski
+        // bayrak yalnızca `currentTutorialNumber == 1` iken yazıldığı için, ilk tutorial
+        // başarısız geçildiğinde bir daha hiç yazılmıyor ve tutorial tekrar ediyordu.
+        Log.d(MainActivity.FIRST_TUTORIAL_LOG_TAG, "ilk tutorial bitti, girişe yönlendiriliyor: $source")
         requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
             .edit()
             .putBoolean("tutorial1_login_flow_pending", true)

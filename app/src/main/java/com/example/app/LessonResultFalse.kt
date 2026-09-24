@@ -114,10 +114,6 @@ class LessonResultFalse : Fragment() {
 
         binding.claimButton.setOnClickListener {
 
-            if (GlobalValues.currentTutorialNumber == 1) {
-                FirstTutorialShownStore.markShown(requireContext(), "LessonResultFalse.claim")
-            }
-
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 GlobalValues.currentTutorialNumber = 0
