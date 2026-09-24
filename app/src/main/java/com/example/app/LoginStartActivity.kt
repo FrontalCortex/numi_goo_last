@@ -28,7 +28,17 @@ class LoginStartActivity : AppCompatActivity() {
         getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putBoolean("login_start_ever_shown", true).apply()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { /* geri tuşu işlevsiz */ }
+            override fun handleOnBackPressed() {
+                // Kayıt soruları açıksa geri tuşu ona ait: bir önceki adıma dönmeli.
+                // Bu dinleyici geri tuşunu KOŞULSUZ yutuyordu ve fragment'in kendi
+                // dinleyicisinin her zaman önce çalışacağına güveniliyordu; sahada
+                // çalışmadı. Artık yutmadan önce buraya soruluyor, yani davranış
+                // dinleyici sırasına bağımlı değil.
+                val userInfo = supportFragmentManager
+                    .findFragmentByTag(TAG_USER_INFO) as? UserInfoFragment
+                if (userInfo != null && userInfo.isVisible && userInfo.onBackStep()) return
+                /* aksi halde geri tuşu işlevsiz */
+            }
         })
 
         val isTeacherMode = intent.getBooleanExtra(EXTRA_TEACHER_MODE, false)

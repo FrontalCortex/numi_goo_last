@@ -145,30 +145,14 @@ class UserInfoFragment : Fragment() {
 
         showStep(Step.AGE, animate = false)
 
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // Ekranda geri butonu yok; geri gitmenin tek yolu telefonun kendi tuşu.
-                // Bu satır tanı içindir: geri tuşu çalışmıyorsa, buranın hiç çağrılmadığını
-                // mı yoksa adımın değişmediğini mi gördüğümüz logcat'ten anlaşılsın.
-                Log.d(TAG, "geri tuşu: adım=$currentStep animating=$animating")
-                if (animating) return
-
-                val previous = when (currentStep) {
-                    Step.CHALLENGE -> Step.GOAL
-                    Step.GOAL -> Step.SOURCE
-                    Step.SOURCE -> Step.AGE
-                    Step.AGE -> null
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    onBackStep()
                 }
-                if (previous != null) {
-                    showStep(previous, forward = false)
-                    return
-                }
-                // İlk adımdayız: fragment'in kendisi kapanıyor. `isEnabled` bilerek
-                // kapatılmıyor — pop başarısız olursa dinleyici kalıcı olarak ölür ve
-                // sonraki geri tuşları activity'nin geri tuşunu yutan dinleyicisine düşerdi.
-                parentFragmentManager.popBackStack()
-            }
-        })
+            },
+        )
 
         updateContinueButton(enabled = false)
 
@@ -257,6 +241,39 @@ class UserInfoFragment : Fragment() {
      * Eskiden bu üç iş, ileri ve geri geçişlerde ayrı ayrı yazılıydı; ilerleme çubuğu
      * eklenince aynı satırların dördüncü kopyası gerekecekti.
      */
+    /**
+     * Geri tuşu: bir önceki adıma döner, ilk adımdaysa ekranı kapatır.
+     *
+     * ## Neden hem fragment hem activity çağırıyor
+     * Fragment kendi `OnBackPressedCallback`'ini kuruyor ama [LoginStartActivity] da geri
+     * tuşunu yutan bir dinleyici kuruyor. Sıralama kurallarına göre fragment'inki
+     * kazanmalıydı; sahada ilk adım dışındaki adımlarda geri tuşu çalışmadı, yani
+     * kazanmıyor. Sebebini statik okumayla bulamadığım için davranış artık sıralamaya
+     * BAĞIMLI DEĞİL: activity'nin dinleyicisi de geri tuşunu yutmadan önce buraya soruyor.
+     * Hangi dinleyici önce çalışırsa çalışsın sonuç aynı.
+     *
+     * @return true → olay burada tüketildi, çağıran başka bir şey yapmamalı.
+     */
+    fun onBackStep(): Boolean {
+        if (!isAdded || _binding == null) return false
+        Log.d(TAG, "geri: adım=$currentStep animating=$animating")
+        if (animating) return true
+
+        val previous = when (currentStep) {
+            Step.CHALLENGE -> Step.GOAL
+            Step.GOAL -> Step.SOURCE
+            Step.SOURCE -> Step.AGE
+            Step.AGE -> null
+        }
+        if (previous != null) {
+            showStep(previous, forward = false)
+            return true
+        }
+        // İlk adımdayız: fragment'in kendisi kapanıyor.
+        parentFragmentManager.popBackStack()
+        return true
+    }
+
     /**
      * Adımı değiştirir: kaydırma animasyonu, ilerleme çubuğu, içerik ve devam butonu
      * tek yerden.
