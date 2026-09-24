@@ -126,6 +126,21 @@ class MainActivity : AppCompatActivity() {
         private const val POST_LESSON_HANDOFF_GRACE_MS = 1_500L
 
         /**
+         * Açılan bir adımın ekrana YERLEŞMESİ için tanınan süre.
+         *
+         * Adımların çoğu ekranını `post` + `commit` ile açıyor, yani "gösterdim" dediği an
+         * ile fragment'in FragmentManager'da görünür olduğu an aynı değil. Arada kuyruğun
+         * bir turu daha çalışırsa kapı o ekranı HENÜZ göremiyor ve sıradakini de açıyor —
+         * ikisi üst üste biniyor (görev ödülünden sonra yeni seri ekranının rozetin
+         * üstünde açılması tam olarak buydu).
+         *
+         * Normalde bir kare yetiyor; pencere yalnızca üst sınır ve dolmasını beklemeye de
+         * gerek yok: adım yerleşince kapı gerçek sebebi ([postLessonQueueBlockReason])
+         * söylemeye başlıyor.
+         */
+        private const val POST_LESSON_STEP_SETTLE_MS = 400L
+
+        /**
          * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
          * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
          */
@@ -3582,11 +3597,29 @@ class MainActivity : AppCompatActivity() {
             releasePostLessonQueueTouchLock(caller)
         }
 
-        val block = postLessonQueueBlockReason()
+        // Kapı iki aşamalı: önce GÖRÜNEN engeller, sonra AÇILMAKTA olan adım.
+        //
+        // İkincisi olmadan şu oluyordu: rozet adımı ekranını `post` + `commit` ile açıyor,
+        // aradan geçen bir tur ise fragment'i FragmentManager'da henüz bulamadığı için
+        // kapıyı açık sanıp sıradaki adımı (yeni seri) da açıyordu. İkisi üst üste
+        // biniyordu.
+        var block = postLessonQueueBlockReason()
+        var settleDelayMs = 0L
+        if (block == null) {
+            settleDelayMs = postLessonStepSettlingRemainingMs()
+            if (settleDelayMs > 0L) block = "step_settling:$postLessonStepLaunchedName"
+        }
         if (block != null) {
             if (block != lastQueueBlockReason) {
                 lastQueueBlockReason = block
                 Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            }
+            if (settleDelayMs > 0L) {
+                // Pencere dolar dolmaz bir tur: bekçinin saniyelik turunu beklemek,
+                // açılmayan bir adımdan (ör. uygun olmayan tanıtım) sonra sıradakini
+                // gereksiz yere geciktiriyor.
+                binding.root.removeCallbacks(postLessonStepSettleRunnable)
+                binding.root.postDelayed(postLessonStepSettleRunnable, settleDelayMs)
             }
             schedulePostLessonQueueWatchdog()
             return
@@ -3608,6 +3641,10 @@ class MainActivity : AppCompatActivity() {
             hidePostLessonSpinner()
             return
         }
+        // Hiçbir adım açılmadı. Denenen ama açılmayan bir adım (ör. uygunluk kontrolünde
+        // elenen rating) pencereyi kurmuş olabilir; açılan ekran yoksa beklenecek bir şey
+        // de yok, zemin fazladan asılı kalmasın.
+        postLessonStepLaunchedAtMs = 0L
         // Kilit yukarıda bırakıldı (bekleyen iş yoktu), burada yalnızca iz düşüyor.
         if (!queueLoggedEmpty) {
             queueLoggedEmpty = true
@@ -3650,6 +3687,10 @@ class MainActivity : AppCompatActivity() {
      */
     private fun postLessonQueueBusy(): Boolean =
         postLessonHandoffActive() ||
+            // Açılmakta olan adım da "elde" sayılıyor: adım bekleyen işi tükettiği an
+            // kuyruk boş görünüyor ama ekran henüz gelmemiş oluyor. Zemin o aralıkta
+            // inerse harita bir kare görünüp kayboluyor.
+            postLessonStepSettlingRemainingMs() > 0L ||
             hasPostLessonQueueWork() ||
             GlobalValues.pendingBadgeFirestoreOperation ||
             adCheckForBadgeInProgress
@@ -3697,6 +3738,45 @@ class MainActivity : AppCompatActivity() {
 
     /** Devir teslim penceresinin bitiş anı (monoton saat); 0 = pencere kapalı. */
     private var postLessonHandoffUntilMs = 0L
+
+    /** Son açılan adımın başlangıç anı (monoton saat); 0 = yerleşme penceresi kapalı. */
+    private var postLessonStepLaunchedAtMs = 0L
+
+    /** Son açılan adımın adı; yalnızca log ve teşhis için. */
+    private var postLessonStepLaunchedName = ""
+
+    /**
+     * Açılmakta olan adımın yerleşmesine kalan süre; 0 = yerleşmiş ya da pencere yok.
+     *
+     * Durum DEĞİŞTİRMİYOR: hem kapı hem de zemin kararı bunu okuyor ve birinin okuması
+     * diğerinin cevabını değiştirmemeli.
+     */
+    private fun postLessonStepSettlingRemainingMs(): Long {
+        if (postLessonStepLaunchedAtMs == 0L) return 0L
+        val remaining = postLessonStepLaunchedAtMs + POST_LESSON_STEP_SETTLE_MS -
+            android.os.SystemClock.elapsedRealtime()
+        return if (remaining > 0L) remaining else 0L
+    }
+
+    /**
+     * Bir adımın açıldığını log'a yazar ve yerleşme penceresini kurar.
+     *
+     * @param settles Adım haritanın ÜSTÜNE bir ekran açıyorsa true. Rehber ve kupa yolu
+     *   false: ikisi zemini bilerek indiriyor (rehber paneli haritanın içinde yaşıyor,
+     *   kupa yolu ise haritadan çıkıyor), pencere kurulsaydı zemin onların üstüne geri
+     *   gelirdi.
+     */
+    private fun logStepLaunch(step: String, caller: String, settles: Boolean = true) {
+        postLessonStepLaunchedName = step
+        postLessonStepLaunchedAtMs =
+            if (settles) android.os.SystemClock.elapsedRealtime() else 0L
+        Log.d(TAG_QUEUE, "$step | caller=$caller")
+    }
+
+    /** Yerleşme penceresi dolduğunda tam zamanında bir tur daha; bkz. [runPostLessonQueue]. */
+    private val postLessonStepSettleRunnable = Runnable {
+        runPostLessonQueue("stepSettled:$postLessonStepLaunchedName")
+    }
 
     private fun postLessonHandoffActive(): Boolean =
         postLessonHandoffUntilMs > 0L &&
@@ -3882,7 +3962,7 @@ class MainActivity : AppCompatActivity() {
         if (payloads.isEmpty() && stringPayloads.isEmpty()) return false
         pendingBadgePayloadsForAd = emptyList()
         pendingBadgeStringPayloadsForAd = emptyList()
-        Log.d(TAG_QUEUE, "rozet | caller=$caller")
+        logStepLaunch("rozet", caller)
         if (payloads.isNotEmpty()) {
             android.os.Handler(android.os.Looper.getMainLooper()).post {
                 BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, payloads)
@@ -3913,7 +3993,7 @@ class MainActivity : AppCompatActivity() {
         if (!newStreakPromptQueued) return false
         newStreakPromptQueued = false
         if (!StreakRepository.needsNewStreakPrompt(this)) return false
-        Log.d(TAG_QUEUE, "yeni seri | caller=$caller")
+        logStepLaunch("yeni seri", caller)
         NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
         return true
     }
@@ -3929,7 +4009,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAskQuestionPromoStep(caller: String): Boolean {
         if (!pendingLessonTypeReturnForPromo) return false
         pendingLessonTypeReturnForPromo = false
-        Log.d(TAG_QUEUE, "ogretmene sorma | caller=$caller")
+        logStepLaunch("ogretmene sorma", caller)
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             maybeShowAskQuestionPromo("queue:$caller")
             pumpPostLessonQueue("afterPromo:$caller")
@@ -3941,7 +4021,7 @@ class MainActivity : AppCompatActivity() {
     private fun showRatingStep(caller: String): Boolean {
         if (!justFinishedChestForRating) return false
         justFinishedChestForRating = false
-        Log.d(TAG_QUEUE, "rating | caller=$caller")
+        logStepLaunch("rating", caller)
         return AppRatingManager.checkAndShowRatingPrompt(this, 1)
     }
 
@@ -3959,7 +4039,7 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG_QUEUE, "rehber ATLANDI | caller=$caller reason=map_yok")
             return false
         }
-        Log.d(TAG_QUEUE, "rehber | caller=$caller")
+        logStepLaunch("rehber", caller, settles = false)
         // Rehber paneli MapFragment'in İÇİNDE yaşıyor, yani zeminin ALTINDA kalır.
         // Haritada duran adımlar zemini kaldırmak zorunda.
         hidePostLessonBackdrop()
@@ -3974,7 +4054,7 @@ class MainActivity : AppCompatActivity() {
     private fun showCupPathStep(caller: String): Boolean {
         if (GlobalValues.pendingCupPathRevealPartId == null) return false
         if (!isMapBaseReadyForMarathonGuide()) return false
-        Log.d(TAG_QUEUE, "kupa yolu | caller=$caller")
+        logStepLaunch("kupa yolu", caller, settles = false)
         // Tasks sekmesine geçiliyor; zemin kalkmazsa yeni ekranın üzerinde asılı kalır.
         hidePostLessonBackdrop()
         // Geçiş sırasında dokunmaları pencere düzeyinde engelle.
