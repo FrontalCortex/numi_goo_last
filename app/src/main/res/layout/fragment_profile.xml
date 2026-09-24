@@ -277,15 +277,16 @@
                             android:visibility="gone" />
 
                         <TextView
-                            android:id="@+id/tvSubscriptionInfo"
+                            android:id="@+id/tvLongestStreak"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=""
                             android:textSize="16sp"
                             android:textColor="@color/white"
-                            app:drawableStartCompat="@drawable/profile_crown_ic4"
+                            app:drawableStartCompat="@drawable/streak_flame_ic"
                             android:drawablePadding="8dp"
-                            android:visibility="gone" />
+                            android:visibility="gone"
+                            tools:text="En uzun seri: 7 gün" />
 
                     </LinearLayout>
 

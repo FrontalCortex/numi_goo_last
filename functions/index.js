@@ -909,6 +909,7 @@ const PUBLIC_PROFILE_FIELDS = [
   'plan',
   'createdAt',
   'totalTimeSpent',
+  'longestStreak',
   'followersCount',
   'followingCount',
 ];
@@ -4080,6 +4081,21 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
 
     transaction.set(ref, patch, { merge: true });
+
+    // En uzun seri profil kartında görünüyor ve o kart başkasının profilinde de
+    // açılıyor. Seri dokümanı yalnızca sahibine okunuyor, o yüzden değer buradan
+    // `users/{uid}`'e yazılıyor; mirrorPublicProfile onu aynaya taşıyor. Kurallarda
+    // sunucuya özel: başkasına görünen bir sayı istemciden yazılamaz.
+    //
+    // Her kabul edilen günde yazılıyor, yalnızca rekor kırıldığında değil: kullanıcı
+    // dokümanı bu transaction'da OKUNMUYOR, dolayısıyla oradaki değerin güncel olup
+    // olmadığı bilinemez. Günde en fazla bir kez oluyor ve ayna, izdüşüm değişmediyse
+    // zaten yazmıyor.
+    transaction.set(
+      db.collection('users').doc(uid),
+      { longestStreak: next.longest },
+      { merge: true }
+    );
     // Hedef/meydan okuma da dönüyor: cihaz değiştiren kullanıcının istemcisi bunları
     // buradan öğreniyor. Yazılan değer varsa o, yoksa kayıtlı olan — yani istemcinin
     // gönderdiği meydan okuma kilitliyse geri gelen kayıtlı olanıdır.

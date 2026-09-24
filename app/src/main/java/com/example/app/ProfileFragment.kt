@@ -203,13 +203,13 @@ class ProfileFragment : Fragment() {
     private fun showLoadingState() {
         binding.tvCompletedLessons.visibility = View.GONE
         binding.tvTotalTime.visibility = View.GONE
-        binding.tvSubscriptionInfo.visibility = View.GONE
+        binding.tvLongestStreak.visibility = View.GONE
     }
     
     private fun hideLoadingState() {
         binding.tvCompletedLessons.visibility = View.VISIBLE
         binding.tvTotalTime.visibility = View.VISIBLE
-        binding.tvSubscriptionInfo.visibility = View.VISIBLE
+        binding.tvLongestStreak.visibility = View.VISIBLE
     }
 
     /** Verilen avatar indeksine göre (1-12) imgProfilePhoto'yu günceller. */
@@ -328,15 +328,14 @@ class ProfileFragment : Fragment() {
                         updateTotalTimeDisplay(totalTime)
                     }
 
-                    // Abonelik bilgisi
-                    // Süresi dolmuş abonelik Free gösterilir; ayrıca "Premium" da Pro
-                    // ayrıcalıklarını verdiği için PRO olarak etiketlenir.
-                    val plan = PlanStatus.effectivePlan(doc)
-                    binding.tvSubscriptionInfo.text = when {
-                        PlanStatus.isProPlan(plan) -> "PRO"
-                        plan.equals("Lite", ignoreCase = true) -> "Lite"
-                        else -> "Free"
-                    }
+                    // En uzun günlük seri.
+                    //
+                    // Dokümandan okunuyor, yerel [StreakRepository]'den değil: bu kart
+                    // başkasının profilinde de açılıyor ve oradaki kaynak `publicProfiles`
+                    // aynası. Tek bir okuma yolu olması için kendi profilimizde de aynı
+                    // alan okunuyor — zaten toplam süre ve ders yüzdesi de oradan geliyor.
+                    val longestStreak = doc.getLong("longestStreak") ?: 0L
+                    binding.tvLongestStreak.text = "En uzun seri: $longestStreak gün"
 
                     // Takipçi / Takip edilen sayaçları
                     val followersCount = doc.getLong("followersCount") ?: 0L
@@ -356,7 +355,7 @@ class ProfileFragment : Fragment() {
                     BadgeProgressRepository.update(UserBadgeProgress())
                     bindRandomProfileBadges()
                     binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
-                    binding.tvSubscriptionInfo.text = "Free"
+                    binding.tvLongestStreak.text = "En uzun seri: 0 gün"
                     hideLoadingState()
                     isDataLoaded = true
                     isUserDataLoading = false

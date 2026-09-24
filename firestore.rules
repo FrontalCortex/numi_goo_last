@@ -59,6 +59,7 @@ service cloud.firestore {
           // yalnız doğrulanmış Play aboneliği
           'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
           'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
+          'longestStreak',               // en uzun seri → yalnız submitStreakDay
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
           'restrictedAt', 'restrictedByUid'
@@ -77,7 +78,7 @@ service cloud.firestore {
         && !request.resource.data.keys().hasAny([
              'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved',
              'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
-             'followersCount', 'followingCount',
+             'followersCount', 'followingCount', 'longestStreak',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
              'restrictedAt', 'restrictedByUid'

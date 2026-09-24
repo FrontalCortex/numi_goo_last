@@ -73,6 +73,11 @@ console.log("\n=== SERI (istemci yazamaz) ===");
 await check("seri yazimi REDDEDILIR",       assertFails(setDoc(doc(db, `users/${UID}/streak/state`), { current: 30 })));
 await check("seri okuma kabul edilir",      assertSucceeds(getDoc(doc(db, `users/${UID}/streak/state`))));
 
+console.log("\n=== EN UZUN SERI (profilde gorunuyor, istemci yazamaz) ===");
+const self = doc(db, `users/${UID}`);
+await check("longestStreak yazimi REDDEDILIR", assertFails(updateDoc(self, { longestStreak: 999 })));
+await check("zararsiz alan hala yazilabilir",  assertSucceeds(updateDoc(self, { selectedAvatar: 3 })));
+
 await env.cleanup();
 console.log(`\n${pass} gecti, ${fail} kaldi`);
 process.exit(fail > 0 ? 1 : 0);
