@@ -107,6 +107,9 @@ class MainActivity : AppCompatActivity() {
         /** Kuyruk tıkalıyken ne sıklıkta yeniden denenecek. */
         private const val QUEUE_WATCHDOG_INTERVAL_MS = 1_000L
 
+        /** Zeminin sönüm süresi; harita "pat" diye belirmesin. */
+        private const val POST_LESSON_BACKDROP_FADE_MS = 200L
+
         /**
          * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
          * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
@@ -3613,6 +3616,41 @@ class MainActivity : AppCompatActivity() {
         postLessonQueueLockHeld = true
         Log.d(TAG_QUEUE, "kilit aliniyor")
         map.lockTouchForPendingOverlay()
+        showPostLessonBackdrop()
+    }
+
+    /**
+     * Haritanın üzerini kapatan opak zemini açar.
+     *
+     * Kuyruktaki ekranlar ayrı kaplarda yaşıyor (rozet bu layout'ta, yeni seri ve rating
+     * kendi pencerelerinde), dolayısıyla aralarındaki geçişlerde harita görünüp
+     * kayboluyordu. Hepsini tek bir kaba taşımak haftalarca süren bir iş; zemin aynı
+     * hissi tek bir View ile veriyor.
+     *
+     * Açılış ANINDA, sönüş yumuşak: geçiş başlarken harita bir kare bile görünmemeli,
+     * ama kuyruk bittiğinde haritanın aniden "pat" diye belirmesi de sert duruyor.
+     */
+    private fun showPostLessonBackdrop() {
+        if (!::binding.isInitialized) return
+        val view = binding.postLessonBackdrop
+        view.animate().cancel()
+        view.alpha = 1f
+        view.visibility = View.VISIBLE
+    }
+
+    private fun hidePostLessonBackdrop() {
+        if (!::binding.isInitialized) return
+        val view = binding.postLessonBackdrop
+        if (view.visibility != View.VISIBLE) return
+        view.animate().cancel()
+        view.animate()
+            .alpha(0f)
+            .setDuration(POST_LESSON_BACKDROP_FADE_MS)
+            .withEndAction {
+                view.visibility = View.GONE
+                view.alpha = 1f
+            }
+            .start()
     }
 
     /**
@@ -3648,6 +3686,7 @@ class MainActivity : AppCompatActivity() {
         postLessonQueueLockHeld = false
         Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller")
         map.releasePostLessonQueueTouchLock()
+        hidePostLessonBackdrop()
     }
 
     /**
@@ -3705,6 +3744,7 @@ class MainActivity : AppCompatActivity() {
                 val map =
                     supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
                 map?.releasePostLessonQueueTouchLock()
+                hidePostLessonBackdrop()
             }
             return
         }
@@ -3795,6 +3835,9 @@ class MainActivity : AppCompatActivity() {
             return false
         }
         Log.d(TAG_QUEUE, "rehber | caller=$caller")
+        // Rehber paneli MapFragment'in İÇİNDE yaşıyor, yani zeminin ALTINDA kalır.
+        // Haritada duran adımlar zemini kaldırmak zorunda.
+        hidePostLessonBackdrop()
         val show = Runnable {
             if (map.isAdded) map.maybeShowPendingMarathonGuide(caller)
         }
@@ -3807,6 +3850,8 @@ class MainActivity : AppCompatActivity() {
         if (GlobalValues.pendingCupPathRevealPartId == null) return false
         if (!isMapBaseReadyForMarathonGuide()) return false
         Log.d(TAG_QUEUE, "kupa yolu | caller=$caller")
+        // Tasks sekmesine geçiliyor; zemin kalkmazsa yeni ekranın üzerinde asılı kalır.
+        hidePostLessonBackdrop()
         // Geçiş sırasında dokunmaları pencere düzeyinde engelle.
         window.setFlags(
             android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,

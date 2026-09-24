@@ -43,6 +43,19 @@ class NewStreakFragment : DialogFragment() {
         setStyle(STYLE_NORMAL, android.R.style.Theme_Light_NoTitleBar_Fullscreen)
     }
 
+    /**
+     * Sağdan kayarak geliyor.
+     *
+     * Aynı çizimler rozet kutlamasında da kullanılıyor (`slide_in_right` /
+     * `slide_out_right`): ders sonrası kuyruğundaki ekranlar art arda geldiği için
+     * hareket dilinin ortak olması gerekiyor. Ekranın aniden belirmesi, önceki ekranın
+     * kayarak gitmesinden sonra kopuk duruyordu.
+     */
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setWindowAnimations(R.style.DialogAnimationSlideRight)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

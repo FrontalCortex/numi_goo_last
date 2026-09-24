@@ -480,4 +480,33 @@
 
     </LinearLayout>
 
+    <!--
+      Ders sonrası kuyruğu çalışırken haritanın üzerini kapatan opak zemin.
+
+      Kuyruktaki ekranlar ayrı ayrı yaşıyor (rozet bu layout'ta, yeni seri ve rating
+      kendi pencerelerinde) ve aralarındaki geçişlerde harita görünüp kayboluyordu.
+      Hepsini tek bir kaba taşımak haftalarca sürer; zemin aynı hissi tek bir View ile
+      veriyor: ekranlar sabit bir arka plana karşı geliyor.
+
+      Yükseklik 8dp — harita (0) ve para panelinin (4) ÜSTÜNDE, kutlama şeridi (9),
+      rozet (10), soru katmanı (25) ve sezon kapısının (30) ALTINDA.
+
+      Tıklanabilir: kuyruk çalışırken dokunuşları yutuyor. Dokunma kilidi zaten var ama
+      o ChromeBlocker sayacına bağlı; bu ikinci ve görsel olarak da doğru katman.
+    -->
+    <View
+        android:id="@+id/postLessonBackdrop"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/background_color"
+        android:clickable="true"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="gone" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
