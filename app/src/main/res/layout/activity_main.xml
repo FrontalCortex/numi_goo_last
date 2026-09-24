@@ -509,4 +509,28 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:visibility="gone" />
 
+    <!--
+      Zemin açıkken "hesaplıyoruz" göstergesi.
+
+      Sandık kapandıktan sonra ne gösterileceği hemen belli olmuyor: rozet kontrolü bir
+      Firestore gidiş-dönüşü, reklam kontrolü ayrıca bekliyor. O bir saniye boyunca bom
+      boş bir zemin "uygulama dondu" gibi duruyordu.
+
+      Gecikmeli açılıyor (bkz. POST_LESSON_SPINNER_DELAY_MS): kuyruk hızlı çözülürse hiç
+      görünmüyor, çünkü bir anlık spinner parlaması beklemenin kendisinden daha rahatsız.
+    -->
+    <ProgressBar
+        android:id="@+id/postLessonBackdropSpinner"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="8dp"
+        android:indeterminateTint="#FF9800"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="gone" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

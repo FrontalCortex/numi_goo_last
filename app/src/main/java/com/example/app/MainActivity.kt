@@ -111,6 +111,12 @@ class MainActivity : AppCompatActivity() {
         private const val POST_LESSON_BACKDROP_FADE_MS = 200L
 
         /**
+         * Bekleme göstergesi bu kadar gecikmeyle geliyor. Bir anlık spinner parlaması,
+         * beklemenin kendisinden daha rahatsız.
+         */
+        private const val POST_LESSON_SPINNER_DELAY_MS = 350L
+
+        /**
          * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
          * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
          */
@@ -3585,6 +3591,8 @@ class MainActivity : AppCompatActivity() {
             showCupPathStep(caller)
         if (shown) {
             queueLoggedEmpty = false
+            // Ekran geldi: artık beklemiyoruz, gösterge zeminin üzerinde asılı kalmasın.
+            hidePostLessonSpinner()
             return
         }
         // Kilit yukarıda bırakıldı (bekleyen iş yoktu), burada yalnızca iz düşüyor.
@@ -3645,9 +3653,27 @@ class MainActivity : AppCompatActivity() {
         acquirePostLessonQueueTouchLock()
     }
 
-    private fun acquirePostLessonQueueTouchLock() {
+    /**
+     * Sandık kapanırken zemini DEVİR TESLİM olarak kaldırır.
+     *
+     * ## Neden koşulsuz
+     * Sandık kapanışı 300 ms sağa kayma ve bu sırada solda bilerek harita gösteriliyordu
+     * (bkz. NewChestFragment). O anda kuyrukta henüz hiçbir şey "yolda" görünmüyor —
+     * rozet kontrolü daha başlamamış — dolayısıyla koşullu kaldırma işe yaramıyordu.
+     *
+     * Mantık tersine çevrildi: artık haritayı KAPATMAYA çalışmıyoruz, ne göstereceğimiz
+     * belli olana kadar HİÇ AÇMIYORUZ. Gösterilecek bir şey yoksa kuyruk bir sonraki
+     * turunda zemini indiriyor ve harita yumuşakça geliyor.
+     */
+    fun raisePostLessonBackdropForChestHandoff() {
+        acquirePostLessonQueueTouchLock(force = true)
+        // Ne gösterileceği hemen değerlendirilsin: bekleyen yoksa zemin inip harita gelmeli.
+        pumpPostLessonQueue("chestHandoff")
+    }
+
+    private fun acquirePostLessonQueueTouchLock(force: Boolean = false) {
         if (postLessonQueueLockHeld) return
-        if (!postLessonQueueBusy()) return
+        if (!force && !postLessonQueueBusy()) return
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
             ?: return
         postLessonQueueLockHeld = true
@@ -3685,10 +3711,27 @@ class MainActivity : AppCompatActivity() {
                     "ekli=${view.isAttachedToWindow}",
             )
         }
+        // Bekleme göstergesi gecikmeli: kuyruk hızlı çözülürse hiç görünmüyor.
+        view.removeCallbacks(postLessonSpinnerRunnable)
+        view.postDelayed(postLessonSpinnerRunnable, POST_LESSON_SPINNER_DELAY_MS)
+    }
+
+    /** Zemin açıkken henüz bir ekran gösterilmediyse beklemeyi görünür kılar. */
+    private val postLessonSpinnerRunnable = Runnable {
+        if (::binding.isInitialized && postLessonQueueLockHeld) {
+            binding.postLessonBackdropSpinner.visibility = View.VISIBLE
+        }
+    }
+
+    private fun hidePostLessonSpinner() {
+        if (!::binding.isInitialized) return
+        binding.postLessonBackdrop.removeCallbacks(postLessonSpinnerRunnable)
+        binding.postLessonBackdropSpinner.visibility = View.GONE
     }
 
     private fun hidePostLessonBackdrop() {
         if (!::binding.isInitialized) return
+        hidePostLessonSpinner()
         val view = binding.postLessonBackdrop
         if (view.visibility != View.VISIBLE) return
         view.animate().cancel()

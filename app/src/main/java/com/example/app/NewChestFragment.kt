@@ -687,6 +687,11 @@ class NewChestFragment : Fragment() {
             // çıkıyordu — animasyon bitene kadar bekleseydik bu görünürdü. Şimdi kayma sırasında
             // solda direkt harita görünüyor.
             (fm.fragments.firstOrNull { it is ChestFragment } as? ChestFragment)?.hideOwnScreenForChestClose()
+            // Kayma başlamadan ÖNCE zemini kaldır: aksi halde 300 ms boyunca solda harita
+            // görünüyor ve rozet gelene kadar öyle kalıyordu. Artık harita, ne göstereceğimiz
+            // belli olana kadar hiç açılmıyor; gösterilecek bir şey yoksa kuyruk zemini
+            // indirip haritayı yumuşakça getiriyor.
+            (activity as? MainActivity)?.raisePostLessonBackdropForChestHandoff()
             var closeHandled = false
             val finishClose: () -> Unit = {
                 if (!closeHandled) {
