@@ -3262,6 +3262,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         currentActivity = this
+        // Güvenlik ağı: kuyruk reklam açıkken (activity duraklatılmışken) dürtüldüyse
+        // "not_resumed" deyip durmuş olabilir. Reklam kapanınca buradan devam ediyor.
+        pumpPostLessonQueue("MainActivity.onResume")
         refreshStreakUi()
         // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
         // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
@@ -3467,14 +3470,35 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
+    /** Bir sonraki karede çalışacak kuyruk turu; bkz. [pumpPostLessonQueue]. */
+    private var postLessonQueuePendingCaller = ""
+    private val postLessonQueueRunnable = Runnable {
+        runPostLessonQueue(postLessonQueuePendingCaller)
+    }
+
     /**
      * Kuyruğu dürter: kapı açıksa sıradaki bekleyen ekranı açar.
      *
      * "Bir şeyler yatıştı" diyen her yerden çağrılabilir; boşa çağrılması zararsız.
-     * Adımların sırası buradaki SIRA: yukarıdaki bir çağrı true dönerse aşağıdakiler o
-     * tur denenmiyor — açılan ekran kapanınca kuyruk yeniden dürtülüyor.
+     *
+     * ## Neden bir sonraki kare
+     * Ekranlar kapanırken dürtüyor (onDismiss / onDestroyView) ama o anda FragmentManager
+     * kaldırma işlemini HENÜZ yapmamış oluyor — işlem kuyruğa alındı, çalışmadı. Kapı
+     * kontrolü de kapanmakta olan o ekranı "açık" sayıp kuyruğu durduruyordu ve bir daha
+     * kimse dürtmediği için sıradaki ekran HİÇ gösterilmiyordu (yeni seri ekranından sonra
+     * maraton rehberinin kaybolması tam olarak buydu).
+     *
+     * Bir kare beklemek FragmentManager'ın işlemini bitirmesine yetiyor. Aynı karedeki
+     * birden fazla dürtü de tek tura indiriliyor.
      */
     fun pumpPostLessonQueue(caller: String) {
+        if (!::binding.isInitialized) return
+        postLessonQueuePendingCaller = caller
+        binding.root.removeCallbacks(postLessonQueueRunnable)
+        binding.root.post(postLessonQueueRunnable)
+    }
+
+    private fun runPostLessonQueue(caller: String) {
         val block = postLessonQueueBlockReason()
         if (block != null) {
             Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
@@ -3544,7 +3568,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG_QUEUE, "ogretmene sorma | caller=$caller")
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             maybeShowAskQuestionPromo("queue:$caller")
-            binding.root.post { pumpPostLessonQueue("afterPromo:$caller") }
+            pumpPostLessonQueue("afterPromo:$caller")
         }
         return true
     }
