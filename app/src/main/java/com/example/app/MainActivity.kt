@@ -104,6 +104,15 @@ class MainActivity : AppCompatActivity() {
         private const val STREAK_CELEBRATION_RETRY_MS = 400L
         private const val TAG_QUEUE = "PostLessonQueue"
 
+        /** Kuyruk tıkalıyken ne sıklıkta yeniden denenecek. */
+        private const val QUEUE_WATCHDOG_INTERVAL_MS = 1_000L
+
+        /**
+         * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
+         * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
+         */
+        private const val QUEUE_WATCHDOG_BUDGET_MS = 120_000L
+
         /**
          * Yeniden denemelerin toplam süresi.
          *
@@ -3515,8 +3524,11 @@ class MainActivity : AppCompatActivity() {
         val block = postLessonQueueBlockReason()
         if (block != null) {
             Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            schedulePostLessonQueueWatchdog()
             return
         }
+        // Bir adım çalıştıysa ilerleme var: bekçinin süresi baştan başlasın.
+        postLessonQueueWatchdogDeadlineMs = 0L
         if (showBadgeStep(caller)) return
         if (showNewStreakStep(caller)) return
         if (showAskQuestionPromoStep(caller)) return
@@ -3524,6 +3536,52 @@ class MainActivity : AppCompatActivity() {
         if (showMarathonGuideStep(caller)) return
         if (showCupPathStep(caller)) return
         Log.d(TAG_QUEUE, "bos | caller=$caller")
+        binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+    }
+
+    /** Kuyrukta gösterilmeyi bekleyen bir şey var mı. */
+    private fun hasPostLessonQueueWork(): Boolean =
+        pendingBadgePayloadsForAd.isNotEmpty() ||
+            pendingBadgeStringPayloadsForAd.isNotEmpty() ||
+            newStreakPromptQueued ||
+            pendingLessonTypeReturnForPromo ||
+            justFinishedChestForRating ||
+            MarathonGuideStore.isPending(this) ||
+            GlobalValues.pendingCupPathRevealPartId != null
+
+    private var postLessonQueueWatchdogDeadlineMs = 0L
+    private val postLessonQueueWatchdogRunnable =
+        Runnable { runPostLessonQueue("watchdog") }
+
+    /**
+     * Kapı kapalıyken kuyruğu canlı tutar.
+     *
+     * ## Neden gerekli
+     * Kuyruk, açılan ekranın kapanırken kendisini dürtmesine güveniyor. Bir ekran bunu
+     * yapmayı unutursa sıradaki ekran SONSUZA KADAR asılı kalıyor — rating dialog'unda
+     * tam olarak bu oldu ve maraton rehberi hiç gösterilmedi. Her ekranın kancasını tek
+     * tek doğru kurmak yetmiyor; yarın eklenecek bir ekran aynı hatayı tekrarlar.
+     *
+     * Bekçi sıralamaya karışmıyor, yalnızca "kuyruk tıkandı mı" diye bakıyor. Bekleyen
+     * iş yoksa hiç kurulmuyor; bir adım çalıştığında süresi sıfırlanıyor.
+     */
+    private fun schedulePostLessonQueueWatchdog() {
+        if (!::binding.isInitialized) return
+        if (!hasPostLessonQueueWork()) {
+            postLessonQueueWatchdogDeadlineMs = 0L
+            binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (postLessonQueueWatchdogDeadlineMs == 0L) {
+            postLessonQueueWatchdogDeadlineMs = now + QUEUE_WATCHDOG_BUDGET_MS
+        }
+        if (now >= postLessonQueueWatchdogDeadlineMs) {
+            Log.w(TAG_QUEUE, "bekci BIRAKTI | sure doldu, kalanlar bir sonraki derse")
+            return
+        }
+        binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+        binding.root.postDelayed(postLessonQueueWatchdogRunnable, QUEUE_WATCHDOG_INTERVAL_MS)
     }
 
     /** B4 — rozet kutlaması. */

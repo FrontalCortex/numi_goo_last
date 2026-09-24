@@ -87,6 +87,22 @@ class RatingDialogFragment : DialogFragment() {
     private var selectedRating = 0
     private lateinit var stars: List<ImageView>
 
+    /**
+     * Kapanınca ders sonrası kuyruğunu dürter.
+     *
+     * Bu olmadan kuyruk burada asılı kalıyordu: rating açıkken kapı "rating_showing"
+     * diyor, kapanınca kimse yeniden denemiyor ve sıradaki ekran (maraton rehberi) hiç
+     * gösterilmiyordu.
+     *
+     * `onCancel` değil `onDismiss`: kullanıcı yıldız verip kapattığında `onCancel`
+     * çalışmıyor ve kuyruk yine asılı kalırdı. (Ölçüm tarafı ayrı — oraya
+     * dokunulmadı.)
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("RatingDialog.dismiss")
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog?.window?.requestFeature(Window.FEATURE_NO_TITLE)

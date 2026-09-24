@@ -166,6 +166,18 @@ class AskQuestionOpenFragment : DialogFragment() {
     }
 
     /**
+     * Kapanınca ders sonrası kuyruğunu dürter.
+     *
+     * Ölçüm için `onCancel` kullanılıyor (yukarıdaki gerekçe), ama kuyruk için
+     * `onDismiss` gerekiyor: düğmeye basıp kapatan kullanıcıda `onCancel` çalışmıyor ve
+     * sıradaki ekran asılı kalırdı. Burası yalnızca dürtüyor, kayıt düşmüyor.
+     */
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("AskQuestionOpen.dismiss")
+    }
+
+    /**
      * İlk çağrı kazanır: düğme kendi sonucunu bildirdikten sonra gelen `onCancel` sayılmaz.
      *
      * [outcome] hangi VIEW'a basıldığına değil, nereye GİDİLDİĞİNE göre yazılır: düzen
