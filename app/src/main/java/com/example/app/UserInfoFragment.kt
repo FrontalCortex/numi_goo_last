@@ -230,6 +230,10 @@ class UserInfoFragment : Fragment() {
                     AnalyticsLogger.STREAK_SOURCE_ONBOARDING,
                 )
                 StreakRepository.markOnboardingDone(requireContext())
+                // Yeni kullanıcının serisi henüz 0 ve ders dönüşündeki yeni tur ekranı tam da
+                // "seri yoksa" diye açılıyor. İşaretlenmeseydi çocuk, az önce cevapladığı
+                // soruyu ilk dersinin sonunda bir kez daha görürdü.
+                StreakRepository.markNewStreakPromptShown(requireContext())
                 finishUserInfo()
             }
         }
