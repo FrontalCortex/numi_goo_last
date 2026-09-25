@@ -289,6 +289,11 @@ class ChestResult : Fragment() {
                 }
             } else {
                 parentFragmentManager.beginTransaction()
+                    // Bu ekran sola çıkıyor. ChestFragment kendi ekranını göstermiyor
+                    // (bkz. ChestFragment), asıl gelen NewChestFragment ve o SAĞDAN
+                    // giriyor; bu ekran animasyonsuz kaybolduğu için arada sert bir kesme
+                    // oluyordu.
+                    .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(
                         R.id.abacusFragmentContainer,
                         ChestFragment().apply {

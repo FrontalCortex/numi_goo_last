@@ -145,9 +145,14 @@ class MissionChestRewardFragment : Fragment() {
                     )
                 }
             }
+            // Zemin, kayma BAŞLAMADAN kalkıyor; bkz. [LessonResult]'taki aynı düzeltme.
+            // Zemini completeMapReturn'e bırakmak, yani animasyon BİTTİKTEN sonraya,
+            // haritanın önce görünüp sonra zeminle kapatılmasına yol açıyor.
+            main?.raisePostLessonBackdropForHandoff("MissionChestReward.continue")
             val rootView = binding.root
             rootView.animate()
-                .translationX(rootView.width.toFloat())
+                // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                .translationX(-rootView.width.toFloat())
                 .setDuration(300L)
                 .withEndAction { completeMapReturn() }
                 .start()
