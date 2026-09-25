@@ -53,7 +53,7 @@ class LessonResult : Fragment() {
         const val COUNT_UP_DURATION_MS = 1000L
         const val CLAIM_BUTTON_FADE_MS = 300L
         const val STEP_PAUSE_MS = 100L
-        const val EXIT_ANIM_DURATION_MS = 300L
+        const val EXIT_ANIM_DURATION_MS = 400L
     }
 
     // --- Teşhis: fragment_lesson_result'tan beklenmedik şekilde MapFragment'e dönme sorunu ---

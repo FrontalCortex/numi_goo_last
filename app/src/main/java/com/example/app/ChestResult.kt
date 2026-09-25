@@ -235,13 +235,13 @@ class ChestResult : Fragment() {
                         rootView.animate()
                             // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
                             .translationX(-rootView.width.toFloat())
-                            .setDuration(300L)
+                            .setDuration(400L)
                             .withEndAction { completeMapReturn() }
                             .start()
                         // Animasyon kesintiye uğrar da withEndAction hiç çalışmazsa (arka plana alma,
                         // view'ın penceresinden kopması vb.) haritaya dönüşü garantiye alan yedek.
                         android.os.Handler(android.os.Looper.getMainLooper())
-                            .postDelayed({ completeMapReturn() }, 600L)
+                            .postDelayed({ completeMapReturn() }, 700L)
                     }
                 }
 

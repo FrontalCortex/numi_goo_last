@@ -708,10 +708,10 @@ class NewChestFragment : Fragment() {
                 // sandık → rozet → yeni seri tek bir ileri hareket gibi okunuyor. Eskiden
                 // sağa kayıyordu, yani bir sonraki ekranla aynı yönden çakışıyordu.
                 .translationX(-rootView.width.toFloat())
-                .setDuration(300L)
+                .setDuration(400L)
                 .withEndAction { finishClose() }
                 .start()
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finishClose() }, 600L)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finishClose() }, 700L)
             return
         }
 

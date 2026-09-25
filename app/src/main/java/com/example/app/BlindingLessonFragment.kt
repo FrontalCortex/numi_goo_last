@@ -1216,6 +1216,12 @@ class BlindingLessonFragment : Fragment() {
             },
         )
     }
+    /** Kapanış kayması sürüyor mu; ikinci bir çıkış hareketi araya girmesin. */
+    private var isBlindingClosing = false
+
+    /** Kapanış kaymasının süresi; [AbacusFragment] ve çizimlerle aynı. */
+    private val blindingDismissSlideMs = 400L
+
     private fun closeFragment() {
         // Fragment zaten kaldırılmışsa çık.
         //
@@ -1223,7 +1229,7 @@ class BlindingLessonFragment : Fragment() {
         // panelinin kapanış animasyonunun bitiş geri çağrısı. Kullanıcı animasyon sürerken
         // (200 ms) çıkarsa fragment önce kalkıyor, sonra geri çağrı çalışıyor ve
         // `parentFragmentManager` "fragment manager'a bağlı değil" diye patlıyordu.
-        if (!isAdded) return
+        if (!isAdded || isBlindingClosing) return
 
         if (isDailyQuestionMode) {
             (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
@@ -1235,6 +1241,32 @@ class BlindingLessonFragment : Fragment() {
             parentFragmentManager.popBackStack()
             return
         }
+
+        // Ekran sola kayarak kapanıyor ([AbacusFragment.closeFragment] ile aynı çözüm).
+        //
+        // Pop'un kendi animasyonu burada işe yaramıyor: [performBlindingDismiss] hemen
+        // ardından `executePendingTransactions` ile pop'u senkron yapıyor ve
+        // `prepareMapReturnAfterLessonClaim` konteyneri GONE'a çekiyor — ikisi de animasyonu
+        // öldürüyor. Bu yüzden view elle kaydırılıyor, harita dönüşü de kayma bitince
+        // başlıyor.
+        val rootView = view
+        if (rootView == null) {
+            performBlindingDismiss()
+            return
+        }
+        isBlindingClosing = true
+        binding.quitButton.isEnabled = false
+        rootView.animate().cancel()
+        rootView.animate()
+            .translationX(-resources.displayMetrics.widthPixels.toFloat())
+            .setDuration(blindingDismissSlideMs)
+            .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
+            .withEndAction { if (isAdded) performBlindingDismiss() }
+            .start()
+    }
+
+    /** [closeFragment] kayma animasyonu bittikten sonra: haritaya dönüş akışı. */
+    private fun performBlindingDismiss() {
         val main = activity as? MainActivity
         val fm = parentFragmentManager
         if (fm.backStackEntryCount > 0) {
@@ -1242,7 +1274,7 @@ class BlindingLessonFragment : Fragment() {
             fm.executePendingTransactions()
         } else if (isAdded) {
             fm.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                 .remove(this@BlindingLessonFragment)
                 .commitNowAllowingStateLoss()
         }

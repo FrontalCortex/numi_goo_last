@@ -112,7 +112,7 @@ class LessonResultFalse : Fragment() {
 
     private companion object {
         /** Çıkış kaymasının süresi; zincirdeki diğer ekranlarla aynı. */
-        const val EXIT_ANIM_DURATION_MS = 300L
+        const val EXIT_ANIM_DURATION_MS = 400L
     }
 
     override fun onCreateView(

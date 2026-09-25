@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
          * Bekleme göstergesi bu kadar gecikmeyle geliyor. Bir anlık spinner parlaması,
          * beklemenin kendisinden daha rahatsız.
          */
-        private const val POST_LESSON_SPINNER_DELAY_MS = 350L
+        private const val POST_LESSON_SPINNER_DELAY_MS = 500L
 
         /**
          * Devir teslim penceresinin en uzun süresi.

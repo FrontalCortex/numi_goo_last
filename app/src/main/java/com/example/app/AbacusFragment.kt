@@ -49,7 +49,7 @@ import kotlin.math.log
 
 class AbacusFragment : Fragment() {
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
-    private val abacusDismissSlideMs = 300L
+    private val abacusDismissSlideMs = 400L
     private var isAbacusSettingsPanelOpen = false
     private var savedAbacusScaleX = 1.0f
     private var savedAbacusScaleY = 1.0f
@@ -1829,7 +1829,9 @@ class AbacusFragment : Fragment() {
         }
         isAbacusClosing = true
         binding.quitButton.isEnabled = false
-        val slideDistance = resources.displayMetrics.widthPixels.toFloat()
+        // Sola: ders akışındaki bütün ekranlar gibi. Sağa kayıyordu, yani altından
+        // çıkan haritayla ters yönde.
+        val slideDistance = -resources.displayMetrics.widthPixels.toFloat()
         rootView.animate().cancel()
         rootView.animate()
             .translationX(slideDistance)
@@ -1853,7 +1855,7 @@ class AbacusFragment : Fragment() {
             fm.executePendingTransactions()
         } else if (isAdded) {
             fm.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                 .remove(this@AbacusFragment)
                 .commitNowAllowingStateLoss()
         }

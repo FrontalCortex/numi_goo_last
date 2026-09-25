@@ -1698,11 +1698,12 @@ class BadgeFragment : Fragment() {
             )
             .remove(this@BadgeFragment)
             .commit()
-        // Çıkış animasyonu 300ms. Animasyon bitmeden kupa yolu açılmasın diye
-        // 350ms bekleyip tetikliyoruz. onDestroyView da çağırır, bu ikincil bir güvencedir.
+        // Çıkış animasyonu 400ms (queue_screen_out). Animasyon bitmeden kupa yolu
+        // açılmasın diye 450ms bekleyip tetikliyoruz. onDestroyView da çağırır, bu
+        // ikincil bir güvencedir. Çizimin süresi değişirse burası da değişmeli.
         view?.postDelayed({
             mainRef?.tryShowPendingMarathonGuideOnMap("BadgeFragment.closeCelebration.afterSlide")
-        }, 350L)
+        }, 450L)
     }
 
     private fun hasNextCelebrationInQueue(): Boolean {

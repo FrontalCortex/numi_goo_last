@@ -12,13 +12,14 @@
   tek bir akış gibi okunmuyordu. slide_in_right on ayrı yerde kullanıldığı için
   değiştirilmedi; kuyruk kendi çiftini kullanıyor.
 
-  Süre ve eğri queue_screen_out ile eşleşiyor: biri girerken diğeri aynı hızda çıkıyor.
+  Süre ve eğri queue_screen_out ile eşleşmek ZORUNDA; sebebi orada anlatılıyor.
+  400 ms: 300 ms'de geçiş okunamayacak kadar hızlı geliyordu.
 -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"
-    android:interpolator="@android:anim/decelerate_interpolator"
+    android:interpolator="@android:anim/accelerate_decelerate_interpolator"
     android:shareInterpolator="true">
     <translate
-        android:duration="300"
+        android:duration="400"
         android:fromXDelta="100%"
         android:toXDelta="0%" />
 </set>
