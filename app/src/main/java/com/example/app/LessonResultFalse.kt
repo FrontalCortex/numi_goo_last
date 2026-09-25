@@ -50,20 +50,69 @@ class LessonResultFalse : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-            val main = activity as? MainActivity
-            if (isAdded) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .remove(this@LessonResultFalse)
-                    .commitNowAllowingStateLoss()
-            }
-            main?.prepareMapReturnAfterLessonClaim()
-            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
-            // kararı tek kaynaktan (item türü) veriyoruz.
-            main?.finalizeMapReturnAfterLessonClaim(
-                "LessonResultFalse.loginReturn",
-                isLessonTypeReturn = isLessonTypeItem,
-            )
+            closeWithSlideAndReturnToMap("LessonResultFalse.loginReturn")
         }
+    }
+
+    /**
+     * Ekranı sola kaydırarak kapatır ve haritaya döner.
+     *
+     * ## Neden kayarak
+     * Bu ekran haritaya ANINDA dönüyordu; zincirdeki diğer ekranlar (sandık, sonuç,
+     * rozet) kayarak gidiyor ve tek sert kesme buydu.
+     *
+     * ## Zemin neden önce kalkıyor
+     * Kayma sırasında ekranın arkasında harita duruyor. Zemin ancak animasyon bittikten
+     * sonra kalksaydı kullanıcı önce haritayı görür, sonra zemin üstünü kapatır, sonra
+     * tekrar açılırdı — [LessonResult]'ta düzeltilen sorunun aynısı. Bu yüzden zemin
+     * kaymadan ÖNCE kaldırılıyor.
+     *
+     * ## Yedek yol
+     * Animasyon kesintiye uğrarsa (arka plana alma, view'ın penceresinden kopması)
+     * `withEndAction` hiç çalışmayabiliyor; gecikmeli çağrı haritaya dönüşü garantiye
+     * alıyor. İki yoldan hangisi önce gelirse o çalışıyor, ikincisi yok sayılıyor.
+     *
+     * Görünüm yoksa (login dönüşünde view yok edilmiş olabilir) kaydıracak bir şey de
+     * yok: eski davranışa, anında dönüşe düşüyor.
+     */
+    private fun closeWithSlideAndReturnToMap(caller: String) {
+        val main = activity as? MainActivity
+        var mapReturnHandled = false
+        val completeMapReturn: () -> Unit = {
+            if (!mapReturnHandled) {
+                mapReturnHandled = true
+                if (isAdded) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .remove(this@LessonResultFalse)
+                        .commitNowAllowingStateLoss()
+                }
+                main?.prepareMapReturnAfterLessonClaim()
+                // LessonResultFalse hem lesson hem chest/race başarısızlığı için
+                // kullanılıyor; kararı tek kaynaktan (item türü) veriyoruz.
+                main?.finalizeMapReturnAfterLessonClaim(
+                    caller,
+                    isLessonTypeReturn = isLessonTypeItem,
+                )
+            }
+        }
+        val rootView = _binding?.root
+        if (rootView == null || !isAdded) {
+            completeMapReturn()
+            return
+        }
+        main?.raisePostLessonBackdropForHandoff(caller)
+        rootView.animate()
+            .translationX(-rootView.width.toFloat())
+            .setDuration(EXIT_ANIM_DURATION_MS)
+            .withEndAction { completeMapReturn() }
+            .start()
+        android.os.Handler(android.os.Looper.getMainLooper())
+            .postDelayed({ completeMapReturn() }, EXIT_ANIM_DURATION_MS + 300L)
+    }
+
+    private companion object {
+        /** Çıkış kaymasının süresi; zincirdeki diğer ekranlarla aynı. */
+        const val EXIT_ANIM_DURATION_MS = 300L
     }
 
     override fun onCreateView(
@@ -126,19 +175,7 @@ class LessonResultFalse : Fragment() {
                 return@setOnClickListener
             }
 
-            val main = activity as? MainActivity
-            if (isAdded) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .remove(this@LessonResultFalse)
-                    .commitNowAllowingStateLoss()
-            }
-            main?.prepareMapReturnAfterLessonClaim()
-            // LessonResultFalse hem lesson hem chest/race başarısızlığı için kullanılıyor;
-            // kararı tek kaynaktan (item türü) veriyoruz.
-            main?.finalizeMapReturnAfterLessonClaim(
-                "LessonResultFalse.claim",
-                isLessonTypeReturn = isLessonTypeItem,
-            )
+            closeWithSlideAndReturnToMap("LessonResultFalse.claim")
         }
 
         // Animasyonları başlat
