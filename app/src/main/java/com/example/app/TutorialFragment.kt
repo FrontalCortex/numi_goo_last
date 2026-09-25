@@ -87,7 +87,7 @@ class TutorialFragment : Fragment() {
     private var optionsContentTextSyncRetries: Int = 0
 
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
-    private val tutorialDismissSlideMs = 300L
+    private val tutorialDismissSlideMs = 400L
     private var isTutorialClosing = false
 
     /** okay / continue / kontrol için çift basım koruması (ms, uptime). */
@@ -1283,7 +1283,9 @@ class TutorialFragment : Fragment() {
         }
         isTutorialClosing = true
         binding.quitButton.isEnabled = false
-        val slideDistance = resources.displayMetrics.widthPixels.toFloat()
+        // Sola: ders akışındaki bütün ekranlar gibi. Sağa kayıyordu, yani geldiği yöne
+        // geri dönüyor gibi duruyordu.
+        val slideDistance = -resources.displayMetrics.widthPixels.toFloat()
         rootView.animate().cancel()
         rootView.animate()
             .translationX(slideDistance)

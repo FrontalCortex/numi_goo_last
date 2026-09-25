@@ -3692,10 +3692,33 @@ class MainActivity : AppCompatActivity() {
             // Açılmakta olan adım da "elde" sayılıyor: adım bekleyen işi tükettiği an
             // kuyruk boş görünüyor ama ekran henüz gelmemiş oluyor. Zemin o aralıkta
             // inerse harita bir kare görünüp kayboluyor.
-            postLessonStepSettlingRemainingMs() > 0L ||
-            hasPostLessonQueueWork() ||
+            (postLessonStepHoldsBackdrop && postLessonStepSettlingRemainingMs() > 0L) ||
+            hasPostLessonBackdropWork() ||
             GlobalValues.pendingBadgeFirestoreOperation ||
             adCheckForBadgeInProgress
+
+    /**
+     * Zeminin kalkmasını gerektiren iş var mı.
+     *
+     * [hasPostLessonQueueWork]'ten tek farkı öğretmene sorma tanıtımını SAYMAMASI.
+     *
+     * O tanıtım bir "belki": uygunluk ve sayaç eşiği ancak adım çalışınca belli oluyor ve
+     * çoğu dönüşte hiç açılmıyor. Zemin ona göre kalkınca, türü LESSON olan bir dersten
+     * çıkan kullanıcı haritayı değil önce düz zemini görüyor, zemin sonra iniyordu —
+     * gösterilecek hiçbir şey olmadan. Türü CHEST olanlarda bu yaşanmıyordu çünkü orada
+     * tanıtım sıraya hiç girmiyor.
+     *
+     * Açıldığında zemine ihtiyacı da yok: kendi penceresi olan bir dialog, haritanın
+     * üstüne kendi çizimiyle geliyor. Kuyruk sırasında yerini koruyor ([hasPostLessonQueueWork]
+     * onu hâlâ sayıyor), yalnızca zemin kararının dışında.
+     */
+    private fun hasPostLessonBackdropWork(): Boolean =
+        pendingBadgePayloadsForAd.isNotEmpty() ||
+            pendingBadgeStringPayloadsForAd.isNotEmpty() ||
+            newStreakPromptQueued ||
+            justFinishedChestForRating ||
+            MarathonGuideStore.isPending(this) ||
+            GlobalValues.pendingCupPathRevealPartId != null
 
     /**
      * Zemini ve kilidi ERKEN kaldırır; sandık rozet işlemini başlatırken çağırıyor.
@@ -3755,6 +3778,9 @@ class MainActivity : AppCompatActivity() {
     /** Son açılan adımın adı; yalnızca log ve teşhis için. */
     private var postLessonStepLaunchedName = ""
 
+    /** Son açılan adım yerleşirken zeminin de durması gerekiyor mu; bkz. [logStepLaunch]. */
+    private var postLessonStepHoldsBackdrop = true
+
     /**
      * Açılmakta olan adımın yerleşmesine kalan süre; 0 = yerleşmiş ya da pencere yok.
      *
@@ -3771,13 +3797,24 @@ class MainActivity : AppCompatActivity() {
     /**
      * Bir adımın açıldığını log'a yazar ve yerleşme penceresini kurar.
      *
-     * @param settles Adım haritanın ÜSTÜNE bir ekran açıyorsa true. Rehber ve kupa yolu
-     *   false: ikisi zemini bilerek indiriyor (rehber paneli haritanın içinde yaşıyor,
-     *   kupa yolu ise haritadan çıkıyor), pencere kurulsaydı zemin onların üstüne geri
-     *   gelirdi.
+     * @param settles Adımın ekranı bir kare sonra gelecekse true; pencere boyunca kuyruk
+     *   sıradakini açmıyor. Rehber ve kupa yolu false: ikisi zemini bilerek indiriyor
+     *   (rehber paneli haritanın içinde yaşıyor, kupa yolu ise haritadan çıkıyor), pencere
+     *   kurulsaydı zemin onların üstüne geri gelirdi.
+     * @param holdsBackdrop Adım yerleşirken zeminin de durması gerekiyor mu. Öğretmene
+     *   sorma tanıtımı false: sıra beklemesi gerekiyor (kendi penceresi commit edilene
+     *   kadar üstüne başka ekran açılmamalı) ama zemine ihtiyacı yok — kendi çizimiyle
+     *   haritanın üstüne geliyor. True olsaydı zemin, hiçbir şey gösterilmeyen dönüşlerde
+     *   de bir anlığına kalkardı.
      */
-    private fun logStepLaunch(step: String, caller: String, settles: Boolean = true) {
+    private fun logStepLaunch(
+        step: String,
+        caller: String,
+        settles: Boolean = true,
+        holdsBackdrop: Boolean = true,
+    ) {
         postLessonStepLaunchedName = step
+        postLessonStepHoldsBackdrop = holdsBackdrop
         postLessonStepLaunchedAtMs =
             if (settles) android.os.SystemClock.elapsedRealtime() else 0L
         Log.d(TAG_QUEUE, "$step | caller=$caller")
@@ -4019,7 +4056,7 @@ class MainActivity : AppCompatActivity() {
     private fun showAskQuestionPromoStep(caller: String): Boolean {
         if (!pendingLessonTypeReturnForPromo) return false
         pendingLessonTypeReturnForPromo = false
-        logStepLaunch("ogretmene sorma", caller)
+        logStepLaunch("ogretmene sorma", caller, holdsBackdrop = false)
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             maybeShowAskQuestionPromo("queue:$caller")
             pumpPostLessonQueue("afterPromo:$caller")
