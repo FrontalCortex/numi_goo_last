@@ -214,17 +214,17 @@
 
     <!-- Ders / Record overlay — harita üstünde; varsayılan GONE (alt barı kilitlemesin) -->
     <!--
-      İKİ DERS KONTEYNERİNİN de android:background'ı ZORUNLU.
+      Bu iki kap BİLEREK saydam.
 
-      Bu kaplarda ekranlar birbirinin yerine kayarak geçiyor (ör. ChestResult sola çıkarken
-      ChestFragment sağdan giriyor). Kayma sırasında iki ekranın arasında kısa bir boşluk
-      oluşuyor ve kabın arkası doğrudan HARİTA. Kap opak değilse o boşluktan harita
-      görünüyor.
+      Ders ekranı haritanın üstüne sağdan kayarak geliyor; kayma sürerken solda haritanın
+      görünmesi gerekiyor. Kaba opak bir arka plan konursa harita bir anda yok olup yerini
+      düz bir panele bırakıyor.
 
-      Normalde hiç fark edilmiyor: içerik her zaman kabı tam kaplayan opak bir arka planla
-      geliyor. Bu renk yalnızca geçişin o birkaç karesinde iş görüyor — yani "gereksiz
-      overdraw" gibi görünüp silinmeye en uygun satır, oysa silinince hata geri geliyor.
-      resultFragmentContainer'dan bir kez silindi ve ChestResult geçişinde harita sızdı.
+      Kap İÇİNDEKİ geçişlerde (ör. ChestResult → ChestFragment) arada boşluk kalmamalı ama
+      çözüm kabı boyamak değil: geçiş "üstüne kayma" yapılıyor — giren ekran sağdan gelir,
+      çıkan ekran YERİNDE durur, yani boşluk hiç oluşmaz. Haritanın kapanması gereken
+      durumlarda ise postLessonBackdrop (elevation 8dp, bu kapların ALTINDA) kaldırılıyor
+      ve saydam kabın içinden o görünüyor.
     -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/abacusFragmentContainer"
@@ -233,7 +233,6 @@
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true"
-        android:background="@color/background_color"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -244,7 +243,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:background="@color/background_color"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

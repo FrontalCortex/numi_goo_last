@@ -289,17 +289,19 @@ class ChestResult : Fragment() {
                 }
             } else {
                 parentFragmentManager.beginTransaction()
-                    // İKİSİ BİRDEN: gelen sağdan girer, giden sola çıkar.
+                    // Girişe BİLEREK animasyon verilmiyor.
                     //
-                    // Girişe 0 vermek yetmiyordu: ChestFragment'in kendi düzeni
-                    // (fragment_chest.xml) tam ekran ve OPAK, aynı kapta bu ekranın
-                    // ÜSTÜNE ekleniyor. Animasyonsuz gelince çıkış kaymasını ilk karede
-                    // örtüyor ve ekran kaymadan yok olmuş gibi görünüyordu.
+                    // Denendi: girişe de kayma verilince iki ekranın arasında boşluk
+                    // açılıyor ve abacusFragmentContainer saydam olduğu için o boşluktan
+                    // HARİTA görünüyor. Kabı opak yapmak da çözüm değil — o zaman ders
+                    // ekranları haritanın üstüne kayarken arkada harita yerine düz bir
+                    // panel kalıyor (bkz. activity_main.xml'deki kap yorumu).
                     //
-                    // ChestFragment kendi içeriğini göstermiyor (bkz. ChestFragment),
-                    // asıl gelen NewChestFragment ve o da sağdan giriyor. İkisi aynı
-                    // renkte ve aynı yönde olduğu için tek bir kayma gibi okunuyor.
-                    .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
+                    // Bu haliyle gelen ChestFragment tam ekran ve opak olduğu için boşluk
+                    // hiç oluşmuyor; ekran kaymadan, anında değişiyor. Gerçekten kayması
+                    // istenirse geçiş boyunca postLessonBackdrop kaldırılmalı (8dp, bu
+                    // kabın altında) — o zaman boşluktan harita değil zemin görünür.
+                    .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(
                         R.id.abacusFragmentContainer,
                         ChestFragment().apply {
