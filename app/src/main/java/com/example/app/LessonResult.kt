@@ -216,10 +216,18 @@ class LessonResult : Fragment() {
                 )
                 chestFragment.arguments = args
                 (activity as? MainActivity)?.showResultOverlayHost()
-                // ChestFragment kendi ekranını göstermiyor (bkz. ChestFragment), bu yüzden onun
-                // girişine animasyon vermiyoruz; sadece LessonResult sola kayarak kapanıyor.
-                // Sağa kayıyordu: ardından gelen NewChestFragment de SAĞDAN girdiği için
-                // ikisi aynı kenarda çakışıyordu.
+                // DİKKAT: aşağıdaki `commitNowAllowingStateLoss` işlemi SENKRON çalıştırıyor
+                // ve senkron işlemlerde FragmentManager animasyonları hiç oynatmıyor. Yani
+                // buradaki çizimler şu an etkisiz; ekran kaymadan, anında değişiyor.
+                //
+                // Görüntüde sorun çıkarmıyor: gelen ChestFragment tam ekran ve opak, boşluk
+                // bırakmadan bu ekranın yerini alıyor. Kaymasını istersek `commitNow` yerine
+                // `commitAllowingStateLoss` gerekiyor — o da işlemi asenkron yapıyor, yani
+                // bu noktadan sonra ChestFragment'i hemen bulmaya güvenen bir kod varsa
+                // etkilenir. Sırf animasyon için alınacak risk değil.
+                //
+                // ChestResult'taki aynı geçiş (abacusFragmentContainer) asenkron olduğu için
+                // orada çizimler gerçekten oynuyor.
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(R.id.resultFragmentContainer, chestFragment)
