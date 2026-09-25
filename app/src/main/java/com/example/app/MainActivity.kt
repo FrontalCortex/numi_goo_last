@@ -2728,7 +2728,11 @@ class MainActivity : AppCompatActivity() {
         // kapanışından geliyor (bkz. RecordFragment). Ayrım şart: bu fonksiyon liderlik
         // tablosu kapatılınca da çağrılıyor ve o zaman "ders bitti" ekranları açılmamalı.
         fromLessonFinish: Boolean = true,
+        // false: ders YARIDA BIRAKILDI, ardından hiçbir ödül ekranı gelemez.
+        // Tek etkisi zemin kararı; bkz. [postLessonRewardScreensPossible].
+        rewardScreensPossible: Boolean = true,
     ) {
+        postLessonRewardScreensPossible = rewardScreensPossible
         // Devir teslim penceresi burada kapanıyor: artık ne gösterileceği belli (rozet
         // kontrolü başladıysa bayrağı set edilmiş durumda). Bundan sonra zeminin ömrünü
         // normal kural belirliyor: bekleyen iş varsa duruyor, yoksa iniyor.
@@ -3720,7 +3724,14 @@ class MainActivity : AppCompatActivity() {
             (postLessonStepHoldsBackdrop && postLessonStepSettlingRemainingMs() > 0L) ||
             hasPostLessonBackdropWork() ||
             GlobalValues.pendingBadgeFirestoreOperation ||
-            adCheckForBadgeInProgress
+            // Reklam kontrolü zemini tutuyor çünkü reklam kapanıp rozet açılana kadarki
+            // boşluk da aynı pencerenin parçası — o aralıkta harita görünmemeli.
+            //
+            // Ama ders YARIDA bırakıldıysa reklamdan sonra gelecek bir şey yok. Kontrol
+            // yine de çalışıyor ve bir an sürüyor; zemin ona göre kalkınca kullanıcı
+            // haritayı değil önce düz zemini görüyor, zemin sonra iniyordu. Log'daki
+            // "block=ad_check_in_progress" satırı tam olarak bu.
+            (postLessonRewardScreensPossible && adCheckForBadgeInProgress)
 
     /**
      * Zeminin kalkmasını gerektiren iş var mı.
@@ -3793,6 +3804,15 @@ class MainActivity : AppCompatActivity() {
         acquirePostLessonQueueTouchLock(force = true)
         pumpPostLessonQueue(caller)
     }
+
+    /**
+     * Bu dönüşün ardından bir ödül ekranı gelebilir mi.
+     *
+     * Ders yarıda bırakıldığında false: ortada bitmiş bir şey yok, yani rozet de sandık da
+     * gelmeyecek. Tek etkisi zemin kararı — [postLessonQueueBusy] içindeki reklam kontrolü
+     * terimi buna bakıyor, sebebi orada yazıyor.
+     */
+    private var postLessonRewardScreensPossible = true
 
     /** Devir teslim penceresinin bitiş anı (monoton saat); 0 = pencere kapalı. */
     private var postLessonHandoffUntilMs = 0L

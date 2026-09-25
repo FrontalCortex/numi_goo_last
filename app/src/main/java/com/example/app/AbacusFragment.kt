@@ -1866,6 +1866,9 @@ class AbacusFragment : Fragment() {
             "AbacusFragment.quit",
             isLessonTypeReturn = ::lessonItem.isInitialized &&
                 lessonItem.type == LessonItem.TYPE_LESSON,
+            // Ders yarıda bırakıldı: ardından rozet/sandık gelmeyecek, zemin reklam
+            // kontrolü için boşuna kalkmasın.
+            rewardScreensPossible = false,
         )
     }
 
