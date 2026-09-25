@@ -169,7 +169,10 @@ class CupPathRoadFragment : Fragment() {
                 // NewChestFragment de tanıyor (görev/mağaza sandıklarındaki kalıbın aynısı).
                 (activity as? MainActivity)?.showAbacusOverlayFragment(
                     NewChestFragment.newInstance(
-                        NewChestFragment.ChestRarity.COMMON,
+                        // Eşiğin nadirliği: 1000'in katları destansı, 500'ün katları ender,
+                        // gerisi sıradan. Sunucu da aynı kuralı uyguluyor; burada verilen
+                        // değer yalnızca ekranın hangi seviyeden BAŞLAYACAĞINI belirliyor.
+                        CupPathRewardRepository.rarityOf(milestone.cupValue),
                         source = AnalyticsLogger.CHEST_SOURCE_CUP_PATH,
                         cupField = cupField,
                         cupMilestone = milestone.cupValue,
@@ -258,6 +261,11 @@ class CupPathRoadFragment : Fragment() {
         fun bind(milestone: CupPathRewardRepository.Milestone) {
             value.text = milestone.cupValue.toString()
 
+            // Eşiğin sandığı: 1000'in katları destansı, 500'ün katları ender, gerisi sıradan.
+            // Kapalı ve açık çizim aynı yerden geliyor ki alınmış bir destansı sandık da
+            // destansı görünsün.
+            val rarity = CupPathRewardRepository.rarityOf(milestone.cupValue)
+
             val reached = milestone.status != CupPathRewardRepository.MilestoneStatus.LOCKED
             track.setBackgroundColor(if (reached) COLOR_ROAD_DONE else COLOR_ROAD_TODO)
             value.setTextColor(if (reached) COLOR_TEXT else COLOR_TEXT_DIM)
@@ -266,7 +274,7 @@ class CupPathRoadFragment : Fragment() {
             when (milestone.status) {
                 CupPathRewardRepository.MilestoneStatus.CLAIMED -> {
                     chestBox.setBackgroundResource(0)
-                    chest.setImageResource(R.drawable.new_chest_open_ic1)
+                    chest.setImageResource(rarity.openDrawableRes)
                     // Açık sandık çizimi kendi kutusunda zaten ortalı; kaydırmaya gerek yok.
                     chest.translationY = 0f
                     chest.alpha = 0.6f
@@ -276,7 +284,7 @@ class CupPathRoadFragment : Fragment() {
                 }
                 CupPathRewardRepository.MilestoneStatus.CLAIMABLE -> {
                     chestBox.setBackgroundResource(R.drawable.bg_cup_path_milestone_ready)
-                    chest.setImageResource(R.drawable.new_chest_close_ic1)
+                    chest.setImageResource(rarity.drawableRes)
                     chest.translationY = -closedChestLiftPx
                     chest.alpha = 1f
                     done.visibility = View.GONE
@@ -285,7 +293,7 @@ class CupPathRoadFragment : Fragment() {
                 }
                 CupPathRewardRepository.MilestoneStatus.LOCKED -> {
                     chestBox.setBackgroundResource(0)
-                    chest.setImageResource(R.drawable.new_chest_close_ic1)
+                    chest.setImageResource(rarity.drawableRes)
                     chest.translationY = -closedChestLiftPx
                     chest.alpha = 0.45f
                     done.visibility = View.GONE

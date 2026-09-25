@@ -2406,6 +2406,10 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
         // Yükleme grisi kalkıyor; bkz. [applyCupPathRewardLoadingState].
         chest.clearColorFilter()
+        // Karttaki sandık SIRADAKİ eşiği temsil ediyor, o yüzden çizimi de onun
+        // nadirliğinden geliyor: 500'ün katıysa ender, 1000'in katıysa destansı görünüyor.
+        // Kullanıcı ne kazanacağını sandığa bakarak anlıyor.
+        chest.setImageResource(CupPathRewardRepository.rarityOf(state.nextMilestone).drawableRes)
         fill.visibility = View.VISIBLE
         shine.visibility = View.VISIBLE
         text.visibility = View.VISIBLE
@@ -2502,7 +2506,9 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         // çubuk sıradaki eşiği gösteriyor. Belirli bir eşiği seçmek kupa yolu ekranının işi.
         openAbacusContainerFragment(
             NewChestFragment.newInstance(
-                NewChestFragment.ChestRarity.COMMON,
+                // Eşiğin nadirliği; sunucu da aynı kuralı uyguluyor, buradaki değer
+                // yalnızca ekranın hangi seviyeden BAŞLAYACAĞINI belirliyor.
+                CupPathRewardRepository.rarityOf(state.nextMilestone),
                 source = AnalyticsLogger.CHEST_SOURCE_CUP_PATH,
                 cupField = state.cupField,
                 cupMilestone = state.nextMilestone,

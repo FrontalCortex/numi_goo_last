@@ -14,7 +14,7 @@
  * yalnızca reddin raporlanma biçimi. Doğrulama assertFails/assertSucceeds ile yapılıyor.
  */
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import fs from "fs";
 import path from "path";
 
@@ -39,6 +39,10 @@ await env.withSecurityRulesDisabled(async (ctx) => {
   });
   await setDoc(doc(db, `users/${UID}/badgeProgress/state`), {
     userDartProgress: 10, userDinoProgress: 800,
+  });
+  // Kupa yolu sandik defteri: sunucu yazar, istemci yalnizca okur.
+  await setDoc(doc(db, `users/${UID}/cupPathRewards/progress`), {
+    addition_abacus_cup: { lastClaimed: 500, claimed: [] },
   });
 });
 
@@ -68,6 +72,19 @@ await check("baskasinin rozeti REDDEDILIR", assertFails(updateDoc(other, { userD
 
 console.log("\n=== KUPA YOLU (istemci yazamaz) ===");
 await check("kupa puani yazimi REDDEDILIR", assertFails(setDoc(doc(db, `users/${UID}/cupWayProgress/progress`), { max_addition_abacus_cup: 9999 })));
+// Sandik nadirligi ESIGE bagli oldugu icin puani sisirmek artik yalnizca "daha cok sandik"
+// degil, "daha IYI sandik" demek: 1000'in katlari destansi. Kapinin kapali oldugu
+// dogrulanmali.
+await check("kupa puani guncellemesi REDDEDILIR", assertFails(updateDoc(doc(db, `users/${UID}/cupWayProgress/progress`), { addition_abacus_cup: 10000 })));
+
+console.log("\n=== KUPA YOLU DEFTERI (silinemez de) ===");
+const ledger = doc(db, `users/${UID}/cupPathRewards/progress`);
+await check("defter okuma kabul edilir",    assertSucceeds(getDoc(ledger)));
+await check("defter yazimi REDDEDILIR",     assertFails(setDoc(ledger, { addition_abacus_cup: { lastClaimed: 200, claimed: [] } })));
+await check("defter guncellemesi REDDEDILIR", assertFails(updateDoc(ledger, { addition_abacus_cup: { lastClaimed: 200, claimed: [] } })));
+// En kritigi: defteri SILEBILEN biri lastClaimed'i basa dondurup butun esikleri -- 1000'in
+// katlarindaki destansi sandiklar dahil -- yeniden odetebilirdi.
+await check("defter silme REDDEDILIR",      assertFails(deleteDoc(ledger)));
 
 console.log("\n=== SERI (istemci yazamaz) ===");
 await check("seri yazimi REDDEDILIR",       assertFails(setDoc(doc(db, `users/${UID}/streak/state`), { current: 30 })));

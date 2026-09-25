@@ -3475,6 +3475,36 @@ const CUP_PATH_START = 200;
 const CUP_PATH_STEP = 100;
 
 /**
+ * Kupa yolunun son eşiği. Buradan sonra kupa artmaya devam eder ama sandık verilmez.
+ *
+ * İstemcideki CupPathRewardRepository.MAX ile birebir aynı olmak zorunda: ekranda eşik
+ * gösterip sunucunun reddetmesi (ya da tersi) kullanıcı için anlaşılmaz olur.
+ */
+const CUP_PATH_MAX = 10000;
+
+/**
+ * Bir eşiğin sandık nadirliği — SUNUCUNUN kararı.
+ *
+ *   1000'in katları -> DESTANSI   (1000, 2000, ... 10000)
+ *   500'ün katları  -> ENDER      (500, 1500, 2500, ...)
+ *   diğerleri       -> SIRADAN    (300, 400, 600, 700, ...)
+ *
+ * Sıra önemli: 1000 hem 500'ün hem 1000'in katı, destansı kazanmalı.
+ *
+ * Bu değer sandığın BAŞLANGIÇ nadirliği; kullanıcının dokunuşları onu yükseltmeye devam
+ * ediyor (bkz. [CHEST_TAP_COUNT]). Yani destansı başlayan bir sandık efsaneviye çıkabilir.
+ *
+ * İstemcideki CupPathRewardRepository.rarityOf ile birebir aynı olmak zorunda; istemci
+ * yalnızca DOĞRU İKONU seçmek için kullanıyor, ödülü buradaki değer belirliyor.
+ */
+function cupPathChestRarity(milestone) {
+  if (!Number.isFinite(milestone)) return 'COMMON';
+  if (milestone % 1000 === 0) return 'EPIC';
+  if (milestone % 500 === 0) return 'RARE';
+  return 'COMMON';
+}
+
+/**
  * [lastClaimed]'den sonraki eşik.
  *
  * Başlangıç puanı 200 olduğu için ilk eşik 300'dür: 100 ve 200 hiç oynamadan geçilmiş
@@ -3483,7 +3513,9 @@ const CUP_PATH_STEP = 100;
 function nextCupPathMilestone(lastClaimed) {
   const base =
     Number.isFinite(lastClaimed) && lastClaimed > CUP_PATH_START ? lastClaimed : CUP_PATH_START;
-  return base + CUP_PATH_STEP;
+  const next = base + CUP_PATH_STEP;
+  // Yol bitti: 0 döndürülüyor ki çağıran taraf "sıradaki eşik yok" durumunu ayırt edebilsin.
+  return next > CUP_PATH_MAX ? 0 : next;
 }
 
 /**
@@ -3518,6 +3550,7 @@ function isCupPathMilestone(value) {
     Number.isFinite(value) &&
     Number.isInteger(value) &&
     value > CUP_PATH_START &&
+    value <= CUP_PATH_MAX &&
     (value - CUP_PATH_START) % CUP_PATH_STEP === 0
   );
 }
@@ -3589,9 +3622,31 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
   const cupRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
   const ledgerRef = db.collection('users').doc(uid).collection('cupPathRewards').doc('progress');
 
-  // Nadirlik ve ödül transaction'dan ÖNCE yuvarlanıyor: transaction yeniden çalıştırılırsa
-  // kullanıcı aynı çağrıda ikinci bir şans kazanmasın.
-  const startRarity = 'COMMON';
+  // Sandığın BAŞLANGIÇ nadirliği eşikten geliyor ([cupPathChestRarity]); yükseltme
+  // dokunuşları onun üstüne biniyor. Eşiği bilmek için önce hangi eşiğin alınacağını
+  // bilmek gerekiyor.
+  //
+  // İstemci eşik gönderdiyse onu kullanıyoruz — ama GÜVENDİĞİMİZ için değil: transaction
+  // içinde defterle ve kupa puanıyla yeniden doğrulanıyor, uymuyorsa hiçbir şey verilmiyor.
+  // Göndermediyse defteri bir kez okuyup sıradakini buluyoruz; o okuma ile transaction
+  // arasında defter değişirse aşağıdaki eşitlik kontrolü çağrıyı iptal ediyor.
+  let rarityMilestone = requestedMilestone;
+  if (rarityMilestone === null) {
+    const preSnap = await ledgerRef.get();
+    const preEntry = readCupPathEntry(preSnap.exists ? preSnap.data() || {} : {}, cupField);
+    rarityMilestone = nextCupPathMilestone(preEntry.lastClaimed);
+  }
+  if (!isCupPathMilestone(rarityMilestone)) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Bu kupa yolunun bütün sandıkları alındı.'
+    );
+  }
+
+  // Ödül transaction'dan ÖNCE yuvarlanıyor: transaction yeniden çalıştırılırsa kullanıcı
+  // aynı çağrıda ikinci bir şans kazanmasın. Zarlar da burada atılıyor ki nadirlik tek
+  // bir yerde, eşikten türeyerek hesaplansın.
+  const startRarity = cupPathChestRarity(rarityMilestone);
   const rarityPath = [];
   let rarity = startRarity;
   for (let i = 0; i < CHEST_TAP_COUNT; i++) {
@@ -3620,6 +3675,22 @@ exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
 
       const milestone =
         requestedMilestone === null ? nextCupPathMilestone(entry.lastClaimed) : requestedMilestone;
+
+      // Ödül yukarıda [rarityMilestone]'a göre yuvarlandı. Defter o okumadan sonra
+      // değiştiyse (başka cihazdan sandık alındı) burada durulur: yanlış nadirlikte bir
+      // sandık vermektense çağrıyı iptal etmek doğru. İstemci yeniden dener.
+      if (milestone !== rarityMilestone) {
+        throw new functions.https.HttpsError(
+          'aborted',
+          'Kupa yolu bu sırada değişti, tekrar dene.'
+        );
+      }
+      if (!isCupPathMilestone(milestone)) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu kupa yolunun bütün sandıkları alındı.'
+        );
+      }
 
       if (milestone <= entry.lastClaimed || entry.claimed.includes(milestone)) {
         throw new functions.https.HttpsError(

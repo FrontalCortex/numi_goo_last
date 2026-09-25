@@ -26,6 +26,37 @@ object CupPathRewardRepository {
     /** Her kaç kupada bir sandık. */
     const val STEP = 100
 
+    /**
+     * Yolun son eşiği. Buradan sonra kupa artmaya devam eder ama sandık verilmez.
+     *
+     * Sunucudaki `CUP_PATH_MAX` ile birebir aynı olmak zorunda; ekranda eşik gösterip
+     * sunucunun reddetmesi kullanıcı için anlaşılmaz olur.
+     */
+    const val MAX = 10_000
+
+    /**
+     * Bir eşiğin sandık nadirliği.
+     *
+     *   1000'in katları -> DESTANSI   (1000, 2000, ... 10000)
+     *   500'ün katları  -> ENDER      (500, 1500, 2500, ...)
+     *   diğerleri       -> SIRADAN    (300, 400, 600, ...)
+     *
+     * Sıra önemli: 1000 hem 500'ün hem 1000'in katı, destansı kazanmalı.
+     *
+     * ## Burası yalnızca GÖRÜNTÜ
+     * Hangi sandığın verileceğine sunucu karar veriyor (`cupPathChestRarity`,
+     * functions/index.js). Buradaki değer ikon seçmek ve sandık ekranını doğru nadirlikten
+     * başlatmak için; iki taraf ayrışırsa kullanıcı yanlış ikon görür ama YANLIŞ ÖDÜL ALMAZ.
+     *
+     * [NewChestFragment.ChestRarity] döndürülüyor çünkü kapalı/açık sandık çizimleri zaten
+     * orada duruyor — ayrı bir eşleme tablosu iki yerde bakım demek olurdu.
+     */
+    fun rarityOf(milestone: Int): NewChestFragment.ChestRarity = when {
+        milestone % 1000 == 0 -> NewChestFragment.ChestRarity.EPIC
+        milestone % 500 == 0 -> NewChestFragment.ChestRarity.RARE
+        else -> NewChestFragment.ChestRarity.COMMON
+    }
+
     /** Kupa yolu ekranında ileriye doğru kaç eşik gösterilsin. */
     private const val FUTURE_MILESTONES = 20
 
@@ -82,10 +113,20 @@ object CupPathRewardRepository {
          * sayılırdı ve ilk açılışta iki bedava sandık demek olurdu.
          */
         val nextMilestone: Int
-            get() = (if (lastClaimed > START) lastClaimed else START) + STEP
+            get() = (waterLevel + STEP).coerceAtMost(MAX)
+
+        /** Su seviyesi: bu değere kadarki bütün eşikler alınmış. */
+        private val waterLevel: Int get() = if (lastClaimed > START) lastClaimed else START
+
+        /**
+         * Yolun sonuna gelindi mi — son eşik ([MAX]) de alınmış.
+         *
+         * Bu durumda kupa artmaya devam ediyor ama verilecek sandık kalmıyor.
+         */
+        val finished: Boolean get() = waterLevel >= MAX
 
         /** Sandık hak edildi mi (alınmayı bekliyor mu). */
-        val claimable: Boolean get() = cupScore >= nextMilestone
+        val claimable: Boolean get() = !finished && cupScore >= nextMilestone
 
         /** O eşiğin ödülü alınmış mı. */
         fun isClaimed(milestone: Int): Boolean =
@@ -118,7 +159,8 @@ object CupPathRewardRepository {
             get() {
                 var count = 0
                 var value = START + STEP
-                while (value <= cupScore) {
+                val ceiling = minOf(cupScore, MAX)
+                while (value <= ceiling) {
                     if (!isClaimed(value)) count++
                     value += STEP
                 }
@@ -132,7 +174,11 @@ object CupPathRewardRepository {
          * gibi, hata izlenimi veren bir metin çıkıyordu.
          */
         val label: String
-            get() = if (claimable) "Sandık hazır!" else "$cupScore / $nextMilestone"
+            get() = when {
+                finished -> "Tamamlandı"
+                claimable -> "Sandık hazır!"
+                else -> "$cupScore / $nextMilestone"
+            }
 
         /**
          * Kupa yolu ekranında gösterilecek eşikler: geçilmiş olanlar, bir de ileriye doğru
@@ -145,7 +191,9 @@ object CupPathRewardRepository {
          * bulunduğu yer listenin sonuna yakın.
          */
         fun milestones(future: Int = FUTURE_MILESTONES): List<Milestone> {
-            val end = maxOf(nextMilestone, cupScore) + future * STEP
+            // [MAX] son eşik: listenin ötesine taş konmuyor, yoksa kullanıcı hiç
+            // alamayacağı sandıklar görürdü.
+            val end = (maxOf(nextMilestone, cupScore) + future * STEP).coerceAtMost(MAX)
             val all = ArrayList<Milestone>()
             var value = START + STEP
             while (value <= end) {
