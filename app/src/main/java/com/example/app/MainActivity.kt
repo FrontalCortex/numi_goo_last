@@ -183,14 +183,6 @@ class MainActivity : AppCompatActivity() {
         /** Promo hiç gösterilemezse harita kalıcı kilitli kalmasın diye son güvenlik ağı. */
         private const val ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS = 15_000L
 
-        /**
-         * Promo penceresinin kayma süresi + küçük pay.
-         *
-         * Zemin bu kadar sonra iniyor: kilit, pencere kaymaya BAŞLAR başlamaz bırakılıyor ve
-         * zemin o anda inerse kayan pencerenin yanından harita görünüyor.
-         * [R.anim.queue_screen_in] 400 ms.
-         */
-        private const val ASK_QUESTION_PROMO_WINDOW_ANIM_MS = 450L
     }
 
     internal fun buildTouchDiagSnapshot(): String {
@@ -2981,54 +2973,15 @@ class MainActivity : AppCompatActivity() {
         logMapTouchDiag("askQuestionPromo", "LOCK", "caller=$caller nextCount=$nextCount")
         (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
             ?.lockTouchForPendingOverlay()
-        // Zemin de kalkıyor: promo kendi penceresinde sağdan kayarak geliyor ve kayma
-        // boyunca yanından ACTIVITY görünüyor — yani harita. Buraya konmasının sebebi
-        // kesinliği: bu fonksiyon zaten uygunluk ve sayaç eşiğini geçmiş, yani promo
-        // GERÇEKTEN açılacak. Kuyruğun "belki açılır" tahminiyle zemin kaldırmak,
-        // hiçbir şey gösterilmeyen dönüşlerde zeminin boşuna parlamasına yol açıyordu.
-        showAskQuestionPromoBackdrop()
         scheduleAskQuestionPromoLockWatchdog()
     }
 
-    /**
-     * @param backdropHideDelayMs Zemin bu kadar sonra iniyor. Promo GÖSTERİLDİĞİNDE kilit,
-     *   pencere kaymaya başlar başlamaz bırakılıyor; zemin o anda inerse kayan pencerenin
-     *   yanından harita görünür. Promo gösterilmeyen çıkışlarda beklemeye gerek yok.
-     */
-    private fun releaseAskQuestionPromoLock(caller: String, backdropHideDelayMs: Long = 0L) {
+    private fun releaseAskQuestionPromoLock(caller: String) {
         if (!askQuestionPromoPendingLock) return
         askQuestionPromoPendingLock = false
         logMapTouchDiag("askQuestionPromo", "UNLOCK", "caller=$caller")
         (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
             ?.enableMapTouchRouting()
-        if (!::binding.isInitialized) return
-        binding.root.removeCallbacks(askQuestionPromoBackdropHideRunnable)
-        if (backdropHideDelayMs > 0L) {
-            binding.root.postDelayed(askQuestionPromoBackdropHideRunnable, backdropHideDelayMs)
-        } else {
-            hideAskQuestionPromoBackdrop()
-        }
-    }
-
-    /** Zemin promo için BİZİM tarafımızdan mı kaldırıldı; kuyruğun kilidiyle karışmasın. */
-    private var askQuestionPromoBackdropHeld = false
-
-    private val askQuestionPromoBackdropHideRunnable =
-        Runnable { hideAskQuestionPromoBackdrop() }
-
-    private fun showAskQuestionPromoBackdrop() {
-        if (askQuestionPromoBackdropHeld) return
-        askQuestionPromoBackdropHeld = true
-        showPostLessonBackdrop()
-    }
-
-    private fun hideAskQuestionPromoBackdrop() {
-        if (!askQuestionPromoBackdropHeld) return
-        askQuestionPromoBackdropHeld = false
-        // Kuyruk da zemini tutuyorsa indirme kararı onun; yalnızca bizim payımız düştü.
-        // İki sahip olduğu için bu kontrol şart: aksi halde kuyruğun ekranları arasında
-        // zemin erken iniyor ve harita ortaya çıkıyor.
-        if (!postLessonQueueLockHeld) hidePostLessonBackdrop()
     }
 
     private fun scheduleAskQuestionPromoLockWatchdog() {
@@ -3101,9 +3054,7 @@ class MainActivity : AppCompatActivity() {
             .newInstance(AnalyticsLogger.PROMO_TRIGGER_AUTO)
             .show(supportFragmentManager, "AskQuestionOpen")
         // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
-        binding.root.post {
-            releaseAskQuestionPromoLock("shown:$caller", ASK_QUESTION_PROMO_WINDOW_ANIM_MS)
-        }
+        binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
     }
 
     /**
@@ -4010,12 +3961,7 @@ class MainActivity : AppCompatActivity() {
         postLessonQueueLockHeld = false
         Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller")
         map.releasePostLessonQueueTouchLock()
-        // Zeminin İKİ sahibi var. Öğretmene sorma tanıtımı kendi kapısından zemini
-        // kaldırmış olabilir ([showAskQuestionPromoBackdrop]) ve kuyruk o sırada
-        // "bekleyen işim yok" deyip indirirse, tanıtım penceresi kayarken yanından harita
-        // görünüyor. Kendi payımızı düşürüyoruz ama zemini ondan çalmıyoruz; indirme
-        // kararı [hideAskQuestionPromoBackdrop]'a kalıyor.
-        if (!askQuestionPromoBackdropHeld) hidePostLessonBackdrop()
+        hidePostLessonBackdrop()
     }
 
     /**

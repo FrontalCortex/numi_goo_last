@@ -43,17 +43,25 @@ class AskQuestionOpenFragment : DialogFragment() {
     }
 
     /**
-     * Ders sonrası kuyruğundaki diğer ekranlarla AYNI çizimler
-     * ([R.style.QueueScreenAnimation]): sağdan girer, SOLA çıkar.
+     * Bu ekran BİLEREK animasyonsuz açılıyor.
      *
-     * Paylaşılan [R.style.DialogAnimationSlideRight] sağa çıkıyordu; bu ekranın hemen
-     * ardından gelen ekran da sağdan girdiği için ikisi aynı kenardan çakışıyor ve akış
-     * geri gidiyormuş gibi okunuyordu. Paylaşılan çizim kuyruk dışındaki ekranlarda
-     * kullanıldığı için değiştirilmedi, bu ekran kuyruğun çiftine geçti.
+     * Kendi penceresi var ve bir pencere kayarken yanından her zaman ALTTAKİ pencere
+     * görünüyor. Burada alttaki pencere activity, yani harita. Denenen iki yol da
+     * çalışmadı:
+     *
+     *  - Çizimsiz bırakmak dışındaki her animasyonda (kayma, solma) kayma/geçiş boyunca
+     *    harita açığa çıkıyor.
+     *  - Arkaya ders sonrası zeminini kaldırmak haritayı gizliyor ama bu sefer düz zemin
+     *    görünüyor; üstelik zeminin iki sahibi olduğu için kuyrukla çekişiyor.
+     *
+     * Kuyruktaki diğer ekranlar (rozet, yeni seri) bu sorunu yaşamıyor çünkü onlar ya
+     * activity'nin kendi kabında ya da zeminin zaten kalkmış olduğu bir anda açılıyor.
+     * Burada gösterilecek tek doğru şey haritanın kendisi ve onu da kayma sırasında
+     * göstermenin bir yolu yok; bu yüzden ekran tek karede geliyor.
      */
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
+        dialog?.window?.setWindowAnimations(0)
     }
 
     override fun onCreateView(
