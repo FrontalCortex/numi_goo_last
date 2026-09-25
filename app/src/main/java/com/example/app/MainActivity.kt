@@ -1927,12 +1927,19 @@ class MainActivity : AppCompatActivity() {
             // 3) Günlük/haftalık görev kombinasyonunu yeniden seçtir.
             MissionsProgressStore.forceReselectMissions(context)
             // 4) Seçilen görevleri hemen üretip state'e yazdır.
-            MissionsProgressStore.selectedMissionsForDaily(context)
-            MissionsProgressStore.selectedMissionsForWeekly(context)
+            val daily = MissionsProgressStore.selectedMissionsForDaily(context)
+            val weekly = MissionsProgressStore.selectedMissionsForWeekly(context)
             // 5) Sıfırlanmış durumu buluta yaz. Bu olmadan bir sonraki okumada
             //    buluttaki ESKİ değerler geri hydrate ediliyor ve sıfırlama boşa gidiyor.
             MissionsProgressStore.forceUploadStateToCloud(context)
-            android.util.Log.w("MissionProgressDebug", "gorev ilerlemesi sifirlandi (test anahtari acik)")
+            // Seçilen görevler log'a yazılıyor: ödül paneli ancak bir görev TAMAMLANINCA
+            // açılıyor, yani kaç ders gerektiğini bilmeden test etmek tahmine kalıyor.
+            android.util.Log.w(
+                "MissionProgressDebug",
+                "gorev ilerlemesi sifirlandi | gunluk=" +
+                    daily.joinToString { "${it.id}(hedef=${it.target})" } +
+                    " haftalik=" + weekly.joinToString { "${it.id}(hedef=${it.target})" },
+            )
         }
         // Kullanıcıya özel lesson verilerini local'den temizler.
         //GlobalLessonData.clearCurrentUserLessonData(context)
@@ -4003,7 +4010,12 @@ class MainActivity : AppCompatActivity() {
         postLessonQueueLockHeld = false
         Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller")
         map.releasePostLessonQueueTouchLock()
-        hidePostLessonBackdrop()
+        // Zeminin İKİ sahibi var. Öğretmene sorma tanıtımı kendi kapısından zemini
+        // kaldırmış olabilir ([showAskQuestionPromoBackdrop]) ve kuyruk o sırada
+        // "bekleyen işim yok" deyip indirirse, tanıtım penceresi kayarken yanından harita
+        // görünüyor. Kendi payımızı düşürüyoruz ama zemini ondan çalmıyoruz; indirme
+        // kararı [hideAskQuestionPromoBackdrop]'a kalıyor.
+        if (!askQuestionPromoBackdropHeld) hidePostLessonBackdrop()
     }
 
     /**
