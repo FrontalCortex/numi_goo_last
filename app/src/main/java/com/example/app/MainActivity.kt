@@ -182,6 +182,15 @@ class MainActivity : AppCompatActivity() {
         private const val ASK_QUESTION_PROMO_MAX_ATTEMPTS = 40
         /** Promo hiç gösterilemezse harita kalıcı kilitli kalmasın diye son güvenlik ağı. */
         private const val ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS = 15_000L
+
+        /**
+         * Promo penceresinin kayma süresi + küçük pay.
+         *
+         * Zemin bu kadar sonra iniyor: kilit, pencere kaymaya BAŞLAR başlamaz bırakılıyor ve
+         * zemin o anda inerse kayan pencerenin yanından harita görünüyor.
+         * [R.anim.queue_screen_in] 400 ms.
+         */
+        private const val ASK_QUESTION_PROMO_WINDOW_ANIM_MS = 450L
     }
 
     internal fun buildTouchDiagSnapshot(): String {
@@ -1908,18 +1917,23 @@ class MainActivity : AppCompatActivity() {
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
         */
 
-        // Offline kullanılmayacağı için görev local cache'ini temizle. Bu kod hep kalacak.
-        //MissionsProgressStore.clearLocalCache(context)
-        // 1) Mevcut görev ilerlemesini sıfırla (daily/weekly counters + claimed flags)
-        //MissionsProgressStore.resetAllProgress(context)
-        // 2) Günlük/haftalık görev kombinasyonunu yeniden seçtir
-        //MissionsProgressStore.forceReselectMissions(context)
-        // 3) Seçilen yeni görevleri hemen üretip state'e yazdır (isteğe bağlı ama önerilir)
-        //MissionsProgressStore.selectedMissionsForDaily(context)
-        //MissionsProgressStore.selectedMissionsForWeekly(context)
-        // Cloud'daki eski mission state'in geri hydrate edilmesini engellemek için
-        // resetlenmiş local state'i doğrudan cloud'a overwrite et.
-        //MissionsProgressStore.forceUploadStateToCloud(context)
+        // Görev ilerlemesini sıfırla — yalnızca [MissionProgressDebug] anahtarı açıkken.
+        // Sırası önemli, açıklaması o dosyada.
+        if (MissionProgressDebug.resetOnLaunch) {
+            // 1) Yerel önbellek: ilerleme önce buradan okunuyor.
+            MissionsProgressStore.clearLocalCache(context)
+            // 2) Sayaçlar ve "ödül alındı" işaretleri.
+            MissionsProgressStore.resetAllProgress(context)
+            // 3) Günlük/haftalık görev kombinasyonunu yeniden seçtir.
+            MissionsProgressStore.forceReselectMissions(context)
+            // 4) Seçilen görevleri hemen üretip state'e yazdır.
+            MissionsProgressStore.selectedMissionsForDaily(context)
+            MissionsProgressStore.selectedMissionsForWeekly(context)
+            // 5) Sıfırlanmış durumu buluta yaz. Bu olmadan bir sonraki okumada
+            //    buluttaki ESKİ değerler geri hydrate ediliyor ve sıfırlama boşa gidiyor.
+            MissionsProgressStore.forceUploadStateToCloud(context)
+            android.util.Log.w("MissionProgressDebug", "gorev ilerlemesi sifirlandi (test anahtari acik)")
+        }
         // Kullanıcıya özel lesson verilerini local'den temizler.
         //GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
@@ -2960,15 +2974,54 @@ class MainActivity : AppCompatActivity() {
         logMapTouchDiag("askQuestionPromo", "LOCK", "caller=$caller nextCount=$nextCount")
         (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
             ?.lockTouchForPendingOverlay()
+        // Zemin de kalkıyor: promo kendi penceresinde sağdan kayarak geliyor ve kayma
+        // boyunca yanından ACTIVITY görünüyor — yani harita. Buraya konmasının sebebi
+        // kesinliği: bu fonksiyon zaten uygunluk ve sayaç eşiğini geçmiş, yani promo
+        // GERÇEKTEN açılacak. Kuyruğun "belki açılır" tahminiyle zemin kaldırmak,
+        // hiçbir şey gösterilmeyen dönüşlerde zeminin boşuna parlamasına yol açıyordu.
+        showAskQuestionPromoBackdrop()
         scheduleAskQuestionPromoLockWatchdog()
     }
 
-    private fun releaseAskQuestionPromoLock(caller: String) {
+    /**
+     * @param backdropHideDelayMs Zemin bu kadar sonra iniyor. Promo GÖSTERİLDİĞİNDE kilit,
+     *   pencere kaymaya başlar başlamaz bırakılıyor; zemin o anda inerse kayan pencerenin
+     *   yanından harita görünür. Promo gösterilmeyen çıkışlarda beklemeye gerek yok.
+     */
+    private fun releaseAskQuestionPromoLock(caller: String, backdropHideDelayMs: Long = 0L) {
         if (!askQuestionPromoPendingLock) return
         askQuestionPromoPendingLock = false
         logMapTouchDiag("askQuestionPromo", "UNLOCK", "caller=$caller")
         (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
             ?.enableMapTouchRouting()
+        if (!::binding.isInitialized) return
+        binding.root.removeCallbacks(askQuestionPromoBackdropHideRunnable)
+        if (backdropHideDelayMs > 0L) {
+            binding.root.postDelayed(askQuestionPromoBackdropHideRunnable, backdropHideDelayMs)
+        } else {
+            hideAskQuestionPromoBackdrop()
+        }
+    }
+
+    /** Zemin promo için BİZİM tarafımızdan mı kaldırıldı; kuyruğun kilidiyle karışmasın. */
+    private var askQuestionPromoBackdropHeld = false
+
+    private val askQuestionPromoBackdropHideRunnable =
+        Runnable { hideAskQuestionPromoBackdrop() }
+
+    private fun showAskQuestionPromoBackdrop() {
+        if (askQuestionPromoBackdropHeld) return
+        askQuestionPromoBackdropHeld = true
+        showPostLessonBackdrop()
+    }
+
+    private fun hideAskQuestionPromoBackdrop() {
+        if (!askQuestionPromoBackdropHeld) return
+        askQuestionPromoBackdropHeld = false
+        // Kuyruk da zemini tutuyorsa indirme kararı onun; yalnızca bizim payımız düştü.
+        // İki sahip olduğu için bu kontrol şart: aksi halde kuyruğun ekranları arasında
+        // zemin erken iniyor ve harita ortaya çıkıyor.
+        if (!postLessonQueueLockHeld) hidePostLessonBackdrop()
     }
 
     private fun scheduleAskQuestionPromoLockWatchdog() {
@@ -3041,7 +3094,9 @@ class MainActivity : AppCompatActivity() {
             .newInstance(AnalyticsLogger.PROMO_TRIGGER_AUTO)
             .show(supportFragmentManager, "AskQuestionOpen")
         // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
-        binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
+        binding.root.post {
+            releaseAskQuestionPromoLock("shown:$caller", ASK_QUESTION_PROMO_WINDOW_ANIM_MS)
+        }
     }
 
     /**
