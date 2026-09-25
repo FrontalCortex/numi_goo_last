@@ -53,7 +53,58 @@ class NewStreakFragment : DialogFragment() {
      */
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
+        val window = dialog?.window ?: return
+        window.setWindowAnimations(R.style.QueueScreenAnimation)
+        applyNavigationBarColor(window)
+    }
+
+    /**
+     * Gezinme çubuğunu ekranın zeminiyle aynı renge getirir.
+     *
+     * ## Sorun
+     * Bu ekran bir `DialogFragment`, yani KENDİ penceresi var. Activity'nin çubuk rengi
+     * ([MainActivity] ve tema, ikisi de `background_color`) o pencereye geçmiyor; dialog
+     * rengini kendi temasından ([android.R.style.Theme_Light_NoTitleBar_Fullscreen])
+     * alıyor ve altta zeminden kopuk AÇIK bir şerit kalıyordu. Tema yalnızca durum
+     * çubuğunu gizliyor, gezinme çubuğu yerinde duruyor.
+     *
+     * ## Neden iki ayrı ayar
+     * İkisi iki ayrı Android sürümü için:
+     *  - `navigationBarColor` API 34 ve altında çubuğu doğrudan boyuyor.
+     *  - API 35'ten itibaren (uygulama `targetSdk 36`) o çağrı artık çalışmıyor: sistem
+     *    çubuğu şeffaf yapıp altındaki PENCEREYİ gösteriyor. Bu yüzden pencerenin kendi
+     *    zemini de aynı renge boyanıyor — şeffaf çubuğun altından o görünüyor.
+     *
+     * Düzeni etkilemiyor: boyanan pencere zemini, içeriğin ÜSTÜNE değil ALTINA çiziliyor,
+     * yani "Başla" düğmesi yerinde kalıyor.
+     *
+     * ## Neden geri alınmıyor
+     * Pencere ekranla birlikte yok oluyor; altındaki activity penceresi kendi rengini hiç
+     * kaybetmiyor. [NewChestFragment] eski rengi saklıyor çünkü o normal bir fragment ve
+     * doğrudan ACTIVITY'nin penceresini boyuyor.
+     */
+    private fun applyNavigationBarColor(window: android.view.Window) {
+        val background = androidx.core.content.ContextCompat.getColor(
+            requireContext(),
+            R.color.background_color,
+        )
+        // Bu iki bayrak olmadan renk hiç uygulanmıyor: ekranın teması eski bir platform
+        // teması ([android.R.style.Theme_Light_NoTitleBar_Fullscreen]) ve orada pencere
+        // sistem çubuklarının zeminini çizmiyor, çubuk sistemin kendi (siyah) renginde
+        // kalıyor.
+        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.navigationBarColor = background
+        window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(background))
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            // Sistem, şeffaf çubuğun altına okunabilirlik için yarı saydam bir perde
+            // çiziyor; rengi zeminle aynı tutmak istediğimiz için o perde istenmiyor.
+            window.isNavigationBarContrastEnforced = false
+        }
+        // Zemin koyu; simgeler açık kalmalı. Dialog'un teması AÇIK tema olduğu için
+        // bazı sürümlerde koyu simge isteniyor ve çubuk okunmaz hale geliyordu.
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+            .isAppearanceLightNavigationBars = false
     }
 
     override fun onCreateView(
