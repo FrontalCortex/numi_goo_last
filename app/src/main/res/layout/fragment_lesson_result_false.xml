@@ -7,8 +7,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="center_horizontal"
+    android:background="@color/background_color"
     android:layout_gravity="center"
-    android:background="#101820"
     android:paddingHorizontal="24dp"
     android:paddingTop="80dp">
 
