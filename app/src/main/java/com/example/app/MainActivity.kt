@@ -2926,10 +2926,22 @@ class MainActivity : AppCompatActivity() {
     private fun isAskQuestionPromoEligible(): Boolean {
         if (FirebaseAuth.getInstance().currentUser == null) return false
         if (energyManager.getUserRole() == "TEACHER") return false
+        // Test anahtarı: plan ve cihaz kredisi kapılarını atlar. Release'de hep false,
+        // sebebi [AskQuestionPromoDebug]'da yazıyor.
+        if (AskQuestionPromoDebug.forceShow) return true
         val plan = energyManager.getUserPlan()
         if (plan == "Pro" || plan == "Premium") return false
         return WelcomeCreditEligibility.isEligible(applicationContext)
     }
+
+    /**
+     * Tanıtımın açılması için gereken LESSON dönüş sayısı.
+     *
+     * Test anahtarı açıkken 1: her dönüşte açılsın, üç ders çözmek gerekmesin.
+     */
+    private val askQuestionPromoThreshold: Int
+        get() = if (AskQuestionPromoDebug.forceShow) 1
+        else ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD
 
     fun isAskQuestionPromoPending(): Boolean = askQuestionPromoPendingLock
 
@@ -2942,7 +2954,7 @@ class MainActivity : AppCompatActivity() {
         if (!::binding.isInitialized || askQuestionPromoPendingLock) return
         if (!isAskQuestionPromoEligible()) return
         val nextCount = GlobalValues.peekAskQuestionPromoLessonReturnCount(this) + 1
-        if (nextCount < ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD) return
+        if (nextCount < askQuestionPromoThreshold) return
 
         askQuestionPromoPendingLock = true
         logMapTouchDiag("askQuestionPromo", "LOCK", "caller=$caller nextCount=$nextCount")
@@ -2986,7 +2998,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
-        if (count < ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD) {
+        if (count < askQuestionPromoThreshold) {
             releaseAskQuestionPromoLock("belowThreshold:$caller")
             return
         }
