@@ -3709,18 +3709,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Sandık kapanırken zemini DEVİR TESLİM olarak kaldırır.
+     * Ders sonrası bir ekran KAPANMAYA BAŞLARKEN zemini devir teslim olarak kaldırır.
      *
      * ## Neden koşulsuz
-     * Sandık kapanışı 300 ms sağa kayma ve bu sırada solda bilerek harita gösteriliyordu
-     * (bkz. NewChestFragment). O anda kuyrukta henüz hiçbir şey "yolda" görünmüyor —
-     * rozet kontrolü daha başlamamış — dolayısıyla koşullu kaldırma işe yaramıyordu.
+     * Kapanış bir kayma animasyonu ve bu sırada arkada bilerek harita gösteriliyordu
+     * (bkz. NewChestFragment, LessonResult). O anda kuyrukta henüz hiçbir şey "yolda"
+     * görünmüyor — rozet kontrolü daha başlamamış — dolayısıyla koşullu kaldırma işe
+     * yaramıyordu.
      *
      * Mantık tersine çevrildi: artık haritayı KAPATMAYA çalışmıyoruz, ne göstereceğimiz
      * belli olana kadar HİÇ AÇMIYORUZ. Gösterilecek bir şey yoksa kuyruk bir sonraki
      * turunda zemini indiriyor ve harita yumuşakça geliyor.
+     *
+     * ## Ne zaman çağrılmalı
+     * Kapanış animasyonu BAŞLAMADAN ÖNCE. Animasyon bittikten sonra çağrılırsa zemin
+     * haritanın üstüne GEÇ geliyor: kullanıcı önce haritayı görüyor, sonra zemin kapatıyor,
+     * sonra tekrar açılıyor — tamamlanmış bir dersin sonuç ekranında yaşanan buydu.
+     *
+     * @param caller Log'da görünecek çağrı yeri.
      */
-    fun raisePostLessonBackdropForChestHandoff() {
+    fun raisePostLessonBackdropForHandoff(caller: String) {
         // Devir teslim penceresi: bu süre boyunca kuyruk "boş" görünse bile zemin inmiyor.
         //
         // Bu olmadan devir teslim kendi kuralımıza takılıyordu: zemin kalkıyor, hemen
@@ -3733,7 +3741,7 @@ class MainActivity : AppCompatActivity() {
         postLessonHandoffUntilMs =
             android.os.SystemClock.elapsedRealtime() + POST_LESSON_HANDOFF_GRACE_MS
         acquirePostLessonQueueTouchLock(force = true)
-        pumpPostLessonQueue("chestHandoff")
+        pumpPostLessonQueue(caller)
     }
 
     /** Devir teslim penceresinin bitiş anı (monoton saat); 0 = pencere kapalı. */

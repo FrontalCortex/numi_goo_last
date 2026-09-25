@@ -186,9 +186,22 @@ class LessonResult : Fragment() {
                         )
                     }
                 }
+                // Zemin, kayma BAŞLAMADAN kalkıyor.
+                //
+                // Eskiden zemini ancak completeMapReturn kaldırıyordu, yani animasyon
+                // BİTTİKTEN sonra. Bu ekran kayarken arkasında harita duruyordu ve sıra
+                // şöyle oluyordu: harita görünür → zemin üstünü kapatır → zemin iner →
+                // harita tekrar görünür. Kullanıcının gördüğü, zeminin haritadan SONRA
+                // anlık parlaması.
+                //
+                // Başarısızlık ekranı ([LessonResultFalse]) bu sorunu hiç yaşamıyor çünkü
+                // kayma animasyonu yok: kendini anında kaldırıp haritaya dönüyor, zemin de
+                // harita hiç boyanmadan kalkmış oluyor.
+                main?.raisePostLessonBackdropForHandoff("LessonResult.claimStepFinish")
                 val rootView = binding.root
                 rootView.animate()
-                    .translationX(rootView.width.toFloat())
+                    // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                    .translationX(-rootView.width.toFloat())
                     .setDuration(EXIT_ANIM_DURATION_MS)
                     .withEndAction { completeMapReturn() }
                     .start()
@@ -204,9 +217,11 @@ class LessonResult : Fragment() {
                 chestFragment.arguments = args
                 (activity as? MainActivity)?.showResultOverlayHost()
                 // ChestFragment kendi ekranını göstermiyor (bkz. ChestFragment), bu yüzden onun
-                // girişine animasyon vermiyoruz; sadece LessonResult sağa kayarak kapanıyor.
+                // girişine animasyon vermiyoruz; sadece LessonResult sola kayarak kapanıyor.
+                // Sağa kayıyordu: ardından gelen NewChestFragment de SAĞDAN girdiği için
+                // ikisi aynı kenarda çakışıyordu.
                 parentFragmentManager.beginTransaction()
-                    .setCustomAnimations(0, R.anim.slide_out_right)
+                    .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(R.id.resultFragmentContainer, chestFragment)
                     .remove(this@LessonResult)
                     .commitNowAllowingStateLoss()

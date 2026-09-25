@@ -222,9 +222,19 @@ class ChestResult : Fragment() {
                                 }
                             }
                         }
+                        // Zemin, kayma BAŞLAMADAN kalkıyor; bkz. [LessonResult]'taki aynı
+                        // düzeltme. Zemini completeMapReturn'e bırakmak, yani animasyon
+                        // BİTTİKTEN sonraya, haritanın önce görünüp sonra zeminle
+                        // kapatılmasına yol açıyor.
+                        //
+                        // Aşağıdaki rozet dalı zaten [raisePostLessonQueueOverlayEarly]
+                        // çağırıyor ama o yalnızca belirli bölümlerde ve KOŞULLU çalışıyor;
+                        // buradaki kaldırma koşulsuz ve her dönüşü kapsıyor.
+                        main?.raisePostLessonBackdropForHandoff("ChestResult.claim")
                         val rootView = binding.root
                         rootView.animate()
-                            .translationX(rootView.width.toFloat())
+                            // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                            .translationX(-rootView.width.toFloat())
                             .setDuration(300L)
                             .withEndAction { completeMapReturn() }
                             .start()

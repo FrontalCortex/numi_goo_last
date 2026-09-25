@@ -691,7 +691,7 @@ class NewChestFragment : Fragment() {
             // görünüyor ve rozet gelene kadar öyle kalıyordu. Artık harita, ne göstereceğimiz
             // belli olana kadar hiç açılmıyor; gösterilecek bir şey yoksa kuyruk zemini
             // indirip haritayı yumuşakça getiriyor.
-            (activity as? MainActivity)?.raisePostLessonBackdropForChestHandoff()
+            (activity as? MainActivity)?.raisePostLessonBackdropForHandoff("chestHandoff")
             var closeHandled = false
             val finishClose: () -> Unit = {
                 if (!closeHandled) {
