@@ -1140,6 +1140,8 @@ class TasksFragment : Fragment() {
         val contentView = LayoutInflater.from(requireContext())
             .inflate(R.layout.panel_cup_path, null)
         dialog.setContentView(contentView)
+        // Ödül satırı ağdan geliyor; veri gelene kadar kartlarla aynı gri.
+        applyCupPathRewardLoadingState(contentView)
 
         val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
         startEnergyUpdateTimer(contentView, energyManager)
@@ -2038,6 +2040,8 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         val contentView = LayoutInflater.from(requireContext())
             .inflate(R.layout.panel_cup_path, null)
         dialog.setContentView(contentView)
+        // Ödül satırı ağdan geliyor; veri gelene kadar kartlarla aynı gri.
+        applyCupPathRewardLoadingState(contentView)
         
         val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
         startEnergyUpdateTimer(contentView, energyManager)
@@ -2251,6 +2255,41 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
      * sayısının yanındaki +N / -N ile aynı anda ve aynı sürede eski değerden yenisine akar.
      * Kupa düşmüşse çubuk geri çekilir.
      */
+    /**
+     * Ödül satırını (çubuk + sandık) veri gelene kadar gri gösterir.
+     *
+     * ## Neden
+     * Kartların kendisi yüklenirken zaten gri duruyor ama çubukla sandık durmuyordu: sandık
+     * tam renkli, çubuğun üstündeki yazı ise XML'deki yer tutucuyu ("200 / 300") gösteriyordu.
+     * Yani kullanıcıya bir an UYDURMA bir ilerleme gösteriliyordu.
+     *
+     * ## Ne yapıyor
+     * Sandık kartlardakiyle aynı gri ([R.color.lesson_locked]) filtreye alınıyor, yazı ve
+     * dolgu gizleniyor (çubuk boş kalıyor, zemini zaten nötr), dokunma kapatılıyor — veri
+     * yokken sandığa basmanın anlamı yok.
+     *
+     * Temizleme [bindCupPathRewardCard]'ın başında; yani gri yalnızca o kartın verisi
+     * gerçekten geldiğinde kalkıyor. Veri hiç gelmezse kart gri kalıyor ve bu doğru:
+     * bilmediğimiz bir ilerlemeyi çizmektense boş bırakmak dürüst olanı.
+     */
+    private fun applyCupPathRewardLoadingState(root: View) {
+        val locked = ContextCompat.getColor(root.context, R.color.lesson_locked)
+        cupPathRewardViews.forEach { views ->
+            root.findViewById<View>(views.fillId)?.visibility = View.INVISIBLE
+            root.findViewById<View>(views.shineId)?.visibility = View.INVISIBLE
+            root.findViewById<TextView>(views.textId)?.visibility = View.INVISIBLE
+            root.findViewById<View>(views.zoneId)?.apply {
+                isClickable = false
+                setOnClickListener(null)
+            }
+            root.findViewById<ImageView>(views.chestId)?.apply {
+                setColorFilter(locked, android.graphics.PorterDuff.Mode.SRC_IN)
+                isClickable = false
+                setOnClickListener(null)
+            }
+        }
+    }
+
     private fun bindCupPathRewards(
         root: View,
         dialog: android.app.Dialog,
@@ -2322,6 +2361,12 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         val shine = root.findViewById<View>(views.shineId) ?: return
         val text = root.findViewById<TextView>(views.textId) ?: return
         val chest = root.findViewById<ImageView>(views.chestId) ?: return
+
+        // Yükleme grisi kalkıyor; bkz. [applyCupPathRewardLoadingState].
+        chest.clearColorFilter()
+        fill.visibility = View.VISIBLE
+        shine.visibility = View.VISIBLE
+        text.visibility = View.VISIBLE
 
         // Sandık hak edilmemişken de net duruyor: soluk sandık "bozuk" izlenimi veriyordu.
         chest.alpha = 1f
