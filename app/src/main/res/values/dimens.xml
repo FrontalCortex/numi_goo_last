@@ -383,14 +383,25 @@
     <dimen name="daily_question_progress_height">28dp</dimen>
 
     <!--
+      Kupa yolu kartlarındaki sandık. Günlük soru kartındakinden AYRI tutuluyor
+      ([daily_question_progress_crystal_size]): oradaki kart tek ve geniş, buradaki altı kart
+      yan yana ve sandık ödülün varış noktası olduğu için daha görünür olmalı.
+      Değiştirilirse [cup_path_chest_center_offset] da birlikte değişmeli, formülü orada.
+    -->
+    <dimen name="cup_path_chest_size">60dp</dimen>
+
+    <!--
       Kupa yolu sandığının alt payı.
 
       Kapalı sandık çiziminin viewBox'ında üstte boşluk var: çizim, kutusunun tam ortasının
       yaklaşık %15 altında duruyor. Görünüm ortalanınca sandık çubuğun altına kaymış gibi
       duruyordu. Dikey olarak ortalanmış bir görünümde alt pay, görünümü payın YARISI kadar
-      yukarı taşır; 48dp'lik sandık için gereken 7.5dp'yi vermek üzere 15dp kullanılıyor.
+      yukarı taşır.
+
+      Formül: pay = sandık boyu × 0.15 × 2. [cup_path_chest_size] 60dp olduğu için 18dp.
+      Sandık boyu değişirse bu da değişmeli, yoksa sandık çubuğa göre kayar.
     -->
-    <dimen name="cup_path_chest_center_offset">15dp</dimen>
+    <dimen name="cup_path_chest_center_offset">18dp</dimen>
 
     <!-- Kupa yolu ekranındaki sandık için aynı düzeltme; orada kaydırma koddan yapılıyor. -->
     <dimen name="cup_path_road_chest_center_offset">7dp</dimen>

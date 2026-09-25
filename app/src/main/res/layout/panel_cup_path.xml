@@ -248,8 +248,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card1RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
@@ -421,8 +421,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card2RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
@@ -595,8 +595,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card3RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
@@ -767,8 +767,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card4RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
@@ -939,8 +939,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card5RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
@@ -1111,8 +1111,8 @@
                     -->
                     <ImageView
                         android:id="@+id/card6RewardChest"
-                        android:layout_width="@dimen/daily_question_progress_crystal_size"
-                        android:layout_height="@dimen/daily_question_progress_crystal_size"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
                         android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"

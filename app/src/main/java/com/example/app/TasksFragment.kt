@@ -1118,6 +1118,11 @@ class TasksFragment : Fragment() {
                                                 bottomSheet.findViewById<View>(R.id.card6View)?.let { card ->
                                                     card.isClickable = active6; card.isEnabled = active6
                                                 }
+
+                                                // Kartlar açıldı: çubuk ve sandık da aynı
+                                                // anda açılsın. Veri geldiyse hemen çizilir,
+                                                // gelmediyse cevabı gelince.
+                                                revealCupPathRewards(bottomSheet, dialog)
                                             }
                                         }
                                     }
@@ -1142,6 +1147,9 @@ class TasksFragment : Fragment() {
         dialog.setContentView(contentView)
         // Ödül satırı ağdan geliyor; veri gelene kadar kartlarla aynı gri.
         applyCupPathRewardLoadingState(contentView)
+        // Kartlar yüklenirken açılıyorsa ödül satırı da onları bekliyor; bkz.
+        // [cupPathCardsRevealed].
+        cupPathCardsRevealed = !isLoading
 
         val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
         startEnergyUpdateTimer(contentView, energyManager)
@@ -2042,6 +2050,9 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         dialog.setContentView(contentView)
         // Ödül satırı ağdan geliyor; veri gelene kadar kartlarla aynı gri.
         applyCupPathRewardLoadingState(contentView)
+        // Bu panelde kartların durumu çağıran tarafından hazır geliyor (aşağıda hemen
+        // çiziliyorlar), yani ödül satırının bekleyeceği bir şey yok.
+        cupPathCardsRevealed = true
         
         val energyManager = (requireActivity() as? MainActivity)?.getEnergyManager()
         startEnergyUpdateTimer(contentView, energyManager)
@@ -2272,6 +2283,33 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
      * gerçekten geldiğinde kalkıyor. Veri hiç gelmezse kart gri kalıyor ve bu doğru:
      * bilmediğimiz bir ilerlemeyi çizmektense boş bırakmak dürüst olanı.
      */
+    /**
+     * Kartlar gerçek durumlarıyla çizildi mi.
+     *
+     * Ödül satırı (çubuk + sandık) TEK bir okumayla geliyor
+     * ([CupPathRewardRepository.fetchStates]), kartların aktifliği ise ALTI bölümün ders
+     * listesini arka arkaya okuyarak. İkincisi doğal olarak çok daha geç bitiyor ve ödül
+     * satırı kartlardan önce renkleniyordu — panelin yarısı canlı, yarısı gri kalıyordu.
+     *
+     * Bu yüzden ödül verisi geldiğinde hemen çizilmiyor; [cupPathStatesCache]'e yazılıp
+     * bekletiliyor ve kartlar açıldığında [revealCupPathRewards] ile birlikte çiziliyor.
+     */
+    private var cupPathCardsRevealed = false
+
+    /**
+     * Kartlar açıldı: elde olan ödül verisiyle çubukları ve sandıkları da aç.
+     *
+     * Veri henüz gelmediyse hiçbir şey yapmıyor — [bindCupPathRewards] kendi cevabı
+     * geldiğinde zaten çizecek, çünkü o an bayrak artık açık.
+     */
+    private fun revealCupPathRewards(root: View, dialog: android.app.Dialog) {
+        cupPathCardsRevealed = true
+        cupPathRewardViews.forEach { views ->
+            val state = cupPathStatesCache[views.cupField] ?: return@forEach
+            bindCupPathRewardCard(root, views, state, dialog)
+        }
+    }
+
     private fun applyCupPathRewardLoadingState(root: View) {
         val locked = ContextCompat.getColor(root.context, R.color.lesson_locked)
         cupPathRewardViews.forEach { views ->
@@ -2356,6 +2394,10 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         dialog: android.app.Dialog,
         from: CupPathRewardRepository.CupPathState? = null,
     ) {
+        // Kartlar henüz açılmadıysa çizme; veri [cupPathStatesCache]'te bekliyor ve
+        // kartlar açılınca [revealCupPathRewards] buraya geri geliyor. Sebebi
+        // [cupPathCardsRevealed]'da.
+        if (!cupPathCardsRevealed) return
         val zone = root.findViewById<View>(views.zoneId) ?: return
         val fill = root.findViewById<View>(views.fillId) ?: return
         val shine = root.findViewById<View>(views.shineId) ?: return
