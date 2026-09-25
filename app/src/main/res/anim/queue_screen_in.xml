@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ders sonrası kuyruğundaki ekranların GİRİŞİ.
+  Ekran GİRİŞİ: sağdan kayarak.
+
+  Adı ders sonrası kuyruğundan geliyor ama kapsamı artık daha geniş: ders akışındaki
+  bütün ekranlar (tutorial, abaküs, körleme, soru paneli, sonuç, sandık, rozet) bu çifti
+  kullanıyor. Kural tek cümle: her ekran SAĞDAN girer, SOLA çıkar.
 
   Neden ayrı bir çizim: paylaşılan slide_in_right 500 ms sürüyor, alpha ile soluyor ve
   çıkış çizimleri 300 ms. Giren ekran yavaşça belirirken çıkan hızla gidiyor, üstelik

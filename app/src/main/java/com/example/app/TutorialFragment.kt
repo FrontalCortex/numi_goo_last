@@ -1373,8 +1373,8 @@ class TutorialFragment : Fragment() {
                 // Panel bitti — asıl derse geçiş
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,
-                        R.anim.slide_out_right
+                        R.anim.queue_screen_in,
+                        R.anim.queue_screen_out
                     )
                     .replace(R.id.abacusFragmentContainer, fragment)
                     .commit()
@@ -1390,8 +1390,8 @@ class TutorialFragment : Fragment() {
 
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out
                 )
                 .add(R.id.abacusFragmentContainer, panelFragment)
                 .hide(this)
@@ -15823,16 +15823,16 @@ class TutorialFragment : Fragment() {
             if(lessonItem!!.isBlinding == true){
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.queue_screen_in,  // Giriş animasyonu
+                        R.anim.queue_screen_out  // Çıkış animasyonu
                     )
 
                     .replace(R.id.abacusFragmentContainer, blindingLessonFragment)  // fragment_container, ana layout'taki container ID'si
                     .commit()
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.queue_screen_in,  // Giriş animasyonu
+                        R.anim.queue_screen_out  // Çıkış animasyonu
                     )
 
                     .replace(R.id.abacusFragmentContainer, blindingLessonFragment)  // fragment_container, ana layout'taki container ID'si
@@ -15852,16 +15852,16 @@ class TutorialFragment : Fragment() {
             }else{
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.queue_screen_in,  // Giriş animasyonu
+                        R.anim.queue_screen_out  // Çıkış animasyonu
                     )
 
                     .replace(R.id.abacusFragmentContainer, abacusFragment)  // fragment_container, ana layout'taki container ID'si
                     .commit()
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
-                        R.anim.slide_in_left,  // Giriş animasyonu
-                        R.anim.slide_out_right  // Çıkış animasyonu
+                        R.anim.queue_screen_in,  // Giriş animasyonu
+                        R.anim.queue_screen_out  // Çıkış animasyonu
                     )
 
                     .replace(R.id.abacusFragmentContainer, abacusFragment)  // fragment_container, ana layout'taki container ID'si

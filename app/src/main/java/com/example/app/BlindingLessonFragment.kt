@@ -2060,7 +2060,7 @@ class BlindingLessonFragment : Fragment() {
         }
 
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+            .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
             .add(R.id.abacusFragmentContainer, fragment)
             .hide(this)
             .commit()
@@ -2208,8 +2208,8 @@ class BlindingLessonFragment : Fragment() {
         lessonResultFalse.arguments = lessonResultArgs(isChestFailure)
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFalse)
             .commit()
@@ -2246,8 +2246,8 @@ class BlindingLessonFragment : Fragment() {
         // Yeni fragment'ı abacus container'a ekle
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
@@ -2360,8 +2360,8 @@ class BlindingLessonFragment : Fragment() {
         lessonResultFragment.arguments = lessonResultArgs()
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFragment)
             .commit()

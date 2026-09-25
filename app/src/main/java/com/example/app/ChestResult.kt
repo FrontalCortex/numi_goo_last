@@ -175,8 +175,8 @@ class ChestResult : Fragment() {
                     if (hasMissionProgress) {
                         fm.beginTransaction()
                             .setCustomAnimations(
-                                R.anim.slide_in_left,
-                                R.anim.slide_out_left,
+                                R.anim.queue_screen_in,
+                                R.anim.queue_screen_out,
                             )
                             .replace(
                                 R.id.abacusFragmentContainer,
@@ -289,11 +289,17 @@ class ChestResult : Fragment() {
                 }
             } else {
                 parentFragmentManager.beginTransaction()
-                    // Bu ekran sola çıkıyor. ChestFragment kendi ekranını göstermiyor
-                    // (bkz. ChestFragment), asıl gelen NewChestFragment ve o SAĞDAN
-                    // giriyor; bu ekran animasyonsuz kaybolduğu için arada sert bir kesme
-                    // oluyordu.
-                    .setCustomAnimations(0, R.anim.queue_screen_out)
+                    // İKİSİ BİRDEN: gelen sağdan girer, giden sola çıkar.
+                    //
+                    // Girişe 0 vermek yetmiyordu: ChestFragment'in kendi düzeni
+                    // (fragment_chest.xml) tam ekran ve OPAK, aynı kapta bu ekranın
+                    // ÜSTÜNE ekleniyor. Animasyonsuz gelince çıkış kaymasını ilk karede
+                    // örtüyor ve ekran kaymadan yok olmuş gibi görünüyordu.
+                    //
+                    // ChestFragment kendi içeriğini göstermiyor (bkz. ChestFragment),
+                    // asıl gelen NewChestFragment ve o da sağdan giriyor. İkisi aynı
+                    // renkte ve aynı yönde olduğu için tek bir kayma gibi okunuyor.
+                    .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                     .replace(
                         R.id.abacusFragmentContainer,
                         ChestFragment().apply {

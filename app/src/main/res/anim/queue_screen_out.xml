@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ders sonrası kuyruğundaki ekranların ÇIKIŞI: sola itilerek.
+  Ekran ÇIKIŞI: sola itilerek. [queue_screen_in] ile çift; kapsamı orada anlatılıyor.
 
   Süresi queue_screen_in ile aynı; eğri hızlanan, çünkü çıkan ekran sahneyi bırakıyor,
   giren ekran ise yavaşlayarak yerine oturuyor. İkisi birlikte tek bir itme hareketi

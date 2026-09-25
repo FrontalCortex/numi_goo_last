@@ -1040,10 +1040,10 @@ class TasksFragment : Fragment() {
             requireActivity().findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
             requireActivity().supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left,
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right,
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                 )
                     .replace(R.id.abacusFragmentContainer, targetFragment)
                 .hide(this@TasksFragment)
@@ -1587,7 +1587,7 @@ class TasksFragment : Fragment() {
                 }
 
                 fm.beginTransaction()
-                    .setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
+                    .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                     .replace(R.id.abacusFragmentContainer, fragment)
                     .addToBackStack(null)
                     .commitAllowingStateLoss()

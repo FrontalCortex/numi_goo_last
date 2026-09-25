@@ -325,7 +325,10 @@ class TutorialQuestionPanelFragment : Fragment() {
     private fun proceedToLesson() {
         if (!isAdded) return
         parentFragmentManager.setFragmentResult("tutorialQuestionPanelResult", Bundle())
+        // Sola kayarak kapanıyor: ders ekranı sağdan geliyor, ikisi tek bir itme gibi
+        // okunuyor. Animasyonsuz kapanıyordu ve zincirdeki tek sert kesme buydu.
         parentFragmentManager.beginTransaction()
+            .setCustomAnimations(0, R.anim.queue_screen_out)
             .remove(this)
             .commit()
     }

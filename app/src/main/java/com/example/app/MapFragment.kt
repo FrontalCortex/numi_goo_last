@@ -1327,12 +1327,12 @@ class MapFragment : Fragment() {
             act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
             act.supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    android.R.anim.slide_in_left,
-                    android.R.anim.slide_out_right,
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                     // popEnter/popExit: LessonAdapter'daki aynı açılış yolunda olduğu gibi,
                     // geri tuşu/X ile kapanışta da kayarak kapansın.
-                    R.anim.slide_in_right,
-                    R.anim.slide_out_left,
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                 )
                 .replace(
                     R.id.abacusFragmentContainer,

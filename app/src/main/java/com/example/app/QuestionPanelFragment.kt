@@ -359,8 +359,11 @@ class QuestionPanelFragment : Fragment() {
         // İşimiz bittiğinde AbacusFragment'teki listener'a sinyal gönderiyoruz
         parentFragmentManager.setFragmentResult("questionPanelResult", Bundle())
 
-        // QuestionPanelFragment'ı kendi kendini kapattırıyoruz
+        // QuestionPanelFragment'ı kendi kendini kapattırıyoruz.
+        // Sola kayarak: sonuç ekranı sağdan geliyor, ikisi tek bir itme gibi okunuyor.
+        // Animasyonsuz kapanıyordu ve zincirdeki tek sert kesme buydu.
         parentFragmentManager.beginTransaction()
+            .setCustomAnimations(0, R.anim.queue_screen_out)
             .remove(this)
             .commit()
     }

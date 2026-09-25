@@ -267,14 +267,14 @@ class LessonAdapter(
                         act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
                         act.supportFragmentManager.beginTransaction()
                             .setCustomAnimations(
-                                android.R.anim.slide_in_left,
-                                android.R.anim.slide_out_right,
+                                R.anim.queue_screen_in,
+                                R.anim.queue_screen_out,
                                 // popEnter/popExit: geri tuşu/X ile kapatılırken de kayarak
                                 // kapansın — bunlar verilmezse pop varsayılan olarak animasyonsuz.
                                 // android.R.anim'de karşılığı olmadığı için uygulamanın kendi
                                 // res/anim/slide_in_right.xml ve slide_out_left.xml'i kullanılıyor.
-                                R.anim.slide_in_right,
-                                R.anim.slide_out_left,
+                                R.anim.queue_screen_in,
+                                R.anim.queue_screen_out,
                             )
                             .replace(
                                 R.id.abacusFragmentContainer,
@@ -361,14 +361,16 @@ class LessonAdapter(
             // Fragment container'ı görünür yap
             val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
             fragmentContainer.visibility = View.VISIBLE
-            val slideIn = android.R.anim.slide_in_left
-            val slideOut = android.R.anim.slide_out_right
+            // Sağdan girer, sola çıkar — uygulamadaki bütün ekran geçişleriyle aynı.
+            // android.R.anim.slide_in_left SOLDAN getiriyordu, yani zincirin tersi yöne.
+            val slideIn = R.anim.queue_screen_in
+            val slideOut = R.anim.queue_screen_out
             item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
             item.startStepNumber.also { lessonStep = it!! }
 
             (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     activity.supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
+                        .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
@@ -469,21 +471,23 @@ class LessonAdapter(
             }
             fragmentContainer.visibility = View.VISIBLE
 
-            val slideIn = android.R.anim.slide_in_left
-            val slideOut = android.R.anim.slide_out_right
+            // Sağdan girer, sola çıkar — uygulamadaki bütün ekran geçişleriyle aynı.
+            // android.R.anim.slide_in_left SOLDAN getiriyordu, yani zincirin tersi yöne.
+            val slideIn = R.anim.queue_screen_in
+            val slideOut = R.anim.queue_screen_out
             item.mapFragmentIndex.also { mapFragmentStepIndex = it!! }
             item.startStepNumber.also { lessonStep = it!! }
             if (item.isBlinding == true) {
                 if (item.tutorialIsFinish) {
                     fm.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
+                        .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 } else {
                     (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
+                        .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
@@ -491,14 +495,14 @@ class LessonAdapter(
             } else {
                 if (item.tutorialIsFinish) {
                     fm.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
+                        .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, AbacusFragment())
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
                 } else {
                     (main as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(true)
                     fm.beginTransaction()
-                        .setCustomAnimations(slideIn, slideOut)
+                        .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                         .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
                         .addToBackStack(null)
                         .commitAllowingStateLoss()
@@ -898,10 +902,12 @@ class LessonAdapter(
             raceItem.mapFragmentIndex?.let { mapFragmentStepIndex = it }
             raceItem.startStepNumber?.let { lessonStep = it }
 
-            val slideIn = android.R.anim.slide_in_left
-            val slideOut = android.R.anim.slide_out_right
+            // Sağdan girer, sola çıkar — uygulamadaki bütün ekran geçişleriyle aynı.
+            // android.R.anim.slide_in_left SOLDAN getiriyordu, yani zincirin tersi yöne.
+            val slideIn = R.anim.queue_screen_in
+            val slideOut = R.anim.queue_screen_out
             fm.beginTransaction()
-                .setCustomAnimations(slideIn, slideOut)
+                .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
                 .replace(R.id.abacusFragmentContainer, BlindingLessonFragment())
                 .addToBackStack(null)
                 .commitAllowingStateLoss()

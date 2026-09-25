@@ -3159,16 +3159,16 @@ class AbacusFragment : Fragment() {
         if(successRate < 10) {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out
                 )
                 .replace(R.id.abacusFragmentContainer, lessonResultFalse)
                 .commit()
         } else {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out
                 )
                 .replace(R.id.abacusFragmentContainer, lessonResultFragment)
                 .commit()
@@ -3215,7 +3215,7 @@ class AbacusFragment : Fragment() {
         }
 
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+            .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
             .add(R.id.abacusFragmentContainer, fragment)
             .hide(this)
             .commit()
@@ -3245,8 +3245,8 @@ class AbacusFragment : Fragment() {
 
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFalse)
             .commit()
@@ -3276,8 +3276,8 @@ class AbacusFragment : Fragment() {
         // Yeni fragment'ı abacus container'a ekle
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()

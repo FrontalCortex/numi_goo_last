@@ -171,8 +171,8 @@ class ChestFragment : Fragment() {
         // gösterilmiyor; görünen tek ekran NewChestFragment (kristal/sandık mini oyunu). ChestFragment'in
         // KENDİ root'unu burada invisible yapmıyoruz: NewChestFragment bir "post" ile (yani asenkron)
         // eklendiği için araya bir çizim (frame) girip arkadaki haritayı bir an gösterebiliyordu.
-        // fragment_chest.xml'in arka planı (#101820) NewChestFragment'in ilk açılış temasına
-        // (#141F23) çok yakın olduğu için bu kısa yükleme anı fark edilmiyor.
+        // fragment_chest.xml'in arka planı NewChestFragment'in ilk açılış temasıyla AYNI
+        // (@color/background_color) olduğu için bu kısa yükleme anı hiç fark edilmiyor.
         prepareHiddenRewardUi()
         setupClaimRewardButton()
         showCrystalBreakAtStart()

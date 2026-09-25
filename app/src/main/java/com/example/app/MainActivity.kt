@@ -1987,12 +1987,14 @@ class MainActivity : AppCompatActivity() {
         val fragment = AbacusFragment()
 
         // Animasyon için slide-in efekti
-        val slideIn = android.R.anim.slide_in_left
-        val slideOut = android.R.anim.slide_out_right
+        // Sağdan girer, sola çıkar — uygulamadaki bütün ekran geçişleriyle aynı.
+        // android.R.anim.slide_in_left SOLDAN getiriyordu, yani zincirin tersi yöne.
+        val slideIn = R.anim.queue_screen_in
+        val slideOut = R.anim.queue_screen_out
 
         // Fragment'ı container'a ekle
         supportFragmentManager.beginTransaction()
-            .setCustomAnimations(slideIn, slideOut)
+            .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
             .replace(R.id.abacusFragmentContainer, fragment)
             .addToBackStack(null)
             .commit()
@@ -2510,10 +2512,10 @@ class MainActivity : AppCompatActivity() {
         binding.abacusFragmentContainer.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, fragment)
             .apply { configure?.invoke(this) }
