@@ -241,7 +241,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -251,11 +257,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card1RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card1RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card1RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card1RewardZone" />
@@ -414,7 +420,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -424,11 +436,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card2RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card2RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card2RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card2RewardZone" />
@@ -588,7 +600,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -598,11 +616,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card3RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card3RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card3RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card3RewardZone" />
@@ -760,7 +778,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -770,11 +794,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card4RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card4RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card4RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card4RewardZone" />
@@ -932,7 +956,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -942,11 +972,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card5RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card5RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card5RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card5RewardZone" />
@@ -1104,7 +1134,13 @@
                     <!--
                       Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
                       noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
-                      böyle duruyor). Eksi sağ pay onu çubuğun ucundan biraz taşırıyor.
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
 
                       Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
                       olmasaydı sandık çubuğun altına kaymış görünüyordu.
@@ -1114,11 +1150,11 @@
                         android:layout_width="@dimen/cup_path_chest_size"
                         android:layout_height="@dimen/cup_path_chest_size"
                         android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
-                        android:layout_marginEnd="-8dp"
                         android:contentDescription="@null"
                         android:elevation="6dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card6RewardZone"
                         app:layout_constraintEnd_toEndOf="@id/card6RewardZone"
                         app:layout_constraintTop_toTopOf="@id/card6RewardZone"
                         app:layout_constraintBottom_toBottomOf="@id/card6RewardZone" />

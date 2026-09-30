@@ -2357,6 +2357,27 @@ class MainActivity : AppCompatActivity() {
     internal fun isForcingAbacusOverlayDismiss(): Boolean =
         forcingAbacusOverlayDismissForSeasonGate
 
+    /**
+     * Bu fragment `abacusFragmentContainer`/`resultFragmentContainer` üstünde TAM EKRAN
+     * duran bir overlay mi.
+     *
+     * Liste dört ayrı yerde iş görüyor ve dördü de aynı cevabı istiyor:
+     *   • sezon kapısı bunlardan biri açıkken gösterilmiyor,
+     *   • ders sonrası kuyruğu bunlardan birinin üstüne ekran açmıyor,
+     *   • harita ilerleme animasyonları bunlar açıkken tüketilmiyor,
+     *   • [purgeAbacusOverlayHosts] haritaya/Tasks'a dönerken bunları KALDIRIYOR.
+     *
+     * Son maddesi listeyi eksik bırakmanın bedelini anlatıyor: listede olmayan bir
+     * fragment kaldırılmıyor, yalnızca kabı gizleniyor. Fragment FragmentManager'da
+     * kalıyor ve kap bir sonraki sefer görünür olduğunda -- yeni bir ekran kayarak
+     * gelirken -- eski görünüm bir anlığına ortaya çıkıyor. CupPathRoadFragment'te tam
+     * olarak bu yaşandı: telefonun orta tuşuyla çıkıp dönünce ekran kapanıyor ama
+     * kaldırılmıyordu.
+     *
+     * Yani buraya eklenmesi gereken ölçüt "ders akışının parçası mı" değil, "o kapta tam
+     * ekran duruyor mu". [AbacusPracticeFragment] bilerek dışarıda: kabı açıkken
+     * temizlenmemesi için [reconcileAbacusOverlayWhenTasksIsBase] onu ayrıca ayıklıyor.
+     */
     private fun fragmentBlocksSeasonLeaderboardGate(f: Fragment?): Boolean = when (f) {
         is TutorialFragment,
         is AbacusFragment,
@@ -2369,6 +2390,9 @@ class MainActivity : AppCompatActivity() {
         is NewChestFragment,
         is RecordFragment,
         is CreateQuestionFragment,
+        is CupPathRoadFragment,
+        is QuestionPanelFragment,
+        is TutorialQuestionPanelFragment,
         -> true
         else -> false
     }

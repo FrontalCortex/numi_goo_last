@@ -41,14 +41,17 @@
                 android:contentDescription="@null" />
 
             <!--
-              Kullanıcının BULUNDUĞU satırda şeridin üstten aşağı dolan kısmı; yüksekliği
-              koddan veriliyor. Diğer satırlarda gizli.
+              Kullanıcının BULUNDUĞU satırda şeridin dolan kısmı; yüksekliği koddan
+              veriliyor, diğer satırlarda gizli.
+
+              ALTTAN yukarı doluyor: liste ters dizili, yani kupa aşağıdan yukarı artıyor
+              ve ilerleme de o yönde akıyor.
             -->
             <View
                 android:id="@+id/milestoneTrackFill"
                 android:layout_width="4dp"
                 android:layout_height="0dp"
-                android:layout_gravity="top|center_horizontal"
+                android:layout_gravity="bottom|center_horizontal"
                 android:contentDescription="@null"
                 android:visibility="gone" />
 

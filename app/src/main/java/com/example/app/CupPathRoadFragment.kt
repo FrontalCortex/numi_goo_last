@@ -84,8 +84,11 @@ class CupPathRoadFragment : Fragment() {
         binding.btnCupPathRoadBack.setOnClickListener { closeFragment() }
 
         binding.tvCupPathRoadTitle.text = CupPathRewardRepository.titleOf(cupField)
+        // Ters dizilim: kupa AŞAĞIDAN YUKARI artıyor, yani ilk eşik (300) en altta.
+        // Yukarı tırmanmak ilerlemeyi anlatıyor; aşağı inmek gerilemeyi çağrıştırıyordu.
+        // Liste de kendiliğinden alt uçta açılıyor, yani kullanıcının başlangıcında.
         binding.cupPathRoadList.layoutManager =
-            LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
+            LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, true)
         binding.cupPathRoadList.adapter = adapter
 
         // Sandıktan dönüldü: liste elimizdeki verilerle zaten dolu, o yüzden okuma
@@ -118,11 +121,6 @@ class CupPathRoadFragment : Fragment() {
         binding.cupPathRoadLoading.visibility = View.GONE
 
         binding.tvCupPathRoadScore.text = state.cupScore.toString()
-        binding.tvCupPathRoadHint.text = when {
-            state.pendingChests > 1 -> "${state.pendingChests} sandık seni bekliyor"
-            state.pendingChests == 1 -> "Bir sandık seni bekliyor"
-            else -> "Sonraki sandık için ${state.nextMilestone - state.cupScore} kupa"
-        }
 
         val milestones = state.milestones()
         adapter.submit(milestones, state)
@@ -141,8 +139,9 @@ class CupPathRoadFragment : Fragment() {
             }.takeIf { it >= 0 } ?: (milestones.size - 1)
             if (index >= 0) {
                 scrolledToCurrent = true
-                // Üstte bir satırlık pay bırakılıyor ki kullanıcı geçtiği eşiği de görsün
-                // ve listenin yukarı doğru devam ettiği anlaşılsın.
+                // Bir satırlık pay bırakılıyor ki kullanıcı geçtiği eşiği de görsün ve
+                // yolun yukarı doğru devam ettiği anlaşılsın. Ters dizilimde bu satır
+                // ekranın ALT ucuna yerleşiyor, aranan eşik de hemen üstüne.
                 layoutManager?.scrollToPositionWithOffset(maxOf(0, index - 1), 0)
             }
         }
