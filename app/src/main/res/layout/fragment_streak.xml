@@ -307,6 +307,26 @@
                         android:layout_marginTop="@dimen/mission_progress_shine_top"
                         android:contentDescription="@null" />
 
+                    <!--
+                      Çubuğun üstünde "1 / 3" gibi ilerleme yazısı.
+
+                      Çubuğun doluluğu kaçıncı günde olunduğunu yaklaşık gösteriyor ama
+                      SAYIYI göstermiyor; 3 günlük bir meydan okumada birinci ile ikinci
+                      günün doluluğu gözle ayırt edilemiyordu. Kupa yolu ve günlük soru
+                      çubuklarında da aynı yazı var, yani aynı dili konuşuyorlar.
+                    -->
+                    <TextView
+                        android:id="@+id/streakChallengeProgressText"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:elevation="2dp"
+                        android:gravity="center"
+                        android:outlineProvider="none"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="1 / 3" />
+
                 </FrameLayout>
 
                 <TextView
