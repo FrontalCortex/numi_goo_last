@@ -1,68 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Kupa yolundaki tek bir eşik: yolu temsil eden şerit, üstünde sandık, altında kupa sayısı.
+  Kupa yolundaki tek bir eşik — DİKEY listenin bir satırı.
 
-  Şerit öğenin tamamı kadar geniş; öğeler yan yana dizilince kesintisiz bir yol oluşuyor.
-  Şeridin rengi ve sandığın durumu koddan veriliyor (bkz. CupPathRoadFragment).
+  Düzen soldan sağa: yol şeridi (dikey çizgi + eşik noktası), eşiğin kupa sayısı, en sağda
+  o eşikte kazanılacak sandık.
+
+  Şerit satırın tamamı kadar uzun; satırlar alt alta dizilince kesintisiz bir yol oluşuyor.
+  Renkler ve sandığın durumu koddan veriliyor (bkz. CupPathRoadFragment).
+
+  ## Neden dikey
+  Yolda 300'den 10000'e kadar eşik var. Yatay listede baştan sona gitmek metrelerce parmak
+  hareketi demekti ve aynı anda yalnızca birkaç eşik görünüyordu. Dikeyde hem başparmağın
+  doğal yönü kullanılıyor hem de ekrana beş altı eşik sığıyor.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="88dp"
-    android:layout_height="wrap_content"
-    android:gravity="center_horizontal"
-    android:orientation="vertical">
+    android:id="@+id/milestoneRow"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/cup_path_road_row_height">
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="80dp">
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp">
 
-        <View
-            android:id="@+id/milestoneTrack"
-            android:layout_width="match_parent"
-            android:layout_height="8dp"
-            android:layout_gravity="center_vertical"
-            android:contentDescription="@null" />
-
+        <!-- Yol şeridi: dikey çizgi + eşik noktası -->
         <FrameLayout
-            android:id="@+id/milestoneChestBox"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_gravity="center">
+            android:layout_width="44dp"
+            android:layout_height="match_parent">
 
-            <ImageView
-                android:id="@+id/milestoneChest"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+            <View
+                android:id="@+id/milestoneTrack"
+                android:layout_width="4dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:contentDescription="@null" />
+
+            <!--
+              Kullanıcının BULUNDUĞU satırda şeridin üstten aşağı dolan kısmı; yüksekliği
+              koddan veriliyor. Diğer satırlarda gizli.
+            -->
+            <View
+                android:id="@+id/milestoneTrackFill"
+                android:layout_width="4dp"
+                android:layout_height="0dp"
+                android:layout_gravity="top|center_horizontal"
+                android:contentDescription="@null"
+                android:visibility="gone" />
+
+            <View
+                android:id="@+id/milestoneNode"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
-                android:adjustViewBounds="true"
-                android:contentDescription="@null"
-                android:scaleType="fitCenter"
-                android:src="@drawable/new_chest_close_ic1" />
-
-            <ImageView
-                android:id="@+id/milestoneDone"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="top|end"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_done"
-                android:visibility="gone"
-                app:tint="#21D07A" />
+                android:background="@drawable/bg_cup_path_node"
+                android:contentDescription="@null" />
 
         </FrameLayout>
 
-    </FrameLayout>
+        <!--
+          Eşiğin kupa sayısı.
 
+          Şeritten uzakta duruyor çünkü aradaki boşluk "şu an buradasın" etiketinin yeri:
+          etiket şeridin üstüne biniyor ve dar bir boşlukta bu sayının üstüne taşardı.
+        -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="34dp"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/milestoneCupIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:adjustViewBounds="true"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/infinity_cup_ic" />
+
+            <TextView
+                android:id="@+id/milestoneValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:includeFontPadding="false"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="1500" />
+
+        </LinearLayout>
+
+        <!-- Ödül: sandık ve durumu -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:id="@+id/milestoneChestBox"
+                android:layout_width="60dp"
+                android:layout_height="60dp">
+
+                <ImageView
+                    android:id="@+id/milestoneChest"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
+                    android:layout_gravity="center"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/new_chest_close_ic1" />
+
+                <ImageView
+                    android:id="@+id/milestoneDone"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="top|end"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_done"
+                    android:visibility="gone"
+                    app:tint="#21D07A" />
+
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/milestoneStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:minHeight="14dp"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                tools:text="HAZIR" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!--
+      "Şu an buradasın" etiketi. Şeridin üstünde duruyor ve yalnızca kullanıcının
+      bulunduğu satırda görünüyor; o satırın eşik noktasını kapatması kasıtlı — kullanıcı
+      o noktada DEĞİL, ona doğru ilerliyor.
+    -->
     <LinearLayout
+        android:id="@+id/milestoneMarker"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_gravity="start|center_vertical"
+        android:background="@drawable/bg_cup_path_marker"
+        android:elevation="4dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingStart="7dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="9dp"
+        android:paddingBottom="3dp"
+        android:visibility="gone">
 
         <ImageView
-            android:id="@+id/milestoneCupIcon"
             android:layout_width="14dp"
             android:layout_height="14dp"
             android:adjustViewBounds="true"
@@ -71,27 +175,16 @@
             android:src="@drawable/infinity_cup_ic" />
 
         <TextView
-            android:id="@+id/milestoneValue"
+            android:id="@+id/milestoneMarkerValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
+            android:layout_marginStart="4dp"
             android:includeFontPadding="false"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textColor="#141F23"
+            android:textSize="13sp"
             android:textStyle="bold"
-            tools:text="300" />
+            tools:text="9822" />
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/milestoneStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:includeFontPadding="false"
-        android:minHeight="16dp"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        tools:text="HAZIR" />
-
-</LinearLayout>
+</FrameLayout>

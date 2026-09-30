@@ -52,6 +52,11 @@ class CupPathRoadFragment : Fragment() {
      * Kapalı sandık çizimi kendi kutusunun ortasının altında duruyor; yolun şeridine göre
      * ortalanması için bu kadar yukarı kaydırılıyor. Açık sandıkta bu sorun yok.
      */
+    /** Satır yüksekliği; yarım dolan şeridin hesabı buna dayanıyor. */
+    private val rowHeightPx: Int by lazy {
+        resources.getDimensionPixelSize(R.dimen.cup_path_road_row_height)
+    }
+
     private val closedChestLiftPx: Float by lazy {
         resources.getDimensionPixelSize(R.dimen.cup_path_road_chest_center_offset).toFloat()
     }
@@ -80,7 +85,7 @@ class CupPathRoadFragment : Fragment() {
 
         binding.tvCupPathRoadTitle.text = CupPathRewardRepository.titleOf(cupField)
         binding.cupPathRoadList.layoutManager =
-            LinearLayoutManager(requireContext(), RecyclerView.HORIZONTAL, false)
+            LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
         binding.cupPathRoadList.adapter = adapter
 
         // Sandıktan dönüldü: liste elimizdeki verilerle zaten dolu, o yüzden okuma
@@ -119,25 +124,8 @@ class CupPathRoadFragment : Fragment() {
             else -> "Sonraki sandık için ${state.nextMilestone - state.cupScore} kupa"
         }
 
-        binding.tvCupPathRoadProgress.text = state.label
-        // Dolgu, parlama ve renkler karttakiyle aynı yardımcıdan geçiyor; genişlik ölçüm
-        // bitmeden bilinmediği için post ile ölçüm sonrasına bırakılıyor.
-        val zone = binding.cupPathRoadProgressZone
-        val fill = binding.cupPathRoadProgressFill
-        val shine = binding.cupPathRoadProgressShine
-        zone.post {
-            if (_binding == null || zone.width <= 0) return@post
-            applyDailyQuestionProgressOverlayNow(
-                widthHost = zone,
-                fill = fill,
-                shine = shine,
-                percent = state.fraction * 100f,
-                complete = state.claimable,
-            )
-        }
-
         val milestones = state.milestones()
-        adapter.submit(milestones)
+        adapter.submit(milestones, state)
 
         val layoutManager = binding.cupPathRoadList.layoutManager as? LinearLayoutManager
         val restore = pendingScrollMilestone
@@ -153,8 +141,8 @@ class CupPathRoadFragment : Fragment() {
             }.takeIf { it >= 0 } ?: (milestones.size - 1)
             if (index >= 0) {
                 scrolledToCurrent = true
-                // Sola bir öğelik pay bırakılıyor ki kullanıcı geçtiği eşiği de görsün ve
-                // listenin devam ettiği anlaşılsın.
+                // Üstte bir satırlık pay bırakılıyor ki kullanıcı geçtiği eşiği de görsün
+                // ve listenin yukarı doğru devam ettiği anlaşılsın.
                 layoutManager?.scrollToPositionWithOffset(maxOf(0, index - 1), 0)
             }
         }
@@ -224,10 +212,19 @@ class CupPathRoadFragment : Fragment() {
 
         private var items: List<CupPathRewardRepository.Milestone> = emptyList()
 
-        fun submit(newItems: List<CupPathRewardRepository.Milestone>) {
+        /** Satırların "şu an buradasın" etiketini çizebilmesi için güncel durum. */
+        private var state: CupPathRewardRepository.CupPathState? = null
+
+        fun submit(
+            newItems: List<CupPathRewardRepository.Milestone>,
+            newState: CupPathRewardRepository.CupPathState,
+        ) {
             items = newItems
+            state = newState
             notifyDataSetChanged()
         }
+
+        fun currentState(): CupPathRewardRepository.CupPathState? = state
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MilestoneHolder {
             val view = LayoutInflater.from(parent.context)
@@ -244,13 +241,18 @@ class CupPathRoadFragment : Fragment() {
         fun indexOfMilestone(milestone: Int): Int = items.indexOfFirst { it.cupValue == milestone }
 
         override fun onBindViewHolder(holder: MilestoneHolder, position: Int) {
-            holder.bind(items[position])
+            holder.bind(items[position], currentState())
         }
     }
 
     private inner class MilestoneHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
+        private val row: View = itemView.findViewById(R.id.milestoneRow)
         private val track: View = itemView.findViewById(R.id.milestoneTrack)
+        private val trackFill: View = itemView.findViewById(R.id.milestoneTrackFill)
+        private val node: View = itemView.findViewById(R.id.milestoneNode)
+        private val marker: View = itemView.findViewById(R.id.milestoneMarker)
+        private val markerValue: TextView = itemView.findViewById(R.id.milestoneMarkerValue)
         private val chestBox: View = itemView.findViewById(R.id.milestoneChestBox)
         private val chest: ImageView = itemView.findViewById(R.id.milestoneChest)
         private val done: ImageView = itemView.findViewById(R.id.milestoneDone)
@@ -258,7 +260,10 @@ class CupPathRoadFragment : Fragment() {
         private val value: TextView = itemView.findViewById(R.id.milestoneValue)
         private val status: TextView = itemView.findViewById(R.id.milestoneStatus)
 
-        fun bind(milestone: CupPathRewardRepository.Milestone) {
+        fun bind(
+            milestone: CupPathRewardRepository.Milestone,
+            state: CupPathRewardRepository.CupPathState?,
+        ) {
             value.text = milestone.cupValue.toString()
 
             // Eşiğin sandığı: 1000'in katları destansı, 500'ün katları ender, gerisi sıradan.
@@ -268,8 +273,19 @@ class CupPathRoadFragment : Fragment() {
 
             val reached = milestone.status != CupPathRewardRepository.MilestoneStatus.LOCKED
             track.setBackgroundColor(if (reached) COLOR_ROAD_DONE else COLOR_ROAD_TODO)
+            node.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (reached) COLOR_ROAD_DONE else COLOR_ROAD_TODO
+            )
             value.setTextColor(if (reached) COLOR_TEXT else COLOR_TEXT_DIM)
             cupIcon.alpha = if (reached) 1f else 0.5f
+
+            // Ulaşılmış satırların zemini bir tık açık: sınır iki çizgi rengini
+            // karşılaştırmaktan daha kolay okunuyor, çocuk kullanıcı için özellikle.
+            row.setBackgroundResource(
+                if (reached) R.drawable.bg_cup_path_row_reached else 0
+            )
+
+            bindCurrentMarker(milestone, state)
 
             when (milestone.status) {
                 CupPathRewardRepository.MilestoneStatus.CLAIMED -> {
@@ -303,6 +319,37 @@ class CupPathRoadFragment : Fragment() {
             }
 
             itemView.setOnClickListener { onMilestoneTapped(milestone) }
+        }
+
+        /**
+         * "Şu an buradasın" etiketi ve şeridin yarım dolan kısmı.
+         *
+         * Yalnızca kullanıcının İLERLEDİĞİ eşikte (sıradaki alınmamış eşik) görünüyor;
+         * yol bittiyse hiç görünmüyor.
+         *
+         * Dolgu yüksekliği satırın SABİT yüksekliğinden hesaplanıyor, ölçümden değil:
+         * ölçüme dayanan bir hesap `post` ile ertelenirdi ve satır o arada geri
+         * dönüştürülürse yanlış satıra uygulanırdı.
+         */
+        private fun bindCurrentMarker(
+            milestone: CupPathRewardRepository.Milestone,
+            state: CupPathRewardRepository.CupPathState?,
+        ) {
+            val isCurrent = state != null &&
+                !state.finished &&
+                milestone.cupValue == state.nextMilestone
+            if (!isCurrent || state == null) {
+                marker.visibility = View.GONE
+                trackFill.visibility = View.GONE
+                return
+            }
+            marker.visibility = View.VISIBLE
+            markerValue.text = state.cupScore.toString()
+
+            val filled = (rowHeightPx * state.fraction).toInt().coerceIn(0, rowHeightPx)
+            trackFill.visibility = if (filled > 0) View.VISIBLE else View.GONE
+            trackFill.layoutParams = trackFill.layoutParams.apply { height = filled }
+            trackFill.setBackgroundColor(COLOR_ROAD_DONE)
         }
     }
 

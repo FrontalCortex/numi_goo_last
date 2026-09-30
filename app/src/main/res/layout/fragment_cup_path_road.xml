@@ -102,57 +102,20 @@
 
     </LinearLayout>
 
-    <!-- Karttaki çubuğun aynısı -->
-    <FrameLayout
-        android:id="@+id/cupPathRoadProgressZone"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/daily_question_progress_height"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="18dp">
+    <!--
+      Buradaki ilerleme çubuğu KALDIRILDI.
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/daily_question_progress_track"
-            android:contentDescription="@null" />
-
-        <View
-            android:id="@+id/cupPathRoadProgressFill"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="start|center_vertical"
-            android:contentDescription="@null" />
-
-        <View
-            android:id="@+id/cupPathRoadProgressShine"
-            android:layout_width="0dp"
-            android:layout_height="@dimen/mission_progress_shine_height"
-            android:layout_gravity="top|start"
-            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
-            android:layout_marginTop="@dimen/mission_progress_shine_top"
-            android:contentDescription="@null" />
-
-        <TextView
-            android:id="@+id/tvCupPathRoadProgress"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:elevation="2dp"
-            android:gravity="center"
-            android:outlineProvider="none"
-            android:textColor="@android:color/white"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            tools:text="242 / 300" />
-
-    </FrameLayout>
-
+      Aynı bilgiyi listenin kendisi gösteriyor: yolun üstündeki "şu an buradasın" etiketi
+      hem kupa sayısını hem de sıradaki eşiğe ne kadar kaldığını yerinde anlatıyor. İkisi
+      birden durunca kullanıcı üç ayrı yere (üstteki sayı, çubuk, liste) bakmak zorunda
+      kalıyordu.
+    -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#1A3040" />
 
-    <!-- Eşikler. Yatay liste, Trophy Road'daki gibi soldan sağa ilerliyor. -->
+    <!-- Eşikler. Dikey liste: yol yukarıdan aşağı, küçük kupadan büyüğe ilerliyor. -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -161,12 +124,10 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/cupPathRoadList"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:orientation="vertical"
+            android:paddingBottom="16dp"
             android:scrollbars="none"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/item_cup_path_milestone" />

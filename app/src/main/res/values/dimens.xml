@@ -391,6 +391,16 @@
     <dimen name="cup_path_chest_size">60dp</dimen>
 
     <!--
+      Kupa yolu ekranındaki bir eşik satırının yüksekliği.
+
+      Koddan da okunuyor: kullanıcının bulunduğu satırda yol şeridinin ne kadarının
+      dolacağı bu yüksekliğe göre hesaplanıyor (bkz. CupPathRoadFragment). Ölçüm
+      beklenmiyor, çünkü yükseklik sabit ve ölçüme dayanan bir hesap satır geri
+      dönüştürüldüğünde yanlış satıra uygulanabiliyor.
+    -->
+    <dimen name="cup_path_road_row_height">76dp</dimen>
+
+    <!--
       Kupa yolu sandığının alt payı.
 
       Kapalı sandık çiziminin viewBox'ında üstte boşluk var: çizim, kutusunun tam ortasının
