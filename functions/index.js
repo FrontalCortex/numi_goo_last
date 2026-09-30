@@ -3172,28 +3172,43 @@ function rollInt(min, max) {
 }
 
 /**
- * NewChestFragment.rollRarity ile aynı olasılıklar.
+ * Tek bir dokunuşun nadirlik yükseltme zarı — ödülün TEK kaynağı.
  *
- * DİKKAT: Kotlin tarafındaki yüzde yorumları koda uymuyor (ör. COMMON için "%15 RARE,
- * %80 COMMON" yazıyor ama eşikler %20/%75 veriyor). Buradaki eşikler istemcinin GERÇEK
- * davranışını birebir yansıtır; denge değiştirilmek istenirse iki taraf birlikte
- * güncellenmelidir.
+ * İstemci artık kendi zarını atmıyor: sunucunun attığı yolu (`rarityPath`) oynatıyor
+ * (bkz. NewChestFragment.requestOutcomeFromServer). Yani bu tablo hem ödülü hem de
+ * ekranda görünen yükseltmeleri belirliyor.
  *
- *   COMMON -> %5 EPIC, %20 RARE, %75 COMMON
- *   RARE   -> %10 LEGENDARY, %20 EPIC, %70 RARE
- *   EPIC   -> %10 LEGENDARY, %90 EPIC
- */
-/**
- * Tek bir dokunuşun nadirlik yükseltme zarı.
+ * ## Tek dokunuş: mevcut nadirlikten SIRADAKİ nadirliğe
  *
- * DİKKAT: bu tablo dokunuş BAŞINA. Sandık SIRADAN başlıyor ve kullanıcı [CHEST_TAP_COUNT]
- * kez dokunduğu için zar üç kez atılıyor; yani buradaki %5, akışın sonunda %5 değil.
- * Üç dokunuşun sonundaki dağılım:
+ *   SIRADAN   ->  %80 SIRADAN   |  %15 ENDER     |   %5 DESTANSI
+ *   ENDER     ->  %80 ENDER     |  %15 DESTANSI  |   %5 EFSANEVİ
+ *   DESTANSI  ->  %95 DESTANSI  |   %5 EFSANEVİ
+ *   EFSANEVİ  -> %100 EFSANEVİ                                     (tavan)
  *
- *   SIRADAN %51.2 | ENDER %28.8 | DESTANSI %17.2 | EFSANEVİ %2.8
+ * Nadirlik hiç DÜŞMÜYOR; her dokunuş ya yerinde bırakıyor ya yukarı taşıyor. SIRADAN'dan
+ * tek dokunuşta EFSANEVİ'ye atlanamıyor: iki basamak birden çıkış yok.
  *
- * Tabloyu değiştirirken bu bileşik etkiyi hesaba kat: yükseltme olasılığını iki katına
- * çıkarmak sondaki destansı+efsanevi payını iki katından fazla artırıyor.
+ * ## [CHEST_TAP_COUNT] dokunuşun sonunda: BAŞLANGIÇ nadirliğine göre
+ *
+ *   SIRADAN başlar   -> SIRADAN %51.2 | ENDER %28.8 | DESTANSI %17.25 | EFSANEVİ  %2.75
+ *   ENDER başlar     ->                 ENDER %51.2 | DESTANSI %34.54 | EFSANEVİ %14.26
+ *   DESTANSI başlar  ->                               DESTANSI %85.74 | EFSANEVİ %14.26
+ *   EFSANEVİ başlar  ->                                                EFSANEVİ %100
+ *
+ * Başlangıç nadirliği artık sabit değil: kupa yolunda eşik belirliyor
+ * ([cupPathChestRarity]). 500'ün katları ENDER, 1000'in katları DESTANSI başlıyor — yani
+ * 1000'lik bir eşikte sandığın EFSANEVİ bitme şansı %14.26, sıradan bir sandıkta ise
+ * %2.75. Aradaki fark beş kat; ödül tablosunu ([rollChestReward]) değiştirirken bunu
+ * hesaba kat.
+ *
+ * ## Tabloyu değiştirirken
+ * Buradaki yüzdeler dokunuş BAŞINA; bileşik etki doğrusal değil. Yükseltme olasılığını
+ * iki katına çıkarmak, sondaki destansı+efsanevi payını iki katından FAZLA artırıyor.
+ *
+ * Yukarıdaki iki tablo `functions/scripts/test-chest-rarity-table.js` ile doğrulanıyor:
+ * test tabloları bu dosyadaki koddan türetiyor ve yorumla karşılaştırıyor. Eşikleri
+ * değiştirip yorumu güncellemezsen test düşer — bu yorum bir kez koddan ayrı düştü
+ * (EFSANEVİ şansı %10 yazıyordu, kod %5 veriyordu) ve fark aylarca görülmedi.
  */
 function rollRarityUpgrade(current) {
   const rand = rollInt(1, 100);
