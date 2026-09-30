@@ -4130,6 +4130,26 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   }
   days.sort();
 
+  // DİKKAT — BU ÜÇ TANIM AŞAĞIDAKİ `days.length === 0` DALINDAN ÖNCE OLMAK ZORUNDA.
+  //
+  // Bir kez aşağıda duruyorlardı ve günsüz dal (günlük "buradayım" bildirimi) onlara
+  // erişiyordu. `const` tanımlandığı satıra kadar "geçici ölü bölge"de olduğu için erişim
+  // ReferenceError atıyor, Cloud Functions bunu INTERNAL diye döndürüyordu: günlük bildirim
+  // HER SEFERİNDE çöküyordu. Gün gönderen çağrılar çalıştığı için hata aylarca yalnızca
+  // "submitStreakDay başarısız" satırı olarak göründü.
+  //
+  // Hedef ve meydan okuma yalnızca taşınsın diye saklanıyor (cihaz değişince geri gelsin).
+  // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
+  const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
+  const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
+
+  // Akşam hatırlatmasının saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının
+  // yerel saatiyle ~19:00'a denk gelen UTC saatini hesaplıyor. Böylece saatlik tarama
+  // "şu anda yerel saati akşam olanlar" sorgusunu indeksli tek bir eşitlikle yapabiliyor.
+  const rawOffset = Number(data && data.utcOffsetMinutes);
+  const utcOffsetMinutes =
+    Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
+
   // Gönderilen günlerin hepsi elendi (hepsi çok eski ya da ileri tarihli). Hata değil:
   // istemci kuyruğu temizleyebilsin diye mevcut durum olduğu gibi dönülüyor. Hata
   // dönseydi istemci aynı işe yaramaz günleri sonsuza kadar yeniden denerdi.
@@ -4160,18 +4180,6 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
     };
   }
-
-  // Hedef ve meydan okuma yalnızca taşınsın diye saklanıyor (cihaz değişince geri gelsin).
-  // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
-  const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
-  const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
-
-  // Akşam hatırlatmasının saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının
-  // yerel saatiyle ~19:00'a denk gelen UTC saatini hesaplıyor. Böylece saatlik tarama
-  // "şu anda yerel saati akşam olanlar" sorgusunu indeksli tek bir eşitlikle yapabiliyor.
-  const rawOffset = Number(data && data.utcOffsetMinutes);
-  const utcOffsetMinutes =
-    Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
 
   const ref = streakDocRef(uid);
   const result = await db.runTransaction(async (transaction) => {
