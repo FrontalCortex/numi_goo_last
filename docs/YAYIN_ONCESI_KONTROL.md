@@ -70,6 +70,17 @@ sebebi "acaba unuttum mu?" diye aramana gerek kalmaması:
   `core.autocrlf false` yapıldı ama bu ayar makineye bağlı: yeni bir klonda ya da başka bir
   bilgisayarda aynı bozulma tekrarlar. Depoya `.gitattributes` eklemek kalıcı çözüm.
 - **`firebase-functions` ^5.0.0.** v6 çıktı. Acil değil ama sürüm atlandıkça geçiş zorlaşıyor.
+- **Ders açılışının `addToBackStack(null)` girişi başarılı bitişte hiç pop edilmiyor.**
+  `LessonAdapter.continueWithLesson` dersi `replace(abacusFragmentContainer, ...).addToBackStack(null)`
+  ile açıyor. Ders normal bitince (LessonResult → ChestFragment → NewChestFragment) yalnızca
+  `"map_chest"` girişi pop ediliyor; ders açılışının girişi back stack'te kalıyor. Sonuçları:
+  (a) o TutorialFragment/AbacusFragment örneği bellekte canlı kalıyor ve her tamamlanan derste
+  bir tane daha birikiyor, (b) haritada geri tuşuna basıldığında görünür hiçbir şey olmadan
+  bu girişler tek tek pop ediliyor, (c) `findFragmentById` bu girişlerin tuttuğu fragment'ı
+  container boş olsa bile döndürüyor — 30.09.2026'daki "haritaya tıklanamıyor + ders
+  güncellenmiyor" hatasının kökü buydu. (c) `MainActivity.liveOverlayIn` ile kapatıldı;
+  (a) ve (b) hâlâ açık. Kalıcı çözüm ders bitiş yolunda bu girişi de pop etmek ama o yol
+  (prepareMapReturn/finalizeMapReturn) çok hassas — ayrı bir turda, tek başına denenmeli.
 
 ---
 

@@ -189,7 +189,10 @@ class MainActivity : AppCompatActivity() {
         if (!::binding.isInitialized) return "binding=false"
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
-        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val rawAbacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacusFrag = rawAbacus?.javaClass?.simpleName ?: "null"
+        // ekli=false → back stack'in tuttuğu hayalet; ekranda yok (bkz. [liveOverlayIn]).
+        val abacusAdded = rawAbacus?.isAdded
         val abacusVis = when (binding.abacusFragmentContainer.visibility) {
             View.VISIBLE -> "VISIBLE"
             View.GONE -> "GONE"
@@ -198,6 +201,7 @@ class MainActivity : AppCompatActivity() {
         return buildString {
             append("base=").append(base)
             append(" abacusFrag=").append(abacusFrag)
+            append(" abacusEkli=").append(abacusAdded)
             append(" abacusVis=").append(abacusVis)
             append(" forceDismiss=").append(forcingAbacusOverlayDismissForSeasonGate)
             append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
@@ -218,7 +222,10 @@ class MainActivity : AppCompatActivity() {
         if (!::binding.isInitialized) return "caller=$caller binding=false"
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
-        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val rawAbacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacusFrag = rawAbacus?.javaClass?.simpleName ?: "null"
+        // ekli=false → back stack'in tuttuğu hayalet; ekranda yok (bkz. [liveOverlayIn]).
+        val abacusAdded = rawAbacus?.isAdded
         val abacusVis = when (binding.abacusFragmentContainer.visibility) {
             View.VISIBLE -> "VISIBLE"
             View.GONE -> "GONE"
@@ -232,6 +239,7 @@ class MainActivity : AppCompatActivity() {
             append(" hadAccount=").append(DeviceAccountStore.hasEverHadAccount(this@MainActivity))
             append(" base=").append(base)
             append(" abacusFrag=").append(abacusFrag)
+            append(" abacusEkli=").append(abacusAdded)
             append(" abacusVis=").append(abacusVis)
             append(" backStack=").append(fm.backStackEntryCount)
             append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
@@ -416,7 +424,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportFragmentManager.addOnBackStackChangedListener {
-            if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
+            if (liveOverlayIn(R.id.createQuestionOverlayContainer) == null) {
                 binding.createQuestionOverlayContainer.visibility = View.GONE
                 binding.root.post {
                     if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
@@ -455,7 +463,7 @@ class MainActivity : AppCompatActivity() {
             refreshStreakUi()
 
             // FM transaction ortasında çağrılır — restore'u bir sonraki kareye ertele.
-            val topOverlay = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+            val topOverlay = liveOverlayIn(R.id.abacusFragmentContainer)
             if (topOverlay == null) {
                 val baseFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 if (baseFragment is MapFragment) {
@@ -629,8 +637,8 @@ class MainActivity : AppCompatActivity() {
                 //    - Eğer öğretmen seçim akışından dönülmüş CreateQuestion ise:
                 //      onTeacherCreateQuestionDismissedByBack() + fragment'i gerçekten kapat.
                 //    - Diğer CreateQuestion durumlarında sadece fragment'i kapat (backButton ile aynı).
-                val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
-                val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+                val createQuestionOverlay = liveOverlayIn(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+                val createQuestionAbacus = liveOverlayIn(R.id.abacusFragmentContainer) as? CreateQuestionFragment
                 if (createQuestionOverlay != null || createQuestionAbacus != null) {
                     val fragment = createQuestionOverlay ?: createQuestionAbacus
                     if (fragment?.isStudentSendingInProgress() == true) {
@@ -674,8 +682,8 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, backCallback)
         supportFragmentManager.addOnBackStackChangedListener {
             val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-            val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
-            val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+            val createQuestionOverlay = liveOverlayIn(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+            val createQuestionAbacus = liveOverlayIn(R.id.abacusFragmentContainer) as? CreateQuestionFragment
             val createQuestionVisible = createQuestionOverlay != null || createQuestionAbacus != null
             val teacherSelectingQuestion = teacherPendingMediaPath != null && current is NotificationFragment
             val seasonRewardGateVisible =
@@ -1074,7 +1082,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 3) CreateQuestion overlay'ini kapat (varsa)
-        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+        liveOverlayIn(R.id.createQuestionOverlayContainer)?.let {
             supportFragmentManager.popBackStackImmediate()
         }
         binding.createQuestionOverlayContainer.visibility = View.GONE
@@ -1214,7 +1222,7 @@ class MainActivity : AppCompatActivity() {
             .update("lastMessageAt", Timestamp.now())
 
         // Temizlik: overlay, bar, geri butonu, alt nav tekrar göster, geçici state (dosyayı servis silecek)
-        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+        liveOverlayIn(R.id.createQuestionOverlayContainer)?.let {
             supportFragmentManager.popBackStack()
         }
         // NotificationFragment az sonra QuestionChatFragment ile replace edilecek; oradan geri
@@ -1729,6 +1737,9 @@ class MainActivity : AppCompatActivity() {
         fm.executePendingTransactions()
 
         // Abacus veya ana container'da hâlihazırda fragment varsa, ekstra bir şey yapma.
+        // Burada bilinçli olarak [liveOverlayIn] DEĞİL ham findFragmentById kullanılıyor: soğuk
+        // açılışta hayalet bile olsa bir fragment varsa başlangıç akışını ikinci kez kurmak
+        // (Map/Tutorial'ı yeniden açmak) daha büyük risk.
         val hasMainFragment =
             fm.findFragmentById(R.id.fragmentContainerID) != null ||
                 fm.findFragmentById(R.id.abacusFragmentContainer) != null
@@ -1798,7 +1809,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         fm.executePendingTransactions()
-        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val active = liveOverlayIn(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         if (hostVisible && active != null && fragmentBlocksSeasonLeaderboardGate(active) &&
             !forcingAbacusOverlayDismissForSeasonGate &&
@@ -1839,6 +1850,27 @@ class MainActivity : AppCompatActivity() {
         logTouchDiag("sanitizeMapTouchSurface:$caller")
     }
 
+    /**
+     * Container'da GERÇEKTEN duran overlay. Ham [androidx.fragment.app.FragmentManager.findFragmentById]
+     * yetmiyor: o çağrı önce ekli fragment'lara, bulamazsa "bilinen bütün fragment'lara" bakıyor.
+     * Ders/tutorial ekranları `replace(...).addToBackStack(null)` ile açıldığı için, `replace` onları
+     * container'dan kaldırdıktan sonra bile o back stack girişi onları canlı tutuyor ve bu ikinci
+     * taramada bulunuyorlar.
+     *
+     * Bildirilen hatanın kökü buydu: ders bitişinde (LessonResult → ChestFragment) LessonResult
+     * abacusFragmentContainer'dan kaldırılıyor, host VISIBLE kalıyor ve container EKLİ hiçbir şey
+     * içermiyor; ama ders açılışının `addToBackStack(null)` girişi başarılı bitiş yolunda hiç pop
+     * edilmediği için findFragmentById hâlâ o TutorialFragment'ı döndürüyordu. Sonuç:
+     * "bekliyor | block=abacus_overlay:TutorialFragment hostVisible=true" ile kuyruk kilitleniyor,
+     * boş ama görünür host (clickable + match_parent + elevation 10dp) bütün harita dokunuşlarını
+     * yutuyor ve ders adımı animasyonu hiç oynamıyordu. Geri tuşu o girişi pop edip hayaleti
+     * düşürdüğü an ekran kendiliğinden düzeliyordu — kullanıcının gördüğü tam olarak buydu.
+     *
+     * Ekranda gerçekten duran bir overlay HER ZAMAN [Fragment.isAdded]'dir; hayalet değildir.
+     */
+    private fun liveOverlayIn(containerId: Int): Fragment? =
+        supportFragmentManager.findFragmentById(containerId)?.takeIf { it.isAdded }
+
     /** Harita tabanındayken bilinçli tutorial oturumu yoksa hayalet [TutorialFragment] sayılır. */
     private fun isStaleTutorialGhostOverlay(overlay: Fragment?): Boolean {
         if (overlay !is TutorialFragment) return false
@@ -1860,7 +1892,7 @@ class MainActivity : AppCompatActivity() {
         var steps = 0
         while (steps++ < 8) {
             fm.executePendingTransactions()
-            val overlay = fm.findFragmentById(R.id.abacusFragmentContainer) ?: break
+            val overlay = liveOverlayIn(R.id.abacusFragmentContainer) ?: break
             if (firstTutorialOverlayBootstrapActive && overlay is TutorialFragment) break
             if (overlay is TutorialFragment && activeMapTutorialOverlayFromLesson) break
             if (!fragmentBlocksSeasonLeaderboardGate(overlay)) break
@@ -2343,12 +2375,12 @@ class MainActivity : AppCompatActivity() {
         if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
         val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         if (abacusHostVisible) {
-            val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+            val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
             if (isBlockingLessonOverlayFragment(abacus)) return false
         }
         val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
         if (resultHostVisible) {
-            val result = fm.findFragmentById(R.id.resultFragmentContainer)
+            val result = liveOverlayIn(R.id.resultFragmentContainer)
             if (isBlockingLessonOverlayFragment(result)) return false
         }
         return true
@@ -2419,9 +2451,9 @@ class MainActivity : AppCompatActivity() {
         if (isQuestionAskFlowBlockingSeasonLeaderboardGate()) return true
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
-        val result = fm.findFragmentById(R.id.resultFragmentContainer)
-        val createQuestion = fm.findFragmentById(R.id.createQuestionOverlayContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
+        val createQuestion = liveOverlayIn(R.id.createQuestionOverlayContainer)
         // Ders overlay'i kapalıyken (GONE) FM'de hayalet Abacus kalabiliyor; haritadayken sezon kapısını kilitleme.
         val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
@@ -2589,7 +2621,7 @@ class MainActivity : AppCompatActivity() {
         practiceOverlayDismissRunnable = null
         val fm = supportFragmentManager
         fm.executePendingTransactions()
-        val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val overlay = liveOverlayIn(R.id.abacusFragmentContainer)
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
             is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment,
@@ -2672,7 +2704,7 @@ class MainActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         if (fm.findFragmentById(R.id.fragmentContainerID) !is TasksFragment) return
         fm.executePendingTransactions()
-        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val active = liveOverlayIn(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         if (active is AbacusPracticeFragment && hostVisible) {
             Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active AbacusPractice")
@@ -2867,13 +2899,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
         if (abacusHostVisible && abacus != null && isBlockingLessonOverlayFragment(abacus)) {
             return "abacus_overlay:${abacus.javaClass.simpleName} hostVisible=$abacusHostVisible"
         }
 
         val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
-        val result = fm.findFragmentById(R.id.resultFragmentContainer)
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
         if (resultHostVisible && result != null && isBlockingLessonOverlayFragment(result)) {
             return "result_overlay:${result.javaClass.simpleName} hostVisible=$resultHostVisible"
         }
@@ -3169,7 +3201,7 @@ class MainActivity : AppCompatActivity() {
         val base = fm.findFragmentById(R.id.fragmentContainerID)
         if (base !is MapFragment && base !is PartSelectionFragment) return
         fm.executePendingTransactions()
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
         val blockingOverlay =
             binding.abacusFragmentContainer.visibility == View.VISIBLE &&
                 abacus != null &&
@@ -3183,7 +3215,7 @@ class MainActivity : AppCompatActivity() {
         if (firstTutorialOverlayBootstrapActive) return false
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
         if (forcingAbacusOverlayDismissForSeasonGate) return true
-        val orphan = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+        val orphan = liveOverlayIn(R.id.abacusFragmentContainer)
         val result = binding.abacusFragmentContainer.visibility == View.VISIBLE ||
             (orphan != null && fragmentBlocksSeasonLeaderboardGate(orphan))
         logFirstTutorial(
@@ -3216,7 +3248,7 @@ class MainActivity : AppCompatActivity() {
         // resultFragmentContainer (ChestFragment) GONE yapılıp direkt haritaya dönülüyordu — ders ilerlemesi
         // hiç kaydedilmeden. resultFragmentContainer'ı da abacusFragmentContainer ile aynı şekilde kontrol et.
         if (!forcingAbacusOverlayDismissForSeasonGate) {
-            val resultOverlay = fm.findFragmentById(R.id.resultFragmentContainer)
+            val resultOverlay = liveOverlayIn(R.id.resultFragmentContainer)
             val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
             if (resultOverlay != null && resultHostVisible && fragmentBlocksSeasonLeaderboardGate(resultOverlay)) {
                 logMapTouchDiag(
@@ -3232,7 +3264,7 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
-        val activeOverlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val activeOverlay = liveOverlayIn(R.id.abacusFragmentContainer)
         if (activeOverlay is RecordFragment &&
             binding.abacusFragmentContainer.visibility == View.VISIBLE
         ) {
@@ -3298,7 +3330,7 @@ class MainActivity : AppCompatActivity() {
         )
         for (step in 0 until 6) {
             fm.executePendingTransactions()
-            val orphan = fm.findFragmentById(R.id.abacusFragmentContainer)
+            val orphan = liveOverlayIn(R.id.abacusFragmentContainer)
             if (orphan == null || !fragmentBlocksSeasonLeaderboardGate(orphan)) break
             fm.beginTransaction().remove(orphan).commitNowAllowingStateLoss()
             fm.executePendingTransactions()

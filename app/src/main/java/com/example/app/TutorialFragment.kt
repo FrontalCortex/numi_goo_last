@@ -15817,6 +15817,12 @@ class TutorialFragment : Fragment() {
             if (optionsInteractionLocked && optionsPanel.visibility == View.VISIBLE) {
                 return@setOnClickListener
             }
+            // DİKKAT: bu bayrak "haritada bilinçli bir tutorial oturumu var" demek ve
+            // burada sıfırlanmıyordu — "Eğitimi atla" ile geçilen her derste true kalıyordu.
+            // O yüzden [MainActivity.isStaleTutorialGhostOverlay] hayalet TutorialFragment'ı
+            // hayalet saymıyor, [MainActivity.purgeAbacusOverlayHosts] de onu kaldırmadan
+            // döngüden çıkıyordu. devamButton ile aynı: tutorial oturumu burada bitiyor.
+            (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(false)
             val abacusFragment = AbacusFragment()
             val blindingLessonFragment = BlindingLessonFragment()
             val bundle = Bundle()

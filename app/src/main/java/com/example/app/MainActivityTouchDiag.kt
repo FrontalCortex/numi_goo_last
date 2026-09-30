@@ -73,7 +73,11 @@ object MainActivityTouchDiag {
     private fun overlayHostsLine(activity: MainActivity): String {
         val fm = activity.supportFragmentManager
         fun host(id: Int, visView: View?): String {
-            val frag = fm.findFragmentById(id)?.javaClass?.simpleName ?: "null"
+            val rawFrag = fm.findFragmentById(id)
+            val frag = rawFrag?.javaClass?.simpleName ?: "null"
+            // ekli=false → fragment container'da DEĞİL, yalnızca bir back stack girişi onu
+            // tutuyor (hayalet). Bkz. MainActivity.liveOverlayIn.
+            val ekli = rawFrag?.isAdded
             val vis = when (visView?.visibility) {
                 View.VISIBLE -> "VISIBLE"
                 View.GONE -> "GONE"
@@ -81,7 +85,7 @@ object MainActivityTouchDiag {
                 else -> "?"
             }
             val click = visView?.isClickable ?: false
-            return "${activity.resources.getResourceEntryName(id)} frag=$frag vis=$vis clickable=$click"
+            return "${activity.resources.getResourceEntryName(id)} frag=$frag ekli=$ekli vis=$vis clickable=$click"
         }
         return buildString {
             append(host(R.id.abacusFragmentContainer, activity.findViewById(R.id.abacusFragmentContainer)))
