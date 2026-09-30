@@ -368,9 +368,36 @@ object GlobalLessonData {
         processNext()
     }
 
+    /**
+     * Bir ders item'ının ilerlemesini belleğe ve Firestore'a yazar.
+     *
+     * ## Sessizce vazgeçtiği iki durum
+     * Aşağıdaki iki kontrol yazmayı iptal ediyor ve bu İYİ bir şey: yanlış bölümün
+     * defterine yazmak, hiç yazmamaktan kötü. Ama vazgeçiş ESKİDEN SESSİZDİ ve gerçek bir
+     * veri kaybını görünmez kıldı: kupa dersi [globalPartId]'yi 9 yapıyor, kullanıcı o
+     * bölüm yüklüyken harita dersine dönerse bitirdiği ders hiç kaydedilmiyordu —
+     * uygulamayı yeniden açınca ders tamamlanmamış görünüyordu.
+     *
+     * Artık uyarı düşüyor. Bu satırı logcat'te görmek "ders kaybı yaşandı" demektir ve
+     * asıl hata burada değil, [globalPartId]'yi yanlış bölümde bırakan akıştadır.
+     */
     fun updateLessonItem(context: Context, position: Int, newItem: LessonItem) {
         if (newItem.partId != null && newItem.partId != globalPartId) {
+            Log.w(
+                LOG_TAG,
+                "updateLessonItem ATLANDI (bolum uyusmuyor) — ilerleme KAYDEDILMEDI. " +
+                    "item.partId=${newItem.partId} globalPartId=$globalPartId " +
+                    "position=$position title=${newItem.title.take(30)}",
+            )
             return
+        }
+        if (position !in _lessonItems.indices) {
+            Log.w(
+                LOG_TAG,
+                "updateLessonItem ATLANDI (konum listede yok) — ilerleme KAYDEDILMEDI. " +
+                    "position=$position listeBoyutu=${_lessonItems.size} " +
+                    "globalPartId=$globalPartId title=${newItem.title.take(30)}",
+            )
         }
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem

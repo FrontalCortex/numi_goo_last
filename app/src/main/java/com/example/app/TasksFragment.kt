@@ -119,6 +119,19 @@ class TasksFragment : Fragment() {
          */
         private const val CUP_SCORE_ANIM_MS = 1000L
 
+        /**
+         * Kupa dersinin bölüm kimliği.
+         *
+         * Gerçek bir harita bölümü DEĞİL: 1-8 arası bölümlerin aksine kendi ders listesi
+         * yok, yalnızca kupa dersini kurmak için kullanılıyor. Bu yüzden
+         * [GlobalLessonData.globalPartId] bu değerde kalırsa harita derslerinin ilerlemesi
+         * yazılamıyor; bkz. [restorePartAfterCupLesson].
+         */
+        private const val CUP_MODE_PART_ID = 9
+
+        /** Kupa yolu panelinin iki kez açılmasını önleyen bekleme; bkz. [showCupPathPanel]. */
+        private const val CUP_PATH_PANEL_REOPEN_GUARD_MS = 600L
+
         /** Sayaç oturduktan sonra rozet kutlamasına geçmeden önceki kısa es. */
         private const val CUP_CELEBRATION_GAP_MS = 350L
 
@@ -1053,8 +1066,55 @@ class TasksFragment : Fragment() {
         }
     }
 
+    /** Panelin son açılış anı; bkz. [showCupPathPanel]. */
+    private var lastCupPathPanelOpenAtMs = 0L
+
+    /** Kupa dersine girmeden önceki bölüm; bkz. [restorePartAfterCupLesson]. */
+    private var partIdBeforeCupLesson: Int? = null
+
+    /**
+     * Kupa dersi bitti: [GlobalLessonData]'yı kullanıcının geldiği bölüme geri döndürür.
+     *
+     * ## Neden gerekli
+     * Kupa dersi [GlobalLessonData]'yı bölüm 9'a alıyor — hem [GlobalLessonData.globalPartId]
+     * hem de ders listesi değişiyor. Bölüm 9 gerçek bir harita bölümü değil, kendi ders
+     * listesi yok.
+     *
+     * Bu hâlde haritaya dönüp bir ders bitirilirse [GlobalLessonData.updateLessonItem]
+     * "item'ın bölümü globalPartId ile uyuşmuyor" deyip yazmaktan vazgeçiyor. Yani ders
+     * ekranda tamamlanmış görünüyor ama HİÇ KAYDEDİLMİYOR; uygulama yeniden açılınca
+     * tamamlanmamış çıkıyor. Vazgeçiş doğru (yanlış bölümün defterine yazmak daha kötü
+     * olurdu), eksik olan geri dönüştü.
+     *
+     * Alt gezinmedeki harita sekmesinde bunun için zaten bir kapı var (bölüm 9'dayken
+     * bölüm seçimine düşürüyor) ama geri tuşu ve diğer dönüş yolları o kapıdan geçmiyor.
+     * Bu yüzden düzeltme kaynağında: bölümü DEĞİŞTİREN akış, işi bitince geri koyuyor.
+     */
+    private fun restorePartAfterCupLesson() {
+        val previous = partIdBeforeCupLesson ?: return
+        partIdBeforeCupLesson = null
+        if (GlobalLessonData.globalPartId != CUP_MODE_PART_ID) return
+        if (!isAdded) return
+        GlobalLessonData.initialize(requireContext(), previous)
+    }
+
     private fun showCupPathPanel() {
         if (!isAdded) return
+
+        // Üst üste hızlı dokunuş iki ayrı panel açıyordu: her çağrı kendi
+        // BottomSheetDialog'unu yaratıyor, [GlobalValues.cupPathDialogRef] ikincisini
+        // gösteriyor ve birincisi arkada açık kalıyordu.
+        //
+        // İKİ kapı var çünkü ikisi de tek başına yetmiyor:
+        //  • "zaten açık mı" kontrolü aynı karede gelen iki dokunuşu yakalayamıyor —
+        //    referans ancak panel kurulduktan SONRA yazılıyor, ikinci dokunuş o boşlukta
+        //    geçiyor.
+        //  • Zaman damgası ise panel uzun süre açık kalıp tekrar dokunulduğunda susuyor.
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastCupPathPanelOpenAtMs < CUP_PATH_PANEL_REOPEN_GUARD_MS) return
+        if (GlobalValues.cupPathDialogRef?.get()?.isShowing == true) return
+        lastCupPathPanelOpenAtMs = now
+
         
         // Paneli varsayılan kapalı (inaktif) durumlarla anında aç
         displayCupPathDialog(
@@ -1552,8 +1612,14 @@ class TasksFragment : Fragment() {
             lessonItem.cupLossDelta = 20
         }
 
+        // Kupa dersine girmeden önceki bölüm saklanıyor; ders bitince oraya dönülüyor.
+        // Sebebi [restorePartAfterCupLesson]'da.
+        if (GlobalLessonData.globalPartId != CUP_MODE_PART_ID) {
+            partIdBeforeCupLesson = GlobalLessonData.globalPartId
+        }
+
         // Kupa modu için part 9'u initialize et
-        GlobalLessonData.initialize(requireContext(), 9) {
+        GlobalLessonData.initialize(requireContext(), CUP_MODE_PART_ID) {
             activity.runOnUiThread {
                 val fm = activity.supportFragmentManager
                 val fragmentContainer = activity.findViewById<View>(R.id.abacusFragmentContainer)
@@ -1594,6 +1660,7 @@ class TasksFragment : Fragment() {
                         // Delta yoktu (örn. quit veya ders başlamadan çıkış) — paneli yine de yeniden aç
                         loadAndShowCupPathDialogAfterCupUpdate()
                     }
+                    restorePartAfterCupLesson()
                 }
 
                 fm.beginTransaction()
