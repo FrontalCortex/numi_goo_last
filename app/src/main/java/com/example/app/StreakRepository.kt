@@ -234,8 +234,19 @@ object StreakRepository {
         if (owner == uid) return
 
         if (owner.isNotEmpty()) {
+            // Bu yol bugünün saniyelerini de siliyor ([wipe] → StudyTimeTracker.clearAll).
+            // "Hedefi tutturdum ama sayaç 0" tablosunun en güçlü açıklaması bu ve
+            // StreakDiag akışında hiç görünmüyordu: uid bir sebeple oynarsa (çıkış/giriş,
+            // ikinci hesap) sayaç her tazelemede sıfırlanır.
+            StreakDiag.log(
+                "Repo.sahip",
+                "SILINIYOR eskiSahip=${owner.take(8)} yeniSahip=${uid.take(8)} " +
+                    "(seri + çalışma süresi sıfırlanıyor)",
+            )
             Log.i(TAG, "Hesap değişti, yerel seri verisi siliniyor")
             wipe(context)
+        } else {
+            StreakDiag.log("Repo.sahip", "SAHIPSIZ_DEVRALINDI yeniSahip=${uid.take(8)} (silme yok)")
         }
         prefs(context)?.edit()?.putString(KEY_OWNER_UID, uid)?.apply()
     }
