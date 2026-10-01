@@ -78,6 +78,12 @@ sebebi "acaba unuttum mu?" diye aramana gerek kalmaması:
   `core.autocrlf false` yapıldı ama bu ayar makineye bağlı: yeni bir klonda ya da başka bir
   bilgisayarda aynı bozulma tekrarlar. Depoya `.gitattributes` eklemek kalıcı çözüm.
 - **`firebase-functions` ^5.0.0.** v6 çıktı. Acil değil ama sürüm atlandıkça geçiş zorlaşıyor.
+- **Cihaz saatini ileri alarak test etmek kalıcı iz bırakıyordu.** `last_goal_day` ileri
+  bir tarihte kalıyor ve seri o güne kadar sessizce donuyordu (01.10.2026'da yaşandı:
+  `last_goal_day=2026-10-05`). İstemci artık bir günden fazla ileri bir son günü atıyor
+  (`StreakRepository.refresh`), yani kendi kendine düzeliyor. Yine de seriyi saat
+  oynatarak test ederken `streak_prefs`'i de temizlemek daha temiz:
+  `adb shell run-as com.numigo.app rm /data/data/com.numigo.app/shared_prefs/streak_prefs.xml`
 - **Ders açılışının `addToBackStack(null)` girişi başarılı bitişte hiç pop edilmiyor.**
   `LessonAdapter.continueWithLesson` dersi `replace(abacusFragmentContainer, ...).addToBackStack(null)`
   ile açıyor. Ders normal bitince (LessonResult → ChestFragment → NewChestFragment) yalnızca

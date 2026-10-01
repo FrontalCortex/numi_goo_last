@@ -525,6 +525,44 @@ object StreakRepository {
         var lastDay = p?.getString(KEY_LAST_DAY, "").orEmpty()
         var achieved = readAchievedDays(context)
 
+        // ── İmkânsız derecede ileri bir son gün: ONURLANDIRILMAZ, ATILIR ──
+        //
+        // Aşağıdaki [lastDayInFuture] koruması saat dilimi payı için var ve payın meşru
+        // sınırı BİR GÜN: sunucu da gün kimliğini yalnızca ±1 günle kabul ediyor
+        // (`STREAK_DAY_TOLERANCE_DAYS = 1`). Bir günden fazla ileride bir son gün saat
+        // diliminden gelemez; bozuk veridir — cihaz saati ileri alınmış (seriyi elle test
+        // ederken tipik), bozuk bir yedek geri yüklenmiş ya da takvim geri sarmış.
+        //
+        // Onurlandırıldığında seri O GÜNE KADAR donuyordu ve bu sessiz bir donmaydı:
+        // ilerleme dalı da kırılma dalı da `!lastDayInFuture` istiyor, yani hedef
+        // tutturulsa bile ne sayılıyor ne "serin kırıldı" deniyor. Gerçekten yaşandı:
+        // `last_goal_day=2026-10-05` kalmış bir cihazda 30.09 (438 sn) ve 01.10 (334 sn)
+        // hedefin üstünde olduğu halde seri 0 gösterdi ve kendi kendine düzelmedi.
+        //
+        // Atılan değerin yerine bugünden yeni bir seri kurulmasına izin veriliyor: elde
+        // güvenilir bir son gün yok, en doğrusu temiz sayfa. Sunucu da aynı sonuca varıyor
+        // (ardışık olmayan gün serisi 1'e çeker), yani iki taraf çelişmiyor.
+        val tomorrow = StudyTimeTracker.dayId(1)
+        if (lastDay > tomorrow) {
+            StreakDiag.log(
+                "Repo.refresh",
+                "BOZUK_LASTDAY_ATILDI lastDay=$lastDay (en fazla $tomorrow olabilirdi) " +
+                    "current=$current->0 — bugünden yeni seri kurulabilir",
+            )
+            Log.w(
+                TAG,
+                "lastDay imkansiz derecede ileride ($lastDay > $tomorrow); " +
+                    "bozuk veri atiliyor, seri bugunden yeniden kurulacak",
+            )
+            lastDay = ""
+            current = 0
+            // Gelecek tarihli günler hafta şeridinden de düşüyor. [writeState] zaten
+            // kesişim alıyor ama bu fonksiyonun DÖNDÜRDÜĞÜ durum bellekteki kümeyi
+            // kullanıyor; filtrelenmezse şeritte gelecekte bir tik görünürdü.
+            achieved = achieved.filterTo(mutableSetOf()) { it <= today }
+            writeState(context, current, longest, lastDay, achieved)
+        }
+
         // Son gün bugünden İLERİDEYSE o gün zaten sayılmış demektir: ne ilerletilir ne
         // kırılır, takvim yetişene kadar olduğu gibi durur.
         //
