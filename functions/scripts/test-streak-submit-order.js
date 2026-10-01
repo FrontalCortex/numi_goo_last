@@ -38,7 +38,8 @@ check('gunsuz dal duruyor', () => {
 // Gunsuz dalin govdesi
 const branchBody = body.slice(branchIndex, body.indexOf('\n  }', branchIndex));
 
-for (const name of ['goalMinutes', 'challengeDays', 'utcOffsetMinutes']) {
+// `todayNo` sonradan eklendi (seri dondurma) ve günsüz dal onu da okuyor.
+for (const name of ['goalMinutes', 'challengeDays', 'utcOffsetMinutes', 'todayNo']) {
   check(`${name} gunsuz daldan ONCE tanimli`, () => {
     const decl = body.indexOf(`const ${name} =`);
     if (decl < 0) throw new Error(`\`const ${name} =\` bulunamadi`);

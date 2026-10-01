@@ -125,11 +125,19 @@ class StreakFragment : Fragment() {
             )
         }
 
-        StreakViews.buildWeekStrip(b.streakWeekStrip, state.achievedDays)
+        StreakViews.buildWeekStrip(b.streakWeekStrip, state.achievedDays, state.frozenDays)
 
         renderChallenge(b, state)
 
         b.streakLongest.text = "${state.longest} gün"
+
+        // Dondurma mağazadan alınıyor ama koruduğu şey burada; alındıktan sonra görülebildiği
+        // tek yer mağaza kartı olsaydı çocuk "korunuyor muyum" sorusunun cevabını seriye
+        // baktığı ekranda bulamazdı.
+        b.streakFreezeStatus.text = if (state.freezeHeld) "Hazır" else "Yok"
+        b.streakFreezeStatus.setTextColor(
+            Color.parseColor(if (state.freezeHeld) COLOR_FREEZE else COLOR_DEAD),
+        )
 
         renderRewards(b)
     }
@@ -296,5 +304,8 @@ class StreakFragment : Fragment() {
     private companion object {
         const val COLOR_ACCENT = "#FF9800"
         const val COLOR_DEAD = "#78909C"
+
+        /** Buz mavisi: mağaza kartındaki "HAZIR" rozetiyle aynı. */
+        const val COLOR_FREEZE = "#4FC3F7"
     }
 }

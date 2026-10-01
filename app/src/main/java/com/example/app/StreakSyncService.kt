@@ -104,6 +104,11 @@ object StreakSyncService {
                     // Ödül alındı bilgisi de sunucudan: cihaz değiştiren kullanıcıya aynı
                     // meydan okuma ödülünü ikinci kez toplatmaya çalıştırmamak için.
                     challengeClaimed = (doc.get("challengeClaimed") as? Number)?.toInt() ?: 0,
+                    // Dokümanda alan yoksa 0: doküman var ama hiç dondurma alınmamış demek.
+                    // (Fonksiyon yanıtlarında durum farklı, bkz. [freezesOf].)
+                    freezes = (doc.get("freezes") as? Number)?.toInt() ?: 0,
+                    freezeDay = doc.getString("freezeDay").orEmpty(),
+                    frozenDays = dayStrings(doc.get("frozenDays")),
                 )
                 onDone?.invoke()
             }
@@ -157,6 +162,10 @@ object StreakSyncService {
             "challengeDays" to StreakRepository.chosenChallengeDays(context),
             // Hatırlatmanın yerel saate denk gelmesi için; sunucu bundan UTC saatini üretiyor.
             "utcOffsetMinutes" to utcOffsetMinutes(),
+            // Seri dondurma için: "dün kaçtı mı" sorusunu sunucu da bu cihazın bugününe göre
+            // soruyor. Kendi saatine baksaydı bu cihazda harcanmış bir dondurmayı duruyor
+            // sayabilir ve mağazadaki yeni alımı "zaten var" diye reddedebilirdi.
+            "today" to StudyTimeTracker.dayId(),
         )
         StreakDiag.log(
             "Sync.gonder",
@@ -202,6 +211,9 @@ object StreakSyncService {
                     goalMinutes = (data["goalMinutes"] as? Number)?.toInt() ?: 0,
                     challengeDays = (data["challengeDays"] as? Number)?.toInt() ?: 0,
                     challengeClaimed = (data["challengeClaimed"] as? Number)?.toInt() ?: 0,
+                    freezes = freezesOf(data),
+                    freezeDay = (data["freezeDay"] as? String).orEmpty(),
+                    frozenDays = dayStrings(data["frozenDays"]),
                 )
                 onDone?.invoke()
             }
@@ -219,6 +231,67 @@ object StreakSyncService {
                         "kuyrukta_kaliyor=${StreakRepository.pendingSyncDays(context)}",
                 )
                 Log.w(TAG, "submitStreakDay başarısız", e)
+            }
+    }
+
+    /**
+     * Fonksiyon yanıtındaki dondurma sayısı; alan yoksa [StreakRepository.FREEZES_UNKNOWN].
+     *
+     * Yokluk "sıfır" demek değil: sunucunun dondurmadan önceki sürümü alanı hiç döndürmüyor
+     * ve onu 0 diye okumak yerel dondurmayı silerdi.
+     */
+    private fun freezesOf(data: Map<*, *>): Int =
+        (data["freezes"] as? Number)?.toInt() ?: StreakRepository.FREEZES_UNKNOWN
+
+    private fun dayStrings(raw: Any?): Set<String> =
+        (raw as? List<*>)?.mapNotNull { it as? String }?.toSet().orEmpty()
+
+    /**
+     * Altın karşılığı seri dondurma satın alır.
+     *
+     * Altın düşümü de dondurmanın yazılması da sunucuda, tek transaction'da: cüzdan
+     * alanları kurallarda sunucuya özel ve iki adımlı bir akışta araya giren kapanma altını
+     * götürüp dondurmayı vermeyebilirdi.
+     *
+     * @param onResult Başarıda yeni altın bakiyesi; başarısızlıkta kullanıcıya gösterilecek
+     *   mesaj.
+     */
+    fun buyFreeze(
+        context: Context,
+        onResult: (success: Boolean, message: String, currency: Int) -> Unit,
+    ) {
+        if (uid() == null) {
+            onResult(false, "Seri dondurma almak için giriş yapman gerekiyor.", 0)
+            return
+        }
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("buyStreakFreeze")
+            // Sunucu dondurmanın hangi günden itibaren koruduğunu buna göre yazıyor.
+            .call(hashMapOf("today" to StudyTimeTracker.dayId()))
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *>
+                val currency = (data?.get("currency") as? Number)?.toInt()
+                val freezes = (data?.get("freezes") as? Number)?.toInt()
+                if (currency == null || freezes == null) {
+                    Log.w(TAG, "buyStreakFreeze geçersiz yanıt döndü: $data")
+                    onResult(false, "Satın alınamadı. Birazdan tekrar dene.", 0)
+                    return@addOnSuccessListener
+                }
+                StreakRepository.markFreezePurchased(
+                    context, freezes, (data["freezeDay"] as? String).orEmpty(),
+                )
+                // Bakiye önbelleği yalnızca Firestore dinleyicisiyle tazeleniyor; o gelene
+                // kadar üst barda eski sayı kalmasın.
+                UserWalletFirestore.cacheCurrency(context, currency)
+                AnalyticsLogger.logGoldSpent(
+                    AnalyticsLogger.ITEM_STREAK_FREEZE,
+                    StreakRepository.FREEZE_COST_GOLD,
+                )
+                onResult(true, "", currency)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "buyStreakFreeze başarısız", e)
+                onResult(false, callErrorMessage(e, "Satın alınamadı."), 0)
             }
     }
 
@@ -267,19 +340,30 @@ object StreakSyncService {
      * Taşıma katmanına ait kodlar ayrı tutuluyor: onlarda sunucunun mesajı ya yok ya da
      * İngilizce bir yığın izi oluyor, çocuğa gösterilecek bir şey değil.
      */
-    private fun claimErrorMessage(e: Exception): String {
+    private fun claimErrorMessage(e: Exception): String = callErrorMessage(e, "Ödül alınamadı.")
+
+    /**
+     * [claimErrorMessage]'ın genel hâli; ödül toplama ve satın alma aynı ayrımı kullanıyor.
+     *
+     * @param failed İşlemin kendi "olmadı" cümlesi ("Ödül alınamadı.", "Satın alınamadı.").
+     */
+    private fun callErrorMessage(e: Exception, failed: String): String {
         val code = (e as? FirebaseFunctionsException)?.code
-            ?: return "Ödül alınamadı. İnternetini kontrol edip tekrar dene."
+            ?: return "$failed İnternetini kontrol edip tekrar dene."
         return when (code) {
             FirebaseFunctionsException.Code.UNAVAILABLE,
             FirebaseFunctionsException.Code.DEADLINE_EXCEEDED,
             -> "Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene."
             FirebaseFunctionsException.Code.INTERNAL,
             FirebaseFunctionsException.Code.UNKNOWN,
-            -> "Ödül alınamadı. İnternetini kontrol edip tekrar dene."
+            -> "$failed İnternetini kontrol edip tekrar dene."
+            // Fonksiyon sunucuda yok (henüz deploy edilmemiş): mesajı İngilizce "NOT_FOUND".
+            FirebaseFunctionsException.Code.NOT_FOUND,
+            FirebaseFunctionsException.Code.UNIMPLEMENTED,
+            -> "$failed Birazdan tekrar dene."
             // Geri kalanı sunucunun kendi Türkçe açıklaması (HttpsError mesajı).
             else -> e.message?.takeIf { it.isNotBlank() }
-                ?: "Ödül alınamadı. Birazdan tekrar dene."
+                ?: "$failed Birazdan tekrar dene."
         }
     }
 

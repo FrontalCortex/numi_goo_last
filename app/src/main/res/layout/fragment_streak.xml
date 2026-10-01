@@ -395,14 +395,57 @@
 
             </LinearLayout>
 
-            <Button
+            <!--
+              Seri dondurma durumu. Mağazadan alınıyor (fragment_shop → shopStreakFreezeCard);
+              burada yalnızca elde olup olmadığı görünüyor. Tıklanabilir değil.
+            -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_streak_option"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="10dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/streak_freeze_ic" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Seri dondurma"
+                    android:textColor="@android:color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/streakFreezeStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#78909C"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    tools:text="Hazır" />
+
+            </LinearLayout>
+
+            <!-- Button DEĞİL TextView: Material teması Button'ı MaterialButton'a çevirip arka planı
+                 colorPrimary (mor) ile boyuyor, bg_streak_option'ın koyu rengi pembeye dönüyordu.
+                 "Ödülü topla" da aynı sebeple TextView. -->
+            <TextView
                 android:id="@+id/streakChangeGoal"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_streak_option"
+                android:gravity="center"
                 android:text="Günlük hedefi değiştir"
-                android:textAllCaps="false"
                 android:textColor="@android:color/white"
                 android:textSize="15sp" />
 

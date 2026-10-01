@@ -230,8 +230,16 @@ object StreakViews {
      *
      * Son 7 gün değil TAKVİM HAFTASI gösteriliyor: kullanıcı "bu hafta neredeyim" diye
      * bakıyor, "son yedi günde" diye değil.
+     *
+     * @param frozenDays Seri dondurmanın kapattığı günler: tutturulmadı ama seri kırılmadı.
+     *   Ayrı çiziliyor, çünkü boş bırakılsaydı yaşayan bir serinin ortasında açıklanamayan
+     *   bir delik görünürdü; tik konsaydı çocuğa çalışmadığı bir gün çalışmış denirdi.
      */
-    fun buildWeekStrip(container: ViewGroup, achievedDays: Set<String>) {
+    fun buildWeekStrip(
+        container: ViewGroup,
+        achievedDays: Set<String>,
+        frozenDays: Set<String> = emptySet(),
+    ) {
         container.removeAllViews()
         val context = container.context
         val density = context.resources.displayMetrics.density
@@ -248,6 +256,9 @@ object StreakViews {
         for (i in 0 until 7) {
             val dayId = format.format(Date(cal.timeInMillis))
             val done = dayId in achievedDays
+            // Tutturulmuş gün önce gelir: iki cihazlı kullanıcıda aynı gün bir cihazda
+            // tutturulmuş, öbüründe dondurmayla kapatılmış görünebiliyor.
+            val frozen = !done && dayId in frozenDays
             val isToday = dayId == today
 
             val cell = LinearLayout(context).apply {
@@ -265,10 +276,12 @@ object StreakViews {
                     setBackgroundResource(
                         when {
                             done -> R.drawable.bg_streak_day_done
+                            frozen -> R.drawable.bg_streak_day_frozen
                             isToday -> R.drawable.bg_streak_day_today
                             else -> R.drawable.bg_streak_day_empty
                         },
                     )
+                    if (frozen) contentDescription = "Seri dondurma kullanıldı"
                     layoutParams = LinearLayout.LayoutParams(
                         (28 * density).toInt(),
                         (28 * density).toInt(),

@@ -4000,6 +4000,104 @@ function streakDayNumber(dayId) {
   return Math.floor(ms / 86400000);
 }
 
+/** Epoch gün sayısı → `yyyy-MM-dd`; [streakDayNumber]'ın tersi. */
+function streakDayId(dayNo) {
+  return new Date(dayNo * 86400000).toISOString().slice(0, 10);
+}
+
+// ─── Seri dondurma ──────────────────────────────────────────────────────────
+//
+// NE
+//   Mağazadan altınla alınan tek kullanımlık koruma: kaçırılan İLK günü kapatır, seri
+//   kırılmaz. Kapatılan gün seriye EKLENMEZ (5 günlük seri 5 kalır, ertesi gün çalışılınca
+//   6 olur) — eklenseydi altınla gün satın alınır, kilometre taşı ödülleri de onunla gelirdi.
+//
+// NASIL TEMSİL EDİLİYOR
+//   Kaçan gün "köprü" olarak `lastDay`'e yazılıyor ve `frozenDays`'e ekleniyor. Böylece
+//   ardışıklık kontrolünün (applyStreakDays, istemcide StreakRepository.refresh) hiçbir
+//   satırı değişmiyor: ertesi gün bildirildiğinde `lastDay + 1` şartı kendiliğinden tutuyor.
+//
+// NE ZAMAN HARCANIYOR
+//   Gün kaçtığı ANDA çalışan bir kodumuz yok, o yüzden — kırılma gibi — sonradan, bir
+//   "referans gün" görüldüğünde hesaplanıyor: istemcinin bildirdiği bugün ya da tutturulmuş
+//   bir gün. İki gün üst üste kaçtıysa dondurma yine harcanıyor ve seri yine kırılıyor
+//   (ürün kararı: dondurma kaçan ilk günün bedeli, serinin kurtulmasının garantisi değil).
+//
+// İKİZİ
+//   Aynı kural istemcide StreakFreezeRules.settle içinde. Çevrimdışıyken de çalışsın diye
+//   orada da var; ikisi aynı girdiyle aynı sonucu vermek ZORUNDA, yoksa çocuk "serin
+//   korundu" görüp eşitlemeden sonra kırık seriyle karşılaşır.
+
+/**
+ * Seri dondurmanın altın bedeli.
+ *
+ * DİKKAT: ikizi istemcide, `StreakRepository.FREEZE_COST_GOLD`. Orası yalnızca GÖSTERİM için
+ * (kartta yazan fiyat); düşülen miktarı burası belirliyor. Biri değişirse diğeri de değişmeli.
+ */
+const STREAK_FREEZE_COST = 4000;
+
+/** Aynı anda elde tutulabilecek dondurma sayısı; harcanınca yenisi alınabilir. */
+const STREAK_FREEZE_MAX_HELD = 1;
+
+/**
+ * Eldeki dondurmayı, kaçırılan ilk günü kapatmak için harcar.
+ *
+ * Değişiklik yoksa AYNI nesneyi döner; çağıranlar `settled !== state` ile "bir şey oldu mu"
+ * diye bakıyor.
+ *
+ * @param refDayNo Başladığı bilinen bir gün (epoch gün): istemcinin bugünü ya da bildirilen
+ *   bir gün. Kendisi henüz bitmediği için kaçmış sayılmaz; kaçan gün ondan ÖNCEKİ günlerdir.
+ */
+function settleStreakFreeze(state, refDayNo) {
+  const freezes = Math.max(0, Math.trunc(Number(state.freezes) || 0));
+  if (freezes <= 0 || !(state.current > 0) || refDayNo === null) return state;
+  const lastNo = streakDayNumber(state.lastDay);
+  if (lastNo === null) return state;
+  // Arada tam bir gün olmalı: lastDay dün ise henüz kaçan bir şey yok.
+  if (refDayNo - lastNo < 2) return state;
+  const missedNo = lastNo + 1;
+  // Dondurma, satın alındığı günden ÖNCESİNİ kurtarmaz. Bu şart olmasaydı dün kırılan seri
+  // bugün dondurma alınarak "onarılabilirdi": sunucuda kırılma yazılmıyor (`current` yeni bir
+  // gün bildirilene kadar eski değerinde duruyor), yani ölü seri burada hâlâ canlı görünür.
+  const boughtNo = streakDayNumber(state.freezeDay);
+  if (boughtNo !== null && missedNo < boughtNo) return state;
+
+  const missedDay = streakDayId(missedNo);
+  const frozenDays = Array.from(new Set((state.frozenDays || []).concat([missedDay])))
+    .sort()
+    .slice(-STREAK_RECENT_DAYS_KEPT);
+  return Object.assign({}, state, {
+    lastDay: missedDay,
+    freezes: freezes - 1,
+    freezeDay: '',
+    frozenDays,
+  });
+}
+
+/** Dondurma alanları değiştiyse yazılacak yama; değişmediyse boş (her çağrıda yazmayalım). */
+function freezePatch(before, after) {
+  if (
+    after.freezes === before.freezes &&
+    after.freezeDay === before.freezeDay &&
+    after.frozenDays.length === before.frozenDays.length
+  ) {
+    return {};
+  }
+  return { freezes: after.freezes, freezeDay: after.freezeDay, frozenDays: after.frozenDays };
+}
+
+/**
+ * İstemcinin bildirdiği yerel gün (epoch gün); geçersizse null.
+ *
+ * Gün bildirimindeki ile aynı pay: sunucunun UTC gününden en fazla ±1 gün sapabilir.
+ */
+function clientTodayNo(raw, serverDayNo) {
+  const dayNo = streakDayNumber(raw);
+  if (dayNo === null) return null;
+  if (Math.abs(dayNo - serverDayNo) > STREAK_DAY_TOLERANCE_DAYS) return null;
+  return dayNo;
+}
+
 /**
  * Meydan okuma alanlarının yazılıp yazılmayacağı.
  *
@@ -4063,6 +4161,17 @@ function readStreakState(snap) {
     goalMinutes: Math.trunc(Number(data.goalMinutes) || 0),
     challengeDays: Math.trunc(Number(data.challengeDays) || 0),
     challengeClaimed: Math.trunc(Number(data.challengeClaimed) || 0),
+    freezes: Math.min(
+      STREAK_FREEZE_MAX_HELD,
+      Math.max(0, Math.trunc(Number(data.freezes) || 0))
+    ),
+    freezeDay:
+      typeof data.freezeDay === 'string' && STREAK_DAY_RE.test(data.freezeDay)
+        ? data.freezeDay
+        : '',
+    frozenDays: Array.isArray(data.frozenDays)
+      ? data.frozenDays.filter((v) => typeof v === 'string' && STREAK_DAY_RE.test(v))
+      : [],
   };
 }
 
@@ -4072,13 +4181,29 @@ function readStreakState(snap) {
  * Aynı gün ikinci kez bildirilirse hiçbir şey olmaz; ardışık olmayan bir gün seriyi
  * bugünden yeniden başlatır ve toplanmış kilometre taşları sıfırlanır — yeni bir seri, yeni
  * bir merdiven demek.
+ *
+ * Araya kaçan bir gün girdiyse ve elde seri dondurma varsa önce o devreye giriyor
+ * (bkz. settleStreakFreeze): kaçan gün köprülendiği için aşağıdaki ardışıklık kontrolü
+ * değişmeden çalışıyor.
  */
 function applyStreakDays(state, days) {
   let { current, longest, lastDay, claimed } = state;
+  let freeze = {
+    freezes: state.freezes || 0,
+    freezeDay: state.freezeDay || '',
+    frozenDays: state.frozenDays || [],
+  };
   for (const day of days) {
     if (lastDay === day) continue;
-    const lastNo = streakDayNumber(lastDay);
     const dayNo = streakDayNumber(day);
+    const settled = settleStreakFreeze(Object.assign({ current, lastDay }, freeze), dayNo);
+    lastDay = settled.lastDay;
+    freeze = {
+      freezes: settled.freezes,
+      freezeDay: settled.freezeDay,
+      frozenDays: settled.frozenDays,
+    };
+    const lastNo = streakDayNumber(lastDay);
     if (lastNo !== null && dayNo === lastNo + 1) {
       current += 1;
     } else if (lastNo !== null && dayNo <= lastNo) {
@@ -4091,7 +4216,7 @@ function applyStreakDays(state, days) {
     longest = Math.max(longest, current);
     lastDay = day;
   }
-  return { current, longest, lastDay, claimed };
+  return Object.assign({ current, longest, lastDay, claimed }, freeze);
 }
 
 /**
@@ -4150,6 +4275,13 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   const utcOffsetMinutes =
     Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
 
+  // İstemcinin yerel bugünü: seri dondurmanın "kaçan gün"ü buna göre belirleniyor. Sunucunun
+  // kendi saatinden türetilmiyor çünkü istemci de dondurmayı KENDİ gününe göre harcıyor
+  // (çevrimdışı çalışabilsin diye); iki taraf farklı güne bakarsa biri harcanmış derken
+  // öbürü durur der. Eski istemci sürümü alanı göndermiyor: o zaman null ve dondurma yalnızca
+  // gün bildirilirken hesaplanıyor. Bu tanım da günsüz daldan ÖNCE olmak zorunda (yukarıya bkz.).
+  const todayNo = clientTodayNo(data && data.today, serverDayNo);
+
   // Gönderilen günlerin hepsi elendi (hepsi çok eski ya da ileri tarihli). Hata değil:
   // istemci kuyruğu temizleyebilsin diye mevcut durum olduğu gibi dönülüyor. Hata
   // dönseydi istemci aynı işe yaramaz günleri sonsuza kadar yeniden denerdi.
@@ -4165,11 +4297,34 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     // Bu yüzden günsüz çağrı da yazabiliyor — aynı "tur başı" şartıyla.
     Object.assign(patch, challengePatch(state.current, challengeDays, state));
     if (Object.keys(patch).length > 0 && snap.exists) await ref.set(patch, { merge: true });
+
+    // Dün kaçtıysa dondurma burada harcanıyor: istemci uygulama açılır açılmaz kendi
+    // tarafında harcadı, sunucu gün bildirilmesini bekleseydi mağaza "dondurman var" diye
+    // yeni alımı reddederdi (istemcide düğme açık, sunucuda kapalı).
+    //
+    // Transaction ŞART, yukarıdaki düz yazım gibi yapılamaz: aynı anda buyStreakFreeze
+    // çalışabiliyor. Düz yazım, burada okunan bayat duruma göre `freezes: 0` yazıp az önce
+    // satın alınan dondurmayı — yani 4000 altını — silerdi.
+    let frozen = state;
+    if (settleStreakFreeze(state, todayNo) !== state) {
+      frozen = await db.runTransaction(async (transaction) => {
+        const fresh = readStreakState(await transaction.get(ref));
+        const settled = settleStreakFreeze(fresh, todayNo);
+        if (settled !== fresh) {
+          transaction.set(
+            ref,
+            Object.assign({ lastDay: settled.lastDay }, freezePatch(fresh, settled)),
+            { merge: true }
+          );
+        }
+        return settled;
+      });
+    }
     return {
       success: true,
       current: state.current,
       longest: state.longest,
-      lastDay: state.lastDay,
+      lastDay: frozen.lastDay,
       claimed: state.claimed,
       recentDays: state.recentDays,
       goalMinutes: state.goalMinutes,
@@ -4178,6 +4333,9 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       // (bkz. StreakRepository.adoptServerState).
       challengeDays: patch.challengeDays ?? state.challengeDays,
       challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
+      freezes: frozen.freezes,
+      freezeDay: frozen.freezeDay,
+      frozenDays: frozen.frozenDays,
     };
   }
 
@@ -4185,7 +4343,10 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   const result = await db.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
     const state = readStreakState(snap);
-    const next = applyStreakDays(state, days);
+    // Günler işlendikten sonra BUGÜNE göre de kapatılıyor: kuyruktan gelen günler eski
+    // olabilir (çevrimdışı geçen günler), yani son bildirilen gün ile bugün arasında da bir
+    // gün kaçmış olabilir. İstemci onu açılışta kendi tarafında zaten harcadı.
+    const next = settleStreakFreeze(applyStreakDays(state, days), todayNo);
 
     // Tutturulmuş günler: hafta şeridi cihaz değişiminden sonra da dolu gelsin diye.
     // Diziler merge'de birleştirilmediği için birleştirme burada yapılıyor.
@@ -4204,6 +4365,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
     Object.assign(patch, challengePatch(next.current, challengeDays, state));
     Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
+    Object.assign(patch, freezePatch(state, next));
 
     transaction.set(ref, patch, { merge: true });
 
@@ -4244,7 +4406,83 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     goalMinutes: result.goalMinutes,
     challengeDays: result.challengeDays,
     challengeClaimed: result.challengeClaimed,
+    freezes: result.freezes,
+    freezeDay: result.freezeDay,
+    frozenDays: result.frozenDays,
   };
+});
+
+/**
+ * Altın karşılığı seri dondurma satın alır.
+ *
+ * Altın düşümü ve dondurmanın yazılması AYNI transaction'da: iki adımlı olsaydı araya
+ * giren bir hata altını götürüp dondurmayı vermeyebilirdi (buyEnergyWithKeys ile aynı sebep).
+ *
+ * Önce bekleyen dondurma hesabı kapatılıyor: eldeki dondurma dün harcanmış ama sunucu bunu
+ * henüz işlememiş olabilir (istemci açılışta kendi tarafında harcıyor). Kapatılmasaydı
+ * "zaten bir dondurman var" diye reddederdik — istemcide düğme açıkken.
+ */
+exports.buyStreakFreeze = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  // Bugün zorunlu: dondurmanın hangi günden itibaren koruduğu buna göre yazılıyor
+  // (bkz. settleStreakFreeze — satın alındığı günden öncesini kurtarmaz).
+  const todayNo = clientTodayNo(data && data.today, Math.floor(Date.now() / 86400000));
+  if (todayNo === null) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz gün.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const ref = streakDocRef(uid);
+
+  const result = await db.runTransaction(async (transaction) => {
+    // Tüm okumalar yazmalardan önce.
+    const userSnap = await transaction.get(userRef);
+    const streakSnap = await transaction.get(ref);
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const before = readStreakState(streakSnap);
+    const state = settleStreakFreeze(before, todayNo);
+
+    if (state.freezes >= STREAK_FREEZE_MAX_HELD) {
+      throw new functions.https.HttpsError('already-exists', 'Zaten bir seri dondurman var.');
+    }
+    const currency = Number.parseInt(userSnap.data().currency, 10) || 0;
+    if (currency < STREAK_FREEZE_COST) {
+      throw new functions.https.HttpsError('failed-precondition', 'Yetersiz altın.');
+    }
+
+    const after = Object.assign({}, state, {
+      freezes: state.freezes + 1,
+      freezeDay: streakDayId(todayNo),
+    });
+    const patch = {
+      freezes: after.freezes,
+      freezeDay: after.freezeDay,
+      frozenDays: after.frozenDays,
+      freezeBoughtAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    // Eski dondurma bu çağrıda harcandıysa köprülenen gün de yazılmalı; harcanmadıysa
+    // `lastDay`'e dokunulmuyor (hiç gün bildirmemiş kullanıcıda boş bir alan yaratmayalım).
+    if (state !== before) patch.lastDay = state.lastDay;
+
+    transaction.update(userRef, { currency: currency - STREAK_FREEZE_COST });
+    transaction.set(ref, patch, { merge: true });
+    return {
+      currency: currency - STREAK_FREEZE_COST,
+      keys: Number.parseInt(userSnap.data().keys, 10) || 0,
+      freezes: after.freezes,
+      freezeDay: after.freezeDay,
+      frozenDays: after.frozenDays,
+      lastDay: after.lastDay,
+    };
+  });
+
+  return Object.assign({ success: true }, result);
 });
 
 /**
@@ -4353,6 +4591,7 @@ exports.claimStreakReward = functions.https.onCall(async (data, context) => {
 // Testler için.
 exports._streakRewardFor = streakRewardFor;
 exports._applyStreakDays = applyStreakDays;
+exports._settleStreakFreeze = settleStreakFreeze;
 
 // ─── Akşam hatırlatması ─────────────────────────────────────────────────────
 //

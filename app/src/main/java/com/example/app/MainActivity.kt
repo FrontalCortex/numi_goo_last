@@ -2117,6 +2117,24 @@ class MainActivity : AppCompatActivity() {
         // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
         // burası: ekran dönüşleri, geri yığını değişimi ve süre değişimi hepsi buradan geçiyor.
         maybeShowStreakCelebration()
+        // Seri dondurma refresh() içinde, kullanıcı hiçbir şey yapmadan harcanıyor. Haber
+        // verilmezse çocuk 4000 altınının nereye gittiğini ancak mağazaya girince fark eder —
+        // "serin kurtuldu" ise hiç söylenmemiş olur. Toast, çünkü tek tazeleme noktası
+        // burası ve ders ekranları dahil her yerden geçiliyor: ekran açan bir şey ders
+        // sonrası zincirine karışırdı.
+        when (StreakRepository.takeFreezeNotice(this)) {
+            StreakRepository.FreezeNotice.SAVED -> Toast.makeText(
+                this,
+                "Dün çalışamadın ama seri dondurman serini korudu!",
+                Toast.LENGTH_LONG,
+            ).show()
+            StreakRepository.FreezeNotice.LOST -> Toast.makeText(
+                this,
+                "Seri dondurman bir günü kapattı ama iki gün üst üste kaçtığı için serin kırıldı.",
+                Toast.LENGTH_LONG,
+            ).show()
+            null -> Unit
+        }
         // Ödüller sunucudaki sayaca bakıyor. Eşitleme burada tetikleniyor çünkü gün ders
         // ekranındayken tutturuluyor ve activity o sırada onResume'a girmiyor; kuyruk boşsa
         // ya da bir deneme sürüyorsa çağrı kendini eliyor.

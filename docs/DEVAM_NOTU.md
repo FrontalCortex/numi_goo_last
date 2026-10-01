@@ -89,6 +89,66 @@ Kalıcı çözüm ders bitiş yolunda bu girişi de pop etmek; ama o yol hassas 
 anlaşmaları). Ayrı bir turda, tek başına ve derleyerek yapılmalı. `docs/YAYIN_ONCESI_KONTROL.md`
 teknik borç bölümünde de yazılı.
 
+## Seri dondurma — yazıldı ve deploy edildi, cihazda DENENMEDİ (01.10.2026)
+
+Mağazada "Özel Teklifler"in en altında, 4000 altına satılan tek kullanımlık koruma.
+
+**Kurallar** (ürün kararları kullanıcıya soruldu, cevapları bunlar):
+
+- Kaçırılan **ilk** günü kapatır; kapatılan gün seriye **eklenmez** (5 günlük seri 5 kalır).
+- Aynı anda en fazla **1** tane tutulur; harcanınca yenisi alınabilir.
+- İki gün üst üste kaçarsa dondurma **yine harcanır** ve seri yine kırılır.
+- Satın alındığı günden **öncesini kurtarmaz** (dün kırılan seri bugün dondurma alınarak
+  onarılamaz). Bu kural olmadan sunucu seriyi diriltiyordu, çünkü sunucuda kırılma hiç
+  yazılmıyor: `current` yeni bir gün bildirilene kadar eski değerinde duruyor.
+
+**Nasıl çalışıyor:** kaçan gün "köprü" olarak serinin son günü yapılıyor ve `frozenDays`'e
+ekleniyor; ardışıklık kontrolünün hiçbir satırı değişmedi. Kural iki yerde, aynı girdiyle aynı
+sonucu vermek zorunda:
+
+| Taraf | Yer |
+|---|---|
+| Sunucu | `functions/index.js` → `settleStreakFreeze`, `applyStreakDays`, `buyStreakFreeze`, `submitStreakDay` |
+| İstemci | `StreakFreezeRules.settle` (yan etkisiz) + `StreakRepository.applyFreeze` / `adoptServerState` |
+
+İstemci dondurmayı kendi tarafında da harcıyor (çevrimdışı açılışta seri kırık görünmesin
+diye) ve `submitStreakDay` / `buyStreakFreeze` çağrılarında yerel gününü (`today`) gönderiyor;
+sunucu "dün kaçtı mı"yı o güne göre soruyor. Sunucu alanları: `freezes`, `freezeDay`,
+`frozenDays` (`users/{uid}/streak/state`).
+
+Fiyat iki yerde: `STREAK_FREEZE_COST` (sunucu, düşülen miktar) ve
+`StreakRepository.FREEZE_COST_GOLD` (istemci, kartta yazan). Biri değişirse diğeri de değişmeli.
+
+**Testler** (hepsi geçiyor):
+
+```powershell
+node functions/scripts/test-streak-freeze.js        # kural, kaynaktan çekilerek (48)
+node functions/scripts/test-streak-freeze-flow.js   # gerçek fonksiyonlar, sahte Firestore (47)
+.\gradlew testDebugUnitTest --tests "*StreakFreezeRulesTest"   # istemci ikizi (14)
+```
+
+**Doğrulanan:** derleme, yukarıdaki testler, deploy (`submitStreakDay` güncellendi,
+`buyStreakFreeze` oluşturuldu; ikisi de oturumsuz istekte `UNAUTHENTICATED` dönüyor, yani
+yükleniyorlar).
+
+**Doğrulanmayan:** cihazda hiçbir şey. Telefon kilitliydi, sonra adb bağlantısı koptu. Kart
+ve ikon yalnızca bilgisayarda başsız tarayıcı önizlemesiyle görüldü. Bakılacaklar:
+
+1. Mağaza → "Özel Teklifler" en alt: kart, ikon, `4000` düğmesi.
+2. Satın al (onay penceresi çıkmalı) → altın 4000 düşmeli, düğme "✓ HAZIR" olmalı, seri
+   ekranında "Seri dondurma: Hazır" yazmalı. Logda `StreakDiag … Repo.dondurma | SATIN_ALINDI`.
+3. Deploy sonrası `submitStreakDay`'in gerçek bir çağrısı: `StreakDiag … Sync.cevap | BASARILI`
+   (günde bir kez gidiyor; o gün zaten gittiyse ertesi gün görünür).
+4. Asıl davranış: dondurma al → ertesi gün **hiç çalışma** → öbür gün aç. Beklenen: "seri
+   dondurman serini korudu" bildirimi, hafta şeridinde kaçan günde kar tanesi, seri sayısı
+   aynı, mağazada düğme yeniden `4000`. Logda `Repo.dondurma | HARCANDI … seriKurtuldu=true`.
+   **Saati ileri alarak deneme** — sunucu istemcinin gününü ±1 günden fazla sapınca kabul
+   etmiyor, iki taraf ayrışır.
+
+**Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
+ekranı; seri ekranındaki "Seri dondurma: Yok" satırına dokununca mağazaya gitmek; akşam
+hatırlatmasının "dondurman var" diyen bir çeşidi.
+
 ## Yakında yapılanlar — tekrar etmeyin
 
 - **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
@@ -124,6 +184,9 @@ firebase deploy --only functions:claimCupPathChest
 
 `claimCupPathChest` (kupa yolu sandık enderliği) deploy edilmedi.
 
+`submitStreakDay` ve `buyStreakFreeze` 01.10.2026'da deploy edildi (seri dondurma). Onay
+yalnızca bu ikisi için alınmıştı; `claimCupPathChest` bilerek dışarıda bırakıldı.
+
 `submitStreakDay`'in deploy edildiği **çıkarım** yoluyla saptandı, doğrudan görülmedi: seri
 dokümanında `lastSeenAt` (yalnızca `reminderPatch` yazıyor, iki dalda da) `updatedAt`'ten
 (yalnızca gün taşıyan transaction yazıyor) daha yeniydi — yani günsüz "buradayım" dalı
@@ -136,7 +199,7 @@ Firebase konsolundan fonksiyonun son deploy zamanına bak.
 
 | Etiket | Ne gösterir |
 |---|---|
-| `StreakDiag` | Günlük seri zinciri: süre sayımı, `refresh()` dalları, kuyruk, sunucu gidiş/dönüş, ekran |
+| `StreakDiag` | Günlük seri zinciri: süre sayımı, `refresh()` dalları, kuyruk, sunucu gidiş/dönüş, ekran; seri dondurma için `Repo.dondurma` (`SATIN_ALINDI` / `HARCANDI`) |
 | `MapTouchDbg` | Harita dokunma yüzeyi: overlay host'ları (`ekli=` alanı hayaleti ayırt eder), scrim, blocker'lar, `fmBackStack`, `chromeLockDepth` |
 | `ChromeBlockerDbg` | `acquire`/`release` zinciri ve derinlik; `STUCK_CHROME_LOCK?` |
 | `LessonProgressDiag` | Ders ilerlemesi, `LessonResult.claimButton` dalları (`SKIP_TO_MAP` / `GO_TO_CHEST`) |

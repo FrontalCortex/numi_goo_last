@@ -65,9 +65,16 @@ sebebi "acaba unuttum mu?" diye aramana gerek kalmaması:
 - **Tanıtım sıklığı** — `MainActivity.ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD = 3`.
   Türü LESSON olan her üçüncü ders dönüşünde açılıyor. Üç sayısı ölçülerek değil seçilerek
   kondu. Bakılacak ölçüm: tanıtımın gösterim sayısına karşılık Pro denemesi başlatma oranı.
-- **Seri dondurma** — `streak_broken.missed_days` ölçümü 2-3 haftalık beta verisi biriktirsin.
-  Kaç günlük boşluktan sonra serinin kırıldığını bilmeden dondurma hakkının kaç gün olacağına
-  karar verilemez.
+- **Seri dondurma** — veri beklenmeden yazıldı (01.10.2026): 1 günü kapatıyor, 4000 altın,
+  aynı anda en fazla 1 tane. Bu üç sayı da ölçülerek değil seçilerek kondu; beta verisiyle
+  yeniden bakılacak. Bakılacak ölçümler:
+  - `streak_broken.missed_days` — seriler kaç günlük boşlukla kırılıyor. Çoğu 1 gün ise 1
+    günlük dondurma doğru; 2-3 gün ağırlıktaysa ikinci bir dondurma tutmaya izin vermek gerekir.
+  - `streak_freeze_used.streak_saved` — harcanan dondurmaların kaçı seriyi gerçekten
+    kurtardı. Düşükse çocuklara boşa altın harcatıyoruz demektir (iki gün kaçınca dondurma
+    yine harcanıyor; bu kural o zaman yeniden düşünülmeli).
+  - `gold_spent` içinde `spend_item=streak_freeze` — kaç kişi alıyor. Kimse almıyorsa fiyat
+    yüksek ya da kart mağazanın dibinde görünmüyor.
 
 ---
 

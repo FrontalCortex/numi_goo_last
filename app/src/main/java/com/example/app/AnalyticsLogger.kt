@@ -101,6 +101,7 @@ object AnalyticsLogger {
     private const val EV_STREAK_DAY_DONE = "streak_day_done"
     private const val EV_STREAK_BROKEN = "streak_broken"
     private const val EV_STREAK_CHALLENGE_DONE = "streak_challenge_done"
+    private const val EV_STREAK_FREEZE_USED = "streak_freeze_used"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -181,6 +182,7 @@ object AnalyticsLogger {
     private const val P_GOAL_MINUTES = "goal_minutes"
     private const val P_CHALLENGE_DAYS = "challenge_days"
     private const val P_MISSED_DAYS = "missed_days"
+    private const val P_STREAK_SAVED = "streak_saved"
 
     // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
     // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
@@ -191,6 +193,8 @@ object AnalyticsLogger {
     const val ITEM_RACE_FAST_FORWARD = "race_fast_forward"
     /** Günlük soruya anahtarla devam etme ([TasksFragment]). */
     const val ITEM_DAILY_QUESTION_CONTINUE = "daily_question_continue"
+    /** Mağazadan altınla seri dondurma ([ShopFragment]). */
+    const val ITEM_STREAK_FREEZE = "streak_freeze"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -1350,6 +1354,24 @@ object AnalyticsLogger {
     fun logStreakChallengeDone(days: Int) = safe { fa ->
         fa.logEvent(EV_STREAK_CHALLENGE_DONE) {
             param(P_CHALLENGE_DAYS, days.toLong())
+        }
+    }
+
+    /**
+     * Seri dondurma harcandı: kaçan ilk gün kapatıldı.
+     *
+     * Satın alma ayrıca [logGoldSpent] ile ([ITEM_STREAK_FREEZE]) gidiyor; bu olay
+     * dondurmanın İŞE YARAYIP YARAMADIĞINI ölçüyor. Fiyatın doğru olup olmadığı ikisinin
+     * oranından okunur: alınıp hiç harcanmıyorsa gereksiz bir güvence, harcanıp seriyi
+     * çoğunlukla kurtarmıyorsa ([saved] = false) çocuğa boşa altın harcatan bir ürün.
+     *
+     * @param streakDays Korunan (ya da yine de kaybedilen) serinin uzunluğu.
+     * @param saved Seri yaşıyor mu. false: arkasından bir gün daha kaçtı, seri yine kırıldı.
+     */
+    fun logStreakFreezeUsed(streakDays: Int, saved: Boolean) = safe { fa ->
+        fa.logEvent(EV_STREAK_FREEZE_USED) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_STREAK_SAVED, if (saved) 1L else 0L)
         }
     }
 

@@ -44,6 +44,10 @@ object StreakRepository {
     private const val KEY_CHALLENGE_CLAIMED = "challenge_claimed"
     private const val KEY_CHALLENGE_CLAIMED_DAY = "challenge_claimed_day"
     private const val KEY_NEW_STREAK_PROMPT_DAY = "new_streak_prompt_day"
+    private const val KEY_FREEZES = "freezes"
+    private const val KEY_FREEZE_DAY = "freeze_day"
+    private const val KEY_FROZEN_DAYS = "frozen_days"
+    private const val KEY_FREEZE_NOTICE = "freeze_notice"
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -61,6 +65,26 @@ object StreakRepository {
     /** Eşitleme kuyruğunda en fazla kaç gün beklesin; sunucu da bundan fazlasını almıyor. */
     private const val MAX_PENDING_SYNC_DAYS = 7
 
+    /** Seri dondurma için son günün kaç gün geriye kadar arandığı (bkz. [StreakFreezeRules.settle]). */
+    private const val FREEZE_SCAN_DAYS = 30
+
+    /**
+     * Seri dondurmanın altın bedeli.
+     *
+     * Yalnızca GÖSTERİM ve ölçüm için: düşülen miktarı sunucu belirliyor
+     * (`functions/index.js` → `STREAK_FREEZE_COST`). İkisi ayrılırsa kart bir fiyat yazar,
+     * cüzdandan başka bir miktar gider — biri değişirse diğeri de değişmeli.
+     */
+    const val FREEZE_COST_GOLD = 4000
+
+    /**
+     * [adoptServerState]'e dondurma bilgisi verilmedi.
+     *
+     * 0 ile aynı şey değil: sunucunun eski sürümü bu alanı hiç döndürmüyor ve o yanıtı
+     * "dondurman yok" diye okumak, az önce satın alınmış dondurmayı ekrandan silerdi.
+     */
+    const val FREEZES_UNKNOWN = -1
+
     /** Seri ekranında gösterilecek durum. */
     data class StreakState(
         /** Güncel seri; kırıldıysa 0. */
@@ -70,6 +94,10 @@ object StreakRepository {
         val secondsToday: Int,
         /** Hedefi tutturulmuş günler (`yyyy-MM-dd`), hafta şeridi için. */
         val achievedDays: Set<String>,
+        /** Seri dondurmanın kapattığı günler; hafta şeridinde tutturulmuş günden ayrı çiziliyor. */
+        val frozenDays: Set<String> = emptySet(),
+        /** Elde harcanmamış seri dondurma var mı. */
+        val freezeHeld: Boolean = false,
     ) {
         val goalSeconds: Int get() = goalMinutes * 60
         val goalReachedToday: Boolean get() = secondsToday >= goalSeconds
@@ -182,6 +210,109 @@ object StreakRepository {
             ?.remove(KEY_CHALLENGE_CLAIMED_DAY)
             ?.remove(KEY_LAST_PING_DAY)
             ?.apply()
+    }
+
+    // ── Seri dondurma ───────────────────────────────────────────────────
+    //
+    // Kaç dondurma olduğunu SUNUCU biliyor (altınla alınıyor, altın sunucuya özel); buradaki
+    // sayı onun önbelleği. Yine de dondurma burada da harcanıyor: çocuk çevrimdışıyken
+    // uygulamayı açtığında serisinin kırık görünmemesi gerekiyor. İki taraf aynı kuralı
+    // ([StreakFreezeRules.settle] ve sunucuda `settleStreakFreeze`) aynı güne göre işlettiği
+    // için eşitlemede aynı sonuca varıyorlar.
+
+    /** Elde harcanmamış dondurma sayısı (şimdilik 0 ya da 1). */
+    fun freezesHeld(context: Context): Int = prefs(context)?.getInt(KEY_FREEZES, 0) ?: 0
+
+    /**
+     * Satın alma sunucuda tamamlandı; yerel önbelleğe de işlenir.
+     *
+     * Bir sonraki sunucu okumasını beklemeden: mağaza kartı "Hazır"a hemen dönmeli ve çocuk
+     * o gün çevrimdışı kalsa bile dondurması geçerli olmalı.
+     */
+    fun markFreezePurchased(context: Context, freezes: Int, freezeDay: String) {
+        prefs(context)?.edit()
+            ?.putInt(KEY_FREEZES, freezes.coerceAtLeast(0))
+            ?.putString(KEY_FREEZE_DAY, freezeDay)
+            ?.apply()
+        StreakDiag.log("Repo.dondurma", "SATIN_ALINDI adet=$freezes gun=${freezeDay.ifEmpty { "(bos)" }}")
+    }
+
+    /** Dondurma harcandığında kullanıcıya bir kez söylenecek şey. */
+    enum class FreezeNotice {
+        /** Kaçan gün kapandı, seri yaşıyor. */
+        SAVED,
+
+        /** Kaçan ilk gün kapandı ama arkasından bir gün daha kaçtı; seri yine kırıldı. */
+        LOST,
+    }
+
+    /**
+     * Bekleyen dondurma bildirimini döner ve siler; yoksa ya da bayatsa null.
+     *
+     * Bayat olan gösterilmiyor: dondurmanın harcandığı gün uygulama arka planda açılıp
+     * kapanmış olabilir ve "dün serin kurtuldu" cümlesi üç gün sonra artık doğru değil.
+     */
+    fun takeFreezeNotice(context: Context): FreezeNotice? {
+        val p = prefs(context) ?: return null
+        val raw = p.getString(KEY_FREEZE_NOTICE, "").orEmpty()
+        if (raw.isEmpty()) return null
+        p.edit().remove(KEY_FREEZE_NOTICE).apply()
+        val (kind, day) = raw.split("|").let { it.getOrElse(0) { "" } to it.getOrElse(1) { "" } }
+        if (day != StudyTimeTracker.dayId()) return null
+        return FreezeNotice.values().firstOrNull { it.name == kind }
+    }
+
+    /**
+     * Kaçan günü eldeki dondurmayla kapatır; kapattıysa serinin yeni son gününü döner.
+     *
+     * Serinin kendisini (kaç gün olduğunu) değiştirmiyor, kırılmayı da yazmıyor: yalnızca
+     * son günü kaçan güne çekiyor. Devamını [refresh] içindeki mevcut dallar hallediyor —
+     * köprüden sonra son gün dün ise seri yaşıyor, değilse aynı çağrıda kırılıyor.
+     *
+     * Son gün ile dondurma alanları TEK yazımda gidiyor: ayrı yazılsaydı araya giren bir
+     * kapanma dondurmayı harcayıp köprüyü yazmadan bırakabilirdi (dondurma gitti, seri de).
+     */
+    private fun applyFreeze(context: Context, current: Int, lastDay: String): String? {
+        val p = prefs(context) ?: return null
+        val freezes = p.getInt(KEY_FREEZES, 0)
+        if (freezes <= 0) return null
+        val settled = StreakFreezeRules.settle(
+            current = current,
+            lastDay = lastDay,
+            freezes = freezes,
+            freezeDay = p.getString(KEY_FREEZE_DAY, "").orEmpty(),
+            scanDays = FREEZE_SCAN_DAYS,
+        ) { StudyTimeTracker.dayId(it) } ?: return null
+
+        val saved = settled.missedDay == StudyTimeTracker.dayId(-1)
+        val notice = if (saved) FreezeNotice.SAVED else FreezeNotice.LOST
+        p.edit()
+            .putInt(KEY_FREEZES, freezes - 1)
+            .remove(KEY_FREEZE_DAY)
+            .putString(KEY_LAST_DAY, settled.missedDay)
+            .putString(KEY_FROZEN_DAYS, recentOnly(readFrozenDays(context) + settled.missedDay))
+            .putString(KEY_FREEZE_NOTICE, "${notice.name}|${StudyTimeTracker.dayId()}")
+            .apply()
+        StreakDiag.log(
+            "Repo.dondurma",
+            "HARCANDI kapatilanGun=${settled.missedDay} eskiLastDay=$lastDay current=$current " +
+                "seriKurtuldu=$saved kalanAdet=${freezes - 1}",
+        )
+        AnalyticsLogger.logStreakFreezeUsed(current, saved)
+        return settled.missedDay
+    }
+
+    private fun readFrozenDays(context: Context): Set<String> =
+        prefs(context)?.getString(KEY_FROZEN_DAYS, "")
+            .orEmpty()
+            .split(",")
+            .filter { it.isNotBlank() }
+            .toSet()
+
+    /** Hafta şeridinin arşiv penceresine sığan günler, saklanacak biçimde. */
+    private fun recentOnly(days: Set<String>): String {
+        val cutoff = (0 until ACHIEVED_HISTORY_DAYS).map { StudyTimeTracker.dayId(-it) }.toSet()
+        return days.intersect(cutoff).sorted().joinToString(",")
     }
 
     // ── Kutlama kuyruğu ─────────────────────────────────────────────────
@@ -348,6 +479,15 @@ object StreakRepository {
      *
      * [lastDay] de birlikte alınıyor — alınmasaydı seri 30'a yükselir ama son gün boş
      * kalırdı ve bir sonraki [refresh] "ardışık değil" deyip seriyi 1'e düşürürdü.
+     *
+     * ## Seri dondurma
+     * Dondurma sayısının sahibi sunucu, o yüzden [freezes] her zaman yerelin yerine geçiyor.
+     * Ama sunucunun durumu "bugüne göre kapatılmamış" olabilir: dondurmayı gün kaçtığı anda
+     * değil, bir sonraki çağrıda harcıyor ve bu okuma o çağrıdan önce gelmiş olabilir. Ham
+     * değer olduğu gibi alınsaydı az önce yerelde harcanan dondurma ekrana geri gelirdi.
+     * Bu yüzden sunucunun değerlerine burada aynı kural uygulanıyor, sonra alınıyor.
+     *
+     * @param freezes Sunucudaki dondurma sayısı; yanıtta yoksa [FREEZES_UNKNOWN].
      */
     fun adoptServerState(
         context: Context,
@@ -359,8 +499,36 @@ object StreakRepository {
         goalMinutes: Int = 0,
         challengeDays: Int = 0,
         challengeClaimed: Int = 0,
+        freezes: Int = FREEZES_UNKNOWN,
+        freezeDay: String = "",
+        frozenDays: Set<String> = emptySet(),
     ) {
         val p = prefs(context) ?: return
+
+        // Önce yerel taraf kapatılıyor. Bu fonksiyon günün ilk [refresh]'inden ÖNCE
+        // çalışabiliyor (açılıştaki okuma erken dönerse); o zaman aşağıda sunucudan gelen
+        // "dondurma harcandı" bilgisi yazılır ama yerel son gün köprülenmemiş kalır ve bir
+        // sonraki [refresh] seriyi kırardı — dondurma gitmiş, seri de.
+        applyFreeze(context, p.getInt(KEY_CURRENT, 0), p.getString(KEY_LAST_DAY, "").orEmpty())
+
+        var serverLastDay = lastDay
+        var serverFreezes = freezes
+        var serverFreezeDay = freezeDay
+        var serverFrozen = frozenDays
+        if (freezes > 0) {
+            StreakFreezeRules.settle(
+                current = current,
+                lastDay = lastDay,
+                freezes = freezes,
+                freezeDay = freezeDay,
+                scanDays = FREEZE_SCAN_DAYS,
+            ) { StudyTimeTracker.dayId(it) }?.let { settled ->
+                serverLastDay = settled.missedDay
+                serverFreezes = freezes - 1
+                serverFreezeDay = ""
+                serverFrozen = frozenDays + settled.missedDay
+            }
+        }
 
         // Hedef ve meydan okuma YALNIZCA bu cihazda kurulum akışı hiç görülmediyse
         // sunucudan alınıyor. Bu, "hesabı var, yeni cihaza kurulum yaptı" durumu: kayıt
@@ -411,16 +579,31 @@ object StreakRepository {
             StudyTimeTracker.dayId(),
             StudyTimeTracker.dayId(-1),
         )
-        val serverFresh = lastDay in fresh
+        // Tazelik, dondurma uygulandıktan SONRAKİ son güne göre: dün kaçmış ama dondurmayla
+        // kapanmış bir seri yaşıyor ve yeni cihaza geri yüklenmeli.
+        val serverFresh = serverLastDay in fresh
         val localCurrent = p.getInt(KEY_CURRENT, 0)
         StreakDiag.log(
             "Repo.sunucuDurumu",
             "sunucuCurrent=$current yerelCurrent=$localCurrent " +
-                "sunucuLastDay=${lastDay.ifEmpty { "(bos)" }} taze=$serverFresh -> " +
+                "sunucuLastDay=${lastDay.ifEmpty { "(bos)" }} " +
+                (if (serverLastDay != lastDay) "dondurmaIle=$serverLastDay " else "") +
+                "taze=$serverFresh dondurma=$serverFreezes -> " +
                 (if (current > localCurrent && serverFresh) "BENIMSENDI" else "yerel_korundu"),
         )
         if (current > localCurrent && serverFresh) {
-            editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, lastDay)
+            editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, serverLastDay)
+        }
+        if (freezes != FREEZES_UNKNOWN) {
+            editor.putInt(KEY_FREEZES, serverFreezes.coerceAtLeast(0))
+            if (serverFreezes > 0 && serverFreezeDay.isNotEmpty()) {
+                editor.putString(KEY_FREEZE_DAY, serverFreezeDay)
+            } else {
+                editor.remove(KEY_FREEZE_DAY)
+            }
+            // Donmuş günler de tutturulmuş günler gibi BİRLEŞTİRİLİYOR: yerelde harcanmış
+            // ama henüz sunucuya ulaşmamış bir gün olabilir.
+            editor.putString(KEY_FROZEN_DAYS, recentOnly(readFrozenDays(context) + serverFrozen))
         }
         // Rekor, güncel seriden küçük olamaz. Sunucudan 30 günlük bir seri geri yüklenip
         // rekor 2'de kalsaydı ekran "şu an 30 gün, en uzun 7 gün" gibi kendi kendisiyle
@@ -575,6 +758,16 @@ object StreakRepository {
         // yyyy-MM-dd biçiminde sözlük sırası tarih sırasıyla aynı, ayrıştırmaya gerek yok.
         val lastDayInFuture = lastDay > today
 
+        // ── Seri dondurma ──
+        //
+        // İlerleme ve kırılma dallarından ÖNCE: kaçan gün köprülenince aşağıdaki iki dal
+        // hiç değişmeden doğru çalışıyor. Dün kaçtıysa son gün dün olur — bugün tutturulursa
+        // seri +1, tutturulmazsa yaşamaya devam eder. İki gün kaçtıysa son gün hâlâ dünden
+        // eskidir ve kırılma dalı aynı çağrıda çalışır (dondurma yine harcanmış olur).
+        //
+        // [lastDayInFuture] yeniden hesaplanmıyor: köprülenen gün en geç dün olabilir.
+        applyFreeze(context, current, lastDay)?.let { lastDay = it }
+
         StreakDiag.log(
             "Repo.refresh",
             "bugun=$today dun=$yesterday sure=${seconds}sn hedef=${goal * 60}sn " +
@@ -636,12 +829,15 @@ object StreakRepository {
             writeState(context, current, longest, lastDay, achieved)
         }
 
+        val frozen = readFrozenDays(context)
         return StreakState(
             current = current,
             longest = longest,
             goalMinutes = goal,
             secondsToday = seconds,
-            achievedDays = achieved + daysOfStreak(current, lastDay),
+            achievedDays = achieved + daysOfStreak(current, lastDay, frozen),
+            frozenDays = frozen,
+            freezeHeld = freezesHeld(context) > 0,
         )
     }
 
@@ -665,8 +861,13 @@ object StreakRepository {
      * [StudyTimeTracker.dayId] geriye doğru taranıp [lastDay]'in bugüne göre kaydırması
      * bulunuyor. Gün kimliğini üreten kodun aynısı hesabı da yapıyor, yani ikinci bir tarih
      * biçimi yorumu ve onun hata payı hiç doğmuyor.
+     *
+     * ## Donmuş günler
+     * Seri dondurmanın kapattığı gün seriye dahil DEĞİL ama serinin ortasında duruyor (son
+     * günün kendisi bile olabilir). "N gün geriye say" hesabı onu atlamak zorunda: atlamasaydı
+     * donmuş gün tutturulmuş diye işaretlenir, serinin gerçek ilk günü de şeritten düşerdi.
      */
-    private fun daysOfStreak(current: Int, lastDay: String): Set<String> {
+    private fun daysOfStreak(current: Int, lastDay: String, frozen: Set<String>): Set<String> {
         if (current <= 0 || lastDay.isEmpty()) return emptySet()
         // Son gün bugünden bir gün ileride olabilir (saat dilimi); tarama oradan başlıyor.
         val lastOffset = (1 downTo -ACHIEVED_HISTORY_DAYS)
@@ -676,10 +877,15 @@ object StreakRepository {
         // Bugünden sonrası işaretlenmiyor: son gün bir gün ileride olabiliyor ve gelecekteki
         // bir güne "tamamlandı" tiki koymak hatalı görünürdü. O gün takvim yetişince gelir.
         val today = StudyTimeTracker.dayId()
-        return (0 until span)
-            .map { StudyTimeTracker.dayId(lastOffset - it) }
-            .filter { it <= today }
-            .toSet()
+        val days = mutableSetOf<String>()
+        var offset = lastOffset
+        // Donmuş gün yokken tam [span] adım atılıyor, yani eski davranışla birebir aynı.
+        var stepsLeft = span + frozen.size
+        while (days.size < span && stepsLeft-- > 0) {
+            val day = StudyTimeTracker.dayId(offset--)
+            if (day !in frozen) days += day
+        }
+        return days.filterTo(mutableSetOf()) { it <= today }
     }
 
     /**

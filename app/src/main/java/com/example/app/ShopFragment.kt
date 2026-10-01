@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
@@ -41,6 +42,9 @@ class ShopFragment : Fragment() {
 
     /** Anahtar karşılığı can alımı sürerken tekrar tıklamayı engeller. */
     private var buyLifeInProgress = false
+
+    /** Altın karşılığı seri dondurma alımı sürerken tekrar tıklamayı engeller. */
+    private var buyFreezeInProgress = false
 
     // Timer properties for energy section
     private val handler = Handler(Looper.getMainLooper())
@@ -161,6 +165,11 @@ class ShopFragment : Fragment() {
             }
         }
 
+        // Seri dondurma: altınla alınır. Kartın görünümü (fiyat düğmesi / "HAZIR" rozeti)
+        // onViewCreated'da çiziliyor — burada `view` henüz yok.
+        val buyFreezeButton = v.findViewById<View>(R.id.shopBuyStreakFreezeButton)
+        buyFreezeButton.setOnClickListener { confirmBuyStreakFreeze(buyFreezeButton) }
+
         // --- Altın ve Anahtar Paketleri ---
         // Gerçek para ile satın alınır. Verilecek miktarı SUNUCU belirler; burada yalnızca
         // hangi kartın hangi Play ürününü açtığı bilgisi var. Bkz. docs/SATIN_ALMA_ENTEGRASYONU.md
@@ -241,8 +250,123 @@ class ShopFragment : Fragment() {
         )
     }
 
+    /**
+     * Seri dondurma kartını çizer: elde yoksa fiyat düğmesi, varsa "✓ HAZIR" rozeti.
+     *
+     * Dondurma eldeyken düğme griye boyanıp bırakılmıyor: gri bir fiyat düğmesi "altınım
+     * yetmiyor" ya da "bozuk" diye de okunuyor. Rozet ve değişen açıklama, bunun bir engel
+     * değil sahip olunan bir şey olduğunu söylüyor ve neden yenisinin alınamadığını da
+     * açıklıyor (aynı anda yalnızca bir tane tutulabiliyor).
+     */
+    private fun renderStreakFreezeCard() {
+        val view = view ?: return
+        val ctx = context ?: return
+        val held = StreakRepository.freezesHeld(ctx) > 0
+
+        val button = view.findViewById<CardView>(R.id.shopBuyStreakFreezeButton)
+        val icon = view.findViewById<ImageView>(R.id.shopBuyStreakFreezeIcon)
+        val text = view.findViewById<TextView>(R.id.shopBuyStreakFreezeText)
+        val desc = view.findViewById<TextView>(R.id.shopStreakFreezeDesc)
+
+        if (held) {
+            desc.text = "Serin korunuyor. Kullanınca yenisini alabilirsin."
+            button.setCardBackgroundColor(Color.parseColor("#17394B"))
+            icon.visibility = View.GONE
+            text.text = "✓  HAZIR"
+            text.setTextColor(Color.parseColor("#4FC3F7"))
+            button.isClickable = false
+        } else {
+            desc.text = "Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!"
+            button.setCardBackgroundColor(Color.parseColor("#37474F"))
+            icon.visibility = View.VISIBLE
+            text.text = StreakRepository.FREEZE_COST_GOLD.toString()
+            text.setTextColor(Color.parseColor("#FFFFFF"))
+            button.isClickable = true
+        }
+    }
+
+    /**
+     * Seri dondurma için onay penceresi; onaylanırsa [buyStreakFreeze].
+     *
+     * Can alımında onay yok çünkü bedeli 1 anahtar. Bu ise 4000 altın — bir çocuğun günlerce
+     * biriktirdiği miktar — ve geri alınamıyor; kaydırırken yanlışlıkla dokunmak yeterli
+     * olmamalı. Pencere seri ekranındakiyle aynı ([StreakFragment] hedef seçimi), yeni bir
+     * görsel dil eklenmiyor.
+     */
+    private fun confirmBuyStreakFreeze(buyButton: View) {
+        if (buyFreezeInProgress) return
+        val ctx = context ?: return
+        if (StreakRepository.freezesHeld(ctx) > 0) return
+
+        val cost = StreakRepository.FREEZE_COST_GOLD
+        val gold = currencyText?.text?.toString()?.toIntOrNull()
+            ?: UserWalletFirestore.getCachedCurrency(ctx)
+        if (gold < cost) {
+            Toast.makeText(ctx, "Yetersiz altın!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(ctx).setView(dialogView).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialogView.findViewById<TextView>(R.id.streakOptionsTitle).text = "Seri Dondurma"
+        dialogView.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            "Bir gün çalışamazsan serin bozulmaz. $cost altın harcanacak."
+        StreakViews.buildOptionRows(
+            container = dialogView.findViewById(R.id.streakOptionsContainer),
+            values = listOf(CONFIRM_BUY, CONFIRM_CANCEL),
+            labels = listOf("Satın al", "Vazgeç"),
+            trailing = listOf("$cost altın", ""),
+            selected = CONFIRM_BUY,
+            trailingColor = StreakViews.COLOR_GOLD,
+        ) { choice ->
+            dialog.dismiss()
+            if (choice == CONFIRM_BUY) buyStreakFreeze(buyButton)
+        }
+        dialog.show()
+    }
+
+    /**
+     * [StreakRepository.FREEZE_COST_GOLD] altın karşılığında bir seri dondurma alır.
+     *
+     * Bakiye iyimser düşülmüyor (can alımındaki gibi): rakam büyük, sunucu reddederse
+     * çocuk 4000 altınının bir an için gittiğini görmüş olur. Yeni bakiye yanıttan yazılıyor.
+     */
+    private fun buyStreakFreeze(buyButton: View) {
+        if (buyFreezeInProgress) return
+        val ctx = context ?: return
+        buyFreezeInProgress = true
+        val appContext = ctx.applicationContext
+        StreakSyncService.buyFreeze(appContext) { success, message, currency ->
+            buyFreezeInProgress = false
+            if (!isAdded) return@buyFreeze
+            if (success) {
+                currencyText?.text = currency.toString()
+                // Üst bar da aynı cüzdanı gösteriyor; mağaza kapanınca eski sayı kalmasın.
+                (activity as? MainActivity)?.refreshWalletUi()
+                playItemFlyAnimation(buyButton, 1, R.drawable.streak_freeze_ic)
+                renderStreakFreezeCard()
+            } else {
+                Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
+                // Reddin sebebi bayat önbellek olabilir (dondurma başka bir cihazda alınmış
+                // ya da araya eski bir okuma girmiş): doğrusu sunucudan çekilip kart ona göre
+                // çiziliyor, yoksa düğme açık kalır ve her dokunuş aynı hatayı verir.
+                StreakSyncService.refreshFromServer(appContext) {
+                    if (isAdded) renderStreakFreezeCard()
+                }
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        renderStreakFreezeCard()
+        // Kart yerel önbellekten çizildi; dondurma dün harcanmış ya da başka bir cihazda
+        // alınmış olabilir, o yüzden sunucudaki durum da okunup yeniden çiziliyor.
+        StreakSyncService.refreshFromServer(requireContext().applicationContext) {
+            if (isAdded) renderStreakFreezeCard()
+        }
 
         (activity as? MainActivity)?.billingManager?.let { billing ->
             billing.onPricesReady = { if (isAdded) applyStorePrices() }
@@ -585,6 +709,10 @@ class ShopFragment : Fragment() {
 
         /** Satın alma sonrası fırlatılan ikon sayısı (yalnızca görsel). */
         private const val PURCHASE_ANIMATION_ITEM_COUNT = 30
+
+        /** Seri dondurma onay penceresindeki iki satırın değerleri. */
+        private const val CONFIRM_BUY = 1
+        private const val CONFIRM_CANCEL = 0
 
         /** Kart -> Play ürün kimliği. */
         private val CARD_PRODUCTS = listOf(
