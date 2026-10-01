@@ -18,63 +18,56 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 - Çalışan bir akışı bozmamak, yeni bir hatayı düzeltmekten önce gelir.
 - Kodun yorum yoğunluğu yüksek ve yorumlar **nedeni** anlatıyor ("niye böyle yapıldı",
   "eskiden ne bozuluyordu"). Aynı üslubu koru; yalnızca ne yaptığını söyleyen yorum eklemeyin.
+- **Derlemek kurmak değildir.** `.\gradlew compileDebugKotlin` cihaza hiçbir şey göndermez; cihazda
+  sınanacak her değişiklikten sonra `.\gradlew installDebug` çalıştırılmalı. Emin olmak için:
+  `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
+  sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Sıradaki iş 1 — chrome kilidi asimetrisi (teşhis tamam, düzeltme yapılmadı)
+## Sıradaki iş 1 — güvenlik ağı sandık ekrandayken kilidi açıyor (teşhis tamam, düzeltme yapılmadı)
 
-**Belirti:** Ders bitip haritaya dönüldüğünde harita tıklanabiliyor ama `bottomNavigationID`
-ve `currencyPanel` tıklanamıyor.
+**Belirti:** Görünür bir belirti gözlenmedi (sandık tam ekran ve alt barı örtüyor), ama sandık
+ekrandayken chrome kilidi teknik olarak açık. Asıl sorun şu: kilit sayacını fragment'ların
+`acquire`/`release` çiftleri değil, bu güvenlik ağı yönetiyor.
 
-**Kanıt** (`MapTouchDbg` + `ChromeBlockerDbg`, 01.10.2026 20:21):
+**Kanıt** (`ChromeBlockerDbg`, 01.10.2026 20:58 — tek bir ders bitişi):
 
 ```
-chromeLockDepth=2
-bottomNav enabled=false clickable=false chromeLocked=true
-mapTouch=(transparentOverlayAttached=false, touchRoutingEnabled=true)   ← harita serbest
-[MapFragment.onResume] STUCK_CHROME_LOCK? depth=2
-[MapFragment.enableMapFragmentViews] release → depth=1 appliedUnlock=false
-[MapFragment.enableMapFragmentViews] release → depth=0 appliedUnlock=true
+[ChestFragment.onViewCreated] acquire → depth=2
+[LessonResult.onDestroyView] release → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← sandık hâlâ ekranda
+[MissionChestRewardFragment.onViewCreated] acquire → depth=2
+[ChestFragment.onDestroyView] release → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← görev ödülü hâlâ ekranda
+[MapFragment.disableMainActivityViews] acquire → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← harita kilidi 1 ms sonra siliniyor
 ```
 
-**Kök neden:** `MapFragment`'te kilidi alan ve bırakan fonksiyonlar çapraz eşleşmiş ve alan
-tarafta koruma yok.
+**Kök neden:** `MainActivity.ensureChromeUnlockedAfterMapReturn` (3205) "bloklayan overlay hâlâ
+aktif mi" kararını yalnızca `abacusFragmentContainer`'a bakarak veriyor. LessonResult →
+ChestFragment geçişinden sonra canlı overlay `resultFragmentContainer`'da duruyor; abacus kabı
+boş olduğu için `blockingOverlayStillActive=false` çıkıyor ve sayaç zorla 0'a çekiliyor. Aşağıda
+düzeltilen back stack dinleyicisiyle aynı türden eksik: `3722b05` öncesinde hayalet fragment bu
+kontrolü tesadüfen geçiriyordu.
 
-| fonksiyon | satır | acquire/release | koruma |
-|---|---|---|---|
-| `disableMainActivityViews()` | 1436 | **acquire** | **yok** |
-| `disableMapFragmentViews()` | 1493 | yok | var (`if (mapTransparentTouchBlockActive) return`) |
-| `enableMapFragmentViews()` | 1525 | **release** | — |
-| `enableMainActivityViews()` | 1553 | yok (sonunda `enableMapFragmentViews()` çağırıyor) | — |
+**Önerilen düzeltme** (uygulanmadı — ders sonu akışına dokunuyor, önce onay alınmalı):
 
-`disableMainActivityViews()` üç yerden çağrılıyor ve ikisi aynı bekleyen overlay için birlikte
-tetiklenebiliyor:
+1. `blockingOverlay` hesabına `resultFragmentContainer` da girsin: host `VISIBLE` ve
+   `liveOverlayIn(R.id.resultFragmentContainer)` `fragmentBlocksSeasonLeaderboardGate`'i
+   sağlıyorsa bloklayan overlay var sayılsın (`reconcileAbacusOverlayWhenMapIsBase`'in başındaki
+   kontrolle aynı koşul).
+2. **Dikkat:** güvenlik ağı bugüne kadar eksik kalan release'leri örtüyor olabilir. Düzeltmeden
+   sonra sayaç gerçek `acquire`/`release` çiftleriyle yönetilecek; bir ders bitirip haritaya
+   dönüldüğünde `depth=0` olduğu ve `release ignored` satırlarının kaybolduğu logdan
+   doğrulanmalı. `depth>0` kalırsa gerçek bir eksik release ortaya çıkmış demektir — onu
+   bulup düzeltmek gerekir, güvenlik ağını geri gevşetmek değil.
+3. Haritanın soru promosu / rehber için aldığı kilidin (`MapFragment.disableMainActivityViews`)
+   neden hemen silindiği ayrıca incelenmeli: o anda hiçbir overlay yok, yani madde 1 onu
+   düzeltmez. `ensureUnlockedForMapReturn` haritanın kendi kilidinden habersiz.
 
-- `lockTouchForPendingOverlay()` (1792) — rozet/rehber gösterileceği kesinleşti, içerik hazır değil
-- `notifyVisibleAfterOverlayDismiss()` EAGER LOCK (1799 içinde) — rehber ya da AskQuestionOpen bekliyorsa
-- `maybeShowPendingMarathonGuide` (1391)
-
-İkisi çalışınca `depth=2`; tek `enableMainActivityViews()` gelirse `depth=1` kalıyor ve chrome
-kilitli kalıyor. Kullanıcıyı kurtaran şey `forceEnableMapTouchRouting()` (1775): içinde hem
-`enableMapFragmentViews()` hem `enableMainActivityViews()` çağırdığı için **iki kez** release
-ediyor ve çift acquire'ı tesadüfen telafi ediyor.
-
-**Önerilen düzeltme** (uygulanmadı — derleyip bir kez koşturarak yapılmalı):
-
-1. `MapFragment`'e `private var mainActivityViewsLocked = false` ekle.
-2. `disableMainActivityViews()`: `mainActivityViewsLocked` true ise `acquire` etme (kardeşi
-   `disableMapFragmentViews` gibi); değilse acquire et ve bayrağı set et.
-3. Release'i `enableMainActivityViews()`'a taşı (bayrak set ise release + bayrağı temizle) ve
-   `enableMapFragmentViews()`'tan release'i **kaldır** — çünkü `disableMapFragmentViews()` hiç
-   acquire etmiyor. Böylece eşleşme simetrik olur.
-4. `forceEnableMapTouchRouting()` (1775) artık tek release eder; ayrıca bir şey yapmaya gerek yok.
-5. **Kenar durum:** `MainActivityChromeBlocker.ensureUnlockedForMapReturn` derinliği zorla 0'a
-   çekiyor. O olduğunda `mainActivityViewsLocked` bayat `true` kalır ve sonraki gerçek kilit
-   atlanır. `MapFragment.onResume`'da `if (MainActivityChromeBlocker.currentLockDepth() == 0)
-   mainActivityViewsLocked = false` ile kapat.
-
-Release/acquire çağrı noktalarının tamamı: `grep -n "MainActivityChromeBlocker\." app/src/main/java/com/example/app/*.kt`
-(9 fragment kullanıyor: ChestFragment, ChestResult, LessonResult, LessonResultFalse, MapFragment,
-MissionChestReward, RecordFragment, SeasonLeaderboardRewardGate). Yalnızca `MapFragment`
-tarafındaki asimetri düzeltilmeli; diğerleri `onViewCreated`/`onDestroyView` çiftinde ve simetrik.
+**Not — eski "chrome kilidi asimetrisi" işi:** `MapFragment`'teki çapraz eşleşme düzeltildi
+(bkz. Yakında yapılanlar), ama o teşhis doğrulanmadı. Haritanın kilidi çift alıp sayacı 2'de
+bıraktığı durum cihazdaki hiçbir koşuda oluşmadı; görülen `depth=2` her seferinde
+`LessonResult` + `ChestFragment` idi.
 
 ## Sıradaki iş 2 — yetim back stack girişleri (`fmBackStack=11`)
 
@@ -90,7 +83,7 @@ Sonuçları:
 3. `performAbacusDismiss` / `performTutorialDismiss` / `BlindingLessonFragment` gibi yerler
    `fm.popBackStack()` ile **en üstteki** girişi atıyor ve o giriş artık kendilerinin değil.
 4. `findFragmentById` bu girişlerin tuttuğu fragment'ı container boş olsa bile döndürüyordu —
-   bu kısım `MainActivity.liveOverlayIn` (1871) ile kapatıldı, bkz. aşağıda.
+   bu kısım `MainActivity.liveOverlayIn` (1878) ile kapatıldı, bkz. aşağıda.
 
 Kalıcı çözüm ders bitiş yolunda bu girişi de pop etmek; ama o yol hassas (bkz. Çalışma
 anlaşmaları). Ayrı bir turda, tek başına ve derleyerek yapılmalı. `docs/YAYIN_ONCESI_KONTROL.md`
@@ -98,12 +91,25 @@ teknik borç bölümünde de yazılı.
 
 ## Yakında yapılanlar — tekrar etmeyin
 
+- **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
+  back stack dinleyicisi (466) yalnızca `abacusFragmentContainer`'a bakıyordu. LessonResult →
+  ChestFragment geçişinde abacus kabı boşalınca "ders kapandı" sanıp
+  `restoreMapUiAfterLessonOverlayDismiss` ile sandığın kabını `GONE` yapıyordu: sandık hiç
+  görünmüyor, ders ilerlemesi yazılmıyor, `LessonResult.onDestroyView` çalışmadığı için chrome
+  kilidi `depth=2`'de kalıyordu. Dinleyici artık `resultFragmentContainer`'daki canlı overlay'i
+  de sayıyor. Belirleyici log satırı: `backStackChanged->restoreMapUi SCHEDULED |
+  caller=backStackChanged.topOverlayNull` (etiket `FirstTutorialDbg`).
+- **`MapFragment` chrome kilidi çapraz eşleşmesi:** `mainActivityViewsLocked` bayrağı eklendi;
+  `disableMainActivityViews` kilidi en fazla bir kez alıyor, `release` `enableMapFragmentViews`'tan
+  `enableMainActivityViews`'a taşındı. `disableMainActivityViews` bayrak set olsa bile sayaç 0 ise
+  yeniden acquire ediyor — güvenlik ağı sayacı sıfırladığında bayrak bayat kalıyor ve bu kontrol
+  olmadan sonraki kilitler atlanıyordu (cihazda bu yol gerçekten çalıştı).
 - `be6cb48` **Seri donması:** `last_goal_day` bir günden fazla ileride ise (cihaz saati ileri
   alınarak test edilmişti) `refresh()` artık o değeri atıyor. Saat dilimi payının meşru sınırı
   ±1 gün; sunucu da `STREAK_DAY_TOLERANCE_DAYS = 1` kullanıyor.
 - `5ef1b37` + `3ac8615` **StreakDiag:** seri zincirinin beş halkası loglanıyor.
 - `3722b05` **Hayalet overlay:** `FragmentManager.findFragmentById` ekli olmayan, yalnızca bir
-  back stack girişinin tuttuğu fragment'ı da döndürüyor. `MainActivity.liveOverlayIn` (1871)
+  back stack girişinin tuttuğu fragment'ı da döndürüyor. `MainActivity.liveOverlayIn` (1878)
   `isAdded` filtresi koyuyor ve "overlay açık mı?" kararı veren bütün yerler ona geçirildi.
   Ayrıca `TutorialFragment` "Eğitimi atla" yolunda `activeMapTutorialOverlayFromLesson`
   sıfırlanmıyordu; düzeltildi.

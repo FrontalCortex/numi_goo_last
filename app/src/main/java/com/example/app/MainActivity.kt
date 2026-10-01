@@ -463,7 +463,14 @@ class MainActivity : AppCompatActivity() {
             refreshStreakUi()
 
             // FM transaction ortasında çağrılır — restore'u bir sonraki kareye ertele.
+            // resultFragmentContainer da sayılmalı: LessonResult → ChestFragment geçişinde abacus
+            // kabı boşalıyor ve NewChestFragment'in "map_chest" girişi bu dinleyiciyi tetikliyor.
+            // Yalnızca abacus'a bakınca "ders kapandı" sanılıp restoreMapUi sandığın kabını GONE
+            // yapıyordu: sandık hiç görünmüyor, ders ilerlemesi yazılmıyor, chrome kilidi depth=2'de
+            // kalıyordu. Eskiden ham findFragmentById'nin döndürdüğü hayalet bu kontrolü tesadüfen
+            // geçiriyordu; [liveOverlayIn]'e geçince o koruma kalktı.
             val topOverlay = liveOverlayIn(R.id.abacusFragmentContainer)
+                ?: liveOverlayIn(R.id.resultFragmentContainer)
             if (topOverlay == null) {
                 val baseFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 if (baseFragment is MapFragment) {

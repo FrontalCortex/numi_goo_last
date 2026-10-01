@@ -1433,11 +1433,29 @@ class MapFragment : Fragment() {
         }
     }
     
+    /**
+     * Chrome kilidini bu fragment aldıysa ve henüz bırakmadıysa true.
+     *
+     * [disableMainActivityViews] aynı bekleyen overlay için birden fazla yerden çağrılıyor
+     * ([lockTouchForPendingOverlay] + [notifyVisibleAfterOverlayDismiss] EAGER LOCK +
+     * [maybeShowPendingMarathonGuide]). Eskiden her çağrı ayrı bir acquire'dı ve sayaç 2'ye
+     * çıkıyordu; tek bir [enableMainActivityViews] sayacı 1'de bırakıyor, harita açılırken alt
+     * bar ve para paneli kilitli kalıyordu. Bayrak sayesinde fragment kilidi en fazla bir kez
+     * tutuyor ve yalnızca kendi aldığını bırakıyor.
+     */
+    private var mainActivityViewsLocked = false
+
     private fun disableMainActivityViews() {
         val activity = requireActivity()
-        android.util.Log.d("GuideDebug", "disableMainActivityViews called, locking ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
-        MainActivityChromeBlocker.acquire(activity)
-        
+        android.util.Log.d("GuideDebug", "disableMainActivityViews called, locking ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()} alreadyLocked=$mainActivityViewsLocked")
+        // Sayaç 0 ise bayrak bayat: ensureUnlockedForMapReturn sayacı zorla sıfırlamış, bizim
+        // acquire'ımız da onunla gitmiş. O durumda atlamak chrome'u kilitsiz bırakırdı.
+        val alreadyHeld = mainActivityViewsLocked && MainActivityChromeBlocker.currentLockDepth() > 0
+        if (!alreadyHeld) {
+            mainActivityViewsLocked = true
+            MainActivityChromeBlocker.acquire(activity)
+        }
+
         // Currency panel (üstteki panel)
         activity.findViewById<View>(R.id.currencyPanel)?.apply {
             isClickable = false
@@ -1523,11 +1541,14 @@ class MapFragment : Fragment() {
     }
     
     private fun enableMapFragmentViews() {
-        android.util.Log.d("GuideDebug", "enableMapFragmentViews called, releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
+        android.util.Log.d("GuideDebug", "enableMapFragmentViews called. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
         val hadBlock = mapTransparentTouchBlockActive || (overlayView?.parent != null)
         mapTransparentTouchBlockActive = false
         guidePanelBackCallback.isEnabled = false
-        MainActivityChromeBlocker.release(activity)
+        // Chrome kilidi burada BIRAKILMIYOR: disableMapFragmentViews hiç acquire etmiyor.
+        // Eskiden release buradaydı ve enableMainActivityViews de bu fonksiyonu çağırdığı için
+        // forceEnableMapTouchRouting iki kez release ediyordu — çift acquire'ı tesadüfen telafi
+        // eden, ama başka bir fragment'ın kilidini de düşürebilen bir çapraz eşleşme.
         if (hadBlock) {
             MapTouchDiagnostics.reportFromFragment(
                 this,
@@ -1595,9 +1616,18 @@ class MapFragment : Fragment() {
             activity.setupClickListeners()
         }
         
+        // disableMainActivityViews'in aldığı kilidin karşılığı. Bayrak yoksa release yok:
+        // sayaçta duran kilit başka bir fragment'ın (ChestFragment, LessonResult vb.) ve onu
+        // kendi onDestroyView'ı bırakacak.
+        if (mainActivityViewsLocked) {
+            mainActivityViewsLocked = false
+            android.util.Log.d("GuideDebug", "enableMainActivityViews releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
+            MainActivityChromeBlocker.release(activity)
+        }
+
         // MapFragment view'larını da tekrar aktif et
         enableMapFragmentViews()
-        
+
         android.util.Log.d("MapFragment", "MainActivity views enabled")
     }
 
@@ -1759,8 +1789,9 @@ class MapFragment : Fragment() {
      * Ders sonrası kuyruğunun aldığı kilidi bırakır.
      *
      * Guard'ları BİLEREK atlıyor: bu çağrı kuyruğun kendi `acquire`'ıyla birebir
-     * eşleşiyor ve [MainActivityChromeBlocker] sayıcılı — başka bir akış kilidi hâlâ
+     * eşleşiyor ve [MainActivityChromeBlocker] sayıcılı — başka bir fragment kilidi hâlâ
      * istiyorsa kendi acquire'ı duruyor, bizimki düşünce sayacı sıfıra inmiyor.
+     * (Harita içindeki çağrılar tek kilidi paylaşıyor, bkz. [mainActivityViewsLocked].)
      *
      * Guard'lı [enableMapTouchRouting] burada kullanılamıyor: bırakmayı reddettiğinde
      * kuyruğun borcu ödenmemiş kalıyor ve harita kalıcı olarak kilitli kalabiliyor.
@@ -1938,6 +1969,11 @@ class MapFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        // ensureUnlockedForMapReturn sayacı zorla 0'a çektiyse bizim acquire'ımız da gitti;
+        // bayrak true kalırsa sonraki enableMainActivityViews başkasının kilidini bırakır.
+        if (MainActivityChromeBlocker.currentLockDepth() == 0) {
+            mainActivityViewsLocked = false
+        }
         val mayConsumeProgress = (activity as? MainActivity)?.shouldConsumeLessonProgressAnimationsOnMap() == true
         if (mayConsumeProgress) {
             GlobalValues.canConsumePendingLessonProgressAnimations = true
