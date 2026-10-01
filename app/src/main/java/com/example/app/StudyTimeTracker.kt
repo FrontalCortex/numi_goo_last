@@ -90,7 +90,12 @@ object StudyTimeTracker {
      */
     fun setActiveScreen(context: Context, screen: String?) {
         closeSegment(context)
-        if (isStudyScreen(screen)) {
+        val counts = isStudyScreen(screen)
+        StreakDiag.log(
+            "StudyTime.ekran",
+            "ekran=${screen ?: "null(arkaplan)"} calismaSayilir=$counts bugun=${secondsToday(context)}sn",
+        )
+        if (counts) {
             val now = SystemClock.elapsedRealtime()
             segmentStartMs = now
             // Ekrana yeni girildi: ilk dokunuşu beklemeden sayım başlasın. Soru okunurken
@@ -129,9 +134,19 @@ object StudyTimeTracker {
     /** Açık parçayı kapatıp süresini bugüne ekler. */
     private fun closeSegment(context: Context) {
         if (segmentStartMs <= 0L) return
-        val elapsed = creditableMs(SystemClock.elapsedRealtime())
+        val now = SystemClock.elapsedRealtime()
+        val elapsed = creditableMs(now)
+        // Boşta kalma sınırı yüzünden kırpılan süre: açık parçanın ham uzunluğu ile
+        // yazılabilir kısmının farkı. "Ders ekranında 10 dakika durdum ama 2 dakika
+        // yazıldı" durumunu ancak bu ikisi birlikte açıklıyor.
+        val rawMs = now - segmentStartMs
         segmentStartMs = 0L
         val seconds = (elapsed / 1000L).toInt()
+        StreakDiag.log(
+            "StudyTime.parcaKapandi",
+            "hamSure=${rawMs / 1000}sn yazilan=${seconds}sn " +
+                "bostaKirpma=${(rawMs - elapsed) / 1000}sn (sinir=${MAX_IDLE_MS / 1000}sn)",
+        )
         if (seconds <= 0) return
         addSeconds(context, seconds)
     }

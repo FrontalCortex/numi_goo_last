@@ -276,6 +276,7 @@ object StreakRepository {
     private fun queueSyncDay(context: Context, day: String) {
         val days = (pendingSyncDays(context) + day).distinct().sorted().takeLast(MAX_PENDING_SYNC_DAYS)
         prefs(context)?.edit()?.putString(KEY_PENDING_SYNC_DAYS, days.joinToString(","))?.apply()
+        StreakDiag.log("Repo.kuyruk", "KUYRUGA_EKLENDI gun=$day kuyruk=$days")
     }
 
     /**
@@ -308,6 +309,11 @@ object StreakRepository {
         claimed: Set<Int>,
     ) {
         val remaining = pendingSyncDays(context) - sentDays.toSet()
+        StreakDiag.log(
+            "Repo.kuyruk",
+            "KABUL_EDILDI gonderilen=$sentDays kalan=$remaining " +
+                "sunucuCurrent=$current sunucuLongest=$longest claimed=${claimed.sorted()}",
+        )
         prefs(context)?.edit()
             ?.putString(KEY_PENDING_SYNC_DAYS, remaining.joinToString(","))
             ?.putInt(KEY_SERVER_CURRENT, current)
@@ -396,6 +402,12 @@ object StreakRepository {
         )
         val serverFresh = lastDay in fresh
         val localCurrent = p.getInt(KEY_CURRENT, 0)
+        StreakDiag.log(
+            "Repo.sunucuDurumu",
+            "sunucuCurrent=$current yerelCurrent=$localCurrent " +
+                "sunucuLastDay=${lastDay.ifEmpty { "(bos)" }} taze=$serverFresh -> " +
+                (if (current > localCurrent && serverFresh) "BENIMSENDI" else "yerel_korundu"),
+        )
         if (current > localCurrent && serverFresh) {
             editor.putInt(KEY_CURRENT, current).putString(KEY_LAST_DAY, lastDay)
         }
@@ -514,6 +526,14 @@ object StreakRepository {
         // yyyy-MM-dd biçiminde sözlük sırası tarih sırasıyla aynı, ayrıştırmaya gerek yok.
         val lastDayInFuture = lastDay > today
 
+        StreakDiag.log(
+            "Repo.refresh",
+            "bugun=$today dun=$yesterday sure=${seconds}sn hedef=${goal * 60}sn " +
+                "yerelCurrent=$current longest=$longest lastDay=${lastDay.ifEmpty { "(bos)" }} " +
+                "ileride=$lastDayInFuture sunucuCurrent=${serverCurrent(context)} " +
+                "challengeDays=$challenge kuyruk=${pendingSyncDays(context)}",
+        )
+
         if (seconds >= goal * 60 && lastDay != today && !lastDayInFuture) {
             // Dün de tutturulmuşsa seri devam eder, yoksa bugünden yeniden başlar.
             current = if (lastDay == yesterday) current + 1 else 1
@@ -524,12 +544,27 @@ object StreakRepository {
 
             // Bu dal günde yalnızca bir kez çalışıyor (koşuldaki `lastDay != today` onu
             // garanti ediyor), yani hem olay hem kutlama tam olarak bir kez tetikleniyor.
+            StreakDiag.log(
+                "Repo.refresh",
+                "GUN_TUTTURULDU current=$current lastDay=$lastDay (yazildi)",
+            )
             AnalyticsLogger.logStreakDayDone(current, goal)
             queueCelebration(context, current, today)
             logChallengeDoneOnce(context, current, challenge)
             // Ödüller sunucudaki sayaca bakıyor; gün oraya da bildirilmeli. Kuyruğa
             // alınıyor çünkü tam o anda internet olmayabilir.
             queueSyncDay(context, today)
+        } else {
+            StreakDiag.log(
+                "Repo.refresh",
+                "GUN_ISLENMEDI neden=" + (
+                    when {
+                        seconds < goal * 60 -> "sure_yetersiz (${seconds}/${goal * 60}sn)"
+                        lastDay == today -> "bugun_zaten_sayilmis"
+                        else -> "lastDay_ileride ($lastDay > $today)"
+                    }
+                    ),
+            )
         }
 
         // ── Kırılma ──
@@ -543,6 +578,10 @@ object StreakRepository {
         if (current > 0 && lastDay.isNotEmpty() && !lastDayInFuture &&
             lastDay != today && lastDay != yesterday
         ) {
+            StreakDiag.log(
+                "Repo.refresh",
+                "KIRILDI current=$current->0 lastDay=$lastDay gecenGun=${daysSince(lastDay)}",
+            )
             AnalyticsLogger.logStreakBroken(current, daysSince(lastDay))
             current = 0
             writeState(context, current, longest, lastDay, achieved)

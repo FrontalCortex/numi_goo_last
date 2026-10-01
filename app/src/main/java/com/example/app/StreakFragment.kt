@@ -82,6 +82,17 @@ class StreakFragment : Fragment() {
         val b = _binding ?: return
         val state = StreakRepository.refresh(requireContext())
         val alive = state.current > 0
+        // Ekranın ne çizdiği de zincirin bir halkası: "kırık yazıyor" bildirimi geldiğinde
+        // verinin mi ekranın mı yanlış olduğu ancak bu satırla ayrılıyor.
+        StreakDiag.log(
+            "Ekran.render",
+            "current=${state.current} longest=${state.longest} " +
+                "sure=${state.secondsToday}sn hedef=${state.goalSeconds}sn " +
+                "bugunTutturuldu=${state.goalReachedToday} yasiyor=$alive " +
+                "challengeDays=${StreakRepository.chosenChallengeDays(requireContext())} " +
+                "challengeClaimed=${StreakRepository.challengeClaimed(requireContext())} " +
+                "sunucuCurrent=${StreakRepository.serverCurrent(requireContext())}",
+        )
 
         // Seri yaşıyorsa alev oynuyor, kırıksa sönük duruyor. Aynı ayrım üst barda da var.
         b.streakLottie.visibility = if (alive) View.VISIBLE else View.GONE

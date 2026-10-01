@@ -71,10 +71,21 @@ object StreakSyncService {
             .collection("streak").document("state")
             .get()
             .addOnSuccessListener { doc ->
-                if (!doc.exists()) return@addOnSuccessListener
+                if (!doc.exists()) {
+                    StreakDiag.log("Sync.oku", "SUNUCUDA_DOKUMAN_YOK (hiç gün bildirilmemiş)")
+                    return@addOnSuccessListener
+                }
                 val current = (doc.get("current") as? Number)?.toInt() ?: 0
                 val longest = (doc.get("longest") as? Number)?.toInt() ?: 0
                 val lastDay = doc.getString("lastDay").orEmpty()
+                StreakDiag.log(
+                    "Sync.oku",
+                    "SUNUCU_DOKUMANI current=$current longest=$longest " +
+                        "lastDay=${lastDay.ifEmpty { "(bos)" }} " +
+                        "goalMinutes=${(doc.get("goalMinutes") as? Number)?.toInt()} " +
+                        "challengeDays=${(doc.get("challengeDays") as? Number)?.toInt()} " +
+                        "challengeClaimed=${(doc.get("challengeClaimed") as? Number)?.toInt()}",
+                )
                 val claimed = (doc.get("claimed") as? List<*>)
                     ?.mapNotNull { (it as? Number)?.toInt() }
                     ?.toSet()
@@ -98,6 +109,7 @@ object StreakSyncService {
             }
             .addOnFailureListener { e ->
                 // Sessiz: seri yerelde çalışmaya devam ediyor.
+                StreakDiag.log("Sync.oku", "OKUNAMADI mesaj=${e.message}")
                 Log.w(TAG, "Seri durumu okunamadı", e)
             }
     }
@@ -110,15 +122,33 @@ object StreakSyncService {
      *   yeniden gönderilir.
      */
     fun syncPendingDays(context: Context, onDone: (() -> Unit)? = null) {
-        if (uid() == null) return
-        if (syncing) return
-        if (android.os.SystemClock.elapsedRealtime() < retryAfterMs) return
+        // Dört sessiz erken dönüş var ve hepsi "gün kaydedilmedi" gibi görünüyor.
+        // Hangisinin çalıştığı yazılmazsa zincirin burada mı koptuğu anlaşılamıyor.
+        if (uid() == null) {
+            StreakDiag.log("Sync.gonder", "ATLANDI neden=oturum_yok")
+            return
+        }
+        if (syncing) {
+            StreakDiag.log("Sync.gonder", "ATLANDI neden=zaten_gonderiliyor")
+            return
+        }
+        val nowMs = android.os.SystemClock.elapsedRealtime()
+        if (nowMs < retryAfterMs) {
+            StreakDiag.log(
+                "Sync.gonder",
+                "ATLANDI neden=geri_cekilme kalan=${(retryAfterMs - nowMs) / 1000}sn",
+            )
+            return
+        }
         val days = StreakRepository.pendingSyncDays(context)
         // Gönderilecek gün yoksa bile günde bir kez gidiliyor: akşam hatırlatması kullanıcının
         // saat dilimini ve son görülme zamanını bilmek zorunda ve bunlar yalnızca gün
         // bildirimiyle güncellenseydi, hedefini hiç tutturmayan kullanıcı — hatırlatmaya en
         // çok ihtiyacı olan kişi — sunucuda hiç görünmezdi.
-        if (days.isEmpty() && !StreakRepository.needsDailyPing(context)) return
+        if (days.isEmpty() && !StreakRepository.needsDailyPing(context)) {
+            StreakDiag.log("Sync.gonder", "ATLANDI neden=gonderilecek_gun_yok_ve_ping_yapilmis")
+            return
+        }
 
         syncing = true
         val payload = hashMapOf(
@@ -127,6 +157,12 @@ object StreakSyncService {
             "challengeDays" to StreakRepository.chosenChallengeDays(context),
             // Hatırlatmanın yerel saate denk gelmesi için; sunucu bundan UTC saatini üretiyor.
             "utcOffsetMinutes" to utcOffsetMinutes(),
+        )
+        StreakDiag.log(
+            "Sync.gonder",
+            "GONDERILIYOR gunler=$days hedef=${StreakRepository.goalMinutes(context)} " +
+                "challengeDays=${StreakRepository.chosenChallengeDays(context)} " +
+                "offset=${utcOffsetMinutes()} pingGerekli=${StreakRepository.needsDailyPing(context)}",
         )
         FirebaseFunctions.getInstance()
             .getHttpsCallable("submitStreakDay")
@@ -146,6 +182,15 @@ object StreakSyncService {
                     ?.toSet()
                     .orEmpty()
                 val lastDay = (data["lastDay"] as? String).orEmpty()
+                StreakDiag.log(
+                    "Sync.cevap",
+                    "BASARILI current=$current longest=$longest " +
+                        "lastDay=${lastDay.ifEmpty { "(bos)" }} recentDays=${recentDays.sorted()} " +
+                        "claimed=${claimed.sorted()} " +
+                        "goalMinutes=${(data["goalMinutes"] as? Number)?.toInt()} " +
+                        "challengeDays=${(data["challengeDays"] as? Number)?.toInt()} " +
+                        "challengeClaimed=${(data["challengeClaimed"] as? Number)?.toInt()}",
+                )
                 StreakRepository.markDailyPing(context)
                 // Gönderilen günler kabul edildi; kuyruktan yalnızca ONLAR siliniyor.
                 // Arada yeni bir gün eklenmiş olabilir, o gitmemeli.
@@ -164,6 +209,15 @@ object StreakSyncService {
                 syncing = false
                 retryAfterMs = android.os.SystemClock.elapsedRealtime() + RETRY_BACKOFF_MS
                 // Sessiz: seri yerelde çalışmaya devam ediyor, yalnızca ödüller bekliyor.
+                // Teşhis satırına KOD da yazılıyor: "başarısız" tek başına INTERNAL
+                // (sunucu çöktü) ile UNAVAILABLE (internet yok) arasını ayırmıyordu ve
+                // aylarca yanlış yere bakılmasına yol açtı.
+                StreakDiag.log(
+                    "Sync.cevap",
+                    "BASARISIZ kod=${(e as? FirebaseFunctionsException)?.code ?: "(taşıma)"} " +
+                        "mesaj=${e.message} gonderilen=$days " +
+                        "kuyrukta_kaliyor=${StreakRepository.pendingSyncDays(context)}",
+                )
                 Log.w(TAG, "submitStreakDay başarısız", e)
             }
     }
