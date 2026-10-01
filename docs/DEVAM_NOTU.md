@@ -131,23 +131,32 @@ node functions/scripts/test-streak-freeze-flow.js   # gerçek fonksiyonlar, saht
 `buyStreakFreeze` oluşturuldu; ikisi de oturumsuz istekte `UNAUTHENTICATED` dönüyor, yani
 yükleniyorlar).
 
-**Doğrulanmayan:** cihazda hiçbir şey. Telefon kilitliydi, sonra adb bağlantısı koptu. Kart
-ve ikon yalnızca bilgisayarda başsız tarayıcı önizlemesiyle görüldü. Bakılacaklar:
+**Cihazda doğrulanan (01.10.2026 23:30, kullanıcı elle denedi + log + ekran görüntüsü):**
 
-1. Mağaza → "Özel Teklifler" en alt: kart, ikon, `4000` düğmesi.
-2. Satın al (onay penceresi çıkmalı) → altın 4000 düşmeli, düğme "✓ HAZIR" olmalı, seri
-   ekranında "Seri dondurma: Hazır" yazmalı. Logda `StreakDiag … Repo.dondurma | SATIN_ALINDI`.
-3. Deploy sonrası `submitStreakDay`'in gerçek bir çağrısı: `StreakDiag … Sync.cevap | BASARILI`
-   (günde bir kez gidiyor; o gün zaten gittiyse ertesi gün görünür).
-4. Asıl davranış: dondurma al → ertesi gün **hiç çalışma** → öbür gün aç. Beklenen: "seri
-   dondurman serini korudu" bildirimi, hafta şeridinde kaçan günde kar tanesi, seri sayısı
-   aynı, mağazada düğme yeniden `4000`. Logda `Repo.dondurma | HARCANDI … seriKurtuldu=true`.
-   **Saati ileri alarak deneme** — sunucu istemcinin gününü ±1 günden fazla sapınca kabul
-   etmiyor, iki taraf ayrışır.
+- Deploy sonrası `submitStreakDay` gerçek çağrılarda çalışıyor: günsüz bildirim
+  (`Sync.cevap | BASARILI current=0`) ve gün bildirimi (`BASARILI current=1 lastDay=2026-10-01`).
+- Satın alma: `Repo.dondurma | SATIN_ALINDI adet=1 gun=2026-10-01`; altın 4019 → 19; sonraki
+  sunucu okumalarında `dondurma=1` (uygulama yeniden başlatıldıktan sonra da).
+- Mağaza kartı "✓ HAZIR" hâlinde, seri ekranındaki satır "Hazır" (ok yok); satın almadan
+  hemen sonra seri ekranı yeniden çizildi (`RESULT_STREAK_FREEZE_BOUGHT`).
+- Seri ekranındaki "Yok ›" satırından mağazanın kartta açılması kullanıcı tarafından denendi.
+
+**Doğrulanmayan — dondurmanın HARCANMASI.** Yalnızca testlerle biliniyor; cihazda görmek için
+gerçekten gün atlamak gerekiyor:
+
+1. Dondurma eldeyken ertesi gün **hiç çalışma** → öbür gün aç. Beklenen: "seri dondurman
+   serini korudu" bildirimi, hafta şeridinde kaçan günde kar tanesi, seri sayısı aynı, seri
+   ekranında "Yok ›", mağazada düğme yeniden `4000`. Logda
+   `Repo.dondurma | HARCANDI … seriKurtuldu=true`. Aynı gün hedef tutturulunca seri +1.
+2. İki gün üst üste kaçırma: seri 0, dondurma gitmiş, "serin kırıldı" bildirimi.
+3. Geçmişi onarmama: dondurma yokken bir gün kaçır, ertesi gün dondurma al → seri geri
+   gelmemeli, o gün çalışınca 1'den başlamalı, dondurma "Hazır" kalmalı.
+
+**Saati ileri alarak deneme** — sunucu istemcinin gününü ±1 günden fazla sapınca kabul
+etmiyor, iki taraf ayrışır.
 
 **Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
-ekranı; seri ekranındaki "Seri dondurma: Yok" satırına dokununca mağazaya gitmek; akşam
-hatırlatmasının "dondurman var" diyen bir çeşidi.
+ekranı; akşam hatırlatmasının "dondurman var" diyen bir çeşidi.
 
 ## Yakında yapılanlar — tekrar etmeyin
 

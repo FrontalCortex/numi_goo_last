@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,10 +10,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
@@ -251,6 +254,40 @@ class ShopFragment : Fragment() {
     }
 
     /**
+     * Mağazayı seri dondurma kartına kaydırılmış açar ve kartı bir kez vurgular.
+     *
+     * Seri ekranındaki "Seri dondurma: Yok" satırından gelindiğinde kullanılıyor: kart
+     * mağazanın ortalarında, tepeden açılsaydı çocuk gönderildiği şeyi aramak zorunda kalırdı.
+     *
+     * Kaydırma ANINDA (yumuşak değil): mağaza zaten kayarak açılıyor, üstüne ikinci bir
+     * hareket binince ekran çalkalanıyor. Vurgu ise açılış animasyonu bittikten sonra
+     * oynuyor, yoksa görülmeden biterdi.
+     */
+    private fun focusStreakFreezeCard(root: View) {
+        val scroll = root.findViewById<ScrollView>(R.id.shopScrollView) ?: return
+        val card = root.findViewById<View>(R.id.shopStreakFreezeCard) ?: return
+        // Kartın konumu ölçüm bitmeden bilinmiyor.
+        scroll.doOnLayout {
+            val bounds = Rect()
+            card.getDrawingRect(bounds)
+            scroll.offsetDescendantRectToMyCoords(card, bounds)
+            val gap = (FOCUS_TOP_GAP_DP * resources.displayMetrics.density).toInt()
+            scroll.scrollTo(0, (bounds.top - gap).coerceAtLeast(0))
+
+            card.postDelayed({
+                if (!isAdded) return@postDelayed
+                card.animate()
+                    .scaleX(FOCUS_PULSE_SCALE).scaleY(FOCUS_PULSE_SCALE)
+                    .setDuration(FOCUS_PULSE_HALF_MS)
+                    .withEndAction {
+                        card.animate().scaleX(1f).scaleY(1f).setDuration(FOCUS_PULSE_HALF_MS).start()
+                    }
+                    .start()
+            }, FOCUS_PULSE_DELAY_MS)
+        }
+    }
+
+    /**
      * Seri dondurma kartını çizer: elde yoksa fiyat düğmesi, varsa "✓ HAZIR" rozeti.
      *
      * Dondurma eldeyken düğme griye boyanıp bırakılmıyor: gri bir fiyat düğmesi "altınım
@@ -346,6 +383,9 @@ class ShopFragment : Fragment() {
                 (activity as? MainActivity)?.refreshWalletUi()
                 playItemFlyAnimation(buyButton, 1, R.drawable.streak_freeze_ic)
                 renderStreakFreezeCard()
+                // Mağaza seri ekranının üstünde açılmış olabilir; o ekran kendiliğinden
+                // yeniden çizilmiyor (bkz. StreakFragment.onViewCreated).
+                parentFragmentManager.setFragmentResult(RESULT_STREAK_FREEZE_BOUGHT, Bundle())
             } else {
                 Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
                 // Reddin sebebi bayat önbellek olabilir (dondurma başka bir cihazda alınmış
@@ -366,6 +406,13 @@ class ShopFragment : Fragment() {
         // alınmış olabilir, o yüzden sunucudaki durum da okunup yeniden çiziliyor.
         StreakSyncService.refreshFromServer(requireContext().applicationContext) {
             if (isAdded) renderStreakFreezeCard()
+        }
+        // Yalnızca ilk açılışta: ekran yeniden kurulduğunda (döndürme, süreç ölümü) sistem
+        // kaydırma konumunu kendisi geri yüklüyor, bir daha karta sıçramak onu ezerdi.
+        if (savedInstanceState == null &&
+            arguments?.getBoolean(ARG_FOCUS_STREAK_FREEZE) == true
+        ) {
+            focusStreakFreezeCard(view)
         }
 
         (activity as? MainActivity)?.billingManager?.let { billing ->
@@ -713,6 +760,30 @@ class ShopFragment : Fragment() {
         /** Seri dondurma onay penceresindeki iki satırın değerleri. */
         private const val CONFIRM_BUY = 1
         private const val CONFIRM_CANCEL = 0
+
+        /** Seri dondurma satın alındı; dinleyen: [StreakFragment]. */
+        const val RESULT_STREAK_FREEZE_BOUGHT = "streak_freeze_bought"
+
+        private const val ARG_FOCUS_STREAK_FREEZE = "focus_streak_freeze"
+
+        /** Karta kaydırıldığında kartın üstünde bırakılan boşluk; başlık kartın tepesine yapışmasın. */
+        private const val FOCUS_TOP_GAP_DP = 16
+
+        /** Vurgu, mağazanın kayarak açılması bittikten sonra başlıyor. */
+        private const val FOCUS_PULSE_DELAY_MS = 450L
+        private const val FOCUS_PULSE_HALF_MS = 160L
+        private const val FOCUS_PULSE_SCALE = 1.04f
+
+        /**
+         * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır
+         *   (bkz. [focusStreakFreezeCard]).
+         */
+        fun newInstance(focusStreakFreeze: Boolean = false): ShopFragment =
+            ShopFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean(ARG_FOCUS_STREAK_FREEZE, focusStreakFreeze)
+                }
+            }
 
         /** Kart -> Play ürün kimliği. */
         private val CARD_PRODUCTS = listOf(

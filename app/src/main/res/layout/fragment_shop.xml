@@ -176,6 +176,7 @@
 
     <!-- ── Scrollable content ─────────────────────────────────────────────── -->
     <ScrollView
+        android:id="@+id/shopScrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
@@ -601,12 +602,36 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
 
-                    <!-- Lottie icon -->
-                    <!-- Heart icon -->
-                    <ImageView
+                    <!--
+                        Pro kalbi: üst para panelinde Pro aboneye gösterilenle aynı çizim
+                        (heart_pro_ic + üzerinde "∞", bkz. EnergyDisplay). Kart "Pro alırsan
+                        canın böyle görünecek" diyor; kırmızı kalp, alttaki "Ekstra Can"
+                        kartıyla aynı olduğu için ikisini ayırt ettirmiyordu.
+
+                        Kullanıcının planına göre DEĞİŞMİYOR: kart satılan şeyi gösteriyor,
+                        kullanıcının şu anki canını değil (o, başlıktaki shopEnergyIcon'da).
+
+                        "∞" boyutu üst paneldeki oranla aynı: orada 28dp ikonda 13sp.
+                    -->
+                    <FrameLayout
                         android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:src="@drawable/heart_ic" />
+                        android:layout_height="64dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/heart_pro_ic"
+                            android:contentDescription="Sınırsız can" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="∞"
+                            android:textColor="#FFFFFF"
+                            android:textSize="30sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"

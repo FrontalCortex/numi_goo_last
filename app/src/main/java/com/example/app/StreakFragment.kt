@@ -54,6 +54,15 @@ class StreakFragment : Fragment() {
         binding.btnStreakBack.setOnClickListener { close() }
         binding.streakChangeGoal.setOnClickListener { showGoalPicker() }
         binding.streakChallengeClaim.setOnClickListener { claimChallenge() }
+        binding.streakFreezeRow.setOnClickListener { openShopForFreeze() }
+
+        // Mağaza bu ekranın ÜSTÜNE ekleniyor (replace değil), yani kapandığında onResume
+        // çalışmıyor ve ekran kendiliğinden yeniden çizilmiyor. Satın alma haberi buradan
+        // geliyor; yoksa çocuk dondurmayı alıp geri döndüğünde satırda hâlâ "Yok" yazardı.
+        parentFragmentManager.setFragmentResultListener(
+            ShopFragment.RESULT_STREAK_FREEZE_BOUGHT,
+            viewLifecycleOwner,
+        ) { _, _ -> render() }
     }
 
     override fun onResume() {
@@ -138,6 +147,10 @@ class StreakFragment : Fragment() {
         b.streakFreezeStatus.setTextColor(
             Color.parseColor(if (state.freezeHeld) COLOR_FREEZE else COLOR_DEAD),
         )
+        // Yalnızca elde yokken tıklanabilir: eldeyken yenisi alınamıyor, mağazaya götürmek
+        // çocuğu basılamayan bir düğmenin önüne bırakmak olurdu.
+        b.streakFreezeRow.isClickable = !state.freezeHeld
+        b.streakFreezeChevron.visibility = if (state.freezeHeld) View.GONE else View.VISIBLE
 
         renderRewards(b)
     }
@@ -260,6 +273,28 @@ class StreakFragment : Fragment() {
         }
     }
 
+    // ── Seri dondurma ──────────────────────────────────
+
+    /** Art arda dokunuşları elemek için son dokunuş anı (monoton saat). */
+    private var lastFreezeRowClickMs = 0L
+
+    /**
+     * Mağazayı seri dondurma kartında açar.
+     *
+     * Kart mağazanın ortalarında ("Özel Teklifler"in en altı); mağaza tepeden açılsaydı
+     * çocuk buradan gönderildiği şeyi aramak zorunda kalırdı.
+     *
+     * Çift dokunuş eleniyor: mağaza `commit()` ile, yani bir sonraki karede ekleniyor;
+     * [MainActivity.openShopFragment] içindeki "zaten açık mı" kontrolü o kareye kadar
+     * ikinci dokunuşu göremiyor ve üst üste iki mağaza açılabiliyordu.
+     */
+    private fun openShopForFreeze() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastFreezeRowClickMs < FREEZE_ROW_CLICK_GAP_MS) return
+        lastFreezeRowClickMs = now
+        (activity as? MainActivity)?.openShopFragment(focusStreakFreeze = true)
+    }
+
     // ── Hedef penceresi ──────────────────────────────────
 
     /**
@@ -307,5 +342,8 @@ class StreakFragment : Fragment() {
 
         /** Buz mavisi: mağaza kartındaki "HAZIR" rozetiyle aynı. */
         const val COLOR_FREEZE = "#4FC3F7"
+
+        /** Seri dondurma satırına iki dokunuş arasında geçmesi gereken en kısa süre. */
+        const val FREEZE_ROW_CLICK_GAP_MS = 700L
     }
 }

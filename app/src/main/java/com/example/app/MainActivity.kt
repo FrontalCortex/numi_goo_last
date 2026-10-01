@@ -4400,16 +4400,20 @@ class MainActivity : AppCompatActivity() {
         binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
     }
 
-    fun openShopFragment() {
+    /**
+     * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır; seri
+     *   ekranındaki "Seri dondurma: Yok" satırı böyle çağırıyor.
+     */
+    fun openShopFragment(focusStreakFreeze: Boolean = false) {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         if (current is ShopFragment) return
-        
+
         dismissMapLessonOverlayChrome()
-        
+
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
-            .add(R.id.fragmentContainerID, ShopFragment())
+            .add(R.id.fragmentContainerID, ShopFragment.newInstance(focusStreakFreeze))
             .addToBackStack(null)
             .commit()
         binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }

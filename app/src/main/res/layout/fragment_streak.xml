@@ -396,10 +396,15 @@
             </LinearLayout>
 
             <!--
-              Seri dondurma durumu. Mağazadan alınıyor (fragment_shop → shopStreakFreezeCard);
-              burada yalnızca elde olup olmadığı görünüyor. Tıklanabilir değil.
+              Seri dondurma durumu. Mağazadan alınıyor (fragment_shop → shopStreakFreezeCard).
+
+              Elde yokken ("Yok") satır tıklanabilir ve mağazayı doğrudan o kartta açıyor:
+              kart mağazanın ortalarında, kendiliğinden bulunması zor. Eldeyken ("Hazır")
+              tıklanamıyor ve ok gizleniyor — gidilecek bir yer yok, yenisi alınamıyor.
+              Bkz. StreakFragment.render / openShopForFreeze.
             -->
             <LinearLayout
+                android:id="@+id/streakFreezeRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
@@ -431,7 +436,19 @@
                     android:textColor="#78909C"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    tools:text="Hazır" />
+                    tools:text="Yok" />
+
+                <!-- "Buraya dokunulur" işareti; yalnızca satır tıklanabilirken görünüyor. -->
+                <TextView
+                    android:id="@+id/streakFreezeChevron"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:includeFontPadding="false"
+                    android:text="›"
+                    android:textColor="#93A5B3"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
