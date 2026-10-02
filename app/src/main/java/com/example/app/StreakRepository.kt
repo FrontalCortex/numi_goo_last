@@ -179,9 +179,10 @@ object StreakRepository {
      * İki şart: seri şu anda YOK ve bugün bu soru henüz sorulmadı. Günde bir kez, çünkü
      * her ders sonunda çıkan bir ekran ödül değil engel olurdu.
      *
-     * Soruyu açan iki yol da buraya soruyor: haritadaki ders dönüşü
-     * (`MainActivity.finalizeMapReturnAfterLessonClaim`) ve Görevler'deki kupa testi dönüşü
-     * (`MainActivity.requestNewStreakPromptOnTasks`).
+     * Soruyu açan yolların hepsi buraya soruyor: haritadaki ders dönüşü
+     * (`MainActivity.finalizeMapReturnAfterLessonClaim`), Görevler'deki kupa testi ve günlük
+     * soru dönüşü (`MainActivity.requestNewStreakPromptOnTasks`) ve yarış dersi dönüşü
+     * (`MainActivity.requestNewStreakPromptOnPartSelection`).
      */
     fun needsNewStreakPrompt(context: Context): Boolean {
         // Yalnızca debug derlemesinde ve anahtar elle açıldıysa; bkz. [NewStreakPromptDebug].

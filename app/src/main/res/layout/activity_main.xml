@@ -557,6 +557,11 @@
       kapısı dokunulabilir kalıyor, bu katman hiçbirini kilitleyemiyor.
 
       Açıp kapatan: MainActivity.setTasksReturnTouchBlock (TasksFragment çağırıyor).
+
+      İkinci kullanıcısı yarış dersi dönüşü (7-8. kısım): ders kapandıktan yeni seri sorusu
+      açılana kadar yarış paneli dokunulabilir kalmasın diye MainActivity aynı katmanı
+      kendisi açıyor. Yarış paneli coordinator_layout'un içinde (0dp), yani bu katmanın
+      altında kalıyor.
     -->
     <View
         android:id="@+id/tasksReturnTouchBlocker"

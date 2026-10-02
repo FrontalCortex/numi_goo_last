@@ -107,18 +107,37 @@ class MainActivity : AppCompatActivity() {
         /** Kuyruk tıkalıyken ne sıklıkta yeniden denenecek. */
         private const val QUEUE_WATCHDOG_INTERVAL_MS = 1_000L
 
-        /** Kupa testi dönüşündeki yeni seri sorusu: kapı kapalıyken iki deneme arası. */
-        private const val TASKS_NEW_STREAK_RETRY_MS = 400L
+        /** Harita dışı dönüşlerdeki yeni seri sorusu: kapı kapalıyken iki deneme arası. */
+        private const val OFF_MAP_NEW_STREAK_RETRY_MS = 400L
 
         /**
-         * Kupa testi dönüşündeki yeni seri sorusunun en fazla ne kadar bekleyeceği.
+         * Harita dışı dönüşlerdeki (kupa testi, günlük soru, yarış dersi) yeni seri
+         * sorusunun en fazla ne kadar bekleyeceği.
          *
          * Beklenen şeyler uzun sürebiliyor: geçiş reklamı, ardından Pro paneli, ardından
          * çocuğun okuduğu bir rozet kutlaması. Üç dakika hepsini kapsıyor; daha uzun
          * bekleyen bir soru artık "testten yeni çıktım" anına ait değil ve düşürülüyor —
          * koşullar sürdükçe bir sonraki test ya da ders dönüşünde yeniden sorulur.
          */
-        private const val TASKS_NEW_STREAK_BUDGET_MS = 180_000L
+        private const val OFF_MAP_NEW_STREAK_BUDGET_MS = 180_000L
+
+        /**
+         * Yarış dersi kapandıktan sonra sorunun en erken açılacağı an.
+         *
+         * Reklam kontrolü dönüşten bir kare sonra başlıyor; soru ondan önce davranırsa
+         * reklam sorunun üstüne açılır. Bu süre kontrolün başlamasına yetiyor, sonrasını
+         * kapı ([offMapNewStreakBlockReason]) bekliyor.
+         */
+        private const val RACE_NEW_STREAK_DELAY_MS = 250L
+
+        /**
+         * Yarış dönüşünde ekranın dokunmaya en fazla ne kadar kapalı kalacağı.
+         *
+         * Engel normalde soru açılınca ya da düşürülünce kalkıyor. Bu sınır, reklam kararı
+         * hiç gelmezse çocuğun ölü bir ekranda kalmaması için: süre dolunca ilk dokunuş
+         * engeli kaldırıyor (bkz. [returnTouchBlockStillOwned]).
+         */
+        private const val RACE_TOUCH_HOLD_MAX_MS = 4_000L
 
         /** Zeminin sönüm süresi; harita "pat" diye belirmesin. */
         private const val POST_LESSON_BACKDROP_FADE_MS = 200L
@@ -2853,16 +2872,33 @@ class MainActivity : AppCompatActivity() {
         postLessonHandoffUntilMs = 0L
         // Yeni tur sorusu burada KUYRUĞA giriyor, açılmıyor. Açma kararı kuyruğun
         // ([pumpPostLessonQueue]) — sırası gelip kapı açıldığı anda.
-        if (fromLessonFinish && StreakRepository.needsNewStreakPrompt(this)) {
-            newStreakPromptQueued = true
+        //
+        // Yarış dersleri (7-8. kısım) istisna: harita yerine kısım seçimi ekranının
+        // üstündeki panelden açılıyorlar ve kuyruk harita tabanı istiyor. Soru kuyruğa
+        // girseydi kapı hiç açılmaz, soru sırada asılı kalır ve çocuk sonradan bir
+        // haritaya girdiğinde alakasız bir anda çıkardı. O dönüşte soru Görevler'deki
+        // bağımsız yoldan soruluyor; taban haritayken hiçbir şey değişmiyor.
+        val returnsToPartSelection =
+            supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is PartSelectionFragment
+        if (fromLessonFinish) {
+            if (returnsToPartSelection) {
+                requestNewStreakPromptOnPartSelection(caller)
+            } else if (StreakRepository.needsNewStreakPrompt(this)) {
+                newStreakPromptQueued = true
+            }
         }
         BadgeDiagnostics.log("MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
+        // Öğretmene sorma tanıtımı haritaya bağlı (kapısı harita tabanı istiyor). Yarış
+        // dersi dönüşünde bayrak kurulursa kısım seçimi ekranında açılamıyor, bekliyor ve
+        // çocuk bir haritaya GİRER GİRMEZ, ortada biten bir ders yokken çıkıyordu (cihazda
+        // görüldü). O dönüşte bayrak hiç kurulmuyor.
+        val promoReturn = isLessonTypeReturn && !returnsToPartSelection
         // scheduleSeasonGate'in post'u bizim post'umuzdan ÖNCE çalışıp reconcile üzerinden
         // notifyMapVisibleAfterLessonClaim'i parametresiz tetikleyebiliyor; bayrağı burada
         // (senkron) biriktir ki hangi çağrı kazanırsa kazansın kaybolmasın.
-        if (isLessonTypeReturn) {
+        if (promoReturn) {
             pendingLessonTypeReturnForPromo = true
             lockTouchForPendingAskQuestionPromo("finalizeMapReturn:$caller")
         }
@@ -2881,7 +2917,7 @@ class MainActivity : AppCompatActivity() {
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
-            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads, isLessonTypeReturn)
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads, promoReturn)
             tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
         }
     }
@@ -3457,8 +3493,9 @@ class MainActivity : AppCompatActivity() {
         // Güvenlik ağı: kuyruk reklam açıkken (activity duraklatılmışken) dürtüldüyse
         // "not_resumed" deyip durmuş olabilir. Reklam kapanınca buradan devam ediyor.
         pumpPostLessonQueue("MainActivity.onResume")
-        // Kupa testi dönüşündeki yeni seri sorusu da aynı sebeple burada sürüyor.
-        pumpTasksNewStreakPrompt()
+        // Harita dışı dönüşlerdeki (kupa testi, günlük soru, yarış dersi) yeni seri sorusu
+        // da aynı sebeple burada sürüyor.
+        pumpOffMapNewStreakPrompt()
         refreshStreakUi()
         // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
         // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
@@ -3757,6 +3794,13 @@ class MainActivity : AppCompatActivity() {
             if (settleDelayMs > 0L) block = "step_settling:$postLessonStepLaunchedName"
         }
         if (block != null) {
+            // Yarış dersi dönüşü istisnası: taban kısım seçimiyken kapı hep kapalı
+            // (harita tabanı istiyor), ama rozet kutlamasının haritaya ihtiyacı yok.
+            // Yalnızca o adım, kendi kapısıyla deneniyor; bkz. [showBadgeOnPartSelectionStep].
+            if (showBadgeOnPartSelectionStep(caller)) {
+                queueLoggedEmpty = false
+                return
+            }
             if (block != lastQueueBlockReason) {
                 lastQueueBlockReason = block
                 Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
@@ -4196,6 +4240,34 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    /**
+     * Yarış dersi (7-8. kısım) dönüşünde rozet kutlaması.
+     *
+     * Yarış dersleri kısım seçimi ekranının üstündeki panelden açılıyor; kuyruğun kapısı
+     * ise harita tabanı istiyor. Rozet yine de kuyruğa düşüyor (aynı dönüş fonksiyonundan
+     * geçiyor), kapı hiç açılmadığı için kutlama gösterilmiyor ve çocuk sonradan bir
+     * haritaya girdiğinde alakasız bir anda çıkıyordu — cihazda görüldü.
+     *
+     * Kuyruğun geri kalanı (zemin, harita kilidi, tanıtım, rehber) haritaya özel olduğu
+     * için o tabana taşınmadı; yalnızca bu adım, harita istemeyen kapıyla
+     * ([offMapNewStreakBlockReason]) çalışıyor. Bekçi kuyruğu saniyede bir dürttüğü için
+     * rozet listesi geç gelse de yakalanıyor.
+     *
+     * Sıra: reklam → yeni seri sorusu → rozet. Haritadaki sıranın (rozet → yeni seri)
+     * tersi, kupa testindekinin aynısı: rozet listesi sunucudan geç geliyor, soru onu
+     * beklemiyor.
+     */
+    private fun showBadgeOnPartSelectionStep(caller: String): Boolean {
+        if (pendingBadgePayloadsForAd.isEmpty() && pendingBadgeStringPayloadsForAd.isEmpty()) return false
+        val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+            as? PartSelectionFragment ?: return false
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return false
+        // Soru sıradaysa önce o açılacak; açıkken de kapı (aşağıda) bekletiyor.
+        if (offMapNewStreakPromptPending) return false
+        if (offMapNewStreakBlockReason(base) != null) return false
+        return showBadgeStep(caller)
+    }
+
     /** B9 — seri kırıksa yeni tur sorusu. */
     private fun showNewStreakStep(caller: String): Boolean {
         if (!newStreakPromptQueued) return false
@@ -4281,22 +4353,31 @@ class MainActivity : AppCompatActivity() {
         pumpPostLessonQueue("NewStreakFragment.dismiss")
     }
 
-    // ── Görevler'e dönüşte yeni seri sorusu (kupa testi, günlük soru) ────────
+    // ── Harita dışı dönüşlerde yeni seri sorusu (kupa testi, günlük soru, yarış dersi) ──
     //
     // NE
-    //   Görevler ekranından açılan iki ders — kupa yolu kartlarındaki test (kupa modu,
-    //   bölüm 9) ve günlük soru — nasıl kapanırsa kapansın (doğru, yanlış, çıkış düğmesi,
-    //   geri tuşu) serisi olmayan kullanıcıya haritadaki ders dönüşünde sorulan soru burada
-    //   da soruluyor. Koşul aynı ([StreakRepository.needsNewStreakPrompt]): seri yok ve
-    //   bugün sorulmadı.
+    //   Haritadan açılmayan üç ders var: Görevler ekranındaki kupa yolu testi (kupa modu,
+    //   bölüm 9) ile günlük soru, ve kısım seçimi ekranının üstündeki yarış panelinden
+    //   açılan yarış dersleri (7-8. kısım). Nasıl kapanırlarsa kapansınlar (doğru, yanlış,
+    //   çıkış düğmesi, geri tuşu) serisi olmayan kullanıcıya haritadaki ders dönüşünde
+    //   sorulan soru burada da soruluyor. Koşul aynı
+    //   ([StreakRepository.needsNewStreakPrompt]): seri yok ve bugün sorulmadı.
     //
     // NEDEN KUYRUĞUN İÇİNDE DEĞİL
     //   Ders sonrası kuyruğu ([pumpPostLessonQueue]) yalnızca HARİTA tabanında çalışıyor:
     //   kapısı [marathonGuideMapBlockReason] ve adımlarının çoğu (zemin, harita kilidi,
-    //   rehber, tanıtım) haritaya özel. Bu iki ders ise Görevler'den açılıp oraya dönüyor.
-    //   Kuyruğa ikinci bir taban öğretmek, uzun uğraşla dengelenmiş o akışın her adımını
-    //   yeniden düşünmek demekti. Burada tek bir ekran açılıyor; kendi kapısı ve kendi
-    //   bekleyişi var, kuyruğun hiçbir alanına dokunmuyor.
+    //   rehber, tanıtım) haritaya özel. Bu dersler ise Görevler'e ya da kısım seçimine
+    //   dönüyor. Kuyruğa ikinci bir taban öğretmek, uzun uğraşla dengelenmiş o akışın her
+    //   adımını yeniden düşünmek demekti. Burada tek bir ekran açılıyor; kendi kapısı ve
+    //   kendi bekleyişi var, kuyruğun hiçbir alanına dokunmuyor.
+    //
+    // YARIŞ DERSİNİN FARKI
+    //   Görevler dönüşünde isteği [TasksFragment] gönderiyor ve reklamın bitmesini kendisi
+    //   bekliyor. Yarış dersi ise haritadaki derslerle aynı dönüş fonksiyonundan
+    //   ([finalizeMapReturnAfterLessonClaim]) geçiyor; reklam kontrolü oradan bir kare sonra
+    //   başlıyor. İstek hemen gönderiliyor, reklamı kapı bekliyor
+    //   ([offMapNewStreakBlockReason] → `ad_check_in_progress`, `not_resumed`). Ekranı
+    //   dokunmaya kapatan da [TasksFragment] değil burası ([offMapNewStreakTouchHold]).
     //
     // SIRA
     //   reklam → (Pro paneli) → yeni seri → dönüşün sonucu.
@@ -4310,16 +4391,40 @@ class MainActivity : AppCompatActivity() {
     //   rozet listesi sunucudan geliyor ve soruyu onun arkasına koymak 1,7–3,4 sn
     //   geciktiriyordu. Kullanıcının kararı — gerekçesi TasksFragment'teki dinleyicide.
 
-    /** Görevler'e dönüldü, yeni seri sorusu uygun anı bekliyor. */
-    private var tasksNewStreakPromptPending = false
+    /** Harita dışı bir tabana dönüldü, yeni seri sorusu uygun anı bekliyor. */
+    private var offMapNewStreakPromptPending = false
+
+    /**
+     * Soru hangi taban ekranı için istendi ([TasksFragment] ya da [PartSelectionFragment]).
+     *
+     * Soru "dersten yeni çıktım" anına ait: taban değişirse başka bir ekranın üstüne
+     * açılmasın diye düşürülüyor. Log öneki de buna göre seçiliyor ([offMapNewStreakLabel]).
+     */
+    private var offMapNewStreakBaseClass: Class<out Fragment> = TasksFragment::class.java
 
     /** Bu andan önce açılmaz (monoton saat): ders ekranının kaldırılması bitiyor. */
-    private var tasksNewStreakNotBeforeMs = 0L
+    private var offMapNewStreakNotBeforeMs = 0L
 
-    /** Bu andan sonra vazgeçilir (monoton saat); bkz. [TASKS_NEW_STREAK_BUDGET_MS]. */
-    private var tasksNewStreakDeadlineMs = 0L
+    /** Bu andan sonra vazgeçilir (monoton saat); bkz. [OFF_MAP_NEW_STREAK_BUDGET_MS]. */
+    private var offMapNewStreakDeadlineMs = 0L
 
-    private val tasksNewStreakRunnable = Runnable { runTasksNewStreakPrompt("retry") }
+    private val offMapNewStreakRunnable = Runnable { runOffMapNewStreakPrompt("retry") }
+
+    /**
+     * Yarış dönüşünde soru sıradayken ekranı dokunmaya kapalı tutan engel bizde mi.
+     *
+     * Görevler dönüşünde engelin sahibi [TasksFragment] (bkz. [setTasksReturnTouchBlock]);
+     * yarış panelinin ise böyle bir sahibi yok, o yüzden burada tutuluyor. Olmasaydı ders
+     * kapandıktan soru açılana kadarki aralıkta panelden yeni bir yarış başlatılabilirdi.
+     */
+    private var offMapNewStreakTouchHold = false
+
+    /** [offMapNewStreakTouchHold]'un geçerliliğinin bittiği an; bkz. [RACE_TOUCH_HOLD_MAX_MS]. */
+    private var offMapNewStreakTouchHoldUntilMs = 0L
+
+    /** Log öneki: sorunun hangi dönüşe ait olduğu satırdan okunabilsin. */
+    private fun offMapNewStreakLabel(baseClass: Class<out Fragment> = offMapNewStreakBaseClass): String =
+        if (baseClass == PartSelectionFragment::class.java) "yaris" else "gorevler"
 
     /**
      * Görevler'den açılan bir ders (kupa testi ya da günlük soru) kapandı; koşullar
@@ -4330,22 +4435,66 @@ class MainActivity : AppCompatActivity() {
      * @param notBeforeElapsedMs Sorunun en erken açılabileceği an (monoton saat).
      */
     fun requestNewStreakPromptOnTasks(caller: String, notBeforeElapsedMs: Long) {
+        requestOffMapNewStreakPrompt(caller, notBeforeElapsedMs, TasksFragment::class.java, holdTouch = false)
+    }
+
+    /**
+     * Yarış panelinden açılan bir ders (7-8. kısım) kapandı; koşullar tutuyorsa yeni seri
+     * sorusunu sıraya alır ve soru gelene kadar ekranı dokunmaya kapatır.
+     *
+     * [finalizeMapReturnAfterLessonClaim] çağırıyor — taban kısım seçimi ekranıyken.
+     */
+    private fun requestNewStreakPromptOnPartSelection(caller: String) {
+        requestOffMapNewStreakPrompt(
+            caller = caller,
+            notBeforeElapsedMs = android.os.SystemClock.elapsedRealtime() + RACE_NEW_STREAK_DELAY_MS,
+            baseClass = PartSelectionFragment::class.java,
+            holdTouch = true,
+        )
+    }
+
+    private fun requestOffMapNewStreakPrompt(
+        caller: String,
+        notBeforeElapsedMs: Long,
+        baseClass: Class<out Fragment>,
+        holdTouch: Boolean,
+    ) {
         if (!::binding.isInitialized) return
+        val label = offMapNewStreakLabel(baseClass)
         // Test çalışma süresine sayılıyor ve hedef tam bu testte tutmuş olabilir; o zaman
         // seri az önce 1 oldu ve sorulacak bir şey yok. Kayıtlı değer tazelenmeden
         // bakılsaydı "serin başladı" kutlamasıyla "seri başlatalım" sorusu aynı anda çıkardı.
         StreakRepository.refresh(this)
         if (!StreakRepository.needsNewStreakPrompt(this)) {
-            Log.d(TAG_QUEUE, "gorevler yeni seri GEREKMIYOR | caller=$caller (seri var ya da bugun soruldu)")
+            Log.d(TAG_QUEUE, "$label yeni seri GEREKMIYOR | caller=$caller (seri var ya da bugun soruldu)")
             return
         }
-        tasksNewStreakPromptPending = true
-        tasksNewStreakNotBeforeMs = notBeforeElapsedMs
+        offMapNewStreakPromptPending = true
+        offMapNewStreakBaseClass = baseClass
+        offMapNewStreakNotBeforeMs = notBeforeElapsedMs
         val now = android.os.SystemClock.elapsedRealtime()
-        tasksNewStreakDeadlineMs = now + TASKS_NEW_STREAK_BUDGET_MS
-        Log.d(TAG_QUEUE, "gorevler yeni seri SIRADA | caller=$caller bekleme=${(notBeforeElapsedMs - now).coerceAtLeast(0L)}ms")
-        binding.root.removeCallbacks(tasksNewStreakRunnable)
-        binding.root.postDelayed(tasksNewStreakRunnable, (notBeforeElapsedMs - now).coerceAtLeast(0L))
+        offMapNewStreakDeadlineMs = now + OFF_MAP_NEW_STREAK_BUDGET_MS
+        Log.d(TAG_QUEUE, "$label yeni seri SIRADA | caller=$caller bekleme=${(notBeforeElapsedMs - now).coerceAtLeast(0L)}ms")
+        if (holdTouch) {
+            offMapNewStreakTouchHold = true
+            offMapNewStreakTouchHoldUntilMs = now + RACE_TOUCH_HOLD_MAX_MS
+            applyReturnTouchBlock()
+        }
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+        binding.root.postDelayed(offMapNewStreakRunnable, (notBeforeElapsedMs - now).coerceAtLeast(0L))
+    }
+
+    /**
+     * Yarış dönüşünde tuttuğumuz dokunma engelini bırakır.
+     *
+     * Bekleyişi bitiren her yol (soru açıldı, düşürüldü, vazgeçildi) buradan geçmeli: engel
+     * yalnızca soru sıradayken anlamlı. Görevler dönüşünde engel bizde olmadığı için
+     * orada hiçbir şey yapmıyor.
+     */
+    private fun releaseOffMapNewStreakTouchHold() {
+        if (!offMapNewStreakTouchHold) return
+        offMapNewStreakTouchHold = false
+        applyReturnTouchBlock()
     }
 
     /**
@@ -4358,7 +4507,7 @@ class MainActivity : AppCompatActivity() {
      * sonuç o kısa aralıkta başlar, soru üstüne binerdi.
      */
     fun isTasksReturnCovered(): Boolean =
-        tasksNewStreakPromptPending ||
+        offMapNewStreakPromptPending ||
             dialogStillShowing(NewStreakFragment.TAG) ||
             supportFragmentManager.findFragmentByTag("AdSkip") != null
 
@@ -4375,112 +4524,170 @@ class MainActivity : AppCompatActivity() {
      * kapatmadan çıkamaz. Kapatan yolların hepsi [TasksFragment]'te; yine de biri atlanırsa
      * diye katman her dokunuşta "hâlâ gerekli miyim" diye soruyor. Gerekmiyorsa kendini
      * kaldırıyor: o dokunuş yutuluyor, bir sonraki alttaki ekrana ulaşıyor.
+     *
+     * ## İkinci sahip
+     * Aynı katmanı yarış dersi dönüşü de kullanıyor ([offMapNewStreakTouchHold]). İki
+     * istek ayrı tutuluyor ve katman ikisinden biri istediği sürece açık: Görevler'in
+     * "kapat" demesi yarış dönüşünün engelini, yarış dönüşününki de Görevler'inkini
+     * düşüremesin.
      */
-    @android.annotation.SuppressLint("ClickableViewAccessibility")
     fun setTasksReturnTouchBlock(blocked: Boolean) {
+        tasksReturnTouchBlockRequested = blocked
+        applyReturnTouchBlock()
+    }
+
+    /** [TasksFragment]'in son isteği; bkz. [setTasksReturnTouchBlock]. */
+    private var tasksReturnTouchBlockRequested = false
+
+    /** Katmanı en son kimin açtığı; kapanış ve "sahipsiz" satırları aynı öneki taşısın diye. */
+    private var returnTouchBlockLabel = "gorevler"
+
+    /** Katmanı iki sahibin isteğine göre açar ya da kapatır. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun applyReturnTouchBlock() {
         if (!::binding.isInitialized) return
+        val blocked = tasksReturnTouchBlockRequested || offMapNewStreakTouchHold
         val blocker = binding.tasksReturnTouchBlocker
         if (blocked) {
             blocker.setOnTouchListener { view, event ->
-                val tasks = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
-                if (event.actionMasked == MotionEvent.ACTION_DOWN && tasks?.needsTasksReturnTouchBlock() != true) {
-                    Log.d(TAG_QUEUE, "gorevler dokunma engeli SAHIPSIZ, kaldirildi")
+                if (event.actionMasked == MotionEvent.ACTION_DOWN && !returnTouchBlockStillOwned()) {
+                    Log.d(TAG_QUEUE, "$returnTouchBlockLabel dokunma engeli SAHIPSIZ, kaldirildi")
+                    tasksReturnTouchBlockRequested = false
+                    offMapNewStreakTouchHold = false
                     view.visibility = View.GONE
                 }
                 true
             }
         }
         if ((blocker.visibility == View.VISIBLE) != blocked) {
-            Log.d(TAG_QUEUE, "gorevler dokunma engeli ${if (blocked) "ACIK" else "KAPALI"}")
+            if (blocked) {
+                returnTouchBlockLabel = if (tasksReturnTouchBlockRequested) "gorevler" else "yaris"
+            }
+            Log.d(TAG_QUEUE, "$returnTouchBlockLabel dokunma engeli ${if (blocked) "ACIK" else "KAPALI"}")
         }
         blocker.visibility = if (blocked) View.VISIBLE else View.GONE
     }
 
     /**
+     * Katmanın hâlâ bir sahibi var mı; [applyReturnTouchBlock]'taki güvenlik ağı soruyor.
+     *
+     * Kayıtlı isteklere değil sahiplerin ŞU ANKİ durumuna bakılıyor: güvenlik ağının işi,
+     * isteğini geri almayı unutan bir yolu yakalamak.
+     */
+    private fun returnTouchBlockStillOwned(): Boolean {
+        val tasks = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
+        if (tasks?.needsTasksReturnTouchBlock() == true) return true
+        // Yarış dönüşü: soru sıradayken ve süre dolmadıysa. Süre sınırı, reklam kararı hiç
+        // gelmezse ekranın ölü kalmaması için (bkz. [RACE_TOUCH_HOLD_MAX_MS]).
+        return offMapNewStreakTouchHold &&
+            offMapNewStreakPromptPending &&
+            android.os.SystemClock.elapsedRealtime() < offMapNewStreakTouchHoldUntilMs
+    }
+
+    /**
      * Bekleyen soru varsa bir sonraki karede yeniden dener.
      *
-     * [onResume] çağırıyor: reklam açıkken activity duraklatılıyor ve [runTasksNewStreakPrompt]
+     * [onResume] çağırıyor: reklam açıkken activity duraklatılıyor ve [runOffMapNewStreakPrompt]
      * o sırada beklemeyi bırakıyor (bkz. oradaki not). Reklam kapanınca buradan sürüyor.
      * Bir sonraki kare, çünkü `onResume` içinde yaşam döngüsü henüz RESUMED değil.
      */
-    private fun pumpTasksNewStreakPrompt() {
-        if (!tasksNewStreakPromptPending || !::binding.isInitialized) return
-        binding.root.removeCallbacks(tasksNewStreakRunnable)
-        binding.root.post(tasksNewStreakRunnable)
+    private fun pumpOffMapNewStreakPrompt() {
+        if (!offMapNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+        binding.root.post(offMapNewStreakRunnable)
     }
 
-    private fun runTasksNewStreakPrompt(caller: String) {
-        if (!tasksNewStreakPromptPending || !::binding.isInitialized) return
-        binding.root.removeCallbacks(tasksNewStreakRunnable)
+    private fun runOffMapNewStreakPrompt(caller: String) {
+        if (!offMapNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+
+        val label = offMapNewStreakLabel()
 
         fun drop(reason: String) {
-            tasksNewStreakPromptPending = false
-            Log.d(TAG_QUEUE, "gorevler yeni seri DUSURULDU | caller=$caller neden=$reason")
+            offMapNewStreakPromptPending = false
+            releaseOffMapNewStreakTouchHold()
+            Log.d(TAG_QUEUE, "$label yeni seri DUSURULDU | caller=$caller neden=$reason")
         }
 
         if (isFinishing || isDestroyed) return drop("activity_gone")
         val now = android.os.SystemClock.elapsedRealtime()
-        if (now >= tasksNewStreakDeadlineMs) return drop("sure_doldu")
-        // Kullanıcı Görevler'den ayrıldı: soru "dersten yeni çıktım" anına ait, başka bir
-        // ekranın üstüne açılmamalı. Koşullar sürdükçe bir sonraki dönüşte yeniden sorulur.
+        if (now >= offMapNewStreakDeadlineMs) return drop("sure_doldu")
+        // Kullanıcı sorunun istendiği ekrandan (Görevler ya da kısım seçimi) ayrıldı: soru
+        // "dersten yeni çıktım" anına ait, başka bir ekranın üstüne açılmamalı. Koşullar
+        // sürdükçe bir sonraki dönüşte yeniden sorulur.
         val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        if (base !is TasksFragment) return drop("gorevlerden_ayrildi:${base?.javaClass?.simpleName}")
+        if (base == null || base.javaClass != offMapNewStreakBaseClass) {
+            val left = if (label == "yaris") "kisim_seciminden_ayrildi" else "gorevlerden_ayrildi"
+            return drop("$left:${base?.javaClass?.simpleName}")
+        }
 
         // Duraklatılmışken (reklam açık ya da uygulama arkada) zamanlayıcı kurulmuyor:
         // reklam dakikalarca sürebilir ve o sırada yoklamanın anlamı yok. [onResume] dürtüyor.
         if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-            Log.d(TAG_QUEUE, "gorevler yeni seri bekliyor | caller=$caller block=not_resumed")
+            Log.d(TAG_QUEUE, "$label yeni seri bekliyor | caller=$caller block=not_resumed")
             return
         }
 
         // Zamanlayıcı bir iki milisaniye erken dönebiliyor. Bu aşağıdaki kapıya bir "engel"
         // olarak girseydi yoklama aralığı (400 ms) kadar boşuna beklenirdi; kalan süre
         // kadar bekleniyor.
-        val waitMs = tasksNewStreakNotBeforeMs - now
+        val waitMs = offMapNewStreakNotBeforeMs - now
         if (waitMs > 0L) {
-            binding.root.postDelayed(tasksNewStreakRunnable, waitMs)
+            binding.root.postDelayed(offMapNewStreakRunnable, waitMs)
             return
         }
 
-        val block = tasksNewStreakBlockReason(base)
+        val block = offMapNewStreakBlockReason(base)
         if (block != null) {
-            if (block != lastTasksNewStreakBlock) {
-                lastTasksNewStreakBlock = block
-                Log.d(TAG_QUEUE, "gorevler yeni seri bekliyor | caller=$caller block=$block")
+            if (block != lastOffMapNewStreakBlock) {
+                lastOffMapNewStreakBlock = block
+                Log.d(TAG_QUEUE, "$label yeni seri bekliyor | caller=$caller block=$block")
             }
             // Bu engellerin hepsi kapanırken haber vermiyor (Pro paneli, rozet kutlaması);
             // kutlama şeridindeki gibi bütçeli yoklama, hangisi kapanırsa kapansın çalışıyor.
-            binding.root.postDelayed(tasksNewStreakRunnable, TASKS_NEW_STREAK_RETRY_MS)
+            binding.root.postDelayed(offMapNewStreakRunnable, OFF_MAP_NEW_STREAK_RETRY_MS)
             return
         }
-        lastTasksNewStreakBlock = null
-        tasksNewStreakPromptPending = false
+        lastOffMapNewStreakBlock = null
+        offMapNewStreakPromptPending = false
 
         // Beklerken koşul değişmiş olabilir: seri başka bir yoldan başlamış ya da soru
         // haritadaki kuyruktan sorulmuş olabilir.
         StreakRepository.refresh(this)
         if (!StreakRepository.needsNewStreakPrompt(this)) {
-            Log.d(TAG_QUEUE, "gorevler yeni seri VAZGECILDI | caller=$caller (beklerken kosul degisti)")
+            releaseOffMapNewStreakTouchHold()
+            Log.d(TAG_QUEUE, "$label yeni seri VAZGECILDI | caller=$caller (beklerken kosul degisti)")
             return
         }
-        Log.d(TAG_QUEUE, "gorevler yeni seri ACILIYOR | caller=$caller")
+        Log.d(TAG_QUEUE, "$label yeni seri ACILIYOR | caller=$caller")
         NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
+        // Önce pencere, sonra engel: soru penceresi gelmeden bırakılsaydı alttaki yarış
+        // paneli bir kare dokunulabilir kalırdı.
+        releaseOffMapNewStreakTouchHold()
     }
 
     /** Log tekrarını önleyen son engel; yoklama 400 ms'de bir dönüyor. */
-    private var lastTasksNewStreakBlock: String? = null
+    private var lastOffMapNewStreakBlock: String? = null
 
     /**
-     * Görevler'e dönüşteki soru şu an açılamıyorsa sebebi; açılabiliyorsa null.
+     * Harita dışı dönüşteki soru şu an açılamıyorsa sebebi; açılabiliyorsa null.
      *
      * [marathonGuideMapBlockReason] ile aynı şeylere bakıyor ama harita tabanı istemiyor.
      * Yalnızca "şu an bir şey GÖRÜNÜYOR" durumları var; hepsi kendiliğinden kapanan şeyler.
+     *
+     * @param base Sorunun istendiği taban ekranı ([TasksFragment] ya da [PartSelectionFragment]).
      */
-    private fun tasksNewStreakBlockReason(tasks: TasksFragment): String? {
+    private fun offMapNewStreakBlockReason(base: Fragment): String? {
         val fm = supportFragmentManager
         if (fm.isStateSaved) return "state_saved"
-        // Görevler başka bir tam ekranın altında gizlenmiş (ayarlar, kupa yolu haritası…).
-        if (!tasks.isAdded || tasks.isHidden) return "gorevler_gizli"
+        // Taban başka bir tam ekranın altında gizlenmiş (ayarlar, kupa yolu haritası…).
+        // Sebep adı Görevler'den kalma; loglarda ve notlarda bu adla geçtiği için duruyor.
+        if (!base.isAdded || base.isHidden) return "gorevler_gizli"
+        // Yarış dersi haritadaki derslerle aynı reklam kontrolünden geçiyor ve o kontrol
+        // dönüşten sonra başlıyor; soru onu beklemezse reklam sorunun üstüne açılır.
+        // Görevler dönüşünde bakılmıyor: orada isteği [TasksFragment] zaten reklam bitince
+        // gönderiyor ve bu bayrak başka bir akışa (harita dönüşü) ait.
+        if (base is PartSelectionFragment && adCheckForBadgeInProgress) return "ad_check_in_progress"
 
         val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
         if (binding.abacusFragmentContainer.visibility == View.VISIBLE &&

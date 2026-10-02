@@ -164,7 +164,7 @@ class TasksFragment : Fragment() {
 
         /**
          * Örten pencere bu kadar sürede kapanmazsa kupa sonucu yine de işlenir. Yeni seri
-         * sorusunun kendi bekleme bütçesiyle aynı (bkz. MainActivity.TASKS_NEW_STREAK_BUDGET_MS).
+         * sorusunun kendi bekleme bütçesiyle aynı (bkz. MainActivity.OFF_MAP_NEW_STREAK_BUDGET_MS).
          */
         private const val TASKS_RETURN_COVER_BUDGET_MS = 180_000L
 

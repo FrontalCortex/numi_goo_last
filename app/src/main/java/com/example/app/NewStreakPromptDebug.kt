@@ -11,12 +11,15 @@ package com.example.app
  *    beklemek gerekiyor; çıktıktan sonra da aynı gün bir daha çıkmıyor.
  *  - Yerel durumu elle sıfırlamak işe yaramıyor: sunucudaki seri bir sonraki açılışta geri
  *    yükleniyor.
- * Yani ekranı — ve onu açan iki ayrı yolu (haritadaki ders dönüşü, Görevler'deki kupa testi
- * dönüşü) — günde en fazla bir kez, o da ancak seri kırıkken denemek mümkün.
+ * Yani ekranı — ve onu açan dört ayrı yolu (haritadaki ders dönüşü, Görevler'deki kupa testi
+ * dönüşü, Görevler'deki günlük soru dönüşü, yarış panelindeki ders dönüşü) — günde en fazla
+ * bir kez, o da ancak seri kırıkken denemek mümkün.
  *
  * ## Nasıl kullanılır
- * [FORCE] değerini `true` yap, debug derlemesini çalıştır. İki koşul da atlanır: her ders
- * dönüşünde ve her kupa testi kapanışında soru sorulur. Test bitince `false`'a geri al.
+ * [FORCE] değerini `true` yap, debug derlemesini çalıştır. İki koşul da atlanır: haritadaki
+ * ve yarış panelindeki her ders dönüşünde (bitirme, başarısızlık, yarıda bırakma), her kupa
+ * testi kapanışında ve her günlük soru kapanışında soru sorulur. Test bitince `false`'a
+ * geri al.
  *
  * Ekranda "Başla"ya basmak gerçek bir seçim kaydeder (meydan okuma yerelde değişir ve
  * sunucuya gönderilir); yalnızca açılıp açılmadığına bakıyorsan geri tuşuyla kapat.
