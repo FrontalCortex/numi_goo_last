@@ -817,10 +817,6 @@ class LessonAdapter(
                     actionButton.backgroundTintList =
                         ContextCompat.getColorStateList(context, R.color.lesson_completed)
                     actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
-                    actionButton.icon = ContextCompat.getDrawable(context, R.drawable.lighting__1_)
-                    actionButton.iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
-                    actionButton.iconPadding = (8 * context.resources.displayMetrics.density).toInt()
-                    actionButton.iconTint = null
                 }
             }
         }
