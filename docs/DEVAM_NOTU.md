@@ -220,7 +220,7 @@ etmiyor, iki taraf ayrışır.
 **Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
 ekranı; akşam hatırlatmasının "dondurman var" diyen bir çeşidi.
 
-## Görevler'e dönüşte yeni seri sorusu: kupa testi ve günlük soru (02.10.2026)
+## Harita dışı dönüşlerde yeni seri sorusu: kupa testi, günlük soru, yarış dersi (02-03.10.2026)
 
 Görevler ekranından açılan iki ders — kupa yolu kartlarındaki test (kupa modu, bölüm 9) ve
 günlük soru — nasıl kapanırsa kapansın (doğru, yanlış, çıkış düğmesi, geri tuşu) serisi olmayan
@@ -238,7 +238,8 @@ aşağıdaki doğrulama kayıtlarındaki log satırları o günkü önekle (`kup
 **Neden ders sonrası kuyruğunun içinde değil:** kuyruk (`pumpPostLessonQueue`) yalnızca harita
 tabanında çalışıyor; kapısı ve adımlarının çoğu haritaya özel. Kupa testi Görevler'den açılıp
 oraya dönüyor. Kuyruğa dokunulmadı; `MainActivity`'de kendi küçük kapısı ve bekleyişi var
-(`requestNewStreakPromptOnTasks` → `runTasksNewStreakPrompt` → `tasksNewStreakBlockReason`).
+(`requestNewStreakPromptOnTasks` → `runOffMapNewStreakPrompt` → `offMapNewStreakBlockReason`;
+iç adlar 03.10.2026'da değişti, bkz. "Yarış dersi dönüşü").
 
 **Sıra — kullanıcının kararları, üç turda oturdu:**
 
@@ -389,6 +390,142 @@ Anahtar KAPALIYKEN de doğrulandı (19:12–19:13, üç günlük soru dönüşü
 dedi): logda `gorevler yeni seri` ve `gorevler dokunma engeli` satırı hiç yok, yani dönüş
 eskisiyle aynı yoldan geçti.
 
+### Yarış dersi dönüşü (03.10.2026 — yeni seri ve rozet cihazda doğrulandı; harita dönüşü de sonrasında denendi)
+
+7-8. kısım dersleri haritadan değil, kısım seçimi ekranının (`PartSelectionFragment`) üstündeki
+yarış panelinden açılıyor (`LessonAdapter.showRacePanel` → `onRaceStartClicked` →
+`BlindingLessonFragment`, `raceBusyLevel != null`). Kullanıcı test anahtarı açıkken bu
+derslerden sonra sorunun gelmediğini, ardından rozet kutlamasının da açılmadığını bildirdi.
+
+**Neden gelmiyorlardı:** yarış dersi de haritadaki derslerle aynı dönüş fonksiyonundan geçiyor
+(`finalizeMapReturnAfterLessonClaim`); soru (`newStreakPromptQueued`) ve rozet
+(`pendingBadgePayloadsForAd`) ders sonrası kuyruğuna giriyordu. Kuyruğun kapısı ise harita
+tabanı istiyor (`marathonGuideMapBlockReason` → `base_not_map:PartSelectionFragment`), yani
+hiçbiri açılmıyordu. Bayraklar silinmediği için ikisi de, çocuk sonradan bir haritaya
+girdiğinde alakasız bir anda çıkıyordu. Rozet için cihaz logu:
+
+```
+00:15:11.516 tur | caller=enqueuePendingBadgePayloads rozet=2 …
+00:15:16.614 bekliyor | caller=watchdog block=base_not_map:ProfileFragment
+00:15:31.165 bekliyor | caller=watchdog block=base_not_map:PartSelectionFragment
+00:17:09.610 bekci BIRAKTI | sure doldu, harita kilidi aciliyor
+```
+
+**Yeni seri — kullanıcı onayladı (`finalizeMapReturnAfterLessonClaim`'e dokunuyor):**
+
+- `finalizeMapReturnAfterLessonClaim` içinde tek dal: taban `PartSelectionFragment` ise soru
+  kuyruğa girmiyor, `requestNewStreakPromptOnPartSelection` ile Görevler'deki bağımsız yoldan
+  isteniyor. Taban haritayken satırlar eskisiyle aynı.
+- Görevler mekanizması iki tabanı tanıyacak şekilde genişledi: istek hangi taban için
+  yapıldıysa (`offMapNewStreakBaseClass`) soru yalnızca o tabandayken açılıyor, taban
+  değişirse düşürülüyor.
+- Sıra: reklam → (Pro paneli) → yeni seri. Görevler'den farkı: istek dönüş anında gönderiliyor,
+  reklamı kapı bekliyor (`ad_check_in_progress`, `not_resumed`). Reklam kontrolü dönüşten bir
+  kare sonra başladığı için soru 250 ms'den önce açılmıyor (`RACE_NEW_STREAK_DELAY_MS`).
+- Dokunma: soru gelene kadar ekran kapalı, Görevler için eklenen katmanla
+  (`tasksReturnTouchBlocker`). Katmanın artık iki sahibi var ve ikisinden biri istediği sürece
+  açık. Yarış dönüşündeki engel en fazla 4 sn geçerli (`RACE_TOUCH_HOLD_MAX_MS`): reklam
+  kararı hiç gelmezse ilk dokunuş engeli kaldırıyor.
+
+**Cihazda doğrulandı (00:14–00:19, test anahtarı açık, kullanıcı "sorunsuz çıkıyor" dedi):**
+
+```
+00:14:46.493 yaris yeni seri SIRADA | caller=BlindingLessonFragment.quit bekleme=243ms
+00:14:46.493 yaris dokunma engeli ACIK
+00:14:46.747 yaris yeni seri ACILIYOR | caller=retry
+00:14:46.783 yaris dokunma engeli KAPALI
+   … reklamlı dönüş …
+00:15:59.208 yaris yeni seri SIRADA | caller=ChestFragment.claimAfterRemove bekleme=246ms
+00:15:59.454 yaris yeni seri bekliyor | caller=retry block=ad_check_in_progress
+00:15:59.535 START AdActivity
+00:15:59.869 yaris yeni seri bekliyor | caller=retry block=not_resumed
+00:16:05.179 yaris yeni seri bekliyor | caller=retry block=ad_skip_showing
+00:16:06.431 yaris yeni seri ACILIYOR | caller=retry
+```
+
+Dört yarış dönüşü (bir çıkış, üç bitirme). Aynı turda üç günlük soru ve iki kupa testi dönüşü
+de denendi; `gorevler …` satırları eskisiyle aynı, kullanıcı "sorunsuz" dedi.
+
+**Rozet — kullanıcı onayladı (`runPostLessonQueue`'ya dokunuyor), cihazda doğrulandı:**
+kuyruğun kapısı kapalıyken tek bir dal: `showBadgeOnPartSelectionStep`. Taban kısım seçimiyse
+ve rozet bekliyorsa, harita istemeyen kapıyla (`offMapNewStreakBlockReason`) yalnızca rozet
+adımı (`showBadgeStep`) çalışıyor. Yeni seri sorusu sıradayken ya da açıkken bekliyor; sıra
+reklam → yeni seri → rozet (haritadaki rozet → yeni seri sırasının tersi, kupa testindekinin
+aynısı: rozet listesi sunucudan ~2 sn geç geliyor). Bekçi kuyruğu saniyede bir dürttüğü için
+geç gelen liste de yakalanıyor. Taban haritayken dal hiçbir şey yapmıyor.
+
+Doğrulama (00:30–00:33, yeni test aboneliğiyle, kullanıcı "sorunsuz" dedi): dört yarış
+dönüşünde soru geldi; rozetli olanda sıra tuttu, çökme yok.
+
+```
+00:32:39.436 yaris yeni seri SIRADA | caller=MissionChestReward.continue bekleme=246ms
+00:32:39.449 tur | caller=finalizeMapReturn:MissionChestReward.continue rozet=1 …
+00:32:39.701 yaris yeni seri ACILIYOR | caller=retry
+00:32:41.729 rozet | caller=NewStreakFragment.dismiss        ← soru kapanınca
+00:32:41.785 ekran=BadgeFragment … 00:32:47.755 ekran=PartSelectionFragment
+```
+
+**Harita dönüşü bu iki değişiklikten sonra da aynı (00:34–00:37, beş dönüş, çökme yok):**
+kuyruk sırası tuttu ve kilit her seferinde bırakıldı. En dolu dönüş:
+
+```
+00:36:08.625 kilit aliniyor
+00:36:09.154 bekliyor | block=badge_firestore_pending
+00:36:10.351 rozet | caller=enqueuePendingBadgePayloads
+00:36:16.410 yeni seri | caller=BadgeFragment.onDestroyView
+00:36:18.641 rating | caller=NewStreakFragment.dismiss
+00:36:19.797 rehber | caller=RatingDialog.dismiss
+00:36:20.535 GuideDebug: releasePostLessonQueueTouchLock SKIP: rehber paneli acik, …
+```
+
+Yani rehber kilidi düzeltmesi (`3d6da7f`) de yerinde. Diğer dönüşler: rozetsiz bitirme,
+başarısız sonuç (`LessonResultFalse`), görev sandığı + rozet (iki kez).
+
+Aynı turda görülen, YENİ OLMAYAN iki şey:
+
+- Haritaya girer girmez öğretmene sorma tanıtımı açıldı (`00:34:35.904 ogretmene sorma |
+  caller=MapFragment.onResume`). Yarış dönüşlerinden kalan `promo=true` bayrağı; aşağıdaki
+  "DOKUNULMADI" maddesinin cihazdaki hâli. (Yerelde `AskQuestionPromoDebug.FORCE` açık olduğu
+  için tanıtım her seferinde açılıyor; gerçekte uygunluk ve sayaç kontrolünden geçer.)
+- Bir dönüşte yeni seri sorusunu rozet kapanırken bekçi açtı (`00:37:24.205 yeni seri |
+  caller=watchdog`, `BadgeFragment.onDestroyView` 0,37 sn sonra): soru, rozetin çıkış
+  animasyonu sürerken geldi. Görsel bir sorun bildirilmedi.
+
+Bilinen sınırlar: rozet beklenirken ekran dokunmaya kapalı DEĞİL (kupa testindeki 1,35 sn'lik
+bekletme burada yok); kullanıcı rozet gelmeden başka sekmeye geçerse kutlama bir sonraki
+dürtüde (ders dönüşü, uygulamanın öne gelmesi ya da bir haritaya giriş) açılıyor.
+
+**Denemek için Pro gerekiyor:** 7-8. kısım Pro'ya kilitli. Test aboneliği 5 dakikada bir
+kendiliğinden yenileniyor ve yaklaşık 30 dakikada bitiyor; kısım kilitlenirse abonelik
+bitmiştir, yenisini almak gerekir (bkz. "Pro'dayken reklam çıktı: test aboneliği bitmişti").
+
+**İsimler (ikinci kez):** mekanizmanın iç adları `tasksNewStreak…` idi; artık yarışı da
+taşıdığı için `offMapNewStreak…` oldu (`runOffMapNewStreakPrompt`, `offMapNewStreakBlockReason`,
+`OFF_MAP_NEW_STREAK_BUDGET_MS` …). Dışarıdan çağrılan adlar aynı kaldı
+(`requestNewStreakPromptOnTasks`, `isTasksReturnCovered`, `setTasksReturnTouchBlock`), yani
+`TasksFragment`'te kod değişmedi. Log öneki dönüşe göre: Görevler'de eskisi gibi `gorevler …`,
+yarışta `yaris yeni seri …` / `yaris dokunma engeli …`.
+
+**Öğretmene sorma tanıtımı — kullanıcı onayladı (`finalizeMapReturnAfterLessonClaim`'e
+dokunuyor), cihazda doğrulandı (00:47, kullanıcı "sorunsuz" dedi):** tanıtım haritaya bağlı. Yarış dönüşünde
+bayrağı (`pendingLessonTypeReturnForPromo`) kurulduğu için kısım seçimi ekranında açılamıyor,
+bekliyor ve çocuk bir haritaya girer girmez çıkıyordu (yukarıdaki 00:34:35 satırı). Artık
+taban kısım seçimiyken bayrak hiç kurulmuyor (`promoReturn`); taban haritayken aynı.
+Doğrulama: iki yarış dönüşünde (`00:47:18` bitirme + iki rozet, `00:47:36` çıkış) logda
+`promo=false`; ardından haritaya girişte `00:47:44.047 bos | caller=MapFragment.onResume`,
+yani tanıtım açılmadı. Hemen sonra görülen tanıtım (`00:47:48.99 AskQuestionOpenFragment`)
+başka bir yoldan: kullanıcı haritada bir eğitim (`TutorialFragment`) açıp kapattı, o dönüş
+tanıtımı kendi yolundan deniyor ve yerelde tanıtım anahtarı açık.
+
+Aynı turda bir harita dersi dönüşü de vardı (`00:48:09`, yeni seri → kupa yolu). Kupa yolu
+adımı Görevler'e geçince kuyruk 6 sn boyunca `kilit BIRAKILAMADI | reason=map_yok` yazdı,
+`00:48:19.999`'da bıraktı. Bu işin dokunduğu bir yer değil (`showCupPathStep` aynı) ve
+kullanıcı bir sorun bildirmedi; o 6 saniyede ekranın kilitli kalıp kalmadığı İNCELENMEDİ.
+
+**Aynı nedene bağlı, DOKUNULMADI:** rating adımı (`justFinishedChestForRating`) kısım seçimi
+tabanında hâlâ açılamıyor; kurulursa bir haritaya girilene kadar bekler. Yarış dönüşlerinde
+kurulduğu görülmedi (`rating=false`), ele alınmadı.
+
 ### Test anahtarı ve kupa testi turlarının doğrulama kayıtları
 
 **Test anahtarı:** koşulları elde etmek zor (yeni hesapta kayıt akışı soruyu o gün için
@@ -396,6 +533,17 @@ işaretliyor, serisi olan hesapta kırılmayı beklemek gerekiyor).
 `NewStreakPromptDebug.FORCE = true` iki koşulu da atlıyor; depoda `false` durmalı. Logda
 `PostLessonQueue` etiketiyle `gorevler yeni seri SIRADA / bekliyor | block=… / ACILIYOR /
 DUSURULDU` satırları.
+
+**Şu anki durum (03.10.2026 00:58):** kullanıcının isteğiyle üç yerel test anahtarı da
+**kapatıldı** ve bu hâliyle cihaza kuruldu: `NewStreakPromptDebug.FORCE`,
+`AskQuestionPromoDebug.FORCE`, `MissionProgressDebug.RESET_ON_LAUNCH` (kodda `= true` kalan
+başka anahtar yok). Son ikisi artık depodaki hâlleriyle aynı; `NewStreakPromptDebug.kt`'de
+yalnızca yorum düzeltmesi (günlük soru ve yarış dersi yolları) duruyor, commit edilebilir.
+Anahtar kapalıyken yarış dersi dönüşü denendi (01:04–01:05, kullanıcı "sorunsuz" dedi): iki
+dönüşte `yaris yeni seri GEREKMIYOR` (seri var), dokunma engeli hiç açılmadı; rozetli olanda
+kutlama liste gelir gelmez açıldı (`01:05:24.637 rozet | caller=enqueuePendingBadgePayloads`).
+Ardından haritaya girişte tanıtım çıkmadı (`bos | caller=MapFragment.onResume`). Sorunun
+gerçek koşulda (seri 0 ve bugün sorulmadı) açılması görülmedi.
 
 **Cihazda doğrulanan (anahtar açıkken, önceki turlarla):** sorunun test kapanışlarında
 açılması (kullanıcı dört kapanış yolunu denedi; log yolları ayırt etmiyor, ilk turda altı
@@ -479,6 +627,152 @@ değiştirmek demek; kapanış animasyonunun görünümünü de değiştirir. Ay
 Ders içinde süre eskisi gibi sayıldı (eğitim 30 sn + abaküs 13 sn → `bugun=62sn`), anket ve
 sonuç ekranlarında durdu. Çökme yok.
 
+## Pro'dayken reklam çıktı: test aboneliği bitmişti (03.10.2026 — hata YOK; ilk teşhis yanlıştı)
+
+Kullanıcı Pro plandayken 7-8. kısım dersinden sonra reklam (ve ardından Pro paneli) gördü.
+Hata değil: test aboneliği o anda bitmişti.
+
+**Ne oldu:** abonelik 23:45:56'da alındı. Lisans testçisinde aylık abonelik 5 dakikada bir
+kendiliğinden YENİLENİR ve birkaç yenilemeden sonra kendiliğinden BİTER; bu abonelik
+alındıktan 30 dakika sonra, 00:15:56'da bitti. Aynı oturumda 00:14:46 ve 00:15:09'daki
+dönüşlerde reklam çıkmadı, 00:15:59'da çıktı; plan o arada Pro'dan Free'ye düştü — olması
+gerektiği gibi.
+
+**İlk teşhis yanlıştı, tekrar etmeyin.** Önce "uygulama her 5 dakikalık dönem sınırında planı
+Free'ye düşürüyor, çünkü `planExpiresAt`'i yalnızca açılışta yeniliyor" sonucuna varıldı ve
+bir düzeltme önerildi. Bu, yalnızca saatlerin örtüşmesinden çıkarılmıştı; sunucudaki RTDN
+dinleyicisi gözden kaçmıştı:
+
+- `functions/index.js` → `playSubscriptionNotification` (Pub/Sub konusu `play-rtdn`): Play her
+  yenilemede bildirim gönderiyor, sunucu `plan` / `planExpiresAt`'i güncelliyor.
+- İstemci bunu cüzdan dinleyicisinden öğreniyor: `UserWalletFirestore` planı süre kontrolüyle
+  okuyor (`PlanStatus.effectivePlan`), `MainActivity.applyWalletToUi` kayıtlı plandan farklıysa
+  `checkSubscriptionAndUpdateEnergy` çağırıyor.
+
+Yanlışlığı gösteren kanıt: ikinci test aboneliği 00:30'da alındı ve 20 dakika sonra, en az üç
+dönem sınırı geçmişken plan hâlâ `Pro` idi (`run-as com.numigo.app` ile
+`shared_prefs/energy_prefs_<uid>.xml` → `user_plan`; dosya 00:30'dan beri değişmedi). Arada
+sandık ödülleri cüzdanı defalarca değiştirdi, reklam da çıkmadı.
+
+**Kod değişikliği yapılmadı ve gerekmiyor.** Görülmeyen tek şey: yenileme bildirimi geç
+gelirse arada birkaç saniyelik bir "Free" penceresi oluşuyor mu — gözlenmedi.
+
+**Test ederken:** test aboneliği yaklaşık yarım saatte biter; Pro kısımlar kilitlenir ve reklam
+çıkmaya başlarsa önce aboneliğin bitip bitmediğine bak (Play Store → Ödemeler ve abonelikler).
+
+## Play satın alma ekranında "Bir şeyler ters gitti" (02.10.2026 — cihazda düzeltildi ve doğrulandı, kod değişmedi)
+
+"Pro'ya geç" düğmesine basınca test kartlı ödeme ekranı yerine Play'in kendi penceresinde
+"Hata — Bir şeyler ters gitti. Lütfen tekrar deneyin." çıkıyordu.
+
+**Play'in gerçek cevabı** pencere "Anladım" ile kapatılınca geliyor:
+
+```
+W/ProxyBillingActivity: Activity finished with resultCode 3 and billing's responseCode: 5
+W/BillingManager: Satın alma hatası: 5 Expired Product details. Please fetch product details
+                  again and use it to retry the call.
+```
+
+Kod 5 = `DEVELOPER_ERROR`. Yani Play, uygulamanın elindeki ürün bilgisini "süresi dolmuş"
+sayıyor — bilgi 13 saniye önce sorulmuş olsa bile.
+
+**Neden (düzeltmeyle doğrulandı):** cihaz saati 24-25 Eylül'de seri
+denemeleri için elle ~24 kez değiştirilmiş, en ileri **16.10.2026**'ya, bir kez de geriye
+(01.09) alınmış; son geri dönüş 25.09 21:06. Kanıt: `adb shell dumpsys time_detector` →
+`Set system clock … cause=Manual time suggestion` satırları. Saat ilerideyken Play ürün
+bilgisini önbelleğine almış; şimdi o bayat bilgiyi vermeye devam ediyor, sunucu da reddediyor.
+Bilinen bir durum: RevenueCat topluluğunda aynı mesaj için "cihaz tarihi ileri alındıktan
+sonra oluyor, cihaz o tarihe ulaşana kadar sürüyor; Play Store önbelleğini temizleyip cihazı
+yeniden başlatmak düzeltiyor" deniyor.
+
+Destekleyenler:
+
+- Bu kurulumda son başarılı satın alma 21.09 (Analytics `_ltv_TRY` zaman damgası) — saat
+  oynanmadan önce.
+- Ürün bilgisi sorgusu ~50 ms'de dönüyor; ağdan değil, Play'in önbelleğinden.
+- Her hatadan sonra `Finsky: Commerce cache was cleared.` yazıyor ama 10 dakika sonraki yeni
+  sorgu yine bayat geliyor; temizlenen, sorunlu önbellek değil.
+- Satın alma kodu 14.09'dan beri değişmedi. Play durum panosunda arıza yok.
+
+**Elenenler:**
+
+- *Yanlış hesap / lisans testçisi:* Play hem mağazada hem bu uygulamanın faturasında …2003
+  hesabını kullanıyor (`Finsky: com.numigo.app: Account from first account`; loglardaki hesap
+  özeti `base64url(sha256(hesap adı))`, bu yolla eşlendi). Telefondaki …tumturk2 hesabının
+  oturumu bozuk (`BAD_AUTHENTICATION`), ama satın almada kullanılmıyor.
+- *Ekran kilidi (PIN) yok:* telefonda kilit yok ve Play her satın almada
+  `AuthService: canAuthenticate … result: 11` alıyor; ilk aday buydu. Yanlış çıktı: kilit
+  kurulmadan, yalnızca önbellek temizliğiyle abonelik alınabildi.
+
+**Düzeltme (cihazda, kullanıcı yaptı):** Ayarlar → Uygulamalar → Google Play Store →
+*Önbelleği temizle*, ardından telefonu yeniden başlatmak. Hangisinin yettiği ayrıştırılmadı:
+23:31'deki deneme hâlâ `Expired Product details` verdi ama o an önbellek temizlenmiş miydi
+bilinmiyor. Tekrar olursa ve bu yetmezse sıradaki adım *Verileri temizle* (hesaplar silinmez,
+Play Store ayarları sıfırlanır); hiçbir şey yapılmasa 16 Ekim'den sonra kendiliğinden
+düzelmesi beklenirdi.
+
+**Doğrulama (yeniden başlatmadan sonra, 23:45):**
+
+```
+23:45:15 BillingManager: OFFERS pro_monthly …                ← yeni süreç, yeni ürün bilgisi
+23:45:20 START ProxyBillingActivity → Play ekranı            ← 1. akış: hata/iptal satırı yok
+23:45:51 START ProxyBillingActivity → Play ekranı            ← 2. akış (PlanFragment'ten)
+23:45:54 Finsky: Monetization gRPC call …                    ← kullanıcı onayladı
+23:45:56 Finsky: Commerce cache was cleared.
+23:45:56 Finsky: Applying library update: account=[…2003]    ← satın alma Play'e işlendi
+23:46:03 BpBinder … IInAppBillingService code=902 (1095 ms)  ← uygulamanın onay çağrısı
+23:46:03 Finsky: Applying library update: account=[…2003]
+```
+
+23:45:15'ten sonra `BillingManager` / `ProxyBillingActivity` etiketlerinde tek bir uyarı ya da
+hata yok. Sunucu doğrulaması (`redeemGooglePlaySubscription`) doğrudan görülmedi, çıkarım:
+uygulama onay çağrısını (902 = `acknowledgePurchase`) yalnızca sunucu "tamam" dedikten sonra
+yapıyor ve hata dalları log yazıyor. Hatalı denemelerde aynı yerde tek bir gRPC çağrısı ve
+~350 ms sonra `Commerce cache was cleared` vardı. 1. akışın ayrıntısı (hangi ürün) tampondan
+düşmüştü.
+
+**Ders:** cihaz saatini oynamak yalnızca seriyi değil, Play satın almalarını da haftalarca
+bozuyor. Seri için zaten yasaktı (bkz. "Saati ileri alarak deneme").
+
+**Koda dair, yapılmadı:** `BillingManager` ürün bilgisini süreç ömrü boyunca bellekte tutuyor
+ve bu hatadan sonra yeniden sormuyor. Bu olayda yeniden sormak işe yaramazdı (Play aynı bayat
+bilgiyi veriyordu); ama gerçek kullanıcıda uygulama günlerce bellekte kalırsa aynı hata
+çıkabilir. Sağlamlaştırma: `DEVELOPER_ERROR` gelince `queryProductDetails()` çağırmak.
+Cihazda denenemediği için kullanıcıya soruldu, beklemede.
+
+**Bir dahaki sefere teşhis sırası:** önce hata penceresini "Anladım" ile kapattırıp
+`adb logcat -s BillingManager:V ProxyBillingActivity:V` ile sonuç kodunu ve mesajını oku —
+bu olayda cevap o tek satırdaydı, ondan önceki adaylar (hesap, ekran kilidi) boşa çıktı.
+Play'in kendi satırları (`Finsky`, `AuthService`) için filtresiz kayıt gerekir; ana tampon bu
+cihazda ~4-5 dakikada dönüyor. Yeniden başlatma `log.tag.*` ayarlarını sıfırlar (`FA-SVC`
+ayrıntılı logu dahil).
+
+## Küçük düzenlemeler (03.10.2026 — kişileştirme fiyatını kullanıcı cihazda denedi; diğerleri için ayrıca bir sorun bildirmedi)
+
+- **Yarış dersi panelindeki "BAŞLAT" düğmesinden yıldırım ikonu kaldırıldı**
+  (`LessonAdapter.showRaceLessonBottomSheet`). `R.drawable.lighting__1_` artık hiçbir yerde
+  kullanılmıyor; dosya silinmedi.
+- **Sandık (CHEST) türü derslerde boncuk animasyonu diğer derslerle aynı hıza çekildi:**
+  50 ms → 300 ms. `AbacusFragment` (`BEAD_ANIMATION_MS`, beş yer) ve
+  `BlindingLessonFragment.setupAbacusController` (denetleyicinin varsayılanı). Dikkat: sandık
+  derslerinde puan süreye de bağlı (`calculateChestScore`); boncuk başına 250 ms'lik fark
+  sürelere yansıyabilir, cihazda bakılmadı.
+- **Atlama düğmesi (`skipStepButton`) de sayıyı bir an siliyor** (01:12'de kuruldu,
+  DENENMEDİ). `BlindingLessonFragment`'te sayılar kendiliğinden geçerken ekran 200 ms boş
+  kalıyor; art arda iki sayı aynıysa geçiş böyle anlaşılıyor. Düğme ise sıradaki sayıyı
+  doğrudan yazıyordu. Artık ikisi aynı yoldan gidiyor (`skipToNextSequenceNumber` →
+  `onShowNextNumberStep`). Boşluk sırasındaki basış yok sayılıyor (`sequenceBlankPending`):
+  boşluğu yeniden başlatsaydı hızlı basışlarda sıradaki sayı hiç gelmezdi. Rehberin zorunlu
+  tıklaması da aynı fonksiyonu kullanıyor.
+- **Anahtarla satılan iki boncuğun (ANIMAL3, ANIMAL8) renk kişileştirmesi de 40 anahtar**
+  (kullanıcı cihazda denedi: "sorunsuz çalıştı"). Diğer boncuklarda eskisi gibi 2000 altın.
+  `AbacusCustomizationFragment`: fiyat ve para birimi `getBeadColorFeaturePrice` /
+  `isKeyPricedBead`'den geliyor; hem Renk sekmesindeki kilit katmanı (etiket + ikon,
+  `tab2ColorLockIcon`) hem satın alma paneli (`showColorFeaturePurchasePanel`) bunu
+  kullanıyor. Sunucuda değişiklik gerekmedi (harcama `updateUserWallet`'tan serbest geçiyor).
+  Aynı panelde eksik olan geri iade de eklendi: ücret düşüp özellik kaydedilemezse
+  (`setColorFeatureActive` hatası) tutar artık iade ediliyor — altın için de.
+
 ## Yakında yapılanlar — tekrar etmeyin
 
 - **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
@@ -508,14 +802,12 @@ sonuç ekranlarında durdu. Çökme yok.
 
 ## Bekleyen deploy
 
-```powershell
-firebase deploy --only functions:claimCupPathChest
-```
+Bekleyen deploy yok.
 
-`claimCupPathChest` (kupa yolu sandık enderliği) deploy edilmedi.
+`claimCupPathChest` (kupa yolu sandık enderliği) kullanıcı tarafından deploy edildi; bunu
+02.10.2026'da kullanıcı bildirdi, deploy zamanı Firebase konsolundan ayrıca **doğrulanmadı**.
 
-`submitStreakDay` ve `buyStreakFreeze` 01.10.2026'da deploy edildi (seri dondurma). Onay
-yalnızca bu ikisi için alınmıştı; `claimCupPathChest` bilerek dışarıda bırakıldı.
+`submitStreakDay` ve `buyStreakFreeze` 01.10.2026'da deploy edildi (seri dondurma).
 
 `submitStreakDay`'in deploy edildiği **çıkarım** yoluyla saptandı, doğrudan görülmedi: seri
 dokümanında `lastSeenAt` (yalnızca `reminderPatch` yazıyor, iki dalda da) `updatedAt`'ten
