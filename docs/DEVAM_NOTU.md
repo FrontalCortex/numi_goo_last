@@ -69,6 +69,68 @@ kontrolü tesadüfen geçiriyordu.
 bıraktığı durum cihazdaki hiçbir koşuda oluşmadı; görülen `depth=2` her seferinde
 `LessonResult` + `ChestFragment` idi.
 
+## Maraton rehberi açıkken ekran tıklanabiliyordu (02.10.2026 — düzeltildi, cihazda doğrulandı)
+
+**Belirti:** 1. bölümün ilk sandığından sonra açılan rehber paneli (`MapFragment.showGuidePanel`)
+ekrandayken alt çubuğa, para paneline ve haritanın üst şeridine dokunulabiliyordu. Kullanıcı
+rehber açıkken alt çubuktan Görevler sekmesine geçebildi.
+
+**Kanıt** (`PostLessonQueue`, 18:14–18:15):
+
+```
+18:14:59.973 rehber | caller=RatingDialog.dismiss          ← kuyruk rehber adımını açtı
+18:15:00.057 tur | caller=watchdog ... rehber=false        ← rehber "gösterildi" işaretlendi
+18:15:00.057 kilit birakildi | caller=watchdog             ← 84 ms sonra kilit bırakıldı
+18:15:00.070 bekliyor | caller=watchdog block=guide_panel_visible
+18:15:01.897 StudyTime.ekran | ekran=MissionsFragment      ← kullanıcı sekme değiştirebildi
+```
+
+**Kök neden — 1 Ekim değil, 24 Eylül (`b13e3d0`).** Kullanıcı 1 Ekim'deki kilit
+düzeltmesinden şüphelendi; değil. `b13e3d0` kuyruğun kilit bırakmasını guard'lı
+`enableMapTouchRouting`'ten (rehber açıkken reddediyordu) guard'sız
+`releasePostLessonQueueTouchLock` → `forceEnableMapTouchRouting`'e çevirdi. Gerekçesi
+"ChromeBlocker sayıcılı, başkasının acquire'ı duruyor"du; bu fragment'lar ARASINDA doğru ama
+harita içindeki kilit tek ve paylaşılan bir kilit: `forceEnableMapTouchRouting` şeffaf
+katmanı kaldırıyor ve alt çubuğu DOĞRUDAN açıyor, sayaca bakmadan. Kuyruk, rehberi gösterdiği
+an boşaldığı için (`MarathonGuideStore.markShown`) bir sonraki turunda — bekçi yüzünden en geç
+1 sn içinde — kilidi bırakıyor. 1 Ekim öncesi kod (`be6cb48`) aynı yolda aynı şeyi yapıyordu
+(çift release + doğrudan açma); bu kod okunarak görüldü, eski sürüm cihazda denenmedi.
+
+**Düzeltme:** `MapFragment.releasePostLessonQueueTouchLock` rehber paneli görünürken kilidi
+açmıyor, rehbere devrediyor (logda `GuideDebug: releasePostLessonQueueTouchLock SKIP`). Panel
+kapanırken kendi dinleyicisi koşulsuz bırakıyor, yani `b13e3d0`'ın çözdüğü "bırakmayı reddedip
+bir daha kimsenin bırakmaması" sorunu geri gelmiyor. 1 Ekim'de yazılan hiçbir satıra
+dokunulmadı.
+
+**Aynı türden başka bozulma arandı** (haritanın kilidini kullanan bütün çağrılar tarandı):
+- 1 Ekim değişikliği: bozduğu başka bir senaryo bulunmadı. Kilidi açan bütün yollar
+  `enableMainActivityViews`'tan geçiyor; yalnızca `enableMapFragmentViews`'a güvenen yol yok.
+- Öğretmene sorma tanıtımı: kuyruk aynı şekilde kilidi tanıtım penceresi gelmeden bırakabiliyor,
+  ama aradaki süre bir iki kare (tanıtım aynı turda açılıyor). Dokunulmadı.
+- **Açık kalan:** rehber açıkken uygulama arka plana alınıp geri gelinirse
+  `MapFragment.onResume` → `sanitizeMapTouchSurface` → `ensureChromeUnlockedAfterMapReturn`
+  chrome sayacını zorla sıfırlıyor ve alt çubuk yine açılıyor (şeffaf katman kalıyor). Bu,
+  aşağıdaki "Sıradaki iş 1"in 3. maddesiyle aynı kök: güvenlik ağı haritanın kendi kilidinden
+  habersiz. Kullanıcıya soruldu, "sorun değil" dedi; DÜZELTİLMEDİ. İleride istenirse önerilen:
+  güvenlik ağı rehber paneli görünürken "bloklayan overlay var" saysın.
+
+**Cihazda doğrulandı (18:41–18:45, yeni hesap, kullanıcı "tıklayamadım" dedi):**
+
+```
+18:41:59.701 markShown
+18:42:00.376 kilit birakildi | caller=watchdog
+18:42:00.376 GuideDebug: releasePostLessonQueueTouchLock SKIP ...      ← kilit rehberde kaldı
+          (10,4 sn boyunca ekran değişimi ve kilit hareketi yok, sayaç depth=1)
+18:42:10.810 enableMainActivityViews releasing ChromeBlocker → depth=0  ← "Rekor" hedefine basıldı
+18:42:10.871 StudyTime.ekran | ekran=RecordFragment
+```
+
+Ardından 1 Ekim düzeltmesinin yerinde durduğu da denendi: sekmeler gezildi, üç ders bitirildi
+(yanlış sonuç, sandıklı ders, reklam + puanlama). Sandık kabı görünür kaldı
+(`block=result_overlay:NewChestFragment hostVisible=true`), her dönüşte kuyruk kilidi bırakıldı
+ve `bos` yazdı, dönüşten sonra mağaza/seri ekranı ve yeni ders açılabildi. Çökme yok.
+Rehber tek seferlik (yeni hesap + 1. bölümün ilk sandığı).
+
 ## Sıradaki iş 2 — yetim back stack girişleri (`fmBackStack=11`)
 
 `LessonAdapter.continueWithLesson` dersi
@@ -158,17 +220,25 @@ etmiyor, iki taraf ayrışır.
 **Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
 ekranı; akşam hatırlatmasının "dondurman var" diyen bir çeşidi.
 
-## Kupa testi dönüşünde yeni seri sorusu (02.10.2026)
+## Görevler'e dönüşte yeni seri sorusu: kupa testi ve günlük soru (02.10.2026)
 
-Görevler ekranındaki kupa yolu kartlarından açılan test (kupa modu, bölüm 9) nasıl kapanırsa
-kapansın (doğru, yanlış, çıkış düğmesi, geri tuşu) serisi olmayan kullanıcıya
-`NewStreakFragment` açılıyor. Koşul haritadaki ders dönüşüyle aynı
-(`StreakRepository.needsNewStreakPrompt`: seri 0 ve bugün sorulmadı).
+Görevler ekranından açılan iki ders — kupa yolu kartlarındaki test (kupa modu, bölüm 9) ve
+günlük soru — nasıl kapanırsa kapansın (doğru, yanlış, çıkış düğmesi, geri tuşu) serisi olmayan
+kullanıcıya `NewStreakFragment` açılıyor. Koşul haritadaki ders dönüşüyle aynı
+(`StreakRepository.needsNewStreakPrompt`: seri 0 ve bugün sorulmadı). Önce kupa testi yazıldı
+(aşağıdaki maddeler onun hikâyesi), günlük soru aynı akşam eklendi (en alttaki bölüm).
+
+**İsimler:** mekanizma kupa testi için yazıldığında adları `cup…` ile başlıyordu
+(`requestNewStreakPromptAfterCupTest`, `isCupResultCovered`, `cupResultTouchBlocker`, log öneki
+`kupa yeni seri` / `kupa dokunma engeli`). Günlük soru eklenince ortak olanlar yeniden
+adlandırıldı: `requestNewStreakPromptOnTasks`, `isTasksReturnCovered`, `tasksReturnTouchBlocker`,
+`runWhenTasksReturnUncovered`, log öneki `gorevler …`. `7cc046a` commit'inde eski adlar duruyor;
+aşağıdaki doğrulama kayıtlarındaki log satırları o günkü önekle (`kupa …`) basılmıştı.
 
 **Neden ders sonrası kuyruğunun içinde değil:** kuyruk (`pumpPostLessonQueue`) yalnızca harita
 tabanında çalışıyor; kapısı ve adımlarının çoğu haritaya özel. Kupa testi Görevler'den açılıp
 oraya dönüyor. Kuyruğa dokunulmadı; `MainActivity`'de kendi küçük kapısı ve bekleyişi var
-(`requestNewStreakPromptAfterCupTest` → `runCupNewStreakPrompt` → `cupNewStreakBlockReason`).
+(`requestNewStreakPromptOnTasks` → `runTasksNewStreakPrompt` → `tasksNewStreakBlockReason`).
 
 **Sıra — kullanıcının kararları, üç turda oturdu:**
 
@@ -185,8 +255,8 @@ Her adım bir öncekinin KAPANMASINI bekliyor; hiçbiri bir diğerinin altında 
    kupa dönüşü, reklam olup olmadığına bakmadan her şeyi aynı anda başlatıyordu.
 3. Şimdi: `TasksFragment`'teki `cupModeResult` dinleyicisi her şeyi tek blokta
    (`startCupResult`) ve `checkAndShowInterstitialAdIfAllowed`'ın geri çağrısında başlatıyor.
-   Blok önce yeni seri isteğini gönderiyor, sonra kupa panelini `runWhenCupResultUncovered`
-   ile bekletiyor (`MainActivity.isCupResultCovered`: soru sırada/ekranda ya da Pro paneli
+   Blok önce yeni seri isteğini gönderiyor, sonra kupa panelini `runWhenTasksReturnUncovered`
+   ile bekletiyor (`MainActivity.isTasksReturnCovered`: soru sırada/ekranda ya da Pro paneli
    açık). Rozet kutlaması sayaç oturduktan sonra açıldığı için ayrıca bekletilmiyor.
 
 4. İlk denemede rozet YİNE sorunun altında açıldı. Sebep: bekleyen kupa farkını tüketen üç
@@ -240,7 +310,7 @@ Her adım bir öncekinin KAPANMASINI bekliyor; hiçbiri bir diğerinin altında 
      sandık ekranı Görevler'i gizlediği için bekleyen rozet kutlaması sessizce atlandı.
 
    Düzeltme: `activity_main.xml`'e görünmez bir dokunma katmanı eklendi
-   (`cupResultTouchBlocker`, yükseklik 9.5dp). Görevler, alt çubuk ve para panelini kapatıyor
+   (`tasksReturnTouchBlocker`, yükseklik 9.5dp). Görevler, alt çubuk ve para panelini kapatıyor
    ama ders/sandık/rozet kaplarının (10dp) ve sezon kapısının (30dp) ALTINDA: sıra
    beklenirken açılan bir kutlama ya da kapı dokunulabilir kalıyor, katman kilitlenmeye yol
    açamıyor. **Yüksekliğini 10dp'nin üstüne çıkarmayın.** Katman iki sebeple açık:
@@ -260,9 +330,9 @@ Her adım bir öncekinin KAPANMASINI bekliyor; hiçbiri bir diğerinin altında 
 
    Güvenlik: katman açık unutulursa Görevler VE alt çubuk ölü kalır. Kapatan yollar: sonuç
    bloğunun sonu, rozet kararı/süre dolması, `TasksFragment.onDestroyView`. Ayrıca katman her
-   dokunuşta `TasksFragment.needsCupResultTouchBlock()`'u soruyor; gerekmiyorsa kendini
-   kaldırıyor (logda `kupa dokunma engeli SAHIPSIZ`). Normal açılıp kapanışı
-   `kupa dokunma engeli ACIK / KAPALI` satırlarıyla görülüyor (`PostLessonQueue` etiketi).
+   dokunuşta `TasksFragment.needsTasksReturnTouchBlock()`'u soruyor; gerekmiyorsa kendini
+   kaldırıyor (logda `gorevler dokunma engeli SAHIPSIZ`). Normal açılıp kapanışı
+   `gorevler dokunma engeli ACIK / KAPALI` satırlarıyla görülüyor (`PostLessonQueue` etiketi).
 
 Ayrıntılar: soru test kapandıktan ~0,3 sn sonra açılıyor. `restorePartAfterCupLesson` hiçbir
 şeyi beklemiyor. Reklam kararı hiç gelmezse 2 sn sonra (reklam ekranda değilse) blok yine de
@@ -277,13 +347,54 @@ yeni bir test) kapı 400 ms'de bir yokluyor; üç dakikada açılamazsa ya da ku
 Görevler'den ayrılırsa soru düşürülüyor, koşullar sürdükçe bir sonraki dönüşte yeniden
 soruluyor.
 
-**Kapsam dışı (bilerek):** günlük soru. O da Görevler'den açılıyor ama istenen yalnızca kupa
-yolu kartlarıydı.
+### Günlük soru dönüşü (02.10.2026 akşamı — cihazda doğrulandı, anahtar açık ve kapalı)
+
+Kullanıcı günlük soru kartından dönüşte de sorunun sorulmasını istedi. Günlük soru kupa
+testinden farklı kapanıyor: `BlindingLessonFragment.closeFragment` →
+`MainActivity.finishTasksOverlayAnimated("dailyQuestion.close", fromDailyQuestion = true)` →
+320 ms'lik kapanış animasyonu → `completeTasksOverlayDismiss` (reklam kontrolü BURADA, yani
+`MainActivity`'de). Bu yüzden iki haber `MainActivity`'den `TasksFragment`'e gidiyor:
+
+1. `onDailyQuestionClosing` — Görevler görünmeden ÖNCE. Soru sorulacaksa
+   (`needsNewStreakPrompt`) `dailyReturnDeferred` kuruluyor: kart tazelenmiyor, ekran dokunmaya
+   kapanıyor. Sorulmayacaksa HİÇBİR ŞEY değişmiyor; serisi olan kullanıcıda dönüş eskisiyle
+   birebir aynı (bilerek: çalışan yolu değiştirmemek için).
+2. `onDailyQuestionReturnSettled` — reklam kontrolünün geri çağrısında. Soru burada isteniyor,
+   kart `runWhenTasksReturnUncovered` ile soru (ve Pro paneli) kapanınca tazeleniyor.
+
+Sıra: reklam → (Pro paneli) → yeni seri sorusu → kartın tazelenmesi. Kart neden bekliyor:
+tazelenmesi iki TEK SEFERLİK animasyonu başlatıyor (ilerleme çubuğu 2,8 sn, yanlış cevapta
+kırık kalp); dönüş anında başlasalar sorunun altında oynar, çocuk kartını değişmiş bulur ama
+değişirken göremezdi. Kupa sayacındaki dersin aynısı. Kartı tazeleyen üç yer var
+(`onHiddenChanged`, `onResume`, bekletmenin sonu); ilk ikisi bekleme süresince kapalı.
+
+Güvenlik: reklam kararı hiç gelmezse 2 sn sonra (reklam ekranda değilse) yine de devam
+ediliyor; `onDestroyView` bekletmeyi sıfırlıyor; kapanış iki kez bildirilirse ikincisi yok
+sayılıyor.
+
+**Kapsam dışı (bilerek):** günlük sorunun ÖDÜL sandığı (kart 3/3 olunca "al"a basılıp açılan
+sandık). O bir ders dönüşü değil; istenen soru ekranından dönüştü. Reklamın kart animasyonunun
+üstüne gelmesi de (soru sorulmayan dönüşlerde) eskisi gibi duruyor.
+
+**Cihazda doğrulandı (19:02–19:04, test anahtarı açık, kullanıcı "sorunsuz" dedi):** dört
+günlük soru dönüşü ve bir kupa testi.
+- Reklamlı dönüş: engel 19:02:39.36'da açıldı, reklam 19:02:40.0–45.3, soru 19:02:45.41
+  (`block=not_resumed` bekleyip reklam kapanınca), soru kapandıktan 0,14 sn sonra engel kalktı.
+- Reklamsız dönüş: kapanıştan 0,34 sn sonra soru (`bekleme=0ms`; 0,32 sn kapanış animasyonu).
+- Çıkışla kapanan iki dönüşte de soru geldi; engel her seferinde soru kapandıktan sonra kalktı.
+- Kupa testi (`caller=cupModeResult`) yeniden adlandırmadan sonra da aynı çalışıyor.
+Çökme yok.
+
+Anahtar KAPALIYKEN de doğrulandı (19:12–19:13, üç günlük soru dönüşü, kullanıcı "sorunsuz"
+dedi): logda `gorevler yeni seri` ve `gorevler dokunma engeli` satırı hiç yok, yani dönüş
+eskisiyle aynı yoldan geçti.
+
+### Test anahtarı ve kupa testi turlarının doğrulama kayıtları
 
 **Test anahtarı:** koşulları elde etmek zor (yeni hesapta kayıt akışı soruyu o gün için
 işaretliyor, serisi olan hesapta kırılmayı beklemek gerekiyor).
 `NewStreakPromptDebug.FORCE = true` iki koşulu da atlıyor; depoda `false` durmalı. Logda
-`PostLessonQueue` etiketiyle `kupa yeni seri SIRADA / bekliyor | block=… / ACILIYOR /
+`PostLessonQueue` etiketiyle `gorevler yeni seri SIRADA / bekliyor | block=… / ACILIYOR /
 DUSURULDU` satırları.
 
 **Cihazda doğrulanan (anahtar açıkken, önceki turlarla):** sorunun test kapanışlarında
@@ -305,7 +416,7 @@ kapandı (18:03:17.6) ve panel dokunulabilir geldi; rozetli dönüşte panel `NO
 olarak geldi, engel kutlamayla aynı anda kapandı (18:04:06.55 / rozet 18:04:06.62). İkinci
 panel ya da sahipsiz pencere yok.
 Sorusuz dönüş de doğrulandı (test anahtarı KAPALI, 18:10–18:13, dokuz dönüş; kullanıcı
-"sorun yok" dedi): logda `kupa yeni seri GEREKMIYOR`; reklamlı dönüşte panel reklam kapanır
+"sorun yok" dedi): logda `gorevler yeni seri GEREKMIYOR`; reklamlı dönüşte panel reklam kapanır
 kapanmaz dokunulabilir geldi; rozetli dönüşte engel 1,36 sn sonra kutlamayla birlikte kalktı;
 çıkışla kapanan testte 9 ms'de kalktı. Rozetsiz dönüşlerde engel 0,9–1,36 sn sürdü: çocuk
 testi hızlı kapatınca rozet listesi henüz gelmemiş oluyor, üç dönüşte süre sınırı
@@ -314,6 +425,59 @@ testi hızlı kapatınca rozet listesi henüz gelmemiş oluyor, üç dönüşte 
 **Doğrulanmayan:** anahtar KAPALIYKEN gerçek koşullarla (seri 0 + bugün sorulmadı) sorunun
 açılması; rozet listesinin süre sınırından SONRA rozetle geldiği durum (kutlama, çocuk bir
 şeye başlamadıysa açılmalı, başladıysa atlanmalı — denk gelmedi).
+
+## Çalışma süresi kapanan ders ekranında takılı kalıyordu (02.10.2026 — düzeltildi, cihazda doğrulandı)
+
+**Belirti:** Görevler'den açılan bir ders ekranı (günlük soru, abaküs pratiği) çıkışla
+kapanınca çalışma süresi Görevler ekranında da işlemeye devam ediyordu — başka bir ekran
+açılana kadar. Günlük hedef bu süreye bağlı; çocuk ders çözmeden hedefi doldurabiliyordu
+(dokunmaya devam ettikçe sınırsız, bırakırsa 5 dk — `MAX_IDLE_MS`).
+
+**Kanıt** (eskiden beri var; günlük soruya dokunulmadan ÖNCEKİ sürümde de görüldü):
+
+```
+18:43:39.550 StudyTime.ekran | ekran=BlindingLessonFragment calismaSayilir=true bugun=12sn
+18:43:40.132 [reconcile.tasks:schedule.tasks]                 ← Görevler geri geldi
+18:43:44.148 StudyTime.parcaKapandi | hamSure=4sn             ← 3,7 sn'si Görevler'de geçti
+18:43:44.156 StudyTime.ekran | ekran=TasksFragment bugun=16sn ← ancak yeni ders açılınca
+```
+Abaküs pratiğinde aynısı (18:43:32 kapandı, 18:43:34'e kadar sayıldı). Soru cevaplanarak
+kapanan dönüşlerde ise ekran 25–70 ms içinde doğru yere dönüyor.
+
+**Kök neden:** ekran takibi (`NumiGooApplication`) bir ekranın gittiğini yalnızca
+`onFragmentViewDestroyed`'dan öğreniyordu. Çıkış animasyonuyla kaldırılan fragment'ın görünümü
+animasyon BİTİNCE yok ediliyor; Görevler dönüşünde ise
+`TasksFragment.onHiddenChanged` → `reconcileAbacusOverlayWhenTasksIsBase` kabı ~20 ms sonra
+`GONE` yapıyor, gizli kapta animasyon ilerlemiyor ve görünüm aynı kaba bir sonraki `replace`'e
+kadar yok edilmiyor. (1 Ekim'de LessonResult'ta görülen "çıkış animasyonu gizlenen kapta
+bitemiyor"un aynısı.) Görevler `show()` ile geri geldiği için resume da olmuyor; takip eski
+ekranda kalıyor.
+
+**Düzeltme (yalnızca takipte):** `onFragmentPaused` de dinleniyor ve fragment (ya da üstündeki
+bir fragment) `isRemoving` ise ekran o anda yığından çıkarılıyor. Arka plana geçişteki pause
+`isRemoving` olmadığı için etkilenmiyor. Yığın artık ad + fragment örneği tutuyor
+(`ScreenEntry`): kapanmış ama görünümü duran eski örneğin gecikmiş haberi, aynı sınıftan yeni
+açılan ekranın kaydını silemesin.
+
+**Dokunulmayan asıl sorun:** görünüm hâlâ bir sonraki `replace`'e kadar yok edilmiyor, yani
+kapanmış fragment o süre boyunca yarı canlı (`onDestroyView` çalışmamış). Düzeltmesi Görevler
+overlay kapanışının sırasını (`finishTasksOverlayAnimated` / `reconcileAbacusOverlayWhenTasksIsBase`)
+değiştirmek demek; kapanış animasyonunun görünümünü de değiştirir. Ayrı bir iş.
+
+**Cihazda doğrulandı (19:24–19:26, yeni hesapla):**
+
+```
+19:24:31.783 ekran=BlindingLessonFragment calismaSayilir=true bugun=0sn   ← günlük soru
+19:24:38.230 parcaKapandi hamSure=6sn
+19:24:38.253 ekran=TasksFragment calismaSayilir=false bugun=6sn           ← kapanış ANINDA
+   ... reklam, sonra Görevler'de 13 sn ...
+19:24:58.582 ekran=AbacusPracticeFragment calismaSayilir=true bugun=6sn   ← hâlâ 6
+19:25:11.677 ekran=TasksFragment calismaSayilir=false bugun=19sn          ← pratik kapanışı ANINDA
+   ... Görevler ve haritada 18 sn ...
+19:25:29.910 ekran=TutorialFragment calismaSayilir=true bugun=19sn        ← hâlâ 19
+```
+Ders içinde süre eskisi gibi sayıldı (eğitim 30 sn + abaküs 13 sn → `bugun=62sn`), anket ve
+sonuç ekranlarında durdu. Çökme yok.
 
 ## Yakında yapılanlar — tekrar etmeyin
 
@@ -370,7 +534,7 @@ Firebase konsolundan fonksiyonun son deploy zamanına bak.
 | `ChromeBlockerDbg` | `acquire`/`release` zinciri ve derinlik; `STUCK_CHROME_LOCK?` |
 | `LessonProgressDiag` | Ders ilerlemesi, `LessonResult.claimButton` dalları (`SKIP_TO_MAP` / `GO_TO_CHEST`) |
 | `LessonProgress` | `updateLessonItem` → Firestore yazımı |
-| `PostLessonQueue` | Ders sonrası ekran kuyruğu: kilit, zemin, `bekliyor \| block=...`. Kupa testi dönüşü de burada: `kupa yeni seri SIRADA / GEREKMIYOR / ACILIYOR / DUSURULDU`, `kupa dokunma engeli ACIK / KAPALI / SAHIPSIZ` |
+| `PostLessonQueue` | Ders sonrası ekran kuyruğu: kilit, zemin, `bekliyor \| block=...`. Görevler'e dönüş (kupa testi, günlük soru) de burada: `gorevler yeni seri SIRADA / GEREKMIYOR / ACILIYOR / DUSURULDU`, `gorevler dokunma engeli ACIK / KAPALI / SAHIPSIZ` |
 
 Hepsini birlikte izlemek için:
 
