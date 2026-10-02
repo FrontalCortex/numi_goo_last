@@ -1796,9 +1796,26 @@ class MapFragment : Fragment() {
      * Guard'lı [enableMapTouchRouting] burada kullanılamıyor: bırakmayı reddettiğinde
      * kuyruğun borcu ödenmemiş kalıyor ve harita kalıcı olarak kilitli kalabiliyor.
      *
+     * ## Tek istisna: rehber paneli ekrandayken
+     * Kuyruk, maraton rehberini gösterdiği an işini bitmiş sayıyor (bekleyen iş kalmadı) ve
+     * bir sonraki turunda kilidini bırakıyor — rehber ise daha yeni açılmış oluyor. Harita
+     * içindeki kilit tek ve paylaşılan bir kilit ([mainActivityViewsLocked]); yukarıdaki
+     * "başkasının acquire'ı duruyor" varsayımı fragment'lar arasında doğru, haritanın kendi
+     * içinde değil. Burada bırakılınca rehberin arkasındaki harita, alt çubuk ve para
+     * paneli tıklanabilir kalıyordu (cihazda görüldü: rehber açıldıktan 84 ms sonra kilit
+     * bırakıldı, kullanıcı alt çubuktan başka sekmeye geçebildi).
+     *
+     * Bu durumda kilit rehbere DEVREDİLİYOR. Borç ödenmemiş kalmıyor: panel kapanırken
+     * kendi dinleyicisi ([showGuidePanel]) kilidi koşulsuz bırakıyor. Yukarıdaki sakınca
+     * (bırakmayı reddedip bir daha kimsenin bırakmaması) bu yüzden burada yok.
+     *
      * Kuyruğun dışından çağırmayın.
      */
     fun releasePostLessonQueueTouchLock() {
+        if (isAdded && view != null && binding.guidePanel.visibility == View.VISIBLE) {
+            android.util.Log.d("GuideDebug", "releasePostLessonQueueTouchLock SKIP: rehber paneli acik, kilit rehbere devredildi")
+            return
+        }
         forceEnableMapTouchRouting()
     }
 
