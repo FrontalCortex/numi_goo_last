@@ -206,7 +206,16 @@ class BlindingLessonFragment : Fragment() {
     private val showNextNumberRunnable: Runnable = Runnable { onShowNextNumberStep() }
     private val restartSequenceRunnable: Runnable = Runnable { onRestartSequenceAfterReset() }
 
+    /**
+     * Sayı az önce silindi ve sıradaki 200 ms içinde gelecek mi.
+     *
+     * Atlama düğmesi bu sırada basılırsa yok sayılıyor: basış boşluğu yeniden başlatsaydı
+     * hızlı basışlarda ekran boş kalır, sıradaki sayı hiç gelmezdi.
+     */
+    private var sequenceBlankPending = false
+
     private fun onSequenceRevealStep() {
+        sequenceBlankPending = false
         if (!isShowingSequence) return
         if (currentSequenceIndex >= currentSequence.size) {
             finishSequencePlayback()
@@ -228,7 +237,24 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         numberText.text = ""
+        sequenceBlankPending = true
         handler.postDelayed(sequenceRevealRunnable, 200L)
+    }
+
+    /**
+     * Atlama düğmesi: süresini beklemeden sıradaki sayıya geçer.
+     *
+     * Kendiliğinden geçişle AYNI yoldan gidiyor (sayı silinir, 200 ms sonra sıradaki gelir).
+     * Eskiden sıradaki sayı doğrudan yazılıyordu; art arda iki sayı aynıysa ekranda hiçbir
+     * şey değişmiyor ve çocuk geçildiğini anlayamıyordu.
+     */
+    private fun skipToNextSequenceNumber() {
+        if (!isShowingSequence) return
+        binding.skipStepButton.playAnimation()
+        if (sequenceBlankPending) return
+        handler.removeCallbacks(showNextNumberRunnable)
+        handler.removeCallbacks(sequenceRevealRunnable)
+        onShowNextNumberStep()
     }
 
     private fun onRestartSequenceAfterReset() {
@@ -241,6 +267,7 @@ class BlindingLessonFragment : Fragment() {
         handler.removeCallbacks(sequenceRevealRunnable)
         handler.removeCallbacks(restartSequenceRunnable)
         isShowingSequence = false
+        sequenceBlankPending = false
     }
 
     private fun finishSequencePlayback() {
@@ -1135,13 +1162,7 @@ class BlindingLessonFragment : Fragment() {
     private fun setupSkipStepButton() {
         binding.skipStepButton.setMinFrame(10) // Animasyonun 10. frame'den başlamasını sağla
         
-        binding.skipStepButton.setOnClickListener {
-            if (!isShowingSequence) return@setOnClickListener
-            binding.skipStepButton.playAnimation()
-            handler.removeCallbacks(showNextNumberRunnable)
-            handler.removeCallbacks(sequenceRevealRunnable)
-            onSequenceRevealStep()
-        }
+        binding.skipStepButton.setOnClickListener { skipToNextSequenceNumber() }
     }
 
     /**
@@ -2656,14 +2677,7 @@ class BlindingLessonFragment : Fragment() {
         when (content.requiredClickTarget) {
             rulesBookButton -> openRulesBook()
             rulesPanelButton -> openRulesPanelTableForGuide()
-            binding.skipStepButton -> {
-                if (isShowingSequence) {
-                    binding.skipStepButton.playAnimation()
-                    handler.removeCallbacks(showNextNumberRunnable)
-                    handler.removeCallbacks(sequenceRevealRunnable)
-                    onSequenceRevealStep()
-                }
-            }
+            binding.skipStepButton -> skipToNextSequenceNumber()
         }
         if (content.requiredClickAdvancesGuide) {
             when (content.requiredClickTarget) {
