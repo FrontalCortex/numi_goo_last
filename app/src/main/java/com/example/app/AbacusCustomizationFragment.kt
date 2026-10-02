@@ -586,12 +586,18 @@ class AbacusCustomizationFragment : Fragment() {
         dialog.findViewById<ImageView>(R.id.beadPurchaseFeatureIcon)
             ?.visibility = View.VISIBLE
 
-        val price = 2000 // Color feature is always 2000
+        // Kişileştirme, boncuğun kendisiyle aynı para biriminden satılıyor: anahtarla alınan
+        // iki boncukta (bkz. [isKeyPricedBead]) anahtar, diğerlerinde altın.
+        val price = getBeadColorFeaturePrice(beadType)
+        val isKeyCurrency = isKeyPricedBead(beadType)
         dialog.findViewById<TextView>(R.id.beadPurchasePriceText)?.text = price.toString()
+        if (isKeyCurrency) {
+            dialog.findViewById<ImageView>(R.id.beadPurchaseCurrencyIcon)?.setImageResource(R.drawable.key)
+        }
 
         // Buy button
         val purchaseBtn = dialog.findViewById<View>(R.id.beadPurchaseButton)
-        
+
         purchaseBtn.setOnClickListener {
             // Disable immediately to prevent double-tap
             if (!purchaseBtn.isEnabled) return@setOnClickListener
@@ -599,46 +605,62 @@ class AbacusCustomizationFragment : Fragment() {
             closeBtn.isEnabled = false
             dialog.setCancelable(false)
 
-            val currentCurrency = UserWalletFirestore.getCachedCurrency(ctx)
-            if (currentCurrency < price) {
-                Toast.makeText(ctx, "Yetersiz altın", Toast.LENGTH_SHORT).show()
+            val hasEnough = if (isKeyCurrency) UserWalletFirestore.getCachedKeys(ctx) >= price
+                            else UserWalletFirestore.getCachedCurrency(ctx) >= price
+            if (!hasEnough) {
+                Toast.makeText(ctx, if (isKeyCurrency) "Yetersiz anahtar" else "Yetersiz altın", Toast.LENGTH_SHORT).show()
                 purchaseBtn.isEnabled = true
                 closeBtn.isEnabled = true
                 dialog.setCancelable(true)
                 return@setOnClickListener
             }
-            
-            // Deduct currency
-            UserWalletFirestore.applyCurrencyDelta(
-                context = ctx,
-                uid = uid,
-                delta = -price,
-                reason = WalletReason.SPEND,
-                itemId = "bead_color_${beadType.name}",
-                onSuccess = {
-                    BeadPurchaseFirestore.setColorFeatureActive(uid, beadType.name, onSuccess = {
-                        val currentData = ownedBeads[beadType.name] ?: BeadData(0, false)
-                        ownedBeads = ownedBeads + (beadType.name to currentData.copy(colorFeatureActive = true))
-                        refreshCurrencyUi()
-                        
-                        dialog.dismiss()
-                        
-                        // Refresh tab 2 to hide the overlay
-                        if (currentTab == 1) selectTab(1)
-                    }, onFailure = {
-                        Toast.makeText(ctx, "Hata oluştu", Toast.LENGTH_SHORT).show()
-                        purchaseBtn.isEnabled = true
-                        closeBtn.isEnabled = true
-                        dialog.setCancelable(true)
-                    })
-                },
-                onFailure = {
+
+            fun onDeltaSuccess(rollbackToken: String?) {
+                BeadPurchaseFirestore.setColorFeatureActive(uid, beadType.name, onSuccess = {
+                    val currentData = ownedBeads[beadType.name] ?: BeadData(0, false)
+                    ownedBeads = ownedBeads + (beadType.name to currentData.copy(colorFeatureActive = true))
+                    refreshCurrencyUi()
+
+                    dialog.dismiss()
+
+                    // Refresh tab 2 to hide the overlay
+                    if (currentTab == 1) selectTab(1)
+                }, onFailure = {
                     Toast.makeText(ctx, "Hata oluştu", Toast.LENGTH_SHORT).show()
+                    // Geri iade: ücret düştü ama özellik kaydedilemedi. Eskiden iade
+                    // edilmiyordu; kullanıcı parasını ödeyip kişileştirmeyi alamıyordu.
+                    if (isKeyCurrency) UserWalletFirestore.applyKeyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
+                    else UserWalletFirestore.applyCurrencyDelta(ctx, uid, +price, WalletReason.PURCHASE_ROLLBACK, rollbackToken)
+                    refreshCurrencyUi()
                     purchaseBtn.isEnabled = true
                     closeBtn.isEnabled = true
                     dialog.setCancelable(true)
-                }
-            )
+                })
+            }
+
+            fun onDeltaFailure() {
+                Toast.makeText(ctx, "Hata oluştu", Toast.LENGTH_SHORT).show()
+                purchaseBtn.isEnabled = true
+                closeBtn.isEnabled = true
+                dialog.setCancelable(true)
+            }
+
+            // Ücreti düş
+            if (isKeyCurrency) {
+                UserWalletFirestore.applyKeyDelta(
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_color_${beadType.name}",
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
+                    onFailure = { onDeltaFailure() }
+                )
+            } else {
+                UserWalletFirestore.applyCurrencyDelta(
+                    context = ctx, uid = uid, delta = -price, reason = WalletReason.SPEND,
+                    itemId = "bead_color_${beadType.name}",
+                    onSuccess = { wallet -> onDeltaSuccess(wallet.rollbackToken) },
+                    onFailure = { onDeltaFailure() }
+                )
+            }
         }
 
         dialog.setOnDismissListener { isDialogShowing = false }
@@ -1087,6 +1109,12 @@ class AbacusCustomizationFragment : Fragment() {
         val isColorFeatureActive = ownedBeads[beadType.name]?.colorFeatureActive == true
         val overlay = v.findViewById<View>(R.id.tab2ColorLockOverlay)
         if (!isColorFeatureActive) {
+            // Kilit katmanındaki etiket, satın alma panelinin soracağı fiyatla aynı olmalı.
+            v.findViewById<TextView>(R.id.tab2ColorLockPrice)?.text =
+                getBeadColorFeaturePrice(beadType).toString()
+            v.findViewById<ImageView>(R.id.tab2ColorLockIcon)?.setImageResource(
+                if (isKeyPricedBead(beadType)) R.drawable.key else R.drawable.gold_ic
+            )
             overlay.visibility = View.VISIBLE
             overlay.setOnClickListener {
                 val imageResId = PAID_BEAD_INFO.find { it.second == beadType }?.third ?: R.drawable.soroban_bead
@@ -1621,6 +1649,19 @@ class AbacusCustomizationFragment : Fragment() {
             BeadType.ANIMAL, BeadType.ANIMAL2, BeadType.ANIMAL4, BeadType.ANIMAL5, BeadType.ANIMAL6, BeadType.ANIMAL7, BeadType.ANIMAL9 -> 5000
         }
     }
+
+    /** Altınla değil anahtarla satılan boncuklar; kişileştirmeleri de anahtarla satılıyor. */
+    private fun isKeyPricedBead(beadType: BeadType): Boolean =
+        beadType == BeadType.ANIMAL3 || beadType == BeadType.ANIMAL8
+
+    /**
+     * Boncuğun renk kişileştirmesinin fiyatı; para birimi için bkz. [isKeyPricedBead].
+     *
+     * Anahtarla satılan iki boncukta 40 anahtar (boncuğun kendi fiyatıyla aynı), diğer
+     * bütün boncuklarda 2000 altın.
+     */
+    private fun getBeadColorFeaturePrice(beadType: BeadType): Int =
+        if (isKeyPricedBead(beadType)) 40 else 2000
 
     private val Int.dp: Int get() = (this * resources.displayMetrics.density + 0.5f).toInt()
 

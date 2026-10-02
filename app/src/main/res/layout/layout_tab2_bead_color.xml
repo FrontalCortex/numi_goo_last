@@ -129,7 +129,10 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
+            <!-- Fiyat ve ikon kodda boncuğa göre ayarlanıyor (anahtarla satılan boncuklarda
+                 anahtar); buradaki değerler yalnızca varsayılan. -->
             <ImageView
+                android:id="@+id/tab2ColorLockIcon"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_marginStart="8dp"
