@@ -181,7 +181,7 @@ object StreakRepository {
      *
      * Soruyu açan iki yol da buraya soruyor: haritadaki ders dönüşü
      * (`MainActivity.finalizeMapReturnAfterLessonClaim`) ve Görevler'deki kupa testi dönüşü
-     * (`MainActivity.requestNewStreakPromptAfterCupTest`).
+     * (`MainActivity.requestNewStreakPromptOnTasks`).
      */
     fun needsNewStreakPrompt(context: Context): Boolean {
         // Yalnızca debug derlemesinde ve anahtar elle açıldıysa; bkz. [NewStreakPromptDebug].

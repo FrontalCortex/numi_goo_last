@@ -160,19 +160,19 @@ class TasksFragment : Fragment() {
         private const val CUP_NEW_STREAK_DELAY_MS = 250L
 
         /** Kupa sonucunu örten pencerenin kapanıp kapanmadığı bu aralıkla yoklanıyor. */
-        private const val CUP_RESULT_COVER_POLL_MS = 200L
+        private const val TASKS_RETURN_COVER_POLL_MS = 200L
 
         /**
          * Örten pencere bu kadar sürede kapanmazsa kupa sonucu yine de işlenir. Yeni seri
-         * sorusunun kendi bekleme bütçesiyle aynı (bkz. MainActivity.CUP_NEW_STREAK_BUDGET_MS).
+         * sorusunun kendi bekleme bütçesiyle aynı (bkz. MainActivity.TASKS_NEW_STREAK_BUDGET_MS).
          */
-        private const val CUP_RESULT_COVER_BUDGET_MS = 180_000L
+        private const val TASKS_RETURN_COVER_BUDGET_MS = 180_000L
 
         /**
          * Reklam kararı bu sürede gelmezse kupa sonucu yine de gösterilir (reklam ekranda
          * değilse). Kararın normal süresi ~350 ms; bu yalnızca hiç gelmediği durum için.
          */
-        private const val CUP_RESULT_AD_WAIT_FALLBACK_MS = 2000L
+        private const val TASKS_RETURN_AD_WAIT_FALLBACK_MS = 2000L
     }
 
     private sealed class BulletinRow {
@@ -715,7 +715,8 @@ class TasksFragment : Fragment() {
         if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
             releaseLaunchTouchBlocker()
         }
-        refreshDailyQuestionCard()
+        // Günlük sorudan dönüş bekletiliyorsa kart burada TAZELENMİYOR; bkz. [dailyReturnDeferred].
+        if (!dailyReturnDeferred) refreshDailyQuestionCard()
         val main = activity as? MainActivity
         main?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         main?.logTouchDiag("TasksFragment.onResume")
@@ -730,7 +731,8 @@ class TasksFragment : Fragment() {
             if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
                 releaseLaunchTouchBlocker()
             }
-            refreshDailyQuestionCard()
+            // Günlük sorudan dönüş bekletiliyorsa kart burada TAZELENMİYOR; bkz. [dailyReturnDeferred].
+            if (!dailyReturnDeferred) refreshDailyQuestionCard()
             (activity as? MainActivity)?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         }
     }
@@ -1142,23 +1144,118 @@ class TasksFragment : Fragment() {
     private var cupDifficultyDialogRef: java.lang.ref.WeakReference<android.app.Dialog>? = null
 
     /**
-     * Kupa testi dönüşü sürerken Görevler ekranı dokunmaya kapalı olmalı mı.
+     * Günlük sorudan dönüş bekletiliyor: kart, reklam ve yeni seri sorusu kapanana kadar
+     * TAZELENMİYOR.
      *
-     * İki sebep var ve ikisi de aynı katmanı kullanıyor (bkz. `activity_main.xml`,
-     * `cupResultTouchBlocker`):
-     *  • sonuç bekletiliyor ([cupResultDeferred]): reklam, soru ve panel sırayla gelirken
-     *    aralarında Görevler ekranı açıkta kalıyor. O aralıkta Kupa Yolu kartına basılınca
-     *    ikinci bir panel sorunun ÜSTÜNE açıldı, gizli bekleyen panel de sahipsiz kaldı
-     *    (cihazda görüldü);
-     *  • rozet kararı bekleniyor ([cupBadgeTouchHold]).
+     * ## Neden gerekli
+     * Kartın tazelenmesi iki animasyonu başlatıyor ve ikisi de tek seferlik: ilerleme
+     * çubuğunun dolması (2,8 sn) ve yanlış cevaptaki kırık kalp. Dönüş anında başlasalar yeni
+     * seri sorusunun ALTINDA oynar; çocuk kartını değişmiş bulur ama değişirken göremezdi.
+     * Kupa sayacında yaşananın aynısı (bkz. [cupResultDeferred]).
      *
-     * [MainActivity.setCupResultTouchBlock]'taki güvenlik ağı da bunu soruyor.
+     * Kartı tazeleyen üç yer var: [onHiddenChanged], [onResume] (reklam dönüşü) ve bu
+     * bekletmenin sonu. İlk ikisi bekleme süresince kapalı.
+     *
+     * Yalnızca soru SORULACAKSA kuruluyor ([onDailyQuestionClosing]); serisi olan kullanıcıda
+     * dönüş eskisiyle birebir aynı.
      */
-    fun needsCupResultTouchBlock(): Boolean = cupResultDeferred || cupBadgeTouchHold
+    private var dailyReturnDeferred = false
 
-    /** Katmanı, onu isteyen iki sebebin güncel hâline göre açar ya da kapatır. */
-    private fun syncCupResultTouchBlock() {
-        (activity as? MainActivity)?.setCupResultTouchBlock(needsCupResultTouchBlock())
+    /** Bekleyen günlük soru dönüşünü sürdüren iş; bkz. [onDailyQuestionClosing]. */
+    private var dailyReturnSettle: Runnable? = null
+
+    /**
+     * Günlük soru ekranı kapanmaya başladı; [MainActivity.finishTasksOverlayAnimated]
+     * Görevler ekranı GÖRÜNMEDEN ÖNCE çağırıyor.
+     *
+     * Serisi olmayan kullanıcıya burada da yeni seri sorusu soruluyor — haritadaki ders
+     * dönüşünde ve kupa testi dönüşünde sorulanın aynısı. Ekran nasıl kapanırsa kapansın
+     * buraya geliniyor: doğru, yanlış, çıkış düğmesi ve geri tuşu aynı kapanış yolunu
+     * kullanıyor.
+     *
+     * Sıra kupa testindekiyle aynı (gerekçesi `cupModeResult` dinleyicisinde):
+     *
+     *   reklam → (Pro paneli) → yeni seri sorusu → kartın tazelenmesi
+     *
+     * Soru burada İSTENMİYOR: reklam kararı bu andan sonra veriliyor ve soru önce açılsaydı
+     * reklam onun üstüne gelirdi. İstek [onDailyQuestionReturnSettled]'da; o zamana kadar
+     * kart ve dokunma bekletiliyor.
+     */
+    fun onDailyQuestionClosing() {
+        val ctx = context ?: return
+        val root = view ?: return
+        // Kapanış iki kez bildirilebiliyor (çıkış düğmesine art arda basış); ikinci bir
+        // bekleyiş kurulursa soru iki kez istenirdi.
+        if (dailyReturnSettle != null) return
+        // Soru sorulmayacaksa hiçbir şey değişmiyor: kart eskisi gibi dönüş anında tazeleniyor.
+        if (!StreakRepository.needsNewStreakPrompt(ctx)) return
+        dailyReturnDeferred = true
+        syncTasksReturnTouchBlock()
+
+        val settle = object : Runnable {
+            var done = false
+            override fun run() {
+                if (done) return
+                done = true
+                if (dailyReturnSettle === this) dailyReturnSettle = null
+                // Kupa testindeki pay ([CUP_NEW_STREAK_DELAY_MS]) burada gerekmiyor: buraya
+                // gelindiğinde soru ekranı çoktan kaldırılmış oluyor.
+                (activity as? MainActivity)?.requestNewStreakPromptOnTasks(
+                    "dailyQuestion",
+                    android.os.SystemClock.elapsedRealtime(),
+                )
+                runWhenTasksReturnUncovered {
+                    dailyReturnDeferred = false
+                    if (isAdded && view != null) refreshDailyQuestionCard()
+                    syncTasksReturnTouchBlock()
+                }
+            }
+        }
+        dailyReturnSettle = settle
+
+        // Güvenlik ağı, kupa testindekiyle aynı gerekçe: reklam kararı hiç gelmezse kart
+        // tazelenmez ve ekran dokunmaya kapalı kalırdı. Reklam ekrandayken (activity
+        // duraklatılmış) beklemeye devam ediliyor.
+        root.postDelayed(object : Runnable {
+            override fun run() {
+                if (settle.done || !isAdded) return
+                val resumed = (activity as? MainActivity)?.lifecycle?.currentState
+                    ?.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) == true
+                if (resumed) settle.run()
+                else root.postDelayed(this, TASKS_RETURN_AD_WAIT_FALLBACK_MS)
+            }
+        }, TASKS_RETURN_AD_WAIT_FALLBACK_MS)
+    }
+
+    /**
+     * Günlük sorudan dönüş yerine oturdu: kapanış animasyonu bitti, reklam (varsa) kapandı.
+     * [MainActivity]'deki `completeTasksOverlayDismiss` çağırıyor.
+     */
+    fun onDailyQuestionReturnSettled() {
+        dailyReturnSettle?.run()
+    }
+
+    /**
+     * Görevler'e dönüş (kupa testi ya da günlük soru) sürerken ekran dokunmaya kapalı olmalı mı.
+     *
+     * Üç sebep var ve hepsi aynı katmanı kullanıyor (bkz. `activity_main.xml`,
+     * `tasksReturnTouchBlocker`):
+     *  • kupa sonucu bekletiliyor ([cupResultDeferred]): reklam, soru ve panel sırayla
+     *    gelirken aralarında Görevler ekranı açıkta kalıyor. O aralıkta Kupa Yolu kartına
+     *    basılınca ikinci bir panel sorunun ÜSTÜNE açıldı, gizli bekleyen panel de sahipsiz
+     *    kaldı (cihazda görüldü);
+     *  • rozet kararı bekleniyor ([cupBadgeTouchHold]);
+     *  • günlük sorudan dönüş bekletiliyor ([dailyReturnDeferred]): aynı aralık, aynı risk —
+     *    karta yeniden basılırsa ikinci soru yeni seri sorusunun altında açılırdı.
+     *
+     * [MainActivity.setTasksReturnTouchBlock]'taki güvenlik ağı da bunu soruyor.
+     */
+    fun needsTasksReturnTouchBlock(): Boolean =
+        cupResultDeferred || cupBadgeTouchHold || dailyReturnDeferred
+
+    /** Katmanı, onu isteyen sebeplerin güncel hâline göre açar ya da kapatır. */
+    private fun syncTasksReturnTouchBlock() {
+        (activity as? MainActivity)?.setTasksReturnTouchBlock(needsTasksReturnTouchBlock())
     }
 
     /**
@@ -1184,7 +1281,7 @@ class TasksFragment : Fragment() {
             android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
         )
-        syncCupResultTouchBlock()
+        syncTasksReturnTouchBlock()
         return ++cupBadgeTouchHoldGeneration
     }
 
@@ -1193,7 +1290,7 @@ class TasksFragment : Fragment() {
         cupBadgeTouchHold = false
         GlobalValues.cupPathDialogRef?.get()?.window
             ?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
-        syncCupResultTouchBlock()
+        syncTasksReturnTouchBlock()
     }
 
     /**
@@ -1819,8 +1916,8 @@ class TasksFragment : Fragment() {
                     // [cupResultDeferred].
                     cupResultDeferred = true
                     // Sıradaki ekran gelene kadar Görevler ekranı açıkta kalıyor; o aralıkta
-                    // dokunulmasın. Bkz. [needsCupResultTouchBlock].
-                    syncCupResultTouchBlock()
+                    // dokunulmasın. Bkz. [needsTasksReturnTouchBlock].
+                    syncTasksReturnTouchBlock()
                     var cupResultStarted = false
                     val startCupResult = Runnable {
                         if (cupResultStarted) return@Runnable
@@ -1838,7 +1935,7 @@ class TasksFragment : Fragment() {
                         //
                         //    Koşullar (seri yok, bugün sorulmadı) ve Pro paneli gibi araya
                         //    girebilecek ekranlar MainActivity'de denetleniyor.
-                        (activity as? MainActivity)?.requestNewStreakPromptAfterCupTest(
+                        (activity as? MainActivity)?.requestNewStreakPromptOnTasks(
                             "cupModeResult",
                             android.os.SystemClock.elapsedRealtime() + CUP_NEW_STREAK_DELAY_MS,
                         )
@@ -1846,7 +1943,7 @@ class TasksFragment : Fragment() {
                         // 2) Kupa paneli, sayacın akması ve (varsa) rozet kutlaması: üstlerini
                         //    örten bir pencere kalmayınca. Rozet kutlaması sayaç oturduktan
                         //    sonra açıldığı için ayrıca bekletilmesine gerek yok.
-                        runWhenCupResultUncovered {
+                        runWhenTasksReturnUncovered {
                             cupResultDeferred = false
                             val consumed = consumePendingCupDelta(pendingDeltaSetter = pendingDeltaSetter, cardCupValueId = cardCupValueId)
                             if (!consumed) {
@@ -1855,7 +1952,7 @@ class TasksFragment : Fragment() {
                             }
                             // Panel geri geldi. Fark tüketildiyse dokunma rozet kararına kadar
                             // kapalı kalıyor ([holdTouchesForCupBadge]); yoksa burada açılıyor.
-                            syncCupResultTouchBlock()
+                            syncTasksReturnTouchBlock()
                         }
                     }
 
@@ -1888,9 +1985,9 @@ class TasksFragment : Fragment() {
                                 val resumed = main.lifecycle.currentState
                                     .isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
                                 if (resumed) startCupResult.run()
-                                else root.postDelayed(this, CUP_RESULT_AD_WAIT_FALLBACK_MS)
+                                else root.postDelayed(this, TASKS_RETURN_AD_WAIT_FALLBACK_MS)
                             }
-                        }, CUP_RESULT_AD_WAIT_FALLBACK_MS)
+                        }, TASKS_RETURN_AD_WAIT_FALLBACK_MS)
                     }
                     // Reklamı BEKLEMİYOR: bölüm, kullanıcı başka bir yoldan haritaya dönmeden
                     // önce geri konmuş olmalı (bkz. fonksiyonun açıklaması).
@@ -1928,37 +2025,39 @@ class TasksFragment : Fragment() {
     }
 
     /**
-     * [block]'u, kupa testinin sonucunu örten bir pencere kalmayınca çalıştırır; yoksa hemen.
+     * [block]'u, Görevler'e dönüşün sonucunu (kupa paneli, günlük soru kartı) örten bir
+     * pencere kalmayınca çalıştırır; yoksa hemen.
      *
      * "Örten pencere": reklamdan sonra çıkan Pro paneli ve yeni seri sorusu (sırada ya da
-     * ekranda). İkisi de kendi penceresinde açıldığı için altlarında başlayan sayaç ve
-     * rozet kutlaması görülmeden oynuyordu.
+     * ekranda). İkisi de kendi penceresinde açıldığı için altlarında başlayan sayaç, rozet
+     * kutlaması ya da kart animasyonu görülmeden oynuyordu.
      *
      * Kanca yerine yoklama: iki pencerenin kapanışı ayrı yollardan geliyor ve Pro paneli
      * kapanırken hiç haber vermiyor. Bekleme yalnızca örten bir şey VARKEN kuruluyor, yani
      * dönüşlerin çoğunda hiç çalışmıyor.
      *
-     * Bütçe dolarsa [block] yine çalışıyor: içinde bekleyen kupa farkı tüketiliyor ve o
-     * tüketilmezse bir sonraki testte bayat fark okunurdu.
+     * Bütçe dolarsa [block] yine çalışıyor: içinde bekleyen kupa farkı tüketiliyor (o
+     * tüketilmezse bir sonraki testte bayat fark okunurdu) ya da kart tazeleniyor ve
+     * dokunma açılıyor.
      */
-    private fun runWhenCupResultUncovered(block: () -> Unit) {
+    private fun runWhenTasksReturnUncovered(block: () -> Unit) {
         // Fragment kopmuşsa (activity yok) beklenecek bir şey de yok.
-        fun covered() = (activity as? MainActivity)?.isCupResultCovered() == true
+        fun covered() = (activity as? MainActivity)?.isTasksReturnCovered() == true
         if (!covered()) {
             block()
             return
         }
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        val deadline = android.os.SystemClock.elapsedRealtime() + CUP_RESULT_COVER_BUDGET_MS
+        val deadline = android.os.SystemClock.elapsedRealtime() + TASKS_RETURN_COVER_BUDGET_MS
         handler.postDelayed(object : Runnable {
             override fun run() {
                 if (covered() && android.os.SystemClock.elapsedRealtime() < deadline) {
-                    handler.postDelayed(this, CUP_RESULT_COVER_POLL_MS)
+                    handler.postDelayed(this, TASKS_RETURN_COVER_POLL_MS)
                 } else {
                     block()
                 }
             }
-        }, CUP_RESULT_COVER_POLL_MS)
+        }, TASKS_RETURN_COVER_POLL_MS)
     }
 
     /**
@@ -3038,10 +3137,13 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Kupa dönüşü için kapatılmış dokunma, ekran giderken açık kalmasın: katman
-        // activity'de duruyor ve yeni gelen ekranın altını da kapatırdı.
+        // Dönüş için kapatılmış dokunma, ekran giderken açık kalmasın: katman activity'de
+        // duruyor ve yeni gelen ekranın altını da kapatırdı. Günlük soru bekletmesi de
+        // burada bitiyor; yoksa aynı örnek yeniden kurulduğunda kart hiç tazelenmezdi.
         cupBadgeTouchHold = false
-        (activity as? MainActivity)?.setCupResultTouchBlock(false)
+        dailyReturnDeferred = false
+        dailyReturnSettle = null
+        (activity as? MainActivity)?.setTasksReturnTouchBlock(false)
         // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
         _binding = null
     }

@@ -1232,7 +1232,8 @@ class BlindingLessonFragment : Fragment() {
         if (!isAdded || isBlindingClosing) return
 
         if (isDailyQuestionMode) {
-            (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
+            (activity as? MainActivity)
+                ?.finishTasksOverlayAnimated("dailyQuestion.close", fromDailyQuestion = true)
                 ?: parentFragmentManager.popBackStack()
             return
         }
