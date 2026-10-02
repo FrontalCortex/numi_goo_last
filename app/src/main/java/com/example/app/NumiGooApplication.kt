@@ -71,7 +71,50 @@ class NumiGooApplication : Application() {
      *
      * Yalnızca ana iş parçacığından okunup yazılır (fragment yaşam döngüsü geri çağırımları).
      */
-    private val screenStack = mutableListOf<String>()
+    private val screenStack = mutableListOf<ScreenEntry>()
+
+    /**
+     * Yığındaki bir ekran: adı ve o adı yığına koyan fragment örneği.
+     *
+     * Örnek de tutuluyor çünkü aynı sınıftan iki fragment aynı anda yaşayabiliyor: kapanmış
+     * ama görünümü henüz yok edilmemiş bir ders ekranı ile yeni açılanı (bkz. [onScreenGone]).
+     * Yalnızca ad tutulsaydı eskisinin gecikmiş "gittim" haberi yenisinin kaydını silerdi.
+     * Zayıf referans: bu liste süreç boyu yaşıyor, fragment'ları bellekte tutmamalı.
+     */
+    private class ScreenEntry(val name: String, fragment: Fragment) {
+        val owner = java.lang.ref.WeakReference(fragment)
+    }
+
+    /**
+     * Bir fragment ekrandan gidiyor: yığından çıkarılır, üstteki oysa altındaki geri yüklenir.
+     *
+     * İki ayrı haberden geliyor ([fragmentCallbacks]): fragment kaldırılırken ve görünümü yok
+     * edilirken. İkincisi tek başına yetmiyordu — sebebi `onFragmentPaused`'ın açıklamasında.
+     * Aynı fragment için iki haber de gelir; ikincisi yığında kaydı bulamaz ve hiçbir şey
+     * yapmaz.
+     */
+    private fun onScreenGone(f: Fragment) {
+        val name = f::class.java.simpleName
+        if (name.isEmpty() || name in ignoredFragments) return
+        // Yalnızca BU örneğin koyduğu kayıt: aynı adı artık başka bir örnek taşıyorsa (yeni
+        // açılan ders) ona dokunulmuyor.
+        val removed = screenStack.removeAll { it.name == name && it.owner.get() === f }
+        if (!removed || currentScreen != name) return
+        val restored = screenStack.lastOrNull()?.name ?: return
+        // Altındaki ekrana "yeniden gelinmiş" sayılır; üsttekinin açık kaldığı süre o ekranın
+        // süresine eklenmemeli.
+        setCurrentScreen(restored)
+    }
+
+    /** [f] ya da üstündeki bir fragment kaldırılıyor mu (iç içe fragment'lar kendileri kaldırılmıyor). */
+    private fun isLeaving(f: Fragment): Boolean {
+        var current: Fragment? = f
+        while (current != null) {
+            if (current.isRemoving) return true
+            current = current.parentFragment
+        }
+        return false
+    }
 
     /**
      * Fragment bazlı `screen_view`.
@@ -90,33 +133,49 @@ class NumiGooApplication : Application() {
             if (name.isEmpty() || name in ignoredFragments) return
             // Aynı ad yığında birden fazla kez durmasın: arka plandan dönüşte görünür
             // fragment'ların hepsi yeniden resume oluyor.
-            screenStack.remove(name)
-            screenStack.add(name)
+            screenStack.removeAll { it.name == name }
+            screenStack.add(ScreenEntry(name, f))
             setCurrentScreen(name)
             AnalyticsLogger.logScreenView(name)
+        }
+
+        /**
+         * Fragment KALDIRILIRKEN pause oldu: kapatıldı, yerine başkası geldi ya da geri
+         * yığınına gitti. Görünümü henüz duruyor olabilir ama ekran artık o değil.
+         *
+         * ## Neden gerekli
+         * Eskiden yalnızca [onFragmentViewDestroyed] dinleniyordu. Çıkış animasyonuyla
+         * kaldırılan bir fragment'ın görünümü ise animasyon BİTİNCE yok ediliyor — ve
+         * animasyon, kabı o sırada gizlenirse hiç bitmiyor. Görevler'den açılan ekranlarda
+         * (günlük soru, abaküs pratiği) çıkışla kapanışta tam olarak bu oluyor: kap ~20 ms
+         * sonra gizleniyor, görünüm aynı kaba bir sonraki ekran konana kadar yok edilmiyor.
+         *
+         * O sürede ekran takibi kapanmış ders ekranında takılı kalıyor, [StudyTimeTracker]
+         * da çalışma süresi yazmaya devam ediyordu: çocuk Görevler ekranında dolaşırken günlük
+         * hedef doluyordu (cihazda görüldü — günlük soru 18:43:40'ta kapandı, sayaç 18:43:44'e
+         * kadar işledi).
+         *
+         * ## Neden yalnızca kaldırılanlar
+         * Uygulama arka plana geçerken de fragment'lar pause olur ama ekran değişmemiştir.
+         * Pause'da yığını koşulsuz boşaltsaydık arka plana geçişte üstteki ekranı düşürür ve
+         * `app_exit_screen`'i alttaki ekrana yazardık. `isRemoving` ikisini ayırıyor.
+         */
+        override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
+            if (isLeaving(f)) onScreenGone(f)
         }
 
         /**
          * Fragment görünümü yok edildi: kapatıldı ya da yerine başkası geldi. Üstteki ekran
          * gidiyorsa altındaki geri yüklenir.
          *
-         * **Neden `onFragmentPaused` değil:** uygulama arka plana geçerken fragment'lar da
-         * pause olur ama görünümleri yok edilmez. Pause'da yığını boşaltsaydık, arka plana
-         * geçişte üstteki ekranı düşürür ve `app_exit_screen`'i alttaki ekrana yazardık —
-         * düzeltmeye çalıştığımız hatanın aynısını ters yönde üretirdik.
+         * Çoğu durumda [onFragmentPaused] bu işi çoktan yapmış oluyor; burası, kaldırılmadan
+         * görünümü yok edilen fragment'lar için duruyor.
          *
          * Uygulama gerçekten kapanırken sıralama `onPause → onStop → onDestroyView`; çıkış
          * olayı `onActivityStopped`'ta, yani yığın bozulmadan ÖNCE kaydedilir.
          */
         override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-            val name = f::class.java.simpleName
-            if (name.isEmpty() || name in ignoredFragments) return
-            screenStack.remove(name)
-            if (currentScreen != name) return
-            val restored = screenStack.lastOrNull() ?: return
-            // Altındaki ekrana "yeniden gelinmiş" sayılır; dialog'un açık kaldığı süre
-            // o ekranın süresine eklenmemeli.
-            setCurrentScreen(restored)
+            onScreenGone(f)
         }
     }
 
