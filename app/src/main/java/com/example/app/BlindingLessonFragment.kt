@@ -1914,10 +1914,11 @@ class BlindingLessonFragment : Fragment() {
 
 
     private fun setupAbacusController() {
+        // Animasyon süresi varsayılanda (300 ms) bırakılıyor: eskiden sandık (CHEST) türünde
+        // 50 ms'ydi ve boncuklar diğer derslerdekinden çok daha hızlı hareket ediyordu.
         abacusController = AbacusBeadController(
             context = requireContext(),
             root = binding.root,
-            animationDurationMs = if (lessonItem.type == 2) 50L else 300L,
         )
         abacusController.setup()
         val density = resources.displayMetrics.density

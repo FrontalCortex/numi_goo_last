@@ -47,6 +47,14 @@ import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.abacus.AbacusBeadRenderer
 import kotlin.math.log
 
+/**
+ * Boncuk animasyonunun süresi; her ders türünde aynı.
+ *
+ * Eskiden türü sandık (CHEST) olan derslerde 50 ms'ydi: boncuklar diğer derslerdekinden
+ * altı kat hızlı hareket ediyor, aynı abaküs iki ayrı şekilde davranıyordu.
+ */
+private const val BEAD_ANIMATION_MS = 300L
+
 class AbacusFragment : Fragment() {
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
     private val abacusDismissSlideMs = 400L
@@ -284,7 +292,7 @@ class AbacusFragment : Fragment() {
         abacusController = AbacusBeadController(
             context = requireContext(),
             root = binding.root,
-            animationDurationMs = if (lessonItem.type == 2) 50L else 300L
+            animationDurationMs = BEAD_ANIMATION_MS
         )
         abacusController.setup()
         ensureAbacusMetricsIfVisible()
@@ -2640,7 +2648,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadsUp(vararg beads: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L // milisaniye cinsinden
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
@@ -2666,7 +2674,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadDown(bead: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getTopMoveDistancePx() > 0f) abacusController.getTopMoveDistancePx().toInt() else AbacusBeadMetrics.topStepPxInt(requireContext())
         animatingBeads.add(bead)
         bead.animate()
@@ -2683,7 +2691,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadUp(bead: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDuration)
@@ -2699,7 +2707,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadsDown(vararg beads: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
