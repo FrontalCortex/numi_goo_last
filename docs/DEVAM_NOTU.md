@@ -158,6 +158,163 @@ etmiyor, iki taraf ayrışır.
 **Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
 ekranı; akşam hatırlatmasının "dondurman var" diyen bir çeşidi.
 
+## Kupa testi dönüşünde yeni seri sorusu (02.10.2026)
+
+Görevler ekranındaki kupa yolu kartlarından açılan test (kupa modu, bölüm 9) nasıl kapanırsa
+kapansın (doğru, yanlış, çıkış düğmesi, geri tuşu) serisi olmayan kullanıcıya
+`NewStreakFragment` açılıyor. Koşul haritadaki ders dönüşüyle aynı
+(`StreakRepository.needsNewStreakPrompt`: seri 0 ve bugün sorulmadı).
+
+**Neden ders sonrası kuyruğunun içinde değil:** kuyruk (`pumpPostLessonQueue`) yalnızca harita
+tabanında çalışıyor; kapısı ve adımlarının çoğu haritaya özel. Kupa testi Görevler'den açılıp
+oraya dönüyor. Kuyruğa dokunulmadı; `MainActivity`'de kendi küçük kapısı ve bekleyişi var
+(`requestNewStreakPromptAfterCupTest` → `runCupNewStreakPrompt` → `cupNewStreakBlockReason`).
+
+**Sıra — kullanıcının kararları, üç turda oturdu:**
+
+    reklam → (Pro paneli) → yeni seri sorusu → kupa paneli ve sayacın akması → rozet kutlaması
+
+Her adım bir öncekinin KAPANMASINI bekliyor; hiçbiri bir diğerinin altında başlamıyor.
+**Bunu "düzeltip" haritadaki sıraya (rozet → yeni seri) döndürmeyin.** Nasıl buraya gelindi:
+
+1. İlk sürüm haritadaki sırayı koruyordu ve soruyu kupa sayacı + rozet listesinin arkasına
+   koyuyordu. Cihazda soru testten 1,7–3,4 sn sonra geldi (rozet listesi sunucudan geliyor,
+   süre her seferinde farklı); kullanıcı geç buldu ve "hemen" istedi.
+2. Soru hemen açılınca rozet kutlaması onun ALTINDA açıldı (cihazda görüldü, 10:43 ve 10:44).
+   Aynı şey eskiden beri reklamın ve Pro panelinin altında da oluyordu (10:29, 10:41):
+   kupa dönüşü, reklam olup olmadığına bakmadan her şeyi aynı anda başlatıyordu.
+3. Şimdi: `TasksFragment`'teki `cupModeResult` dinleyicisi her şeyi tek blokta
+   (`startCupResult`) ve `checkAndShowInterstitialAdIfAllowed`'ın geri çağrısında başlatıyor.
+   Blok önce yeni seri isteğini gönderiyor, sonra kupa panelini `runWhenCupResultUncovered`
+   ile bekletiyor (`MainActivity.isCupResultCovered`: soru sırada/ekranda ya da Pro paneli
+   açık). Rozet kutlaması sayaç oturduktan sonra açıldığı için ayrıca bekletilmiyor.
+
+4. İlk denemede rozet YİNE sorunun altında açıldı. Sebep: bekleyen kupa farkını tüketen üç
+   yer var — dinleyici, `TasksFragment.onResume` ve `onHiddenChanged` (son ikisi güvenlik
+   ağı). Sonuç bekletilince reklam kapanıp uygulama öne geldiğinde `onResume` farkı kendisi
+   tüketti ve paneli + rozeti soruyu beklemeden başlattı. `cupResultDeferred` bayrağı bekleme
+   boyunca o iki yolu kapatıyor. **Kupa sonucunu bekleten bir şey eklerseniz bu üç tüketiciyi
+   birlikte düşünün.**
+
+5. Sıra oturdu ama reklam → soru akışında soru kayarak gelirken ARKASINDA kupa paneli bozuk
+   göründü: eski görüntüsüyle, 88 px sağa-aşağı kaymış ve arkası karartılmış (ekran
+   görüntüsü 11:07). Sebep uygulamada değil, Android'in pencere yöneticisinde — ama onu
+   tetikleyen bizim bekletmemiz:
+   - Panel test boyunca kapatılmıyor, `Dialog.hide()` ile gizleniyor. Sistem gizlenen
+     pencerenin yüzeyini activity DURDURULANA kadar son karesiyle saklıyor (`mDestroying`).
+   - Reklam ekranı (`AdActivity`) yarı saydam: `MainActivity` duraklıyor ama durmuyor.
+     Dönüşte sistem `notifyAppResumed(wasStopped=false)` → `destroySurfaces(cleanupOnResume)`
+     ile `mDestroying`'i siliyor, yüzeyi YOK ETMEDEN. `WindowState.isOnScreen()` pencerenin
+     GONE olduğuna bakmıyor → eski yüzey yeniden gösteriliyor.
+   - 88 px, pencerenin gölge payı (`surfaceInsets`): gizlenirken oynayan çıkış animasyonu
+     konumu sıfırlıyor, pencere GONE olduğu için `updateSurfacePosition` geri koymuyor.
+   - Eskiden görülmüyordu çünkü panel reklamdan ÖNCE geri açılıyordu. Bekletme (madde 3)
+     paneli reklam boyunca gizli bıraktı.
+
+   Düzeltme (`TasksFragment.concealHiddenCupPanel` / `revealCupPanel`): gizli panelin
+   penceresi saydam yapılıyor (`alpha=0`) ve karartma bayrağı kaldırılıyor — yüzey geri gelse
+   de görülmüyor. İki yerden çağrılıyor: test kapanınca (reklamdan önce) ve `onResume`'da.
+   İkincisi pencereyi sisteme yeniden bildirdiği için geri gelmiş yüzey yeniden gizleniyor;
+   böylece panel açılırken giriş animasyonu da oynuyor (yoksa sistem onu "zaten ekranda"
+   sayıp atlıyordu). `revealCupPanel`, `show()`'dan hemen önce geri alıyor; "saydam mı"
+   bilgisi ayrı bir bayrakta değil pencerenin kendi `alpha` değerinde duruyor.
+   **Paneli `hide()` ile gizleyen başka bir yol eklerseniz bu ikiliyi de kullanın;** gizli
+   panel + yarı saydam bir activity (reklam, izin penceresi, paylaşım menüsü) aynı hayaleti
+   üretir. Bilinen, dokunulmayan hâli: test SIRASINDA böyle bir activity açılıp kapanırsa
+   hayalet artık kalıcı değil ama `onResume`'a kadar bir an görünebilir.
+
+   Pencerenin durumunu görmek için:
+   `adb shell dumpsys window com.numigo.app/com.example.app.MainActivity` — kupa paneli
+   `ty=APPLICATION` ve `surfaceInsets` olan pencere; `mAttrs` içinde `alpha=0.0`,
+   `fl=` içinde `DIM_BEHIND`, `mViewVisibility` (0x8 = gizli), `mHasSurface`,
+   `Surface: shown=`, `mDestroying=` alanlarına bakın.
+
+6. Sıra beklenirken ekrana dokunulabiliyordu; iki ayrı hata çıktı (cihazda görüldü, 17:38 ve
+   17:41):
+   - **Soru gelmeden karta basma.** Test kapanışı ile sorunun gelişi arasında (~0,25 sn +
+     sorunun kayması) Görevler ekranı açıkta. Kupa Yolu kartına basılınca İKİNCİ bir panel
+     açıldı ve sorunun üstünde kaldı; gizli bekleyen ilk panel de sahipsiz kaldı
+     (`showCupPathPanel`'deki "zaten açık mı" kontrolü `isShowing`'e bakıyor ve gizli panel
+     için false dönüyor). Sahipsiz panel pencere listesinde sonsuza dek duruyor.
+   - **Sayaç akarken sandığa basma.** Panel geri geldikten 0,45 sn sonra sandığa basıldı;
+     sandık ekranı Görevler'i gizlediği için bekleyen rozet kutlaması sessizce atlandı.
+
+   Düzeltme: `activity_main.xml`'e görünmez bir dokunma katmanı eklendi
+   (`cupResultTouchBlocker`, yükseklik 9.5dp). Görevler, alt çubuk ve para panelini kapatıyor
+   ama ders/sandık/rozet kaplarının (10dp) ve sezon kapısının (30dp) ALTINDA: sıra
+   beklenirken açılan bir kutlama ya da kapı dokunulabilir kalıyor, katman kilitlenmeye yol
+   açamıyor. **Yüksekliğini 10dp'nin üstüne çıkarmayın.** Katman iki sebeple açık:
+   - `cupResultDeferred` — test kapanışından panelin geri gelişine kadar (reklam, Pro
+     paneli ve soru kendi pencerelerinde, etkilenmiyorlar);
+   - `cupBadgeTouchHold` — panel geri geldikten sonra rozet kararına kadar. Bu sürede panelin
+     penceresi de dokunulmaz (`FLAG_NOT_TOUCHABLE`); dokunuşlar alttaki katmana düşüp
+     yutuluyor. Rozet yoksa karar gelir gelmez, varsa kutlama açılırken bitiyor.
+
+   Rozet listesi sunucudan geliyor ve gecikebiliyor. Karar `CUP_BADGE_TOUCH_HOLD_MS`
+   (sayaç + geçiş payı, 1,35 sn) içinde gelmezse dokunma AÇILIYOR — listeyi sonuna kadar
+   (5 sn) beklemek, internet zayıfken paneli her dönüşte ölü bırakırdı. Liste sonradan
+   rozetle gelirse kutlama yalnızca çocuk bir şeye başlamadıysa açılıyor (`isHidden` ya da
+   `isCupTestStarting`: zorluk paneli açık / test başlatılmış); başladıysa kutlama atlanıyor,
+   rozet yine kazanılmış oluyor. Kullanıcıya bu ödünleşim söylendi; "kutlama hiç kaçmasın"
+   denirse sabiti `CUP_BADGE_WAIT_MS` yapmak yeterli.
+
+   Güvenlik: katman açık unutulursa Görevler VE alt çubuk ölü kalır. Kapatan yollar: sonuç
+   bloğunun sonu, rozet kararı/süre dolması, `TasksFragment.onDestroyView`. Ayrıca katman her
+   dokunuşta `TasksFragment.needsCupResultTouchBlock()`'u soruyor; gerekmiyorsa kendini
+   kaldırıyor (logda `kupa dokunma engeli SAHIPSIZ`). Normal açılıp kapanışı
+   `kupa dokunma engeli ACIK / KAPALI` satırlarıyla görülüyor (`PostLessonQueue` etiketi).
+
+Ayrıntılar: soru test kapandıktan ~0,3 sn sonra açılıyor. `restorePartAfterCupLesson` hiçbir
+şeyi beklemiyor. Reklam kararı hiç gelmezse 2 sn sonra (reklam ekranda değilse) blok yine de
+başlıyor; örten pencere 3 dakikada kapanmazsa kupa sonucu yine de işleniyor (bekleyen kupa
+farkı tüketilmezse bir sonraki testte bayat okunurdu). Reklam da soru da yoksa — dönüşlerin
+çoğu — blok eskisi gibi aynı çağrının içinde çalışıyor. Yan etki: reklam aralığı dolmuş ama
+reklam çıkmayan dönüşlerde panel ~350 ms geç geliyor (karar bir ders listesi okumasını
+bekliyor).
+
+Soru için: istekten sonra araya girebilecekleri (Pro paneli, zaten açık bir rozet kutlaması,
+yeni bir test) kapı 400 ms'de bir yokluyor; üç dakikada açılamazsa ya da kullanıcı
+Görevler'den ayrılırsa soru düşürülüyor, koşullar sürdükçe bir sonraki dönüşte yeniden
+soruluyor.
+
+**Kapsam dışı (bilerek):** günlük soru. O da Görevler'den açılıyor ama istenen yalnızca kupa
+yolu kartlarıydı.
+
+**Test anahtarı:** koşulları elde etmek zor (yeni hesapta kayıt akışı soruyu o gün için
+işaretliyor, serisi olan hesapta kırılmayı beklemek gerekiyor).
+`NewStreakPromptDebug.FORCE = true` iki koşulu da atlıyor; depoda `false` durmalı. Logda
+`PostLessonQueue` etiketiyle `kupa yeni seri SIRADA / bekliyor | block=… / ACILIYOR /
+DUSURULDU` satırları.
+
+**Cihazda doğrulanan (anahtar açıkken, önceki turlarla):** sorunun test kapanışlarında
+açılması (kullanıcı dört kapanış yolunu denedi; log yolları ayırt etmiyor, ilk turda altı
+kapanışın beşinde açıldı); kullanıcı Görevler'den ayrılınca düşürülmesi
+(`neden=gorevlerden_ayrildi`);
+reklamlı dönüşte sorunun reklamı ve Pro panelini beklemesi (`block=ad_skip_showing`);
+"hemen" zamanlaması (kapanıştan ~0,26 sn sonra); kupa paneli ve rozetin soruyu beklemesi
+(11:03: soru 11:03:55.9'da kapandı, rozet 11:03:57.5'te açıldı — kullanıcı "yapı çalışıyor"
+dedi). Çökme yok.
+Madde 5 (hayalet panel) de doğrulandı — 17:34–17:41, kullanıcı reklamlı akışı rozetli ve
+rozetsiz denedi, "sorunsuz" dedi; pencere kaydı da aynısını gösteriyor: test kapanınca
+`alpha=0.0` ve `DIM_BEHIND` yok; reklam dönüşünde yüzey geri geliyor ama `Surface: alpha=0.0`
+(17:36:16.9), bir kare sonra yeniden `mDestroying=true`; soru kapanınca panel `alpha=1`,
+karartmalı ve görünür.
+Madde 6 (dokunma engeli) de doğrulandı — 18:03–18:04, kullanıcı "kusursuz" dedi; kayıtlar:
+rozetsiz dönüşte engel test kapanışında açıldı (18:03:08.0), soru kapandıktan 0,13 sn sonra
+kapandı (18:03:17.6) ve panel dokunulabilir geldi; rozetli dönüşte panel `NOT_TOUCHABLE`
+olarak geldi, engel kutlamayla aynı anda kapandı (18:04:06.55 / rozet 18:04:06.62). İkinci
+panel ya da sahipsiz pencere yok.
+Sorusuz dönüş de doğrulandı (test anahtarı KAPALI, 18:10–18:13, dokuz dönüş; kullanıcı
+"sorun yok" dedi): logda `kupa yeni seri GEREKMIYOR`; reklamlı dönüşte panel reklam kapanır
+kapanmaz dokunulabilir geldi; rozetli dönüşte engel 1,36 sn sonra kutlamayla birlikte kalktı;
+çıkışla kapanan testte 9 ms'de kalktı. Rozetsiz dönüşlerde engel 0,9–1,36 sn sürdü: çocuk
+testi hızlı kapatınca rozet listesi henüz gelmemiş oluyor, üç dönüşte süre sınırı
+(`CUP_BADGE_TOUCH_HOLD_MS`) doldu. Yani o sınır nadir bir yedek değil, sık çalışan yol.
+Çökme, sahipsiz pencere ya da `SAHIPSIZ` kaydı yok.
+**Doğrulanmayan:** anahtar KAPALIYKEN gerçek koşullarla (seri 0 + bugün sorulmadı) sorunun
+açılması; rozet listesinin süre sınırından SONRA rozetle geldiği durum (kutlama, çocuk bir
+şeye başlamadıysa açılmalı, başladıysa atlanmalı — denk gelmedi).
+
 ## Yakında yapılanlar — tekrar etmeyin
 
 - **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
@@ -213,7 +370,7 @@ Firebase konsolundan fonksiyonun son deploy zamanına bak.
 | `ChromeBlockerDbg` | `acquire`/`release` zinciri ve derinlik; `STUCK_CHROME_LOCK?` |
 | `LessonProgressDiag` | Ders ilerlemesi, `LessonResult.claimButton` dalları (`SKIP_TO_MAP` / `GO_TO_CHEST`) |
 | `LessonProgress` | `updateLessonItem` → Firestore yazımı |
-| `PostLessonQueue` | Ders sonrası ekran kuyruğu: kilit, zemin, `bekliyor \| block=...` |
+| `PostLessonQueue` | Ders sonrası ekran kuyruğu: kilit, zemin, `bekliyor \| block=...`. Kupa testi dönüşü de burada: `kupa yeni seri SIRADA / GEREKMIYOR / ACILIYOR / DUSURULDU`, `kupa dokunma engeli ACIK / KAPALI / SAHIPSIZ` |
 
 Hepsini birlikte izlemek için:
 

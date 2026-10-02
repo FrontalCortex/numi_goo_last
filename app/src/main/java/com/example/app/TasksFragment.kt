@@ -138,6 +138,41 @@ class TasksFragment : Fragment() {
         /** Rozet listesi için en fazla bu kadar beklenir; sonrası "rozet yok" sayılır. */
         private const val CUP_BADGE_WAIT_MS = 5000L
         private const val CUP_BADGE_POLL_MS = 50L
+
+        /**
+         * Rozet listesi henüz gelmediyse kupa paneli en fazla bu kadar dokunmaya kapalı kalır.
+         *
+         * Sayaç animasyonu + kutlamaya geçiş payı kadar: rozet varsa kutlama tam bu anda
+         * açılıyor, yani çocuk "sayaç akıyor" dışında bir bekleme görmüyor. Liste bu sürede
+         * gelmezse (ağ yavaş) dokunma açılıyor. Listeyi sonuna kadar ([CUP_BADGE_WAIT_MS])
+         * beklemek, internet zayıfken paneli her dönüşte 5 saniye ölü bırakırdı.
+         */
+        private const val CUP_BADGE_TOUCH_HOLD_MS = CUP_SCORE_ANIM_MS + CUP_CELEBRATION_GAP_MS
+
+        /**
+         * Test kapandıktan sonra yeni seri sorusunun açılmasına kadar bırakılan kısa pay.
+         *
+         * Sıfır olamıyor: sonuç, test ekranı geri yığınından ÇIKARILMADAN ÖNCE geliyor
+         * (BlindingLessonFragment önce sonucu gönderip sonra pop ediyor). Bu pay o işlemin
+         * bitmesine yetiyor; soru, kaldırılmakta olan test ekranının değil, yerine oturmuş
+         * Görevler ekranının üstüne açılıyor.
+         */
+        private const val CUP_NEW_STREAK_DELAY_MS = 250L
+
+        /** Kupa sonucunu örten pencerenin kapanıp kapanmadığı bu aralıkla yoklanıyor. */
+        private const val CUP_RESULT_COVER_POLL_MS = 200L
+
+        /**
+         * Örten pencere bu kadar sürede kapanmazsa kupa sonucu yine de işlenir. Yeni seri
+         * sorusunun kendi bekleme bütçesiyle aynı (bkz. MainActivity.CUP_NEW_STREAK_BUDGET_MS).
+         */
+        private const val CUP_RESULT_COVER_BUDGET_MS = 180_000L
+
+        /**
+         * Reklam kararı bu sürede gelmezse kupa sonucu yine de gösterilir (reklam ekranda
+         * değilse). Kararın normal süresi ~350 ms; bu yalnızca hiç gelmediği durum için.
+         */
+        private const val CUP_RESULT_AD_WAIT_FALLBACK_MS = 2000L
     }
 
     private sealed class BulletinRow {
@@ -671,7 +706,11 @@ class TasksFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val isConsumingAndBlocking = consumePendingCupDelta()
+        // Activity durdurulmadan geri geldiyse (reklam dönüşü) sistem gizli kupa panelinin
+        // eski görüntüsünü yeniden göstermiş olabilir; bkz. [concealHiddenCupPanel].
+        concealHiddenCupPanel()
+        // Kupa sonucu bekletiliyorsa burada TÜKETİLMİYOR; bkz. [cupResultDeferred].
+        val isConsumingAndBlocking = !cupResultDeferred && consumePendingCupDelta()
         // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
         if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
             releaseLaunchTouchBlocker()
@@ -685,7 +724,8 @@ class TasksFragment : Fragment() {
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
-            val isConsumingAndBlocking = consumePendingCupDelta()
+            // Kupa sonucu bekletiliyorsa burada TÜKETİLMİYOR; bkz. [cupResultDeferred].
+            val isConsumingAndBlocking = !cupResultDeferred && consumePendingCupDelta()
             // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
             if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
                 releaseLaunchTouchBlocker()
@@ -1071,6 +1111,103 @@ class TasksFragment : Fragment() {
 
     /** Kupa dersine girmeden önceki bölüm; bkz. [restorePartAfterCupLesson]. */
     private var partIdBeforeCupLesson: Int? = null
+
+    /**
+     * Kupa testinin sonucu (panel, sayaç, rozet) bilerek bekletiliyor: reklam, Pro paneli
+     * ya da yeni seri sorusu kapanana kadar (bkz. `cupModeResult` dinleyicisi).
+     *
+     * ## Neden gerekli
+     * Bekleyen kupa farkını tüketen ÜÇ yer var: dinleyici, [onResume] ve [onHiddenChanged].
+     * Son ikisi bir güvenlik ağı — dinleyici hiç çalışmadıysa (ekran yeniden kurulduysa)
+     * fark kaybolmasın diye. Dinleyici farkı hemen tükettiği sürece onlar hep boş buluyordu.
+     *
+     * Sonuç bekletilmeye başlayınca bu değişti: reklam kapanıp uygulama öne geldiğinde
+     * [onResume] bekleyen farkı kendisi tüketiyor, paneli ve rozet kutlamasını soruyu
+     * beklemeden başlatıyordu — rozet yine sorunun altında açıldı (cihazda görüldü, uygulama
+     * öne geldikten tam sayaç animasyonu kadar sonra). Bayrak o iki yolu bekleme süresince
+     * kapatıyor.
+     *
+     * Örnek başına tutuluyor, kalıcı değil: ekran yeniden kurulursa yeni örnekte false olur
+     * ve güvenlik ağı eskisi gibi çalışır — o durumda bekleten dinleyici de zaten yok.
+     */
+    private var cupResultDeferred = false
+
+    /** Rozet kararı beklenirken dokunma kapalı mı; bkz. [holdTouchesForCupBadge]. */
+    private var cupBadgeTouchHold = false
+
+    /** Her bekleyişin kendi numarası: eski bir bekleyişin gecikmiş işi yenisini açmasın. */
+    private var cupBadgeTouchHoldGeneration = 0
+
+    /** Açık zorluk paneli; bkz. [isCupTestStarting]. */
+    private var cupDifficultyDialogRef: java.lang.ref.WeakReference<android.app.Dialog>? = null
+
+    /**
+     * Kupa testi dönüşü sürerken Görevler ekranı dokunmaya kapalı olmalı mı.
+     *
+     * İki sebep var ve ikisi de aynı katmanı kullanıyor (bkz. `activity_main.xml`,
+     * `cupResultTouchBlocker`):
+     *  • sonuç bekletiliyor ([cupResultDeferred]): reklam, soru ve panel sırayla gelirken
+     *    aralarında Görevler ekranı açıkta kalıyor. O aralıkta Kupa Yolu kartına basılınca
+     *    ikinci bir panel sorunun ÜSTÜNE açıldı, gizli bekleyen panel de sahipsiz kaldı
+     *    (cihazda görüldü);
+     *  • rozet kararı bekleniyor ([cupBadgeTouchHold]).
+     *
+     * [MainActivity.setCupResultTouchBlock]'taki güvenlik ağı da bunu soruyor.
+     */
+    fun needsCupResultTouchBlock(): Boolean = cupResultDeferred || cupBadgeTouchHold
+
+    /** Katmanı, onu isteyen iki sebebin güncel hâline göre açar ya da kapatır. */
+    private fun syncCupResultTouchBlock() {
+        (activity as? MainActivity)?.setCupResultTouchBlock(needsCupResultTouchBlock())
+    }
+
+    /**
+     * Kupa panelini rozet kararı gelene kadar dokunmaya kapatır.
+     *
+     * ## Neden gerekli
+     * Rozet kutlaması sayaç yerine oturduktan sonra açılıyor. O bir saniyede panel
+     * dokunulabilirdi: çocuk sandığı açarsa ya da yeni bir test başlatırsa kutlama ya hiç
+     * oynamıyor ya da başlattığı şeyin üstüne açılıyordu (cihazda görüldü: sandık açıldı,
+     * kutlama hiç gelmedi).
+     *
+     * Panel kendi penceresinde durduğu için pencere dokunulmaz yapılıyor; dokunuşlar altına,
+     * Görevler ekranını kapatan katmana düşüp orada yutuluyor.
+     *
+     * Rozet yoksa karar gelir gelmez, varsa kutlama açılırken, karar gecikirse
+     * [CUP_BADGE_TOUCH_HOLD_MS] dolunca açılıyor ([releaseCupBadgeTouchHold]).
+     *
+     * @return Bu bekleyişin numarası; [releaseCupBadgeTouchHold]'a verilir.
+     */
+    private fun holdTouchesForCupBadge(): Int {
+        cupBadgeTouchHold = true
+        GlobalValues.cupPathDialogRef?.get()?.window?.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+        )
+        syncCupResultTouchBlock()
+        return ++cupBadgeTouchHoldGeneration
+    }
+
+    private fun releaseCupBadgeTouchHold(generation: Int) {
+        if (!cupBadgeTouchHold || generation != cupBadgeTouchHoldGeneration) return
+        cupBadgeTouchHold = false
+        GlobalValues.cupPathDialogRef?.get()?.window
+            ?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+        syncCupResultTouchBlock()
+    }
+
+    /**
+     * Çocuk kupa panelinden bir teste doğru yola çıkmış mı: zorluk paneli açık ya da test
+     * başlatılmış (panel o an gizleniyor ve sonuç işlenene kadar gizli kalıyor).
+     *
+     * Rozet kutlaması bunların üstüne açılmasın diye bakılıyor. Sandık ve kupa yolu ekranı
+     * burada yok çünkü onlar Görevler'i gizliyor; `isHidden` ile yakalanıyorlar.
+     */
+    private fun isCupTestStarting(): Boolean {
+        if (cupDifficultyDialogRef?.get()?.isShowing == true) return true
+        val decor = GlobalValues.cupPathDialogRef?.get()?.window?.peekDecorView() ?: return false
+        return decor.isAttachedToWindow && decor.visibility != View.VISIBLE
+    }
 
     /**
      * Kupa dersi bitti: [GlobalLessonData]'yı kullanıcının geldiği bölüme geri döndürür.
@@ -1574,6 +1711,8 @@ class TasksFragment : Fragment() {
             }
         }
 
+        // Geç gelen bir rozet kutlaması bu panelin arkasına açılmasın; bkz. [isCupTestStarting].
+        cupDifficultyDialogRef = java.lang.ref.WeakReference(dialog)
         dialog.show()
     }
 
@@ -1653,13 +1792,108 @@ class TasksFragment : Fragment() {
                 // Fragment kapandığında TasksFragment'in haberi olması için result listener ekliyoruz
                 fm.setFragmentResultListener("cupModeResult", viewLifecycleOwner) { _, _ ->
                     activity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.GONE
-                    
-                    (activity as? MainActivity)?.checkAndShowInterstitialAdIfAllowed("cupModeResult")
-                    val consumed = consumePendingCupDelta(pendingDeltaSetter = pendingDeltaSetter, cardCupValueId = cardCupValueId)
-                    if (!consumed) {
-                        // Delta yoktu (örn. quit veya ders başlamadan çıkış) — paneli yine de yeniden aç
-                        loadAndShowCupPathDialogAfterCupUpdate()
+
+                    // Sonuç bekletilirken panel gizli kalıyor ve araya reklam girebiliyor; o
+                    // dönüşte eski görüntüsü ekrana gelmesin diye reklamdan ÖNCE saydam
+                    // yapılıyor. Bkz. [concealHiddenCupPanel].
+                    concealHiddenCupPanel()
+
+                    // ── Testin sonucu: SIRAYLA, hiçbiri bir diğerinin altında başlamadan ──
+                    //
+                    //   reklam → (Pro paneli) → yeni seri sorusu → kupa paneli ve sayacın
+                    //   akması → rozet kutlaması
+                    //
+                    // Her adım bir öncekinin KAPANMASINI bekliyor. Eskiden hepsi test kapanır
+                    // kapanmaz, aynı anda başlıyordu: panel geri geliyor, sayaç akıyor ve
+                    // rozet kutlaması açılıyordu — reklam varsa onun, Pro paneli varsa onun
+                    // ALTINDA. Çocuk kupasının değiştiğini akarken göremiyor, rozet ekranını
+                    // da kutlaması çoktan oynamış halde buluyordu. Yeni seri sorusu
+                    // eklendiğinde aynı şey onun altında da oldu (cihazda görüldü).
+                    //
+                    // Reklam da soru da yoksa — yani dönüşlerin çoğunda — aşağıdaki blok
+                    // eskisi gibi bu çağrının içinde, hemen çalışıyor. İki istisna: reklam
+                    // aralığı (5 dk) dolduysa karar bir ders listesi okumasından sonra
+                    // geliyor (~350 ms), reklam çıkmasa bile panel o kadar geç geliyor.
+                    //
+                    // Bekleme boyunca [onResume] / [onHiddenChanged] farkı tüketmemeli; bkz.
+                    // [cupResultDeferred].
+                    cupResultDeferred = true
+                    // Sıradaki ekran gelene kadar Görevler ekranı açıkta kalıyor; o aralıkta
+                    // dokunulmasın. Bkz. [needsCupResultTouchBlock].
+                    syncCupResultTouchBlock()
+                    var cupResultStarted = false
+                    val startCupResult = Runnable {
+                        if (cupResultStarted) return@Runnable
+                        cupResultStarted = true
+
+                        // 1) Serisi olmayan kullanıcıya yeni seri sorusu (haritadaki ders
+                        //    dönüşünde sorulanın aynısı). Test nasıl kapanırsa kapansın
+                        //    buraya geliniyor: doğru, yanlış, çıkış düğmesi ve geri tuşu aynı
+                        //    sonucu gönderiyor.
+                        //
+                        //    Kupa panelinden ÖNCE ve hemen açılıyor (kullanıcının kararı).
+                        //    İlk hâli panelin oturmasını ve rozet listesini bekliyordu; soru
+                        //    testten 1,7–3,4 sn sonra geliyor, çocuk o arada panele dokunmaya
+                        //    başlıyor ve soru elinin altına düşüyordu.
+                        //
+                        //    Koşullar (seri yok, bugün sorulmadı) ve Pro paneli gibi araya
+                        //    girebilecek ekranlar MainActivity'de denetleniyor.
+                        (activity as? MainActivity)?.requestNewStreakPromptAfterCupTest(
+                            "cupModeResult",
+                            android.os.SystemClock.elapsedRealtime() + CUP_NEW_STREAK_DELAY_MS,
+                        )
+
+                        // 2) Kupa paneli, sayacın akması ve (varsa) rozet kutlaması: üstlerini
+                        //    örten bir pencere kalmayınca. Rozet kutlaması sayaç oturduktan
+                        //    sonra açıldığı için ayrıca bekletilmesine gerek yok.
+                        runWhenCupResultUncovered {
+                            cupResultDeferred = false
+                            val consumed = consumePendingCupDelta(pendingDeltaSetter = pendingDeltaSetter, cardCupValueId = cardCupValueId)
+                            if (!consumed) {
+                                // Delta yoktu (örn. quit veya ders başlamadan çıkış) — paneli yine de yeniden aç
+                                loadAndShowCupPathDialogAfterCupUpdate()
+                            }
+                            // Panel geri geldi. Fark tüketildiyse dokunma rozet kararına kadar
+                            // kapalı kalıyor ([holdTouchesForCupBadge]); yoksa burada açılıyor.
+                            syncCupResultTouchBlock()
+                        }
                     }
+
+                    val main = activity as? MainActivity
+                    if (main == null) {
+                        startCupResult.run()
+                    } else {
+                        val root = view
+                        var adCheckReturned = false
+                        main.checkAndShowInterstitialAdIfAllowed("cupModeResult") {
+                            // Geri çağrı ders listesi yüklemesinin içinden de gelebiliyor.
+                            activity.runOnUiThread {
+                                // Karar bu çağrının içinde verildiyse (reklam yok) hemen.
+                                // Sonradan geldiyse bir kare bekleniyor: reklam kapanırken
+                                // açılan Pro paneli `show()` ile, yani bir sonraki karede
+                                // ekleniyor; aynı karede bakılırsa görülmüyor ve panel onun
+                                // altında başlıyordu.
+                                if (adCheckReturned && root != null) root.post(startCupResult)
+                                else startCupResult.run()
+                            }
+                        }
+                        adCheckReturned = true
+                        // Güvenlik ağı. Reklam kararı bir ders listesi okumasına bağlı ve o
+                        // okuma yanıt vermezse panel hiç geri gelmez, çocuk boş Görevler
+                        // ekranında kalırdı. Reklam ekrandayken (activity duraklatılmış)
+                        // beklemeye devam ediliyor: amaç tam da reklamın altında başlamamak.
+                        root?.postDelayed(object : Runnable {
+                            override fun run() {
+                                if (cupResultStarted || !isAdded) return
+                                val resumed = main.lifecycle.currentState
+                                    .isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+                                if (resumed) startCupResult.run()
+                                else root.postDelayed(this, CUP_RESULT_AD_WAIT_FALLBACK_MS)
+                            }
+                        }, CUP_RESULT_AD_WAIT_FALLBACK_MS)
+                    }
+                    // Reklamı BEKLEMİYOR: bölüm, kullanıcı başka bir yoldan haritaya dönmeden
+                    // önce geri konmuş olmalı (bkz. fonksiyonun açıklaması).
                     restorePartAfterCupLesson()
                 }
 
@@ -1691,6 +1925,98 @@ class TasksFragment : Fragment() {
             }
         }
         return result
+    }
+
+    /**
+     * [block]'u, kupa testinin sonucunu örten bir pencere kalmayınca çalıştırır; yoksa hemen.
+     *
+     * "Örten pencere": reklamdan sonra çıkan Pro paneli ve yeni seri sorusu (sırada ya da
+     * ekranda). İkisi de kendi penceresinde açıldığı için altlarında başlayan sayaç ve
+     * rozet kutlaması görülmeden oynuyordu.
+     *
+     * Kanca yerine yoklama: iki pencerenin kapanışı ayrı yollardan geliyor ve Pro paneli
+     * kapanırken hiç haber vermiyor. Bekleme yalnızca örten bir şey VARKEN kuruluyor, yani
+     * dönüşlerin çoğunda hiç çalışmıyor.
+     *
+     * Bütçe dolarsa [block] yine çalışıyor: içinde bekleyen kupa farkı tüketiliyor ve o
+     * tüketilmezse bir sonraki testte bayat fark okunurdu.
+     */
+    private fun runWhenCupResultUncovered(block: () -> Unit) {
+        // Fragment kopmuşsa (activity yok) beklenecek bir şey de yok.
+        fun covered() = (activity as? MainActivity)?.isCupResultCovered() == true
+        if (!covered()) {
+            block()
+            return
+        }
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val deadline = android.os.SystemClock.elapsedRealtime() + CUP_RESULT_COVER_BUDGET_MS
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                if (covered() && android.os.SystemClock.elapsedRealtime() < deadline) {
+                    handler.postDelayed(this, CUP_RESULT_COVER_POLL_MS)
+                } else {
+                    block()
+                }
+            }
+        }, CUP_RESULT_COVER_POLL_MS)
+    }
+
+    /**
+     * GİZLİ kupa panelinin penceresini saydam yapar ve arkasındaki karartmayı kaldırır.
+     *
+     * ## Neden gerekli
+     * Panel test boyunca kapatılmıyor, `Dialog.hide()` ile gizleniyor (kaydırma konumu ve
+     * kart durumları kalsın, dönüşte anında gelsin diye). Android gizlenen pencerenin
+     * yüzeyini hemen yok etmiyor: activity DURDURULANA kadar, son çizilen kareyle birlikte
+     * saklıyor. Activity durdurulmadan duraklatılıp geri gelirse sistem o yüzeyi "hâlâ
+     * kullanılıyor" sayıp yeniden GÖSTERİYOR. Reklam tam olarak bunu yapıyor, çünkü reklam
+     * ekranı yarı saydam bir activity: altındaki ekran duraklıyor ama durmuyor.
+     *
+     * Sonuç: panel bizim açımızdan hâlâ gizli, ama ekranda eski görüntüsü duruyor — üstelik
+     * pencerenin gölge payı kadar (bu cihazda 88 px) sağa ve aşağı kaymış ve arkasını
+     * karartmış halde. Kayma, gizlenirken oynayan çıkış animasyonundan kalıyor: sistem
+     * konumu animasyon için sıfırlıyor, pencere "gizli" olduğu için de geri koymuyor.
+     *
+     * Test biter bitmez panel geri açıldığı sürece bu görülmüyordu. Kupa sonucu reklamın ve
+     * yeni seri sorusunun kapanmasını beklemeye başlayınca panel reklam boyunca gizli kaldı;
+     * soru kayarak gelirken arkasında bu bozuk görüntü göründü (cihazda görüldü).
+     *
+     * Yüzeyin geri gelmesi sistemin işi, engellenemiyor — ama saydam bir yüzey görülmüyor.
+     * Bu yüzden İKİ yerden çağrılıyor:
+     *  • test kapanınca, reklamdan ÖNCE: yüzey geri geldiği anda zaten saydam olsun;
+     *  • [onResume]'da: değerler değişmese de pencere sisteme yeniden bildiriliyor, sistem
+     *    geri gelmiş yüzeyi yeniden gizliyor. Böylece panel açılırken eskisi gibi kayarak
+     *    geliyor; yoksa sistem onu "zaten ekranda" sayıp giriş animasyonunu atlıyordu.
+     *
+     * Geri alınması: [revealCupPanel].
+     */
+    private fun concealHiddenCupPanel() {
+        val window = GlobalValues.cupPathDialogRef?.get()?.window ?: return
+        val decor = window.peekDecorView() ?: return
+        // Yalnızca GİZLİ panel: görünen bir paneli saydam yapmak onu ekrandan silerdi.
+        // (`isShowing` burada işe yaramıyor: gizli pencere için de false dönüyor.)
+        if (!decor.isAttachedToWindow || decor.visibility == View.VISIBLE) return
+        val attrs = window.attributes
+        attrs.alpha = 0f
+        attrs.flags = attrs.flags and android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND.inv()
+        window.attributes = attrs
+    }
+
+    /**
+     * [concealHiddenCupPanel]'in tersi: paneli yeniden görünür kılmadan hemen önce çağrılır.
+     *
+     * Saydamlık işaret olarak da kullanılıyor: pencere saydam değilse ona dokunulmamıştır ve
+     * karartma bayrağı da yerindedir. Ayrı bir bayrak tutulmuyor ki panel değişse ya da
+     * ekran yeniden kurulsa bile durum pencerenin kendisinden okunabilsin.
+     */
+    private fun revealCupPanel(dialog: android.app.Dialog) {
+        val window = dialog.window ?: return
+        val attrs = window.attributes
+        if (attrs.alpha != 0f) return
+        attrs.alpha = 1f
+        // Panelin karartması her zaman var (BottomSheetDialog'un varsayılan teması).
+        attrs.flags = attrs.flags or android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
+        window.attributes = attrs
     }
 
     /**
@@ -1730,8 +2056,22 @@ class TasksFragment : Fragment() {
         // (bkz. BadgePrecalcHelper) beklemek panelin geç açılması demek oluyordu.
         loadAndShowCupPathDialogAfterCupUpdate(cardCupValueId, newScore, delta)
         val panelShownAtMs = android.os.SystemClock.elapsedRealtime()
+
+        // Rozet kararı gelene kadar panel dokunmaya kapalı; bkz. [holdTouchesForCupBadge].
+        val hold = holdTouchesForCupBadge()
+        var badgeDecided = false
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            // Liste hâlâ gelmedi: çocuğu daha fazla bekletme. Sonradan gelirse kutlama yine
+            // açılıyor — çocuk o arada başka bir şeye başlamadıysa (bkz. aşağıdaki kapı).
+            if (!badgeDecided) releaseCupBadgeTouchHold(hold)
+        }, CUP_BADGE_TOUCH_HOLD_MS)
         awaitCupBadgePayloads { payloads ->
-            openCupBadgeCelebrationAfterAnimation(payloads, panelShownAtMs)
+            badgeDecided = true
+            if (payloads.isEmpty()) {
+                releaseCupBadgeTouchHold(hold)
+            } else {
+                openCupBadgeCelebrationAfterAnimation(payloads, panelShownAtMs, hold)
+            }
         }
 
         return true
@@ -1782,14 +2122,25 @@ class TasksFragment : Fragment() {
     private fun openCupBadgeCelebrationAfterAnimation(
         payloads: List<BadgeLevelUpPayload>,
         panelShownAtMs: Long,
+        touchHold: Int,
     ) {
-        if (payloads.isEmpty() || !isAdded) return
+        if (payloads.isEmpty()) return
+        if (!isAdded) {
+            releaseCupBadgeTouchHold(touchHold)
+            return
+        }
         val elapsed = android.os.SystemClock.elapsedRealtime() - panelShownAtMs
         val wait = (CUP_SCORE_ANIM_MS + CUP_CELEBRATION_GAP_MS - elapsed).coerceAtLeast(0L)
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            // isHidden: kullanıcı bu arada başka bir ekrana geçtiyse kutlama onun üstüne
-            // açılmasın. Rozet yine kazanılmış olur, yalnızca kutlaması oynamaz.
-            if (!isAdded || isHidden) return@postDelayed
+            // Kutlama açılsa da açılmasa da dokunma bekleyişi burada bitiyor.
+            releaseCupBadgeTouchHold(touchHold)
+            // Çocuk bu arada başka bir şeye başladıysa kutlama onun üstüne açılmasın: başka
+            // bir ekrana geçmiş (isHidden) ya da bir teste doğru yola çıkmış olabilir. Rozet
+            // yine kazanılmış olur, yalnızca kutlaması oynamaz.
+            //
+            // Liste zamanında geldiyse buraya kadar dokunma kapalıydı ve bunlar olamaz; kapı,
+            // listenin [CUP_BADGE_TOUCH_HOLD_MS]'den geç geldiği durum için.
+            if (!isAdded || isHidden || isCupTestStarting()) return@postDelayed
             GlobalValues.cupPathDialogRef?.get()?.dismiss()
             GlobalValues.cupPathDialogRef = null
             BadgeProgressFirestore.openBadgeCelebration(
@@ -1829,6 +2180,9 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         if (!isAdded) return
         val dialog = GlobalValues.cupPathDialogRef?.get()
         if (dialog != null) {
+            // Gizliyken saydam yapılmıştı. show()'dan ÖNCE: ikisi aynı karede pencereye
+            // gidiyor, panel saydam halde bir an bile görünmüyor.
+            revealCupPanel(dialog)
             // Eskiden olduğu gibi gizlenmiş dialogu anında aç
             dialog.show()
             // Dokunmatik kilidini kaldır (eğer derse girilirken konulmuşsa)
@@ -2684,6 +3038,10 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Kupa dönüşü için kapatılmış dokunma, ekran giderken açık kalmasın: katman
+        // activity'de duruyor ve yeni gelen ekranın altını da kapatırdı.
+        cupBadgeTouchHold = false
+        (activity as? MainActivity)?.setCupResultTouchBlock(false)
         // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
         _binding = null
     }

@@ -7,15 +7,16 @@ listeyi altı ay sonra okuyan kişi (muhtemelen sen) nedenini bilmeden doğru ka
 
 ## 1. Test anahtarları
 
-Elle `true` yapılıp unutulabilen anahtarlar. İlk ikisi **güvenlik sorunu değil** — ikisi de
+Elle `true` yapılıp unutulabilen anahtarlar. İlk üçü **güvenlik sorunu değil** — üçü de
 `BuildConfig.DEBUG` ile çarpılıyor, yani release APK'sinde blok hiç çalışmıyor. Sorun debug
-derlemesinde: açık kalırsa kendi testlerini yanıltır. Üçüncüsü farklı, aşağıda ayrıca
+derlemesinde: açık kalırsa kendi testlerini yanıltır. Dördüncüsü farklı, aşağıda ayrıca
 yazıyor.
 
 | Dosya | Sabit | Yayın değeri |
 |---|---|---|
 | `AskQuestionPromoDebug.kt` | `FORCE` | `false` |
 | `MissionProgressDebug.kt` | `RESET_ON_LAUNCH` | `false` |
+| `NewStreakPromptDebug.kt` | `FORCE` | `false` |
 | `StreakDiag.kt` | `ENABLED` | `false` |
 
 **Ne yapıyorlar**
@@ -26,8 +27,12 @@ yazıyor.
 - `MissionProgressDebug.RESET_ON_LAUNCH` — görev ilerlemesini her açılışta sıfırlar. Ders sonu
   görev ödülü paneli yalnızca bir görev tamamlanınca açıldığı için, günün görevleri bittiyse
   panel bir daha hiç çıkmıyor.
+- `NewStreakPromptDebug.FORCE` — yeni seri sorusunun (`NewStreakFragment`) iki koşulunu
+  (seri 0, bugün sorulmadı) atlar: her ders dönüşünde ve her kupa testi kapanışında sorulur.
+  Koşulları elde etmenin başka yolu yok — yeni hesapta kayıt akışı soruyu o gün için
+  "soruldu" diye işaretliyor, serisi olan hesapta ise serinin kırılmasını beklemek gerekiyor.
 - `StreakDiag.ENABLED` — günlük seri zincirinin teşhis logları (`StreakDiag` filtresi).
-  **Diğer ikisinden farklı: `BuildConfig.DEBUG`'a bağlı DEĞİL**, yani kapatılmazsa release
+  **Diğer üçünden farklı: `BuildConfig.DEBUG`'a bağlı DEĞİL**, yani kapatılmazsa release
   APK'sinde de log basar. Zarar vermez ama kullanıcı cihazında işi yok; logcat'e seri
   durumu (gün kimlikleri, hedef, sunucu sayacı) yazıyor. Zincirin beş halkasından hangisinin
   sessizce "hiçbir şey yapma" dediğini görmek için eklendi.
@@ -37,10 +42,11 @@ yazıyor.
 ```powershell
 git grep -n "FORCE = true" -- app/src/main/java/com/example/app/AskQuestionPromoDebug.kt
 git grep -n "RESET_ON_LAUNCH = true" -- app/src/main/java/com/example/app/MissionProgressDebug.kt
+git grep -n "FORCE = true" -- app/src/main/java/com/example/app/NewStreakPromptDebug.kt
 git grep -n "ENABLED = true" -- app/src/main/java/com/example/app/StreakDiag.kt
 ```
 
-Üçü de boş dönmeli.
+Dördü de boş dönmeli.
 
 ---
 

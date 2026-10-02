@@ -107,6 +107,19 @@ class MainActivity : AppCompatActivity() {
         /** Kuyruk tıkalıyken ne sıklıkta yeniden denenecek. */
         private const val QUEUE_WATCHDOG_INTERVAL_MS = 1_000L
 
+        /** Kupa testi dönüşündeki yeni seri sorusu: kapı kapalıyken iki deneme arası. */
+        private const val CUP_NEW_STREAK_RETRY_MS = 400L
+
+        /**
+         * Kupa testi dönüşündeki yeni seri sorusunun en fazla ne kadar bekleyeceği.
+         *
+         * Beklenen şeyler uzun sürebiliyor: geçiş reklamı, ardından Pro paneli, ardından
+         * çocuğun okuduğu bir rozet kutlaması. Üç dakika hepsini kapsıyor; daha uzun
+         * bekleyen bir soru artık "testten yeni çıktım" anına ait değil ve düşürülüyor —
+         * koşullar sürdükçe bir sonraki test ya da ders dönüşünde yeniden sorulur.
+         */
+        private const val CUP_NEW_STREAK_BUDGET_MS = 180_000L
+
         /** Zeminin sönüm süresi; harita "pat" diye belirmesin. */
         private const val POST_LESSON_BACKDROP_FADE_MS = 200L
 
@@ -3424,6 +3437,8 @@ class MainActivity : AppCompatActivity() {
         // Güvenlik ağı: kuyruk reklam açıkken (activity duraklatılmışken) dürtüldüyse
         // "not_resumed" deyip durmuş olabilir. Reklam kapanınca buradan devam ediyor.
         pumpPostLessonQueue("MainActivity.onResume")
+        // Kupa testi dönüşündeki yeni seri sorusu da aynı sebeple burada sürüyor.
+        pumpCupNewStreakPrompt()
         refreshStreakUi()
         // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
         // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
@@ -4244,6 +4259,229 @@ class MainActivity : AppCompatActivity() {
     /** Yeni tur ekranı kapandı: kuyruğa devam. [NewStreakFragment.onDismiss] çağırıyor. */
     fun onNewStreakPromptClosed() {
         pumpPostLessonQueue("NewStreakFragment.dismiss")
+    }
+
+    // ── Kupa testi dönüşünde yeni seri sorusu ────────────────────────────────
+    //
+    // NE
+    //   Görevler ekranındaki kupa yolu kartlarından açılan test (kupa modu, bölüm 9) nasıl
+    //   kapanırsa kapansın — doğru, yanlış, çıkış düğmesi, geri tuşu — serisi olmayan
+    //   kullanıcıya haritadaki ders dönüşünde sorulan soru burada da soruluyor. Koşul aynı
+    //   ([StreakRepository.needsNewStreakPrompt]): seri yok ve bugün sorulmadı.
+    //
+    // NEDEN KUYRUĞUN İÇİNDE DEĞİL
+    //   Ders sonrası kuyruğu ([pumpPostLessonQueue]) yalnızca HARİTA tabanında çalışıyor:
+    //   kapısı [marathonGuideMapBlockReason] ve adımlarının çoğu (zemin, harita kilidi,
+    //   rehber, tanıtım) haritaya özel. Kupa testi ise Görevler'den açılıp oraya dönüyor.
+    //   Kuyruğa ikinci bir taban öğretmek, uzun uğraşla dengelenmiş o akışın her adımını
+    //   yeniden düşünmek demekti. Burada tek bir ekran açılıyor; kendi kapısı ve kendi
+    //   bekleyişi var, kuyruğun hiçbir alanına dokunmuyor.
+    //
+    // SIRA
+    //   reklam → (Pro paneli) → yeni seri → kupa paneli ve sayacın akması → rozet kutlaması.
+    //   Soru test kapanır kapanmaz açılıyor; beklediği tek şey reklam akışı (isteği
+    //   [TasksFragment] reklam bitince gönderiyor). Kupa paneli ve rozet ise SORUYU
+    //   bekliyor ([isCupResultCovered]): hiçbiri bir diğerinin altında başlamıyor.
+    //
+    //   Haritadaki sıradan (reklam → rozet → yeni seri) BİLEREK ayrılıyor: burada rozet
+    //   listesi sunucudan geliyor ve soruyu onun arkasına koymak 1,7–3,4 sn geciktiriyordu.
+    //   Kullanıcının kararı — gerekçesi TasksFragment'teki dinleyicide.
+
+    /** Kupa testinden dönüldü, yeni seri sorusu uygun anı bekliyor. */
+    private var cupNewStreakPromptPending = false
+
+    /** Bu andan önce açılmaz (monoton saat): test ekranının kaldırılması bitiyor. */
+    private var cupNewStreakNotBeforeMs = 0L
+
+    /** Bu andan sonra vazgeçilir (monoton saat); bkz. [CUP_NEW_STREAK_BUDGET_MS]. */
+    private var cupNewStreakDeadlineMs = 0L
+
+    private val cupNewStreakRunnable = Runnable { runCupNewStreakPrompt("retry") }
+
+    /**
+     * Kupa testi kapandı; koşullar tutuyorsa yeni seri sorusunu sıraya alır.
+     *
+     * [TasksFragment] çağırıyor — reklam akışı bittikten sonra.
+     *
+     * @param notBeforeElapsedMs Sorunun en erken açılabileceği an (monoton saat).
+     */
+    fun requestNewStreakPromptAfterCupTest(caller: String, notBeforeElapsedMs: Long) {
+        if (!::binding.isInitialized) return
+        // Test çalışma süresine sayılıyor ve hedef tam bu testte tutmuş olabilir; o zaman
+        // seri az önce 1 oldu ve sorulacak bir şey yok. Kayıtlı değer tazelenmeden
+        // bakılsaydı "serin başladı" kutlamasıyla "seri başlatalım" sorusu aynı anda çıkardı.
+        StreakRepository.refresh(this)
+        if (!StreakRepository.needsNewStreakPrompt(this)) {
+            Log.d(TAG_QUEUE, "kupa yeni seri GEREKMIYOR | caller=$caller (seri var ya da bugun soruldu)")
+            return
+        }
+        cupNewStreakPromptPending = true
+        cupNewStreakNotBeforeMs = notBeforeElapsedMs
+        val now = android.os.SystemClock.elapsedRealtime()
+        cupNewStreakDeadlineMs = now + CUP_NEW_STREAK_BUDGET_MS
+        Log.d(TAG_QUEUE, "kupa yeni seri SIRADA | caller=$caller bekleme=${(notBeforeElapsedMs - now).coerceAtLeast(0L)}ms")
+        binding.root.removeCallbacks(cupNewStreakRunnable)
+        binding.root.postDelayed(cupNewStreakRunnable, (notBeforeElapsedMs - now).coerceAtLeast(0L))
+    }
+
+    /**
+     * Kupa testinin sonucu (panel, sayacın akması, rozet kutlaması) şu an açılsa bir
+     * pencerenin ALTINDA mı kalırdı.
+     *
+     * [TasksFragment] soruyor ve sonucu bunlar kapanana kadar bekletiyor. Örtenler kendi
+     * penceresinde açılan iki şey: reklamdan sonra çıkan Pro paneli ve yeni seri sorusu.
+     * Soru SIRADAYKEN de örtüyor sayılıyor — henüz açılmadı ama açılacak; sayılmasaydı
+     * panel o kısa aralıkta başlar, soru üstüne binerdi.
+     */
+    fun isCupResultCovered(): Boolean =
+        cupNewStreakPromptPending ||
+            dialogStillShowing(NewStreakFragment.TAG) ||
+            supportFragmentManager.findFragmentByTag("AdSkip") != null
+
+    /**
+     * Kupa testi dönüşü sürerken Görevler ekranını dokunmaya kapatır ya da açar.
+     *
+     * [TasksFragment] çağırıyor: test kapanınca kapatıyor; kupa paneli geri gelince, rozet
+     * bekleniyorsa kutlama açılınca açıyor. Neden gerektiği ve katmanın neden o yükseklikte
+     * durduğu `activity_main.xml`'deki `cupResultTouchBlocker` açıklamasında.
+     *
+     * ## Güvenlik ağı
+     * Katman açık unutulursa Görevler ekranı VE alt çubuk ölü kalır; çocuk uygulamayı
+     * kapatmadan çıkamaz. Kapatan yolların hepsi [TasksFragment]'te; yine de biri atlanırsa
+     * diye katman her dokunuşta "hâlâ gerekli miyim" diye soruyor. Gerekmiyorsa kendini
+     * kaldırıyor: o dokunuş yutuluyor, bir sonraki alttaki ekrana ulaşıyor.
+     */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    fun setCupResultTouchBlock(blocked: Boolean) {
+        if (!::binding.isInitialized) return
+        val blocker = binding.cupResultTouchBlocker
+        if (blocked) {
+            blocker.setOnTouchListener { view, event ->
+                val tasks = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
+                if (event.actionMasked == MotionEvent.ACTION_DOWN && tasks?.needsCupResultTouchBlock() != true) {
+                    Log.d(TAG_QUEUE, "kupa dokunma engeli SAHIPSIZ, kaldirildi")
+                    view.visibility = View.GONE
+                }
+                true
+            }
+        }
+        if ((blocker.visibility == View.VISIBLE) != blocked) {
+            Log.d(TAG_QUEUE, "kupa dokunma engeli ${if (blocked) "ACIK" else "KAPALI"}")
+        }
+        blocker.visibility = if (blocked) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Bekleyen soru varsa bir sonraki karede yeniden dener.
+     *
+     * [onResume] çağırıyor: reklam açıkken activity duraklatılıyor ve [runCupNewStreakPrompt]
+     * o sırada beklemeyi bırakıyor (bkz. oradaki not). Reklam kapanınca buradan sürüyor.
+     * Bir sonraki kare, çünkü `onResume` içinde yaşam döngüsü henüz RESUMED değil.
+     */
+    private fun pumpCupNewStreakPrompt() {
+        if (!cupNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(cupNewStreakRunnable)
+        binding.root.post(cupNewStreakRunnable)
+    }
+
+    private fun runCupNewStreakPrompt(caller: String) {
+        if (!cupNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(cupNewStreakRunnable)
+
+        fun drop(reason: String) {
+            cupNewStreakPromptPending = false
+            Log.d(TAG_QUEUE, "kupa yeni seri DUSURULDU | caller=$caller neden=$reason")
+        }
+
+        if (isFinishing || isDestroyed) return drop("activity_gone")
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now >= cupNewStreakDeadlineMs) return drop("sure_doldu")
+        // Kullanıcı Görevler'den ayrıldı: soru "testten yeni çıktım" anına ait, başka bir
+        // ekranın üstüne açılmamalı. Koşullar sürdükçe bir sonraki dönüşte yeniden sorulur.
+        val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (base !is TasksFragment) return drop("gorevlerden_ayrildi:${base?.javaClass?.simpleName}")
+
+        // Duraklatılmışken (reklam açık ya da uygulama arkada) zamanlayıcı kurulmuyor:
+        // reklam dakikalarca sürebilir ve o sırada yoklamanın anlamı yok. [onResume] dürtüyor.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            Log.d(TAG_QUEUE, "kupa yeni seri bekliyor | caller=$caller block=not_resumed")
+            return
+        }
+
+        // Zamanlayıcı bir iki milisaniye erken dönebiliyor. Bu aşağıdaki kapıya bir "engel"
+        // olarak girseydi yoklama aralığı (400 ms) kadar boşuna beklenirdi; kalan süre
+        // kadar bekleniyor.
+        val waitMs = cupNewStreakNotBeforeMs - now
+        if (waitMs > 0L) {
+            binding.root.postDelayed(cupNewStreakRunnable, waitMs)
+            return
+        }
+
+        val block = cupNewStreakBlockReason(base)
+        if (block != null) {
+            if (block != lastCupNewStreakBlock) {
+                lastCupNewStreakBlock = block
+                Log.d(TAG_QUEUE, "kupa yeni seri bekliyor | caller=$caller block=$block")
+            }
+            // Bu engellerin hepsi kapanırken haber vermiyor (Pro paneli, rozet kutlaması);
+            // kutlama şeridindeki gibi bütçeli yoklama, hangisi kapanırsa kapansın çalışıyor.
+            binding.root.postDelayed(cupNewStreakRunnable, CUP_NEW_STREAK_RETRY_MS)
+            return
+        }
+        lastCupNewStreakBlock = null
+        cupNewStreakPromptPending = false
+
+        // Beklerken koşul değişmiş olabilir: seri başka bir yoldan başlamış ya da soru
+        // haritadaki kuyruktan sorulmuş olabilir.
+        StreakRepository.refresh(this)
+        if (!StreakRepository.needsNewStreakPrompt(this)) {
+            Log.d(TAG_QUEUE, "kupa yeni seri VAZGECILDI | caller=$caller (beklerken kosul degisti)")
+            return
+        }
+        Log.d(TAG_QUEUE, "kupa yeni seri ACILIYOR | caller=$caller")
+        NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
+    }
+
+    /** Log tekrarını önleyen son engel; yoklama 400 ms'de bir dönüyor. */
+    private var lastCupNewStreakBlock: String? = null
+
+    /**
+     * Kupa testi dönüşündeki soru şu an açılamıyorsa sebebi; açılabiliyorsa null.
+     *
+     * [marathonGuideMapBlockReason] ile aynı şeylere bakıyor ama harita tabanı istemiyor.
+     * Yalnızca "şu an bir şey GÖRÜNÜYOR" durumları var; hepsi kendiliğinden kapanan şeyler.
+     */
+    private fun cupNewStreakBlockReason(tasks: TasksFragment): String? {
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return "state_saved"
+        // Görevler başka bir tam ekranın altında gizlenmiş (ayarlar, kupa yolu haritası…).
+        if (!tasks.isAdded || tasks.isHidden) return "gorevler_gizli"
+
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
+        if (binding.abacusFragmentContainer.visibility == View.VISIBLE &&
+            abacus != null && isBlockingLessonOverlayFragment(abacus)
+        ) {
+            // Çocuk hemen yeni bir teste girdi; soru onun bitişini bekliyor.
+            return "abacus_overlay:${abacus.javaClass.simpleName}"
+        }
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
+        if (binding.resultFragmentContainer.visibility == View.VISIBLE &&
+            result != null && isBlockingLessonOverlayFragment(result)
+        ) {
+            return "result_overlay:${result.javaClass.simpleName}"
+        }
+        fm.findFragmentById(R.id.badgeFragmentContainter)?.let {
+            return "badge_overlay:${it.javaClass.simpleName}"
+        }
+        if (dialogStillShowing(NewStreakFragment.TAG)) return "new_streak_prompt"
+        if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
+        val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
+        if (binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE && gate != null) {
+            return "season_gate:${gate.javaClass.simpleName}"
+        }
+        return null
     }
 
     /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */

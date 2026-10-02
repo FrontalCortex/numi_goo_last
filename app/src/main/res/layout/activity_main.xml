@@ -541,4 +541,33 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:visibility="gone" />
 
+    <!--
+      Kupa testi dönüşünde Görevler ekranını dokunmaya kapatan görünmez katman.
+
+      Testten dönüşte ekranlar SIRAYLA geliyor (reklam → yeni seri sorusu → kupa paneli →
+      rozet kutlaması) ve aralarında Görevler ekranı kısa süre açıkta kalıyor. O aralıkta
+      bir karta basılabiliyordu: Kupa Yolu'na basılınca ikinci bir panel sorunun ÜSTÜNE
+      açıldı; sayaç akarken sandığa basılınca rozet kutlaması hiç oynamadı (cihazda görüldü).
+
+      Yükseklik 9.5dp — Görevler ve alt çubuk (0), para paneli (4) ve hedef şeridinin (9)
+      ÜSTÜNDE; ders/sandık/rozet kaplarının (10) ve sezon kapısının (30) ALTINDA. Yani
+      yalnızca alttaki ekranı kapatıyor: sıra beklenirken açılan bir kutlama ya da sezon
+      kapısı dokunulabilir kalıyor, bu katman hiçbirini kilitleyemiyor.
+
+      Açıp kapatan: MainActivity.setCupResultTouchBlock (TasksFragment çağırıyor).
+    -->
+    <View
+        android:id="@+id/cupResultTouchBlocker"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clickable="true"
+        android:elevation="9.5dp"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="gone" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

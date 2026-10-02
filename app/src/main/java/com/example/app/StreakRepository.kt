@@ -178,8 +178,14 @@ object StreakRepository {
      *
      * İki şart: seri şu anda YOK ve bugün bu soru henüz sorulmadı. Günde bir kez, çünkü
      * her ders sonunda çıkan bir ekran ödül değil engel olurdu.
+     *
+     * Soruyu açan iki yol da buraya soruyor: haritadaki ders dönüşü
+     * (`MainActivity.finalizeMapReturnAfterLessonClaim`) ve Görevler'deki kupa testi dönüşü
+     * (`MainActivity.requestNewStreakPromptAfterCupTest`).
      */
     fun needsNewStreakPrompt(context: Context): Boolean {
+        // Yalnızca debug derlemesinde ve anahtar elle açıldıysa; bkz. [NewStreakPromptDebug].
+        if (NewStreakPromptDebug.forceShow) return true
         val p = prefs(context) ?: return false
         if (p.getInt(KEY_CURRENT, 0) > 0) return false
         return p.getString(KEY_NEW_STREAK_PROMPT_DAY, "") != StudyTimeTracker.dayId()
