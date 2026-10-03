@@ -947,9 +947,16 @@ yani deploy demek (bkz. "Push = deploy").
 - **`friendRequests`:** kullanıcı kendisi sildi (`firebase firestore:delete friendRequests
   --recursive`, 2 belge). Kurallardaki `match /friendRequests` bloğu duruyor (zararsız).
 - **Gizlilik politikası canlıda** (kullanıcı `firebase deploy --only hosting` yaptı, 03.10.2026).
-  DİKKAT: politika "kapanan danışmalar 30 gün sonra silinir, reklam ödülü kayıtları 7 gün
-  tutulur" diyor ama bunu yapan sunucu kodu (yukarıdaki iki madde) henüz deploy edilmedi —
-  commit + push (= deploy) bekliyor.
+- **Deploy edildi (03.10.2026 ~09:56):** `0846e58` push'u iki iş akışını tetikledi, ikisi de
+  başarılı: "Deploy Cloud Functions" (bütün fonksiyonlar) ve "Deploy Firestore & Storage
+  Rules" (kurallar + indeksler + TTL). Politika ile sunucu artık uyumlu. İlk gerçek tarama
+  `cleanupResolvedQuestionMedia` günlük görevinin bir sonraki çalışmasında; sonucu
+  `firebase functions:log --only cleanupResolvedQuestionMedia` → `runClosedQuestionCleanup
+  tamamlandı { … }` satırında görülür (bakılmadı).
+- **Ayrı sorun:** "Build Debug APK" iş akışı en az 01.10'dan beri HER push'ta "Setup Android
+  SDK" adımında (`android-actions/setup-android@v3`) başarısız. Yerel derleme sağlam;
+  CI ortamı sorunu. Kayıtlar kimlik doğrulama istiyor, `gh` bu makinede yok. Ayrı göreve
+  bırakıldı.
 
 ## Yakında yapılanlar — tekrar etmeyin
 
