@@ -119,6 +119,9 @@ object SeasonClock {
             Log.w(TAG, "Sunucu saati akla yatkın değil, yok sayıldı: $serverNowUtcMs")
             return
         }
+        // Can hesabının kullandığı saat de aynı cevaptan besleniyor; ayrı bir sunucu çağrısı
+        // açmamak için burada.
+        TrustedClock.onServerTime(serverNowUtcMs)
         val offset = serverNowUtcMs - System.currentTimeMillis()
         serverOffsetMs = offset
         lastSyncElapsedMs = SystemClock.elapsedRealtime()

@@ -255,6 +255,13 @@ class NumiGooApplication : Application() {
         } catch (e: Throwable) {
             Log.w(TAG, "Sezon saati kurulamadı", e)
         }
+        // Can hesabının saati: diskteki sunucu çapasını yükler (ağ çağrısı yok). EnergyManager
+        // MainActivity'de kurulmadan önce hazır olmalı.
+        try {
+            TrustedClock.init(this)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Güvenilir saat kurulamadı", e)
+        }
     }
 
     /** [Application.ActivityLifecycleCallbacks]'in yalnızca bir metodunu ezebilmek için boş taban. */

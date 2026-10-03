@@ -105,7 +105,21 @@ class EnergyManager(private val context: Context) {
         }
     }
 
+    /**
+     * Güvenilir saatin çapası değişince göstergeyi tazeler; bkz. [TrustedClock.addAnchorListener].
+     * Sunucu cevabı ana iş parçacığında geliyor, yine de `post` ile: dinleyici başka bir
+     * iş parçacığından çağrılırsa arayüze oradan dokunulmasın.
+     */
+    private val trustedClockListener: () -> Unit = {
+        handler.post {
+            energyUpdateCallback?.invoke(getCurrentEnergy())
+            scheduleNextTick()
+        }
+    }
+
     init {
+        TrustedClock.addAnchorListener(trustedClockListener)
+
         // Eğer bu cihazda Firestore henüz senkronize edilmediyse,
         // eski yerel veriden geçiş yap ya da boş başlat (FS sync gelene kadar).
         migrateLocalIfNeeded()
@@ -183,7 +197,7 @@ class EnergyManager(private val context: Context) {
     fun getCurrentEnergy(): Int {
         if (isEnergyBlocked()) return 0
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val fullTime = getFullTime()
 
         if (fullTime <= now) return getMaxEnergy()
@@ -207,7 +221,7 @@ class EnergyManager(private val context: Context) {
         val currentEnergy = getCurrentEnergy()
         if (currentEnergy < amount) return false
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val currentFullTime = getFullTime()
 
         // Eğer enerji zaten dolu (fullTime geçmişte), sayacı şimdiden başlat.
@@ -232,7 +246,7 @@ class EnergyManager(private val context: Context) {
         if (amount <= 0) return
         if (isEnergyBlocked() || isInfiniteEnergy()) return
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val currentFullTime = getFullTime()
 
         if (currentFullTime <= now) {
@@ -263,7 +277,7 @@ class EnergyManager(private val context: Context) {
 
     /** Bir sonraki enerji tick'ine kaç ms kaldığını döndürür (0 = zaten dolu). */
     fun getTimeUntilNextEnergy(): Long {
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val fullTime = getFullTime()
 
         if (fullTime <= now) return 0L
@@ -276,6 +290,7 @@ class EnergyManager(private val context: Context) {
     }
 
     fun destroy() {
+        TrustedClock.removeAnchorListener(trustedClockListener)
         handler.removeCallbacksAndMessages(null)
     }
 
@@ -283,9 +298,17 @@ class EnergyManager(private val context: Context) {
     // İç yardımcılar
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Can hesabındaki "şimdi". Cihazın duvar saati DEĞİL: çocuk saati ileri alınca
+     * `energy_full_time` geçmişte kalıyor, uygulama canı dolu sanıp dersi başlatıyordu
+     * (sunucu harcamayı reddediyor ama ders iyimser başladığı için iş işten geçiyordu).
+     * Bkz. [TrustedClock].
+     */
+    private fun trustedNow(): Long = TrustedClock.nowMs()
+
     private fun getFullTime(): Long {
-        val saved = prefs.getLong(KEY_ENERGY_FULL_TIME, System.currentTimeMillis())
-        val now = System.currentTimeMillis()
+        val saved = prefs.getLong(KEY_ENERGY_FULL_TIME, trustedNow())
+        val now = trustedNow()
         val maxAllowed = now + getMaxEnergy() * getEnergyRefreshMillis()
         if (saved > maxAllowed) {
             persistFullTime(maxAllowed)
@@ -386,7 +409,7 @@ class EnergyManager(private val context: Context) {
      * Eski sistem verisinden (energy int + last_update timestamp) yeni fullTime türetir.
      */
     private fun deriveFullTimeFromLegacy(legacyEnergy: Int?, legacyLastUpdate: Long?): Long {
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         if (legacyEnergy == null) return now // Veri yoksa şimdi full
 
         val lastUpdate = legacyLastUpdate ?: now
@@ -418,7 +441,7 @@ class EnergyManager(private val context: Context) {
         } else {
             // Hiç yerel geçmiş yok → Firestore sync gelene kadar full göster.
             // syncFromFirestore() doğru değeri üzerine yazacak.
-            System.currentTimeMillis()
+            trustedNow()
         }
 
         setFullTimeLocally(derivedFullTime)
