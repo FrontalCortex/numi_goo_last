@@ -1434,8 +1434,9 @@ class QuestionChatFragment : Fragment() {
         val updates = hashMapOf<String, Any>(
             "status" to StudentQuestion.STATUS_RESOLVED,
             "resolvedAt" to Timestamp.now(),
-            // cleanupResolvedQuestionMedia (functions/index.js) bu alanı sorgulayıp N gün sonra
-            // medyayı otomatik siliyor; tekrar çözülürse bu false'a dönüp süre sıfırlanmalı.
+            // runClosedQuestionCleanup (functions/index.js) resolvedAt'e bakıp 30 gün sonra
+            // soruyu medyası ve mesajlarıyla birlikte siliyor; sorgusu bu alanı da kullanıyor.
+            // Tekrar çözülürse resolvedAt yenileniyor, yani süre baştan başlıyor.
             "mediaPurged" to false
         )
         firestore.collection("questions").document(questionId).update(updates)

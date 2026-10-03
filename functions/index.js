@@ -1012,12 +1012,12 @@ exports.onFollowingDeleted = functions.firestore
  *   `questions` ÜST SEVİYE bir koleksiyon ve kullanıcıya `studentUid` alanıyla bağlı; yani
  *   `recursiveDelete(users/{uid})` ona hiç dokunmuyordu. Gizlilik politikası silmenin
  *   mesajları da kaldırdığını söylüyor, kod bunu yapmıyordu — öğrencinin ödev fotoğrafları
- *   ve videoları Storage'da süresiz kalıyordu. (cleanupResolvedQuestionMedia yalnızca
- *   `resolved` durumdaki soruların medyasını 30 gün sonra temizliyor.)
+ *   ve videoları Storage'da süresiz kalıyordu. (Kapanan sorular ayrıca 30 gün sonra
+ *   runClosedQuestionCleanup ile tamamen siliniyor; bu adım hesap silinince HEMEN siler.)
  *
  * AÇIK MODERASYON RAPORU OLANLAR ATLANIR
  *   Bekleyen bir `messageReports` kaydı varsa soru korunur: rapor incelenmeden kanıtın
- *   silinmemesi gerekiyor. Aynı kural runResolvedQuestionMediaCleanup'ta da uygulanıyor.
+ *   silinmemesi gerekiyor. Aynı kural runClosedQuestionCleanup'ta da uygulanıyor.
  *   Bu istisna gizlilik politikasında beyan edilmiştir.
  *
  * Sorgu tek eşitlik filtresi kullanıyor (studentUid), yani bileşik indeks gerekmiyor.
@@ -1028,40 +1028,12 @@ async function deleteUserQuestions(uid) {
 
   for (const doc of snapshot.docs) {
     try {
-      const pendingReport = await db
-        .collection('messageReports')
-        .where('questionId', '==', doc.id)
-        .where('status', '==', 'pending')
-        .limit(1)
-        .get();
-      if (!pendingReport.empty) {
+      if (await hasPendingQuestionReport(doc.id)) {
         counts.skippedForReport++;
         continue;
       }
-
-      const data = doc.data();
-      const messagesSnap = await doc.ref.collection('messages').get();
-      const storagePaths = messagesSnap.docs
-        .map((m) => m.data().mediaStoragePath)
-        .concat([data.videoStoragePath, data.screenshotStoragePath]);
-
-      // Önce Storage denenmeli: doküman silindikten sonra dosya yollarını öğrenmenin yolu
-      // kalmaz. Ama AYRI bir try içinde — Storage tarafındaki bir sorun (bucket
-      // yapılandırması, izin, kesinti) kullanıcının verisinin silinmesini ENGELLEMEMELİ.
-      // Öncelik sırası: veri silme bir yükümlülük, artakalan medya dosyası ise
-      // temizlenebilir bir kalıntı.
-      try {
-        await deleteStorageFiles(storagePaths);
-      } catch (error) {
-        counts.mediaFailed++;
-        console.error('Silinen kullanıcının soru medyası silinemedi (Firestore silme devam ediyor)', {
-          uid,
-          questionId: doc.id,
-          error: error.message,
-        });
-      }
-
-      await db.recursiveDelete(doc.ref);
+      const { mediaFailed } = await deleteQuestionCompletely(doc, 'Silinen kullanıcının');
+      if (mediaFailed) counts.mediaFailed++;
       counts.deleted++;
     } catch (error) {
       console.error('Silinen kullanıcının sorusu temizlenemedi', {
@@ -1074,6 +1046,51 @@ async function deleteUserQuestions(uid) {
   }
 
   return counts;
+}
+
+/** Soruda incelenmemiş (`pending`) bir şikâyet var mı; varsa soru kanıt olarak korunur. */
+async function hasPendingQuestionReport(questionId) {
+  const pendingReport = await db
+    .collection('messageReports')
+    .where('questionId', '==', questionId)
+    .where('status', '==', 'pending')
+    .limit(1)
+    .get();
+  return !pendingReport.empty;
+}
+
+/**
+ * Soruyu mesajları ve Storage'daki medyasıyla (video, ekran görüntüsü, mesaj ekleri)
+ * birlikte siler. Hesap silmede ve kapanan soruların süre dolunca silinmesinde ortak.
+ *
+ * @param logLabel Log satırının başı ("Silinen kullanıcının", "Kapanan" …).
+ * @returns `mediaFailed`: Storage silmesi hata verdi mi (Firestore silmesi yine yapıldı).
+ */
+async function deleteQuestionCompletely(doc, logLabel) {
+  const data = doc.data();
+  const messagesSnap = await doc.ref.collection('messages').get();
+  const storagePaths = messagesSnap.docs
+    .map((m) => m.data().mediaStoragePath)
+    .concat([data.videoStoragePath, data.screenshotStoragePath]);
+
+  // Önce Storage denenmeli: doküman silindikten sonra dosya yollarını öğrenmenin yolu
+  // kalmaz. Ama AYRI bir try içinde — Storage tarafındaki bir sorun (bucket
+  // yapılandırması, izin, kesinti) verinin silinmesini ENGELLEMEMELİ.
+  // Öncelik sırası: veri silme bir yükümlülük, artakalan medya dosyası ise
+  // temizlenebilir bir kalıntı.
+  let mediaFailed = false;
+  try {
+    await deleteStorageFiles(storagePaths);
+  } catch (error) {
+    mediaFailed = true;
+    console.error(`${logLabel} soru medyası silinemedi (Firestore silme devam ediyor)`, {
+      questionId: doc.id,
+      error: error.message,
+    });
+  }
+
+  await db.recursiveDelete(doc.ref);
+  return { mediaFailed };
 }
 
 // Auth 'onDelete' trigger to recursively delete user data in Firestore
@@ -2129,95 +2146,108 @@ exports.reconcileUnansweredQuestions = functions
     return null;
   });
 
-/** Çözülmüş bir sorunun medyası bu süre sonunda, kimse elle silmese bile otomatik silinir. */
-const RESOLVED_MEDIA_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/** Kapanan (çözülen ya da cevapsız kalıp iade edilen) bir soru bu süre sonunda silinir. */
+const CLOSED_QUESTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Bir taramada tür başına en fazla bu kadar soru; kalanı ertesi günün taramasına kalır. */
+const CLOSED_QUESTION_SCAN_LIMIT = 300;
 
 /**
- * NEDEN
- *   Soru medyası (video/görsel/ses) eskiden yalnızca hem öğrenci hem öğretmen elle
- *   "listeden sil" dediğinde Storage'dan siliniyordu (bkz. onQuestionUpdated) — pratikte bu
- *   neredeyse hiç gerçekleşmiyor, bucket sınırsız büyüyordu. Bu fonksiyon çözülmüş bir sorunun
- *   ağır medya dosyalarını (asıl maliyet kalemi) kimse elle silmese bile belli bir süre sonra
- *   otomatik siler. Firestore metnini (soru/mesaj dokümanlarını) SİLMEZ — kullanıcı sohbet
- *   geçmişini görmeye devam eder, sadece medya alanları temizlenir.
+ * Kapanan soruları 30 gün sonra medyası, mesajları ve kendisiyle birlikte siler.
  *
- *   Bekleyen (pending) bir raporu olan sorulara DOKUNMAZ — moderasyon incelemesi bitmeden
- *   kanıt (raporlanan medya) silinmesin diye; bir sonraki günlük taramada tekrar denenir.
+ * NEDEN
+ *   Soru medyası eskiden yalnızca hem öğrenci hem öğretmen elle "listeden sil" dediğinde
+ *   siliniyordu (bkz. onQuestionUpdated) — pratikte neredeyse hiç; bucket sınırsız
+ *   büyüyordu. İlk çözüm yalnızca MEDYAYI 30 gün sonra siliyor, soru ve mesaj metinlerini
+ *   bırakıyordu (`mediaPurged`). 03.10.2026'da kullanıcı kararıyla metin de siliniyor: bir
+ *   çocuğun özel sohbeti süresiz saklanmamalı ve kapanmış bir soru 30 gün sonra kimsenin
+ *   işine yaramıyor (kredi iadesi 48 saat içinde, ödeme hesabı soru belgelerine dayanmıyor).
+ *
+ * HANGİ SORULAR
+ *   - `resolved`: `resolvedAt` 30 günden eski. Daha önce yalnızca medyası silinmiş
+ *     (`mediaPurged == true`) eski sorular da dahil — iki sorgu, ikisi de mevcut
+ *     (status, mediaPurged, resolvedAt) indeksini kullanıyor.
+ *   - `expired` (cevapsız kalıp kredisi iade edilen): `creditRefundedAt` 30 günden eski.
+ *     İndeksi firestore.indexes.json'da (status, creditRefundedAt).
+ *   Açık sorulara (`pending`, `claimed`) dokunulmuyor.
+ *
+ *   Bekleyen (pending) bir şikâyeti olan soru korunuyor: moderasyon incelemesi bitmeden
+ *   kanıt silinmesin. Bir sonraki günlük taramada tekrar deneniyor.
  */
-async function runResolvedQuestionMediaCleanup() {
-  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - RESOLVED_MEDIA_RETENTION_MS);
-  const snapshot = await db
-    .collection('questions')
-    .where('status', '==', 'resolved')
-    .where('mediaPurged', '==', false)
-    .where('resolvedAt', '<', cutoff)
-    .limit(300)
-    .get();
+async function runClosedQuestionCleanup() {
+  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - CLOSED_QUESTION_RETENTION_MS);
+  const questions = db.collection('questions');
+  const queries = {
+    resolved: questions
+      .where('status', '==', 'resolved')
+      .where('mediaPurged', '==', false)
+      .where('resolvedAt', '<', cutoff),
+    resolvedMediaPurged: questions
+      .where('status', '==', 'resolved')
+      .where('mediaPurged', '==', true)
+      .where('resolvedAt', '<', cutoff),
+    expired: questions
+      .where('status', '==', 'expired')
+      .where('creditRefundedAt', '<', cutoff),
+  };
+  // Sorgular birbirinden bağımsız: biri düşerse ötekiler yine çalışıyor. Özellikle ilk
+  // deploy'da (status, creditRefundedAt) indeksi henüz oluşmamışsa `expired` sorgusu
+  // FAILED_PRECONDITION veriyor; Promise.all o gün çözülenleri de silmeden bırakırdı.
+  const results = await Promise.allSettled(
+    Object.values(queries).map((q) => q.limit(CLOSED_QUESTION_SCAN_LIMIT).get()),
+  );
+  const docs = [];
+  Object.keys(queries).forEach((name, i) => {
+    const result = results[i];
+    if (result.status === 'fulfilled') {
+      docs.push(...result.value.docs);
+    } else {
+      console.error('runClosedQuestionCleanup: sorgu başarısız', { name, error: result.reason.message });
+    }
+  });
 
-  const counts = { scanned: snapshot.size, purged: 0, skippedForReport: 0, failed: 0 };
+  const counts = {
+    scanned: docs.length,
+    deleted: 0,
+    skippedForReport: 0,
+    failed: 0,
+    mediaFailed: 0,
+    queryFailed: results.filter((r) => r.status === 'rejected').length,
+  };
 
-  for (const doc of snapshot.docs) {
-    const questionId = doc.id;
+  for (const doc of docs) {
     try {
-      const pendingReport = await db
-        .collection('messageReports')
-        .where('questionId', '==', questionId)
-        .where('status', '==', 'pending')
-        .limit(1)
-        .get();
-      if (!pendingReport.empty) {
+      if (await hasPendingQuestionReport(doc.id)) {
         counts.skippedForReport++;
         continue;
       }
-
-      const data = doc.data();
-      const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
-      const storagePaths = messagesSnap.docs
-        .map((m) => m.data().mediaStoragePath)
-        .concat([data.videoStoragePath, data.screenshotStoragePath]);
-      await deleteStorageFiles(storagePaths);
-
-      const batch = db.batch();
-      messagesSnap.docs.forEach((m) => {
-        if (m.data().mediaStoragePath) {
-          batch.update(m.ref, {
-            mediaStoragePath: admin.firestore.FieldValue.delete(),
-            mediaUrl: admin.firestore.FieldValue.delete(),
-            thumbnailUrl: admin.firestore.FieldValue.delete(),
-          });
-        }
-      });
-      batch.update(doc.ref, {
-        mediaPurged: true,
-        mediaPurgedAt: admin.firestore.FieldValue.serverTimestamp(),
-        videoStoragePath: admin.firestore.FieldValue.delete(),
-        videoUrl: admin.firestore.FieldValue.delete(),
-        screenshotStoragePath: admin.firestore.FieldValue.delete(),
-        screenshotUrl: admin.firestore.FieldValue.delete(),
-      });
-      await batch.commit();
-      counts.purged++;
+      const { mediaFailed } = await deleteQuestionCompletely(doc, 'Kapanan');
+      if (mediaFailed) counts.mediaFailed++;
+      counts.deleted++;
     } catch (error) {
-      console.error('Soru medyası temizlenemedi', { questionId, error: error.message });
+      console.error('Kapanan soru silinemedi', { questionId: doc.id, error: error.message });
       counts.failed++;
     }
   }
 
-  console.log('runResolvedQuestionMediaCleanup tamamlandı', counts);
+  console.log('runClosedQuestionCleanup tamamlandı', counts);
   return counts;
 }
 
+// Adı eski görevinden kalma (yalnızca medyayı siliyordu). Değiştirilmedi: deploy iş akışı
+// etkileşimsiz çalışıyor ve adı değişen bir fonksiyonun eskisini silmek onay istiyor, yani
+// deploy yarıda kalırdı.
 exports.cleanupResolvedQuestionMedia = functions
   .runWith({ timeoutSeconds: 540, memory: '256MB' })
   .pubsub.schedule('every 24 hours')
   .timeZone('Etc/UTC')
   .onRun(async () => {
-    await runResolvedQuestionMediaCleanup();
+    await runClosedQuestionCleanup();
     return null;
   });
 
 // Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
-exports._runResolvedQuestionMediaCleanup = runResolvedQuestionMediaCleanup;
+exports._runClosedQuestionCleanup = runClosedQuestionCleanup;
 
 // ─── Öğretmen danışma soruları — sunucu taraflı ─────────────────────────────
 //

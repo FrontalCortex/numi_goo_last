@@ -22,6 +22,11 @@ if (!process.env.FIRESTORE_EMULATOR_HOST && process.env.ALLOW_PRODUCTION !== '1'
   console.error('FIRESTORE_EMULATOR_HOST ayarlı değil; çıkılıyor.');
   process.exit(1);
 }
+// `firebase emulators:exec` ile çalıştırılırsa ortamda gerçek bucket adı ve CLI kimliği oluyor;
+// medya silme çağrıları o zaman CANLI Storage'a gider. Aşağıdaki "medya silme başarısız"
+// beklentisi de ancak bucket adı yokken tutuyor.
+delete process.env.FIREBASE_CONFIG;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
 process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'numigo-new';
 
 const fns = require('../index');
