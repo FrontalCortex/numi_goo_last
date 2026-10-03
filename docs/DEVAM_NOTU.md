@@ -1285,8 +1285,15 @@ hepsini denemek için Görevler'e bir kart.
     (sunucu `acquisitionSource`'u serbest metin alıyor, izin listesi yok). Sıra karıştırılmıyor
     (kullanıcı istemedi).
   - Giriş ekranında `tvBody` alt boşluğunu kullanıcı kendisi 48dp yaptı; dokunma.
-- **Kayıtta hatırlatma sorusu + seçilebilir hatırlatma saati (kuruldu, cihazda görülmedi,
-  commit edilmedi, FUNCTIONS DEPLOY EDİLMEDİ):** kullanıcı önerilerin hepsini seçti.
+- **Commit + deploy (03.10.2026 23:21):** kullanıcı isteğiyle bu bölümdeki her şey
+  `28d6c35`'te commit edilip push edildi (test anahtarları kapatıldı; `.firebase` önbelleği,
+  `.idea` ayarı ve `package-lock.json` dışarıda). "Deploy Cloud Functions" iş akışı başarılı
+  (run 37150948053) — seçilebilir hatırlatma saati sunucuda canlı. "Build Debug APK" bilinen
+  CI sorunuyla yine başarısız (yerel derleme sağlam). Cihazda uçtan uca denenmedi: ilk
+  gerçek kontrol, saati seçen bir hesabın `users/{uid}/streak/state` dokümanında
+  `reminderLocalHour` ve doğru `reminderHourUtc` görmek.
+- **Kayıtta hatırlatma sorusu + seçilebilir hatırlatma saati (kuruldu, cihazda görülmedi):**
+  kullanıcı önerilerin hepsini seçti.
   - `Step.REMINDER` (gün sorusundan sonra, son soru; tanışma artık "5 kısa sorum" diyor).
     Başlık "Sobi sana her gün hatırlatsın mı?", alt yazı "Saati istediğin zaman
     değiştirebilirsin"; satırlar diğer sorularla aynı (`StreakViews.buildReminderRows`):
@@ -1323,8 +1330,8 @@ hepsini denemek için Görevler'e bir kart.
     Testler: `node functions/scripts/test-streak-reminder.js` 32/32, diğer seri testleri geçti.
   - Ölçüm: `STREAK_STAGE_REMINDER`, yeni olay `streak_reminder_set` (saat, kaynak, seçim
     yes/later, izin granted/denied/not_needed/not_asked).
-  - **Deploy gerekiyor:** functions değişmeden uygulama saati gönderir ama sunucu yok sayar
-    (herkes 19:00'da kalır). `claude/**` dalına push = deploy, önce kullanıcıya sor.
+  - Deploy edildi (yukarıya bkz.). Not: yayından önce kurulan sürümler saati göndermiyordu,
+    onlar 19:00'da kalır; `claude/**` dalına functions içeren push = deploy, önce sor.
   - Alt sistem çubuğu: koyu temada (`values-night/themes.xml`) varsayılan
     `navigationBarColor` `message_topbar`'dı (#111416, zeminden koyu); `background_color`
     yapıldı. Kendi rengini koddan vermeyen 5 ekran düzeldi: Login, Register, TeacherLogin,
