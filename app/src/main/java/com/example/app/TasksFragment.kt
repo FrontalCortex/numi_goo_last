@@ -682,6 +682,7 @@ class TasksFragment : Fragment() {
                                     source = AnalyticsLogger.CHEST_SOURCE_BULLETIN,
                                 )
                             )
+                            "mascot_animation" -> openAbacusContainerFragment(MascotPlaygroundFragment())
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
                     }
@@ -767,6 +768,12 @@ class TasksFragment : Fragment() {
                     subtitle = "Yeni sandık açılış animasyonu yapısı.",
                     iconRes = R.drawable.gold_ic,
                     colorRes = android.R.color.holo_orange_dark
+                ),
+                BulletinRow.Standard(
+                    id = "mascot_animation",
+                    title = "Karakter Animasyonu",
+                    subtitle = "Maskotun bütün hareketlerini dene.",
+                    colorRes = android.R.color.holo_purple
                 ),
             ),
         )

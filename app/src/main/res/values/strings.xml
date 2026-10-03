@@ -10,12 +10,12 @@
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>
     <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
     <string name="lesson_hint_step5">10 gelir adımını uygularken 5 lik kuralı kullanman gerekebilir.</string>
-    <string name="login_start_student_title">Hesabın mı var?</string>
-    <string name="login_start_student_subtitle">Sorobit\'e ilk defa mı giriyorsun?</string>
-    <string name="login_start_teacher_title">Öğretmen hesabın mı var?</string>
-    <string name="login_start_teacher_subtitle">Öğretmen kaydı oluştur</string>
-    <string name="login_start_primary_button">GİRİŞ YAP</string>
-    <string name="login_start_secondary_button">BAŞLA</string>
+    <string name="login_start_student_title">Zihnini Güçlendir</string>
+    <string name="login_start_student_subtitle">Abaküsle oynayarak zihinden hesaplamayı öğren, daha hızlı düşün ve matematikte kendine güven.</string>
+    <string name="login_start_teacher_title">Öğrencilerine Yol Göster</string>
+    <string name="login_start_teacher_subtitle">Öğrencilerinin sorularını yanıtla, abaküsle ilerlemelerine destek ol.</string>
+    <string name="login_start_start_button">Başla</string>
+    <string name="login_start_login_button">Zaten hesabım var</string>
     <string name="login_start_teacher_mode_button">Öğretmen girişi</string>
     <string name="login_start_student_mode_button">Öğrenci girişi</string>
     <!-- OTP doğrulama -->

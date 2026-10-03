@@ -773,7 +773,7 @@ ayrıntılı logu dahil).
   Aynı panelde eksik olan geri iade de eklendi: ücret düşüp özellik kaydedilemezse
   (`setColorFeatureActive` hatası) tutar artık iade ediliyor — altın için de.
 
-## Saati ileri alarak can doldurma (03.10.2026 — cihazda denendi; son küçük sağlamlaştırma kurulmadı, commit edilmedi)
+## Saati ileri alarak can doldurma (03.10.2026 — cihazda denendi; son sağlamlaştırma commit edildi ve kuruldu, ayrıca denenmedi)
 
 Kullanıcı, çocukların cihaz saatini ileri alarak canlarını doldurabildiğinden şüphelendi.
 Koddan teyit edildi (cihazda denenmedi — saatle oynamak seriyi ve Play satın almalarını
@@ -829,8 +829,8 @@ dolmadığını gördü. Etiketlerde hata ya da çökme satırı yok. Saat sonra
 - `EnergyManager` tek yerde (MainActivity) kuruluyor ve `destroy()`'da dinleyicisini
   bırakıyor.
 
-Gözden geçirmede bulunan ve kapatılan zayıflık (derleniyor, 8 birim testi; cihaza
-KURULMADI — telefon o sırada bağlı değildi): açılış sayacı okunamazsa (0) diskteki çapanın
+Gözden geçirmede bulunan ve kapatılan zayıflık (8 birim testi; giriş ekranı yenilemesiyle
+birlikte cihaza kuruldu, kendi başına denenmedi): açılış sayacı okunamazsa (0) diskteki çapanın
 bu açılışa ait olduğu kanıtlanamıyor. Cihaz yeniden başlatılıp eskisinden uzun süre açık
 kalmışsa çapa geçerli sanılır, "şimdi" gerçeğin gerisinde kalır ve can internet gelene kadar
 geç dolardı. Artık o durumda diskteki çapa yalnızca alt sınır. Bu cihazda `boot_count`'un
@@ -957,6 +957,110 @@ yani deploy demek (bkz. "Push = deploy").
   SDK" adımında (`android-actions/setup-android@v3`) başarısız. Yerel derleme sağlam;
   CI ortamı sorunu. Kayıtlar kimlik doğrulama istiyor, `gh` bu makinede yok. Ayrı göreve
   bırakıldı.
+
+## Giriş başlangıç ekranı yenilendi (03.10.2026 — kullanıcı cihazda denedi, sorun bildirmedi; commit edilmedi)
+
+Kullanıcı `LoginStartActivity`'yi bir örnek görsele göre değiştirmek istedi: büyük çizim,
+başlık + motivasyon cümlesi, dolu "Başla" düğmesi, altında "Zaten hesabım var" bağlantısı.
+
+- **Düzen (`activity_login_start.xml`):** sağ üstte öğretmen/öğrenci geçişi (örnekte yoktu,
+  kullanıcı sağ üstü önerdi) → maskot (önce dinozor Lottie, sonra robot, su aygırı, en son tavşan; genişliğin
+  %70'i, en fazla 320dp, kare) → başlık (28sp) → metin (17sp, ikincil renk) → "Başla"
+  (56dp, `dark_primary`) → "Zaten hesabım var" (mavi metin bağlantısı). Örnekteki sayfa
+  noktaları eklenmedi (tek sayfa). Maskot geçici seçim; başka bir Lottie/görselle
+  değiştirilebilir.
+- **Kimlikler:** `tvQuestion`→`tvTitle`, `tvSubtitle`→`tvBody`, `btnSecondary`→`btnStart`
+  (kayıt, `showUserInfoFragment`), `btnPrimary`→`btnLogin` (giriş), `divider` kalktı,
+  `mascotView` eklendi. Davranış aynı; yalnızca ana eylem artık kayıt.
+- **`setMainContentVisible`** tek tek görünüm yerine `loginStartContent` katmanını gizliyor
+  (maskot gizlenince kendisi duruyor).
+- **Metinler:** öğrenci "Zihnini Güçlendir" / "Abaküsle oynayarak zihinden hesaplamayı öğren,
+  daha hızlı düşün ve matematikte kendine güven."; öğretmen "Öğrencilerine Yol Göster" /
+  "Öğrencilerinin sorularını yanıtla, abaküsle ilerlemelerine destek ol."; düğmeler "Başla",
+  "Zaten hesabım var". Eski `login_start_primary_button` / `secondary_button` silindi.
+- **Maskot → tavşan (`BunnyMascotView.kt` + `BunnyMascotArt.kt`, kuruldu, cihazda denendi;
+  sorunsuz):** su aygırı da "eksik" bulundu. Kullanıcı Freepik "Animal Collection"
+  çizimini `res/drawable/animal_maskot.xml` olarak ekledi (altı hayvan + yazı, 247 şekil;
+  APK'ya girmesin diye sonra `design/maskot/animal_maskot.xml`e taşındı).
+  Tavşanın şekilleri (2 ve 40–76 numaralı yollar) bir betikle `BunnyMascotArt.kt`'ye
+  aktarıldı; parça → yol eşlemesi o dosyanın başında. Betikler (`parse.js`, `gen.js`,
+  önizleme `proto*.js`) oturumun scratchpad'inde, depoda değil. View parçaları kendi dönme
+  noktalarında oynatıyor: nefes, kafa eğme, göz kırpma, bakış, kulak oynatma; `greet()`
+  zafer işaretli kolla selam, ağız KEDİNİN açık mutlu ağzı (konuşma yok); `cheer()` iki
+  zıplama, KEDİNİN dolgun kolları tavşan rengine boyalı, yana ve yukarı açık (sol 32°,
+  sağ 18° — kedinin kolları asimetrik), zafer işareti YOK, yanak kızarması YOK, gülen
+  gözler, kedi ağzı. Kedi parçaları (78–81, 102–103) `BunnyMascotArt`'ta kedinin yerinde
+  duruyor, view `CAT_DX = -213` ile kaydırıyor. Tavşanın kendi kolunu yana açmak
+  çelimsiz duruyordu; yukarı kaldırmak kolu kocaman kafanın arkasına sokuyordu.
+  Beklerken sağ kol, sol kolun aynası (özgün çizimde hep zafer işareti var), 2 birim sola
+  ve 2 aşağı kaydırılmış (tam aynada omzun sivri ucu dışarıda kalıyordu; 7/5 kaydırma
+  fazla içeride kaldı); kollar arası geçiş `saveLayerAlpha` ile. Gövde hareketi
+  (kullanıcı "gövde ve kafa çok sabit" dedi): selamda gövde kalçadan ±3° sallanıyor, kafa
+  geriden geliyor, öbür kol da sallanıyor (hepsi `peace` ile ağırlıklı); sevinçte
+  `updateCheerBody`: yere değerken ezilme (ayak tabanından), havada uzama, inişten sonra
+  sönen yaylanma, kafa gövdeyi 70 ms geriden izliyor (gecikmeli zıplama yüksekliği),
+  gövde ±4° kıvrılıp kafa ters fazda. Kullanıcı sevinçte kafayı fazla buldu: kafa
+  kıvrılması 3°→1,5°, gecikme 70→40 ms. Selamda iki ayak hafifçe sağa-sola açılıyor
+  (bacaklar `LEG_LEFT`/`LEG_RIGHT` olarak ayrıldı; her biri kalçasından 5° dışa, 1 yana;
+  önce tek ayağı öne atma denendi, kullanıcı iki ayağın açılmasını tercih etti, sonra
+  kaymayı azalttı). SELAM ARTIK ZAFER İŞARETİYLE DEĞİL: sağdaki kedi kolu 32° kalkıp ±12°
+  sallanıyor (46°'ye kadar kafanın arkasına girmediği önizlemede görüldü), sol kol sarkık.
+  `PEACE_ARM` çizimde duruyor ama kullanılmıyor — kullanıcı onu ileride ayrı bir hâl
+  (emote) için saklamak istedi.
+  Uzamada kulaklar ve adımda ayak kesilmesin diye görünür alan 314 birim, üst pay 6.
+  `autoGreetIntervalMs` (giriş ekranında 5 sn): beklerken kendiliğinden selam; sevinç
+  sayacı baştan başlatıyor. Açık konu: Freepik lisansı (kaynak gösterme yeri, yayından önce).
+  Diğer hâller aşağıdaki "Maskot hâlleri" bölümünde.
+- **(Önceki deneme) su aygırı prototipi (`HippoMascotView.kt`, SİLİNDİ):**
+  önce kodla çizilen bir "boncuk robot" yapıldı; kullanıcı animasyonu beğendi, görseli
+  beğenmedi ve bir örnek çizim gösterdi (düz renkli, gri-yeşil, geniş burunlu su aygırı
+  kafası). Robot silindi; yerine aynı tarzda, bütün bedeniyle duran bir su aygırı kodla
+  çiziliyor (örnek kopyalanmadı, tarzı alındı). Kendi kendine nefes alır gibi iner-kalkar,
+  göz kırpar, bakışını kaydırır, ara ara bir kulağını oynatır. Koddan: `greet()` (el sallar
+  + konuşur; ekran açılınca 400 ms sonra), `talk(ms)`, `cheer()` (iki zıplama, kollar
+  yukarı, gülen gözler, yanak kızarması, açık ağız, kıpırdayan kulaklar; dokununca).
+  Beklerken ağız çizilmiyor (örnekteki gibi yalnızca dişler). Görünmezken
+  (`onVisibilityAggregated`) kare çizmeyi bırakıyor. Çizim aynı geometriyle başsız Edge'de
+  resme döküldü ve kontrol edildi (scratchpad `hippo.html`).
+  Kullanıcıya önerilen kalıcı yol: animatöre Rive karakteri yaptırmak (durum makinesi:
+  bekleme/konuşma/sevinç/üzüntü/düşünme); bu view'in tetikleme API'si aynı kalabilir.
+  Ayrıca uygulamadaki hazır Lottie hayvanlarının ticari lisansı yayından önce kontrol
+  edilmeli.
+- **Gezinme çubuğu:** telefon (API 33) gece modunda; `values-night/themes.xml` çubuğu
+  `message_topbar` (#111416) yapıyor ve ekranın zemininden kopuk duruyordu. `onCreate`'te
+  Splash ile aynı şekilde `background_color`'a çekildi (kuruldu).
+- Aynı sırada kullanıcı `activity_login.xml` ve `activity_register.xml`'de arka planı
+  `dark_background`→`background_color` yaptı; kullanıcı bunların da aynı commit'e girmesini
+  istedi. Commit henüz istenmedi ("ekleyeceğimiz şeyler var"). Kullanıcı başka düzenleri de
+  düzenliyor (`fragment_user_info`, `activity_teacher_otp`, `fragment_offline`, …); commit
+  öncesi CRLF→LF çevrilmeli.
+
+## Maskot hâlleri ve deneme ekranı (03.10.2026 — kullanıcı cihazda denedi: "her şey sorunsuz"; commit edilmedi)
+
+Kullanıcı bekleme/selam/sevinçten sonra 13 yeni hâl daha istedi (tablodaki önerilerin hepsi) ve
+hepsini denemek için Görevler'e bir kart.
+
+- **`BunnyMascotView` yeniden yazıldı:** `play(Emote)` + 15 hâl (`GREET, CHEER, BALLOON,
+  SLEEP, POINT, PEACE, SAD, DANCE, THINK, CLAP, SURPRISED, SHY, WINK, HEART, ABACUS`); her
+  biri süresi dolunca beklemeye dönüyor, `onEmoteFinished` çağrılıyor. `greet()`, `cheer()`,
+  `autoGreetIntervalMs` aynı davranıyor (giriş ekranı değişmedi); `point(toLeft)` var.
+- **Duruş kanalları (`Ch`):** hâl her karede kanal HEDEFLERİNİ yazıyor (kol görünürlükleri ve
+  açıları, gövde/kafa, kulak, bakış, yanak, kaş, balon, abaküs), `cur`'da yumuşatılıyor →
+  hâller arası geçiş kendiliğinden yumuşak. Hızlı salınımlar (`osc`) yumuşatılmadan
+  ekleniyor (yumuşatılsa sönüyordu), hâlin zarfıyla girip çıkıyor. Göz/ağız türü ayrık.
+- **Yeni parçalar (`BunnyMascotArt`, betikle üretildi):** domuzun balonu (118–120,
+  144–146; renk aynen), köpeğin önde birleşik elleri + gövdeye düşen gölgeleri (201–207,
+  tavşan rengine boyalı). Eller iki yana açılınca gölgeler gövde dışına taşıp leke
+  bırakıyordu → açıldıkça siliniyor. Zafer işaretli kol (PEACE) artık kullanılıyor.
+- **Kodla çizilenler:** üzgün kaşlar, ters ağız, "O" ağız, kapalı/gülen göz yayları, "Z"ler,
+  düşünce balonu ve "?", alkış yıldızları, kalp, küçük soroban (ahşap çerçeve, 5 çubuk,
+  boncuklar kayıyor). Düşünmede kedi kolu kafanın ÖNÜNDE çeneye gidiyor.
+- Hepsi önizlemede (scratchpad `proto16/17`) sabit kare olarak kontrol edildi; HAREKET
+  cihazda görülmedi.
+- **Deneme ekranı:** `MascotPlaygroundFragment` + `fragment_mascot_playground.xml`; Görevler'de
+  "Karakter Animasyonu" kartı (`mascot_animation`, mor) → `openAbacusContainerFragment`.
+  Bekleme hep oynuyor, seçeneklerde yok; 15 çip (`ChipGroup`, tek seçim); hâl bitince seçim
+  kalkıyor. Kapatma `finishTasksOverlayAnimated` (FeedbackFragment ile aynı).
 
 ## Yakında yapılanlar — tekrar etmeyin
 

@@ -22,6 +22,11 @@ class LoginStartActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Gece temasında gezinme çubuğu `message_topbar` (mesaj ekranlarına göre seçilmiş)
+        // geliyor ve ekranın zemininden kopuk duruyordu; Splash ve MainActivity de aynı
+        // şekilde ekranın zemin rengine çekiyor. API 35+ bu çağrıyı yok sayıp pencere
+        // zeminini gösteriyor, o da temada zaten `background_color`.
+        window.navigationBarColor = androidx.core.content.ContextCompat.getColor(this, R.color.background_color)
         binding = ActivityLoginStartBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -55,15 +60,15 @@ class LoginStartActivity : AppCompatActivity() {
 
     private fun setupUI(isTeacherMode: Boolean) {
         if (isTeacherMode) {
-            binding.tvSubtitle.text = getString(R.string.login_start_teacher_subtitle)
-            binding.tvQuestion.text = getString(R.string.login_start_teacher_title)
+            binding.tvTitle.text = getString(R.string.login_start_teacher_title)
+            binding.tvBody.text = getString(R.string.login_start_teacher_subtitle)
         } else {
-            binding.tvSubtitle.text = getString(R.string.login_start_student_subtitle)
-            binding.tvQuestion.text = getString(R.string.login_start_student_title)
+            binding.tvTitle.text = getString(R.string.login_start_student_title)
+            binding.tvBody.text = getString(R.string.login_start_student_subtitle)
         }
 
-        // GİRİŞ YAP
-        binding.btnPrimary.setOnClickListener {
+        // "Zaten hesabım var" → giriş ekranı
+        binding.btnLogin.setOnClickListener {
             if (isTeacherMode) {
                 loginOrRegisterLauncher.launch(Intent(this, TeacherLoginActivity::class.java))
             } else {
@@ -71,12 +76,18 @@ class LoginStartActivity : AppCompatActivity() {
             }
         }
 
-        // BAŞLA → Önce UserInfoFragment'i aç
-        binding.btnSecondary.setOnClickListener {
+        // "Başla" → Önce UserInfoFragment'i aç
+        binding.btnStart.setOnClickListener {
             showUserInfoFragment(isTeacherMode)
         }
 
-        // Sağ alttaki "Öğretmen girişi" / "Öğrenci girişi" butonu
+        // Maskot: ekran açılış geçişi bitince el sallayıp "merhaba" der; dokununca sevinir.
+        binding.mascotView.postDelayed({ binding.mascotView.greet() }, 400)
+        // Şimdilik beklerken de 5 saniyede bir selam veriyor (kullanıcı isteği).
+        binding.mascotView.autoGreetIntervalMs = 5_000L
+        binding.mascotView.setOnClickListener { binding.mascotView.cheer() }
+
+        // Sağ üstteki "Öğretmen girişi" / "Öğrenci girişi" butonu
         binding.btnTeacherMode.setOnClickListener {
             val intent = Intent(this, LoginStartActivity::class.java)
                 .putExtra(EXTRA_TEACHER_MODE, !isTeacherMode)
@@ -84,7 +95,7 @@ class LoginStartActivity : AppCompatActivity() {
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
-        // Alt köşe buton metni
+        // Sağ üst köşe buton metni
         binding.btnTeacherMode.text = if (isTeacherMode) {
             getString(R.string.login_start_student_mode_button)
         } else {
@@ -129,13 +140,12 @@ class LoginStartActivity : AppCompatActivity() {
     }
 
     private fun setMainContentVisible(visible: Boolean) {
-        val v = if (visible) android.view.View.VISIBLE else android.view.View.GONE
-        binding.tvQuestion.visibility = v
-        binding.tvSubtitle.visibility = v
-        binding.btnPrimary.visibility = v
-        binding.btnSecondary.visibility = v
-        binding.divider.visibility = v
-        binding.btnTeacherMode.visibility = v
+        // Görünümleri tek tek saymak yerine bütün katman gizleniyor: tasarıma yeni bir
+        // öğe eklendiğinde buraya eklemeyi unutma riski kalmıyor.
+        binding.loginStartContent.visibility =
+            if (visible) android.view.View.VISIBLE else android.view.View.GONE
+        // Maskotun durdurulmasına gerek yok: katman gizlenince BunnyMascotView kare
+        // çizmeyi kendisi bırakıyor.
     }
 
     // RegisterActivity'den dönen sonucu yakala
