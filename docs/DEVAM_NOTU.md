@@ -773,6 +773,184 @@ ayrıntılı logu dahil).
   Aynı panelde eksik olan geri iade de eklendi: ücret düşüp özellik kaydedilemezse
   (`setColorFeatureActive` hatası) tutar artık iade ediliyor — altın için de.
 
+## Saati ileri alarak can doldurma (03.10.2026 — cihazda denendi; son küçük sağlamlaştırma kurulmadı, commit edilmedi)
+
+Kullanıcı, çocukların cihaz saatini ileri alarak canlarını doldurabildiğinden şüphelendi.
+Koddan teyit edildi (cihazda denenmedi — saatle oynamak seriyi ve Play satın almalarını
+bozuyor):
+
+- Can sunucuda (`energy_full_time`: canın dolacağı an) ve istemci yazımına kapalı; sunucu
+  kendi saatiyle hesaplıyor, harcamayı gerekirse `Yetersiz can` ile reddediyor.
+- Ama "şu an kaç can var" sorusunu istemci, o değeri CİHAZ saatiyle karşılaştırarak
+  cevaplıyordu (`EnergyManager.getCurrentEnergy`). Saat ileri alınınca can dolu görünüyor,
+  `hasEnoughEnergy` geçiyor ve ders başlıyor: `useEnergy` iyimser, sunucunun cevabını
+  beklemiyor. Sunucu reddedince yalnızca yeniden eşitleme yapılıyor, o da bir şey değiştirmiyor
+  (cihaz saati hâlâ ileride). Sonuç: sınırsız ders.
+
+**Düzeltme (yalnızca istemci, deploy yok):** can hesabındaki "şimdi" artık cihazın duvar
+saati değil, `TrustedClock.nowMs()`: sunucudan öğrenilen an + o zamandan beri MONOTON saatle
+(`SystemClock.elapsedRealtime`) geçen süre. Sunucu saati zaten alınıyordu
+(`SeasonClock.refreshFromServer` → `getSeasonInfo`, her açılışta ve saatte bir);
+`SeasonClock.onServerTime` aynı cevabı `TrustedClock`'a da veriyor. Çapa diske yazılıyor
+(`trusted_clock` tercihleri) ve açılış sayacıyla (`BOOT_COUNT`) hangi açılışa ait olduğu
+tutuluyor. Hesabın kendisi `TrustedClockRules.trustedNow` (Android'siz, 8 birim testi).
+Çapa değişince `EnergyManager` göstergeyi hemen tazeliyor.
+
+Yan fayda: saati yanlış olan dürüst cihazlarda can artık doğru anda doluyor.
+
+**Kapatmadığı (bilerek):** çapa yokken — cihaz yeniden başlatıldı VE internet yok — duvar
+saatine dönülüyor. "Saati ileri al, yeniden başlat, uçak modunda oyna" hâlâ mümkün. Tamamen
+kapatmak, ders başlatmayı sunucu onayına bağlamak demek (internetsiz ders açılamaz, her
+başlatış ~0,5-1 sn gecikir); kullanıcıya soruldu.
+
+**Cihazda denendi (01:33–01:35, kullanıcı saati ~1 saat ileri aldı: "sorunsuz çalıştı"):**
+
+```
+01:33:03.011 TrustedClock: capa kuruldu | cihazSaatiFarki=299ms
+01:33:55.612 TrustedClock: capa kuruldu | cihazSaatiFarki=375ms          ← yeni süreç
+02:34:10.092 TrustedClock: capa kuruldu | cihazSaatiFarki=3556005ms      ← saat +59 dk ilerideyken
+```
+
+Son satırın damgası cihazın (ileri alınmış) duvar saati; gerçek an 01:34:54. Uygulama saat
+ilerideyken yeniden açılmış, sunucu cevabı farkı (59 dk 16 sn) yakalamış; kullanıcı canın
+dolmadığını gördü. Etiketlerde hata ya da çökme satırı yok. Saat sonra otomatiğe döndü.
+
+**Bir şeyi bozdu mu — koddan gözden geçirildi, sorun bulunmadı:**
+
+- Cihaz saati doğruysa sonuç eskisiyle aynı (fark: sunucu cevabının gecikmesi, ~0,3 sn,
+  hep geriye doğru; can en fazla o kadar geç dolar).
+- Oturum açılmamışken sunucu saati istenmiyor, çapa kurulmuyor: misafirde eski davranış.
+- Canı değiştiren sunucu cevapları (`spendEnergy`, `claimAdEnergy`, `buyEnergyWithKeys`)
+  aynen benimseniyor; yalnızca "şimdi" değişti. Üst sınır kırpması (`getFullTime`) artık
+  sunucunun kırpmasıyla aynı saati kullanıyor.
+- Can API'sini duvar saatiyle karıştıran başka yer yok (`ShopFragment`, `TasksFragment`
+  göreli süreleri `EnergyManager`'dan alıyor). Sezon saati (`SeasonClock.nowUtcMs`), görevler
+  (`MissionsProgressStore`) ve seri kendi saatlerini kullanmaya devam ediyor; dokunulmadı.
+- `EnergyManager` tek yerde (MainActivity) kuruluyor ve `destroy()`'da dinleyicisini
+  bırakıyor.
+
+Gözden geçirmede bulunan ve kapatılan zayıflık (derleniyor, 8 birim testi; cihaza
+KURULMADI — telefon o sırada bağlı değildi): açılış sayacı okunamazsa (0) diskteki çapanın
+bu açılışa ait olduğu kanıtlanamıyor. Cihaz yeniden başlatılıp eskisinden uzun süre açık
+kalmışsa çapa geçerli sanılır, "şimdi" gerçeğin gerisinde kalır ve can internet gelene kadar
+geç dolardı. Artık o durumda diskteki çapa yalnızca alt sınır. Bu cihazda `boot_count`'un
+okunup okunmadığına bakılmadı (`adb shell settings get global boot_count`).
+
+Testin kendisinden kalabilecek iz: uygulama saat ilerideyken açıldığı için Play ürün
+bilgisini o saatle önbelleğe almış olabilir. Satın alma ekranı "Bir şeyler ters gitti"
+derse çözüm aynı (Play Store önbelleği); fark 1 saat olduğu için kendiliğinden de geçer.
+
+`MissionsProgressStore.trustedNowMs` ve `SeasonClock.nowUtcMs` kendi yöntemleriyle duruyor;
+`TrustedClock`'a taşınmadılar.
+
+## Hesabını silen öğrencinin soruları (03.10.2026 — kod ve canlı loglar incelendi, veri İNCELENMEDİ)
+
+Kullanıcı, `questions` koleksiyonunda verilerin durduğunu gördü ve hesap silinince soruların
+silinip silinmediğini sordu.
+
+- **Kod siliyor:** `cleanupUserOnDelete` (Auth `onDelete` tetikleyicisi) → `deleteUserQuestions`:
+  `questions` içinde `studentUid == uid` olan her soruyu `messages` alt koleksiyonu ve
+  Storage medyasıyla (`mediaStoragePath`, `videoStoragePath`, `screenshotStoragePath`)
+  birlikte siliyor. Bekleyen (`status == 'pending'`) bir `messageReports` kaydı olan soru
+  kanıt olarak KORUNUYOR (gizlilik politikasında beyan edilmiş). Kod `a7bf88d` (06.09.2026).
+- **Canlıda da var:** `firebase functions:log --only cleanupUserOnDelete` çıktısında bu
+  adımın satırları görünüyor (`Silinen kullanıcının danışma soruları temizlendi { deleted,
+  skippedForReport, failed, mediaFailed }`). Görülen dört silmede (24.09) hepsi `deleted: 0`:
+  silinen hesapların sorusu yoktu. Log saklama süresi ~30 gün; öncesi görülemiyor.
+- **Kalan soruların olası sebepleri** (hangisi olduğu veriye bakılmadan bilinemez): soru
+  sahibinin hesabı hâlâ duruyor; hesap, silme kodu canlıya çıkmadan önce silindi; soruda
+  bekleyen bir şikâyet var; silme hata verdi (`failed`/`mediaFailed` > 0).
+- **Ayırt etmek için:** Firebase konsolunda kalan bir sorunun `studentUid`'ini
+  Authentication'da ara. Yoksa sahipsiz; bekleyen şikâyeti de yoksa tek seferlik bir
+  temizlik betiği gerekir (yazılmadı; çalıştırmak için yönetici kimliği — GitHub Actions'taki
+  `FIREBASE_SERVICE_ACCOUNT` gibi — gerekiyor, kullanıcı onayı şart).
+- Öğretmen hesabını silerse öğretmenin cevapladığı sorular silinmiyor (öğrenciye ait).
+
+Silmede ele alınmayan koleksiyonlar ve şişme incelemesi aşağıdaki bölümde.
+
+## Firestore şişme ve silmede kalan veri incelemesi (03.10.2026 — yalnızca okundu, kod değişmedi)
+
+Canlı veritabanı salt okunur sorgularla ölçüldü: belge SAYILARI (`count()` toplaması) ve
+belge/alan BOYUTLARI (alan adları ve bayt; değerler yazdırılmadı). Betikler oturum
+klasöründe: `firestore_sayim.js`, `firestore_boyut.js` (firebase CLI oturumuyla REST).
+
+**Bugün şişmiş bir şey yok.** 16 üst seviye koleksiyon, toplam ~1.000 belge, en büyük belge
+~1,3 KB (1 MiB sınırından çok uzak). Sayılar: `items` (ders ilerlemesi) 675,
+`processedPurchases` 81, `messages` 55, `lessonSuccessRateState` 31, `messageReports` 21,
+`text` 15, `adRewards` 14, `questions` 10, `cupHistory` 8, `feedback` 6, diğerleri ≤ 5.
+4 kullanıcı var, yani bunlar büyüme hızı hakkında fikir veriyor, ölçek hakkında değil.
+TTL politikaları canlıda açık: `otpRateLimits`, `otpWrongAttempts`, `studentVerificationCodes`
+(`firebase firestore:indexes`). Sezon liderlik tabloları sezon kapanınca siliniyor
+(`seasonLeaderboardFinalize.deleteLeaderboardBoard`).
+
+**Kullanıcı sayısıyla sınırsız büyüyenler:**
+
+| Koleksiyon | Büyüme | Temizlik | Değerlendirme |
+|---|---|---|---|
+| `adRewards` | izlenen her ödüllü reklam için bir belge (~150 B) | YOK, TTL yok | En hızlı büyüyen. 10 bin günlük aktif × 5 reklam ≈ günde 50 bin belge. Kullanıldıktan sonra yalnızca tekrar oynatmaya karşı kısa süre gerekli. Öneri: oluştururken `expireAt = createdAt + 7 gün`, o alana TTL (sunucu + index deploy'u). |
+| `cupHistory` | kullanıcı başına aktif gün başına bir belge (~100 B) | yok | Önemsiz; okuma zaten tarih penceresiyle. |
+| `users.dailyTimeSpent` | gün başına bir anahtar | yazılan günün 14 gün öncesi siliniyor | Aktif olunmayan günlerde budama atlanıyor, çok yavaş sızıntı; önemsiz. |
+| `questions` + `messages` | soru/mesaj başına | yanıtlanan soruların MEDYASI 30 gün sonra Storage'dan siliniyor, belgeler kalıyor | Saklama süresi bir politika kararı. |
+| `processedPurchases` | satın alma başına | yok | Kalmalı: tekrar kullanım koruması ve iade geri alımı. |
+| `messageReports` | şikâyet başına | yok | Küçük; inceleme kaydı. |
+
+**Hesap silinince kalan kişisel veri** (`cleanupUserOnDelete` yalnızca `users/{uid}` ağacını,
+`questions`'ı ve liderlik kayıtlarını siliyor; `publicProfiles` aynalama tetikleyicisiyle
+gidiyor):
+
+- `friendRequests` (2 belge): gönderen/alan ADLARI var. Kod hiç kullanmıyor (kurallar
+  `if false`, istemci ve sunucuda referans yok) — ölü koleksiyon, elle silinebilir.
+- `feedback` (6): e-posta, kullanıcı kimliği, mesaj, cihaz modeli.
+- `ratingFeedback` (3): kullanıcı kimliği + yıldız + metin.
+- `messageReports` (21): şikâyet eden ve şikâyet edilen kimlikleri, medya bağlantısı.
+- `adRewards` (14): kullanıcı kimliği (TTL önerisi bunu da çözer).
+- Bilinçli kalabilecekler: `processedPurchases` (iade/yasal), `welcomeCreditGrants`
+  (cihaz başına kredi kötüye kullanımı), `creditRefundAudit` (denetim). Geçiciler TTL'li
+  ya da boş: `studentVerificationCodes`, `otp*`, `pendingRegistrations`, `teacherInvites`.
+
+Karar kullanıcıda (gizlilik politikasıyla karşılaştırılmadı). Her öneri sunucu değişikliği,
+yani deploy demek (bkz. "Push = deploy").
+
+### Kullanıcı kararları ve yapılanlar (03.10.2026 — yazıldı, emülatörde test edildi, DEPLOY EDİLMEDİ)
+
+- **`adRewards` 7 gün sonra silinir:** `admobRewardCallback` kayda `expireAt` (oluşturma + 7
+  gün, `AD_REWARD_RECORD_RETENTION_MS`) yazıyor; `firestore.indexes.json`'da `adRewards.expireAt`
+  TTL'i (indekssiz). Güvenli: hak 24 saatte bozuluyor, 1 saatten eski callback reddediliyor.
+  Mevcut 14 kayıtta `expireAt` yok, TTL onlara dokunmaz (elle silinebilir; önemsiz).
+- **Kapanan sorular 30 gün sonra TAMAMEN silinir** (medya + mesajlar + soru): eskiden yalnızca
+  medya siliniyordu. `runClosedQuestionCleanup` — `cleanupResolvedQuestionMedia` adlı günlük
+  görevin içinde (ad değiştirilmedi: etkileşimsiz deploy, adı değişen fonksiyonun eskisini
+  silmek için onay isteyip yarıda kalırdı). `resolved` (`resolvedAt` > 30 gün; daha önce
+  yalnızca medyası silinmişler dahil) ve `expired` (`creditRefundedAt` > 30 gün). Açık
+  sorulara ve bekleyen şikâyetli sorulara dokunulmuyor. Yeni indeks: `questions`
+  (status, creditRefundedAt). Sorgular bağımsız (`Promise.allSettled`): indeks oluşmadan
+  çalışırsa yalnızca `expired` sorgusu düşer. Soru silme adımı hesap silmeyle ortak
+  (`deleteQuestionCompletely`, `hasPendingQuestionReport`).
+- **Testler:** `functions/scripts/test-closed-question-cleanup.js` (yeni) ve
+  `test-delete-user-questions.js` — ikisi de emülatörde geçiyor:
+  `firebase emulators:exec --only firestore --project numigo-new "node functions/scripts/test-closed-question-cleanup.js && node functions/scripts/test-delete-user-questions.js"`.
+  DİKKAT: `emulators:exec` ortama gerçek bucket adını ve CLI kimliğini koyuyor; ilk
+  çalıştırmada medya silme çağrıları CANLI Storage'a gitti (yollar sahte `q/...`, gerçek
+  dosyalar `question_media/…`, `question_screenshots/…`, `question_videos/…` altında — hiçbir
+  şey silinmedi). İki betik artık `FIREBASE_CONFIG` ve `GOOGLE_APPLICATION_CREDENTIALS`'ı
+  kendisi siliyor. Emülatör süreci bazen kapanmıyor (8080 meşgul) — `cloud-firestore-emulator`
+  java sürecini öldür.
+- **Gizlilik politikası** (`public/privacy-policy.html`, yürürlük tarihi 3 Ekim 2026): kapanan
+  danışmaların 30 gün sonra silindiği ve reklam ödülü kayıtlarının 7 gün tutulduğu yazıldı.
+  Hosting ayrı deploy ediliyor (iş akışı yok): `firebase deploy --only hosting`.
+- **`feedback` / `ratingFeedback`:** uygulama ve sunucu yalnızca YAZIYOR, hiçbir yer okumuyor —
+  geliştirici konsoldan okuyor. Öneri (yapılmadı): hesap silinince silmek yerine kimliksizleştirmek
+  (e-posta/uid kalksın, mesaj/puan kalsın).
+- **`messageReports`:** kalması teknik sorun değil (küçük); kişisel veri olarak silinen
+  kullanıcının kimliğini ve medya bağlantısını tutuyor. Öneri (yapılmadı): incelenmişleri
+  kimliksizleştirmek; acil değil.
+- **`friendRequests`:** kullanıcı kendisi sildi (`firebase firestore:delete friendRequests
+  --recursive`, 2 belge). Kurallardaki `match /friendRequests` bloğu duruyor (zararsız).
+- **Gizlilik politikası canlıda** (kullanıcı `firebase deploy --only hosting` yaptı, 03.10.2026).
+  DİKKAT: politika "kapanan danışmalar 30 gün sonra silinir, reklam ödülü kayıtları 7 gün
+  tutulur" diyor ama bunu yapan sunucu kodu (yukarıdaki iki madde) henüz deploy edilmedi —
+  commit + push (= deploy) bekliyor.
+
 ## Yakında yapılanlar — tekrar etmeyin
 
 - **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
@@ -801,6 +979,15 @@ ayrıntılı logu dahil).
   atıyordu (`const` geçici ölü bölge). Düzeltildi ve deploy edildi.
 
 ## Bekleyen deploy
+
+**Push = deploy (03.10.2026'da fark edildi):** `.github/workflows/deploy-functions.yml`,
+`functions/**` değişikliği içeren her push'ta (`claude/**` dalları; çalışma dalı dahil)
+`firebase-tools deploy --only functions` çalıştırıyor — yani seçici değil, BÜTÜN
+fonksiyonlar gidiyor. Cloud Functions denetim kayıtlarında deploy'lar
+`github-actions-deploy@numigo-new.iam.gserviceaccount.com` adına (ör. 2026-10-01T19:04Z).
+"Deploy etmeden önce sor" anlaşması bu yüzden functions/ dokunan commit'lerin PUSH'unu da
+kapsıyor. Aşağıdaki "yalnızca şu iki fonksiyon deploy edildi" ifadesi muhtemelen yanlıştı:
+o push hepsini göndermiş olmalı.
 
 Bekleyen deploy yok.
 
