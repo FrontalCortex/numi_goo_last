@@ -4747,6 +4747,8 @@ const ADMOB_KEY_CACHE_MS = 24 * 60 * 60 * 1000;
 const ADMOB_CALLBACK_MAX_AGE_MS = 60 * 60 * 1000;
 // Kazanılan sandık hakkının kullanılmadan durabileceği süre.
 const AD_ENTITLEMENT_TTL_MS = 24 * 60 * 60 * 1000;
+/** `adRewards` kaydının Firestore TTL ile silinmesine kadar geçen süre; bkz. admobRewardCallback. */
+const AD_REWARD_RECORD_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 let admobKeyCache = { keys: null, fetchedAt: 0 };
 
@@ -4871,6 +4873,13 @@ exports.admobRewardCallback = functions.https.onRequest(async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAtMs: Date.now(),
       consumed: false,
+      // Firestore TTL bu alana bakıp kaydı siliyor (firestore.indexes.json → adRewards).
+      // Kayıt sonsuza kadar kalsaydı izlenen her reklam bir belge daha demekti; en hızlı
+      // büyüyen koleksiyon buydu. Kaydın tek işi aynı ödülün iki kez alınmasını önlemek
+      // ve onun için gereken süre çok kısa: hak 24 saatte bozuluyor
+      // (AD_ENTITLEMENT_TTL_MS), 1 saatten eski callback zaten reddediliyor
+      // (ADMOB_CALLBACK_MAX_AGE_MS). 7 gün bol bir pay.
+      expireAt: admin.firestore.Timestamp.fromMillis(Date.now() + AD_REWARD_RECORD_RETENTION_MS),
     });
     console.log('AdMob SSV: sandık hakkı verildi', { uid, transactionId });
   } catch (error) {

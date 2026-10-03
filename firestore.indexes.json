@@ -63,6 +63,12 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "adRewards",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "otpRateLimits",
       "fieldPath": "updatedAt",
       "ttl": true,
