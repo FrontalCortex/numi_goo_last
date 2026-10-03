@@ -8,8 +8,24 @@
  * kurmadan, saniyeler içinde çalıştırılabiliyor (bkz. scripts/test-streak-reminder.js).
  */
 
-/** Kullanıcının yerel saatiyle hatırlatmanın gönderileceği saat. */
+/**
+ * Kullanıcının yerel saatiyle hatırlatmanın gönderileceği saat — kullanıcı kendi saatini
+ * seçmediyse. Seçim kayıtta ve seri ekranında yapılıyor (`reminderLocalHour`).
+ */
 const STREAK_REMINDER_LOCAL_HOUR = 19;
+
+/**
+ * İstemcinin gönderdiği hatırlatma saati; tam saat 0–23 değilse null.
+ *
+ * Tarama saatte bir çalıştığı için dakika kabul edilmiyor. Hangi saatlerin SUNULACAĞI
+ * istemcinin işi (çocuklara okul saati ve gece önerilmiyor); burada yalnızca geçerlilik.
+ */
+function normalizeReminderHour(raw) {
+  // null/boş Number()'da 0'a dönüyor; "seçim yok" gece yarısı sanılmasın.
+  if (raw === null || raw === undefined || raw === '') return null;
+  const hour = Number(raw);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : null;
+}
 
 /** Kaç gündür görülmeyene hatırlatma gönderilmesin. */
 const STREAK_REMINDER_MAX_IDLE_DAYS = 7;
@@ -20,13 +36,14 @@ function localDayId(nowMs, utcOffsetMinutes) {
 }
 
 /**
- * Kullanıcının yerel saatiyle [STREAK_REMINDER_LOCAL_HOUR]'a denk gelen UTC saati.
+ * Kullanıcının yerel saatiyle [localHour]'a (verilmezse [STREAK_REMINDER_LOCAL_HOUR]) denk
+ * gelen UTC saati.
  *
- * Saatlik tarama "şu anda yerel saati akşam olanlar" sorgusunu bu alan üzerinden, indeksli
- * tek bir eşitlikle yapıyor — tüm kullanıcıları taramak yerine.
+ * Saatlik tarama "şu anda yerel saati hatırlatma saati olanlar" sorgusunu bu alan üzerinden,
+ * indeksli tek bir eşitlikle yapıyor — tüm kullanıcıları taramak yerine.
  */
-function reminderHourUtc(utcOffsetMinutes) {
-  const localMinutes = STREAK_REMINDER_LOCAL_HOUR * 60;
+function reminderHourUtc(utcOffsetMinutes, localHour = STREAK_REMINDER_LOCAL_HOUR) {
+  const localMinutes = localHour * 60;
   const utcMinutes = (((localMinutes - utcOffsetMinutes) % 1440) + 1440) % 1440;
   return Math.floor(utcMinutes / 60);
 }
@@ -85,6 +102,7 @@ function streakReminderDecision(state, nowMs) {
 module.exports = {
   STREAK_REMINDER_LOCAL_HOUR,
   STREAK_REMINDER_MAX_IDLE_DAYS,
+  normalizeReminderHour,
   localDayId,
   reminderHourUtc,
   streakReminderText,

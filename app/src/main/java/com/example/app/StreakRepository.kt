@@ -48,6 +48,20 @@ object StreakRepository {
     private const val KEY_FREEZE_DAY = "freeze_day"
     private const val KEY_FROZEN_DAYS = "frozen_days"
     private const val KEY_FREEZE_NOTICE = "freeze_notice"
+    private const val KEY_REMINDER_HOUR = "reminder_hour"
+    private const val KEY_REMINDER_HOUR_PENDING = "reminder_hour_pending"
+
+    /**
+     * Hatırlatma için HAZIR sunulan saatler (yerel, tam saat). Dakika yok: sunucu
+     * hatırlatmaları saatte bir tarıyor (`functions/index.js` → `sendStreakReminders`). Okul
+     * saatleri ve 21:00 sonrası hazırlarda bilerek yok — kitle 7–10 yaş. Başka bir saat
+     * isteyen "Başka bir saat" satırından 24 saatin herhangi birini seçebiliyor
+     * ([StreakViews.showHourPicker]); kayıtlı saat bu yüzden bu listenin dışında olabilir.
+     */
+    val REMINDER_HOUR_OPTIONS = listOf(16, 18, 19, 20)
+
+    /** Seçim yapılmadıysa; sunucunun eski sabit saati (`STREAK_REMINDER_LOCAL_HOUR`) ile aynı. */
+    const val DEFAULT_REMINDER_HOUR = 19
 
     /** Onboarding'de sunulan günlük hedefler (dakika). */
     val GOAL_OPTIONS = listOf(5, 10, 20)
@@ -120,6 +134,52 @@ object StreakRepository {
     fun setGoalMinutes(context: Context, minutes: Int) {
         val value = if (minutes in GOAL_OPTIONS) minutes else DEFAULT_GOAL_MINUTES
         prefs(context)?.edit()?.putInt(KEY_GOAL_MINUTES, value)?.apply()
+    }
+
+    // ── Hatırlatma saati ────────────────────────────────────────────────
+    //
+    // Bildirimi sunucu gönderiyor; burada yalnızca kullanıcının seçtiği yerel saat ve "henüz
+    // sunucuya iletilmedi" işareti var. Saat YALNIZCA bu cihazda seçildiyse gönderiliyor:
+    // her eşitlemede gönderilseydi, hesabı yeni bir telefona kuran kullanıcının varsayılan
+    // 19:00'u, sunucudaki seçimini ezerdi (bkz. [adoptServerReminderHour]).
+
+    fun reminderHour(context: Context): Int =
+        prefs(context)?.getInt(KEY_REMINDER_HOUR, DEFAULT_REMINDER_HOUR) ?: DEFAULT_REMINDER_HOUR
+
+    /**
+     * Kullanıcı saati seçti (kayıtta ya da seri ekranında). Günlük "buradayım" bildiriminin
+     * işareti de siliniyor: bugün zaten gönderilmiş olsa bile yeni saat bir sonraki
+     * eşitlemede, yarını beklemeden sunucuya gitsin.
+     */
+    fun setReminderHour(context: Context, hour: Int) {
+        prefs(context)?.edit()
+            ?.putInt(KEY_REMINDER_HOUR, hour.coerceIn(0, 23))
+            ?.putBoolean(KEY_REMINDER_HOUR_PENDING, true)
+            ?.remove(KEY_LAST_PING_DAY)
+            ?.apply()
+    }
+
+    /** Seçilmiş ama sunucuya henüz iletilmemiş bir saat var mı. */
+    fun reminderHourPending(context: Context): Boolean =
+        prefs(context)?.getBoolean(KEY_REMINDER_HOUR_PENDING, false) ?: false
+
+    /**
+     * Sunucu [sentHour]'u kabul etti. Gönderim sürerken kullanıcı saati yeniden değiştirdiyse
+     * işaret kalıyor; yeni saat bir sonraki eşitlemede gidiyor.
+     */
+    fun onReminderHourSynced(context: Context, sentHour: Int) {
+        if (reminderHour(context) != sentHour) return
+        prefs(context)?.edit()?.putBoolean(KEY_REMINDER_HOUR_PENDING, false)?.apply()
+    }
+
+    /**
+     * Sunucudaki seçimi yerele alır (yeni cihaz, ya da başka cihazdan değiştirilmiş saat).
+     * Bu cihazda gönderilmeyi bekleyen bir seçim varsa o kazanıyor: kullanıcının en son
+     * yaptığı seçim o.
+     */
+    fun adoptServerReminderHour(context: Context, hour: Int) {
+        if (hour !in 0..23 || reminderHourPending(context)) return
+        prefs(context)?.edit()?.putInt(KEY_REMINDER_HOUR, hour)?.apply()
     }
 
     /**
@@ -389,23 +449,89 @@ object StreakRepository {
         prefs(context)?.edit()?.putString(KEY_OWNER_UID, uid)?.apply()
     }
 
+    // ── Kayıt cevapları (bekleyen) ──────────────────────────────────────
+    //
+    // Kayıt sorularının seri cevapları (hedef, meydan okuma, hatırlatma saati) doğrudan seri
+    // verisine YAZILMIYOR, ayrı bir dosyada bekliyor; giriş yapılınca [applyPendingSignup]
+    // karar veriyor:
+    //  - Hesap YENİ açıldıysa cevaplar uygulanıyor.
+    //  - Kayıt ekranında mevcut bir hesaba girildiyse (ör. Google ile zaten kayıtlı hesap)
+    //    cevaplar atılıyor: o hesabın kendi hedefi/sözü/saati geçerli. Eskiden kayıtta seçilen
+    //    20 dakika, hedefi 5 dakika olan mevcut hesabın hedefini sessizce değiştiriyordu.
+    //
+    // Eskiden kayıt ekranı AÇILIR AÇILMAZ önceki hesabın cihazdaki seri verisi siliniyordu
+    // (prepareForNewAccount): kayda girip geri dönen ya da mevcut hesabına giren çocuk
+    // bugünkü dakikalarını ve henüz gönderilmemiş günlerini kaybediyordu. Artık silme yalnızca
+    // [bindToUser]'da, oturum gerçekten BAŞKA bir hesaba geçtiğinde.
+
+    /** Kayıt cevaplarının uygulanacağı "yeni hesap" penceresi (hesabın açılışından bu yana). */
+    private const val NEW_ACCOUNT_WINDOW_MS = 10 * 60 * 1000L
+
+    /** Bundan eski bekleyen cevaplar kullanılmıyor (kayıt yarıda bırakılmış). */
+    private const val PENDING_SIGNUP_MAX_AGE_MS = 24 * 60 * 60 * 1000L
+
+    private const val PENDING_PREFS = "streak_signup_pending"
+    private const val KEY_P_GOAL = "goal_minutes"
+    private const val KEY_P_CHALLENGE = "challenge_days"
+    private const val KEY_P_REMINDER = "reminder_hour"
+    private const val KEY_P_SAVED_AT = "saved_at"
+
+    private fun pendingPrefs(context: Context) = try {
+        context.applicationContext.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
+    } catch (e: Exception) {
+        Log.w(TAG, "Bekleyen kayıt cevapları açılamadı", e)
+        null
+    }
+
+    /** Kayıt soruları bitti; cevaplar giriş yapılana kadar bekliyor. */
+    fun savePendingSignup(context: Context, goalMinutes: Int, challengeDays: Int, reminderHour: Int) {
+        pendingPrefs(context)?.edit()
+            ?.putInt(KEY_P_GOAL, goalMinutes)
+            ?.putInt(KEY_P_CHALLENGE, challengeDays)
+            ?.putInt(KEY_P_REMINDER, reminderHour)
+            ?.putLong(KEY_P_SAVED_AT, System.currentTimeMillis())
+            ?.apply()
+    }
+
     /**
-     * Kayıt akışına girildi: veri başka bir hesaba aitse şimdi siliniyor.
+     * Oturum açıldıktan sonra ([bindToUser]'dan hemen sonra) çağrılıyor: bekleyen kayıt
+     * cevapları varsa hesap yeniyse uygulanıyor, değilse atılıyor; her durumda siliniyor.
      *
-     * [bindToUser] tek başına yetmiyordu, çünkü o ancak KAYIT BİTTİKTEN sonra, kullanıcı
-     * MainActivity'ye geldiğinde çalışıyor. Oysa kurulum akışının gösterilip
-     * gösterilmeyeceğine kayıt SIRASINDA karar veriliyor ve o anda `isOnboardingDone`
-     * bayrağı hâlâ önceki kullanıcıdan kalma "true" oluyordu — yani aynı cihazda ikinci
-     * hesap açan kimseye sorular yine sorulmuyordu.
+     * Yeni hesap ayrımı Firebase Auth'un hesap açılış zamanından (RegisterActivity'deki kayıt
+     * ölçümüyle aynı yöntem): yeni açılan hesapta dakikalar, mevcut hesapta günler öncesi.
      *
-     * Sahip boşsa dokunulmuyor: o veri, kayıttan önce ilk derste kazanılmış demektir ve az
-     * önce açılmakta olan hesabın hakkıdır.
+     * @param accountCreatedAtMs `FirebaseUser.metadata.creationTimestamp`; bilinmiyorsa null
+     *   (o zaman mevcut hesap sayılıyor — yanlışlıkla başkasının ayarını ezmektense kayıt
+     *   cevabını kaybetmek daha az zararlı, hedef seri ekranından değiştirilebiliyor).
      */
-    fun prepareForNewAccount(context: Context) {
-        val p = prefs(context) ?: return
-        if (p.getString(KEY_OWNER_UID, "").orEmpty().isEmpty()) return
-        Log.i(TAG, "Yeni hesap kaydı, önceki hesabın seri verisi siliniyor")
-        wipe(context)
+    fun applyPendingSignup(context: Context, accountCreatedAtMs: Long?) {
+        val pending = pendingPrefs(context) ?: return
+        val savedAt = pending.getLong(KEY_P_SAVED_AT, 0L)
+        if (savedAt == 0L) return
+        val goal = pending.getInt(KEY_P_GOAL, 0)
+        val challenge = pending.getInt(KEY_P_CHALLENGE, 0)
+        val reminder = pending.getInt(KEY_P_REMINDER, -1)
+        pending.edit().clear().apply()
+
+        val now = System.currentTimeMillis()
+        val fresh = now - savedAt in 0..PENDING_SIGNUP_MAX_AGE_MS
+        val newAccount = accountCreatedAtMs != null && now - accountCreatedAtMs in 0..NEW_ACCOUNT_WINDOW_MS
+        if (!fresh || !newAccount) {
+            StreakDiag.log(
+                "Repo.kayitCevaplari",
+                "ATILDI neden=${if (!fresh) "eski" else "mevcut_hesap"} hedef=$goal gun=$challenge saat=$reminder",
+            )
+            return
+        }
+        if (goal > 0) setGoalMinutes(context, goal)
+        if (challenge > 0) setChallengeDays(context, challenge)
+        if (reminder in 0..23) setReminderHour(context, reminder)
+        markOnboardingDone(context)
+        // Yeni kullanıcının serisi henüz 0 ve ders dönüşündeki yeni tur ekranı tam da "seri
+        // yoksa" diye açılıyor. İşaretlenmeseydi çocuk, az önce cevapladığı soruyu ilk dersinin
+        // sonunda bir kez daha görürdü.
+        markNewStreakPromptShown(context)
+        StreakDiag.log("Repo.kayitCevaplari", "UYGULANDI hedef=$goal gun=$challenge saat=$reminder")
     }
 
     private fun wipe(context: Context) {

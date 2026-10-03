@@ -49,21 +49,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText1" />
 
-    <!-- Center Graphic Placeholder -->
-    <com.airbnb.lottie.LottieAnimationView
+    <!--
+      Maskot: sağdaki reklam billboardını sihirli değnekle yok ediyor (yasak işareti mühürlenip
+      billboard yıldız tozuna dönüşüyor), ardından taç ve gözlükle havalı poz (BunnyMascotView,
+      AD_MAGIC döngüsü; oynatma AdSkipFragment'ta). Eskiden timsah Lottie'siydi. Sahne
+      billboardla birlikte geniş olduğu için timsahtan geniş alan; görünüm kendini kareye sığdırıyor.
+    -->
+    <com.example.app.BunnyMascotView
         android:id="@+id/centerGraphic"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="32dp"
-        app:lottie_fileName="crocodile_anim.json"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText2"
-        app:layout_constraintWidth_percent="0.6" />
+        app:layout_constraintWidth_percent="0.85" />
 
     <!-- Bottom White Container -->
     <androidx.constraintlayout.widget.ConstraintLayout

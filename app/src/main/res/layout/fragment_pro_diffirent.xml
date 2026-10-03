@@ -48,20 +48,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btnClose" />
 
-    <!-- Center Mascot -->
-    <com.airbnb.lottie.LottieAnimationView
+    <!--
+      Maskot: başında taç, zafer işareti yapıp göz kırpıyor (BunnyMascotView, CROWN döngüsü;
+      oynatma ProDiffirentFragment'ta). Eskiden roket Lottie'siydi. Tavşan karesinin yarısı
+      kadar geniş olduğu için alan rokettekinden geniş tutuldu; yükseklik başlık ile alt
+      bölüm arasındaki boşluğa göre, görünüm kendini kare alana sığdırıyor.
+    -->
+    <com.example.app.BunnyMascotView
         android:id="@+id/centerMascot"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="50dp"
-        app:lottie_fileName="rocket_anim.json"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
-        app:layout_constraintWidth_percent="0.5" />
+        app:layout_constraintWidth_percent="0.75" />
 
     <!-- Bottom White Section -->
     <androidx.constraintlayout.widget.ConstraintLayout

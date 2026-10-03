@@ -8,6 +8,7 @@
  */
 const {
   localDayId,
+  normalizeReminderHour,
   reminderHourUtc,
   streakReminderDecision,
 } = require('../streakReminder');
@@ -31,6 +32,34 @@ for (const [name, offset, expected] of [
   ['Yeni Zelanda +13', 780, 6],
 ]) {
   check(name, reminderHourUtc(offset), expected);
+}
+
+console.log('\n=== SEÇİLEN SAAT (kayıttaki hatırlatma sorusu) ===');
+for (const [name, offset, localHour, expected] of [
+  ['Türkiye, 16:00', 180, 16, 13],
+  ['Türkiye, 20:00', 180, 20, 17],
+  ['Türkiye, 01:00 (gün geri sarıyor)', 180, 1, 22],
+  ['UTC, 18:00', 0, 18, 18],
+  ['Hindistan +5:30, 16:00', 330, 16, 10],
+]) {
+  check(name, reminderHourUtc(offset, localHour), expected);
+}
+check('saat verilmezse 19:00', reminderHourUtc(180), reminderHourUtc(180, 19));
+
+console.log('\n=== SAAT DOĞRULAMA ===');
+for (const [name, raw, expected] of [
+  ['16', 16, 16],
+  ['0 (gece yarısı geçerli)', 0, 0],
+  ['23', 23, 23],
+  ['24 geçersiz', 24, null],
+  ['-1 geçersiz', -1, null],
+  ['18.5 (dakika yok)', 18.5, null],
+  ['metin "20" kabul', '20', 20],
+  ['null → seçim yok', null, null],
+  ['undefined → seçim yok', undefined, null],
+  ['boş metin → seçim yok', '', null],
+]) {
+  check(name, normalizeReminderHour(raw), expected);
 }
 
 console.log('\n=== KİME GÖNDERİLİR ===');

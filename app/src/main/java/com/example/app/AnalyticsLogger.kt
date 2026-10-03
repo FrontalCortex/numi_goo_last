@@ -98,6 +98,7 @@ object AnalyticsLogger {
     private const val EV_STREAK_SETUP_STEP = "streak_setup_step"
     private const val EV_STREAK_GOAL_SET = "streak_goal_set"
     private const val EV_STREAK_CHALLENGE_SET = "streak_challenge_set"
+    private const val EV_STREAK_REMINDER_SET = "streak_reminder_set"
     private const val EV_STREAK_DAY_DONE = "streak_day_done"
     private const val EV_STREAK_BROKEN = "streak_broken"
     private const val EV_STREAK_CHALLENGE_DONE = "streak_challenge_done"
@@ -181,6 +182,9 @@ object AnalyticsLogger {
     private const val P_STREAK_DAYS = "streak_days"
     private const val P_GOAL_MINUTES = "goal_minutes"
     private const val P_CHALLENGE_DAYS = "challenge_days"
+    private const val P_REMINDER_HOUR = "reminder_hour"
+    private const val P_REMINDER_CHOICE = "reminder_choice"
+    private const val P_NOTIF_PERMISSION = "notif_permission"
     private const val P_MISSED_DAYS = "missed_days"
     private const val P_STREAK_SAVED = "streak_saved"
 
@@ -259,11 +263,18 @@ object AnalyticsLogger {
     const val PROMO_DISMISSED = "dismissed"
 
     // ── Kayıt hunisinin adımları ───────────────────────────────────────────
-    // Sıra: start -> age -> source -> email/teacher_form -> otp_sent -> completed.
+    // Sıra: start -> intro (yalnızca öğrenci) -> age -> source -> email/teacher_form ->
+    // otp_sent -> completed.
     // otp_wrong huninin bir adımı DEĞİL, sürtünme sinyali: aynı kullanıcıda hem otp_wrong
     // hem completed olabilir.
     /** Giriş/kayıt seçim ekranı açıldı — huninin paydası. */
     const val SIGNUP_START = "start"
+    /**
+     * Maskotla tanışma ekranı açıldı (öğrenci, yaş sorusundan önce). Eklenmeden önce "age"
+     * kayıt ekranının açılması demekti; artık yaş sorusuna gerçekten varmak demek, aradaki
+     * fark tanışma ekranlarında kaybedilenler.
+     */
+    const val SIGNUP_INTRO = "intro"
     /** Yaş soruldu. */
     const val SIGNUP_AGE = "age"
     /** "Bizi nereden duydun" soruldu. */
@@ -291,8 +302,12 @@ object AnalyticsLogger {
     // ── Günlük seri ────────────────────────────────────────────────────────
     /** Kayıt akışındaki seri adımları ([UserInfoFragment]); huni bunlarla kuruluyor. */
     const val STREAK_STAGE_GOAL = "goal"
+    /** Hedeften sonraki ilerleme yolu ekranı; yeni bir ekran hunide kayıp yaratıyor mu diye. */
+    const val STREAK_STAGE_ROADMAP = "roadmap"
     const val STREAK_STAGE_CHALLENGE_INTRO = "challenge_intro"
     const val STREAK_STAGE_CHALLENGE = "challenge"
+    /** Kayıttaki son soru: hatırlatma saati ve bildirim izni. */
+    const val STREAK_STAGE_REMINDER = "reminder"
 
     /**
      * Seri kırıldıktan sonra ders dönüşünde açılan yeni tur ekranı
@@ -1307,6 +1322,35 @@ object AnalyticsLogger {
         fa.logEvent(EV_STREAK_GOAL_SET) {
             param(P_GOAL_MINUTES, minutes.toLong())
             param(P_SOURCE, sanitize(source))
+        }
+    }
+
+    /** [logStreakReminderSet]'in seçim ve izin değerleri. */
+    const val REMINDER_CHOICE_YES = "yes"
+    const val REMINDER_CHOICE_LATER = "later"
+    const val NOTIF_PERMISSION_GRANTED = "granted"
+    const val NOTIF_PERMISSION_DENIED = "denied"
+    /** Android 13 öncesi ya da izin zaten var: sorulmadı. */
+    const val NOTIF_PERMISSION_NOT_NEEDED = "not_needed"
+    /** "Şimdi değil": izin bilerek sorulmadı. */
+    const val NOTIF_PERMISSION_NOT_ASKED = "not_asked"
+
+    /**
+     * Hatırlatma saati seçildi (kayıttaki soru ya da seri ekranı).
+     *
+     * İzin sonucu ayrı tutuluyor: "evet" deyip sistem penceresinde reddedenlerin oranı,
+     * bağlamlı sormanın işe yarayıp yaramadığını gösteriyor (eskiden izin ana ekranda
+     * bağlamsız soruluyordu).
+     *
+     * @param choice [REMINDER_CHOICE_YES] / [REMINDER_CHOICE_LATER]; seri ekranında hep "yes".
+     * @param permission `NOTIF_PERMISSION_*` değerlerinden biri.
+     */
+    fun logStreakReminderSet(hour: Int, source: String, choice: String, permission: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_REMINDER_SET) {
+            param(P_REMINDER_HOUR, hour.toLong())
+            param(P_SOURCE, sanitize(source))
+            param(P_REMINDER_CHOICE, sanitize(choice))
+            param(P_NOTIF_PERMISSION, sanitize(permission))
         }
     }
 

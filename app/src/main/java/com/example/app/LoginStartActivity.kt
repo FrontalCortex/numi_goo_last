@@ -118,13 +118,9 @@ class LoginStartActivity : AppCompatActivity() {
             forceStudent = !isTeacherMode
         )
 
+        // Geçiş animasyonu yok: soru ekranı "Başla"ya basılınca doğrudan geliyor (kullanıcı
+        // isteği; kayarak gelmesi ekranı yavaş hissettiriyordu).
         supportFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                android.R.anim.slide_in_left,
-                android.R.anim.slide_out_right,
-                android.R.anim.slide_in_left,
-                android.R.anim.slide_out_right
-            )
             .replace(R.id.userInfoFragmentContainer, fragment, TAG_USER_INFO)
             .addToBackStack(TAG_USER_INFO)
             .commit()

@@ -13,49 +13,130 @@
       Ekrandaki geri butonu kaldırıldı: kayıt akışında tek bir ileri yön var ve köşedeki
       ok kullanıcıyı "buradan çıkabilirim" diye düşündürüyordu. Geri gitmek hâlâ mümkün,
       telefonun kendi geri tuşuyla — o davranış UserInfoFragment'te zaten tanımlı.
+
+      Görünüm günlük/haftalık görevlerdeki çubukla aynı: yuvarlak koyu zemin, mavi dolgu ve
+      üstünde ince parlama (item_mission_quest). Dolgu ve parlama genişliği koddan
+      applyMissionProgressOverlayNow ile ayarlanıyor; parlamanın sol boşluğu o fonksiyonun
+      hesabındaki mission_progress_shine_inset_start ile aynı olmalı.
     -->
-    <ProgressBar
+    <FrameLayout
         android:id="@+id/userInfoProgress"
-        style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
-        android:layout_height="6dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="20dp"
-        android:max="100"
-        android:progress="50"
-        android:progressBackgroundTint="#2E4149"
-        android:progressTint="@color/dark_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <View
+            android:id="@+id/userInfoProgressTrack"
+            android:layout_width="match_parent"
+            android:layout_height="18dp"
+            android:background="@drawable/mission_progress_track" />
+
+        <View
+            android:id="@+id/userInfoProgressFill"
+            android:layout_width="0dp"
+            android:layout_height="18dp"
+            android:layout_gravity="start|center_vertical"
+            android:visibility="gone" />
+
+        <View
+            android:id="@+id/userInfoProgressShine"
+            android:layout_width="0dp"
+            android:layout_height="4dp"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+            android:layout_marginTop="4dp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!--
+      Soru başlığı (yaş, kaynak, günlük hedef adımlarında): solda havuç kalemle defterine
+      yazan maskot, sağında kuyruğu ona dönük konuşma balonu içinde soru. Balonun arka planı
+      koddan (SpeechBubbleDrawable), metni bindStep'ten. Seri adımlarında (niyet, gün sorusu)
+      GONE: oradaki kaplar kendi maskotlarıyla geliyor ve goneMargin ile çubuğun altına çıkıyor.
+    -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/questionHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="20dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
+
+        <!-- 108dp'de küçük görünüyordu (kullanıcı isteği). Tanışmadan buraya kayan tavşanın
+             hedef boyutu da bu: leaveIntro ölçeği bu görünümün genişliğinden hesaplıyor. -->
+        <com.example.app.BunnyMascotView
+            android:id="@+id/questionMascot"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/questionBubble"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:minHeight="64dp"
+            android:gravity="center_vertical"
+            android:paddingStart="28dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="14dp"
+            android:textColor="@color/dark_text"
+            android:textSize="19sp"
+            app:layout_constraintBottom_toBottomOf="@id/questionMascot"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/questionMascot"
+            app:layout_constraintTop_toTopOf="@id/questionMascot"
+            tools:text="Kaç yaşındasın?" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--
+      Seri adımlarının (niyet + "kaç gün üst üste") ORTAK maskotu. Kayan kapların DIŞINDA:
+      adımlar arasında yazılar kayarken tavşan yerinde kalıyor. Niyette sürekli utangaç,
+      gün sorusuna geçince elinde serinin alevi beliriyor ve seçilen güne göre
+      büyüyor (oynatma UserInfoFragment.bindStep'te). Diğer adımlarda GONE.
+    -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/streakMascot"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/userInfoProgress" />
+
+    <!--
+      Adım kaplarının üst sınırı: o adımda görünen başlığın (soru başlığı ya da seri maskotu)
+      altı. GONE olan, çubuğun altına çökmüş sayılıyor; yani her zaman görünenin altı.
+    -->
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/stepTopBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="questionHeader,streakMascot" />
 
     <!-- Yaş Adımı Container -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/ageContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
-
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Kaç yaşındasın?"
-            android:textColor="@color/dark_text"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/stepTopBarrier">
 
         <EditText
             android:id="@+id/etAge"
             android:layout_width="140dp"
             android:layout_height="56dp"
-            android:layout_marginTop="20dp"
             android:background="@drawable/bg_edit_profile_input"
             android:gravity="center"
             android:hint="Yaş"
@@ -66,243 +147,44 @@
             android:textSize="22sp"
             android:textStyle="bold"
             android:paddingHorizontal="16dp"
-            app:layout_constraintTop_toBottomOf="@id/tvTitle"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Kaynak Adımı Container -->
+    <!--
+      Kaynak adımı ("Bizi nereden duydun?").
+
+      Seçenekler alt alta, günlük hedef sorusundaki satırlarla AYNI görünümde: satırlar XML'de
+      değil StreakViews.buildOptionRows ile üretiliyor (UserInfoFragment.renderSourceStep).
+      Eskiden ikişerli kart ızgarasıydı; iki soru iki ayrı tasarım gibi duruyordu. Sekiz satır
+      küçük ekranda sığmayabilir, bu yüzden kaydırılabilir.
+    -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/sourceContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="gone"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="24dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintTop_toBottomOf="@id/userInfoProgress"
+        app:layout_constraintTop_toBottomOf="@id/stepTopBarrier"
         app:layout_constraintBottom_toTopOf="@id/btnContinue">
-
-        <TextView
-            android:id="@+id/tvSourceTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bizi nereden duydunuz?"
-            android:textColor="@color/dark_text"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="24dp"
             android:scrollbars="none"
-            app:layout_constraintTop_toBottomOf="@id/tvSourceTitle"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
 
             <LinearLayout
+                android:id="@+id/sourceOptions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
-                android:paddingBottom="24dp">
-
-                <!-- Row 1 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-                    
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceFacebook"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Facebook"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceInstagram"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Instagram"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- Row 2 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-                    
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceYoutube"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Youtube"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceGoogle"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Google Araması"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- Row 3 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-                    
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceFriends"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Arkadaş/Aile"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceTiktok"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="TikTok"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <!-- Row 4 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceStore"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Uygulama Mağazası"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
-                        android:id="@+id/cardSourceOther"
-                        android:layout_width="0dp"
-                        android:layout_height="64dp"
-                        android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        app:cardBackgroundColor="@color/background_color"
-                        app:strokeColor="#33FFFFFF"
-                        app:strokeWidth="2dp"
-                        app:cardElevation="0dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:text="Diğer"
-                            android:textColor="@color/dark_text"
-                            android:gravity="center"
-                            android:textStyle="bold"
-                            />
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-            </LinearLayout>
+                android:paddingBottom="8dp" />
         </ScrollView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -320,11 +202,12 @@
         android:id="@+id/streakContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="16dp"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/btnContinue"
-        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
+        app:layout_constraintTop_toBottomOf="@id/stepTopBarrier">
 
+        <!-- Başlık yalnızca gün sorusunda görünüyor; hedef sorusunda soru balonda. -->
         <TextView
             android:id="@+id/streakStepTitle"
             android:layout_width="0dp"
@@ -338,7 +221,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="Her gün ne kadar öğrenmek istersin?" />
+            tools:text="Kaç gün üst üste öğreneceksin?" />
 
         <TextView
             android:id="@+id/streakStepSubtitle"
@@ -355,17 +238,57 @@
             app:layout_constraintTop_toBottomOf="@id/streakStepTitle"
             tools:text="Bu hedefi istediğin zaman değiştirebilirsin" />
 
-        <LinearLayout
-            android:id="@+id/streakOptions"
+        <!-- Kaydırılabilir: hatırlatma sorusunda 5 satır var ("Başka bir saat" dahil), küçük
+             ekranda son satır düğmenin altında kalıyordu. Satırlar az olduğunda kaydırma yok. -->
+        <ScrollView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
+            android:layout_height="0dp"
             android:layout_marginTop="28dp"
-            android:layout_marginEnd="24dp"
-            android:orientation="vertical"
+            android:scrollbars="none"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/streakStepSubtitle" />
+            app:layout_constraintTop_toBottomOf="@id/streakStepSubtitle">
+
+            <LinearLayout
+                android:id="@+id/streakOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="8dp"
+                android:orientation="vertical" />
+        </ScrollView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--
+      İlerleme yolu: günlük hedeften hemen sonra, o hedefle nereye varılacağını üç adımda
+      gösteriyor. Başlık soru balonunda ("Her gün N dakikayla buraya varacaksın!"); çizim ve
+      sıralı belirme LearningPathView'de, adımlar ve tarihler UserInfoFragment'ten.
+      Çizim kabın boş alanında biraz yukarıda duruyor (bias): altında düğme var, ortada
+      dursa başlıktan kopuk görünüyordu.
+    -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/roadmapContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnContinue"
+        app:layout_constraintTop_toBottomOf="@id/stepTopBarrier">
+
+        <com.example.app.LearningPathView
+            android:id="@+id/learningPath"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.3" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -373,35 +296,25 @@
       Meydan okuma sorusundan önceki niyet ekranı.
 
       Soru doğrudan gelseydi çocuk neyi neden seçtiğini bilmeden bir sayı seçerdi.
-      Ders dönüşündeki yeni tur ekranı (fragment_new_streak) aynı metni ve aynı alevi
-      kullanıyor: ikisi de aynı sözü istiyor, farklı görünmeleri için sebep yok.
+      Ders dönüşündeki yeni tur ekranı (fragment_new_streak) aynı metni ve aynı tavşanı
+      kullanıyor: ikisi de aynı sözü istiyor, farklı görünmeleri için sebep yok. Tavşan bu
+      kabın içinde DEĞİL (ortak streakMascot): gün sorusuna geçerken yalnızca yazı kayıyor.
     -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/challengeIntroContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="16dp"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/btnContinue"
-        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
-
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/challengeIntroLottie"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:lottie_autoPlay="true"
-            app:lottie_fileName="fire_anim.json"
-            app:lottie_loop="true" />
+        app:layout_constraintTop_toBottomOf="@id/stepTopBarrier">
 
         <TextView
             android:id="@+id/challengeIntroText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="28dp"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="12dp"
             android:layout_marginEnd="28dp"
             android:gravity="center"
             android:lineSpacingExtra="4dp"
@@ -411,7 +324,57 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/challengeIntroLottie" />
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--
+      Tanışma (öğrenci kaydının ilk iki ekranı, yaş sorusundan önce): ortada tavşan, üstünde
+      aşağı kuyruklu konuşma balonu. 1. ekranda kendini tanıtıp 2 sn arayla el sallıyor, 2.'de
+      kaç soru sorulacağını söyleyip alkışlıyor. Sorulara geçerken tavşan küçülerek sol üstteki
+      soru maskotunun yerine kayıyor ve orada defteriyle devam ediyor (UserInfoFragment.leaveIntro).
+
+      Tavşan kabın ortasına sabit, balon onun üstüne asılı: iki ekranın metin uzunluğu farklı
+      ve balon büyüdüğünde tavşan yerinden oynamasın, balon yukarı doğru büyüsün.
+      Diğer kapların ÜSTÜNDE (sonra) tanımlı: kayan tavşan soru başlığının üstünden geçiyor.
+    -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/introContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnContinue"
+        app:layout_constraintTop_toBottomOf="@id/userInfoProgress">
+
+        <com.example.app.BunnyMascotView
+            android:id="@+id/introMascot"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.6" />
+
+        <!-- Alt dolgu = metin boşluğu (14dp) + kuyruk (16dp). -->
+        <TextView
+            android:id="@+id/introBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:lineSpacingExtra="4dp"
+            android:paddingStart="20dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="30dp"
+            android:textColor="@color/dark_text"
+            android:textSize="20sp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toTopOf="@id/introMascot"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:text="Selamlar! Benim adım Sobi!" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -421,7 +384,7 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginTop="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="4dp"
         android:text="Devam Et"
         android:textAllCaps="false"
         android:layout_marginHorizontal="10dp"
@@ -430,9 +393,34 @@
         android:enabled="false"
         app:cornerRadius="8dp"
         app:backgroundTint="@color/dark_primary"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnLater"
+        app:layout_goneMarginBottom="24dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!--
+      İkincil seçenek ("Şimdi değil"): yalnızca hatırlatma sorusunda görünüyor, düğme değil
+      bağlantı görünümünde. Gizliyken "Devam Et" eski yerine (alttan 24dp) iniyor.
+    -->
+    <TextView
+        android:id="@+id/btnLater"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="Şimdi değil"
+        android:textColor="@color/dark_primary"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 

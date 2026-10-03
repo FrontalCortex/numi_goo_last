@@ -10,7 +10,12 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const seasonLeaderboardFinalize = require('./seasonLeaderboardFinalize');
-const { reminderHourUtc, streakReminderDecision } = require('./streakReminder');
+const {
+  STREAK_REMINDER_LOCAL_HOUR,
+  normalizeReminderHour,
+  reminderHourUtc,
+  streakReminderDecision,
+} = require('./streakReminder');
 exports.finalizeSeasonLeaderboardMedals =
   seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
 
@@ -4156,18 +4161,29 @@ function challengePatch(runDay, challengeDays, state) {
 }
 
 /**
- * Hatırlatma alanları: UTC saati, saat dilimi farkı ve son görülme.
+ * Hatırlatma alanları: UTC saati, saat dilimi farkı, son görülme ve (gönderildiyse)
+ * kullanıcının seçtiği yerel saat.
  *
  * Fark gelmemişse null dönüyor — eski bir istemci sürümü alanı hiç göndermiyor olabilir ve
  * o kullanıcının kaydını yanlış bir saatle bozmaktansa hiç dokunmamak doğru.
+ *
+ * Yerel saat önceliği: bu çağrıda seçilen > kayıtlı seçim > 19:00. İstemci saati yalnızca
+ * kullanıcı o cihazda seçtiğinde gönderiyor; eski sürümler hiç göndermiyor, onlar kayıtlı
+ * seçimle (yoksa 19:00 ile) devam ediyor.
+ *
+ * @param chosenHour Bu çağrıda gönderilen saat (normalizeReminderHour'dan), yoksa null.
+ * @param storedHour Kayıtlı seçim (readStreakState), yoksa null.
  */
-function reminderPatch(utcOffsetMinutes) {
+function reminderPatch(utcOffsetMinutes, chosenHour, storedHour) {
   if (utcOffsetMinutes === null) return null;
-  return {
-    reminderHourUtc: reminderHourUtc(utcOffsetMinutes),
+  const localHour = chosenHour ?? storedHour ?? STREAK_REMINDER_LOCAL_HOUR;
+  const patch = {
+    reminderHourUtc: reminderHourUtc(utcOffsetMinutes, localHour),
     utcOffsetMinutes,
     lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
   };
+  if (chosenHour !== null) patch.reminderLocalHour = chosenHour;
+  return patch;
 }
 
 function streakDocRef(uid) {
@@ -4202,6 +4218,8 @@ function readStreakState(snap) {
     frozenDays: Array.isArray(data.frozenDays)
       ? data.frozenDays.filter((v) => typeof v === 'string' && STREAK_DAY_RE.test(v))
       : [],
+    // Kullanıcının seçtiği hatırlatma saati (yerel); seçmediyse null → 19:00.
+    reminderLocalHour: normalizeReminderHour(data.reminderLocalHour),
   };
 }
 
@@ -4298,12 +4316,17 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
   const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
   const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
 
-  // Akşam hatırlatmasının saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının
-  // yerel saatiyle ~19:00'a denk gelen UTC saatini hesaplıyor. Böylece saatlik tarama
-  // "şu anda yerel saati akşam olanlar" sorgusunu indeksli tek bir eşitlikle yapabiliyor.
+  // Hatırlatmanın saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının yerel
+  // saatiyle seçtiği saate (seçmediyse 19:00'a) denk gelen UTC saatini hesaplıyor. Böylece
+  // saatlik tarama "şu anda yerel saati hatırlatma saati olanlar" sorgusunu indeksli tek bir
+  // eşitlikle yapabiliyor.
   const rawOffset = Number(data && data.utcOffsetMinutes);
   const utcOffsetMinutes =
     Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
+  // Kullanıcının seçtiği hatırlatma saati (yerel, tam saat). İstemci yalnızca kullanıcı o
+  // cihazda seçtiğinde gönderiyor (kayıttaki soru ya da seri ekranı); yoksa null ve kayıtlı
+  // seçim (o da yoksa 19:00) geçerli. Bu tanım da günsüz daldan ÖNCE olmak zorunda (yukarıya bkz.).
+  const chosenReminderHour = normalizeReminderHour(data && data.reminderHour);
 
   // İstemcinin yerel bugünü: seri dondurmanın "kaçan gün"ü buna göre belirleniyor. Sunucunun
   // kendi saatinden türetilmiyor çünkü istemci de dondurmayı KENDİ gününe göre harcıyor
@@ -4321,12 +4344,21 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     const ref = streakDocRef(uid);
     const snap = await ref.get();
     const state = readStreakState(snap);
-    const patch = Object.assign({}, reminderPatch(utcOffsetMinutes) || {});
+    const patch = Object.assign(
+      {},
+      reminderPatch(utcOffsetMinutes, chosenReminderHour, state.reminderLocalHour) || {}
+    );
     // Seri kırıldıktan sonra kullanıcı ders sonunda yeni bir meydan okuma seçiyor
     // (bkz. NewStreakFragment) ve cevabı günün ilk bildiriminden SONRA gelebiliyor.
     // Bu yüzden günsüz çağrı da yazabiliyor — aynı "tur başı" şartıyla.
     Object.assign(patch, challengePatch(state.current, challengeDays, state));
-    if (Object.keys(patch).length > 0 && snap.exists) await ref.set(patch, { merge: true });
+    // Doküman yoksa normalde yazılmıyor (hiç gün bildirmemiş kullanıcı için seri kaydı
+    // açılmıyor). İstisna: kullanıcı hatırlatma saati SEÇTİ — yeni kayıt olmuş, henüz hedef
+    // tutturmamış çocuk. Yazılmasaydı istemci "iletildi" deyip seçimi unutur ve hatırlatma
+    // ancak ilk tutturulan günden sonra, 19:00'da başlardı; oysa en çok ilk günlerde lazım.
+    if (Object.keys(patch).length > 0 && (snap.exists || patch.reminderLocalHour !== undefined)) {
+      await ref.set(patch, { merge: true });
+    }
 
     // Dün kaçtıysa dondurma burada harcanıyor: istemci uygulama açılır açılmaz kendi
     // tarafında harcadı, sunucu gün bildirilmesini bekleseydi mağaza "dondurman var" diye
@@ -4366,6 +4398,8 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       freezes: frozen.freezes,
       freezeDay: frozen.freezeDay,
       frozenDays: frozen.frozenDays,
+      // Hatırlatma saati: başka cihazda seçilmişse bu cihaz da öğrensin.
+      reminderLocalHour: patch.reminderLocalHour ?? state.reminderLocalHour,
     };
   }
 
@@ -4394,7 +4428,10 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     };
     if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
     Object.assign(patch, challengePatch(next.current, challengeDays, state));
-    Object.assign(patch, reminderPatch(utcOffsetMinutes) || {});
+    Object.assign(
+      patch,
+      reminderPatch(utcOffsetMinutes, chosenReminderHour, state.reminderLocalHour) || {}
+    );
     Object.assign(patch, freezePatch(state, next));
 
     transaction.set(ref, patch, { merge: true });
@@ -4423,6 +4460,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
       goalMinutes: patch.goalMinutes ?? state.goalMinutes,
       challengeDays: patch.challengeDays ?? state.challengeDays,
       challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
+      reminderLocalHour: patch.reminderLocalHour ?? state.reminderLocalHour,
     });
   });
 
@@ -4439,6 +4477,7 @@ exports.submitStreakDay = functions.https.onCall(async (data, context) => {
     freezes: result.freezes,
     freezeDay: result.freezeDay,
     frozenDays: result.frozenDays,
+    reminderLocalHour: result.reminderLocalHour,
   };
 });
 
@@ -4631,7 +4670,8 @@ exports._settleStreakFreeze = settleStreakFreeze;
 //   Kırılmayı ONLEMEK, kırıldıktan sonra onarmaktan hem ucuz hem etkili.
 //
 // NASIL SEÇİLİYOR
-//   Saatte bir çalışıp "yerel saati şu anda akşam olan" kullanıcıları buluyor. Bunu tüm
+//   Saatte bir çalışıp "yerel saati şu anda hatırlatma saati olan" kullanıcıları buluyor
+//   (kullanıcının kayıtta/seri ekranında seçtiği saat, seçmediyse 19:00). Bunu tüm
 //   kullanıcıları tarayarak değil, submitStreakDay'in yazdığı `reminderHourUtc` alanına
 //   indeksli tek bir eşitlikle soruyor.
 //

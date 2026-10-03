@@ -200,6 +200,16 @@ class MainActivity : AppCompatActivity() {
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
+
+        /**
+         * Bildirim izni kayıttaki hatırlatma sorusunda bağlamıyla soruldu (ya da çocuk "Şimdi
+         * değil" dedi): ana ekran ilk açılışta aynı izni bağlamsız bir daha sormasın.
+         */
+        fun markNotificationPermissionPrompted(context: android.content.Context) {
+            context.getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit()
+                .putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true)
+                .apply()
+        }
         const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
         const val LESSON_ACTION_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
         const val FIRST_TUTORIAL_LOG_TAG = "FirstTutorialDbg"
@@ -2144,6 +2154,11 @@ class MainActivity : AppCompatActivity() {
         // Yerel seri verisi cihaza ait, uid'ye değil. Oturumdaki hesap değiştiyse önceki
         // kullanıcının verisi burada siliniyor — yoksa yeni hesap onun serisini devralırdı.
         StreakRepository.bindToUser(this, auth.currentUser?.uid)
+        // Kayıt sorularının seri cevapları: hesap yeni açıldıysa uygulanıyor, kayıt ekranında
+        // mevcut bir hesaba girildiyse atılıyor (o hesabın kendi ayarları geçerli).
+        auth.currentUser?.let {
+            StreakRepository.applyPendingSignup(this, it.metadata?.creationTimestamp)
+        }
         val state = StreakRepository.refresh(this)
         // refresh() hedefi tutturan günü burada ilerletiyor; kutlama da aynı yerden
         // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de

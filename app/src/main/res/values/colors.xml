@@ -91,4 +91,7 @@
     <color name="parent_step_passed">#8FD14F</color>
     <color name="parent_step_in_progress">#FFA726</color>
     <color name="parent_step_not_reached">#505D66</color>
+    <!-- Pro/satış ekranlarının (Pro karşılaştırma, reklam atlama, soru tanıtımı) koyu lacivert zemini;
+         düzenlerde düz değer olarak da geçiyor. Telefonun üst çubuğu buna boyanıyor (SystemBarColors). -->
+    <color name="paywall_navy">#050C38</color>
 </resources>

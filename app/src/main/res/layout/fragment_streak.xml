@@ -466,6 +466,19 @@
                 android:textColor="@android:color/white"
                 android:textSize="15sp" />
 
+            <!-- Hatırlatma saati (kayıttaki "Sobi sana her gün hatırlatsın mı?" sorusunun ayarı).
+                 Metin koddan: seçili saati de yazıyor. Aynı sebeple Button değil TextView. -->
+            <TextView
+                android:id="@+id/streakChangeReminder"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_streak_option"
+                android:gravity="center"
+                android:text="Bildirim saatini değiştir"
+                android:textColor="@android:color/white"
+                android:textSize="15sp" />
+
         </LinearLayout>
 
     </ScrollView>

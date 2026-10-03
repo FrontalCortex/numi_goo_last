@@ -46,8 +46,13 @@
             app:layout_constraintEnd_toEndOf="parent" />
 
         <!--
-          Maskot (tavşan). Genişliğin %70'i, kare; küçük ekranda alttaki
-          metne yer bırakmak için küçülüyor. Dokununca seviniyor.
+          Maskot (tavşan). Genişliğin %70'i, kare. Dokununca seviniyor.
+
+          Tavşan + başlık + metin tek bir dikey zincir (packed), öğretmen düğmesiyle "Başla"
+          arasında, bias 1: grup düğmenin hemen üstüne yaslanıyor. Böylece tavşan ekranın
+          ortasına olabildiğince yakın duruyor ama metin hiçbir ekranda düğmeye binmiyor.
+          Tavşan tam ortaya sabitlenseydi bu telefonda (393×873dp) metin düğmeye biniyordu,
+          küçük ekranda ~70dp. Eskiden grup alta bağlı değildi ve yukarı yapışıyordu.
         -->
         <com.example.app.BunnyMascotView
             android:id="@+id/mascotView"
@@ -60,19 +65,21 @@
             app:layout_constraintBottom_toTopOf="@id/tvTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintVertical_bias="0.6" />
+            app:layout_constraintVertical_chainStyle="packed"
+            app:layout_constraintVertical_bias="1" />
 
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:text="@string/login_start_student_title"
             android:textSize="28sp"
             android:textStyle="bold"
             android:textColor="@color/dark_text"
             android:gravity="center"
             android:fontFamily="@font/font_regular"
+            app:layout_constraintTop_toBottomOf="@id/mascotView"
             app:layout_constraintBottom_toTopOf="@id/tvBody"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -82,13 +89,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="40dp"
+            android:layout_marginBottom="48dp"
             android:text="@string/login_start_student_subtitle"
             android:textSize="17sp"
             android:lineSpacingMultiplier="1.2"
             android:textColor="@color/dark_text_secondary"
             android:gravity="center"
             android:fontFamily="@font/font_regular"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle"
             app:layout_constraintBottom_toTopOf="@id/btnStart"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

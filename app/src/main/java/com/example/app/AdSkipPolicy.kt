@@ -82,6 +82,11 @@ object AdSkipPolicy {
     fun onAdClosed(context: Context, eligible: Boolean): Boolean {
         val p = prefs(context) ?: return false
         return try {
+            // Test anahtarı: her uygun reklamdan sonra (bkz. AdSkipDebug; release'de kapalı).
+            if (eligible && AdSkipDebug.everyAd) {
+                markShown(p)
+                return true
+            }
             val since = p.getInt(KEY_ADS_SINCE_PANEL, 0) + 1
             // Sıra gelmediyse ya da süre/gün kapısı kapalıysa sayaç EŞİKTE bekletiliyor,
             // sıfırlanmıyor: kapı açıldığında panel bir sonraki uygun reklamda çıksın,

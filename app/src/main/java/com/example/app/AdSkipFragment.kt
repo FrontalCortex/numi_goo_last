@@ -57,6 +57,20 @@ class AdSkipFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Telefonun üst çubuğu lacivert zemine, alt tuşların çubuğu alttaki beyaz bölüme uysun.
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.paywall_navy),
+                bottom = android.graphics.Color.WHITE,
+                topView = binding.root,
+                bottomView = binding.bottomWhiteContainer,
+            )
+        }
+
+        // Maskot reklamı değnekle yok edip havalı poz veriyor; panel açık kaldıkça döngüde.
+        binding.centerGraphic.play(BunnyMascotView.Emote.AD_MAGIC)
+
         playSounds()
 
         viewNoBucket = AdSkipStats.viewBucket(AdSkipStats.nextViewNo(requireContext()))

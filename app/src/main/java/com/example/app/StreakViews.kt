@@ -4,10 +4,12 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -28,8 +30,118 @@ object StreakViews {
     /** Sağ taraftaki metin bir ÖDÜL olduğunda; sönük gri onu açıklama gibi gösterirdi. */
     const val COLOR_GOLD = "#FFC107"
 
+    /** "19:00" biçiminde saat. */
+    fun hourText(hour: Int): String = String.format(Locale.US, "%02d:00", hour)
+
+    /**
+     * Hatırlatma saatinin günlük hayattaki karşılığı (kayıttaki soru ve seri ekranı aynı
+     * satırları gösteriyor). Çocuk "18:00"dan çok "okuldan sonra"yı tanıyor.
+     */
+    fun reminderHourLabel(hour: Int): String = when (hour) {
+        16 -> "Okuldan sonra"
+        18 -> "Akşamüstü"
+        19 -> "Akşam"
+        20 -> "Yemekten sonra"
+        else -> hourText(hour)
+    }
+
+    /** "Başka bir saat" satırının değeri; gerçek bir saat değil, saat penceresini açıyor. */
+    private const val CUSTOM_HOUR_ROW = -1
+
+    /**
+     * Hatırlatma saati satırları: solda açıklama, sağda saat; en altta "Başka bir saat".
+     *
+     * Hazır saatler çocukların çoğuna uyuyor ama herkese değil (ör. sabah çalışmak isteyen);
+     * son satır [showHourPicker]'ı açıyor. Seçili saat hazırlardan biri değilse o satır seçili
+     * görünüyor ve sağında saati yazıyor.
+     *
+     * @param onCustom "Başka bir saat"e dokunuldu; çağıran [showHourPicker]'ı açar.
+     */
+    fun buildReminderRows(
+        container: ViewGroup,
+        selected: Int,
+        onPick: (Int) -> Unit,
+        onCustom: () -> Unit,
+    ) {
+        val hours = StreakRepository.REMINDER_HOUR_OPTIONS
+        val custom = selected !in hours
+        buildOptionRows(
+            container = container,
+            values = hours + CUSTOM_HOUR_ROW,
+            labels = hours.map { reminderHourLabel(it) } + "Başka bir saat",
+            trailing = hours.map { hourText(it) } +
+                (if (custom && selected in 0..23) hourText(selected) else "Seç ›"),
+            selected = if (custom) CUSTOM_HOUR_ROW else selected,
+        ) { value -> if (value == CUSTOM_HOUR_ROW) onCustom() else onPick(value) }
+    }
+
+    /**
+     * Tam saat penceresi: 24 saat, 4 sütunlu ızgara, satırlarla aynı görünüm. Dokununca seçilip
+     * kapanıyor.
+     *
+     * Sabah 06:00'dan başlıyor, gece saatleri en sonda: arayan çoğunlukla sabah ya da öğlen
+     * saati arıyor. Dakika yok, sunucu hatırlatmaları saatte bir tarıyor. Gece saatleri de
+     * seçilebiliyor; hazır satırlarda yoklar, burada seçen bilerek seçiyor.
+     */
+    fun showHourPicker(
+        context: Context,
+        inflater: LayoutInflater,
+        selected: Int,
+        onPick: (Int) -> Unit,
+    ) {
+        val view = inflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(context).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Saat seç"
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            "Sobi sana her gün bu saatte hatırlatsın"
+
+        val container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer)
+        val density = context.resources.displayMetrics.density
+        val gap = (8 * density).toInt()
+        for (row in 0 until 6) {
+            val line = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { if (row > 0) topMargin = gap }
+            }
+            for (col in 0 until 4) {
+                val hour = (HOUR_GRID_START + row * 4 + col) % 24
+                line.addView(
+                    TextView(context).apply {
+                        text = hourText(hour)
+                        gravity = Gravity.CENTER
+                        setTextColor(Color.WHITE)
+                        textSize = 15f
+                        setTypeface(typeface, Typeface.BOLD)
+                        setBackgroundResource(
+                            if (hour == selected) R.drawable.bg_streak_option_selected
+                            else R.drawable.bg_streak_option,
+                        )
+                        layoutParams = LinearLayout.LayoutParams(0, (44 * density).toInt(), 1f)
+                            .apply { if (col > 0) marginStart = gap }
+                        setOnClickListener {
+                            dialog.dismiss()
+                            onPick(hour)
+                        }
+                    },
+                )
+            }
+            container.addView(line)
+        }
+        dialog.show()
+    }
+
+    /** Saat ızgarasının ilk saati (sabah). */
+    private const val HOUR_GRID_START = 6
+
     /**
      * Seçenek satırlarını [container] içine üretir (önce içini boşaltır).
+     *
+     * Kayıttaki "Bizi nereden duydun?" sorusu da bunu kullanıyor: kayıt soruları tek tip
+     * görünsün diye (orada sağ tarafta açıklama yok, [trailing] boş).
      *
      * @param values Satırların taşıdığı değerler; seçim bunlarla bildiriliyor.
      * @param labels Sol taraftaki ana metin.

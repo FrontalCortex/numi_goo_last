@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Sorobit</string>
+    <!-- Tavşan maskotun adı (kayıttaki tanışma ekranı); değişirse yalnızca burası. -->
+    <string name="mascot_name">Sobi</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <!-- Google Sign-In Web Client ID - Firebase Console > Authentication > Sign-in method > Google'dan alınmalı -->

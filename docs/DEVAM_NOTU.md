@@ -1061,6 +1061,337 @@ hepsini denemek için Görevler'e bir kart.
   "Karakter Animasyonu" kartı (`mascot_animation`, mor) → `openAbacusContainerFragment`.
   Bekleme hep oynuyor, seçeneklerde yok; 15 çip (`ChipGroup`, tek seçim); hâl bitince seçim
   kalkıyor. Kapatma `finishTasksOverlayAnimated` (FeedbackFragment ile aynı).
+- **Commit sonrası (kuruldu, commit edilmedi):** düşünce balonu ~1,5 kat büyüdü, beyaz +
+  mavi kenar (kullanıcı "daha büyük ve belirgin" istedi); kalp artık `heart_ic` ikonu
+  (`mutate()` ile kopya; boyut tuval ölçeğiyle, sınırlar sabit 100 — tam sayı sınırlar
+  atışta titretiyordu).
+- **Mesajlaşma hâli (`CHAT`, döngülü; kuruldu, cihazda görülmedi, commit edilmedi):**
+  `Emote.loops` eklendi (süre dolunca bitmiyor, baştan dönüyor; görünmezken geçen turlar
+  atlanıyor). Tavşan köpeğin elleriyle telefon tutuyor (kodla çizilen telefon, ekranda
+  sohbet satırları). 6 sn'lik tur: yazıyor (parmaklar kıpır) → 1,6 sn soru balonu ("?")
+  telefondan çıkıp sola yükseliyor → 2,3 sn sağda öğretmenin sarı balonu, zıplayan
+  "yazıyor" noktaları → 3,6 sn noktalar video ▶ oluyor, tavşan seviniyor (zıplama, gülen
+  göz/ağız, kulaklar) → 5,0 sn balonlar sönüyor. Balon = hap + kuyruk `Path.op(UNION)`.
+  Önizlemede (scratchpad `proto18`) sabit karelerle kontrol edildi.
+- **`fragment_ask_question_open`:** ortadaki Lottie (`chating_anim.json`, renkleri uymuyordu)
+  yerine `BunnyMascotView` (`mascotView`), `AskQuestionOpenFragment.onViewCreated`'da
+  `play(CHAT)`. Eski `centerGraphic` kodda kullanılmıyordu. `chating_anim.json` kullanıcının
+  onayıyla silindi (`git rm`, ~400 KB).
+- Kullanıcı: "telefonun önünü görüyoruz, mantıken arkasını görmeliyiz" → telefon ARKADAN
+  çiziliyor: kenarlı kılıf, sol üstte kamera adası (iki lens + flaş), ortada logo
+  (önizleme `proto19`).
+- **Yeni seri ekranı için iki aday (kuruldu, deneme kartında; kullanıcı seçecek):**
+  `NewStreakFragment`'taki alev Lottie'sinin (`fire_anim.json`) yerine. Alev seri simgesi
+  (üst bar, seri ekranı, ders paneli, kayıt akışı), bu yüzden ikisi de aleve bağlı.
+  - `FLAME` (döngülü): sağ elde meşale gibi `streak_flame_ic` + radyal hale (tek
+    gölgelendirici, ölçekle boyutlanıyor); titreme tabandan esneme + sallanma. Boy
+    `FLAME_H` (3 → 30, 5 → 38, 7 → 46 birim), her büyümede zıplama + sevinç. Avuçta tutma
+    da denendi (önizleme `proto20`): göğüste küçük kalıyordu.
+  - `CALENDAR` (döngülü): önde beyaz takvim (mavi bant, halkalar), seçilen gün kadar kutu
+    0,35 sn arayla işaretleniyor (baş sallama), hepsi dolunca köşede küçük alev + sevinç,
+    4,6 sn'de işaretler siliniyor.
+  - `streakDays`: −1 deneme (alev 2 sn'de bir 3 → 5 → 7; takvim her turda sıradaki),
+    0 seçim yok, 3/5/7 seçilen (değişince alev büyüyüp seviniyor, takvim baştan).
+  - **Kullanıcı ALEV'i seçti ve kayıt akışının da değişmesini istedi (kuruldu, cihazda
+    görülmedi, commit edilmedi):**
+    - `fragment_new_streak`: `newStreakLottie` (fire_anim) → `newStreakMascot` (190dp,
+      üst boşluk 72 → 48dp, toplam yükseklik ~aynı). `onViewCreated`: `streakDays = 0` +
+      `play(FLAME)`; seçenek seçilince `streakDays = value` → alev büyüyüp seviniyor.
+    - `fragment_user_info` niyet sayfası: `challengeIntroLottie` → `challengeIntroMascot`
+      (200dp); `bindStep(CHALLENGE_INTRO)`'da `play(FLAME)` (gizli kapta önceden
+      başlatılsa açılışta beliriş görünmezdi). Kayıt akışında gün sorusu ayrı kapta
+      (hedef sorusuyla ortak) ve orada maskot YOK; alevin seçimle büyümesi yalnızca yeni
+      seri ekranında.
+    - `fire_anim.json` başka yerlerde kullanılmaya devam ediyor (üst bar, seri ekranı,
+      ders paneli).
+    - **Kullanıcı düzeltmesi:** niyet sayfalarında ALEV YOK — tavşan iki kez selam verip
+      beklemeye geçiyor (`play(GREET, times = 2)`; `play`'e `times` eklendi, tekrarlar
+      arasında beklemeye dönmüyor). Alev gün sorusunda geliyor: yeni seri ekranında
+      `showQuestion`'da `streakDays = 0` + `play(FLAME)`; kayıt akışında gün sorusu
+      kabına (`streakContainer`, hedef sorusuyla ortak) `streakMascot` (150dp) eklendi,
+      yalnızca CHALLENGE adımında görünüyor (hedef adımında GONE, başlık tepeye çıkıyor);
+      `bindStep(CHALLENGE)`'da başlatılıyor (seçimde yeniden çizilen
+      `renderChallengeStep`'te değil, yoksa her seçimde baştan başlardı).
+- **Kayıt akışı hatası (kuruldu, cihazda denenmedi):** soruları cevaplayıp kayıt olmadan
+  geri dönen çocuk bir sonraki girişte seri sorularını görmüyordu (yalnızca yaş + kaynak).
+  Sebep: `markOnboardingDone` seri soruları cevaplanınca, kayıt BİTMEDEN konuyor;
+  `UserInfoFragment` `!isOnboardingDone` ise soruyordu; sahipsiz cihazda
+  `prepareForNewAccount` işareti silmiyor. Düzeltme: öğrenciye seri soruları her seferinde
+  soruluyor (`streakStepsEnabled = !forceTeacher`). Bu ekran yalnızca yeni hesap açarken
+  açıldığı için yeniden sormak her zaman doğru; `isOnboardingDone` artık yalnızca sunucu
+  eşitlemesinde (hedefi sunucudan alma) kullanılıyor.
+- **Pro ekranı (`fragment_pro_diffirent`, roket Lottie'si) için üç aday (kuruldu, deneme
+  kartında; kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** hepsi döngülü.
+  - `JETPACK`: sırtta iki gümüş tüp (gövdenin iki yanından görünüyor), memelerden aşağı
+    yanan alev (`drawFlame` ters ölçekle), düşen kıvılcımlar; `LIFT` hedefi 14 (havada
+    süzülüyor, beklemeye dönünce yumuşakça iniyor), kollar açık, ayaklar sallanıyor.
+  - `HERO`: kırmızı pelerin (yanları rüzgârla açılıp kapanıyor, alt kenar dalgalı;
+    `cubicTo/quadTo` yolu), göğüste PRO rozeti (`bg_shop_super_badge`'in yeşil → mavi →
+    mor geçişi, `LinearGradient` bir kez kuruluyor), sağ kol 45° havada, sol kol kalçada.
+  - `CROWN`: kafayla dönen yan yatık altın taç (3 uç, mücevherli bant), uçlarda sırayla
+    parıltı; zafer işareti + göz kırpma.
+  - Önizleme: scratchpad `proto22`. (Bir ara "geri al" isteğiyle kaldırılmıştı; kullanıcı
+    kartta görmek istediğini söyleyince aynen geri eklendi.)
+  - **Kullanıcı TAÇ'ı seçti (kuruldu, cihazda görülmedi, commit edilmedi):**
+    `fragment_pro_diffirent`'taki `centerMascot` Lottie (roket) → `BunnyMascotView` (aynı
+    id; kodda zaten kullanılmıyordu), genişlik %50 → %75 (tavşan karesinin yarısı kadar),
+    üst 8dp / alt 24dp boşluk. `ProDiffirentFragment.onViewCreated`: `play(CROWN)`.
+    `rocket_anim.json` `PartCardAdapter`'da kullanıldığı için silinmedi. Jetpack ve süper
+    kahraman deneme kartında duruyor.
+- **Reklam atlama paneli (`fragment_ad_skip`, timsah Lottie'si; geçiş reklamı kapanınca
+  çıkıyor, "7 günlük ücretsiz PRO denemesiyle reklamları atla!") için üç aday (kuruldu,
+  deneme kartında; kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** hepsi döngülü,
+  sahne nesneleri (`drawAdProps`) yerde sabit, tavşandan önce çiziliyor.
+  - `AD_JUMP` "Reklamı atla": sağdan REKLAM yazılı TV kayıyor, tavşan üstünden zıplıyor
+    (Türkçe "atla" kelime oyunu). Zıplama (yükseklik 42, 1,1 sn) TV gövdesi ve kısa antenler
+    ayak altındayken havada kalacak şekilde hesaplandı (node ile kontrol edildi);
+    kulaklar tepede görünümden taşmıyor. Önce TV'ye bakıp çömeliyor, inince uğurlayıp seviniyor.
+  - `AD_BUTTON` "Atla düğmesi": sağda "Atla ⏭" düğmesi; pati hazırda bekleyip basıyor,
+    düğme gömülüp maviye dönüyor, yıldızlar, sağa kayıp kayboluyor. **Kullanıcı değiştirdi
+    (zıplayarak sevinç yerine):** yukarıdan önce taç (1,45 sn), sonra havalı güneş gözlüğü
+    (1,7 sn) hızlanarak düşüyor, inişte küçük sekme + kafa sarsılması; tavşan yukarı bakıyor;
+    2,2 sn'den itibaren havalı poz: köpeğin elleriyle kavuşturulmuş kollar, arkaya yaslanma
+    (−4°), baş yana (−7°), açık ayaklar, yarım gülümseme; gözlük inince sağ camda parıltı;
+    4,0 sn'de taç ve gözlük sönüyor (tur 4,4 sn). Gözlük kullanıcının eklediği
+    `res/drawable/cool_glasses.xml`: kafa silinince gözlük 512'lik karenin üst yarısında
+    kalmıştı → görüntü alanı 512×196'ya daraltıldı, yollar bir `group translateY=-119` ile
+    ortalandı (yollara dokunulmadı). Camların ortası gözlerin ortasına oturacak şekilde
+    ölçekleniyor (`GLASSES_*`). Önizleme `proto25`.
+  - `AD_PUSH` "Reklamı itme": iki direkli REKLAM tabelası; kedi koluyla yaslanıp itiyor
+    (gövde 8° eğik, 8 birim kayık, gözler sıkılı, ağız "O"), tabela sallanarak hızlanıp
+    çıkıyor; sonra köpeğin elleriyle el çırpma + sevinç.
+  - Önizleme: scratchpad `proto23` (`make23.js`).
+- **Kayıt soruları ekranı (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - "Başla"ya basınca `UserInfoFragment` artık kaymadan, doğrudan geliyor
+    (`LoginStartActivity.showUserInfoFragment`'tan `setCustomAnimations` kaldırıldı; geri
+    dönüş de animasyonsuz).
+  - Adım çubuğu görevlerdeki çubuk tasarımında: `ProgressBar` → `FrameLayout`
+    (`userInfoProgress`, kısıtlar aynı id'ye bağlı) + zemin/dolgu/parlama (18dp,
+    `mission_progress_track`), çizim `applyMissionProgressOverlayNow` (mavi). Adımlar arası
+    akış `ValueAnimator` ile korunuyor; ilk çizimde genişlik yoksa ölçüm sonrası
+    (`applyMissionProgressOverlay`). Animatör `onDestroyView`'da iptal.
+- **Kayıt bilgi soruları (yaş, kaynak, hedef) için üç aday (kuruldu, deneme kartında;
+  kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** Duo'nun kâğıt-kalemi birebir
+  kopyalanmasın istendi. Hepsi döngülü.
+  - `BOARD` "Kara tahta": tavşan 14 sola kayıyor, sağında şövaleli yeşil tahta; tebeşirli
+    el tahtanın sol kenarında (kol kaydırılınca kökü gövdeden ayrılıyordu — o yüzden yazı
+    soldan sağa kırpmayla beliriyor, el yerinde yazma hareketi yapıyor), sonra altı çiziliyor,
+    baş sallama, sevinç, silme. Deneme örnekleri her turda: "9 yaş", "YouTube", "10 dk".
+  - `LISTEN` "Dinleyen tavşan": düşünme kolu 72°'de (el yüzün yanında), sağ kulak 26° eğik;
+    2. sn'de kulak dikiliyor, iki baş sallama, sağ üstte ✓ balonu.
+  - `NOTEBOOK` "Havuç kalem": köpeğin elleri tek tek kayabiliyor (`FRONT_L_X`, `FRONT_R_X/Y`;
+    kaydıkça el gölgeleri siliniyor). **Kullanıcı düzeltmesi:** "bize doğru yazıyormuş gibi"
+    duruyordu → defterin ARKA kapağını görüyoruz (kırmızı kapak, spiral, beyaz etiket, yıldız
+    çıkartması; yazı/satır yok). Çizim sırası: sağ el → havuç → defter → sol el
+    (`drawFrontHands(left/right)` tek eli çizebiliyor). Havuç kullanıcının
+    `res/drawable/carrot_ic.xml`'i (ikon zaten yazma açısında; uç ≈(55,505)); tutma noktası
+    gövdenin ortası (180,330), ölçek 0,08 — ucu kapağın arkasında, üst gövde ve yapraklar
+    kapağın üstünden görünüyor (havuç elin arkasındayken turuncu gövde hiç görünmüyordu).
+    El, kapağın arkasındaki iki "satırda" (y 222/230) gidip geliyor. Önizleme `proto27`.
+  - Önizleme: scratchpad `proto24` (`make24.js`, `proto24_parts.js`).
+- **Reklam paneli için iki değnek adayı (kuruldu, deneme kartında; kullanıcı seçecek):**
+  kullanıcı "Atla düğmesi" yerine sihirli değnek fikri getirdi; seçenek 1 ve 3 yapıldı.
+  Billboard kullanıcının `res/drawable/billboard.xml`'i (512'lik, tabela + direk; sahnede
+  yerde, tavşanın sağında ~87 birim). Değnek ve yasak işareti kodla çiziliyor.
+  - `AD_ZAP` "Değnek + yıldırım": değnek elde beliriyor, "abra kadabra" diye daire
+    çizerek sallanıyor (kol açısına iki frekanslı sinüs, ağız konuşuyor, uçta sönen yıldız
+    izi), billboarda doğrultuyor; yıldırım (zikzak, sarı + beyaz; yumuşak hale, ekranı
+    bembeyaz yapan flaş YOK) birkaç kez yanıp sönüyor; billboard kararıyor
+    (`LightingColorFilter`), tabandan çöküp kül yığınına dönüşüyor, közler ve duman.
+  - `AD_MAGIC` "Değnek + yasak işareti": aynı sallama; değnek ucundan billboarda yay
+    çizerek uçan parıltılar, kırmızı yasak işareti büyükten küçülerek "pat" diye basılıyor
+    (billboard sarsılıyor), billboard yıldız tozuna dönüşüp kayboluyor.
+  - İkisi de "Atla düğmesi"yle aynı finale bağlı: `coolFinale(e, crownS, fadeS)` (taç →
+    0,25 sn sonra gözlük → havalı poz; gözlük parıltısı `glassesSparkleT`). AD_BUTTON da
+    artık bunu kullanıyor.
+  - Önizleme `proto28` (`make28.js`).
+- **Kayıt bilgi soruları — havuç kalem seçildi (kuruldu, cihazda görülmedi, commit
+  edilmedi):** Duolingo'daki gibi sol üstte maskot, sağında konuşma balonunda soru.
+  Kullanıcı telif riskini sordu: kalıp (karakter + soru balonu) yaygın bir arayüz kalıbı,
+  karakter/çizim/renkler bizim; Duolingo yeşili ve baykuşa özgü öğe kullanılmadı.
+  - `fragment_user_info`: `questionHeader` (çubuğun altında) = `questionMascot` (108dp,
+    `play(NOTEBOOK)` döngüde) + `questionBubble` (arka plan `SpeechBubbleDrawable`: koyu
+    zemin, `missions_track` kenar, sola bakan kuyruk; kutu+kuyruk `Path.op(UNION)`).
+  - Yaş/kaynak/hedef soruları balonda (`bindQuestionHeader`); eski başlıklar (`tvTitle`,
+    `tvSourceTitle`, kodda kullanılmıyordu) kaldırıldı; hedef adımında `streakStepTitle`
+    gizli, gün sorusunda görünür. Soru değişince balon küçükten büyüyerek beliriyor.
+  - Niyet ve gün sorusu adımlarında başlık satırı GONE; kaplar `layout_goneMarginTop=40dp`
+    ile eskisi gibi çubuğun altına çıkıyor.
+- **Kayıt akışı maskot düzeltmeleri + reklam paneli (derlendi ve telefon bağlanınca
+  kuruldu; cihazda görülmedi; commit edilmedi):**
+  - Havuç kalem artık iki hâlli: `NOTEBOOK_HOLD` (döngü: defter ve havuç elde, kalem satır
+    başında havada, sana bakıyor) ve `NOTEBOOK_WRITE` (tek sefer ~2,3 sn: iki satır yazıp
+    baş sallıyor). `play(emote, times, then)`'e `then` eklendi: hâl bitince beklemeye değil
+    ona geçiliyor. UserInfoFragment: başta HOLD; yaş/kaynak/hedef "Devam Et"inde (geçerlilik
+    kontrolünden SONRA) `play(NOTEBOOK_WRITE, then = NOTEBOOK_HOLD)`. Başlık satırı kayan
+    kapların dışında olduğu için yazma, bir sonraki soru gelirken de sürüyor.
+  - Seri adımları: niyet ve gün sorusunda iki ayrı tavşan vardı ve kapla birlikte kayıyordu
+    (kullanıcı: "yeni tavşan yandan kayarak geliyor"). Artık tek ortak `streakMascot`
+    (170dp) kapların DIŞINDA; yalnızca yazılar kayıyor. Niyette `play(GREET, 2)`, gün sorusuna
+    geçince (yazılar değişirken, `bindStep`) `play(FLAME)`. Kaplar
+    `stepTopBarrier`'a bağlı (questionHeader + streakMascot'un altı; GONE olan çubuğun altına
+    çökmüş sayılıyor). `challengeIntroMascot` silindi.
+  - `fragment_ad_skip`: timsah Lottie (`centerGraphic`) → `BunnyMascotView` (aynı id,
+    genişlik %60 → %85), `AdSkipFragment.onViewCreated`'da `play(AD_MAGIC)`.
+    `crocodile_anim.json` rozet/kupa/görevlerde kullanıldığı için silinmedi.
+- **Kayıt ekranı küçük düzeltmeler (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - Balondaki soru adım değişince daktilo gibi hızlı yazılıyor (`typeQuestion`, harf başına
+    22 ms; metin baştan tamamı konup yazılmamış kısım şeffaf `ForegroundColorSpan` — harf
+    harf eklense balon satır kaydıkça büyüyüp zıplardı). Önceki "küçükten büyüme" kaldırıldı.
+  - Kayıttaki niyet sayfasında tavşan iki kez selam yerine `SHY` (utangaç) oynuyor; yeni seri
+    ekranı (ders sonu) değişmedi, orada hâlâ iki kez selam.
+  - Kullanıcı isteği: niyet sayfasında tavşan sürekli utangaç kalsın (tek sefer oynayıp
+    beklemeye dönüyordu). `play(SHY, times = Int.MAX_VALUE)`: tekrarlar arasında hâl
+    bırakılmadığı için duruş korunuyor; yeni bir `loops` hâli eklemeye gerek olmadı.
+    Kuruldu, cihazda görülmedi.
+  - `login_start` (`LoginStartActivity.kt`, `activity_login_start.xml`) dosyalarında kullanıcının
+    kendi değişiklikleri var: dokunma, üzerine yazma.
+- **Kayıt akışı mevcut hesaba dokunmuyor (kuruldu, cihazda denenmedi, commit edilmedi):**
+  kullanıcı çıkış yapıp kayıt sorularını cevaplayıp Google ile ZATEN KAYITLI hesaba girdi
+  (logcat 23:00–23:01). İki sorun bulundu ve düzeltildi:
+  1. Kayıtta seçilen hedef (20 dk) mevcut hesabın hedefini (sunucuda 5 dk) sessizce
+     değiştiriyordu (yerel 20, ilk tutturulan günde sunucuya da gidecekti); meydan okuma ve
+     hatırlatma saati de aynı yoldan ezilebiliyordu.
+  2. Kayıt ekranı AÇILIR AÇILMAZ (`prepareForNewAccount`) önceki hesabın cihazdaki seri
+     verisi siliniyordu: bugünkü dakikalar ve gönderilmemiş günler gidiyordu.
+  Çözüm: kayıt cevapları ayrı dosyada bekliyor (`StreakRepository.savePendingSignup`,
+  `streak_signup_pending`); MainActivity `bindToUser`'dan hemen sonra `applyPendingSignup`:
+  Firebase hesabı son 10 dk'da açıldıysa (RegisterActivity'deki kayıt ölçümüyle aynı yöntem)
+  hedef/meydan okuma/saat + onboarding + yeni seri sorusu işareti uygulanıyor, değilse
+  atılıyor (StreakDiag `Repo.kayitCevaplari`). `prepareForNewAccount` kaldırıldı; silme artık
+  yalnızca `bindToUser`'da, oturum başka hesaba geçince. Kayıt seçimleri cihaz değerinden
+  değil varsayılandan (5 dk, 19:00) başlıyor.
+  - Bu telefonda önceki denemeden kalan uyumsuzluk: yerel hedef 20 dk, sunucu 5 dk.
+- **Çalışma süresi cihaza özel:** `StudyTimeTracker` yalnızca telefonda (`study_time`
+  prefs), sunucuya gitmiyor. Başka cihazda bugünkü süre 0 görünür; dakikalar cihazlar
+  arasında toplanmıyor, gün ancak tek cihaz hedefi tutturunca seriye işleniyor (sonra
+  sunucudan diğer cihaza geliyor). Aynı cihazda başka hesaba geçince de siliniyor. Veli
+  panelindeki `TimeTracker`/`dailyTimeSpent` ayrı bir ölçü (uygulama açık kalma süresi).
+- **Soru başlığındaki tavşan büyüdü (kuruldu, cihazda görülmedi):** `questionMascot`
+  108 → 140dp (kullanıcı: küçük görünüyor). Balon sağında kaldığı için daraldı (~180dp metin
+  genişliği, en uzun soru ~3 satır, tavşan boyunu geçmiyor). Tanışmadan kayan tavşan ölçeği
+  bu görünümden hesaplandığı için ayrıca bir değişiklik gerekmedi.
+- **Üç küçük düzeltme (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - Giriş ekranı (`activity_login_start.xml`, kullanıcının kendi değişiklikleri korundu):
+    tavşan + başlık + metin tek dikey zincir (packed, bias 1), "Başla"nın hemen üstüne
+    yaslanıyor; metnin alt boşluğu 40 → 28dp. Tavşan tam ortaya sabitlenemedi: bu telefonda
+    (393×873dp) metin düğmeye biniyordu, küçük ekranda ~70dp. Şimdi merkezin ~35dp üstünde
+    (hesap, cihazda ölçülmedi). Tam orta istenirse tavşanı %70 → ~%62 küçültmek gerekiyor.
+  - "Bizi nereden duydun?" seçenekleri ikişerli kart ızgarası yerine günlük hedef satırlarının
+    aynısı (`StreakViews.buildOptionRows`, alt alta, gri); `renderSourceStep`. Kaydedilen
+    değerler aynı, istatistik anahtarları değişmedi. 8 kart XML'den silindi.
+    Sonra (kullanıcı isteği): `sources` = (kaydedilen değer → görünen ad) listesi; "Youtube"
+    değer olarak kaldı, ekranda "YouTube"; "Arkadaş/Aile"nin ardına yeni **"Okul/Öğretmen"**
+    (sunucu `acquisitionSource`'u serbest metin alıyor, izin listesi yok). Sıra karıştırılmıyor
+    (kullanıcı istemedi).
+  - Giriş ekranında `tvBody` alt boşluğunu kullanıcı kendisi 48dp yaptı; dokunma.
+- **Kayıtta hatırlatma sorusu + seçilebilir hatırlatma saati (kuruldu, cihazda görülmedi,
+  commit edilmedi, FUNCTIONS DEPLOY EDİLMEDİ):** kullanıcı önerilerin hepsini seçti.
+  - `Step.REMINDER` (gün sorusundan sonra, son soru; tanışma artık "5 kısa sorum" diyor).
+    Başlık "Sobi sana her gün hatırlatsın mı?", alt yazı "Saati istediğin zaman
+    değiştirebilirsin"; satırlar diğer sorularla aynı (`StreakViews.buildReminderRows`):
+    Okuldan sonra 16:00 / Akşamüstü 18:00 / Akşam 19:00 / Yemekten sonra 20:00, 19:00 seçili.
+    Düğmeler "Evet, hatırlat" (Android 13+ bildirim izni penceresi, sonuç ne olursa olsun
+    kayda devam) ve yeni `btnLater` "Şimdi değil" (izin sorulmaz). İkisinde de saat
+    kaydediliyor ve `MainActivity.markNotificationPermissionPrompted` ile ana ekranın ilk
+    açılıştaki bağlamsız izin isteği kapanıyor.
+  - Sobi yerinde (ortak `streakMascot`), yalnızca hâl değişiyor: yeni `Emote.ALARM` — önde
+    iki çanlı kırmızı çalar saat, patiler arkadan tutuyor (saat patilerin ÖNÜNDE çiziliyor),
+    kadranda seçili saat (`alarmHour`). Seçim değişince akrep yaylı dönüyor, yelkovan aradaki
+    her saat için bir tur atıyor, saat hemen çalıyor (titreme, çekiç, ses çizgileri, küçük
+    zıplama); her turda bir kez de kendiliğinden çalıyor. Önizleme: scratchpad
+    `maskot/make29.js` → `proto29.png`. Oyun alanında (Karakter Animasyonu) saatler kendi
+    kendine dönüyor (`alarmHour = -1`).
+  - Kullanıcı isteği: hazır saatlerin altına **"Başka bir saat"** satırı
+    (`StreakViews.buildReminderRows(..., onCustom)`); dokununca 24 tam saatlik ızgara penceresi
+    (`StreakViews.showHourPicker`, 4 sütun, 06:00'dan başlıyor, gece saatleri sonda, dakika
+    yok). Hazırlardan biri değilse o satır seçili ve sağında saat yazıyor. Kayıtta ve seri
+    ekranında aynı. Sunucu 0–23'ü zaten kabul ediyordu, değişiklik gerekmedi. Gün/hedef/
+    hatırlatma seçenekleri artık kaydırılabilir (`streakOptions` bir ScrollView içinde): 5
+    satır bu telefona ancak sığıyordu.
+  - Seri ekranı: "Günlük hedefi değiştir"in altına "Bildirim saatini değiştir · 19:00"
+    (`streakChangeReminder`, aynı pencere); izin yoksa orada da soruluyor.
+  - Saklama/eşitleme: `StreakRepository.reminderHour/setReminderHour` + "gönderilmedi"
+    işareti; saat YALNIZCA bu cihazda seçildiyse `submitStreakDay`'e `reminderHour` olarak
+    gidiyor (yeni cihazın varsayılanı sunucudaki seçimi ezmesin), sunucudaki
+    `reminderLocalHour` yanıttan ve doküman okumasından geri alınıyor.
+  - Sunucu (`functions/streakReminder.js`, `index.js`): `normalizeReminderHour`,
+    `reminderHourUtc(offset, localHour)`, `reminderPatch` önceliği seçilen > kayıtlı > 19:00,
+    `readStreakState.reminderLocalHour`, yanıtlarda `reminderLocalHour`. Günsüz çağrıda
+    doküman yoksa artık YALNIZCA saat seçildiyse oluşturuluyor (yeni kayıt olmuş, hedef
+    tutturmamış çocuk hatırlatmayı ilk günden alsın). Eski istemciler etkilenmiyor.
+    Testler: `node functions/scripts/test-streak-reminder.js` 32/32, diğer seri testleri geçti.
+  - Ölçüm: `STREAK_STAGE_REMINDER`, yeni olay `streak_reminder_set` (saat, kaynak, seçim
+    yes/later, izin granted/denied/not_needed/not_asked).
+  - **Deploy gerekiyor:** functions değişmeden uygulama saati gönderir ama sunucu yok sayar
+    (herkes 19:00'da kalır). `claude/**` dalına push = deploy, önce kullanıcıya sor.
+  - Alt sistem çubuğu: koyu temada (`values-night/themes.xml`) varsayılan
+    `navigationBarColor` `message_topbar`'dı (#111416, zeminden koyu); `background_color`
+    yapıldı. Kendi rengini koddan vermeyen 5 ekran düzeldi: Login, Register, TeacherLogin,
+    TeacherOtp, EmailVerification. Main/Splash/LoginStart zaten koddan aynı rengi veriyordu.
+- **Kayıtta maskotla tanışma (kuruldu, cihazda görülmedi, commit edilmedi):** Başla'dan sonra,
+  yaş sorusundan ÖNCE iki ekran (yalnızca öğrenci; öğretmen doğrudan yaştan başlıyor, "ilk
+  dersinden önce" ona uymuyor). Duolingo'nun tanışma ekranlarından esinlenildi (kullanıcı
+  ekran görüntüsü verdi); metin kendi sesimizle yazıldı, birebir değil.
+  - `Step.MEET`: ortada tavşan (180dp), üstünde aşağı kuyruklu balon (daktilo): "Selamlar!
+    Benim adım Sobi!"; `repeatWithPause(GREET, 2000)` = el salla, 2 sn bekle, tekrar.
+  - `Step.BRIEF`: "İlk dersinden önce seni tanımak için sadece **4 kısa sorum** var!" (sayı
+    `Step.asks` olan adımlardan: yaş, kaynak, hedef, gün); `repeatWithPause(CLAP, 2000)`.
+    İki tanışma ekranı arasında kayma yok, yalnızca yazı ve hâl değişiyor.
+  - Devam → `leaveIntro`: balon soluyor, tavşan `stop()` ile beklemeye dönerken küçülerek
+    soru başlığındaki maskotun yerine kayıyor (450 ms), varınca o maskot görünüp defterini
+    çıkarıyor (NOTEBOOK_HOLD), yaş sorusu balona yazılıyor. Geri tuşunda `returnToIntro` tersini
+    yapıyor. Soru başlığı tanışmada INVISIBLE (hedef konum ölçülü kalsın), tanışma kabı sonra
+    INVISIBLE (dönüşte orta konum ölçülü kalsın).
+  - İlerleme çubuğu tanışmada gizli ve sayılmıyor; `progressFor` artık `flowSteps` üzerinden.
+  - **İsim tek yerde:** `strings.xml` → `mascot_name` (şimdilik "Sobi", kullanıcıyla isim
+    kararı açık).
+  - Yeni: `BunnyMascotView.repeatWithPause/stop` (otomatik selam düzeneğinin genellemesi; giriş
+    ekranının `autoGreetIntervalMs` kullanımı değişmedi), `SpeechBubbleDrawable` alt kuyruk
+    (`TailSide.BOTTOM`; parametreler `tailLength/tailBase` oldu).
+  - Huni: öğrencide açılışta `SIGNUP_INTRO = "intro"`, `age` artık yaş sorusuna VARINCA
+    (tanışmadan devam edince) sayılıyor. GA4 hunisine "intro" adımı eklenmeli.
+- **Kayıtta yeni "ilerleme yolu" ekranı (kuruldu, cihazda görülmedi, commit edilmedi):**
+  GOAL ("Her gün ne kadar…") adımından hemen sonra, `Step.ROADMAP`. Mimo'nun benzer
+  ekranından esinlenildi; kullanıcı seçeneklerden **D + B1 + Z2**'yi seçti:
+  - Başlık balonda (daktilo): "Her gün **N dakikayla** buraya varacaksın!" (N altın, kalın).
+  - Adımlar: Abaküsü tanı (`abacus_svg_ic`, BUGÜN) · Serini büyüt (`streak_flame_ic`,
+    bugün+7 gün, ör. "10 EKİM") · Kafadan hesap ustası ol (`brain`, kullanıcının eklediği
+    çizim; ay+yıl, ör. "OCAK 2027"). Kullanıcı isteğiyle 2. adımdaki "Her gün N dakikayla"
+    kaldırıldı (başlıkta zaten var), 3. adımda kristal yerine beyin.
+  - Çizim `LearningPathView` (yeni): soldan yükselen basamaklı **abaküs teli** (mavi → yeşil →
+    altın), adımlar telin üstünde açık zeminli yuvarlak boncuklarda, yazılar altlarında, telin
+    ucunda altın **ok başı** (kullanıcı havuç yerine ok istedi; çentikli, köşeleri yuvarlak,
+    40° eğimli); altta zaman çizgisi + etiketler. Tel ve zaman çizgisi soldan çiziliyor
+    (900 ms), ok başı ucunda beliriyor, sonra her adımda boncuk → yazı → etiket 0→%120→%100
+    (toplam ~2,8 sn; kap kayarak gelince başlıyor, geri dönünce baştan oynuyor). Mimo'dan
+    ayrışma: basamaklı tel, mor-pembe yok, kendi metin/ikonlarımız.
+  - Tarih `LearningPathPlan` (yeni): 1–4. bölümlerin (körleme toplamanın sonuna kadar) ders
+    adımları müfredattan sayılıyor (şu an 190 adım) × **adım başına 4 dk** ÷ günlük hedef,
+    **haftada 5 gün** çalışma varsayımıyla. Bugün (3 Eki 2026) için: 20 dk → KASIM 2026,
+    10 dk → OCAK 2027, 5 dk → MAYIS 2027. **İki sayı da varsayım**; Analytics'teki
+    `lesson_step_pass` `elapsedMs` ortancasıyla `MINUTES_PER_STEP` düzeltilmeli.
+  - İlerleme çubuğu toplamı artık `Step.entries.size` (6); geri tuşu ROADMAP ↔ GOAL/niyet.
+    Huniye `STREAK_STAGE_ROADMAP = "roadmap"` eklendi (yeni ekran kayıp yaratıyor mu).
+  - Önizleme: scratchpad `yol/make.js` (yerleşim hesabının JS kopyası, headless Edge).
+- **Reklam atlama paneli her reklamdan sonra (geçici, test için):** kullanıcı "şimdilik her
+  reklamdan sonra gelsin" dedi. Seyreklik kuralları (4 reklamda bir, 2 saat ara, günde 2)
+  silinmedi; yeni `AdSkipDebug` anahtarı (`NewStreakPromptDebug` kalıbı, `BuildConfig.DEBUG`
+  ile çarpılıyor, release'e sızmaz) açıkken `AdSkipPolicy.onAdClosed` her UYGUN reklamda
+  true dönüyor (`eligible = false` kararları geçerli).
+- **Satış ekranlarında telefon çubuk renkleri (kuruldu, cihazda görülmedi, commit edilmedi):**
+  `fragment_ad_skip`, `fragment_pro_diffirent`, `fragment_ask_question_open` ve `fragment_plan`
+  `Theme_*_NoTitleBar_Fullscreen` dialog'ları: tema durum çubuğunu gizliyordu (tepede sistemin
+  siyah bandı) ve gezinme çubuğu sistem renginde kalıyordu. Yeni `SystemBarColors.applyToDialog`
+  (her ekranın `onViewCreated`'ında BİR kez — `onStart` her öne gelişte çalışıyor, Android 15+
+  dolguları üst üste eklenirdi): FLAG_FULLSCREEN temizleniyor, durum çubuğu görünür ve üst
+  renge, gezinme çubuğu alt renge boyanıyor, simgeler zemine göre açık/koyu. Üç lacivert
+  ekranda üst `paywall_navy` (#050C38, yeni renk kaynağı), alt beyaz; plan baştan sona
+  beyaz. Android 15+ (çubuk rengi yok sayılıyor, içerik çubukların altına uzanıyor) için
+  üst görünüme durum çubuğu, alt beyaz bölüme gezinme çubuğu kadar dolgu ekleniyor;
+  telefon Android 13 olduğu için o yol DENENMEDİ.
+- **TEST ANAHTARLARI AÇIK:** `NewStreakPromptDebug.FORCE = true` ve `AdSkipDebug.FORCE = true`
+  (kullanıcı istedi). Commit'ten önce ikisi de `false` yapılmalı.
 
 ## Yakında yapılanlar — tekrar etmeyin
 

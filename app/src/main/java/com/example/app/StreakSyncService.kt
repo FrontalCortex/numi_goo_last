@@ -94,6 +94,10 @@ object StreakSyncService {
                     ?.mapNotNull { it as? String }
                     ?.toSet()
                     .orEmpty()
+                // Hatırlatma saati de geri geliyor: başka cihazda seçilmiş olabilir.
+                (doc.get("reminderLocalHour") as? Number)?.toInt()?.let {
+                    StreakRepository.adoptServerReminderHour(context, it)
+                }
                 StreakRepository.adoptServerState(
                     context, current, longest, lastDay, claimed, recentDays,
                     // Hedef/meydan okuma da geri geliyor: hesabı olup yeni cihaza kurulum
@@ -167,6 +171,11 @@ object StreakSyncService {
             // sayabilir ve mağazadaki yeni alımı "zaten var" diye reddedebilirdi.
             "today" to StudyTimeTracker.dayId(),
         )
+        // Hatırlatma saati yalnızca bu cihazda seçildiyse gidiyor (bkz. StreakRepository):
+        // her seferinde gönderilseydi yeni cihazın varsayılanı sunucudaki seçimi ezerdi.
+        val sentReminderHour =
+            if (StreakRepository.reminderHourPending(context)) StreakRepository.reminderHour(context) else null
+        if (sentReminderHour != null) payload["reminderHour"] = sentReminderHour
         StreakDiag.log(
             "Sync.gonder",
             "GONDERILIYOR gunler=$days hedef=${StreakRepository.goalMinutes(context)} " +
@@ -201,6 +210,10 @@ object StreakSyncService {
                         "challengeClaimed=${(data["challengeClaimed"] as? Number)?.toInt()}",
                 )
                 StreakRepository.markDailyPing(context)
+                if (sentReminderHour != null) StreakRepository.onReminderHourSynced(context, sentReminderHour)
+                (data["reminderLocalHour"] as? Number)?.toInt()?.let {
+                    StreakRepository.adoptServerReminderHour(context, it)
+                }
                 // Gönderilen günler kabul edildi; kuyruktan yalnızca ONLAR siliniyor.
                 // Arada yeni bir gün eklenmiş olabilir, o gitmemeli.
                 StreakRepository.onSyncAccepted(context, days, current, longest, claimed)

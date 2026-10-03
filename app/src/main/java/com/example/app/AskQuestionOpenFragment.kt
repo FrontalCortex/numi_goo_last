@@ -76,6 +76,17 @@ class AskQuestionOpenFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Telefonun üst çubuğu lacivert zemine, alt tuşların çubuğu alttaki beyaz bölüme uysun.
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.paywall_navy),
+                bottom = android.graphics.Color.WHITE,
+                topView = binding.root,
+                bottomView = binding.bottomWhiteContainer,
+            )
+        }
+
         welcomeCreditAvailable = WelcomeCreditEligibility.isEligible(requireContext())
 
         viewNoBucket = AskQuestionPromoStats.viewBucket(
@@ -99,6 +110,8 @@ class AskQuestionOpenFragment : DialogFragment() {
         }
 
         bindActions()
+
+        binding.mascotView.play(BunnyMascotView.Emote.CHAT)
 
         binding.btnNoThanks.setOnClickListener {
             logClosed(AnalyticsLogger.PROMO_NO_THANKS)

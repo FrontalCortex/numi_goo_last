@@ -43,6 +43,17 @@ class ProDiffirentFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Telefonun üst çubuğu lacivert zemine, alt tuşların çubuğu alttaki beyaz bölüme uysun.
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.paywall_navy),
+                bottom = android.graphics.Color.WHITE,
+                topView = binding.root,
+                bottomView = binding.bottomWhiteContainer,
+            )
+        }
+
         // Kapı hem bu olaya hem de akışın devamındaki satın alma olaylarına yazılır; bkz. [ProFlow].
         ProFlow.start(entryPoint)
         AnalyticsLogger.logProPanelShown(entryPoint)
@@ -58,6 +69,9 @@ class ProDiffirentFragment : DialogFragment() {
         // Title text formatting
         val titleHtml = "Pro ile daha hızlı öğren, daha fazla pratik yap!"
         binding.tvTitle.text = Html.fromHtml(titleHtml, Html.FROM_HTML_MODE_LEGACY)
+
+        // Maskot taçla "premium" hissi veriyor; ekran açık kaldıkça döngüde.
+        binding.centerMascot.play(BunnyMascotView.Emote.CROWN)
 
         // Click listeners
         binding.btnClose.setOnClickListener {

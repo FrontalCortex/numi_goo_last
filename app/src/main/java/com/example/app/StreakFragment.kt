@@ -53,6 +53,7 @@ class StreakFragment : Fragment() {
 
         binding.btnStreakBack.setOnClickListener { close() }
         binding.streakChangeGoal.setOnClickListener { showGoalPicker() }
+        binding.streakChangeReminder.setOnClickListener { showReminderPicker() }
         binding.streakChallengeClaim.setOnClickListener { claimChallenge() }
         binding.streakFreezeRow.setOnClickListener { openShopForFreeze() }
 
@@ -89,6 +90,8 @@ class StreakFragment : Fragment() {
 
     private fun render() {
         val b = _binding ?: return
+        b.streakChangeReminder.text = "Bildirim saatini değiştir · " +
+            StreakViews.hourText(StreakRepository.reminderHour(requireContext()))
         val state = StreakRepository.refresh(requireContext())
         val alive = state.current > 0
         // Ekranın ne çizdiği de zincirin bir halkası: "kırık yazıyor" bildirimi geldiğinde
@@ -329,6 +332,85 @@ class StreakFragment : Fragment() {
             render()
         }
         dialog.show()
+    }
+
+    // ── Hatırlatma saati ─────────────────────────────────
+
+    /**
+     * Saat seçilince bildirim izni yoksa (Android 13+) burada soruluyor: kayıtta "Şimdi değil"
+     * diyen çocuğun saati ayarlaması hatırlatma istediğini gösteriyor. Sonuç ne olursa olsun
+     * saat kayıtlı; ölçüme izin durumuyla gidiyor.
+     */
+    private val notificationPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        logReminderChange(
+            if (granted) AnalyticsLogger.NOTIF_PERMISSION_GRANTED else AnalyticsLogger.NOTIF_PERMISSION_DENIED,
+        )
+    }
+
+    /**
+     * Hatırlatma saati seçimi; kayıttaki "Sobi sana her gün hatırlatsın mı?" sorusunun
+     * verdiği "saati istediğin zaman değiştirebilirsin" sözünün karşılığı. Hedef penceresiyle
+     * aynı davranış: seçim yapılır yapılmaz kaydedilip kapanıyor. Yeni saat hemen sunucuya
+     * gönderiliyor; bugünün hatırlatması zaten gittiyse ikincisi gelmiyor (günde bir).
+     */
+    private fun showReminderPicker() {
+        if (!isAdded) return
+        val view = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Bildirim saatin"
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            "Sobi sana her gün ne zaman hatırlatsın?"
+        val current = StreakRepository.reminderHour(requireContext())
+        StreakViews.buildReminderRows(
+            view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
+            selected = current,
+            onPick = { hour ->
+                dialog.dismiss()
+                applyReminderHour(hour)
+            },
+            // "Başka bir saat": bu pencere kapanıp 24 saatlik pencere açılıyor.
+            onCustom = {
+                dialog.dismiss()
+                StreakViews.showHourPicker(requireContext(), layoutInflater, current, ::applyReminderHour)
+            },
+        )
+        dialog.show()
+    }
+
+    private fun applyReminderHour(hour: Int) {
+        val context = context ?: return
+        if (hour == StreakRepository.reminderHour(context) &&
+            !StreakRepository.reminderHourPending(context)
+        ) {
+            return
+        }
+        StreakRepository.setReminderHour(context, hour)
+        StreakSyncService.syncPendingDays(context)
+        render()
+        val needsPermission =
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.POST_NOTIFICATIONS,
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (needsPermission) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            logReminderChange(AnalyticsLogger.NOTIF_PERMISSION_NOT_NEEDED)
+        }
+    }
+
+    private fun logReminderChange(permission: String) {
+        val context = context ?: return
+        AnalyticsLogger.logStreakReminderSet(
+            StreakRepository.reminderHour(context),
+            AnalyticsLogger.STREAK_SOURCE_SETTINGS,
+            AnalyticsLogger.REMINDER_CHOICE_YES,
+            permission,
+        )
     }
 
     override fun onDestroyView() {

@@ -137,6 +137,8 @@ class NewStreakFragment : DialogFragment() {
         binding.newStreakOptions.visibility = View.GONE
         binding.newStreakContinue.text = "Devam et"
         setContinueEnabled(true)
+        // Niyet sayfasında maskot iki kez selam verip beklemeye geçiyor; alev gün sorusunda.
+        binding.newStreakMascot.play(BunnyMascotView.Emote.GREET, times = 2)
     }
 
     private fun showQuestion() {
@@ -153,6 +155,9 @@ class NewStreakFragment : DialogFragment() {
         // Bilerek ön seçimsiz: söz kullanıcının kendisinin olmalı.
         setContinueEnabled(false)
         renderOptions()
+        // Gün sorusunda maskotun elinde serinin alevi beliriyor; seçilen gün arttıkça büyüyor.
+        binding.newStreakMascot.streakDays = 0
+        binding.newStreakMascot.play(BunnyMascotView.Emote.FLAME)
 
         // Soru sağdan kayarak gelsin; kayıt akışındaki adım geçişiyle aynı his.
         val density = resources.displayMetrics.density
@@ -178,6 +183,8 @@ class NewStreakFragment : DialogFragment() {
             trailingColor = StreakViews.COLOR_GOLD,
         ) { value ->
             picked = value
+            // Seçilen güne göre alev büyüyor ve tavşan seviniyor: seçimin neyi büyüttüğü görünsün.
+            binding.newStreakMascot.streakDays = value
             setContinueEnabled(true)
             renderOptions()
         }

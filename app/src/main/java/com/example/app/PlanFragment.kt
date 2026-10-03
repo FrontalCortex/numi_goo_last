@@ -37,6 +37,17 @@ class PlanFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Ekran baştan sona beyaz: telefonun üst ve alt çubukları da beyaz (koyu simgeler).
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = android.graphics.Color.WHITE,
+                bottom = android.graphics.Color.WHITE,
+                topView = view,
+                bottomView = view,
+            )
+        }
+
         AnalyticsLogger.logPlanShown()
 
         // Hoş geldin kredisi CİHAZ başına bir kez veriliyor (sunucuda welcomeCreditGrants).
