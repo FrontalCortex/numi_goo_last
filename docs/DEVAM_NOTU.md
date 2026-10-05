@@ -1617,7 +1617,7 @@ Kullanıcı sekme geçişini "hissedemediğini" söyledi: her menü öğesinin t
   profil sekmesi kullanıcının avatarı. Eski `home_ic`, `tasks_ic`, `shop_ic`, `chat_ic`, `explore_ic` artık
   hiçbir yerde kullanılmıyor (silinmedi).
 
-## Avatar: Personas (05.10.2026 — profile bağlandı, kuruldu; commit/deploy edilmedi)
+## Avatar: Personas (05.10.2026 — profile bağlandı; commit 7927804, functions+rules deploy edildi)
 
 **Profile bağlandı:** eski 12'li AvatarPickerFragment, fragment_avatar_picker, avatar_ic1-12 ve
 kullanılmayan profile_ic1/3/4/5 silindi (profile_ic1/3/4/5 index'te "A" olarak duruyordu; diskten
@@ -1685,7 +1685,7 @@ ekranın üstünde tür seçimi. Profile/alt bara bağlanması kullanıcının O
 
 ## Bekleyen deploy
 
-**Push = deploy (03.10.2026'da fark edildi):** `.github/workflows/deploy-functions.yml`,
+**Push = deploy (03.10.2026'da fark edildi):** (05.10: firestore.rules/indexes/storage değişikliği de push ile `deploy-rules.yml` üzerinden gidiyor.) `.github/workflows/deploy-functions.yml`,
 `functions/**` değişikliği içeren her push'ta (`claude/**` dalları; çalışma dalı dahil)
 `firebase-tools deploy --only functions` çalıştırıyor — yani seçici değil, BÜTÜN
 fonksiyonlar gidiyor. Cloud Functions denetim kayıtlarında deploy'lar
@@ -1694,7 +1694,7 @@ fonksiyonlar gidiyor. Cloud Functions denetim kayıtlarında deploy'lar
 kapsıyor. Aşağıdaki "yalnızca şu iki fonksiyon deploy edildi" ifadesi muhtemelen yanlıştı:
 o push hepsini göndermiş olmalı.
 
-**Bekleyen (05.10.2026, avatar):** commit edilmedi, deploy edilmedi.
+**05.10.2026, avatar — DEPLOY EDİLDİ** (commit 7927804, push → "Deploy Cloud Functions" ve "Deploy Firestore & Storage Rules" iş akışları başarılı; rules push ile zaten gitmişti, elle deploy "up to date" dedi). Aşağısı o deploy'un içeriği:
 - `functions/index.js` → `mirrorPublicProfile`: `PUBLIC_PROFILE_FIELDS`'a `avatarConfig` eklendi,
   `selectedAvatar` çıkarıldı. Deploy edilene kadar başkalarının avatarı listelerde/profilde
   görünmez (harfli daire / non_user); kendi avatarın etkilenmez. Mevcut publicProfiles
