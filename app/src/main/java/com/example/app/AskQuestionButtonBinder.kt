@@ -21,7 +21,11 @@ object AskQuestionButtonBinder {
         onAllowedClick: () -> Unit,
         onVisibleChanged: ((visible: Boolean) -> Unit)? = null,
         onReadyForBounce: (() -> Unit)? = null,
+        canPlayWave: () -> Boolean = { true },
     ) {
+        // Renkli ikon ve ara sıra geçen renk dalgası; bkz. AskQuestionButtonStyle.
+        (button as? android.widget.ImageView)?.let { AskQuestionButtonStyle.apply(fragment, it, canPlayWave) }
+
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser == null) {
             button.visibility = View.GONE

@@ -67,6 +67,7 @@ object AnalyticsLogger {
     private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
     private const val EV_PLAN_SHOWN = "plan_shown"
     private const val EV_SIGNUP_STEP = "signup_step"
+    private const val EV_NOTIFICATION_OPENED = "notification_opened"
     private const val EV_QUESTION_ASKED = "question_asked"
     private const val EV_QUESTION_ANSWERED = "question_answered"
     private const val EV_QUESTION_CHAT_OPENED = "question_chat_opened"
@@ -162,6 +163,7 @@ object AnalyticsLogger {
     private const val P_SIGNUP_STAGE = "signup_stage"
     private const val P_SIGNUP_ROLE = "signup_role"
     private const val P_MEDIA_TYPE = "media_type"
+    private const val P_NOTIFY_TOPIC = "notify_topic"
     private const val P_WAIT_HOURS = "wait_hours"
     private const val P_QUESTION_STATUS = "question_status"
     private const val P_UNIT_TITLE = "unit_title"
@@ -1192,6 +1194,27 @@ object AnalyticsLogger {
     /** Üç soru da bitti ve günün ödülü alındı — huninin son adımı. */
     fun logDailyQuestionClaim() = safe { fa ->
         fa.logEvent(EV_DAILY_QUESTION_CLAIM) {}
+    }
+
+    /**
+     * Kullanıcı bir bildirime dokundu.
+     *
+     * ## Neden gerekli
+     * Gönderim sayısını biliyorduk, açılma sayısını bilmiyorduk — yani bir bildirim türünün
+     * işe yarayıp yaramadığı ölçülemiyordu. Açılmayan bildirim hata üretmediği için sahada
+     * görünmüyor; yalnızca kullanıcıyı yoruyor ve sonunda bildirimlerin tamamen
+     * kapatılmasıyla sonuçlanıyor.
+     *
+     * Aynı sayı sunucuda da tutuluyor (functions/notifications.js) ama orada KARAR için:
+     * üst üste açılmayan konu susuyor. Buradaki kayıt raporlama için — ikisi ayrı işler.
+     *
+     * @param topic Bildirimin konu etiketi (örn. `streak_reminder`, `season_ending`).
+     *   Serbest metin değil, sabit bir etiket kümesi; kişisel veri taşımıyor.
+     */
+    fun notificationOpened(topic: String) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_OPENED) {
+            param(P_NOTIFY_TOPIC, sanitize(topic))
+        }
     }
 
     /**

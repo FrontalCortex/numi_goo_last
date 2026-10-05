@@ -16,7 +16,8 @@
     "test:reminder": "node scripts/test-streak-reminder.js",
     "test:challenge-lock": "node scripts/test-streak-challenge-lock.js",
     "test:streak-freeze": "node scripts/test-streak-freeze.js",
-    "test:streak-freeze-flow": "node scripts/test-streak-freeze-flow.js"
+    "test:streak-freeze-flow": "node scripts/test-streak-freeze-flow.js",
+    "test:notifications": "node scripts/test-notifications.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

@@ -49,8 +49,20 @@
     <!-- FCM mesaj bildirimi -->
     <string name="notification_channel_messages_name">Sohbet mesajları</string>
     <string name="notification_channel_messages_desc">Yeni sohbet mesajı bildirimleri</string>
+    <string name="notification_channel_messages_quiet_name">Sohbet mesajları (sessiz)</string>
+    <string name="notification_channel_messages_quiet_desc">Gece gelen sohbet mesajları — sessiz gösterilir</string>
     <string name="notification_channel_streak_name">Günlük seri hatırlatması</string>
     <string name="notification_channel_streak_desc">Günlük hedefini henüz tamamlamadığın akşamlarda tek bir hatırlatma</string>
+    <string name="notification_channel_rewards_name">Ödüller ve etkinlikler</string>
+    <string name="notification_channel_rewards_desc">Bekleyen sandık, sezon sonu ve benzeri oyun bildirimleri</string>
+    <string name="notification_channel_account_name">Hesap ve ödeme</string>
+    <string name="notification_channel_account_desc">Deneme süresi, kredi iadesi ve sorunun durumu gibi önemli bilgiler</string>
+
+    <!-- Ses ve Bildirimler ekranındaki tür bazlı bildirim ayarları -->
+    <string name="settings_notify_chat">Öğretmen mesajları</string>
+    <string name="settings_notify_chat_desc">Sorunun cevaplandığını bu bildirim haber veriyor</string>
+    <string name="settings_notify_streak">Günlük hatırlatma</string>
+    <string name="settings_notify_reward">Ödüller ve etkinlikler</string>
 
     <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
     <string name="notification_download_cancel">İptal et</string>

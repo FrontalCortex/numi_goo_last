@@ -16,6 +16,12 @@ const {
   reminderHourUtc,
   streakReminderDecision,
 } = require('./streakReminder');
+const {
+  notificationDecision,
+  notificationPrefsFor,
+  ledgerPatch,
+  openPatch,
+} = require('./notifications');
 exports.finalizeSeasonLeaderboardMedals =
   seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
 
@@ -807,25 +813,26 @@ exports.onMessageCreated = functions.firestore
     // MyFirebaseMessagingService.onMessageReceived HER zaman çağrılır
     // (uygulama arka planda / kapalı olsa bile) ve kendi PendingIntent'imizle
     // doğru sohbete yönlendirebiliriz.
-    const baseData = {
-      questionId: String(questionId),
-      messageId: String(messageId),
-      recipientUid: String(recipientUid),
-      // Bildirim kanalları soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
-      title: String(questionTitle),
+    //
+    // Tek bildirim kapısından geçiyor: tür `chat`, yani tavana tabi değil (öğretmenin
+    // cevabını duymamak doğrudan kullanıcının aleyhine) ama sessiz saatte sessiz kanala
+    // düşüyor — gece 03:00'te gelen bir mesaj çocuğun telefonunu çaldırmamalı.
+    await sendUserNotification(recipientUid, {
+      type: 'chat',
+      // Konu soru başına değil tür başına: amaç sohbet bildirimlerinin açılma oranını
+      // ölçmek, tek tek soruları değil.
+      topic: 'chat',
+      // Bildirimler soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
+      title: questionTitle,
       body,
-      // İstersen istemci tarafında kullanabilmek için göndericinin adını da ayrıca data'ya ekleyelim.
-      senderName,
-    };
-
-    // Her token için ayrı bir data-only FCM gönder.
-    const sendPromises = tokens.map((token) =>
-      admin.messaging().send({
-        data: baseData,
-        token,
-      })
-    );
-    await Promise.all(sendPromises);
+      data: {
+        questionId: String(questionId),
+        messageId: String(messageId),
+        // İstemci tarafında kullanabilmek için göndericinin adı da data'da.
+        senderName,
+      },
+      userData: recipientData,
+    });
 
     // Mesaj sunucuya ulaştıktan sonra, bildirimi FCM'e başarıyla verdiysek deliveredAt alanını işaretle.
     // Böylece gönderici tarafta "çift tik gri" durumu (telefona gönderildi ama okunmadı) gösterilebilir.
@@ -3339,13 +3346,28 @@ function rollCrystalReward(videoName) {
 }
 
 /**
+ * Hesap başına kaç cihaza bildirim gönderilir.
+ *
+ * NEDEN 3 (05.10.2026, kullanıcı kararı — eskiden 2)
+ *   Tipik kurulum ailede tablet + çocuğun telefonu + ebeveyn telefonu. 2 sınırıyla en eski
+ *   cihaz listeden sessizce düşüyor ve o cihaz bildirim almayı tamamen kesiyordu — hiçbir
+ *   hata üretmeden, yani şikâyet gelene kadar görünmeyen bir kayıp.
+ *
+ *   Sınırsız değil çünkü her bildirim cihaz başına bir FCM gönderimi; ölü token da
+ *   biriktiriyor (temizliği `pruneDeadToken` yapıyor).
+ */
+const FCM_MAX_DEVICES = 3;
+
+/**
  * Bir kullanıcı dokümanından bildirim gönderilecek token'lar.
  *
  * Üç biçim birden destekleniyor çünkü alan zaman içinde değişti: güncel yapı `fcmDevices`,
  * öncesinde `fcmTokens` dizisi, en eskisinde tekil `fcmToken`. Eski cihazlar güncellenene
  * kadar üçü de sahada.
  *
- * Hesap başına en fazla iki cihaz: istemci de aynı sınırı uyguluyor.
+ * Hesap başına en fazla [FCM_MAX_DEVICES] cihaz: istemci de aynı sınırı uyguluyor
+ * (MyFirebaseMessagingService.MAX_FCM_DEVICES). İkisi birlikte değişmeli — sunucu daha azını
+ * okursa istemcinin kaydettiği cihaz sessizce bildirim almaz.
  */
 function fcmTokensFor(userData) {
   const d = userData || {};
@@ -3359,8 +3381,173 @@ function fcmTokensFor(userData) {
   } else if (typeof d.fcmToken === 'string' && d.fcmToken.trim()) {
     tokens = [d.fcmToken.trim()];
   }
-  return tokens.length > 2 ? tokens.slice(-2) : tokens;
+  return tokens.length > FCM_MAX_DEVICES ? tokens.slice(-FCM_MAX_DEVICES) : tokens;
 }
+
+// ─── BİLDİRİM GÖNDERİM YOLU ────────────────────────────────────────────────
+//
+// NEDEN TEK KAPI
+//   Bildirim türleri çoğalırken her çağıranın kendi kararını vermesi iki şeyi imkânsız
+//   kılıyor: kullanıcının türe göre tercihine saygı duymak ve toplam sayıya bir tavan
+//   koymak. Kararın tamamı [notifications.js] içinde, saf ve test edilebilir; buradaki iş
+//   yalnızca Firestore'u okuyup FCM'e vermek.
+//
+//   Yeni bir bildirim eklemek isteyen kod bu fonksiyonu çağırıyor; doğrudan
+//   `admin.messaging()` çağırmıyor. Aksi halde tercih ve tavan sessizce atlanır.
+
+/** Bildirim defteri: gönderim/açılma sayaçları. Yalnızca sunucu yazar (bkz. firestore.rules). */
+function notifyLedgerRef(uid) {
+  return db.collection('users').doc(uid).collection('notifyLedger').doc('state');
+}
+
+/**
+ * Geçersiz hale gelmiş FCM token'ını kullanıcı dokümanından çıkarır.
+ *
+ * NEDEN
+ *   Uygulama kaldırıldığında ya da veri temizlendiğinde token ölüyor ve FCM
+ *   `registration-token-not-registered` dönüyor. Bu token Firestore'da kalırsa iki zarar
+ *   veriyor: her gönderim denemesi boşa gidiyor, ve taramaların `failed` sayısı şişip
+ *   gerçek hataları görünmez yapıyor — yani ölçüm de yalan söylüyor.
+ */
+async function pruneDeadToken(uid, token) {
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const snap = await userRef.get();
+    if (!snap.exists) return;
+    const devices = Array.isArray(snap.get('fcmDevices')) ? snap.get('fcmDevices') : null;
+    if (!devices) return;
+    const kept = devices.filter((x) => !(x && x.token === token));
+    if (kept.length === devices.length) return;
+    const lastToken = (kept.length ? kept[kept.length - 1].token : null) || null;
+    await userRef.set({ fcmDevices: kept, fcmToken: lastToken }, { merge: true });
+    console.log('pruneDeadToken: ölü token çıkarıldı', { uid, kalan: kept.length });
+  } catch (e) {
+    console.error('pruneDeadToken başarısız', { uid, error: e.message });
+  }
+}
+
+/** FCM hatası token'ın kalıcı olarak geçersiz olduğunu mu söylüyor. */
+function isDeadTokenError(error) {
+  const code = (error && error.errorInfo && error.errorInfo.code) || (error && error.code) || '';
+  return (
+    code === 'messaging/registration-token-not-registered' ||
+    code === 'messaging/invalid-registration-token'
+  );
+}
+
+/**
+ * Kullanıcıya bildirim gönderir — tercih, sessiz saat ve tavan kontrolünden geçirerek.
+ *
+ * Data-only gönderiyor; gösterme kararının son adımı istemcide (oturumdaki hesap bu mu,
+ * kullanıcı o ekranda mı). Kanal adı da data içinde gidiyor: sessiz saatte sohbet bildirimi
+ * sessiz varyant kanalına düşüyor ve bunu sunucu belirliyor.
+ *
+ * @param uid     Alıcı.
+ * @param type    [NOTIFICATION_TYPES] anahtarı.
+ * @param topic   Sayaç etiketi (örn. `season_ending`). Verilmezse tür adı kullanılıyor.
+ * @param title   Bildirim başlığı.
+ * @param body    Bildirim gövdesi.
+ * @param data    İstemciye geçecek ek alanlar (örn. questionId).
+ * @param userData Çağıran taraf kullanıcı dokümanını zaten okuduysa — fazladan okuma olmasın.
+ * @returns `{ sent: boolean, reason?: string }`
+ */
+async function sendUserNotification(uid, { type, topic, title, body, data = {}, userData = null }) {
+  if (!uid) return { sent: false, reason: 'no_uid' };
+  const nowMs = Date.now();
+
+  let user = userData;
+  if (!user) {
+    const snap = await db.collection('users').doc(uid).get();
+    if (!snap.exists) return { sent: false, reason: 'no_user' };
+    user = snap.data() || {};
+  }
+
+  const tokens = fcmTokensFor(user);
+  if (!tokens.length) return { sent: false, reason: 'no_token' };
+
+  const ledgerSnap = await notifyLedgerRef(uid).get();
+  const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+
+  const decision = notificationDecision(
+    {
+      type,
+      topic,
+      state: {
+        prefs: notificationPrefsFor(user),
+        history: ledger.history,
+        unopened: ledger.unopened,
+        // İstemci her token kaydında yazıyor (MyFirebaseMessagingService); eksikse sessiz
+        // saat uygulanmıyor, bildirim yine gidiyor.
+        utcOffsetMinutes: user.utcOffsetMinutes,
+      },
+    },
+    nowMs
+  );
+  if (!decision.send) return { sent: false, reason: decision.reason };
+
+  // `notifyType` yeni, katalog türü. Eski `type` alanına DOKUNULMUYOR ve çağıran taraf onu
+  // kendi `data`'sında gönderiyor — sahadaki eski istemci sürümleri ayrıştırmayı ona göre
+  // yapıyor (`type == 'streak_reminder'`), adı burada ezilse seri hatırlatması o cihazlarda
+  // sessizce düşerdi.
+  const payload = {
+    notifyType: String(type),
+    topic: String(decision.topic),
+    channel: String(decision.channel),
+    recipientUid: String(uid),
+    title: String(title || ''),
+    body: String(body || ''),
+    ...data,
+  };
+
+  let delivered = 0;
+  await Promise.all(
+    tokens.map(async (token) => {
+      try {
+        await admin.messaging().send({ data: payload, token });
+        delivered++;
+      } catch (e) {
+        if (isDeadTokenError(e)) await pruneDeadToken(uid, token);
+        else console.error('sendUserNotification: gönderilemedi', { uid, type, error: e.message });
+      }
+    })
+  );
+  if (!delivered) return { sent: false, reason: 'delivery_failed' };
+
+  // Defter yalnızca gerçekten gönderildiğinde güncelleniyor: başarısız denemenin tavandan
+  // bir hak yemesi, kullanıcının hiç almadığı bir bildirim yüzünden ötekini kaçırması olurdu.
+  try {
+    await notifyLedgerRef(uid).set(ledgerPatch(ledger, decision, nowMs), { merge: true });
+  } catch (e) {
+    console.error('sendUserNotification: defter yazılamadı', { uid, type, error: e.message });
+  }
+
+  return { sent: true, topic: decision.topic, silent: decision.silent };
+}
+
+/**
+ * Kullanıcı bir bildirime dokundu — istemci bunu bildiriyor.
+ *
+ * NEDEN SUNUCUDA TUTULUYOR
+ *   İki ayrı işe yarıyor. Birincisi ölçüm: hangi bildirim türünün gerçekten açıldığını
+ *   bilmeden yeni bildirim eklemek körlemesine gidiyor. İkincisi karar: üst üste
+ *   açılmayan bir konu kendiliğinden susuyor ([UNOPENED_MUTE_AFTER]) — bu sayaç istemcide
+ *   tutulamaz, çünkü kullanıcının öteki cihazı onu bilmezdi.
+ *
+ *   Defteri istemciye açmak yerine callable olmasının sebebi: istemci yazabilseydi tavan
+ *   sayaçları da onun elinde olurdu.
+ */
+exports.recordNotificationOpen = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const topic = String((data && data.topic) || '').trim().slice(0, 64);
+  if (!topic) throw new functions.https.HttpsError('invalid-argument', 'Konu gerekli.');
+
+  const ref = notifyLedgerRef(context.auth.uid);
+  const snap = await ref.get();
+  await ref.set(openPatch(snap.exists ? snap.data() : {}, topic), { merge: true });
+  return { ok: true };
+});
 
 /** UTC gün anahtarı — günlük tavan sayacı için. */
 function utcDayKey(nowMs) {
@@ -4740,34 +4927,30 @@ async function runStreakReminderScan(hourUtc, nowMs) {
           return;
         }
 
-        let tokens = [];
         try {
           const userSnap = await db.collection('users').doc(uid).get();
           if (!userSnap.exists) return;
-          tokens = fcmTokensFor(userSnap.data());
-        } catch (e) {
-          counts.failed++;
-          return;
-        }
-        if (!tokens.length) {
-          counts.noToken++;
-          return;
-        }
 
-        // Data-only: istemci gösterip göstermeyeceğine kendisi karar veriyor (uygulama içi
-        // bildirim tercihi ve oturumdaki hesap kontrolü orada).
-        const payload = {
-          type: 'streak_reminder',
-          recipientUid: String(uid),
-          title: decision.text.title,
-          body: decision.text.body,
-        };
-        try {
-          await Promise.all(
-            tokens.map((token) => admin.messaging().send({ data: payload, token }))
-          );
+          // Data-only: istemci gösterip göstermeyeceğine kendisi karar veriyor (oturumdaki
+          // hesap kontrolü orada). `type: 'streak_reminder'` sahadaki eski sürümlerin
+          // ayrıştırma anahtarı, bu yüzden data'da elle veriliyor.
+          const result = await sendUserNotification(uid, {
+            type: 'streak',
+            topic: 'streak_reminder',
+            title: decision.text.title,
+            body: decision.text.body,
+            data: { type: 'streak_reminder' },
+            userData: userSnap.data(),
+          });
+          if (!result.sent) {
+            if (result.reason === 'no_token') counts.noToken++;
+            else if (result.reason === 'delivery_failed') counts.failed++;
+            else counts.skipped++;
+            // Gönderilmediyse `reminderSentDay` işaretlenmiyor: tercihi kapalıysa yarın da
+            // gitmeyecek (zararsız), ama geçici bir aksaklıksa bir sonraki saatte denenir.
+            return;
+          }
           counts.sent++;
-          // Gönderim başarılıysa işaretle: başarısızsa bir sonraki saatte yeniden denenir.
           await doc.ref.set({ reminderSentDay: decision.today }, { merge: true });
         } catch (e) {
           counts.failed++;

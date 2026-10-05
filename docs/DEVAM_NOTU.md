@@ -1737,6 +1737,92 @@ Firebase konsolundan fonksiyonun son deploy zamanına bak.
 
 **Deploy etmeden önce kullanıcıya sor.**
 
+## Bildirim altyapısı (05.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ, deploy EDİLMEDİ)
+
+Uygulamada iki bildirim vardı ve ikisi de kararını kendi içinde veriyordu: sohbet mesajı
+(`onMessageCreated`) ve akşam seri hatırlatması (`sendStreakReminders`). Yeni bildirim türleri
+eklenmeden önce altyapı kuruldu — her yeni tür bu işi pahalılaştırdığı için önce yapıldı.
+
+**Dört şey kuruldu:**
+
+1. **Tür bazlı tercih.** Eskiden tek anahtar (`notifications_enabled`) üç türü de kesiyordu;
+   oyun bildiriminden rahatsız olan kullanıcının kapatacağı şey ÖĞRETMEN MESAJLARI DAHİL her
+   şeydi. Artık `chat` / `streak` / `reward` ayrı. `account` (deneme bitişi, kredi iadesi,
+   sorunun durumu) bilerek kapatılamıyor — yalnızca Android kanal ayarından susturulabiliyor.
+2. **Sessiz saatler** — yerel 21:00–08:00. Sohbet sessiz kanala düşüyor (`messages_quiet`;
+   kanalın önem derecesi sonradan değiştirilemediği için ayrı kanal olmak zorunda), ödül
+   bildirimi düşürülüyor, seri hatırlatması etkilenmiyor (saati kullanıcı seçiyor).
+3. **Günlük tavan ve öncelik** — tavana tabi tek tür `reward`: günde 2, son yedi günde 5
+   (kayan pencere). `chat` ve `account` işlemsel olduğu için tavansız; `streak` de tavansız,
+   çünkü kullanıcının açıkça kurduğu alarm (saatini kendi seçti, günde bir).
+   Tavanın SON slotu öncelikli konulara ayrılmış (`RESERVED_FOR_PRIORITY = 1`), yani normal
+   bir ödül bildirimi günde 1'den fazla alamıyor. Öncelikli konu listesi şu an yalnızca
+   `season_ending` — **kullanıcı kararı (05.10.2026):** sezonun son günü "sezon bitiyor" ve
+   seri hatırlatması geçecek, madalya bildirimi düşecek.
+   Rezervasyon seçildi çünkü bildirimler gün içinde ayrı ayrı tetikleniyor; hepsini görüp
+   aralarından seçeceğimiz bir an yok ve rezervasyon olmadan tavan "ilk gelen geçer" demekti.
+4. **Ölçüm.** Bildirime dokunma hem Analytics'e (`notification_opened`) hem sunucudaki deftere
+   yazılıyor. Defter aynı zamanda karar veriyor: üst üste 5 kez açılmayan **konu** susuyor
+   (tür değil konu — "sezon bitiyor" ile "sandığın bekliyor" ikisi de `reward`).
+   Susturma YALNIZCA `reward`'da (`mutable` alanı). Ötekilerde ters çalışıyordu: bildirimi
+   görüp uygulamayı kendi açan kullanıcı "dokunmamış" sayılıyor, yani seri hatırlatması işini
+   düzgün yaptığı için beş günde kendini kapatırdı.
+
+**Dosyalar**
+
+- `functions/notifications.js` — saf karar: tür kataloğu, tercih çözümleme, sessiz saat,
+  tavan, susturma. Yan etkisiz olması kasıtlı (bkz. `streakReminder.js` aynı gerekçe).
+- `functions/index.js` — `sendUserNotification()` tek gönderim kapısı. Yeni bildirim ekleyen
+  kod bunu çağırmalı; doğrudan `admin.messaging()` çağırmak tercih ve tavanı atlar.
+  Ayrıca `recordNotificationOpen` callable ve ölü token temizliği (`pruneDeadToken`).
+- `app/.../NotificationPrefs.kt` — istemci tercihleri (SharedPreferences + Firestore).
+- `app/.../MyFirebaseMessagingService.kt` — tür/kanal kataloğu, `notifyType` ayrıştırma,
+  token ile birlikte `utcOffsetMinutes` yazımı (sessiz saat sunucuda buna bakıyor).
+- `firestore.rules` — `users/{uid}/notifyLedger/{doc}`: istemci okur, yazamaz.
+
+**GERİYE DÖNÜK UYUM — bozulmaması kritik olan iki yer**
+
+- Sunucu `notifyType` gönderiyor ama eski `type` alanına DOKUNMUYOR: sahadaki eski istemciler
+  seri hatırlatmasını `type == "streak_reminder"` ile tanıyor. Adı ezilse o cihazlarda
+  bildirim sessizce düşerdi.
+- Tercih önceliği: `notificationPrefs.<tür>` > eski `notificationsEnabled` > açık. Daha özel
+  olanın kazanması şart, yoksa evdeki eski sürümlü tablet kullanıcının seçimini geri alır.
+  Aynı kural iki tarafta: `notifications.js → notificationPrefsFor` ve
+  `NotificationPrefs.isEnabled`.
+
+**Test:** `cd functions && npm run test:notifications` — 64 kontrol, emülatör gerektirmiyor.
+Sezonun son günü senaryosu da burada, gün içindeki gerçek sırayla.
+Testler yazarken iki gerçek hata yakalandı:
+- `Number(null) === 0` olduğu için "saat dilimi bilinmiyor" ile "kullanıcı UTC'de" ayırt
+  edilemiyordu; farkı bilinmeyen kullanıcının gece bildirimi düşüyordu (`normalizeOffset`).
+- Seri hatırlatması susturulabilir türdeydi (yukarıdaki 4. madde).
+
+**DENENMEYEN.** Hiçbiri cihazda görülmedi ve deploy edilmedi:
+- Ayarlardaki üç yeni anahtar ve ana anahtarla iki yönlü bağı.
+- Sessiz saatte sohbet bildiriminin sessiz kanala düşmesi (cihaz saatini 22:00'ye almak
+  yeterli — sunucu `users/{uid}.utcOffsetMinutes` alanına bakıyor, o alan token ile birlikte
+  yazılıyor, yani uygulamayı bir kez açıp kapatmak gerekiyor).
+- Tavanın dolması ve rezerve slot. Pratikte ÖLÇÜLEMEZ durumda: tavana tabi tek tür `reward`
+  ve henüz tek bir ödül bildirimi yazılmadı. İlk ödül bildirimiyle birlikte denenmeli.
+- `recordNotificationOpen` çağrısı ve defterin dolması.
+
+**FCM token tavanı 2 → 3 cihaz** (kullanıcı kararı, 05.10.2026). Tipik kurulum ailede
+tablet + çocuğun telefonu + ebeveyn telefonu; 2 sınırıyla en eskisi listeden sessizce
+düşüyor ve o cihaz bildirim almayı tamamen kesiyordu — hiçbir hata üretmeden. Sınır iki
+yerde ve birlikte değişmek zorunda: sunucuda `FCM_MAX_DEVICES` (functions/index.js),
+istemcide `MAX_FCM_DEVICES`. Sunucu daha azını okursa istemcinin kaydettiği cihaz sessizce
+bildirim almaz. **Cihazda denenmedi** — üçüncü bir cihaz gerekiyor.
+
+**Sonraki adım (kullanıcıyla kararlaştırılan sıra):** deneme bitişi + öğretmen havuzu → soru
+durumu → seri dondurma + kırılma öncesi ikinci şans → ödüller (sandık, sezon, enerji).
+
+**Sezon bitişi bildirimi — kullanıcının verdiği tasarım, henüz yazılmadı:**
+madalya alanlara "Sezon bitti, madalyan hazır"; bitişe 4 saat kala herkese "Sezon 4 saat sonra
+bitecek, sıranı gözden geçir". Susturma şartı zaten altyapıda (`UNOPENED_MUTE_AFTER = 5`).
+Yazılırken çözülmesi gereken: sezon bitişi sabit bir UTC anı (`SEASON_ANCHOR_UTC_MS`), yani
+"4 saat kala" bazı saat dilimlerinde gecenin bir yarısı — ertelemek işe yaramaz (sezon
+bitiyor), öne almak gerekir.
+
 ## Teşhis logları
 
 | Etiket | Ne gösterir |

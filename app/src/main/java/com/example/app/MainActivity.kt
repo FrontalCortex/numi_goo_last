@@ -38,6 +38,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Source
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.android.gms.ads.MobileAds
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -195,6 +196,12 @@ class MainActivity : AppCompatActivity() {
         /** Set by FCM notification tap; open this question chat when activity is ready. */
         const val EXTRA_OPEN_QUESTION_ID = "open_question_id"
         const val EXTRA_NOTIFICATION_RECIPIENT_UID = "notification_recipient_uid"
+
+        /**
+         * Dokunulan bildirimin konu etiketi (sunucudaki defterle aynı anahtar). Hangi
+         * bildirimin gerçekten açıldığını ölçmek için; bkz. [recordNotificationOpenIfAny].
+         */
+        const val EXTRA_NOTIFICATION_TOPIC = "notification_topic"
 
         @Volatile
         var currentActivity: MainActivity? = null
@@ -681,6 +688,8 @@ class MainActivity : AppCompatActivity() {
             itemRippleColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
         }
         refreshProfileNavIcon()
+        // Üst panelin altındaki çizgi, panel görünürlüğü nereden değişirse değişsin eşitlensin.
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener { syncCurrencyPanelDivider() }
 
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {
@@ -1006,14 +1015,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * currencyPanelDivider yalnızca üstte bir panel (currencyPanel ya da teacherSendTopBar)
+     * varken görünür. Çizgi bu panellerin alt kenarına bağlı; ikisi de gizliyken (mağaza,
+     * ayarlar, abaküs özelleştirme, bildirimler, profil...) en üste kayıp durum çubuğunun hemen
+     * altında ayıracak bir şey olmayan bir çizgi olarak kalıyordu.
+     *
+     * Paneller birçok yerden (MainActivity, ders ve harita kodu) açılıp kapandığı için her
+     * düzende (global layout) bakılıyor; görünürlük değişikliği zaten yeni bir düzen tetikliyor.
+     */
+    private fun syncCurrencyPanelDivider() {
+        if (!::binding.isInitialized) return
+        val hasTopBar = binding.currencyPanel.visibility == View.VISIBLE ||
+            binding.teacherSendTopBar.visibility == View.VISIBLE
+        val target = if (hasTopBar) View.VISIBLE else View.GONE
+        if (binding.currencyPanelDivider.visibility != target) binding.currencyPanelDivider.visibility = target
+    }
+
+    /**
      * Telefonun durum çubuğunu (saat, pil) [color]'a boyar; null eski hâline döndürür. Profil,
      * avatarın arka plan rengini en üste kadar uzatmak için kullanıyor.
      *
      * Kök görünüm fitsSystemWindows ile durum çubuğu kadar aşağıdan başlıyor ve uygulama kenardan
      * kenara (enableEdgeToEdge) çizildiği için şerit şeffaf. Android 15+ window.statusBarColor'ı
      * yok saydığından şeridin arkasına renkli bir görünüm konuyor; eski sürümlerde ikisi de
-     * aynı rengi veriyor. currencyPanelDivider da gizleniyor: aksi halde boyalı şeridin hemen
-     * altında koyu bir çizgi kalıyordu. İkonlar zemine göre koyu ya da açık.
+     * aynı rengi veriyor. İkonlar zemine göre koyu ya da açık. (Şeridin altındaki çizgi
+     * currencyPanelDivider; üst panel yokken zaten gizli, bkz. [syncCurrencyPanelDivider].)
      */
     fun setStatusBarTint(color: Int?) {
         val content = findViewById<android.widget.FrameLayout>(android.R.id.content) ?: return
@@ -1023,7 +1049,6 @@ class MainActivity : AppCompatActivity() {
             strip?.visibility = View.GONE
             window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
             controller.isAppearanceLightStatusBars = false
-            binding.currencyPanelDivider.visibility = View.VISIBLE
             return
         }
         if (strip == null) {
@@ -1040,7 +1065,6 @@ class MainActivity : AppCompatActivity() {
         strip.visibility = View.VISIBLE
         window.statusBarColor = color
         controller.isAppearanceLightStatusBars = androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5
-        binding.currencyPanelDivider.visibility = View.GONE
     }
 
     /**
@@ -1063,7 +1087,7 @@ class MainActivity : AppCompatActivity() {
         val itemView = binding.bottomNavigationID.findViewById<View>(itemId) ?: return
         val icon = itemView.findViewById<View>(com.google.android.material.R.id.navigation_bar_item_icon_view)
             ?: return
-        itemView.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+        Haptics.click(itemView)
         icon.animate().cancel()
         icon.scaleX = 0.85f
         icon.scaleY = 0.85f
@@ -3707,8 +3731,34 @@ class MainActivity : AppCompatActivity() {
         handleOpenQuestionIdFromIntent()
     }
 
+    /**
+     * Bildirime dokunulduğunu sunucuya ve Analytics'e bildirir.
+     *
+     * NEDEN ÖLÇÜLÜYOR
+     *   Hangi bildirimin açıldığını bilmeden yeni bildirim eklemek körlemesine gidiyor:
+     *   gönderilmiş ama kimsenin dokunmadığı bir bildirim hata üretmiyor, yalnızca
+     *   kullanıcıyı yoruyor. Sunucudaki sayaç aynı zamanda karar veriyor — üst üste
+     *   açılmayan konu kendiliğinden susuyor (functions/notifications.js).
+     *
+     *   Sunucu çağrısı sessizce başarısız olabilir; ölçüm hiçbir zaman kullanıcı akışını
+     *   bozmamalı.
+     */
+    private fun recordNotificationOpenIfAny() {
+        val topic = intent?.extras?.getString(EXTRA_NOTIFICATION_TOPIC) ?: return
+        if (topic.isEmpty()) return
+        intent?.removeExtra(EXTRA_NOTIFICATION_TOPIC)
+
+        AnalyticsLogger.notificationOpened(topic)
+        FirebaseFunctions.getInstance().getHttpsCallable("recordNotificationOpen")
+            .call(mapOf("topic" to topic))
+            .addOnFailureListener { e ->
+                Log.w("MainActivity", "recordNotificationOpen başarısız (topic=$topic)", e)
+            }
+    }
+
     /** Opens QuestionChatFragment when launched from FCM notification (EXTRA_OPEN_QUESTION_ID). */
     private fun handleOpenQuestionIdFromIntent() {
+        recordNotificationOpenIfAny()
         val extras = intent?.extras
         Log.d("MainActivity", "handleOpenQuestionIdFromIntent extras = $extras")
         val questionId = extras?.getString(EXTRA_OPEN_QUESTION_ID)

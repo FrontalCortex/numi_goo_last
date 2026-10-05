@@ -1275,7 +1275,7 @@ class BadgeFragment : Fragment() {
             }
         }
         b.medalPieceNamesList.setOnClickListener { v ->
-            v.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+            Haptics.click(v)
             togglePieceRowsPanel(mode, isCup, seasonLbPieceFilter)
         }
     }

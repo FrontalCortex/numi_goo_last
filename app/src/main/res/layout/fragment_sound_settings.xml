@@ -7,12 +7,59 @@
     android:background="@color/background_color"
     android:fitsSystemWindows="true">
 
+    <!-- Başlık: hesap ayarlarındaki gibi solda geri oku, ortada başlık, altında çizgi. -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/soundSettingsHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ses ve Bildirimler"
+            android:textColor="#BDBDBD"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btnClose"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Geri"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/white"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:id="@+id/soundSettingsDivider"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:layout_marginTop="3dp"
+        android:background="#3B4A55"
+        app:layout_constraintTop_toBottomOf="@id/soundSettingsHeader"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scrollbars="none"
         android:fillViewport="true"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/soundSettingsDivider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -21,19 +68,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
-
-            <!-- Başlık -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Ses ve Bildirimler"
-                android:gravity="center"
-                android:textColor="@color/dark_text"
-                android:textSize="22sp"
-                android:fontFamily="@font/font_regular"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="32dp" />
+            android:paddingStart="20dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="20dp">
 
             <!-- Ses Satırı -->
             <LinearLayout
@@ -157,14 +195,54 @@
                     android:checked="true" />
             </LinearLayout>
 
-            <!-- Bildirimler Satırı -->
+            <!-- Titreşim Satırı: dokunma titreşimleri (alt bar, avatar seçimi, rozet ekranı); bkz. Haptics. -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/hint_background"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/vibration_ic"
+                    app:tint="#607887" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Titreşim"
+                    android:textColor="@color/dark_text"
+                    android:textSize="18sp"
+                    android:fontFamily="@font/font_regular"
+                    android:layout_marginStart="16dp" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchVibration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:track="@drawable/switch_track_custom"
+                    android:thumb="@drawable/switch_thumb_custom"
+                    app:thumbTint="@null"
+                    app:trackTint="@null"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <!-- Bildirimler ana anahtarı: üç türü birden açıp kapatıyor. Altındaki satırlar
+                 türe göre ince ayar — oyun bildiriminden rahatsız olan kullanıcı öğretmen
+                 mesajlarını kapatmak zorunda kalmasın (bkz. NotificationPrefs). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_background"
+                android:paddingHorizontal="16dp"
+                android:layout_marginBottom="12dp">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -193,34 +271,111 @@
                     android:checked="true" />
             </LinearLayout>
 
-            <!-- Boşluk -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <!-- Kapat Butonu -->
+            <!-- Öğretmen mesajları: ürünün çalışması için zorunlu olan tek bildirim, bu yüzden
+                 ne işe yaradığı alt yazıyla anlatılıyor. -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="64dp"
                 android:orientation="horizontal"
-                android:gravity="end"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="16dp">
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_background"
+                android:paddingStart="32dp"
+                android:paddingEnd="16dp"
+                android:layout_marginBottom="12dp">
 
-                <Button
-                    android:id="@+id/btnClose"
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_notify_chat"
+                        android:textColor="@color/dark_text"
+                        android:textSize="17sp"
+                        android:fontFamily="@font/font_regular" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_notify_chat_desc"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="13sp"
+                        android:fontFamily="@font/font_regular" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchNotifyChat"
                     android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="Kapat"
-                    android:textAllCaps="false"
-                    android:textSize="15sp"
-                    android:textColor="@color/dark_text_secondary"
-                    app:backgroundTint="@color/background_color"
-                    app:strokeColor="#4A5A67"
-                    app:strokeWidth="2dp"
-                    android:paddingHorizontal="32dp"
+                    android:layout_height="wrap_content"
+                    app:track="@drawable/switch_track_custom"
+                    android:thumb="@drawable/switch_thumb_custom"
+                    app:thumbTint="@null"
+                    app:trackTint="@null"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <!-- Günlük hatırlatma -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_background"
+                android:paddingStart="32dp"
+                android:paddingEnd="16dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_notify_streak"
+                    android:textColor="@color/dark_text"
+                    android:textSize="17sp"
                     android:fontFamily="@font/font_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchNotifyStreak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:track="@drawable/switch_track_custom"
+                    android:thumb="@drawable/switch_thumb_custom"
+                    app:thumbTint="@null"
+                    app:trackTint="@null"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <!-- Ödüller ve etkinlikler -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_background"
+                android:paddingStart="32dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/settings_notify_reward"
+                    android:textColor="@color/dark_text"
+                    android:textSize="17sp"
+                    android:fontFamily="@font/font_regular" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchNotifyReward"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:track="@drawable/switch_track_custom"
+                    android:thumb="@drawable/switch_thumb_custom"
+                    app:thumbTint="@null"
+                    app:trackTint="@null"
+                    android:checked="true" />
             </LinearLayout>
 
         </LinearLayout>

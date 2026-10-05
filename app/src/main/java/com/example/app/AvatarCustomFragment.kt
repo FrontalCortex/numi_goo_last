@@ -8,7 +8,6 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.AttributeSet
 import android.view.Gravity
-import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -65,7 +64,7 @@ class AvatarCustomFragment : Fragment() {
             close()
         }
         binding.btnRandom.setOnClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            Haptics.click(it)
             applyConfig(AvatarConfig.random(requireContext(), config.style))
         }
 
@@ -220,7 +219,7 @@ class AvatarCustomFragment : Fragment() {
             val value = options[position]
             holder.cell.isSelected = currentValue() == value
             holder.cell.setOnClickListener {
-                it.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                Haptics.click(it)
                 select(value)
             }
             holder.none.visibility = if (value.isEmpty()) View.VISIBLE else View.GONE

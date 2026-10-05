@@ -708,6 +708,9 @@ class ChestResult : Fragment() {
 
     private fun playStarSoundForTier(tier: Int) {
         if (!isStarSoundLoaded || starSoundId == 0) return
+        // Ses efektleri ayarı kapalıysa çalmıyor (öteki efekt sesleri gibi; önce unutulmuştu).
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         val rate = when (tier) {
             1 -> 0.9f  // daha kalin
             2 -> 1.0f  // normal

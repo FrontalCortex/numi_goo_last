@@ -1150,7 +1150,7 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         // Geri tuşunu engelleme callback'ini kaydet (başlangıçta isEnabled = false)
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, guidePanelBackCallback)
 
@@ -1255,6 +1255,13 @@ class MapFragment : Fragment() {
                 (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
             },
             onReadyForBounce = { startAskQuestionBounceAnimation() },
+            // Rehber ya da ders paneli açıkken renk dalgası oynamasın; dikkati onlardan çekmesin.
+            canPlayWave = {
+                val b = _binding
+                val lessonPanelOpen = activity?.findViewById<View>(R.id.coordinator_layout)
+                    ?.findViewWithTag<View>(LessonPanel.TAG) != null
+                b != null && !b.guidePanel.isShown && !lessonPanelOpen
+            },
         )
     }
 

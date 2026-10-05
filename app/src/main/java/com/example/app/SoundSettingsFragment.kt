@@ -7,22 +7,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import com.example.app.abacus.AbacusSoundPlayer
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 class SoundSettingsFragment : Fragment() {
 
     private lateinit var switchSound: SwitchCompat
     private lateinit var switchTutorialSound: SwitchCompat
     private lateinit var switchNotifications: SwitchCompat
-    private lateinit var btnClose: Button
+    private lateinit var switchVibration: SwitchCompat
+    private lateinit var btnClose: View
+
+    /** Tür bazlı bildirim anahtarları: anahtar → kutu. Bkz. [NotificationPrefs]. */
+    private lateinit var notifySwitches: Map<String, SwitchCompat>
+
+    /** Ana anahtar ile tür anahtarları birbirini güncellerken dinleyicileri susturuyor. */
+    private var suppressNotifyListeners = false
 
     private lateinit var rowAbacusSoundPicker: View
     private lateinit var textAbacusSoundCurrent: TextView
@@ -38,14 +41,21 @@ class SoundSettingsFragment : Fragment() {
         switchSound = view.findViewById(R.id.switchSound)
         switchTutorialSound = view.findViewById(R.id.switchTutorialSound)
         switchNotifications = view.findViewById(R.id.switchNotifications)
+        switchVibration = view.findViewById(R.id.switchVibration)
         btnClose = view.findViewById(R.id.btnClose)
+
+        notifySwitches = mapOf(
+            NotificationPrefs.CHAT to view.findViewById(R.id.switchNotifyChat),
+            NotificationPrefs.STREAK to view.findViewById(R.id.switchNotifyStreak),
+            NotificationPrefs.REWARD to view.findViewById(R.id.switchNotifyReward),
+        )
 
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
 
         // Mevcut ayarları yükle
         switchSound.isChecked = prefs.getBoolean("sound_enabled", true)
         switchTutorialSound.isChecked = prefs.getBoolean("tutorial_sound_enabled", true)
-        switchNotifications.isChecked = prefs.getBoolean("notifications_enabled", true)
+        switchVibration.isChecked = Haptics.isEnabled(requireContext())
 
         // Dinleyiciler
         switchSound.setOnCheckedChangeListener { _, isChecked ->
@@ -56,24 +66,57 @@ class SoundSettingsFragment : Fragment() {
             prefs.edit().putBoolean("tutorial_sound_enabled", isChecked).apply()
         }
 
-        switchNotifications.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("notifications_enabled", isChecked).apply()
-
-            // Firebase veritabanında da bildirimi kapat/aç (Cloud Functions için)
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-            if (uid != null) {
-                FirebaseFirestore.getInstance().collection("users").document(uid)
-                    .update("notificationsEnabled", isChecked)
-                    .addOnFailureListener {
-                        // Sessizce hatayı yoksayabiliriz veya loglayabiliriz
-                    }
-            }
+        switchVibration.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(Haptics.KEY, isChecked).apply()
         }
 
+        setupNotificationSwitches()
         setupAbacusSoundSelector(view)
 
         btnClose.setOnClickListener {
             closeFragment()
+        }
+    }
+
+    /**
+     * Bildirim anahtarları: bir ana anahtar ve altında üç tür.
+     *
+     * ANA ANAHTAR NE YAPIYOR
+     *   Üçünü birden aynı değere çekiyor ([NotificationPrefs.setAll]). Yalnızca eski tek
+     *   anahtarı yazmak yetmezdi: tür anahtarı varsa o kazanıyor, yani kullanıcı bir kez
+     *   ince ayar yaptıktan sonra ana anahtarı kapatınca bildirim gelmeye devam ederdi.
+     *
+     *   Ters yönde ana anahtar türlerden TÜRETİLİYOR: en az biri açıksa açık görünüyor.
+     *   Kullanıcı tek tek hepsini kapattığında ana anahtarın açık kalması tutarsız olurdu.
+     *
+     * DİNLEYİCİ DÖNGÜSÜ
+     *   `isChecked` programatik olarak değiştirildiğinde de dinleyici tetikleniyor; iki yönlü
+     *   bağ [suppressNotifyListeners] olmadan sonsuz döngüye girerdi.
+     */
+    private fun setupNotificationSwitches() {
+        val ctx = requireContext()
+
+        notifySwitches.forEach { (type, box) ->
+            box.isChecked = NotificationPrefs.isEnabled(ctx, type)
+        }
+        switchNotifications.isChecked = notifySwitches.values.any { it.isChecked }
+
+        switchNotifications.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressNotifyListeners) return@setOnCheckedChangeListener
+            NotificationPrefs.setAll(ctx, isChecked)
+            suppressNotifyListeners = true
+            notifySwitches.values.forEach { it.isChecked = isChecked }
+            suppressNotifyListeners = false
+        }
+
+        notifySwitches.forEach { (type, box) ->
+            box.setOnCheckedChangeListener { _, isChecked ->
+                if (suppressNotifyListeners) return@setOnCheckedChangeListener
+                NotificationPrefs.setEnabled(ctx, type, isChecked)
+                suppressNotifyListeners = true
+                switchNotifications.isChecked = notifySwitches.values.any { it.isChecked }
+                suppressNotifyListeners = false
+            }
         }
     }
 

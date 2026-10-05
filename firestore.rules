@@ -134,12 +134,13 @@ service cloud.firestore {
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
     //
-    // BEŞ ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü beşini de yalnızca sunucu üretebilmeli:
+    // ALTI ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü altısını da yalnızca sunucu üretebilmeli:
     //   • `badgeProgress`   — sezon madalyaları
     //   • `cupPathRewards`  — kupa yolunda hangi sandığın alındığı defteri
     //   • `cupWayProgress`  — kupa puanı
     //   • `cupHistory`      — kupa puanının günlük geçmişi
     //   • `streak`          — günlük seri sayacı ve toplanan kilometre taşları
+    //   • `notifyLedger`    — bildirim gönderim/açılma sayaçları
     // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
     // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
     // zorunda.)
@@ -147,7 +148,8 @@ service cloud.firestore {
       allow read: if isSelf(userId);
       allow write: if isSelf(userId)
         && !(subcollection in [
-          'badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory', 'streak'
+          'badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory', 'streak',
+          'notifyLedger'
         ]);
     }
 
@@ -306,6 +308,21 @@ service cloud.firestore {
     //
     // Okuma yalnızca sahibine: seri ekranı ve ödül düğmesi buradan besleniyor.
     match /users/{userId}/streak/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
+    // Bildirim defteri: hangi bildirim kaç kez gönderildi, kaç kez açıldı, günlük tavan
+    // sayacı (bkz. functions/notifications.js).
+    //
+    // NEDEN İSTEMCİ YAZAMIYOR
+    //   Burada iki şey var ve ikisi de istemcinin elinde olmamalı. Tavan sayacını sıfırlayan
+    //   biri kendine sınırsız bildirim açardı — bu kendine zarar, ama "üst üste açılmayan
+    //   konu susar" kuralı aynı deftere bakıyor ve onu istemci yazabilseydi kural hiç
+    //   işlemezdi. Açılma kaydı sunucuya `recordNotificationOpen` ile bildiriliyor.
+    //
+    //   Okuma sahibine açık: istemcinin ayarlar ekranında "hangi bildirimleri alıyorsun"
+    //   özetini gösterebilmesi için.
+    match /users/{userId}/notifyLedger/{doc} {
       allow read: if isSelf(userId);
       allow write: if false;
     }
