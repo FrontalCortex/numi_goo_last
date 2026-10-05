@@ -363,7 +363,7 @@ object AnalyticsLogger {
     const val CHEST_SOURCE_LESSON = "lesson"
     /** Günlük soru ödülü ([TasksFragment]). */
     const val CHEST_SOURCE_DAILY_QUESTION = "daily_question"
-    /** Görev tamamlama ödülü ([MissionsFragment]). */
+    /** Görev tamamlama ödülü ([MissionsSection], Görevler sekmesi). */
     const val CHEST_SOURCE_MISSION = "mission"
     /** Görev sandığı ([MissionChestRewardFragment]). */
     const val CHEST_SOURCE_MISSION_CHEST = "mission_chest"

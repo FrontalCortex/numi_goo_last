@@ -922,12 +922,13 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+                    // İki sekme de TasksFragment, yalnızca modu farklı (gerekçe: TasksFragment.MODE_MISSIONS).
                     R.id.tasks ->
-                        if (currentFragment is MissionsFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(MissionsFragment())
+                        if (currentFragment is TasksFragment && !currentFragment.isCupTab) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(TasksFragment.newInstance(TasksFragment.MODE_MISSIONS))
                     R.id.explore ->
-                        if (currentFragment is TasksFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(TasksFragment())
+                        if (currentFragment is TasksFragment && currentFragment.isCupTab) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(TasksFragment.newInstance(TasksFragment.MODE_CUP))
                     R.id.profile ->
                         if (currentFragment is ProfileFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(ProfileFragment())
@@ -1822,7 +1823,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateCurrencyPanelVisibility() {
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment || current is MissionsFragment) View.VISIBLE else View.GONE
+        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment) View.VISIBLE else View.GONE
         
         // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle.
         // Mağaza ve seri ekranı haritanın ÜSTÜNE ekleniyor (openShopFragment / openStreakFragment):

@@ -177,7 +177,9 @@ class ProfileFragment : Fragment() {
         // Sabit üst panelin altındaki çizgi yalnızca içerik aşağı kaydırılmışken görünür; en üstte
         // panel avatar alanıyla tek parça duruyor.
         binding.profileScroll.setOnScrollChangeListener { _, _, scrollY, _, _ ->
-            binding.profileTopDivider.alpha = if (scrollY > 0) 1f else 0f
+            val a = if (scrollY > 0) 1f else 0f
+            binding.profileTopDivider.alpha = a
+            binding.otherUserTopDivider.alpha = a
         }
 
         // Verileri yükle
@@ -186,7 +188,7 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        if (!isOtherUser) (activity as? MainActivity)?.setStatusBarTint(headerColor)
+        (activity as? MainActivity)?.setStatusBarTint(headerColor)
         resumeCupAnimations()
         if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
@@ -244,17 +246,26 @@ class ProfileFragment : Fragment() {
         headerColor = color
         val bg = color ?: ContextCompat.getColor(requireContext(), R.color.background_color)
         binding.avatarHeader.setBackgroundColor(bg)
-        if (isOtherUser) return
-        binding.profileTopPanel.setBackgroundColor(bg)
         // Açık zeminde (pastel arka planların çoğu) yazı ve ikon koyu, koyu zeminde beyaz.
         val light = androidx.core.graphics.ColorUtils.calculateLuminance(bg) > 0.5
         val fg = if (light) HEADER_DARK_TEXT else Color.WHITE
+        if (isResumed) (activity as? MainActivity)?.setStatusBarTint(color)
+        if (isOtherUser) {
+            // Başkasının profilinde üstte geri düğmeli bar var; o da avatarın rengini alıyor.
+            binding.otherUserProfileTopBar.setBackgroundColor(bg)
+            binding.tvOtherUserProfileName.setTextColor(fg)
+            binding.btnOtherUserProfileBack.setColorFilter(fg)
+            binding.otherUserTopDivider.setBackgroundColor(
+                androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
+            )
+            return
+        }
+        binding.profileTopPanel.setBackgroundColor(bg)
         binding.tvTopLeftName.setTextColor(fg)
         binding.btnAccountSettings.setColorFilter(fg)
         binding.profileTopDivider.setBackgroundColor(
             androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
         )
-        if (isResumed) (activity as? MainActivity)?.setStatusBarTint(color)
     }
     
     private fun reloadUserData() {
@@ -1775,12 +1786,11 @@ class ProfileFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         // Başka bir ekrana geçerken durum çubuğu uygulamanın kendi rengine dönsün.
-        if (!isOtherUser) (activity as? MainActivity)?.setStatusBarTint(null)
+        (activity as? MainActivity)?.setStatusBarTint(null)
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        if (isOtherUser) return
         (activity as? MainActivity)?.setStatusBarTint(if (hidden) null else headerColor)
     }
 

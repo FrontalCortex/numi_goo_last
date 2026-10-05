@@ -1633,7 +1633,9 @@ rengiyle; ad + ayarlar `profileTopPanel`'de ScrollView DIŞINDA sabit, aynı ren
 göre koyu/beyaz; kaydırınca altta `profileTopDivider` çizgisi. Durum çubuğu
 `MainActivity.setStatusBarTint` ile boyanıyor (Android 15+ statusBarColor'ı yok saydığı için
 android.R.id.content'e şerit görünüm; currencyPanelDivider gizleniyor). Profil onResume/onPause/
-onHiddenChanged'da açıp kapatıyor. Başkasının profilinde panel ve boyama yok.
+onHiddenChanged'da açıp kapatıyor. Başkasının profilinde sabit panel yerine geri düğmeli
+`otherUserProfileTopBar` var; o ve durum çubuğu da o kişinin avatar rengini alıyor (avatarı yoksa
+uygulamanın koyu rengi).
 
 **Son durum:** kullanıcı Personas'ı uygulamaya daha uygun buldu; Avataaars KALDIRILDI (parça dosyası,
 lisans, AvatarStyle girişi). Yapı çok stilli kaldı; tek stil varken tür çipleri gizli. Ücret
@@ -1655,6 +1657,26 @@ ekranın üstünde tür seçimi. Profile/alt bara bağlanması kullanıcının O
 - `AvatarConfig(style, values)` seçenek ADLARINI tutar; `AvatarStore` her türün son hâlini ayrı +
   etkin türü tutar (yalnızca SharedPreferences, Firestore yok).
 - Personas tarayıcıda (aynı SVG) kontrol edildi; AndroidSVG çıktısı telefonda görülmedi.
+
+## Görevler ve Kupa Yolu sekmeleri (05.10.2026 — kuruldu, telefonda DENENMEDİ; commit edilmedi)
+
+Keşfet sekmesi Kupa Yolu oldu; günlük soru, abaküs ve karakter kartı Görevler sekmesine geçti.
+**İki sekme de TasksFragment** (`newInstance(MODE_MISSIONS / MODE_CUP)`, `isCupTab`): dönüş
+altyapısı (finishTasksOverlayAnimated, yeni seri sorusu, reklam, tasksReturnTouchBlock,
+reconcileAbacusOverlayWhenTasksIsBase) "alttaki ekran TasksFragment" varsayıyor; aynı sınıf
+olunca akış kodu hiç taşınmadı (kullanıcıyla riskli yol olarak konuşuldu, seçilmedi).
+- Görevler modu: görev listeleri → günlük soru (eski MissionsFragment → `MissionsSection` +
+  `item_missions_sections.xml`, listede `BulletinRow.Missions`) → Abaküs → Karakter animasyonu.
+- Kupa modu: yalnızca Kupa Yolu kartı; panel bugünkü BottomSheet (kullanıcı panelin sekmeye
+  gömülmesini İSTEMEDİ, ileride başka kart eklenebilir diye kart kalsın dedi).
+- Kupa farkı tüketimi (`consumePendingCupDeltaIfCupTab`), otomatik kupa yolu açılışı ve
+  concealHiddenCupPanel yalnızca kupa modunda; günlük soru kartı tazelemesi yalnızca görev modunda.
+- Sandık animasyonu ve Bize Ulaşın kartları silindi. MissionsFragment ve fragment_missions silindi.
+- Görev sandığı artık TasksFragment tabanında kapanıyor → finishTasksOverlayAnimated'ın kayarak
+  kapanış yolu (eskiden MissionsFragment tabanında anlık kapanış yolu).
+- Denenecek: günlük soru dönüşü (yeni seri sorusu + kart tazelemesi sırası), abaküs pratiği
+  kapanışı (çalışma süresi duruyor mu), görev sandığı, kupa testi gidiş-dönüş, haritadan otomatik
+  kupa yolu yönlendirmesi, iki sekme arasında geçiş.
 
 ## Yakında yapılanlar — tekrar etmeyin
 

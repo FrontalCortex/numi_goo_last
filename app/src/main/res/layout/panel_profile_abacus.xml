@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_panel_daily_question_continue"
+    android:backgroundTint="@color/background_color"
     android:clipToOutline="true"
     android:padding="20dp">
 

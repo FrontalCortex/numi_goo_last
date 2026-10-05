@@ -110,6 +110,25 @@ class TasksFragment : Fragment() {
         private const val PRACTICE_TOUCH_BLOCKER_TAG = MainActivity.PRACTICE_TOUCH_BLOCKER_TAG
         private const val VIEW_TYPE_STANDARD = 0
         private const val VIEW_TYPE_DAILY_QUESTION = 1
+        private const val VIEW_TYPE_MISSIONS = 2
+
+        /**
+         * Hangi alt bar sekmesi. İki sekme de bu fragment: Görevler (günlük soru, görev
+         * listeleri, abaküs) ve Kupa Yolu (eski Keşfet).
+         *
+         * Neden ayrı fragment değil: günlük soru, abaküs pratiği ve kupa testinin dönüşleri
+         * (kapanış animasyonu → reklam → Pro paneli → yeni seri sorusu, dokunma kilitleri,
+         * çalışma süresinin durması) MainActivity'de "alttaki ekran TasksFragment" varsayımıyla
+         * kurulu ve uzun uğraşla oturtuldu. İki sekmenin aynı sınıf olması bu altyapının ikisinde
+         * de hiç değişmeden çalışmasını sağlıyor; akış kodu yerinden oynamadı.
+         */
+        const val MODE_MISSIONS = "missions"
+        const val MODE_CUP = "cup"
+        private const val ARG_MODE = "mode"
+
+        fun newInstance(mode: String): TasksFragment = TasksFragment().apply {
+            arguments = Bundle().apply { putString(ARG_MODE, mode) }
+        }
         private const val DAILY_PROGRESS_ANIM_DURATION_MS = 2800L
         private const val CLAIM_READY_VISUAL_PERCENT = 99.5f
 
@@ -191,6 +210,15 @@ class TasksFragment : Fragment() {
         ) : BulletinRow() {
             override val id: String = "daily_question_card"
         }
+
+        /**
+         * Haftalık ve günlük görev listeleri ([MissionsSection]). [revision] her tazelemede
+         * artıyor: içerik satırın dışında (MissionsProgressStore) duruyor, DiffUtil değişikliği
+         * başka türlü göremezdi.
+         */
+        data class Missions(val revision: Int) : BulletinRow() {
+            override val id: String = "missions"
+        }
     }
 
     private class BulletinAdapter(
@@ -200,6 +228,7 @@ class TasksFragment : Fragment() {
         private val onDailyQuestionProgressIncompleteTap: () -> Unit,
         private val onDailyQuestionPeriodRolledOver: () -> Unit,
         private val onBrokenHeartHealFinished: () -> Unit,
+        private val onBindMissions: (View) -> Unit,
     ) : ListAdapter<BulletinRow, RecyclerView.ViewHolder>(
         object : DiffUtil.ItemCallback<BulletinRow>() {
             override fun areItemsTheSame(oldItem: BulletinRow, newItem: BulletinRow): Boolean =
@@ -212,11 +241,15 @@ class TasksFragment : Fragment() {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is BulletinRow.DailyQuestion -> VIEW_TYPE_DAILY_QUESTION
             is BulletinRow.Standard -> VIEW_TYPE_STANDARD
+            is BulletinRow.Missions -> VIEW_TYPE_MISSIONS
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             val inflater = LayoutInflater.from(parent.context)
             return when (viewType) {
+                VIEW_TYPE_MISSIONS -> object : RecyclerView.ViewHolder(
+                    inflater.inflate(R.layout.item_missions_sections, parent, false),
+                ) {}
                 VIEW_TYPE_DAILY_QUESTION -> {
                     val view = inflater.inflate(R.layout.item_bulletin_daily_question_card, parent, false)
                     DailyQuestionVH(
@@ -239,6 +272,7 @@ class TasksFragment : Fragment() {
             when (val item = getItem(position)) {
                 is BulletinRow.Standard -> (holder as StandardVH).bind(item)
                 is BulletinRow.DailyQuestion -> (holder as DailyQuestionVH).bind(item.state)
+                is BulletinRow.Missions -> onBindMissions(holder.itemView)
             }
         }
 
@@ -675,13 +709,7 @@ class TasksFragment : Fragment() {
                 when (row) {
                     is BulletinRow.Standard -> {
                         when (row.id) {
-                            "feedback_card" -> openAbacusContainerFragment(FeedbackFragment())
                             "cup_path" -> showCupPathPanel()
-                            "chest_animation" -> openAbacusContainerFragment(
-                                NewChestFragment.newInstance(
-                                    source = AnalyticsLogger.CHEST_SOURCE_BULLETIN,
-                                )
-                            )
                             "mascot_animation" -> openAbacusContainerFragment(MascotPlaygroundFragment())
                             else -> openAbacusContainerFragment(AbacusPracticeFragment())
                         }
@@ -697,27 +725,60 @@ class TasksFragment : Fragment() {
             onDailyQuestionProgressIncompleteTap = { showDailyQuestionClaimRequiresCompleteToast() },
             onDailyQuestionPeriodRolledOver = { onDailyQuestionPeriodRolledOver() },
             onBrokenHeartHealFinished = { onDailyQuestionBrokenHeartHealFinished() },
+            onBindMissions = { row -> missionsSection.bind(row) },
         )
 
         binding.tasksRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.tasksRecycler.adapter = bulletinAdapter
         submitBulletinList()
-        refreshDailyQuestionCard()
+        if (isMissionsMode) refreshDailyQuestionCard()
     }
+
+    /** Görevler sekmesi mi; değilse Kupa Yolu sekmesi. Bkz. [MODE_MISSIONS]. */
+    private val isMissionsMode: Boolean
+        get() = (arguments?.getString(ARG_MODE) ?: MODE_MISSIONS) == MODE_MISSIONS
+
+    /** Kupa Yolu sekmesi mi; MainActivity aynı sekmeye yeniden basılınca ekranı yenilememek için bakıyor. */
+    val isCupTab: Boolean get() = !isMissionsMode
+
+    private val missionsSection by lazy { MissionsSection(this) { refreshMissions() } }
+    private var missionsRevision = 0
+
+    /** Görev listelerini yeniden çizer (geri gelişte, ödül alınınca). */
+    private fun refreshMissions() {
+        if (!isMissionsMode || _binding == null) return
+        missionsRevision++
+        submitBulletinList()
+    }
+
+    /**
+     * Kupa sekmesindeysek bekleyen kupa farkını tüketir; bkz. [consumePendingCupDelta].
+     * Görevler sekmesinde hiç tüketilmiyor: kupa testi yalnızca Kupa Yolu sekmesinden
+     * başlıyor ve oraya dönüyor. Görevler sekmesi tüketseydi kupa paneli Görevler'in üstünde
+     * açılırdı.
+     */
+    private fun consumePendingCupDeltaIfCupTab(): Boolean =
+        !isMissionsMode && !cupResultDeferred && consumePendingCupDelta()
+
+    /** Aynı sebeple kupa yolunun otomatik açılışı da yalnızca Kupa Yolu sekmesinde. */
+    private fun checkAndTriggerCupPathRevealIfCupTab(): Boolean =
+        !isMissionsMode && checkAndTriggerCupPathReveal()
 
     override fun onResume() {
         super.onResume()
         // Activity durdurulmadan geri geldiyse (reklam dönüşü) sistem gizli kupa panelinin
         // eski görüntüsünü yeniden göstermiş olabilir; bkz. [concealHiddenCupPanel].
-        concealHiddenCupPanel()
+        if (!isMissionsMode) concealHiddenCupPanel()
         // Kupa sonucu bekletiliyorsa burada TÜKETİLMİYOR; bkz. [cupResultDeferred].
-        val isConsumingAndBlocking = !cupResultDeferred && consumePendingCupDelta()
+        val isConsumingAndBlocking = consumePendingCupDeltaIfCupTab()
         // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
-        if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
+        if (!checkAndTriggerCupPathRevealIfCupTab() && !isConsumingAndBlocking) {
             releaseLaunchTouchBlocker()
         }
         // Günlük sorudan dönüş bekletiliyorsa kart burada TAZELENMİYOR; bkz. [dailyReturnDeferred].
-        if (!dailyReturnDeferred) refreshDailyQuestionCard()
+        if (isMissionsMode && !dailyReturnDeferred) refreshDailyQuestionCard()
+        // Görev ilerlemesi (ör. pratikten dönüşte çalışma süresi görevi) yeniden okunuyor.
+        refreshMissions()
         val main = activity as? MainActivity
         main?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         main?.logTouchDiag("TasksFragment.onResume")
@@ -727,47 +788,32 @@ class TasksFragment : Fragment() {
         super.onHiddenChanged(hidden)
         if (!hidden) {
             // Kupa sonucu bekletiliyorsa burada TÜKETİLMİYOR; bkz. [cupResultDeferred].
-            val isConsumingAndBlocking = !cupResultDeferred && consumePendingCupDelta()
+            val isConsumingAndBlocking = consumePendingCupDeltaIfCupTab()
             // Kupa Yolu otomatik açılış: bayrak varsa releaseLaunchTouchBlocker çağrılmaz, reveal kendi içinde yönetir
-            if (!checkAndTriggerCupPathReveal() && !isConsumingAndBlocking) {
+            if (!checkAndTriggerCupPathRevealIfCupTab() && !isConsumingAndBlocking) {
                 releaseLaunchTouchBlocker()
             }
             // Günlük sorudan dönüş bekletiliyorsa kart burada TAZELENMİYOR; bkz. [dailyReturnDeferred].
-            if (!dailyReturnDeferred) refreshDailyQuestionCard()
+            if (isMissionsMode && !dailyReturnDeferred) refreshDailyQuestionCard()
+            refreshMissions()
             (activity as? MainActivity)?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         }
     }
 
+    /**
+     * Sekmeye göre kartlar. Bize Ulaşın kartı kaldırıldı (geri bildirim hesap ayarlarında),
+     * sandık animasyonu deneme kartı da.
+     */
     private fun submitBulletinList() {
-        bulletinAdapter.submitList(
+        val rows = if (isMissionsMode) {
             listOf(
+                BulletinRow.Missions(missionsRevision),
+                BulletinRow.DailyQuestion(dailyCardState),
                 BulletinRow.Standard(
                     id = "daily_card",
                     title = "Abaküs",
                     subtitle = "Abaküste pratik yaparak kendini geliştir.",
                     iconRes = R.drawable.abacus_svg_ic,
-                ),
-                BulletinRow.DailyQuestion(dailyCardState),
-                BulletinRow.Standard(
-                    id = "cup_path",
-                    title = "Kupa Yolu",
-                    subtitle = "Başarılarını kupalarla ölç, seviyeni yükselt ve yeni zorluklara ilerle.",
-                    iconRes = R.drawable.infinity_cup_ic,
-                    colorRes = R.color.lesson_header_yellow
-                ),
-                BulletinRow.Standard(
-                    id = "feedback_card",
-                    title = "Bize Ulaşın",
-                    subtitle = "Bir sorun mu yaşadınız? Görüşlerinizi ve önerilerinizi bizimle paylaşın.",
-                    iconRes = R.drawable.feedback_ic,
-                    colorRes = android.R.color.holo_blue_dark
-                ),
-                BulletinRow.Standard(
-                    id = "chest_animation",
-                    title = "Sandık Animasyonu",
-                    subtitle = "Yeni sandık açılış animasyonu yapısı.",
-                    iconRes = R.drawable.gold_ic,
-                    colorRes = android.R.color.holo_orange_dark
                 ),
                 BulletinRow.Standard(
                     id = "mascot_animation",
@@ -775,8 +821,19 @@ class TasksFragment : Fragment() {
                     subtitle = "Maskotun bütün hareketlerini dene.",
                     colorRes = android.R.color.holo_purple
                 ),
-            ),
-        )
+            )
+        } else {
+            listOf(
+                BulletinRow.Standard(
+                    id = "cup_path",
+                    title = "Kupa Yolu",
+                    subtitle = "Başarılarını kupalarla ölç, seviyeni yükselt ve yeni zorluklara ilerle.",
+                    iconRes = R.drawable.infinity_cup_ic,
+                    colorRes = R.color.lesson_header_yellow
+                ),
+            )
+        }
+        bulletinAdapter.submitList(rows)
     }
 
     /** Periyot bittiğinde kartı Tasks’tayken anında yeniler. */

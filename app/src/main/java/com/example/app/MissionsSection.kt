@@ -1,6 +1,5 @@
 package com.example.app
 
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,53 +8,38 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.app.databinding.FragmentMissionsBinding
 import java.util.Locale
 
-class MissionsFragment : Fragment() {
-
-    private var _binding: FragmentMissionsBinding? = null
-    private val binding get() = _binding!!
+/**
+ * Görevler sekmesindeki haftalık ve günlük görev listeleri (item_missions_sections.xml).
+ *
+ * Eskiden kendi ekranıydı (MissionsFragment). Görevler sekmesi günlük soru ve abaküs
+ * kartlarıyla birleşince [TasksFragment]'in Görevler modundaki listede bir satır oldu; kod
+ * aynen buraya taşındı. Ekran yerine [host] fragment kullanılıyor: sandık onun
+ * FragmentManager'ına ekleniyor, sonucu onun yaşam döngüsüyle dinleniyor.
+ *
+ * @param onChanged Bir ödül alınınca çağrılır; satır yeniden çizilsin diye.
+ */
+class MissionsSection(
+    private val host: Fragment,
+    private val onChanged: () -> Unit,
+) {
     private var isVideoFlowOpen = false
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
-        _binding = FragmentMissionsBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        updateMissionsUI()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        updateMissionsUI()
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
-    }
-
-    private fun updateMissionsUI() {
-        val b = _binding ?: return
-        val ctx = context ?: return
+    fun bind(root: View) {
+        val ctx = host.context ?: return
 
         val snap = MissionsProgressStore.getSnapshot(ctx)
         val dailyHours = MissionsProgressStore.hoursUntilDailyReset(ctx)
         val weeklyMs = MissionsProgressStore.millisUntilWeeklyReset(ctx)
-        val weeklyLabel = formatWeeklyCountdown(weeklyMs)
 
-        b.weeklySectionCountdown.text = weeklyLabel
-        b.dailySectionCountdown.text = getString(R.string.missions_hours_short, dailyHours)
+        root.findViewById<TextView>(R.id.weeklySectionCountdown).text = formatWeeklyCountdown(weeklyMs)
+        root.findViewById<TextView>(R.id.dailySectionCountdown).text =
+            ctx.getString(R.string.missions_hours_short, dailyHours)
 
         // Haftalık Görevleri Yükle
-        b.weeklyQuestsContainer.removeAllViews()
+        val weeklyContainer = root.findViewById<LinearLayout>(R.id.weeklyQuestsContainer)
+        weeklyContainer.removeAllViews()
         val weeklyMissions = MissionsProgressStore.selectedMissionsForWeekly(ctx)
         weeklyMissions.forEachIndexed { index, mission ->
             val progress = minOf(
@@ -65,23 +49,23 @@ class MissionsFragment : Fragment() {
             val isClaimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.WEEKLY, mission.id)
             val questData = MissionQuestData(
                 missionId = mission.id,
-                title = getString(mission.titleResId),
+                title = ctx.getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
                 iconRes = R.drawable.new_chest_close_ic2,
                 window = MissionWindow.WEEKLY,
                 isClaimed = isClaimed,
             )
-            val itemView = createQuestItemView(b.weeklyQuestsContainer, questData)
-            b.weeklyQuestsContainer.addView(itemView)
+            weeklyContainer.addView(createQuestItemView(weeklyContainer, questData))
 
             if (index < weeklyMissions.size - 1) {
-                addDivider(b.weeklyQuestsContainer)
+                addDivider(weeklyContainer)
             }
         }
 
         // Günlük Görevleri Yükle
-        b.dailyQuestsContainer.removeAllViews()
+        val dailyContainer = root.findViewById<LinearLayout>(R.id.dailyQuestsContainer)
+        dailyContainer.removeAllViews()
         val dailyMissions = MissionsProgressStore.selectedMissionsForDaily(ctx)
         dailyMissions.forEachIndexed { index, mission ->
             val progress = minOf(
@@ -91,24 +75,23 @@ class MissionsFragment : Fragment() {
             val isClaimed = MissionsProgressStore.isMissionRewardClaimed(ctx, MissionWindow.DAILY, mission.id)
             val questData = MissionQuestData(
                 missionId = mission.id,
-                title = getString(mission.titleResId),
+                title = ctx.getString(mission.titleResId),
                 progress = progress,
                 target = mission.target,
                 iconRes = R.drawable.new_chest_close_ic1,
                 window = MissionWindow.DAILY,
                 isClaimed = isClaimed,
             )
-            val itemView = createQuestItemView(b.dailyQuestsContainer, questData)
-            b.dailyQuestsContainer.addView(itemView)
+            dailyContainer.addView(createQuestItemView(dailyContainer, questData))
 
             if (index < dailyMissions.size - 1) {
-                addDivider(b.dailyQuestsContainer)
+                addDivider(dailyContainer)
             }
         }
     }
 
     private fun addDivider(container: ViewGroup) {
-        val dividerView = View(requireContext()).apply {
+        val dividerView = View(container.context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 1,
@@ -183,18 +166,19 @@ class MissionsFragment : Fragment() {
     }
 
     private fun onQuestClicked(quest: MissionQuestData) {
-        val ctx = context ?: return
+        val ctx = host.context ?: return
         val done = quest.progress >= quest.target
         if (!done || quest.isClaimed) return
-        if (isVideoFlowOpen || !isAdded) return
+        if (isVideoFlowOpen || !host.isAdded) return
 
         isVideoFlowOpen = true
 
-        parentFragmentManager.setFragmentResultListener("chest_closed", viewLifecycleOwner) { _, _ ->
-            MissionsProgressStore.markMissionRewardClaimed(requireContext(), quest.window, quest.missionId)
+        val fm = host.parentFragmentManager
+        fm.setFragmentResultListener("chest_closed", host.viewLifecycleOwner) { _, _ ->
+            MissionsProgressStore.markMissionRewardClaimed(ctx, quest.window, quest.missionId)
             isVideoFlowOpen = false
-            updateMissionsUI()
-            parentFragmentManager.clearFragmentResultListener("chest_closed")
+            onChanged()
+            fm.clearFragmentResultListener("chest_closed")
         }
 
         val startRarity = if (quest.window == MissionWindow.WEEKLY) {
@@ -206,28 +190,29 @@ class MissionsFragment : Fragment() {
         // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
         ServerRewards.prefetchChest(startRarity.name)
 
-        val mainActivity = activity as? MainActivity
+        val mainActivity = host.activity as? MainActivity
         val containerId = mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.id ?: R.id.fragmentContainerID
-        mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = android.view.View.VISIBLE
+        mainActivity?.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
 
-        parentFragmentManager.beginTransaction()
-                .add(
-                    containerId,
-                    NewChestFragment.newInstance(
-                        startRarity,
-                        source = AnalyticsLogger.CHEST_SOURCE_MISSION,
-                    ),
-                )
-                .commit()
+        fm.beginTransaction()
+            .add(
+                containerId,
+                NewChestFragment.newInstance(
+                    startRarity,
+                    source = AnalyticsLogger.CHEST_SOURCE_MISSION,
+                ),
+            )
+            .commit()
     }
 
     private fun formatWeeklyCountdown(ms: Long): String {
+        val ctx = host.requireContext()
         val hoursTotal = (ms / (1000 * 60 * 60)).toInt().coerceAtLeast(1)
         return if (ms >= 24L * 60 * 60 * 1000) {
             val days = ((ms + 24L * 60 * 60 * 1000 - 1) / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(1)
-            getString(R.string.missions_days_short, days)
+            ctx.getString(R.string.missions_days_short, days)
         } else {
-            getString(R.string.missions_hours_short, hoursTotal)
+            ctx.getString(R.string.missions_hours_short, hoursTotal)
         }
     }
 
