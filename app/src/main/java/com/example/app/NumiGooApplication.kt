@@ -25,6 +25,19 @@ class NumiGooApplication : Application() {
      * Ekran adı üretmeyen fragment'ler. Bunlar kullanıcı için bir "ekran" değil, taşıyıcı
      * ya da görünmez yardımcıdır; rapora girerse gerçek ekranların sayısını bozarlar.
      */
+    /**
+     * Ölçümdeki ekran adı: sınıf adı değil, fragment'ın kendi verdiği ad.
+     *
+     * Sınıf adı tek başına yetmiyor. Görevler ve Kupa Yolu sekmelerinin ikisi de
+     * [TasksFragment] (dönüş altyapısı "alttaki ekran TasksFragment" varsaydığı için
+     * bilinçle aynı sınıf): sınıf adıyla ikisi `screen_view` ve `app_exit_screen`'de tek
+     * satırda birleşiyor, yani Kupa Yolu sekmesinin kullanılıp kullanılmadığı hiç
+     * ölçülemiyordu. Bir de geçmişle kıyas bozuluyordu — silinen `MissionsFragment`
+     * raporlardan kaybolup trafiği `TasksFragment`'a ekleniyordu.
+     */
+    private fun screenNameOf(f: Fragment): String =
+        (f as? AnalyticsScreenName)?.analyticsScreenName ?: f::class.java.simpleName
+
     private val ignoredFragments = setOf(
         "SupportRequestManagerFragment",   // Glide
         "ReportFragment",                  // androidx.lifecycle
@@ -94,7 +107,7 @@ class NumiGooApplication : Application() {
      * yapmaz.
      */
     private fun onScreenGone(f: Fragment) {
-        val name = f::class.java.simpleName
+        val name = screenNameOf(f)
         if (name.isEmpty() || name in ignoredFragments) return
         // Yalnızca BU örneğin koyduğu kayıt: aynı adı artık başka bir örnek taşıyorsa (yeni
         // açılan ders) ona dokunulmuyor.
@@ -129,7 +142,7 @@ class NumiGooApplication : Application() {
      */
     private val fragmentCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-            val name = f::class.java.simpleName
+            val name = screenNameOf(f)
             if (name.isEmpty() || name in ignoredFragments) return
             // Aynı ad yığında birden fazla kez durmasın: arka plandan dönüşte görünür
             // fragment'ların hepsi yeniden resume oluyor.
@@ -277,4 +290,22 @@ class NumiGooApplication : Application() {
     companion object {
         const val TAG = "AppCheck"
     }
+}
+
+/**
+ * Ölçümde sınıf adı yerine kendi adını veren fragment.
+ *
+ * Yalnızca aynı sınıfın birden fazla ekran olarak yaşadığı yerlerde gerekiyor; geri kalan
+ * fragment'lar bunu uygulamaz ve sınıf adıyla kaydedilir (bkz.
+ * [NumiGooApplication.screenNameOf]).
+ */
+interface AnalyticsScreenName {
+    /**
+     * `screen_view` ve `app_exit_screen`'de görünecek ad.
+     *
+     * Fragment'ın ömrü boyunca DEĞİŞMEMELİ: ekran yığını bu adla tutuluyor, ad ortada
+     * değişirse "gittim" haberi kendi kaydını bulamaz ve alttaki ekrana geri dönüş
+     * işlenmez.
+     */
+    val analyticsScreenName: String
 }

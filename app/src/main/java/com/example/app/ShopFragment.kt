@@ -49,6 +49,15 @@ class ShopFragment : Fragment() {
     /** Altın karşılığı seri dondurma alımı sürerken tekrar tıklamayı engeller. */
     private var buyFreezeInProgress = false
 
+    /**
+     * Dondurma teklifi bu ekran ömründe ölçüme bildirildi mi.
+     *
+     * [renderStreakFreezeCard] her bakiye/dondurma değişiminde yeniden çalışıyor; olay
+     * her çizimde gönderilse "kaç kez görüldü" sayısı çizim sayısına dönüşür ve dönüşüm
+     * oranı anlamsızlaşırdı.
+     */
+    private var freezeOfferLogged = false
+
     // Timer properties for energy section
     private val handler = Handler(Looper.getMainLooper())
     private var updateRunnable: Runnable? = null
@@ -313,6 +322,15 @@ class ShopFragment : Fragment() {
             text.setTextColor(Color.parseColor("#4FC3F7"))
             button.isClickable = false
         } else {
+            // Yalnızca ALINABİLİR hâl bir teklif; "✓ HAZIR" değil. Satın almanın paydası:
+            // streak_freeze_offer_shown → gold_spent[item_id=streak_freeze].
+            if (!freezeOfferLogged) {
+                freezeOfferLogged = true
+                AnalyticsLogger.logStreakFreezeOfferShown(
+                    canAfford = UserWalletFirestore.getCachedCurrency(ctx) >=
+                        StreakRepository.FREEZE_COST_GOLD,
+                )
+            }
             desc.text = "Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!"
             button.setCardBackgroundColor(Color.parseColor("#37474F"))
             icon.visibility = View.VISIBLE

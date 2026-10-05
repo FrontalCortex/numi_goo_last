@@ -49,6 +49,20 @@ class AvatarCustomFragment : Fragment() {
     private var options: List<String> = emptyList()
     private lateinit var adapter: OptionAdapter
 
+    // ── Ölçüm ───────────────────────────────────────────────────────────────
+    //
+    // "Hangi parça ilgi çekiyor" sorusunun cevabı ücretli yapılacak parçaları seçmenin tek
+    // verisi; geçmişe dönük toplanamıyor.
+
+    /** Bu ekran ömründe değiştirilmiş parça anahtarları; olay parça başına bir kez gider. */
+    private val loggedParts = HashSet<String>()
+
+    /** "Rastgele" düğmesine basıldı mı. Parça başına ücretlendirme kararını değiştiriyor. */
+    private var usedRandom = false
+
+    /** Ekran açılırken yüklenen hâl; kaydetmede kaç parçanın değiştiğini bundan sayıyoruz. */
+    private var baseline: AvatarConfig? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAvatarCustomBinding.inflate(inflater, container, false)
         return binding.root
@@ -59,6 +73,11 @@ class AvatarCustomFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) { close() }
         binding.btnClose.setOnClickListener { close() }
         binding.btnSave.setOnClickListener {
+            AnalyticsLogger.logAvatarSaved(
+                changedParts = changedPartCount(),
+                usedRandom = usedRandom,
+                style = config.style.key,
+            )
             AvatarStore.save(requireContext(), config)
             (activity as? MainActivity)?.refreshProfileNavIcon()
             Toast.makeText(requireContext(), "Avatarın kaydedildi", Toast.LENGTH_SHORT).show()
@@ -66,6 +85,9 @@ class AvatarCustomFragment : Fragment() {
         }
         binding.btnRandom.setOnClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            // Rastgele bütün parçaları birden değiştiriyor; parça olayı GÖNDERİLMİYOR.
+            // Gönderilseydi "bu parça ilgi çekti" sayısı zar atmalarla şişerdi.
+            usedRandom = true
             applyConfig(AvatarConfig.random(requireContext(), config.style))
         }
 
@@ -82,6 +104,14 @@ class AvatarCustomFragment : Fragment() {
             showStyle(AvatarStyle.entries[i])
         }
         showStyle(active)
+        baseline = config
+    }
+
+    /** Ekran açılırken yüklenen hâle göre kaç parça farklı. Stil değiştiyse 0 dönülmüyor. */
+    private fun changedPartCount(): Int {
+        val before = baseline ?: return 0
+        if (before.style != config.style) return config.values.size
+        return config.values.count { (key, value) -> before.values[key] != value }
     }
 
     private fun showStyle(style: AvatarStyle) {
@@ -144,6 +174,12 @@ class AvatarCustomFragment : Fragment() {
 
     private fun select(value: String) {
         if (currentValue() == value) return
+        // Ekran ömründe parça başına bir kez: bir çocuk yirmi saç seçeneğini gezse de
+        // "saç ilgi çekti" bir kez sayılıyor. Yoksa rapor en çok DENENEN parçayı değil en
+        // çok SEÇENEĞİ olan parçayı gösterirdi.
+        if (loggedParts.add(tab.key)) {
+            AnalyticsLogger.logAvatarPartChanged(tab.key, config.style.key)
+        }
         applyConfig(withValue(value))
     }
 

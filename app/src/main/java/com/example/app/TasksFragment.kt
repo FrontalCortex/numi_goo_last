@@ -33,7 +33,7 @@ import com.example.app.databinding.FragmentTasksBinding
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class TasksFragment : Fragment() {
+class TasksFragment : Fragment(), AnalyticsScreenName {
     private fun startEnergyUpdateTimer(contentView: View, energyManager: EnergyManager?) {
         if (energyManager == null) return
         val energyText = contentView.findViewById<TextView>(R.id.panelCupPathEnergyText) ?: return
@@ -740,6 +740,17 @@ class TasksFragment : Fragment() {
 
     /** Kupa Yolu sekmesi mi; MainActivity aynı sekmeye yeniden basılınca ekranı yenilememek için bakıyor. */
     val isCupTab: Boolean get() = !isMissionsMode
+
+    /**
+     * İki sekme ölçümde ayrı ekran sayılıyor.
+     *
+     * Sınıf adı ikisinde de `TasksFragment` olduğu için `screen_view` ve
+     * `app_exit_screen` onları tek satırda birleştiriyordu. [ARG_MODE] fragment
+     * oluşturulurken bir kez yazılıyor ve değişmiyor, yani ad ömür boyu sabit —
+     * [AnalyticsScreenName] bunu şart koşuyor.
+     */
+    override val analyticsScreenName: String
+        get() = if (isMissionsMode) "Tasks_Missions" else "Tasks_CupPath"
 
     private val missionsSection by lazy { MissionsSection(this) { refreshMissions() } }
     private var missionsRevision = 0

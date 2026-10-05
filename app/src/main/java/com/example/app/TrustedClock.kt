@@ -44,6 +44,9 @@ object TrustedClock {
 
     @Volatile private var anchor: TrustedClockRules.Anchor? = null
     @Volatile private var bootCount: Int = 0
+
+    /** Ölçüme en son bildirilen sapma kovası; bkz. [reportSkew]. */
+    @Volatile private var lastSkewBucket: String? = null
     private var prefs: SharedPreferences? = null
 
     /**
@@ -101,8 +104,38 @@ object TrustedClock {
             ?.putInt(KEY_BOOT_COUNT, bootCount)
             ?.apply()
         // Fark büyükse cihaz saati yanlış ya da oynanmış demektir; teşhiste işe yarıyor.
-        Log.d(TAG, "capa kuruldu | cihazSaatiFarki=${System.currentTimeMillis() - serverNowMs}ms")
+        val skewMs = System.currentTimeMillis() - serverNowMs
+        Log.d(TAG, "capa kuruldu | cihazSaatiFarki=${skewMs}ms")
+        reportSkew(skewMs)
         anchorListeners.forEach { runCatching { it() } }
+    }
+
+    /**
+     * Belirgin sapmayı ölçüme bildirir.
+     *
+     * Bu fonksiyon her açılışta ve saatte bir çalışıyor ([SeasonClock.refreshFromServer]),
+     * yani her çağrıda olay göndermek kullanıcı başına günde onlarca kayıt demekti. İki
+     * süzgeç var:
+     *
+     * - 5 dakikanın altı hiç gönderilmiyor: o aralık ağ gecikmesi ve normal saat kayması.
+     * - Aynı kova tekrar gönderilmiyor. Böylece saatlik tazeleme sessiz kalıyor ama kova
+     *   DEĞİŞİRSE (çocuk uygulama açıkken saati ileri aldı, ya da saat düzeldi) yakalanıyor.
+     *
+     * Süreç başına durum: uygulama yeniden açılınca tekrar bir kez gönderilir, o da
+     * "kaç kullanıcıda var" sorusu için doğru olan.
+     */
+    private fun reportSkew(skewMs: Long) {
+        val bucket = AnalyticsLogger.skewBucket(skewMs)
+        if (bucket == AnalyticsLogger.SKEW_UNDER_5M) {
+            lastSkewBucket = bucket
+            return
+        }
+        if (bucket == lastSkewBucket) return
+        lastSkewBucket = bucket
+        AnalyticsLogger.logDeviceClockSkew(
+            bucket = bucket,
+            direction = if (skewMs > 0) AnalyticsLogger.SKEW_AHEAD else AnalyticsLogger.SKEW_BEHIND,
+        )
     }
 
     /** Duvar saati değiştirilse de kaymayan "şimdi" (Unix ms). */

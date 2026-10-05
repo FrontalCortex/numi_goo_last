@@ -103,6 +103,10 @@ object AnalyticsLogger {
     private const val EV_STREAK_BROKEN = "streak_broken"
     private const val EV_STREAK_CHALLENGE_DONE = "streak_challenge_done"
     private const val EV_STREAK_FREEZE_USED = "streak_freeze_used"
+    private const val EV_STREAK_FREEZE_OFFER = "streak_freeze_offer_shown"
+    private const val EV_AVATAR_PART_CHANGED = "avatar_part_changed"
+    private const val EV_AVATAR_SAVED = "avatar_saved"
+    private const val EV_DEVICE_CLOCK_SKEW = "device_clock_skew"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
     private const val P_PART_ID = "part_id"
@@ -188,6 +192,13 @@ object AnalyticsLogger {
     private const val P_NOTIF_PERMISSION = "notif_permission"
     private const val P_MISSED_DAYS = "missed_days"
     private const val P_STREAK_SAVED = "streak_saved"
+    private const val P_CAN_AFFORD = "can_afford"
+    private const val P_AVATAR_PART = "avatar_part"
+    private const val P_AVATAR_STYLE = "avatar_style"
+    private const val P_CHANGED_PARTS = "changed_parts"
+    private const val P_USED_RANDOM = "used_random"
+    private const val P_SKEW_BUCKET = "skew_bucket"
+    private const val P_SKEW_DIR = "skew_dir"
 
     // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
     // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
@@ -200,6 +211,41 @@ object AnalyticsLogger {
     const val ITEM_DAILY_QUESTION_CONTINUE = "daily_question_continue"
     /** Mağazadan altınla seri dondurma ([ShopFragment]). */
     const val ITEM_STREAK_FREEZE = "streak_freeze"
+
+    // ── Cihaz saati sapması ([logDeviceClockSkew]) ────────────────────────────
+    //
+    // Ham fark GÖNDERİLMİYOR, kova gönderiliyor: ham milisaniye her kullanıcıda farklı bir
+    // değer demek, yani raporda binlerce ayrı satır ve hiçbir soruya cevap vermeyen bir
+    // kardinalite. Soru "kaç kullanıcının saati ne kadar yanlış", cevabı kova veriyor.
+
+    /** 5 dakikanın altı hiç gönderilmiyor: ağ gecikmesi ve normal saat kayması bu aralıkta. */
+    const val SKEW_UNDER_5M = "under_5m"
+    const val SKEW_5M_1H = "5m_1h"
+    const val SKEW_1H_6H = "1h_6h"
+    const val SKEW_6H_1D = "6h_1d"
+    const val SKEW_1D_PLUS = "1d_plus"
+
+    /** Cihaz saati sunucudan İLERİDE — canı/seriyi erken açmaya çalışan yön. */
+    const val SKEW_AHEAD = "ahead"
+    /** Cihaz saati GERİDE — çoğunlukla dürüst bozulma (saati kurulmamış cihaz). */
+    const val SKEW_BEHIND = "behind"
+
+    /**
+     * Sapmayı kovaya çevirir; 5 dakikanın altı [SKEW_UNDER_5M] (gönderilmemeli).
+     *
+     * Burada duruyor ki eşik ve sınırlar tek yerde olsun: çağıran taraf
+     * ([TrustedClock]) hangi sapmanın kaydedilmeye değdiğine de buna bakarak karar veriyor.
+     */
+    fun skewBucket(skewMs: Long): String {
+        val abs = kotlin.math.abs(skewMs)
+        return when {
+            abs < 5 * 60_000L -> SKEW_UNDER_5M
+            abs < 60 * 60_000L -> SKEW_5M_1H
+            abs < 6 * 60 * 60_000L -> SKEW_1H_6H
+            abs < 24 * 60 * 60_000L -> SKEW_6H_1D
+            else -> SKEW_1D_PLUS
+        }
+    }
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -1420,6 +1466,94 @@ object AnalyticsLogger {
         fa.logEvent(EV_STREAK_FREEZE_USED) {
             param(P_STREAK_DAYS, streakDays.toLong())
             param(P_STREAK_SAVED, if (saved) 1L else 0L)
+        }
+    }
+
+    /**
+     * Mağazadaki seri dondurma kartı **alınabilir** hâlde görüldü.
+     *
+     * Satın almanın paydası. Alım `gold_spent` olayıyla ([ITEM_STREAK_FREEZE]) zaten
+     * gidiyordu ama payda yoktu: 4000 altınlık bir ürünün kaç kez görülüp kaç kez
+     * alındığı, yani dönüşüm oranı hesaplanamıyordu. Huni:
+     * `streak_freeze_offer_shown` → `gold_spent[item_id=streak_freeze]`.
+     *
+     * Elde dondurma varken ("✓ HAZIR") gönderilmiyor: o hâl bir teklif değil.
+     * Mağaza her tazelemede kartı yeniden çiziyor, bu yüzden çağıran taraf olayı
+     * ekran ömrü başına bir kez gönderiyor (bkz. [ShopFragment]).
+     *
+     * @param canAfford Kullanıcının altını yetiyor mu. Dönüşmeyen görüşlerin "istemedi" mi
+     *   "parası yetmedi" mi olduğunu ayırıyor; ikisi tamamen farklı iki karar demek
+     *   (fiyatı düşürmek ya da kartı anlatmak).
+     */
+    fun logStreakFreezeOfferShown(canAfford: Boolean) = safe { fa ->
+        fa.logEvent(EV_STREAK_FREEZE_OFFER) {
+            param(P_CAN_AFFORD, if (canAfford) 1L else 0L)
+        }
+    }
+
+    /**
+     * Avatar ekranında bir parça değiştirildi — **ekran ömrü başına parça başına bir kez**.
+     *
+     * Hangi parçaların ilgi çektiğini ölçüyor; ücretli yapılacak parçalara karar vermenin
+     * tek verisi bu. Tekilleştirme çağıran tarafta: saç seçeneklerini tek tek gezen bir
+     * çocuk yirmi olay değil bir `hair` olayı üretiyor, yoksa rapor "en çok denenen" ile
+     * "en çok seçenek içeren" parçayı ayırt edemezdi.
+     *
+     * @param part [AvatarTab.key] — `hair`, `hairColor`, `skinColor`, `eyes`, `nose`,
+     *   `mouth`, `facialHair`, `body`, `clothingColor`, `backgroundColor`. Sayısı sabit
+     *   ve küçük olduğu için ham gönderiliyor.
+     * @param style [AvatarStyle.key]. Şimdilik tek stil var; ikincisi eklenirse ayrım hazır.
+     */
+    fun logAvatarPartChanged(part: String, style: String) = safe { fa ->
+        fa.logEvent(EV_AVATAR_PART_CHANGED) {
+            param(P_AVATAR_PART, part)
+            param(P_AVATAR_STYLE, style)
+        }
+    }
+
+    /**
+     * Avatar kaydedildi.
+     *
+     * Ekranı açıp vazgeçenlerin oranı, bununla `screen_view[AvatarCustomFragment]`
+     * sayısının karşılaştırılmasından çıkıyor; bu yüzden ayrı bir "ekran açıldı" olayı yok.
+     *
+     * @param changedParts Yüklenen hâle göre kaç parça farklı. 0: ekrana girip bir şey
+     *   değiştirmeden kaydetti.
+     * @param usedRandom "Rastgele" düğmesi kullanıldı mı. Parça başına ücretlendirme
+     *   kararı için belirleyici: kullanıcıların çoğu zarı atıp kaydediyorsa tek tek parça
+     *   satmak karşılıksız kalır.
+     */
+    fun logAvatarSaved(changedParts: Int, usedRandom: Boolean, style: String) = safe { fa ->
+        fa.logEvent(EV_AVATAR_SAVED) {
+            param(P_CHANGED_PARTS, changedParts.toLong())
+            param(P_USED_RANDOM, if (usedRandom) 1L else 0L)
+            param(P_AVATAR_STYLE, style)
+        }
+    }
+
+    /**
+     * Cihazın duvar saati sunucu saatinden belirgin biçimde sapıyor.
+     *
+     * İki ayrı soruyu birlikte cevaplıyor:
+     *
+     * 1. **Dürüst bozulma.** Saati yanlış olan cihazlarda can ve seri yanlış zamanda
+     *    işliyor. Kaç kullanıcının başına geldiğini bilmeden bunun önemsenecek bir sorun
+     *    olup olmadığı bilinemez.
+     * 2. **Saatle oynama.** İleri yönlü büyük sapmalar, canı erken doldurmak için saati
+     *    ileri alma denemesinin izi. [TrustedClock] bunu zaten etkisiz bırakıyor ama
+     *    kapatılmayan bir boşluk duruyor (çapa yokken duvar saatine dönülüyor). O boşluğu
+     *    kapatmanın bedeli var: ders başlatmayı sunucu onayına bağlamak, yani internetsiz
+     *    ders açılamaması. Bu olay o kararı tahminden çıkarıyor.
+     *
+     * Ham fark gönderilmiyor; bkz. [skewBucket].
+     *
+     * @param bucket [skewBucket] çıktısı. [SKEW_UNDER_5M] ile çağrılmamalı.
+     * @param direction [SKEW_AHEAD] ya da [SKEW_BEHIND].
+     */
+    fun logDeviceClockSkew(bucket: String, direction: String) = safe { fa ->
+        fa.logEvent(EV_DEVICE_CLOCK_SKEW) {
+            param(P_SKEW_BUCKET, bucket)
+            param(P_SKEW_DIR, direction)
         }
     }
 
