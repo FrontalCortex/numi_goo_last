@@ -132,10 +132,9 @@ object TrustedClock {
         }
         if (bucket == lastSkewBucket) return
         lastSkewBucket = bucket
-        AnalyticsLogger.logDeviceClockSkew(
-            bucket = bucket,
-            direction = if (skewMs > 0) AnalyticsLogger.SKEW_AHEAD else AnalyticsLogger.SKEW_BEHIND,
-        )
+        // Kova yönü de taşıyor (`ahead_1h_6h`); ayrı bir yön parametresi ikinci bir özel
+        // boyut yuvası yerdi, bkz. [AnalyticsLogger.skewBucket].
+        AnalyticsLogger.logDeviceClockSkew(bucket)
     }
 
     /** Duvar saati değiştirilse de kaymayan "şimdi" (Unix ms). */

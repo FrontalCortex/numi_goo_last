@@ -198,7 +198,6 @@ object AnalyticsLogger {
     private const val P_CHANGED_PARTS = "changed_parts"
     private const val P_USED_RANDOM = "used_random"
     private const val P_SKEW_BUCKET = "skew_bucket"
-    private const val P_SKEW_DIR = "skew_dir"
 
     // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
     // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
@@ -220,31 +219,30 @@ object AnalyticsLogger {
 
     /** 5 dakikanın altı hiç gönderilmiyor: ağ gecikmesi ve normal saat kayması bu aralıkta. */
     const val SKEW_UNDER_5M = "under_5m"
-    const val SKEW_5M_1H = "5m_1h"
-    const val SKEW_1H_6H = "1h_6h"
-    const val SKEW_6H_1D = "6h_1d"
-    const val SKEW_1D_PLUS = "1d_plus"
-
-    /** Cihaz saati sunucudan İLERİDE — canı/seriyi erken açmaya çalışan yön. */
-    const val SKEW_AHEAD = "ahead"
-    /** Cihaz saati GERİDE — çoğunlukla dürüst bozulma (saati kurulmamış cihaz). */
-    const val SKEW_BEHIND = "behind"
 
     /**
-     * Sapmayı kovaya çevirir; 5 dakikanın altı [SKEW_UNDER_5M] (gönderilmemeli).
+     * Sapmayı YÖNÜYLE BİRLİKTE tek kovaya çevirir (`ahead_1h_6h`, `behind_5m_1h`, …);
+     * 5 dakikanın altı [SKEW_UNDER_5M] (gönderilmemeli).
      *
-     * Burada duruyor ki eşik ve sınırlar tek yerde olsun: çağıran taraf
-     * ([TrustedClock]) hangi sapmanın kaydedilmeye değdiğine de buna bakarak karar veriyor.
+     * Yön neden ayrı parametre değil: GA4'ün ücretsiz sürümünde olay kapsamlı özel boyut
+     * yuvası 50 ile sınırlı ve bu projede dolmak üzere. İki ayrı boyut iki yuva yerdi;
+     * birleşik kovanın 8 ayrı değeri var, raporda tek tabloda okunuyor ve "ileri olanların
+     * toplamı" gerekiyorsa BigQuery'de prefix ile alınıyor.
+     *
+     * Burada duruyor ki eşik ve sınırlar tek yerde olsun: çağıran taraf ([TrustedClock])
+     * hangi sapmanın kaydedilmeye değdiğine de buna bakarak karar veriyor.
      */
     fun skewBucket(skewMs: Long): String {
         val abs = kotlin.math.abs(skewMs)
-        return when {
-            abs < 5 * 60_000L -> SKEW_UNDER_5M
-            abs < 60 * 60_000L -> SKEW_5M_1H
-            abs < 6 * 60 * 60_000L -> SKEW_1H_6H
-            abs < 24 * 60 * 60_000L -> SKEW_6H_1D
-            else -> SKEW_1D_PLUS
+        val size = when {
+            abs < 5 * 60_000L -> return SKEW_UNDER_5M
+            abs < 60 * 60_000L -> "5m_1h"
+            abs < 6 * 60 * 60_000L -> "1h_6h"
+            abs < 24 * 60 * 60_000L -> "6h_1d"
+            else -> "1d_plus"
         }
+        // İleri = canı/seriyi erken açmaya çalışan yön; geri = çoğunlukla dürüst bozulma.
+        return (if (skewMs > 0) "ahead_" else "behind_") + size
     }
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
@@ -1502,7 +1500,10 @@ object AnalyticsLogger {
      * @param part [AvatarTab.key] — `hair`, `hairColor`, `skinColor`, `eyes`, `nose`,
      *   `mouth`, `facialHair`, `body`, `clothingColor`, `backgroundColor`. Sayısı sabit
      *   ve küçük olduğu için ham gönderiliyor.
-     * @param style [AvatarStyle.key]. Şimdilik tek stil var; ikincisi eklenirse ayrım hazır.
+     * @param style [AvatarStyle.key]. Şimdilik tek stil var, yani bugün tek değerli:
+     *   GA4'te özel boyut olarak KAYDEDİLMEMESİ gerekiyor (yuva sınırlı ve tek değerli bir
+     *   boyut hiçbir soruya cevap vermiyor). Gönderilmeye devam ediyor; ikinci stil
+     *   eklendiğinde kaydedilir, o güne kadar BigQuery'den okunabilir.
      */
     fun logAvatarPartChanged(part: String, style: String) = safe { fa ->
         fa.logEvent(EV_AVATAR_PART_CHANGED) {
@@ -1547,13 +1548,12 @@ object AnalyticsLogger {
      *
      * Ham fark gönderilmiyor; bkz. [skewBucket].
      *
-     * @param bucket [skewBucket] çıktısı. [SKEW_UNDER_5M] ile çağrılmamalı.
-     * @param direction [SKEW_AHEAD] ya da [SKEW_BEHIND].
+     * @param bucket [skewBucket] çıktısı — yönü de içeriyor (`ahead_1h_6h`).
+     *   [SKEW_UNDER_5M] ile çağrılmamalı.
      */
-    fun logDeviceClockSkew(bucket: String, direction: String) = safe { fa ->
+    fun logDeviceClockSkew(bucket: String) = safe { fa ->
         fa.logEvent(EV_DEVICE_CLOCK_SKEW) {
             param(P_SKEW_BUCKET, bucket)
-            param(P_SKEW_DIR, direction)
         }
     }
 
