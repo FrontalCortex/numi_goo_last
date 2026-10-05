@@ -2,10 +2,15 @@ package com.example.app
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
+import android.os.Build
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.View
@@ -15,6 +20,7 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.floor
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -59,8 +65,16 @@ class BunnyMascotView @JvmOverloads constructor(
     /**
      * Oynatılabilen hâller ve süreleri. [loops] olan hâl süresi dolunca bitmiyor, başka bir
      * hâl oynatılana kadar baştan dönüyor (bir ekranın sürekli canlandırması için).
+     * [holdFromMs] verilen hâl ise baştan dönmüyor: bir kez oynuyor, sonra yalnızca son bölümü
+     * ([holdFromMs] .. süre) kendi içinde dönüyor — ders sonu ekranında son hâlinde bekliyor.
+     * O bölümdeki salınımlar bölüm boyuna tam oturacak şekilde seçildi (dikiş görünmesin).
      */
-    enum class Emote(val durationMs: Long, val label: String, val loops: Boolean = false) {
+    enum class Emote(
+        val durationMs: Long,
+        val label: String,
+        val loops: Boolean = false,
+        val holdFromMs: Long = -1L,
+    ) {
         GREET(1700, "Selam"),
         CHEER(1400, "Sevinç"),
         BALLOON(3500, "Balon"),
@@ -81,7 +95,7 @@ class BunnyMascotView @JvmOverloads constructor(
         CALENDAR(5500, "Takvim (seri)", loops = true),
         JETPACK(4000, "Jetpack (Pro)", loops = true),
         HERO(4000, "Süper kahraman (Pro)", loops = true),
-        CROWN(3600, "Taç (Pro)", loops = true),
+        CROWN(4000, "Taç (Pro)", loops = true),
         AD_JUMP(3200, "Reklamı atla", loops = true),
         AD_BUTTON(4400, "Atla düğmesi", loops = true),
         AD_PUSH(3600, "Reklamı itme", loops = true),
@@ -93,10 +107,30 @@ class BunnyMascotView @JvmOverloads constructor(
         NOTEBOOK_HOLD(3000, "Havuç kalem (bekleme)", loops = true),
         NOTEBOOK_WRITE(2300, "Havuç kalem (yazma)"),
         ALARM(4500, "Çalar saat (hatırlatma)", loops = true),
+
+        // Ders sonu sahneleri (aday havuz; hangilerinin kullanılacağına oyun alanında karar
+        // veriliyor). Çizimleri dosyanın "Ders sonu sahneleri" bölümünde.
+        WEIGHTS(4200, "Boncuk halteri", loops = true),
+        SKATE(4400, "Kaykay", loops = true),
+        GUITAR(4000, "Gitar", loops = true),
+        JUGGLE(3600, "Boncuk hokkabazlığı", loops = true),
+        PERFECT(3600, "Mükemmel (taç + gözlük)", loops = true, holdFromMs = 1600),
+        STARS(4400, "Yıldızlar (sandık)", loops = true),
+        DETERMINED(4300, "Üzgün → kararlı", loops = true, holdFromMs = 3300),
+        COWBOY_FRONT(7600, "Kovboy önden (bandana)", loops = true, holdFromMs = 6900),
+        KARATE(6400, "Karate (tahta kırma)", loops = true, holdFromMs = 5800),
+        NINJA(7000, "Ninja (duman bombası)", loops = true, holdFromMs = 4600),
+        PIRATE(6800, "Korsan (ters dürbün)", loops = true, holdFromMs = 4600),
+        GLASSES(5600, "Gözlük (havalı bakış)", loops = true, holdFromMs = 3600),
+        RAPPER(6000, "Rapçi (kep + zincir)", loops = true),
+        // Rehber panelinin öğretmeni: elde havuç, öğretmen çubuğu gibi (bkz. GuideContent.emote)
+        TEACH_TALK(3000, "Anlatma (havuç)", loops = true),
+        TEACH_POINT(2400, "Gösterme (havuç)", loops = true),
+        TEACH_WARN(2400, "Uyarı (havuç)", loops = true),
     }
 
     private enum class Eyes { NORMAL, HAPPY, CLOSED, WINK }
-    private enum class Mouth { IDLE, HAPPY, TALK, O, SAD }
+    private enum class Mouth { IDLE, HAPPY, TALK, O, SAD, CHEW, SMIRK }
 
     /** Duruş kanalları; bkz. sınıf açıklaması. Açılarda artı = dışa/yukarı. */
     private object Ch {
@@ -149,7 +183,32 @@ class BunnyMascotView @JvmOverloads constructor(
         const val GLASSES_A = 46    // havalı gözlük
         const val WAND_A = 47       // sihirli değnek (sağ elde)
         const val ALARM_A = 48      // önde tutulan çalar saat
-        const val COUNT = 49
+        const val TILT = 49         // bütün tavşanın ayaklarından yatması (kaykaydan düşme)
+        const val KICK_L = 50       // bacakların tek tek dışa açılması (top sektirme, oturma)
+        const val KICK_R = 51
+        const val BARBELL_A = 52    // ders sonu sahnelerinin eşyaları
+        const val SKATE_A = 53
+        const val GUITAR_A = 56
+        const val JUGGLE_A = 57
+        const val STARS_A = 58
+        const val BROWS_DET = 59    // kararlı kaşlar (iç uçlar aşağıda; üzgünün tersi)
+        const val FRONT_L_Y = 60   // soldaki patinin dikey kayması (gitar tellerine vurma)
+        const val HAT_A = 61        // kovboy / korsan şapkası
+        const val HAT_DY = 62       // şapkanın yüze inmesi (yüzü saklama)
+        const val HOLSTER_A = 63    // beldeki kılıfta duran havuç
+        const val HCARROT_A = 64    // öndeki (çeneye giden) kolda havuç
+        const val HCARROT_ROT = 65  // o havucun ucunun ekrandaki yönü (derece)
+        const val SQUINT = 66       // kısık, havalı gözler
+        const val CHEEKS = 67       // çiğnerken şişen yanaklar
+        const val HEADBAND_A = 68   // karate bandı
+        const val KBOARD_A = 69     // karate tahtası ve tuğlalar
+        const val MASK_A = 70       // ninja maskesi
+        const val SPYGLASS_A = 75   // korsan dürbünü
+        const val RAP_A = 78        // rapçinin kepi ve zincir kolyesi
+        const val HEAD_PITCH = 79   // kafanın öne eğilmesi (0..1; bkz. drawBunny)
+        const val FRONT_L_ROT = 80  // soldaki ön kolun omuzdan dönmesi (gitar tellerine vurma)
+        const val JESTER_A = 81     // hokkabazın soytarı şapkası
+        const val COUNT = 82
     }
 
     private val target = FloatArray(Ch.COUNT)
@@ -178,6 +237,25 @@ class BunnyMascotView @JvmOverloads constructor(
         setBounds(0, 0, 512, 512)
     }
     private val carrotDrawable = ContextCompat.getDrawable(context, R.drawable.carrot_ic)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    private val guitarDrawable = ContextCompat.getDrawable(context, R.drawable.guitar)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    // Şapka ve boyun bandanası tek bir çizimden (şapka + bandana) iki dosyaya ayrıldı; ayrı çiziliyor.
+    private val cowboyFrontDrawable = ContextCompat.getDrawable(context, R.drawable.cowboy_hat_front)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    private val bandanaDrawable = ContextCompat.getDrawable(context, R.drawable.bandana)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    private val pirateHatDrawable = ContextCompat.getDrawable(context, R.drawable.pirates_hat)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    private val rapHatDrawable = ContextCompat.getDrawable(context, R.drawable.rap_hat)?.mutate()?.apply {
+        setBounds(0, 0, 512, 512)
+    }
+    private val jesterHatDrawable = ContextCompat.getDrawable(context, R.drawable.jester_hat)?.mutate()?.apply {
         setBounds(0, 0, 512, 512)
     }
     private val glassesDrawable = ContextCompat.getDrawable(context, R.drawable.cool_glasses)?.mutate()?.apply {
@@ -231,6 +309,21 @@ class BunnyMascotView @JvmOverloads constructor(
     private var crownDrop = 0f
     private var glassesDrop = 0f
     private var glassesSparkleT = -1f   // gözlük inişinden bu yana (sn); parıltı için
+    private val bitePath = Path()
+    // Foto flaşında tavşanın yalnızca çizili yerlerini beyaza çeken boya (katmana SRC_ATOP).
+    private val flashTintPaint = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP) }
+    // Flaşın geldiği yan parlak, öbür yan soluk: soldan ve sağdan gelen iki yatay geçiş (bir kez
+    // kuruluyor; şiddet boyanın alfasıyla ayarlanıyor).
+    private val flashFromLeft = LinearGradient(
+        FLASH_NEAR_X, 0f, FLASH_FAR_X, 0f, WHITE, FLASH_FAR_COLOR, Shader.TileMode.CLAMP,
+    )
+    private val flashFromRight = LinearGradient(
+        FLASH_FAR_X, 0f, FLASH_NEAR_X, 0f, FLASH_FAR_COLOR, WHITE, Shader.TileMode.CLAMP,
+    )
+    private var biteCount = 0           // kovboyun havucundaki ısırık sayısı
+    private var spyFlip = 0f            // korsan dürbünü: 0 ters, 1 doğru, arası çevriliyor
+    private var lastHeadRot = 0f        // son karede kafanın dönüşü (dürbünü göze oturtmak için)
+    private var lensBlink = 1f          // dürbün merceğindeki gözün açıklığı (kırpma)
 
     private var loopIndex = 0          // döngülü hâlin kaçıncı turu (takvimin deneme sırası)
     private var repeatsLeft = 0        // [play]'in times'ından kalan tekrar
@@ -267,6 +360,13 @@ class BunnyMascotView @JvmOverloads constructor(
             invalidate()
         }
     private var alarmChangedMs = 0L
+
+    /**
+     * Yıldızlar hâlinde ([Emote.STARS]) kaç yıldız kazanıldı (sandık sonucu, 0–3):
+     *  - -1: deneme ekranı, her turda üç yıldız.
+     *  - diğer: o kadar yıldız sırayla beliriyor; üçte büyük kutlama, azında küçük gülümseme.
+     */
+    var starCount: Int = -1
     /** Akrebin o anki açısı (derece, 12 = 0); hedefe yaylı yaklaşıyor, bkz. [updateAlarmHands]. */
     private var alarmAngle = 0f
 
@@ -406,7 +506,13 @@ class BunnyMascotView @JvmOverloads constructor(
 
         val playing = emote
         if (playing != null && now - emoteStartMs >= playing.durationMs) {
-            if (playing.loops) {
+            if (playing.holdFromMs >= 0) {
+                // Bir kez oynadı; artık yalnızca son bölüm (bekleme) kendi içinde dönüyor.
+                val hold = playing.holdFromMs
+                val over = (now - emoteStartMs - hold) % (playing.durationMs - hold)
+                emoteStartMs = now - hold - over
+                loopIndex++
+            } else if (playing.loops) {
                 // Görünmezken geçen süre birden çok tura denk gelebilir; hepsi atlanıyor.
                 val turns = (now - emoteStartMs) / playing.durationMs
                 emoteStartMs += turns * playing.durationMs
@@ -459,6 +565,9 @@ class BunnyMascotView @JvmOverloads constructor(
         crownDrop = 0f
         glassesDrop = 0f
         glassesSparkleT = -1f
+        biteCount = 0
+        spyFlip = 0f
+        lensBlink = 1f
         eyes = Eyes.NORMAL
         mouth = Mouth.IDLE
     }
@@ -754,6 +863,170 @@ class BunnyMascotView @JvmOverloads constructor(
                     target[Ch.HEAD_ROT] = -3f
                 }
             }
+            Emote.WEIGHTS -> {
+                // Halteri önde iki patiyle tutuyor (uçlarında soroban boncukları): eğilip
+                // kavrıyor, kızarıp titreyerek göğsüne kaldırıyor, tepede gururla gülüp
+                // sekiyor, sonra "küt" diye bırakıp soluklanıyor. Halter [drawBarbell].
+                frontHands()
+                target[Ch.FRONT_GAP] = 16f
+                target[Ch.BARBELL_A] = 1f
+                val up = weightsLift(e)
+                osc[Ch.FRONT_DY] = W_LOW_DY + (W_HIGH_DY - W_LOW_DY) * up
+                osc[Ch.BODY_DY] = 7f * (1f - up)
+                osc[Ch.HEAD_DY] = 3f * (1f - up)
+                when {
+                    e < W_PULL_S -> target[Ch.GAZE_Y] = 2.5f
+                    e < W_TOP_S -> {
+                        eyes = Eyes.CLOSED
+                        target[Ch.BLUSH] = 1f
+                        target[Ch.EAR_L] = 18f
+                        target[Ch.EAR_R] = 18f
+                        val shake = sin(e * TAU * 11f)
+                        osc[Ch.FRONT_ROT] = 2f * shake
+                        osc[Ch.UPPER_ROT] = 1f * shake
+                    }
+                    e < W_DROP_S -> {
+                        eyes = Eyes.HAPPY
+                        mouth = Mouth.HAPPY
+                        target[Ch.BLUSH] = 0.4f
+                        earsWiggle(e, 1f, base = -4f)
+                        hop(e - W_TOP_S - 0.15f, hops = 1, hopS = 0.32f, height = 7f)
+                    }
+                    else -> {
+                        // Bırakınca yere çarpma: kısa ezilme; sonra derin nefes.
+                        val since = e - W_DROP_S
+                        if (since < 0.6f) osc[Ch.SQUASH] += 0.6f * exp(-since * 9f) * cos(since * TAU * 3f)
+                        osc[Ch.BODY_DY] += 1.5f * sin(e * TAU / 1.2f)
+                        target[Ch.GAZE_Y] = 1f
+                    }
+                }
+            }
+            Emote.SKATE -> {
+                // Soldan kaykayla kayarak geliyor (kollar dengede, kulaklar rüzgârda), ortada
+                // kaykayla birlikte zıplıyor (ollie), iniyor, havalı gözlüğü düşüyor ve kollarını
+                // kavuşturuyor; sonra sağa kayıp çıkıyor, tur soldan yeniden başlıyor.
+                target[Ch.SKATE_A] = 1f
+                target[Ch.LIFT] = SKATE_RIDE_LIFT
+                osc[Ch.BODY_DX] = skateDx(e, SK_ARRIVE_S, SK_EXIT_S, 4.4f)
+                if (e >= SK_POSE_S && e < SK_EXIT_S) {
+                    coolPose(e - SK_POSE_S)
+                } else {
+                    rideBalance(e)
+                }
+                hop(e - SK_OLLIE_S, hops = 1, hopS = 0.5f, height = 24f)
+            }
+            Emote.GUITAR -> {
+                // Gitar kucakta, sol pati sapta, sağ pati tellerde ritim tutuyor; kafa ve
+                // gövde tempoyla sallanıyor, ayak vuruyor, gözler keyifle kapalı; gitardan
+                // notalar uçuşuyor. Gitar [drawGuitar], notalar [drawSceneFront].
+                frontHands()
+                target[Ch.GUITAR_A] = 1f
+                // Soldaki pati tellerde (GT_X, GT_Y), sağdaki sapta; bkz. GT_ sabitleri.
+                target[Ch.FRONT_DY] = 30f
+                target[Ch.FRONT_L_X] = -2f
+                target[Ch.FRONT_R_X] = 16f
+                target[Ch.FRONT_R_Y] = -21f
+                // Tellere vuran pati düz inip kalkmıyor: omuzdan açısal bir yay çiziyor.
+                osc[Ch.FRONT_L_ROT] = GT_STRUM_DEG * sin(e * TAU * GT_STRUM_HZ) * env
+                osc[Ch.FRONT_L_Y] = 1.5f * cos(e * TAU * GT_STRUM_HZ) * env
+                osc[Ch.FRONT_R_X] = 2f * sin(e * TAU) * env
+                osc[Ch.HEAD_ROT] = 4f * sin(e * TAU) * env
+                osc[Ch.UPPER_ROT] = 2.5f * sin(e * TAU + 0.5f) * env
+                osc[Ch.KICK_R] = 7f * max(0f, sin(e * TAU * 2f)) * env
+                osc[Ch.EAR_L] = 5f * sin(e * TAU) * env
+                osc[Ch.EAR_R] = -5f * sin(e * TAU) * env
+                eyes = Eyes.HAPPY
+                mouth = Mouth.HAPPY
+            }
+            Emote.JUGGLE -> {
+                // Üç soroban boncuğuyla hokkabazlık (kaskad): eller sırayla atıp tutuyor,
+                // boncuklar başının üstünden çaprazlama uçuyor. Boncuklar [drawSceneFront].
+                bothCatArms()
+                target[Ch.CAT_L] = JG_ARM_L
+                target[Ch.CAT_R] = JG_ARM_R
+                val beat = e * TAU / (2f * JG_THROW_S)
+                osc[Ch.CAT_L] = 8f * max(0f, sin(beat))
+                osc[Ch.CAT_R] = 8f * max(0f, -sin(beat))
+                target[Ch.JUGGLE_A] = 1f
+                target[Ch.JESTER_A] = 1f
+                target[Ch.GAZE_Y] = -2.5f
+                osc[Ch.GAZE_X] = 1.5f * sin(beat)
+                osc[Ch.LIFT] = 1.5f * abs(sin(beat))
+                mouth = Mouth.HAPPY
+            }
+            Emote.PERFECT -> perfect(e)
+            Emote.STARS -> {
+                // Sandık sonucu: kazanılan yıldızlar başının üstünde sırayla beliriyor, her
+                // birinde küçük bir sekme; üç yıldızda büyük kutlama. Yıldızlar [drawSceneFront].
+                target[Ch.STARS_A] = 1f
+                target[Ch.GAZE_Y] = -2.5f
+                val n = shownStars()
+                for (i in 0 until n) {
+                    val since = e - (ST_FIRST_S + i * ST_GAP_S)
+                    if (since >= 0f && since < 0.45f) {
+                        hop(since, hops = 1, hopS = 0.3f, height = 8f)
+                        eyes = Eyes.HAPPY
+                        mouth = Mouth.HAPPY
+                    }
+                }
+                val party = ST_FIRST_S + (n - 1) * ST_GAP_S + 0.45f
+                if (n >= 3 && e >= party && e < ST_FADE_S) {
+                    bothCatArms()
+                    target[Ch.CAT_L] = 58f
+                    target[Ch.CAT_R] = 48f
+                    val flap = 6f * sin(e * TAU * 3f)
+                    osc[Ch.CAT_L] = flap
+                    osc[Ch.CAT_R] = flap
+                    hop(e - party, hops = 2, hopS = 0.4f, height = 16f)
+                    earsWiggle(e, 1f, base = 10f)
+                    eyes = Eyes.HAPPY
+                    mouth = Mouth.HAPPY
+                } else if (n in 1..2 && e >= party) {
+                    mouth = Mouth.HAPPY
+                }
+            }
+            Emote.DETERMINED -> {
+                // Ders geçilemedi: önce üzgün (kulaklar düşük, iç çekiyor), sonra derin bir
+                // nefes, kulaklar dikiliyor, kaşlar kararlı; yumruğunu kaldırıp "bir daha!".
+                when {
+                    e < DT_BREATH_S -> {
+                        target[Ch.EAR_L] = 35f
+                        target[Ch.EAR_R] = 35f
+                        target[Ch.HEAD_DY] = 4f
+                        target[Ch.HEAD_ROT] = 3f
+                        target[Ch.BODY_DY] = 2f
+                        target[Ch.GAZE_Y] = 2f
+                        target[Ch.BROWS] = 1f
+                        target[Ch.HANG_L] = -3f
+                        target[Ch.HANG_R] = -3f
+                        osc[Ch.BODY_DY] = 1.2f * sin(e * TAU / 1.6f) * env
+                        mouth = Mouth.SAD
+                    }
+                    e < DT_FIRE_S -> {
+                        val p = seg(e, DT_BREATH_S, DT_FIRE_S)
+                        osc[Ch.SQUASH] = -0.5f * sin(PI.toFloat() * p)
+                        osc[Ch.HEAD_DY] = -3f * sin(PI.toFloat() * p)
+                        target[Ch.EAR_L] = 8f
+                        target[Ch.EAR_R] = 8f
+                        eyes = Eyes.CLOSED
+                    }
+                    else -> {
+                        fistPump(e - DT_FIRE_S)
+                        // Bekleme: yumruk havada, ağır ağır sallanıyor (sonuç ekranında yeniden
+                        // üzgüne dönmesin; salınım bekleme bölümüne tam oturuyor).
+                        if (e >= DT_HOLD_S) osc[Ch.CAT_R] = 4f * sin((e - DT_HOLD_S) * TAU / DT_HOLD_PERIOD_S)
+                    }
+                }
+            }
+            Emote.COWBOY_FRONT -> cowboy(e)
+            Emote.KARATE -> karate(e)
+            Emote.NINJA -> ninja(e)
+            Emote.PIRATE -> pirate(e)
+            Emote.GLASSES -> coolGlasses(e)
+            Emote.RAPPER -> rapper(e)
+            Emote.TEACH_TALK -> teachTalk(e)
+            Emote.TEACH_POINT -> teachPoint(e)
+            Emote.TEACH_WARN -> teachWarn(e)
             Emote.JETPACK -> {
                 // Sırtında jet çantası, havada süzülüyor: kollar uçar gibi açık, ayaklar
                 // boşlukta sallanıyor, kulaklar rüzgârda. Çanta ve egzoz [drawJetpack].
@@ -792,15 +1065,15 @@ class BunnyMascotView @JvmOverloads constructor(
                 mouth = Mouth.HAPPY
             }
             Emote.CROWN -> {
-                // Başında yan yatık altın taç, zafer işareti ve göz kırpma; çenesi hafif
-                // havada. Taç ve parıltıları [drawCrown].
+                // Mükemmel'in son hâli: taç ve havalı gözlük baştan takılı, zafer işaretiyle poz,
+                // karşıdan flaşlar vuruyor. Taç [drawCrown],
+                // flaş [photoFlashTint]. Salınım süreye tam oturuyor (döngüde dikiş yok).
+                target[Ch.CROWN_A] = 1f
+                target[Ch.GLASSES_A] = 1f
                 target[Ch.HANG_R_A] = 0f
                 target[Ch.PEACE_A] = 1f
-                osc[Ch.PEACE] = 5f * sin(e * TAU * 1.2f) * env
-                target[Ch.HEAD_ROT] = -4f
-                target[Ch.GAZE_Y] = -1f
-                target[Ch.CROWN_A] = 1f
-                eyes = Eyes.WINK
+                osc[Ch.PEACE] = 6f * sin(e * TAU * 1.5f)
+                target[Ch.HEAD_ROT] = 6f
                 mouth = Mouth.HAPPY
             }
             Emote.AD_JUMP -> {
@@ -1290,6 +1563,7 @@ class BunnyMascotView @JvmOverloads constructor(
         val bob = sin(t * TAU / 2.4f) * 2.2f
         val upperRot = v(Ch.UPPER_ROT)
         val headRot = sin(t * TAU / 5f) * 2.5f + v(Ch.HEAD_ROT)
+        lastHeadRot = headRot
         val squash = v(Ch.SQUASH)
 
         // Gölge: tavşan yükseldikçe küçülüyor — zıplamayı gölge satıyor.
@@ -1300,13 +1574,22 @@ class BunnyMascotView @JvmOverloads constructor(
         drawShapes(canvas, BunnyMascotArt.SHADOW)
         canvas.restore()
 
+        // Foto flaşı: tavşan ve eşyaları bir katmana çiziliyor, flaş anında katman yalnızca
+        // çizili yerlerinde beyaza çekiliyor (gölge ve zemin etkilenmiyor).
+        val flashTint = photoFlashTint(e)
+        val flashLayer = if (flashTint > 0.01f) canvas.saveLayer(FULL_LAYER, null) else -1
+
         // Reklam hâllerinin sahnesi (TV, düğme, tabela): yerde duruyor, tavşanla birlikte
         // zıplamıyor; tavşandan ÖNCE çiziliyor ki pati ve ayaklar önde kalsın.
         drawAdProps(canvas, e)
         drawBoard(canvas, e)
+        // Kaykay ayakların altında: tavşandan önce (ayaklar üstünde dursun).
+        drawSkateboard(canvas, e)
 
         canvas.save()
         canvas.translate(bodyDx, -lift)
+        // Bütün gövdenin yatması (kaykaydan düşme) ayak tabanından.
+        canvas.rotate(v(Ch.TILT), FEET_X, FEET_Y)
         // Ezilme/uzama ayak tabanından.
         canvas.scale(1f + 0.07f * squash, 1f - 0.10f * squash, FEET_X, FEET_Y)
 
@@ -1323,23 +1606,40 @@ class BunnyMascotView @JvmOverloads constructor(
         canvas.rotate(upperRot, HIP_X, HIP_Y)
         drawShapes(canvas, BunnyMascotArt.BODY)
         drawProBadge(canvas)
+        drawBelt(canvas)
+        if (emote == Emote.RAPPER) drawChain(canvas)
 
         canvas.save()
         canvas.translate(0f, v(Ch.HEAD_DY))
         canvas.rotate(headRot, NECK_X, NECK_Y)
-        drawEars(canvas, now)
-        drawShapes(canvas, BunnyMascotArt.HEAD)
+        // Öne eğilme: önden bakınca kafa bize doğru dönüyormuş gibi görünsün diye kafa boyna
+        // doğru biraz basılıyor, yüz (burun, gözler, ağız) aşağı kayıyor, kulaklar kısalıyor.
+        val pitch = v(Ch.HEAD_PITCH)
+        if (pitch != 0f) canvas.scale(1f + PITCH_WIDEN * pitch, 1f - PITCH_SQUASH * pitch, NECK_X, NECK_Y)
+        drawEars(canvas, now, pitch)
+        val head = BunnyMascotArt.HEAD
+        drawShape(canvas, head[0])
+        drawShape(canvas, head[1])
+        canvas.save()
+        canvas.translate(0f, PITCH_FACE_DY * pitch)
+        for (i in 2 until head.size) drawShape(canvas, head[i])
         drawBlush(canvas)
         drawEyes(canvas, now)
         drawMouth(canvas, t)
-        drawShapes(canvas, BunnyMascotArt.HEAD_TOP)
+        drawShape(canvas, BunnyMascotArt.HEAD_TOP[0])   // burun parıltısı yüzle birlikte
+        canvas.restore()
+        for (i in 1 until BunnyMascotArt.HEAD_TOP.size) drawShape(canvas, BunnyMascotArt.HEAD_TOP[i])
         drawCrown(canvas, e)
         drawGlasses(canvas, e)
+        drawHeadGear(canvas, e, t)
         canvas.restore()
 
         // Öndekiler: kafanın altına binen eller kafadan SONRA (köpeğin özgün çizimindeki sıra).
         drawAbacus(canvas, e)
         drawCalendar(canvas, e)
+        // Halter ve gitar patilerin ARKASINDA: patiler sapı ve sapı kavrıyor.
+        drawBarbell(canvas)
+        drawGuitar(canvas)
         if (v(Ch.NOTE_A) > 0.01f) {
             // Defteri arkasından görüyoruz: yazan sağ el ve havuç kalem defterin ARKASINDA
             // (yalnızca üstleri görünüyor), defteri tutan sol el önde. Havuç elin önünde:
@@ -1359,6 +1659,15 @@ class BunnyMascotView @JvmOverloads constructor(
         drawExtras(canvas, e)
 
         canvas.restore()
+
+        // Sahnenin tavşandan bağımsız, önde duran parçaları (top, pota, boncuklar, yıldızlar…).
+        if (flashLayer >= 0) {
+            flashTintPaint.shader = if (lastFlashFromLeft(e)) flashFromLeft else flashFromRight
+            flashTintPaint.alpha = (255 * FLASH_TINT_MAX * flashTint).roundToInt()
+            canvas.drawRect(FULL_LAYER, flashTintPaint)
+            canvas.restoreToCount(flashLayer)
+        }
+        drawSceneFront(canvas, e)
     }
 
     private fun drawBackArms(canvas: Canvas, t: Float) {
@@ -1461,28 +1770,33 @@ class BunnyMascotView @JvmOverloads constructor(
         val open = v(Ch.LEGS_OPEN)
         canvas.save()
         canvas.translate(-STEP_DX * open, 0f)
-        canvas.rotate(STEP_DEG * open, LEG_L_HIP_X, LEG_HIP_Y)
+        // KICK_*: tek bacağın dışa/yukarı açılması (top sektirme, yere oturunca bacaklar).
+        canvas.rotate(STEP_DEG * open + v(Ch.KICK_L), LEG_L_HIP_X, LEG_HIP_Y)
         drawShapes(canvas, BunnyMascotArt.LEG_LEFT)
         canvas.restore()
         canvas.save()
         canvas.translate(STEP_DX * open, 0f)
-        canvas.rotate(-STEP_DEG * open, LEG_R_HIP_X, LEG_HIP_Y)
+        canvas.rotate(-STEP_DEG * open - v(Ch.KICK_R), LEG_R_HIP_X, LEG_HIP_Y)
         drawShapes(canvas, BunnyMascotArt.LEG_RIGHT)
         canvas.restore()
     }
 
-    private fun drawEars(canvas: Canvas, now: Long) {
+    /** Kulaklar; kafa öne eğildikçe ([pitch]) kısalıyor (bize doğru yatıyor). */
+    private fun drawEars(canvas: Canvas, now: Long, pitch: Float) {
         var flick = 0f
         if (earFlickStartMs >= 0) {
             val p = ((now - earFlickStartMs) / EAR_FLICK_MS.toFloat()).coerceIn(0f, 1f)
             flick = 12f * sin(PI.toFloat() * p)
         }
+        val shorten = 1f - PITCH_EAR * pitch
         canvas.save()
         canvas.rotate(-(v(Ch.EAR_L) + if (earFlickSide < 0) flick else 0f), EAR_L_X, EAR_Y)
+        canvas.scale(1f, shorten, EAR_L_X, EAR_Y)
         drawShapes(canvas, BunnyMascotArt.EAR_LEFT)
         canvas.restore()
         canvas.save()
         canvas.rotate(v(Ch.EAR_R) + if (earFlickSide > 0) flick else 0f, EAR_R_X, EAR_Y)
+        canvas.scale(1f, shorten, EAR_R_X, EAR_Y)
         drawShapes(canvas, BunnyMascotArt.EAR_RIGHT)
         canvas.restore()
     }
@@ -1525,7 +1839,7 @@ class BunnyMascotView @JvmOverloads constructor(
                     val o = if (eyes == Eyes.WINK) 1f else open
                     canvas.save()
                     canvas.translate(v(Ch.GAZE_X), v(Ch.GAZE_Y))
-                    canvas.scale(scale, scale * o, cx, EYE_Y)
+                    canvas.scale(scale, scale * o * (1f - 0.55f * v(Ch.SQUINT).coerceIn(0f, 1f)), cx, EYE_Y)
                     drawShape(canvas, BunnyMascotArt.EYES[i])
                     canvas.restore()
                 }
@@ -1541,6 +1855,28 @@ class BunnyMascotView @JvmOverloads constructor(
             canvas.drawLine(357f, 133f, 369f, 128f, paint)
             canvas.drawLine(402f, 128f, 414f, 133f, paint)
         }
+        val determined = v(Ch.BROWS_DET)
+        if (determined > 0.01f) {
+            // Kararlı kaşlar: iç uçları aşağıda (üzgünün tersi) — "hadi bir daha!"
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2.6f
+            paint.color = EYE
+            paint.alpha = (255 * determined.coerceAtMost(1f)).roundToInt()
+            canvas.drawLine(356f, 127f, 369f, 133f, paint)
+            canvas.drawLine(402f, 133f, 415f, 127f, paint)
+        }
+        val squint = v(Ch.SQUINT)
+        if (squint > 0.01f && eyes == Eyes.NORMAL) {
+            // Kısık gözler: göz basık, üstünde içe doğru inen kapak çizgisi (havalı bakış).
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2.8f
+            paint.color = EYE
+            paint.alpha = (255 * squint.coerceAtMost(1f)).roundToInt()
+            val gx = v(Ch.GAZE_X)
+            val gy = v(Ch.GAZE_Y)
+            canvas.drawLine(EYE_X[0] - 7f + gx, EYE_Y - 5f + gy, EYE_X[0] + 6f + gx, EYE_Y - 2.5f + gy, paint)
+            canvas.drawLine(EYE_X[1] - 6f + gx, EYE_Y - 2.5f + gy, EYE_X[1] + 7f + gx, EYE_Y - 5f + gy, paint)
+        }
     }
 
     private fun eyeArc(canvas: Canvas, cx: Float, startDeg: Float) {
@@ -1552,7 +1888,40 @@ class BunnyMascotView @JvmOverloads constructor(
     }
 
     private fun drawMouth(canvas: Canvas, t: Float) {
+        val cheeks = v(Ch.CHEEKS)
+        if (cheeks > 0.01f) {
+            // Çiğnerken şişen yanaklar: kafanın iki yanından taşan kafa renginde tümsekler.
+            paint.style = Paint.Style.FILL
+            paint.color = BunnyMascotArt.HEAD[0].color
+            canvas.drawCircle(CHEEK_L_X, CHEEK_Y, 9f * cheeks.coerceAtMost(1f), paint)
+            canvas.drawCircle(CHEEK_R_X, CHEEK_Y, 9f * cheeks.coerceAtMost(1f), paint)
+        }
         when (mouth) {
+            Mouth.CHEW -> {
+                // Kapalı ağız, çiğnedikçe dalgalanıyor.
+                val c = sin(t * TAU * 4f)
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2f
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.color = MOUTH
+                mouthPath.reset()
+                mouthPath.moveTo(MOUTH_X - 5f, 167f + c)
+                mouthPath.quadTo(MOUTH_X, 170f - 1.5f * c, MOUTH_X + 5f, 167f + c)
+                canvas.drawPath(mouthPath, paint)
+                paint.strokeCap = Paint.Cap.BUTT
+            }
+            Mouth.SMIRK -> {
+                // Yan gülüş: tek tarafı kalkık.
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 2f
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.color = MOUTH
+                mouthPath.reset()
+                mouthPath.moveTo(MOUTH_X - 6f, 166.5f)
+                mouthPath.quadTo(MOUTH_X + 1f, 170.5f, MOUTH_X + 7f, 163.5f)
+                canvas.drawPath(mouthPath, paint)
+                paint.strokeCap = Paint.Cap.BUTT
+            }
             Mouth.HAPPY -> {
                 // Kedinin açık, mutlu ağzı: burnun hemen altına taşınıp tavşanın küçük
                 // burun çevresine sığsın diye biraz küçültülüyor.
@@ -1619,7 +1988,7 @@ class BunnyMascotView @JvmOverloads constructor(
         val rot = v(Ch.FRONT_ROT)
         val dy = v(Ch.FRONT_DY) + (1f - a) * 25f   // gelirken aşağıdan
         // Eller ayrıldıkça/kaydıkça gölgeleri gövdenin dışına taşıyor; o yüzden siliniyor.
-        val spread = gap + abs(v(Ch.FRONT_L_X)) + abs(v(Ch.FRONT_R_X)) + abs(v(Ch.FRONT_R_Y))
+        val spread = gap + abs(v(Ch.FRONT_L_X)) + abs(v(Ch.FRONT_L_Y)) + abs(v(Ch.FRONT_R_X)) + abs(v(Ch.FRONT_R_Y))
         val shadow = (1f - spread / 8f).coerceIn(0f, 1f)
         withAlpha(canvas, a, FULL_LAYER) {
             if (shadow > 0.01f) {
@@ -1634,10 +2003,11 @@ class BunnyMascotView @JvmOverloads constructor(
     private inline fun frontSide(canvas: Canvas, side: Float, gap: Float, rot: Float, dy: Float, block: () -> Unit) {
         canvas.save()
         // Ellerin tek tek kayması (defteri tutan sol el, yazan sağ el)
-        if (side < 0) canvas.translate(v(Ch.FRONT_L_X), 0f)
+        if (side < 0) canvas.translate(v(Ch.FRONT_L_X), v(Ch.FRONT_L_Y))
         else canvas.translate(v(Ch.FRONT_R_X), v(Ch.FRONT_R_Y))
         canvas.translate(side * gap, dy)
-        canvas.rotate(-side * rot, if (side < 0) FRONT_SHOULDER_L_X else FRONT_SHOULDER_R_X, FRONT_SHOULDER_Y)
+        val ownRot = if (side < 0) v(Ch.FRONT_L_ROT) else 0f
+        canvas.rotate(-side * rot + ownRot, if (side < 0) FRONT_SHOULDER_L_X else FRONT_SHOULDER_R_X, FRONT_SHOULDER_Y)
         canvas.translate(DOG_DX, DOG_DY)
         block()
         canvas.restore()
@@ -2310,12 +2680,6 @@ class BunnyMascotView @JvmOverloads constructor(
             canvas.drawCircle(370f, 92f, 2.2f, paint)
             canvas.drawCircle(389f, 87f, 2.4f, paint)
             canvas.drawCircle(408f, 92f, 2.2f, paint)
-            if (emote == Emote.CROWN) {
-                for (k in CROWN_SPARKLE_X.indices) {
-                    val p = ((e / 1.2f) + k / 3f) % 1f
-                    drawStar(canvas, CROWN_SPARKLE_X[k], CROWN_SPARKLE_Y[k], 2.5f + 3f * p, sin(PI.toFloat() * p))
-                }
-            }
         }
     }
 
@@ -2537,10 +2901,17 @@ class BunnyMascotView @JvmOverloads constructor(
     private fun drawThinkArm(canvas: Canvas) {
         val a = v(Ch.THINK_A)
         withAlpha(canvas, a, FULL_LAYER) {
-            canvas.rotate(-(v(Ch.THINK) - (1f - a) * 60f), CHEER_SHOULDER_R_X, CHEER_SHOULDER_R_Y)
+            val armDeg = -(v(Ch.THINK) - (1f - a) * 60f)
+            canvas.rotate(armDeg, CHEER_SHOULDER_R_X, CHEER_SHOULDER_R_Y)
             canvas.translate(CAT_DX, 0f)
+            // Kovboyun havucu elde: patinin arkasında (pati kavrıyor), ucu ekranda istenen yönde.
+            drawCarrotAt(
+                canvas, CAT_HAND_X - 3f, CAT_HAND_Y, HAND_CARROT_SCALE,
+                v(Ch.HCARROT_ROT) - armDeg, v(Ch.HCARROT_A), biteCount,
+            )
             drawShapes(canvas, BunnyMascotArt.CHEER_ARM_RIGHT)
         }
+        drawSpyglass(canvas)
     }
 
     /** Küçük bir soroban: ahşap çerçeve, 5 çubuk, kiriş; boncuklar sayılıyormuş gibi kayıyor. */
@@ -2756,8 +3127,1678 @@ class BunnyMascotView @JvmOverloads constructor(
         canvas.restoreToCount(save)
     }
 
+    // ---------------------------------------------------------------- ders sonu sahneleri
+    //
+    // Ders sonu ekranları için aday sahneler (hepsi oyun alanında; hangilerinin kullanılacağına
+    // kullanıcı karar veriyor). Eşyalar tavşanın kendi koordinatlarında (UNITS kare) elle
+    // çiziliyor; zamanlar ve ölçüler companion'daki W_ / SK_ / GT_ / JG_ / PF_ / ST_ / DT_
+    // sabitlerinde.
+
+    /** Sahne hesapları için ortak noktalar (her karede yeniden yazılıyor, ayırma yok). */
+    private val scenePt = FloatArray(2)
+    private val scenePt2 = FloatArray(2)
+
+    /** [e]'nin [from]–[to] aralığındaki ilerleyişi, 0..1'e sıkıştırılmış. */
+    private fun seg(e: Float, from: Float, to: Float) = ((e - from) / (to - from)).coerceIn(0f, 1f)
+
+    /** Yumuşak başlayıp yumuşak biten 0..1. */
+    private fun smooth01(x: Float): Float {
+        val c = x.coerceIn(0f, 1f)
+        return c * c * (3f - 2f * c)
+    }
+
+    /** ([px], [py]) noktasını ([cx], [cy]) etrafında [deg] derece (saat yönü +) döndürür. */
+    private fun rotateAround(px: Float, py: Float, cx: Float, cy: Float, deg: Float, out: FloatArray) {
+        val r = Math.toRadians(deg.toDouble())
+        val c = cos(r).toFloat()
+        val s = sin(r).toFloat()
+        val dx = px - cx
+        val dy = py - cy
+        out[0] = cx + dx * c - dy * s
+        out[1] = cy + dx * s + dy * c
+    }
+
+    /**
+     * Sağ kedi kolunun elinin sahnedeki yeri (kolun o anki açısıyla). Tavşanın kayması,
+     * zıplaması ve gövde inişi dahil; nefes salınımı hariç — eldeki top için yetiyor.
+     */
+    private fun catHandRight(out: FloatArray) {
+        val up = v(Ch.CAT_R) - (1f - v(Ch.CAT_R_A)) * 50f
+        rotateAround(CAT_HAND_X + CAT_DX, CAT_HAND_Y, CHEER_SHOULDER_R_X, CHEER_SHOULDER_R_Y, -up, out)
+        out[0] += v(Ch.BODY_DX)
+        out[1] += v(Ch.BODY_DY) - v(Ch.LIFT)
+    }
+
+    /** Sol kedi kolunun eli; bkz. [catHandRight]. */
+    private fun catHandLeft(out: FloatArray) {
+        val up = v(Ch.CAT_L) - (1f - v(Ch.CAT_L_A)) * 50f
+        rotateAround(CAT_HAND_L_X, CAT_HAND_L_Y, SHOULDER_L_X, CHEER_SHOULDER_L_Y, up, out)
+        out[0] += v(Ch.BODY_DX)
+        out[1] += v(Ch.BODY_DY) - v(Ch.LIFT)
+    }
+
+    /** Halterin yüksekliği: 0 = aşağıda (eller dizde), 1 = göğüste. */
+    private fun weightsLift(e: Float): Float = when {
+        e < W_PULL_S -> 0f
+        e < W_TOP_S -> {
+            // Yavaş ve takılarak: ortada bir an duraksıyor (zorlanıyor).
+            val p = seg(e, W_PULL_S, W_TOP_S)
+            smooth01(p - 0.11f * sin(p * TAU))
+        }
+        e < W_DROP_S -> 1f
+        e < W_DROP_S + 0.22f -> 1f - seg(e, W_DROP_S, W_DROP_S + 0.22f).let { it * it }
+        else -> 0f
+    }
+
+    /** Kaykayın soldan girip ortada durması ve sağdan çıkması (yatay kayma). */
+    private fun skateDx(e: Float, arriveS: Float, exitS: Float, durS: Float): Float = when {
+        e < arriveS -> -SKATE_OFF_X * (1f - seg(e, 0f, arriveS)).let { it * it }
+        e < exitS -> 0f
+        else -> SKATE_OFF_X * seg(e, exitS, durS).let { it * it }
+    }
+
+    /** Kaykayda denge: kollar iki yana açık, hafif çömelik, öne eğik, kulaklar rüzgârda. */
+    private fun rideBalance(e: Float) {
+        bothCatArms()
+        target[Ch.CAT_L] = 14f
+        target[Ch.CAT_R] = 4f
+        osc[Ch.CAT_L] = 5f * sin(e * TAU * 1.3f)
+        osc[Ch.CAT_R] = -5f * sin(e * TAU * 1.3f)
+        target[Ch.BODY_DY] = 3f
+        target[Ch.TILT] = 4f
+        target[Ch.EAR_L] = 16f
+        target[Ch.EAR_R] = 10f
+        mouth = Mouth.HAPPY
+    }
+
+    /** Havalı duruş ([t] = duruşun başından): gözlük düşüyor, kollar kavuşuyor, arkaya yaslanıyor. */
+    private fun coolPose(t: Float) {
+        frontHands()
+        target[Ch.FRONT_DY] = 2f
+        target[Ch.UPPER_ROT] = -4f
+        target[Ch.HEAD_ROT] = -6f
+        target[Ch.LEGS_OPEN] = 1f
+        target[Ch.GLASSES_A] = 1f
+        glassesDrop = dropOffset(t)
+        glassesSparkleT = t - AD_DROP_S - 0.1f
+        osc[Ch.HEAD_DY] += landBump(t - AD_DROP_S)
+        mouth = Mouth.HAPPY
+    }
+
+    /** "Bir daha!" ([t] = başından): kaşlar kararlı, kulaklar dik, sağ yumruk havada sallanıyor. */
+    private fun fistPump(t: Float) {
+        target[Ch.BROWS_DET] = 1f
+        target[Ch.EAR_L] = -6f
+        target[Ch.EAR_R] = -6f
+        target[Ch.HANG_R_A] = 0f
+        target[Ch.CAT_R_A] = 1f
+        target[Ch.CAT_R] = 62f
+        osc[Ch.CAT_R] = 12f * sin(t * TAU * 2.5f) * exp(-t * 1.2f)
+        hop(t - 0.05f, hops = 1, hopS = 0.35f, height = 10f)
+        target[Ch.HEAD_ROT] = -3f
+        mouth = Mouth.HAPPY
+    }
+
+    /** Yıldızlar hâlinde gösterilecek yıldız sayısı; deneme ekranında hep üç. */
+    private fun shownStars(): Int = if (starCount >= 0) starCount.coerceIn(0, 3) else 3
+
+    /**
+     * Kaykay: kalkık uçlu tahta, altında iki teker. Ayakların altında; tavşanla birlikte kayıp
+     * zıplıyor (ollie'de burnu kalkıyor).
+     */
+    private fun drawSkateboard(canvas: Canvas, e: Float) {
+        val a = v(Ch.SKATE_A)
+        if (a <= 0.01f) return
+        val cx = FEET_X + v(Ch.BODY_DX)
+        val top = FEET_Y + 1f - v(Ch.LIFT)
+        var rot = v(Ch.TILT)
+        val alpha = a
+        if (emote == Emote.SKATE) {
+            val hopT = e - SK_OLLIE_S
+            if (hopT in 0f..0.5f) rot -= 14f * sin(PI.toFloat() * hopT / 0.5f)
+        }
+        val spin = e * 900f
+        withAlpha(canvas, alpha, FULL_LAYER) {
+            canvas.rotate(rot, cx, top)
+            // Tahta: uçları kalkık kalın bir çizgi; üstünde koyu zımpara bandı.
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 5f
+            paint.color = SKATE_DECK
+            tailPath.reset()
+            tailPath.moveTo(cx - 38f, top - 3f)
+            tailPath.quadTo(cx - 34f, top + 2.5f, cx - 27f, top + 2.5f)
+            tailPath.lineTo(cx + 27f, top + 2.5f)
+            tailPath.quadTo(cx + 34f, top + 2.5f, cx + 38f, top - 3f)
+            canvas.drawPath(tailPath, paint)
+            paint.strokeWidth = 1.6f
+            paint.color = SKATE_GRIP
+            canvas.drawLine(cx - 26f, top + 0.6f, cx + 26f, top + 0.6f, paint)
+            for (dx in SKATE_WHEEL_DX) {
+                val wx = cx + dx
+                val wy = top + 10.5f
+                paint.style = Paint.Style.FILL
+                paint.color = SKATE_TRUCK
+                rect.set(wx - 4f, top + 4.5f, wx + 4f, top + 7.5f)
+                canvas.drawRect(rect, paint)
+                paint.color = SKATE_WHEEL
+                canvas.drawCircle(wx, wy, 4.4f, paint)
+                paint.color = SKATE_HUB
+                canvas.drawCircle(wx, wy, 1.6f, paint)
+                // Dönen tekerin çizgisi
+                val r = Math.toRadians(spin.toDouble())
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 1.1f
+                canvas.drawLine(wx, wy, wx + 3.6f * cos(r).toFloat(), wy + 3.6f * sin(r).toFloat(), paint)
+            }
+        }
+    }
+
+    /**
+     * Halter: çubuk patilerin hizasında, uçlarında büyük soroban boncukları (ağırlık). Patiler
+     * çubuğu önden kavrıyor, yani patilerden ÖNCE çiziliyor; patilerle birlikte iniyor-kalkıyor
+     * ve zorlanırken titriyor.
+     */
+    private fun drawBarbell(canvas: Canvas) {
+        val a = v(Ch.BARBELL_A)
+        withAlpha(canvas, a, FULL_LAYER) {
+            val fa = v(Ch.FRONT_A)
+            val gap = v(Ch.FRONT_GAP)
+            val y = FRONT_R_PAW_Y + 3f + v(Ch.FRONT_DY) + (1f - fa) * 25f
+            val xl = FRONT_L_PAW_X - gap - 30f
+            val xr = FRONT_R_PAW_X + gap + 30f
+            canvas.rotate(v(Ch.FRONT_ROT) * 0.5f, 391f, y)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 4.5f
+            paint.strokeCap = Paint.Cap.ROUND
+            paint.color = STEEL
+            canvas.drawLine(xl - 14f, y, xr + 14f, y, paint)
+            paint.strokeCap = Paint.Cap.BUTT
+            drawWeightBead(canvas, xl, y, 20f, ABACUS_BEADS[0])
+            drawWeightBead(canvas, xl - 11f, y, 15f, ABACUS_BEADS[1])
+            drawWeightBead(canvas, xr, y, 20f, ABACUS_BEADS[0])
+            drawWeightBead(canvas, xr + 11f, y, 15f, ABACUS_BEADS[1])
+        }
+    }
+
+    /** Ekseni yatay soroban boncuğu (yandan bakınca dik altıgen), [h] yarı yükseklik; parlamalı. */
+    private fun drawWeightBead(canvas: Canvas, cx: Float, cy: Float, h: Float, color: Int) {
+        beadPath.reset()
+        beadPath.moveTo(cx - 6.5f, cy - h * 0.35f)
+        beadPath.lineTo(cx - 2.5f, cy - h)
+        beadPath.lineTo(cx + 2.5f, cy - h)
+        beadPath.lineTo(cx + 6.5f, cy - h * 0.35f)
+        beadPath.lineTo(cx + 6.5f, cy + h * 0.35f)
+        beadPath.lineTo(cx + 2.5f, cy + h)
+        beadPath.lineTo(cx - 2.5f, cy + h)
+        beadPath.lineTo(cx - 6.5f, cy + h * 0.35f)
+        beadPath.close()
+        paint.style = Paint.Style.FILL
+        paint.color = color
+        canvas.drawPath(beadPath, paint)
+        paint.color = 0x55FFFFFF
+        rect.set(cx - 3.6f, cy - h * 0.6f, cx - 1.6f, cy + h * 0.2f)
+        canvas.drawRoundRect(rect, 1f, 1f, paint)
+    }
+
+    /**
+     * Gitar (guitar.xml): gövde tavşanın sağ kalçasında (ekranda solda), sap sağa-yukarı.
+     * Ekranda soldaki pati tellere vuruyor, sağdaki sapta; patilerden ÖNCE çiziliyor ki
+     * patiler gitarın önünde kalsın. Ellerle birlikte aşağıdan geliyor.
+     */
+    private fun drawGuitar(canvas: Canvas) {
+        val a = v(Ch.GUITAR_A)
+        val g = guitarDrawable ?: return
+        withAlpha(canvas, a, FULL_LAYER) {
+            canvas.translate(GT_X, GT_Y + (1f - a) * 25f)
+            canvas.rotate(GT_ANGLE + v(Ch.FRONT_ROT) * 0.4f)
+            canvas.scale(GT_SCALE, GT_SCALE)
+            canvas.translate(-GT_STRUM_X, -GT_STRUM_Y)
+            g.draw(canvas)
+        }
+    }
+
+    /** Tavşandan bağımsız, önde duran sahne parçaları (sahnenin kendi zamanıyla). */
+    private fun drawSceneFront(canvas: Canvas, e: Float) {
+        when (emote) {
+            Emote.JUGGLE -> drawJuggle(canvas, e)
+            Emote.STARS -> drawStarsScene(canvas, e)
+            Emote.GUITAR -> {
+                // Notalar gitarın gövdesinden sola-yukarı süzülüp sönüyor.
+                val a = v(Ch.GUITAR_A)
+                for (k in 0 until 3) {
+                    val ph = ((e / 2f) + k / 3f) % 1f
+                    val x = 330f - 40f * ph + 6f * sin(ph * TAU * 1.5f + k)
+                    val y = 236f - 130f * ph
+                    drawNote(canvas, x, y, a * sin(PI.toFloat() * ph))
+                }
+            }
+            Emote.SKATE -> {
+                // İnişte toz.
+                drawDust(canvas, FEET_X + v(Ch.BODY_DX), FEET_Y + 4f, e - SK_OLLIE_S - 0.5f)
+            }
+            Emote.KARATE -> drawKarateScene(canvas, e)
+            Emote.NINJA -> drawNinjaScene(canvas, e)
+            Emote.COWBOY_FRONT, Emote.PIRATE -> drawCoolExtras(canvas, e)
+            Emote.RAPPER -> drawRapHatFree(canvas, e)
+            else -> Unit
+        }
+    }
+
+    /**
+     * Üç soroban boncuğu kaskad düzeninde: her 0,3 sn'de bir el atıyor (sırayla sol, sağ),
+     * boncuk 0,6 sn uçup karşı elde 0,3 sn bekliyor. Eller kolların o anki yerinden.
+     */
+    private fun drawJuggle(canvas: Canvas, e: Float) {
+        val a = v(Ch.JUGGLE_A)
+        if (a <= 0.01f) return
+        catHandLeft(scenePt)
+        catHandRight(scenePt2)
+        val cycle = 3f * JG_THROW_S
+        for (i in 0 until 3) {
+            val t = e - i * JG_THROW_S
+            val k = floor(t / cycle)
+            val local = t - k * cycle
+            val throwNo = k.toInt() * 3 + i
+            val fromLeft = ((throwNo % 2) + 2) % 2 == 0
+            val fx = if (fromLeft) scenePt[0] else scenePt2[0]
+            val fy = (if (fromLeft) scenePt[1] else scenePt2[1]) - 9f
+            val tx = if (fromLeft) scenePt2[0] else scenePt[0]
+            val ty = (if (fromLeft) scenePt2[1] else scenePt[1]) - 9f
+            val x: Float
+            val y: Float
+            if (local < JG_FLIGHT_S) {
+                val p = local / JG_FLIGHT_S
+                x = fx + (tx - fx) * p
+                y = fy + (ty - fy) * p - JG_HEIGHT * 4f * p * (1f - p)
+            } else {
+                x = tx
+                y = ty
+            }
+            canvas.save()
+            canvas.scale(1.8f, 1.8f, x, y)
+            paint.style = Paint.Style.FILL
+            paint.color = ABACUS_BEADS[(i * 2) % ABACUS_BEADS.size]
+            paint.alpha = (255 * a.coerceAtMost(1f)).roundToInt()
+            drawBead(canvas, x, y)
+            canvas.restore()
+        }
+    }
+
+    /** Sandık yıldızları: üç yuva (soluk), kazanılanlar sırayla taşarak dolup parıldıyor. */
+    private fun drawStarsScene(canvas: Canvas, e: Float) {
+        val a = v(Ch.STARS_A)
+        if (a <= 0.01f) return
+        val n = shownStars()
+        val fade = a * (1f - seg(e, ST_FADE_S, ST_FADE_S + 0.4f))
+        for (i in 0 until 3) {
+            drawBigStar(canvas, ST_X[i], ST_Y[i], 15f, fade * 0.35f, hollow = true)
+            if (i >= n) continue
+            val since = e - (ST_FIRST_S + i * ST_GAP_S)
+            val s = popScale(since)
+            if (s <= 0f) continue
+            drawBigStar(canvas, ST_X[i], ST_Y[i], 15f * s, fade, hollow = false)
+            if (since < 0.5f) {
+                // Belirirken çevresinde dört parıltı.
+                val p = since / 0.5f
+                for (k in 0 until 4) {
+                    val ang = k * TAU / 4f + 0.4f
+                    val r = 16f + 14f * p
+                    drawStar(canvas, ST_X[i] + r * cos(ang), ST_Y[i] + r * sin(ang), 3.5f, (1f - p) * fade)
+                }
+            }
+        }
+    }
+
+    /** Beş köşeli yıldız: dolu (altın, koyu kenar) ya da boş yuva (açık kenar). */
+    private fun drawBigStar(canvas: Canvas, cx: Float, cy: Float, r: Float, alpha: Float, hollow: Boolean) {
+        if (alpha <= 0.01f || r <= 0f) return
+        mouthPath.reset()
+        for (k in 0 until 10) {
+            val ang = -PI.toFloat() / 2f + k * PI.toFloat() / 5f
+            val rr = if (k % 2 == 0) r else r * 0.45f
+            val px = cx + rr * cos(ang)
+            val py = cy + rr * sin(ang)
+            if (k == 0) mouthPath.moveTo(px, py) else mouthPath.lineTo(px, py)
+        }
+        mouthPath.close()
+        val a = (255 * alpha.coerceIn(0f, 1f)).roundToInt()
+        if (!hollow) {
+            paint.style = Paint.Style.FILL
+            paint.color = CROWN_GOLD
+            paint.alpha = a
+            canvas.drawPath(mouthPath, paint)
+        }
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.8f
+        paint.color = if (hollow) LIGHT else STAR_EDGE
+        paint.alpha = a
+        canvas.drawPath(mouthPath, paint)
+    }
+
+    /** Sekizlik nota: yuvarlak baş, sap ve bayrak. */
+    private fun drawNote(canvas: Canvas, x: Float, y: Float, alpha: Float) {
+        if (alpha <= 0.01f) return
+        val a = (255 * alpha.coerceIn(0f, 1f)).roundToInt()
+        paint.style = Paint.Style.FILL
+        paint.color = LIGHT
+        paint.alpha = a
+        rect.set(x - 3.8f, y - 2.8f, x + 3.8f, y + 2.8f)
+        canvas.save()
+        canvas.rotate(-20f, x, y)
+        canvas.drawOval(rect, paint)
+        canvas.restore()
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.5f
+        paint.color = LIGHT
+        paint.alpha = a
+        canvas.drawLine(x + 3.2f, y - 1f, x + 3.2f, y - 14f, paint)
+        tailPath.reset()
+        tailPath.moveTo(x + 3.2f, y - 14f)
+        tailPath.quadTo(x + 9f, y - 11f, x + 7.5f, y - 6f)
+        canvas.drawPath(tailPath, paint)
+    }
+
+    /** Yerden kalkan toz bulutu ([t] = başından, 0,6 sn sürüyor). */
+    private fun drawDust(canvas: Canvas, cx: Float, cy: Float, t: Float) {
+        if (t < 0f || t > 0.6f) return
+        val p = t / 0.6f
+        paint.style = Paint.Style.FILL
+        paint.color = DUST
+        paint.alpha = (150 * (1f - p)).roundToInt()
+        for (k in 0 until 3) {
+            val side = k - 1f
+            canvas.drawCircle(cx + side * (12f + 22f * p), cy - 4f * p, 4f + 5f * p, paint)
+        }
+    }
+
+    // ---------------------------------------------------------------- havalı ama tatlı sahneler
+    //
+    // Sobi sert/havalı görünmeye çalışıyor, son anda tatlılığı ele veriyor (kovboy havuç çeker,
+    // karate tahtası kırılmaz, ninja kaybolamaz, korsan dürbünü ters tutar, gözlük kayar, rapçinin
+    // kepi uçar). Şapkalar res/drawable'daki asset'ler; bant, maske, göz bandı, dürbün, tahta,
+    // duman ve kolye elle çiziliyor. Zamanlar companion'da CB_ / KR_ / NJ_ / PR_ / GL_ / RP_.
+
+    /**
+     * Kovboy: baş öne eğik, şapka yüzde başlıyor; baş yavaşça kalkıyor, gözler kısık, sağ el yavaşça
+     * beldeki kılıfa gidip parmaklar seğiriyor… ve silah yerine HAVUÇ çekiyor: elde bir tur
+     * çevirip ağzına götürüyor, iki ısırık, yanaklar şişip mutlu mutlu çiğniyor. Sonra
+     * "öhöm": yeniden havalı bakış, başını eğip şapkayı gözlerine indiriyor ve öyle bekliyor.
+     */
+    private fun cowboy(e: Float) {
+        target[Ch.HAT_A] = 1f
+        val up = smooth01(seg(e, CB_LIFT_S, CB_STARE_S)) * (1f - smooth01(seg(e, CB_TIP_S, CB_TIP_S + 0.5f)))
+        target[Ch.HAT_DY] = CB_HAT_LOW_FRONT * (1f - up)
+        target[Ch.HEAD_PITCH] = 1f - up
+        target[Ch.HEAD_DY] = 3f * (1f - up)
+        target[Ch.GAZE_Y] = 2.5f * (1f - up)
+        target[Ch.SQUINT] = 1f
+        mouth = Mouth.SMIRK
+        target[Ch.HOLSTER_A] = if (e < CB_DRAW_S || e >= CB_HOLSTER_S) 1f else 0f
+        if (e < CB_DRAW_S) {
+            if (e >= CB_STARE_S && e < CB_REACH_S) {
+                // Gözler kısık, yavaşça sağa sola süzülüyor.
+                osc[Ch.GAZE_X] = 2.2f * sin((e - CB_STARE_S) * TAU / (CB_REACH_S - CB_STARE_S))
+            }
+            if (e >= CB_REACH_S) {
+                // El yavaşça kılıfın üstüne: sarkan sağ kol dışa açılıyor, son anda parmaklar seğiriyor.
+                target[Ch.HANG_R] = CB_REACH_DEG * smooth01(seg(e, CB_REACH_S, CB_DRAW_S - 0.35f))
+                if (e > CB_DRAW_S - 0.45f) osc[Ch.HANG_R] = 2.5f * sin(e * TAU * 9f)
+            }
+            return
+        }
+        // Çekiş: sarkan kolun yerine öndeki (çeneye giden) kol; elde havuç. Kol önce kılıfın
+        // hizasına iniyor, sarkan kolla orada yer değiştiriyor (yukarıda solunca koyu bir
+        // gölge gibi görünüyordu).
+        val armUp = e < CB_HOLSTER_S
+        target[Ch.HANG_R_A] = if (armUp) 0f else 1f
+        target[Ch.THINK_A] = if (armUp) 1f else 0f
+        target[Ch.HCARROT_A] = if (armUp) 1f else 0f
+        biteCount = when {
+            e >= CB_BITE2_S -> 2
+            e >= CB_BITE1_S -> 1
+            else -> 0
+        }
+        when {
+            e < CB_POSE_S -> {
+                // Tabanca gibi havaya kaldırıp elde bir tur çeviriyor.
+                target[Ch.THINK] = CB_DRAW_UP
+                target[Ch.HCARROT_ROT] = CB_PISTOL_DEG
+                osc[Ch.HCARROT_ROT] = 360f * smooth01(seg(e, CB_DRAW_S + 0.15f, CB_DRAW_S + 0.55f))
+                hop(e - CB_DRAW_S, hops = 1, hopS = 0.3f, height = 6f)
+            }
+            e < CB_BITE1_S -> {
+                target[Ch.THINK] = THINK_UP
+                target[Ch.HCARROT_ROT] = CB_MOUTH_DEG
+            }
+            e < CB_AHEM_S -> {
+                // Isırık anında ağız açık, gözler kapalı; sonra yanaklar şişik, mutlu çiğneme.
+                target[Ch.THINK] = THINK_UP - 10f
+                target[Ch.HCARROT_ROT] = CB_MOUTH_DEG
+                target[Ch.SQUINT] = 0f
+                val sinceBite = if (e >= CB_BITE2_S) e - CB_BITE2_S else e - CB_BITE1_S
+                if (sinceBite < 0.14f) {
+                    mouth = Mouth.O
+                    eyes = Eyes.CLOSED
+                    target[Ch.THINK] = THINK_UP + 4f
+                } else {
+                    mouth = Mouth.CHEW
+                    eyes = Eyes.HAPPY
+                    target[Ch.CHEEKS] = 1f
+                    target[Ch.BLUSH] = 0.7f
+                    earsWiggle(e, 1f, base = 4f)
+                    osc[Ch.HEAD_DY] = sin(e * TAU * 4f)
+                }
+            }
+            else -> {
+                // "Öhöm": yeniden havalı bakış; kol havucu kılıfa indiriyor, şapka gözlere iniyor.
+                target[Ch.THINK] = if (e < CB_DROP_S) 70f else CB_HOLSTER_ARM
+                target[Ch.HCARROT_ROT] = if (e < CB_DROP_S) CB_PISTOL_DEG + 30f else 90f
+                target[Ch.CHEEKS] = 0.25f
+                target[Ch.BLUSH] = 0.3f
+            }
+        }
+    }
+
+    /**
+     * Karate: kafada bant; selam, duruş, kol başın üstüne… "HİYAA!" — tahta kırılmıyor.
+     * Acıyla pati sallıyor, üflüyor; toparlanıp tahtaya ciddi bakarken tahta kendiliğinden
+     * ikiye ayrılıyor. Şaşkın bir an, ardından kollar kavuşuk "tabii ki" pozu.
+     */
+    private fun karate(e: Float) {
+        target[Ch.HEADBAND_A] = 1f
+        target[Ch.KBOARD_A] = 1f
+        when {
+            e < KR_STANCE_S -> {
+                // Selam: baş öne eğiliyor, gözler kapalı, patiler önde birleşik.
+                frontHands()
+                val p = sin(PI.toFloat() * seg(e, 0.1f, KR_STANCE_S - 0.1f))
+                target[Ch.HEAD_DY] = 7f * p
+                target[Ch.BODY_DY] = 2f * p
+                if (p > 0.3f) eyes = Eyes.CLOSED
+            }
+            e < KR_RAISE_S -> karateGuard()
+            e < KR_CHOP_S -> {
+                // Kol başın üstüne, derin nefes.
+                karateGuard()
+                target[Ch.CAT_R] = KR_ARM_HIGH
+                target[Ch.EAR_L] = -6f
+                target[Ch.EAR_R] = -6f
+                mouth = Mouth.O
+            }
+            e < KR_PAIN_S -> {
+                // Pat! Tahtaya vuruş; tahta kırılmıyor.
+                karateGuard()
+                target[Ch.CAT_R] = KR_ARM_HIT
+                val since = e - KR_CHOP_S
+                osc[Ch.SQUASH] = 0.5f * exp(-since * 10f) * cos(since * TAU * 4f)
+                mouth = Mouth.O
+            }
+            e < KR_BLOW_S -> {
+                // Acıdı: gözler sımsıkı, kulaklar dimdik, pati sallanıyor, yerinde sekiyor.
+                bothCatArms()
+                target[Ch.CAT_L] = 10f
+                target[Ch.CAT_R] = 40f
+                osc[Ch.CAT_R] = 16f * sin(e * TAU * 9f)
+                eyes = Eyes.CLOSED
+                mouth = Mouth.SAD
+                target[Ch.EAR_L] = -10f
+                target[Ch.EAR_R] = -10f
+                target[Ch.BLUSH] = 0.6f
+                osc[Ch.LIFT] = 2f * abs(sin(e * TAU * 4.5f))
+            }
+            e < KR_CALM_S -> {
+                // Patiye üflüyor.
+                target[Ch.HANG_R_A] = 0f
+                target[Ch.THINK_A] = 1f
+                target[Ch.THINK] = THINK_UP - 5f
+                mouth = Mouth.O
+                target[Ch.BLUSH] = 0.6f
+                target[Ch.EAR_L] = 20f
+                target[Ch.EAR_R] = 20f
+            }
+            e < KR_BREAK_S -> {
+                // Toparlanıp tahtaya ciddi ciddi bakıyor.
+                karateGuard()
+                target[Ch.GAZE_X] = 2.5f
+                target[Ch.GAZE_Y] = 1.5f
+            }
+            e < KR_BREAK_S + 0.45f -> {
+                // Tahta kendiliğinden ikiye ayrılıyor: şaşkın.
+                karateGuard()
+                target[Ch.SQUINT] = 0f
+                target[Ch.BROWS_DET] = 0f
+                target[Ch.EYE_SCALE] = 0.35f
+                target[Ch.EAR_L] = -8f
+                target[Ch.EAR_R] = -8f
+                mouth = Mouth.O
+                target[Ch.GAZE_X] = 2.5f
+                target[Ch.GAZE_Y] = 1.5f
+            }
+            else -> {
+                // "Tabii ki": kollar kavuşuk, kısık gözler, yan gülüş (bekleme bölümü).
+                frontHands()
+                target[Ch.FRONT_DY] = 2f
+                target[Ch.UPPER_ROT] = -4f
+                target[Ch.HEAD_ROT] = -6f
+                target[Ch.LEGS_OPEN] = 1f
+                target[Ch.SQUINT] = 1f
+                mouth = Mouth.SMIRK
+            }
+        }
+    }
+
+    /** Karate duruşu: kediden kollar önde, bacaklar açık, hafif çömelik, kısık gözler. */
+    private fun karateGuard() {
+        bothCatArms()
+        target[Ch.CAT_L] = 22f
+        target[Ch.CAT_R] = 30f
+        target[Ch.LEGS_OPEN] = 1f
+        target[Ch.BODY_DY] = 4f
+        target[Ch.SQUINT] = 1f
+        target[Ch.BROWS_DET] = 1f
+    }
+
+    /**
+     * Ninja: maskeli, parmak ucunda soldan geliyor; el işareti, sağa sola hızlı bakış. Duman
+     * bombasını yere atıyor, dumanın içinde gözleri kapalı kendinden emin… duman dağılınca
+     * hâlâ aynı yerde — ama bozuntuya vermiyor: kısık gözlerle sinsi sinsi bir sağa bir sola
+     * bakıyor (bekleme bölümü: sürekli böyle).
+     */
+    private fun ninja(e: Float) {
+        target[Ch.MASK_A] = 1f
+        target[Ch.SQUINT] = 1f
+        when {
+            e < NJ_SIGN_S -> {
+                // Parmak ucunda sinsice geliyor.
+                osc[Ch.BODY_DX] = -SKATE_OFF_X * (1f - smooth01(seg(e, 0f, NJ_SIGN_S - 0.1f)))
+                hop(e, hops = 4, hopS = (NJ_SIGN_S - 0.1f) / 4f, height = 5f)
+                frontHands()
+                target[Ch.FRONT_DY] = -8f
+                target[Ch.BODY_DY] = 3f
+                osc[Ch.GAZE_X] = 2.2f * sin(e * TAU * 1.5f)
+            }
+            e < NJ_THROW_S -> {
+                // El işareti, çömelik; sağa sola hızlı bakış.
+                ninjaSign()
+                target[Ch.BROWS_DET] = 1f
+                target[Ch.GAZE_X] = if (e < (NJ_SIGN_S + NJ_THROW_S) / 2f) -2.5f else 2.5f
+            }
+            e < NJ_SMOKE_S -> {
+                // Duman bombasını yere atıyor.
+                target[Ch.HANG_R_A] = 0f
+                target[Ch.CAT_R_A] = 1f
+                target[Ch.CAT_R] = if (e < NJ_THROW_S + 0.12f) 55f else -25f
+                target[Ch.BROWS_DET] = 1f
+                target[Ch.BODY_DY] = 3f
+            }
+            e < NJ_PEEK_S -> {
+                // Dumanın içinde: gözler kapalı, kendinden emin — kaybolduğunu sanıyor.
+                ninjaSign()
+                eyes = Eyes.CLOSED
+                target[Ch.HEAD_ROT] = -5f
+            }
+            e < NJ_HOLD_S -> {
+                // Duman dağıldı: gözlerini kısıp sinsi sinsi sola süzüyor.
+                ninjaSign()
+                target[Ch.BROWS_DET] = 1f
+                sneakyLook(-1f, smooth01(seg(e, NJ_PEEK_S, NJ_HOLD_S)))
+            }
+            else -> {
+                // Bekleme: kısık gözler ağır ağır bir yana süzülüp duruyor, sonra öbür yana;
+                // baş ve gövde de bakışla birlikte hafifçe o yana kayıyor.
+                ninjaSign()
+                target[Ch.BROWS_DET] = 1f
+                val k = floor((e - NJ_HOLD_S) / NJ_GLANCE_S).toInt()
+                val dir = if (k % 2 == 0) 1f else -1f
+                val local = e - NJ_HOLD_S - k * NJ_GLANCE_S
+                val p = smooth01(seg(local, 0f, NJ_SLIDE_S))
+                sneakyLook(-dir + 2f * dir * p, 1f)
+            }
+        }
+    }
+
+    /**
+     * Sinsi bakış: [side] −1 sol … +1 sağ. Kısık gözler o yana kayıyor, baş ve üst gövde o yana
+     * hafifçe dönüp kayıyor; [amount] 0..1 bakışın gücü.
+     */
+    private fun sneakyLook(side: Float, amount: Float) {
+        osc[Ch.GAZE_X] = 2.5f * side * amount
+        osc[Ch.HEAD_ROT] = 3.5f * side * amount
+        osc[Ch.UPPER_ROT] = 1.5f * side * amount
+        osc[Ch.BODY_DX] = 3f * side * amount
+    }
+
+    /** Ninja el işareti: patiler göğüste birleşik, çömelik, bacaklar açık. */
+    private fun ninjaSign() {
+        frontHands()
+        target[Ch.FRONT_DY] = -14f
+        target[Ch.FRONT_GAP] = -3f
+        target[Ch.BODY_DY] = 4f
+        target[Ch.LEGS_OPEN] = 1f
+    }
+
+    /**
+     * Korsan: şapka ve göz bandı, gemide gibi yalpalıyor. Dürbünü gözüne götürüyor ama TERS:
+     * mercekte minicik bir göz. İndirip şaşkın bakıyor ("?"), çeviriyor; şimdi mercekte
+     * kocaman bir göz, nefesi kesiliyor ve dürbünle bakmaya devam ediyor (bekleme bölümü:
+     * yalpalayarak bakıyor, mercekteki göz arada bir kırpıyor).
+     */
+    private fun pirate(e: Float) {
+        target[Ch.HAT_A] = 1f
+        target[Ch.EAR_L] = PR_EAR
+        target[Ch.EAR_R] = PR_EAR
+        osc[Ch.TILT] = 3f * sin(e * TAU / PR_SWAY_S)
+        osc[Ch.UPPER_ROT] = 2f * sin(e * TAU / PR_SWAY_S + 0.8f)
+        target[Ch.SQUINT] = 0.6f
+        mouth = Mouth.SMIRK
+        spyFlip = smooth01(seg(e, PR_FLIP_S, PR_FLIP_S + 0.3f))
+        val held = e >= PR_RAISE_S
+        target[Ch.HANG_R_A] = if (held) 0f else 1f
+        target[Ch.THINK_A] = if (held) 1f else 0f
+        target[Ch.SPYGLASS_A] = if (held) 1f else 0f
+        target[Ch.THINK] = THINK_UP
+        lensBlink = 1f
+        when {
+            e < PR_RAISE_S -> Unit
+            e < PR_PUZZLE_S -> {
+                // Ters dürbünle bakıyor.
+                target[Ch.SQUINT] = 0f
+                mouth = Mouth.IDLE
+            }
+            e < PR_LOOK2_S -> {
+                // Dürbünü indirip bakıyor: "bu neden böyle?" — ve çeviriyor.
+                target[Ch.THINK] = PR_LOWER
+                target[Ch.HEAD_ROT] = 9f
+                target[Ch.SQUINT] = 0f
+                target[Ch.GAZE_X] = 2f
+                target[Ch.GAZE_Y] = 2f
+                mouth = Mouth.O
+            }
+            e < PR_HOLD_S -> {
+                // Doğru tarafından: kocaman göz! Bir an sonra nefesi kesiliyor.
+                target[Ch.SQUINT] = 0f
+                mouth = if (e > PR_LOOK2_S + 0.4f) Mouth.O else Mouth.IDLE
+            }
+            else -> {
+                // Bekleme: dürbünle bakmaya devam; mercekteki göz arada bir kırpıyor.
+                target[Ch.SQUINT] = 0f
+                val b = (e - PR_HOLD_S - PR_BLINK_AT_S) / 0.15f
+                if (b in 0f..1f) lensBlink = 1f - 0.9f * sin(PI.toFloat() * b)
+            }
+        }
+    }
+
+    /**
+     * Mükemmel ders: taç ve havalı gözlük yukarıdan düşüyor, ardından zafer işaretiyle poz
+     * (bekleme bölümü: zafer işaretli kol hafifçe sallanıyor, karşıdan foto muhabirlerinin
+     * flaşları vuruyor). Flaş [photoFlashTint].
+     */
+    private fun perfect(e: Float) {
+        val glassesS = PF_CROWN_S + FINALE_GLASSES_DELAY_S
+        val poseS = glassesS + AD_DROP_S + 0.1f
+        if (e >= PF_CROWN_S) target[Ch.CROWN_A] = 1f
+        if (e >= glassesS) target[Ch.GLASSES_A] = 1f
+        crownDrop = dropOffset(e - PF_CROWN_S)
+        glassesDrop = dropOffset(e - glassesS)
+        glassesSparkleT = e - glassesS - AD_DROP_S - 0.1f
+        osc[Ch.HEAD_DY] += landBump(e - PF_CROWN_S - AD_DROP_S) + landBump(e - glassesS - AD_DROP_S)
+        if (e < poseS) {
+            target[Ch.GAZE_Y] = -2.5f
+            target[Ch.HEAD_ROT] = -3f
+            mouth = Mouth.SMIRK
+        } else {
+            // Zafer işareti hâlindeki poz: özgün zafer işaretli kol, baş yana yatık.
+            target[Ch.HANG_R_A] = 0f
+            target[Ch.PEACE_A] = 1f
+            osc[Ch.PEACE] = 6f * sin((e - poseS) * TAU * 1.5f)
+            target[Ch.HEAD_ROT] = 6f
+            hop(e - poseS, hops = 1, hopS = 0.35f, height = 8f)
+            mouth = Mouth.HAPPY
+        }
+    }
+
+    /** Bu hâlde flaşların başladığı an (sn); flaş yoksa −1. */
+    private fun flashStartS(): Float = when (emote) {
+        Emote.PERFECT -> PF_FLASH_S
+        Emote.CROWN -> 0f
+        else -> -1f
+    }
+
+    /** Son flaştan bu yana geçen süre (sn); henüz flaş yoksa −1. Flaşlar [PF_FLASH_LOOP_S] ile dönüyor. */
+    private fun sinceLastFlash(e: Float): Float {
+        val start = flashStartS()
+        if (start < 0f || e < start) return -1f
+        val u = (e - start) % PF_FLASH_LOOP_S
+        var best = -1f
+        for (ft in FLASH_T) if (u >= ft) best = u - ft
+        return best
+    }
+
+    /** Son flaş soldan mı geldi: flaşlar sırayla sol, sağ, sol… ([FLASH_T]'nin çift sırası sol). */
+    private fun lastFlashFromLeft(e: Float): Boolean {
+        val start = flashStartS()
+        if (start < 0f || e < start) return true
+        val u = (e - start) % PF_FLASH_LOOP_S
+        var k = 0
+        for (i in FLASH_T.indices) if (u >= FLASH_T[i]) k = i
+        return k % 2 == 0
+    }
+
+    /**
+     * Foto flaşı: karşıdan çekiliyormuş gibi tavşan bir an beyaza çekilip hızla sönüyor (0..1).
+     * Ayrı bir ışık, hale ya da yıldız çizilmiyor; anlık vuruş drawBunny'deki katmanda. Flaşlar
+     * sırayla soldan ve sağdan geliyor: gelen yan parlak, öbür yan soluk ([lastFlashFromLeft]).
+     */
+    private fun photoFlashTint(e: Float): Float {
+        val since = sinceLastFlash(e)
+        if (since < 0f || since > FLASH_DUR_S) return 0f
+        val q = 1f - since / FLASH_DUR_S
+        return q * q
+    }
+
+    /**
+     * Gözlük ("deal with it"): havalı gözlük yukarıdan düşüyor, kollar kavuşuk. Sonra gözlük
+     * burnundan kayıyor, gözler üstünden mahcup mahcup bakıyor, yanaklar kızarıyor; hızlı bir
+     * baş hareketiyle gözlük yerine sıçrıyor ve yeniden havalı (bekleme: ağır ağır baş sallama).
+     */
+    private fun coolGlasses(e: Float) {
+        if (e >= GL_DROP_S) target[Ch.GLASSES_A] = 1f
+        val slip = GL_SLIP * smooth01(seg(e, GL_SLIP_S, GL_SLIP_S + 0.5f)) *
+            (1f - smooth01(seg(e, GL_FIX_S, GL_FIX_S + 0.12f)))
+        glassesDrop = dropOffset(e - GL_DROP_S) + slip + 2.5f * landBump(e - GL_FIX_S - 0.12f)
+        glassesSparkleT = if (e >= GL_FIX_S) e - GL_FIX_S - 0.15f else e - GL_DROP_S - AD_DROP_S - 0.1f
+        osc[Ch.HEAD_DY] += landBump(e - GL_DROP_S - AD_DROP_S)
+        mouth = Mouth.SMIRK
+        if (e < GL_DROP_S + AD_DROP_S) {
+            target[Ch.SQUINT] = 1f
+            target[Ch.GAZE_Y] = -2.5f
+            return
+        }
+        // Kollar kavuşuk, arkaya yaslanmış.
+        frontHands()
+        target[Ch.FRONT_DY] = 2f
+        target[Ch.UPPER_ROT] = -4f
+        target[Ch.HEAD_ROT] = -6f
+        target[Ch.LEGS_OPEN] = 1f
+        when {
+            e < GL_SLIP_S + 0.25f -> Unit
+            e < GL_FIX_S -> {
+                // Gözlük kaydı: gözler üstünden bakıyor, mahcup.
+                target[Ch.EYE_SCALE] = 0.2f
+                target[Ch.GAZE_Y] = -1.5f
+                target[Ch.BLUSH] = 0.8f
+                target[Ch.EAR_L] = 15f
+                target[Ch.EAR_R] = 15f
+                target[Ch.HEAD_ROT] = -2f
+                mouth = Mouth.O
+            }
+            e < GL_FIX_S + 0.3f -> {
+                // Hızlı baş hareketi: gözlük yerine.
+                val p = seg(e, GL_FIX_S, GL_FIX_S + 0.15f)
+                osc[Ch.HEAD_DY] += -5f * sin(PI.toFloat() * p)
+                target[Ch.BLUSH] = 0.4f
+            }
+            else -> {
+                // Yeniden havalı; beklemede ağır ağır baş sallıyor.
+                osc[Ch.HEAD_ROT] = 1.5f * sin(e * TAU / GL_NOD_S)
+            }
+        }
+    }
+
+    /**
+     * Rapçi: yana çevrilmiş kep, zincir kolye, kollar kavuşuk, ritimle kafa sallıyor. Sert bir
+     * vuruşta kep uçuyor; sağ kolla havada yakalayıp bir tur çevirerek başına geri atıyor,
+     * yeniden kollar kavuşuk. Döngüde dönüyor (süre vuruşun tam katı).
+     */
+    private fun rapper(e: Float) {
+        target[Ch.RAP_A] = 1f
+        target[Ch.SQUINT] = 1f
+        target[Ch.LEGS_OPEN] = 1f
+        mouth = Mouth.SMIRK
+        val beat = (e % RP_BEAT_S) / RP_BEAT_S
+        val nod = sin(PI.toFloat() * beat)
+        val big = if (e >= RP_OFF_S - RP_BEAT_S && e < RP_OFF_S) 1.8f else 1f
+        osc[Ch.HEAD_DY] = 3.5f * nod * big
+        osc[Ch.HEAD_ROT] = 2f * nod * big
+        osc[Ch.BODY_DY] = 1.5f * nod
+        if (e < RP_OFF_S || e >= RP_RECROSS_S) {
+            // Kollar kavuşuk; kolye görünsün diye patiler biraz aşağıda.
+            frontHands()
+            target[Ch.FRONT_DY] = RP_ARMS_DY
+            return
+        }
+        target[Ch.HANG_R_A] = 0f
+        target[Ch.CAT_R_A] = 1f
+        when {
+            e < RP_CATCH_S -> {
+                // Kep uçtu! Gözler kocaman, kol uzanıyor.
+                target[Ch.CAT_R] = RP_CATCH_UP
+                target[Ch.SQUINT] = 0f
+                target[Ch.EYE_SCALE] = 0.3f
+                target[Ch.GAZE_X] = 2f
+                target[Ch.GAZE_Y] = 2f
+                mouth = Mouth.O
+            }
+            e < RP_TOSS_S -> {
+                // Yakaladı: kol kalkıyor, kepe bakıyor.
+                target[Ch.CAT_R] = 50f
+                target[Ch.SQUINT] = 0.5f
+                target[Ch.GAZE_X] = 2f
+                target[Ch.GAZE_Y] = -1f
+            }
+            e < RP_ON_S -> {
+                // Bir tur çevirerek başına atıyor.
+                target[Ch.CAT_R] = 95f
+                target[Ch.GAZE_Y] = -2.5f
+            }
+            else -> target[Ch.CAT_R] = 40f
+        }
+    }
+
+    /** Rapçinin kepi başta mı (uçtuğu, elde durduğu ve başına atıldığı an değil). */
+    private fun rapHatOnHead(e: Float) = e < RP_OFF_S || e >= RP_ON_S
+
+    /** Rapçinin kepi uçarken, eldeyken ve başına atılırken (sahne koordinatı). */
+    private fun drawRapHatFree(canvas: Canvas, e: Float) {
+        if (rapHatOnHead(e)) return
+        val headX = RP_HAT_X + v(Ch.BODY_DX)
+        val headY = RP_HAT_Y + v(Ch.BODY_DY) + v(Ch.HEAD_DY) - v(Ch.LIFT)
+        catHandRight(scenePt)
+        val hx = scenePt[0]
+        val hy = scenePt[1] - 6f
+        val x: Float
+        val y: Float
+        val rot: Float
+        when {
+            e < RP_CATCH_S -> {
+                val p = seg(e, RP_OFF_S, RP_CATCH_S)
+                x = headX + (hx - headX) * p
+                y = headY + (hy - headY) * p - 40f * 4f * p * (1f - p)
+                rot = RP_HAT_ROT + 300f * p
+            }
+            e < RP_TOSS_S -> {
+                x = hx
+                y = hy
+                rot = RP_HAT_ROT + 300f
+            }
+            else -> {
+                val p = seg(e, RP_TOSS_S, RP_ON_S)
+                x = hx + (headX - hx) * p
+                y = hy + (headY - hy) * p - 45f * 4f * p * (1f - p)
+                rot = RP_HAT_ROT + 300f + 420f * p
+            }
+        }
+        drawAsset(canvas, rapHatDrawable, v(Ch.RAP_A), x, y, rot, RP_HAT_SCALE, RP_HAT_AX, RP_HAT_AY, sx = -1f)
+    }
+
+    /** Altın zincir kolye: boyundan göğse sarkan halkalar ve yuvarlak madalyon (gövde çerçevesi). */
+    private fun drawChain(canvas: Canvas) {
+        val a = v(Ch.RAP_A)
+        withAlpha(canvas, a, FULL_LAYER) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.7f
+            paint.color = BUCKLE
+            for (i in 0..CHAIN_LINKS) {
+                val t = i / CHAIN_LINKS.toFloat()
+                val u = 1f - t
+                val x = u * u * CHAIN_L_X + 2f * t * u * CHAIN_MID_X + t * t * CHAIN_R_X
+                val y = u * u * CHAIN_TOP_Y + 2f * t * u * CHAIN_MID_Y + t * t * CHAIN_TOP_Y
+                // Eğrinin o noktadaki yönü
+                val dx = 2f * u * (CHAIN_MID_X - CHAIN_L_X) + 2f * t * (CHAIN_R_X - CHAIN_MID_X)
+                val dy = 2f * u * (CHAIN_MID_Y - CHAIN_TOP_Y) + 2f * t * (CHAIN_TOP_Y - CHAIN_MID_Y)
+                val ang = Math.toDegrees(kotlin.math.atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                val rx = if (i % 2 == 0) 3.2f else 2.7f
+                val ry = if (i % 2 == 0) 2f else 1.4f
+                canvas.save()
+                canvas.rotate(ang, x, y)
+                rect.set(x - rx, y - ry, x + rx, y + ry)
+                canvas.drawOval(rect, paint)
+                canvas.restore()
+            }
+            paint.style = Paint.Style.FILL
+            paint.color = BUCKLE
+            canvas.drawCircle(CHAIN_MID_X, CHAIN_PENDANT_Y, 6.5f, paint)
+            paint.color = STAR_EDGE
+            canvas.drawCircle(CHAIN_MID_X, CHAIN_PENDANT_Y, 4.2f, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1f
+            paint.color = 0xFFFFF3C4.toInt()
+            rect.set(CHAIN_MID_X - 3f, CHAIN_PENDANT_Y - 3f, CHAIN_MID_X + 3f, CHAIN_PENDANT_Y + 3f)
+            canvas.drawArc(rect, 200f, 70f, false, paint)
+        }
+    }
+
+    // ---- rehber öğretmeni: elde havuç
+
+    /**
+     * Havucu öğretmen çubuğu gibi tutan öndeki kol (çeneye giden kedi kolu, elde havuç). Sobi
+     * konuşmuyor, gülümsüyor; tek hareket havucun ağır ağır sağa sola sallanması.
+     */
+    private fun holdPointer(armDeg: Float, tipDeg: Float, e: Float, swayPeriodS: Float) {
+        target[Ch.HANG_R_A] = 0f
+        target[Ch.THINK_A] = 1f
+        target[Ch.HCARROT_A] = 1f
+        target[Ch.THINK] = armDeg
+        target[Ch.HCARROT_ROT] = tipDeg
+        val sway = sin(e * TAU / swayPeriodS)
+        osc[Ch.HCARROT_ROT] = TEACH_SWAY_DEG * sway
+        osc[Ch.HEAD_ROT] = 2f * sway
+        mouth = Mouth.HAPPY
+    }
+
+    /** Anlatma: havuç yukarıda, sağa sola sallanıyor. */
+    private fun teachTalk(e: Float) {
+        holdPointer(TC_ARM, TC_TIP, e, swayPeriodS = 1.5f)
+    }
+
+    /** Gösterme: kol öne uzanık, havucun ucu aşağıda (panelin altındaki abaküs ve düğmeler), sallanıyor. */
+    private fun teachPoint(e: Float) {
+        holdPointer(TP_ARM, TP_TIP, e, swayPeriodS = 2.4f)
+        target[Ch.GAZE_X] = 2f
+        target[Ch.GAZE_Y] = 2.5f
+    }
+
+    /** Uyarı, ama güler yüzle: havuç dik, ağır ağır sallanıyor, baş hafif yana yatık. */
+    private fun teachWarn(e: Float) {
+        holdPointer(TW_ARM, TW_TIP, e, swayPeriodS = 2.4f)
+        target[Ch.HEAD_ROT] = 5f
+    }
+
+    // ---- çizim
+
+    /** [d]'yi ([ax], [ay]) noktası ([x], [y])'ye gelecek, [rot] dönük ve [s] ölçekli çizer; [sx] = -1 aynalar. */
+    private fun drawAsset(
+        canvas: Canvas, d: android.graphics.drawable.Drawable?, alpha: Float,
+        x: Float, y: Float, rot: Float, s: Float, ax: Float, ay: Float, sx: Float = 1f,
+    ) {
+        if (d == null || alpha <= 0.01f) return
+        canvas.save()
+        canvas.translate(x, y)
+        canvas.rotate(rot)
+        canvas.scale(s * sx, s)
+        canvas.translate(-ax, -ay)
+        d.alpha = (255 * alpha.coerceAtMost(1f)).roundToInt()
+        d.draw(canvas)
+        canvas.restore()
+    }
+
+    /** [p] dışını çizime açık bırakan kırpma (API 26 öncesinde eski yol). */
+    @Suppress("DEPRECATION")
+    private fun clipOut(canvas: Canvas, p: Path) {
+        if (Build.VERSION.SDK_INT >= 26) canvas.clipOutPath(p)
+        else canvas.clipPath(p, android.graphics.Region.Op.DIFFERENCE)
+    }
+
+    /**
+     * Havuç (carrot_ic): tutulan yer ([x], [y]) noktasında, ucu [tipDeg] yönünde (ekran
+     * açısı, 0 = sağ, 90 = aşağı). [bites] kadar ısırık ucundan oyuluyor.
+     */
+    private fun drawCarrotAt(canvas: Canvas, x: Float, y: Float, scale: Float, tipDeg: Float, alpha: Float, bites: Int) {
+        val carrot = carrotDrawable ?: return
+        if (alpha <= 0.01f) return
+        canvas.save()
+        canvas.translate(x, y)
+        canvas.rotate(tipDeg - CARROT_TIP_DEG)
+        canvas.scale(scale, scale)
+        canvas.translate(-CARROT_GRIP_X, -CARROT_GRIP_Y)
+        if (bites > 0) {
+            bitePath.reset()
+            bitePath.addCircle(BITE1_X, BITE1_Y, BITE1_R, Path.Direction.CW)
+            if (bites > 1) bitePath.addCircle(BITE2_X, BITE2_Y, BITE2_R, Path.Direction.CW)
+            clipOut(canvas, bitePath)
+        }
+        carrot.alpha = (255 * alpha.coerceAtMost(1f)).roundToInt()
+        carrot.draw(canvas)
+        canvas.restore()
+    }
+
+    /** Kovboy kemeri (gövdeye kırpılmış), tokası ve sağ kalçada havuç kılıfı. */
+    private fun drawBelt(canvas: Canvas) {
+        if (emote != Emote.COWBOY_FRONT) return
+        val a = v(Ch.HAT_A)
+        withAlpha(canvas, a, FULL_LAYER) {
+            canvas.save()
+            canvas.clipPath(BunnyMascotArt.BODY[0].path)
+            paint.style = Paint.Style.FILL
+            paint.color = BELT
+            rect.set(350f, BELT_TOP, 440f, BELT_TOP + 7f)
+            canvas.drawRect(rect, paint)
+            canvas.restore()
+            paint.color = BUCKLE
+            rect.set(388f, BELT_TOP - 1.5f, 398f, BELT_TOP + 8.5f)
+            canvas.drawRoundRect(rect, 2f, 2f, paint)
+            paint.color = BELT
+            rect.set(391f, BELT_TOP + 1.5f, 395f, BELT_TOP + 5.5f)
+            canvas.drawRect(rect, paint)
+            // Kılıftaki havuç: yaprakları yukarıda, ucu kesenin içinde.
+            drawCarrotAt(canvas, HOLSTER_X, HOLSTER_Y, HOLSTER_SCALE, 90f, v(Ch.HOLSTER_A), 0)
+            canvas.save()
+            canvas.rotate(-12f, HOLSTER_X, HOLSTER_Y + 4f)
+            paint.style = Paint.Style.FILL
+            paint.color = HOLSTER
+            rect.set(HOLSTER_X - 7f, HOLSTER_Y - 4f, HOLSTER_X + 8f, HOLSTER_Y + 15f)
+            canvas.drawRoundRect(rect, 4f, 4f, paint)
+            paint.color = HOLSTER_DARK
+            rect.set(HOLSTER_X - 7f, HOLSTER_Y - 4f, HOLSTER_X + 8f, HOLSTER_Y)
+            canvas.drawRoundRect(rect, 2f, 2f, paint)
+            canvas.restore()
+        }
+    }
+
+    /** Kafaya takılanlar (kafa çerçevesinde): maske, bant, öne dönen kulak, şapkalar, ter. */
+    private fun drawHeadGear(canvas: Canvas, e: Float, t: Float) {
+        val mask = v(Ch.MASK_A)
+        if (mask > 0.01f) drawNinjaMask(canvas, mask, t)
+        val band = v(Ch.HEADBAND_A)
+        if (band > 0.01f) drawKarateBand(canvas, band, t)
+        val hat = v(Ch.HAT_A)
+        if (hat > 0.01f) {
+            val drop = -(1f - hat) * 20f   // takılırken yukarıdan iniyor
+            when (emote) {
+                Emote.COWBOY_FRONT -> {
+                    drawAsset(canvas, bandanaDrawable, hat, BANDANA_X, BANDANA_Y, 0f, BANDANA_SCALE, BANDANA_AX, BANDANA_AY)
+                    drawAsset(
+                        canvas, cowboyFrontDrawable, hat, CB_FRONT_X, CB_FRONT_Y + v(Ch.HAT_DY) + drop,
+                        0f, CB_FRONT_SCALE, CB_FRONT_AX, CB_FRONT_AY,
+                    )
+                }
+                Emote.RAPPER -> Unit
+                Emote.PIRATE -> {
+                    drawEyePatch(canvas, hat)
+                    drawAsset(canvas, pirateHatDrawable, hat, PR_HAT_X, PR_HAT_Y + drop, 0f, PR_HAT_SCALE, PR_HAT_AX, PR_HAT_AY)
+                }
+                else -> Unit
+            }
+        }
+        val jester = v(Ch.JESTER_A)
+        if (jester > 0.01f) {
+            // Soytarı şapkası (jester_hat): kulakların arasında, yana yatık küçük bir şapka;
+            // takılırken yukarıdan iniyor.
+            drawAsset(
+                canvas, jesterHatDrawable, jester, JESTER_X, JESTER_Y - (1f - jester) * 20f, JESTER_ROT,
+                JESTER_SCALE, JESTER_AX, JESTER_AY,
+            )
+        }
+        val rap = v(Ch.RAP_A)
+        if (rap > 0.01f && emote == Emote.RAPPER && rapHatOnHead(e)) {
+            drawAsset(canvas, rapHatDrawable, rap, RP_HAT_X, RP_HAT_Y - (1f - rap) * 20f, RP_HAT_ROT, RP_HAT_SCALE, RP_HAT_AX, RP_HAT_AY, sx = -1f)
+        }
+    }
+
+    /** Bandın arkadaki düğümü ve rüzgârda dalgalanan iki ucu. */
+    private fun drawKnot(canvas: Canvas, x: Float, y: Float, t: Float, color: Int, dark: Int) {
+        val w = 3f * sin(t * TAU * 1.8f)
+        paint.style = Paint.Style.FILL
+        paint.color = dark
+        tailPath.reset()
+        tailPath.moveTo(x, y - 3f)
+        tailPath.quadTo(x + 10f, y - 10f + w, x + 30f, y - 2f + w)
+        tailPath.quadTo(x + 16f, y + 1f, x, y + 3f)
+        tailPath.close()
+        canvas.drawPath(tailPath, paint)
+        paint.color = color
+        tailPath.reset()
+        tailPath.moveTo(x, y + 1f)
+        tailPath.quadTo(x + 12f, y + 6f - w, x + 26f, y + 24f - w)
+        tailPath.quadTo(x + 12f, y + 16f, x, y + 5f)
+        tailPath.close()
+        canvas.drawPath(tailPath, paint)
+        paint.color = dark
+        canvas.drawCircle(x, y + 1f, 5.5f, paint)
+    }
+
+    /** Karate bandı: kafanın çevresine kırpılmış kırmızı şerit, sağda düğüm. */
+    private fun drawKarateBand(canvas: Canvas, a: Float, t: Float) {
+        withAlpha(canvas, a, FULL_LAYER) {
+            canvas.save()
+            canvas.clipPath(BunnyMascotArt.HEAD[0].path)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 11f
+            paint.color = BAND_RED
+            tailPath.reset()
+            tailPath.moveTo(318f, 136f)
+            tailPath.quadTo(388f, 108f, 462f, 136f)
+            canvas.drawPath(tailPath, paint)
+            paint.strokeWidth = 2f
+            paint.color = BAND_LIGHT
+            tailPath.reset()
+            tailPath.moveTo(318f, 131f)
+            tailPath.quadTo(388f, 103f, 462f, 131f)
+            canvas.drawPath(tailPath, paint)
+            canvas.restore()
+            drawKnot(canvas, 446f, 128f, t, BAND_RED, BAND_DARK)
+        }
+    }
+
+    /**
+     * Ninja maskesi: kafaya kırpılmış lacivert bez; gözlerin olduğu şerit açık, alnında
+     * kırmızı bant, sağda düğüm. Kızarınca yanaklar bezin üstünde görünsün diye yeniden.
+     */
+    private fun drawNinjaMask(canvas: Canvas, a: Float, t: Float) {
+        withAlpha(canvas, a, FULL_LAYER) {
+            canvas.save()
+            canvas.clipPath(BunnyMascotArt.HEAD[0].path)
+            paint.style = Paint.Style.FILL
+            paint.color = NINJA_CLOTH
+            tailPath.reset()
+            tailPath.moveTo(300f, 100f)
+            tailPath.lineTo(480f, 100f)
+            tailPath.lineTo(480f, NJ_SLIT_TOP)
+            tailPath.quadTo(388f, NJ_SLIT_TOP - 10f, 300f, NJ_SLIT_TOP)
+            tailPath.close()
+            canvas.drawPath(tailPath, paint)
+            tailPath.reset()
+            tailPath.moveTo(300f, NJ_SLIT_BOTTOM)
+            tailPath.quadTo(388f, NJ_SLIT_BOTTOM - 7f, 480f, NJ_SLIT_BOTTOM)
+            tailPath.lineTo(480f, 230f)
+            tailPath.lineTo(300f, 230f)
+            tailPath.close()
+            canvas.drawPath(tailPath, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 6f
+            paint.color = BAND_RED
+            tailPath.reset()
+            tailPath.moveTo(300f, 124f)
+            tailPath.quadTo(388f, 112f, 480f, 124f)
+            canvas.drawPath(tailPath, paint)
+            paint.strokeWidth = 2f
+            paint.color = NINJA_FOLD
+            tailPath.reset()
+            tailPath.moveTo(350f, 175f)
+            tailPath.quadTo(388f, 185f, 426f, 175f)
+            tailPath.moveTo(360f, 188f)
+            tailPath.quadTo(388f, 196f, 416f, 188f)
+            canvas.drawPath(tailPath, paint)
+            canvas.restore()
+            drawKnot(canvas, 447f, 124f, t, BAND_RED, BAND_DARK)
+        }
+        if (v(Ch.BLUSH) > 0.01f) drawBlush(canvas)
+    }
+
+    /** Korsan göz bandı: sağ gözde (izleyiciye göre) siyah bant, ip alından geçiyor. */
+    private fun drawEyePatch(canvas: Canvas, a: Float) {
+        withAlpha(canvas, a, FULL_LAYER) {
+            canvas.save()
+            canvas.clipPath(BunnyMascotArt.HEAD[0].path)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2.4f
+            paint.color = PATCH
+            canvas.drawLine(330f, 118f, 452f, 152f, paint)
+            canvas.restore()
+            paint.style = Paint.Style.FILL
+            paint.color = PATCH
+            rect.set(EYE_X[1] - 10f, EYE_Y - 9f, EYE_X[1] + 10f, EYE_Y + 9f)
+            canvas.drawOval(rect, paint)
+            paint.color = PATCH_SHINE
+            rect.set(EYE_X[1] - 5.5f, EYE_Y - 5.5f, EYE_X[1] - 0.5f, EYE_Y - 2f)
+            canvas.drawOval(rect, paint)
+        }
+    }
+
+    /**
+     * Dürbün (gövde çerçevesinde): bir ucu sağ elde, öbür ucu sol gözde. Ters tutarken gözdeki
+     * mercek küçük ve içinde minicik bir göz; çevirince büyük mercek, kocaman bir göz. Kol
+     * inince göze yapışmıyor, elden sola-yukarı duruyor.
+     */
+    private fun drawSpyglass(canvas: Canvas) {
+        val a = v(Ch.SPYGLASS_A)
+        if (a <= 0.01f) return
+        val ta = v(Ch.THINK_A)
+        val armDeg = -(v(Ch.THINK) - (1f - ta) * 60f)
+        rotateAround(CAT_HAND_X + CAT_DX, CAT_HAND_Y, CHEER_SHOULDER_R_X, CHEER_SHOULDER_R_Y, armDeg, scenePt)
+        var bx = scenePt[0]
+        var by = scenePt[1]
+        // Göz: kafa çerçevesinden gövde çerçevesine (önce dönüş, sonra kafanın inişi).
+        rotateAround(EYE_X[0], EYE_Y, NECK_X, NECK_Y, lastHeadRot, scenePt2)
+        val eyeX = scenePt2[0]
+        val eyeY = scenePt2[1] + v(Ch.HEAD_DY)
+        val attach = ((v(Ch.THINK) - PR_LOWER) / (THINK_UP - PR_LOWER)).coerceIn(0f, 1f) * ta.coerceAtMost(1f)
+        val freeRad = Math.toRadians(SPY_FREE_DEG.toDouble())
+        val fx = bx + SPY_LEN * cos(freeRad).toFloat()
+        val fy = by + SPY_LEN * sin(freeRad).toFloat()
+        var ax = fx + (eyeX - fx) * attach
+        var ay = fy + (eyeY - fy) * attach
+        val flip = spyFlip
+        if (flip > 0f && flip < 1f) {
+            // Çevirme: iki uç ortanın çevresinde yarım tur dönüyor.
+            val mx = (ax + bx) / 2f
+            val my = (ay + by) / 2f
+            rotateAround(ax, ay, mx, my, 180f * flip, scenePt)
+            rotateAround(bx, by, mx, my, 180f * flip, scenePt2)
+            ax = scenePt[0]; ay = scenePt[1]; bx = scenePt2[0]; by = scenePt2[1]
+        }
+        val bigAtEye = flip >= 0.5f
+        val rA = if (bigAtEye) SPY_BIG_R else SPY_SMALL_R
+        val rB = if (bigAtEye) SPY_SMALL_R else SPY_BIG_R
+        withAlpha(canvas, a, FULL_LAYER) {
+            // Boru: iki uç arasında yamuk; iki halka.
+            val dx = bx - ax
+            val dy = by - ay
+            val len = kotlin.math.sqrt(dx * dx + dy * dy).coerceAtLeast(0.01f)
+            val nx = -dy / len
+            val ny = dx / len
+            paint.style = Paint.Style.FILL
+            paint.color = BRASS
+            tailPath.reset()
+            tailPath.moveTo(ax + nx * rA * 0.8f, ay + ny * rA * 0.8f)
+            tailPath.lineTo(bx + nx * rB * 0.8f, by + ny * rB * 0.8f)
+            tailPath.lineTo(bx - nx * rB * 0.8f, by - ny * rB * 0.8f)
+            tailPath.lineTo(ax - nx * rA * 0.8f, ay - ny * rA * 0.8f)
+            tailPath.close()
+            canvas.drawPath(tailPath, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 2f
+            paint.color = BRASS_DARK
+            for (f in SPY_RING_AT) {
+                val r = (rA + (rB - rA) * f) * 0.8f
+                val cx = ax + dx * f
+                val cy = ay + dy * f
+                canvas.drawLine(cx + nx * r, cy + ny * r, cx - nx * r, cy - ny * r, paint)
+            }
+            // El tarafındaki uç
+            paint.style = Paint.Style.FILL
+            paint.color = BRASS_DARK
+            canvas.drawCircle(bx, by, rB * 0.8f + 1.5f, paint)
+            // Göz tarafındaki mercek
+            canvas.drawCircle(ax, ay, rA + 2.5f, paint)
+            paint.color = GLASS
+            canvas.drawCircle(ax, ay, rA, paint)
+            if (attach > 0.9f && (flip <= 0f || flip >= 1f)) {
+                // Mercekte büyümüş (ya da küçülmüş) göz.
+                canvas.save()
+                bitePath.reset()
+                bitePath.addCircle(ax, ay, rA, Path.Direction.CW)
+                canvas.clipPath(bitePath)
+                canvas.translate(ax - EYE_X[0], ay - EYE_Y)
+                val k = if (bigAtEye) SPY_EYE_BIG else SPY_EYE_SMALL
+                canvas.scale(k, k * lensBlink, EYE_X[0], EYE_Y)
+                drawShape(canvas, BunnyMascotArt.EYES[0])
+                canvas.restore()
+            }
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.5f
+            paint.color = WHITE
+            paint.alpha = 170
+            rect.set(ax - rA * 0.7f, ay - rA * 0.7f, ax + rA * 0.7f, ay + rA * 0.7f)
+            canvas.drawArc(rect, 200f, 60f, false, paint)
+        }
+    }
+
+    /** Karate tahtası ve tuğlalar (sağda, yerde), vuruş yazısı, üfleme çizgileri, final parıltısı. */
+    private fun drawKarateScene(canvas: Canvas, e: Float) {
+        val alpha = v(Ch.KBOARD_A) * seg(e, 0f, 0.3f)
+        withAlpha(canvas, alpha, FULL_LAYER) {
+            for (bx in KB_BRICK_X) {
+                for (k in 0 until 4) {
+                    val top = KB_BRICK_TOP + k * 14f
+                    paint.style = Paint.Style.FILL
+                    paint.color = BLOCK
+                    rect.set(bx - 7f, top, bx + 7f, top + 13f)
+                    canvas.drawRoundRect(rect, 1.5f, 1.5f, paint)
+                    paint.style = Paint.Style.STROKE
+                    paint.strokeWidth = 1f
+                    paint.color = BLOCK_EDGE
+                    canvas.drawRoundRect(rect, 1.5f, 1.5f, paint)
+                }
+            }
+            if (e < KR_BREAK_S) {
+                val since = e - KR_CHOP_S
+                val wob = if (since > 0f && since < 0.6f) 2.5f * exp(-since * 7f) * sin(since * TAU * 8f) else 0f
+                drawPlank(canvas, KB_LEFT, KB_RIGHT, KB_TOP + wob)
+            } else {
+                // İkiye ayrılıyor: yarılar dış uçlarından dönüp ortadan aşağı düşüyor.
+                val p = seg(e, KR_BREAK_S, KR_BREAK_S + 0.3f)
+                val ang = 32f * p * p
+                canvas.save()
+                canvas.rotate(ang, KB_LEFT + 4f, KB_TOP)
+                drawPlank(canvas, KB_LEFT, KB_MID - 1f, KB_TOP)
+                canvas.restore()
+                canvas.save()
+                canvas.rotate(-ang, KB_RIGHT - 4f, KB_TOP)
+                drawPlank(canvas, KB_MID + 1f, KB_RIGHT, KB_TOP)
+                canvas.restore()
+                val s = e - KR_BREAK_S
+                if (s < 0.5f) {
+                    for (k in 0 until 4) {
+                        val ang2 = k * TAU / 4f + 0.6f
+                        val r = 8f + 18f * (s / 0.5f)
+                        drawStar(canvas, KB_MID + r * cos(ang2), KB_TOP + r * sin(ang2), 4f, 1f - s / 0.5f)
+                    }
+                }
+            }
+        }
+        val ts = e - KR_CHOP_S + 0.1f
+        if (ts > 0f && ts < 0.9f) {
+            drawText(canvas, "HİYAA!", 300f, 72f, 22f * popScale(ts), CROWN_GOLD, 1f - seg(ts, 0.6f, 0.9f))
+        }
+        if (e >= KR_BLOW_S && e < KR_CALM_S) {
+            // Patiye üfleme: ağızdan sağa üç küçük kavis.
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.6f
+            for (k in 0 until 3) {
+                val ph = ((e * 2.5f) + k / 3f) % 1f
+                paint.color = LIGHT
+                paint.alpha = (255 * (1f - ph)).roundToInt()
+                val x = 396f + 16f * ph
+                val y = 168f - 6f + k * 5f
+                rect.set(x - 3f, y - 3f, x + 3f, y + 3f)
+                canvas.drawArc(rect, -60f, 120f, false, paint)
+            }
+        }
+        val sp = e - KR_BREAK_S - 0.7f
+        if (sp > 0f && sp < 0.6f) drawStar(canvas, 433f, 118f, 7f * popScale(sp), 1f - sp / 0.6f)
+    }
+
+    private fun drawPlank(canvas: Canvas, x0: Float, x1: Float, top: Float) {
+        paint.style = Paint.Style.FILL
+        paint.color = KB_WOOD
+        rect.set(x0, top, x1, top + 7f)
+        canvas.drawRect(rect, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1f
+        paint.color = KB_EDGE
+        canvas.drawRect(rect, paint)
+        canvas.drawLine(x0 + 4f, top + 3.5f, x1 - 6f, top + 3.5f, paint)
+    }
+
+    /** Duman bombası (elden yere) ve tavşanı tamamen örten, sonra dağılan duman. */
+    private fun drawNinjaScene(canvas: Canvas, e: Float) {
+        val tb = e - NJ_THROW_S - 0.12f
+        if (tb > 0f && tb < 0.23f) {
+            val p = tb / 0.23f
+            val x = 455f - 40f * p
+            val y = 225f + 75f * p * p
+            paint.style = Paint.Style.FILL
+            paint.color = PATCH
+            canvas.drawCircle(x, y, 5f, paint)
+            drawStar(canvas, x + 3f, y - 7f, 3f, 1f)
+        }
+        val s = e - NJ_SMOKE_S
+        if (s <= 0f || e >= NJ_PEEK_S) return
+        val grow = smooth01(s / 0.35f)
+        val fade = 1f - seg(e, NJ_PEEK_S - 0.7f, NJ_PEEK_S - 0.1f)
+        // Bulutlar tek katmanda opak çiziliyor, katman bütün olarak soluyor: tek tek saydam
+        // çizilince üst üste binen kenarlar görünüyordu.
+        withAlpha(canvas, fade * 0.95f, FULL_LAYER) {
+            for (shade in 0..1) {
+                paint.style = Paint.Style.FILL
+                paint.color = if (shade == 0) SMOKE_SHADE else NINJA_SMOKE
+                for (k in SMOKE_X.indices) {
+                    val r = SMOKE_R[k] * grow * (1f + 0.06f * sin(e * 3f + k)) * (if (shade == 0) 1f else 0.9f)
+                    val drift = -10f * s
+                    canvas.drawCircle(SMOKE_X[k] + v(Ch.BODY_DX), SMOKE_Y[k] + drift + (if (shade == 0) 3f else 0f), r, paint)
+                }
+            }
+        }
+    }
+
+    /** Sahnenin önündeki küçük süsler: kovboyda havuç kırıntıları, korsanda yazılar. */
+    private fun drawCoolExtras(canvas: Canvas, e: Float) {
+        when (emote) {
+            Emote.COWBOY_FRONT -> {
+                for (b in CB_BITES) {
+                    val s = e - b
+                    if (s < 0f || s > 0.6f) continue
+                    paint.style = Paint.Style.FILL
+                    paint.color = CRUMB
+                    paint.alpha = (255 * (1f - s / 0.6f)).roundToInt()
+                    for (k in 0 until 4) {
+                        val dx = (k - 1.5f) * 9f * s
+                        canvas.drawCircle(386f + dx + v(Ch.BODY_DX), 176f + 70f * s * s + k * 1.5f, 1.8f, paint)
+                    }
+                }
+            }
+            Emote.PIRATE -> {
+                val q = e - PR_PUZZLE_S - 0.15f
+                if (q > 0f && q < PR_LOOK2_S - PR_PUZZLE_S - 0.2f) drawText(canvas, "?", 450f, 104f, 26f * popScale(q), LIGHT, 1f)
+            }
+            else -> Unit
+        }
+    }
+
     private companion object {
         const val TAU = (2 * PI).toFloat()
+        // ---- havalı ama tatlı sahneler (bkz. "havalı ama tatlı sahneler" bölümü)
+        // Kovboy zamanları
+        const val CB_LIFT_S = 0.7f      // şapka yüzden kalkmaya başlıyor
+        const val CB_STARE_S = 1.6f     // kısık gözlerle süzme
+        const val CB_REACH_S = 2.5f     // el yavaşça kılıfa
+        const val CB_DRAW_S = 3.5f      // havuç çekiliyor
+        const val CB_POSE_S = 4.3f      // ağza götürüyor
+        const val CB_BITE1_S = 4.75f
+        const val CB_BITE2_S = 5.15f
+        const val CB_AHEM_S = 6.1f      // yeniden havalı
+        const val CB_TIP_S = 6.3f       // şapka gözlere iniyor
+        const val CB_DROP_S = 6.35f     // kol iniyor
+        const val CB_HOLSTER_S = 6.6f   // havuç yeniden kılıfta
+        val CB_BITES = floatArrayOf(CB_BITE1_S, CB_BITE2_S)
+        const val CB_REACH_DEG = 16f    // sarkan kolun kılıfa açılması
+        const val CB_DRAW_UP = 35f      // çekişte öndeki kolun açısı
+        const val CB_PISTOL_DEG = -95f  // havucun ucu yukarıda (tabanca gibi)
+        const val CB_MOUTH_DEG = -150f  // havucun ucu ağza doğru
+        const val CB_HOLSTER_ARM = -35f // havucu kılıfa indiren kolun açısı
+        // Önden kovboy şapkası ve bandana (kafa çerçevesi; asset 512'lik, (AX, AY) noktası (X, Y)'ye)
+        const val CB_FRONT_X = 388f
+        const val CB_FRONT_Y = 129f
+        const val CB_FRONT_SCALE = 0.33f
+        const val CB_FRONT_AX = 266f
+        const val CB_FRONT_AY = 290f
+        const val CB_HAT_LOW_FRONT = 30f   // baş eğikken şapkanın inişi (yüz de aşağı kayıyor)
+        const val BANDANA_X = 390f
+        const val BANDANA_Y = 203f
+        const val BANDANA_SCALE = 0.28f
+        const val BANDANA_AX = 262f
+        const val BANDANA_AY = 384f
+        // Kemer ve kılıf (gövde çerçevesi)
+        const val BELT_TOP = 254f
+        const val HOLSTER_X = 430f
+        const val HOLSTER_Y = 258f
+        const val HOLSTER_SCALE = 0.075f
+        // Havuç: carrot_ic'te ucun tutma yerine göre yönü (derece) ve ısırıklar (asset koordinatı)
+        const val CARROT_TIP_DEG = 125.54f
+        const val HAND_CARROT_SCALE = 0.09f
+        const val BITE1_X = 60f
+        const val BITE1_Y = 500f
+        const val BITE1_R = 70f
+        const val BITE2_X = 112f
+        const val BITE2_Y = 445f
+        const val BITE2_R = 78f
+        // Karate
+        const val KR_STANCE_S = 0.8f
+        const val KR_RAISE_S = 1.5f
+        const val KR_CHOP_S = 2.2f
+        const val KR_PAIN_S = 2.45f
+        const val KR_BLOW_S = 3.1f
+        const val KR_CALM_S = 3.8f
+        const val KR_BREAK_S = 4.4f
+        const val KR_ARM_HIGH = 80f
+        const val KR_ARM_HIT = -32f
+        const val KB_LEFT = 441f
+        const val KB_RIGHT = 499f
+        const val KB_MID = 470f
+        const val KB_TOP = 247f
+        const val KB_BRICK_TOP = 254f
+        val KB_BRICK_X = floatArrayOf(448f, 492f)
+        // Ninja
+        const val NJ_SIGN_S = 1.0f
+        const val NJ_THROW_S = 2.0f
+        const val NJ_SMOKE_S = 2.35f
+        const val NJ_PEEK_S = 4.1f
+        const val NJ_HOLD_S = 4.6f      // bekleme: sinsi sinsi sağa sola bakış
+        const val NJ_GLANCE_S = 1.2f    // bir yöne bakış süresi (bekleme bölümüne çift sayıda sığıyor)
+        const val NJ_SLIDE_S = 0.6f     // bakışın öbür yana ağır ağır kayması
+        const val NJ_SLIT_TOP = 131f
+        const val NJ_SLIT_BOTTOM = 153f
+        val SMOKE_X = floatArrayOf(393f, 340f, 446f, 393f, 330f, 456f, 370f, 420f, 393f, 345f, 441f)
+        val SMOKE_Y = floatArrayOf(280f, 250f, 250f, 210f, 190f, 190f, 140f, 140f, 90f, 95f, 95f)
+        val SMOKE_R = floatArrayOf(48f, 40f, 40f, 52f, 38f, 38f, 44f, 44f, 42f, 32f, 32f)
+        // Korsan
+        const val PR_RAISE_S = 0.9f
+        const val PR_PUZZLE_S = 2.5f
+        const val PR_FLIP_S = 3.1f
+        const val PR_LOOK2_S = 3.6f
+        const val PR_HOLD_S = 4.6f      // bekleme: dürbünle bakmaya devam
+        const val PR_SWAY_S = 2.2f      // yalpalama periyodu = bekleme bölümünün boyu
+        const val PR_BLINK_AT_S = 1.0f  // beklemede mercekteki gözün kırpması
+        const val PR_LOWER = 70f
+        const val PR_EAR = 38f
+        const val PR_HAT_X = 388f
+        const val PR_HAT_Y = 120f
+        const val PR_HAT_SCALE = 0.25f
+        const val PR_HAT_AX = 256f
+        const val PR_HAT_AY = 345f
+        const val SPY_LEN = 34f
+        const val SPY_FREE_DEG = -135f
+        const val SPY_BIG_R = 12f
+        const val SPY_SMALL_R = 6f
+        const val SPY_EYE_BIG = 2.1f
+        const val SPY_EYE_SMALL = 0.55f
+        val SPY_RING_AT = floatArrayOf(0.35f, 0.7f)
+        // Renkler
+        const val BELT = 0xFF7A4A24.toInt()
+        const val BUCKLE = 0xFFF2C14E.toInt()
+        const val HOLSTER = 0xFF8A5A2B.toInt()
+        const val HOLSTER_DARK = 0xFF6B4220.toInt()
+        const val BAND_RED = 0xFFE8453C.toInt()
+        const val BAND_LIGHT = 0xFFFF7A6E.toInt()
+        const val BAND_DARK = 0xFFC9302A.toInt()
+        const val NINJA_CLOTH = 0xFF2E3A57.toInt()
+        const val NINJA_FOLD = 0xFF45547A.toInt()
+        const val PATCH = 0xFF1E2230.toInt()
+        const val PATCH_SHINE = 0xFF3A4258.toInt()
+        const val BRASS = 0xFFE0A84A.toInt()
+        const val BRASS_DARK = 0xFFA8742A.toInt()
+        const val GLASS = 0xFFCFEFFF.toInt()
+        const val KB_WOOD = 0xFFE0A96D.toInt()
+        const val KB_EDGE = 0xFFB57A3E.toInt()
+        const val BLOCK = 0xFFA7AFB8.toInt()
+        const val BLOCK_EDGE = 0xFF7D858F.toInt()
+        const val NINJA_SMOKE = 0xFFE3E7EE.toInt()
+        const val SMOKE_SHADE = 0xFFBFC6D1.toInt()
+        const val CRUMB = 0xFFFF8A3D.toInt()
+        const val CHEEK_L_X = 334f
+        // Rehber öğretmeni: kolun açısı (THINK) ve havucun ucunun ekrandaki yönü (derece)
+        const val TC_ARM = 40f
+        const val TC_TIP = -100f        // yukarı, hafif sola
+        const val TP_ARM = -5f          // kol öne uzanık
+        const val TP_TIP = 80f          // aşağı: panelin altındaki abaküs ve düğmeler
+        const val TW_ARM = 70f
+        const val TW_TIP = -90f         // dik
+        const val TEACH_SWAY_DEG = 15f  // havucun sağa sola sallanması (periyotlar süreye tam oturuyor)
+        // Kafanın öne eğilmesi (HEAD_PITCH = 1 iken)
+        const val PITCH_SQUASH = 0.07f   // kafa boyna doğru bu kadar basılıyor
+        const val PITCH_WIDEN = 0.02f
+        const val PITCH_FACE_DY = 9f     // yüz bu kadar aşağı kayıyor
+        const val PITCH_EAR = 0.3f       // kulaklar bu oranda kısalıyor
+        // Gözlük ("deal with it")
+        const val GL_DROP_S = 0.3f
+        const val GL_SLIP_S = 1.7f      // gözlük burundan kaymaya başlıyor
+        const val GL_FIX_S = 2.6f       // baş hareketiyle yerine
+        const val GL_SLIP = 17f
+        const val GL_NOD_S = 2.0f       // beklemede baş sallama periyodu = bekleme bölümünün boyu
+        // Rapçi
+        const val RP_BEAT_S = 0.5f
+        const val RP_OFF_S = 2.0f       // kep uçuyor
+        const val RP_CATCH_S = 2.4f
+        const val RP_TOSS_S = 2.9f
+        const val RP_ON_S = 3.25f
+        const val RP_RECROSS_S = 3.5f
+        const val RP_ARMS_DY = 34f
+        const val RP_CATCH_UP = -10f
+        const val RP_HAT_X = 388f
+        const val RP_HAT_Y = 120f
+        const val RP_HAT_ROT = -30f
+        const val RP_HAT_SCALE = 0.24f
+        const val RP_HAT_AX = 313f
+        const val RP_HAT_AY = 340f
+        const val CHAIN_LINKS = 14
+        // Hokkabazın soytarı şapkası (jester_hat, 512'lik; (AX, AY) şapkanın alt kenarının ortası)
+        const val JESTER_X = 386f
+        const val JESTER_Y = 124f
+        const val JESTER_ROT = -3f
+        const val JESTER_SCALE = 0.17f
+        const val JESTER_AX = 266f
+        const val JESTER_AY = 455f
+        const val CHAIN_L_X = 368f
+        const val CHAIN_R_X = 414f
+        const val CHAIN_MID_X = 391f
+        const val CHAIN_TOP_Y = 207f
+        const val CHAIN_MID_Y = 250f
+        const val CHAIN_PENDANT_Y = 232f
+        const val CHEEK_R_X = 440f
+        const val CHEEK_Y = 170f
+
+        // ---- ders sonu sahneleri (bkz. "ders sonu sahneleri" bölümü)
+        // Sol kedi kolunun eli (sahne koordinatı, kol dönmeden önce)
+        const val CAT_HAND_L_X = 334f
+        const val CAT_HAND_L_Y = 232f
+        // Sol elin (köpek patisi) merkezi
+        const val FRONT_L_PAW_X = 374f
+        // Halter: patilerin aşağıdaki / göğüsteki inişi ve çizelgesi
+        const val W_LOW_DY = 16f
+        const val W_HIGH_DY = -10f
+        const val W_PULL_S = 0.6f      // kaldırmaya başlıyor
+        const val W_TOP_S = 1.6f       // göğüste
+        const val W_DROP_S = 2.9f      // bırakıyor
+        // Kaykay
+        const val SKATE_RIDE_LIFT = 10f   // tahtanın üstünde durma yüksekliği
+        const val SKATE_OFF_X = 250f      // ekran dışından giriş / çıkış mesafesi
+        const val SK_ARRIVE_S = 1.1f
+        const val SK_OLLIE_S = 1.2f
+        const val SK_POSE_S = 2.0f
+        const val SK_EXIT_S = 3.9f
+        // Gitar (guitar.xml, 512lik): tellere vurulan nokta ≈(135, 285) sahnede (GT_X, GT_Y)
+        // noktasına oturuyor; asset sapı 45° yukarıda çizilmiş, GT_ANGLE kadar yatıyor.
+        // Sapı tutan pati asset'te ≈(280, 155): bu noktanın sahnedeki yeri GUITAR hâlindeki
+        // FRONT_R_X / FRONT_R_Y değerlerini belirliyor.
+        const val GT_X = 372f
+        const val GT_Y = 252f
+        const val GT_ANGLE = 15f
+        const val GT_SCALE = 0.30f
+        const val GT_STRUM_X = 135f
+        const val GT_STRUM_Y = 285f
+        const val GT_STRUM_DEG = 12f    // tellere vuran kolun omuzdan salınımı
+        const val GT_STRUM_HZ = 2.5f    // süre (4 sn) içinde tam tur sayısı: dikiş yok
+        // Hokkabazlık
+        const val JG_ARM_L = 20f
+        const val JG_ARM_R = 10f
+        const val JG_THROW_S = 0.3f
+        const val JG_FLIGHT_S = 2f * JG_THROW_S
+        const val JG_HEIGHT = 120f
+        // Mükemmel
+        const val PF_CROWN_S = 0.3f
+        // Flaşlar: bekleme bölümünün başından (PERFECT.holdFromMs) itibaren, bölüm boyunca dönüyor
+        const val PF_FLASH_S = 1.6f
+        const val PF_FLASH_LOOP_S = 2.0f     // = PERFECT süresi − holdFromMs; CROWN süresi bunun katı
+        const val FLASH_DUR_S = 0.18f   // anlık vuruş: parlayıp hızla sönüyor
+        const val FLASH_TINT_MAX = 0.5f    // flaş anında tavşanın en fazla bu kadar beyaza çekilmesi
+        // Yönlü flaş: gelen yanda tam beyaz, öbür yanda bunun yalnızca ~%15'i (tavşanın genişliği boyunca)
+        const val FLASH_NEAR_X = 330f
+        const val FLASH_FAR_X = 455f
+        const val FLASH_FAR_COLOR = 0x26FFFFFF
+        // Her flaşın bölümdeki anı
+        val FLASH_T = floatArrayOf(0.05f, 0.35f, 0.55f, 0.95f, 1.25f, 1.6f)
+        // Sandık yıldızları
+        const val ST_FIRST_S = 0.5f
+        const val ST_GAP_S = 0.7f
+        const val ST_FADE_S = 3.9f
+        // Kulakların iki yanında ve arasında (kulakların üstüne binmesin)
+        val ST_X = floatArrayOf(292f, 393f, 494f)
+        val ST_Y = floatArrayOf(70f, 30f, 70f)
+        // Üzgün → kararlı
+        const val DT_BREATH_S = 1.5f
+        const val DT_FIRE_S = 2.1f
+        const val DT_HOLD_S = 3.3f          // = DETERMINED.holdFromMs
+        const val DT_HOLD_PERIOD_S = 1.0f   // bekleme bölümünün (1 sn) boyu
+        // Sahne eşyalarının renkleri ve ölçüleri
+        val SKATE_WHEEL_DX = floatArrayOf(-21f, 21f)
+        const val SKATE_DECK = 0xFFFF8A3D.toInt()
+        const val SKATE_GRIP = 0xFF3A3A48.toInt()
+        const val SKATE_TRUCK = 0xFF9AA3AD.toInt()
+        const val SKATE_WHEEL = 0xFFFFD84A.toInt()
+        const val SKATE_HUB = 0xFF8A6D1F.toInt()
+        const val STEEL = 0xFF8C96A3.toInt()
+        const val DUST = 0xFFC9C2B8.toInt()
 
         // Görünür alan: kaynak çizimde CENTER_X etrafında UNITS genişliğinde, TOP_Y'den başlayan kare.
         const val UNITS = 314f
@@ -3039,8 +5080,6 @@ class BunnyMascotView @JvmOverloads constructor(
         const val CROWN_GOLD = 0xFFFFC93C.toInt()
         const val CROWN_BAND = 0xFFF2A900.toInt()
         const val CROWN_TIP = 0xFFFFE082.toInt()
-        val CROWN_SPARKLE_X = floatArrayOf(364f, 389f, 414f)
-        val CROWN_SPARKLE_Y = floatArrayOf(86f, 78f, 86f)
         const val CAL_BOX_FILL = 0xFFEAF6FF.toInt()
         const val CHECK_GREEN = 0xFF51B848.toInt()
         const val HEART_BOUNDS = 100f

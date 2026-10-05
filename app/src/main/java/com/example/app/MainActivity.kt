@@ -211,6 +211,8 @@ class MainActivity : AppCompatActivity() {
                 .apply()
         }
         const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+        /** Durum çubuğunu boyayan şeridin etiketi; bkz. [setStatusBarTint]. */
+        private const val STATUS_BAR_TINT_TAG = "status_bar_tint"
         const val LESSON_ACTION_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
         const val FIRST_TUTORIAL_LOG_TAG = "FirstTutorialDbg"
         /** Harita dokunma kilidi teşhisi — `adb logcat -s MapTouchDbg` */
@@ -451,6 +453,9 @@ class MainActivity : AppCompatActivity() {
         // satın almaları yeniden gönder (ödeme sonrası çökme senaryosunu kurtarır).
         billingManager = BillingManager(this)
         installDefaultBillingCallbacks()
+        // Ödeme penceresi kapanınca ders sonrası ekranları (rozet, yeni seri…) bekliyorsa
+        // sıradakini aç; akış sürerken kuyruğun kapısı kapalıydı (bkz. subscriptionFlowBlockReason).
+        billingManager.onPurchaseFlowEnded = { pumpPostLessonQueue("purchase_flow_ended") }
         billingManager.start()
 
         // Yaşa ve ülkeye göre reklam muamelesi (TFAT) altyapısıyla AdMob'u başlat.
@@ -675,6 +680,7 @@ class MainActivity : AppCompatActivity() {
             )
             itemRippleColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
         }
+        refreshProfileNavIcon()
 
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {
@@ -881,6 +887,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun setupClickListeners() {
         binding.bottomNavigationID.setOnItemSelectedListener {
+            bounceBottomNavIcon(it.itemId)
             requireOnlineAndLoggedInOrLogin {
                 closeBottomSheet()
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
@@ -995,6 +1002,76 @@ class MainActivity : AppCompatActivity() {
                 true
             }
         }
+    }
+
+    /**
+     * Telefonun durum çubuğunu (saat, pil) [color]'a boyar; null eski hâline döndürür. Profil,
+     * avatarın arka plan rengini en üste kadar uzatmak için kullanıyor.
+     *
+     * Kök görünüm fitsSystemWindows ile durum çubuğu kadar aşağıdan başlıyor ve uygulama kenardan
+     * kenara (enableEdgeToEdge) çizildiği için şerit şeffaf. Android 15+ window.statusBarColor'ı
+     * yok saydığından şeridin arkasına renkli bir görünüm konuyor; eski sürümlerde ikisi de
+     * aynı rengi veriyor. currencyPanelDivider da gizleniyor: aksi halde boyalı şeridin hemen
+     * altında koyu bir çizgi kalıyordu. İkonlar zemine göre koyu ya da açık.
+     */
+    fun setStatusBarTint(color: Int?) {
+        val content = findViewById<android.widget.FrameLayout>(android.R.id.content) ?: return
+        var strip = content.findViewWithTag<View>(STATUS_BAR_TINT_TAG)
+        val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        if (color == null) {
+            strip?.visibility = View.GONE
+            window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
+            controller.isAppearanceLightStatusBars = false
+            binding.currencyPanelDivider.visibility = View.VISIBLE
+            return
+        }
+        if (strip == null) {
+            strip = View(this).apply { tag = STATUS_BAR_TINT_TAG }
+            content.addView(
+                strip,
+                android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, android.view.Gravity.TOP),
+            )
+        }
+        val top = ViewCompat.getRootWindowInsets(binding.root)
+            ?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: 0
+        strip.layoutParams = strip.layoutParams.apply { height = top }
+        strip.setBackgroundColor(color)
+        strip.visibility = View.VISIBLE
+        window.statusBarColor = color
+        controller.isAppearanceLightStatusBars = androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5
+        binding.currencyPanelDivider.visibility = View.GONE
+    }
+
+    /**
+     * Alt bardaki profil sekmesinin ikonu kullanıcının avatarı. Avatar kaydedildiğinde
+     * (AvatarCustomFragment) ve Firestore'dan farklı bir avatar geldiğinde yeniden çiziliyor.
+     */
+    fun refreshProfileNavIcon() {
+        val sizePx = resources.getDimensionPixelSize(R.dimen.main_bottom_nav_icon_size)
+        val bitmap = AvatarView.toBitmap(this, AvatarStore.loadActive(this), sizePx * 2)
+        binding.bottomNavigationID.menu.findItem(R.id.profile)?.icon =
+            android.graphics.drawable.BitmapDrawable(resources, bitmap)
+    }
+
+    /**
+     * Alt barda seçilen sekmenin ikonunu kısa bir zıplatma ile büyütüp geri bırakır ve hafif
+     * titreşim verir. Seçili kutu (bottom_nav_item_bg) tek başına sessiz kalıyordu; geçişin
+     * "hissedilmesini" bu hareket sağlıyor.
+     */
+    private fun bounceBottomNavIcon(itemId: Int) {
+        val itemView = binding.bottomNavigationID.findViewById<View>(itemId) ?: return
+        val icon = itemView.findViewById<View>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+            ?: return
+        itemView.performHapticFeedback(android.view.HapticFeedbackConstants.CONTEXT_CLICK)
+        icon.animate().cancel()
+        icon.scaleX = 0.85f
+        icon.scaleY = 0.85f
+        icon.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(280)
+            .setInterpolator(android.view.animation.OvershootInterpolator(3f))
+            .start()
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
@@ -1747,8 +1824,10 @@ class MainActivity : AppCompatActivity() {
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment || current is MissionsFragment) View.VISIBLE else View.GONE
         
-        // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle
-        if (current !is MapFragment && current !is ShopFragment) {
+        // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle.
+        // Mağaza ve seri ekranı haritanın ÜSTÜNE ekleniyor (openShopFragment / openStreakFragment):
+        // kapanınca altta aynı harita kalıyor, düğmeyi geri açan bir yol yok — gizlenmemeli.
+        if (current !is MapFragment && current !is ShopFragment && current !is StreakFragment) {
             binding.lessonPartBackButton.visibility = View.GONE
         }
     }
@@ -1828,7 +1907,19 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener(null)
         }
         val coordinator = findViewById<CoordinatorLayout>(R.id.coordinator_layout)
-        coordinator?.findViewWithTag<View>("bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        coordinator?.findViewWithTag<View>(LessonPanel.TAG)?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        // Ders panelinin üst panel / alt menü karartmaları pencere kökünde; onlar da kalkmalı.
+        findViewById<ViewGroup>(android.R.id.content)?.let { content ->
+            while (true) {
+                val dim = content.findViewWithTag<View>(LessonAdapter.CHROME_DIM_TAG) ?: break
+                content.removeView(dim)
+            }
+        }
+        LessonAdapter.savedBarColors?.let { saved ->
+            window.statusBarColor = saved[0]
+            window.navigationBarColor = saved[1]
+            LessonAdapter.savedBarColors = null
+        }
         coordinator?.findViewWithTag<View>("race_panel")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
         coordinator?.findViewWithTag<View>("race_lesson_bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
     }
@@ -2342,6 +2433,10 @@ class MainActivity : AppCompatActivity() {
                     val plan = if (planExpired) "Free" else storedPlan
                     val role = doc.getString("role") ?: ""
                     val teacherApproved = doc.getBoolean("teacherApproved") == true
+                    // Avatar başka cihazda değişmiş ya da hesap değişmiş olabilir; alt bar ikonu
+                    // kullanıcının avatarına çekiliyor. Aynı dokümandan, ayrı okuma yok.
+                    AvatarStore.applyRemote(this, doc.getString(AvatarStore.FIRESTORE_FIELD))
+                    refreshProfileNavIcon()
                     GlobalValues.isTeacherApproved = teacherApproved
                     energyManager.setUserPlan(plan)
                     energyManager.setUserRoleApproval(role, teacherApproved)
@@ -2998,6 +3093,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Abonelik akışı ekranda mı: Pro karşılaştırma paneli, plan seçimi ya da Play'in ödeme
+     * penceresi (başlatıldı, sonucu henüz gelmedi). Açıksa sebebi, değilse null.
+     *
+     * ## Neden
+     * Reklam sonrası paneldeki "Pro'ya geç" bu akışı açıyor ve panel kendini kapatıyor.
+     * Kapılar yalnızca reklam paneline bakıyordu: panel kapandığı an ders sonrası kuyruğu
+     * "engel yok" deyip rozet kutlamasını ya da yeni seri sorusunu Pro panelinin ALTINDA
+     * açıyordu — kullanıcı abonelikten çıkınca kutlamayı yarısından görüyordu.
+     *
+     * Rozet, yeni seri, tanıtım, rehber ve Görevler dönüşü bu yüzden akış bitene kadar
+     * bekliyor. Kapanan Pro/plan ekranı kuyruğu dürtüyor, ödeme akışının bitişini
+     * [BillingManager.onPurchaseFlowEnded] haber veriyor.
+     *
+     * Pro → plan geçişinde boşluk yok: plan açıldıktan 500 ms SONRA Pro kendini kapatıyor,
+     * reklam paneli de Pro'yu açtıktan sonra kapanıyor.
+     */
+    private fun subscriptionFlowBlockReason(): String? {
+        if (dialogStillShowing("ProDiffirent")) return "pro_panel_showing"
+        if (dialogStillShowing("Plan")) return "plan_showing"
+        if (::billingManager.isInitialized && billingManager.isPurchaseFlowActive()) {
+            return "purchase_flow"
+        }
+        return null
+    }
+
     /** Harita tabanı görünür; ders/sandık/görev/rozet/sezon kapısı overlay'i yok. */
     fun marathonGuideMapBlockReason(): String? {
         if (!::binding.isInitialized) return "binding_not_initialized"
@@ -3029,6 +3150,8 @@ class MainActivity : AppCompatActivity() {
         if (dialogStillShowing(NewStreakFragment.TAG)) {
             return "new_streak_prompt"
         }
+
+        subscriptionFlowBlockReason()?.let { return it }
 
         if (GlobalValues.pendingBadgeFirestoreOperation) {
             return "badge_firestore_pending"
@@ -4524,7 +4647,9 @@ class MainActivity : AppCompatActivity() {
     fun isTasksReturnCovered(): Boolean =
         offMapNewStreakPromptPending ||
             dialogStillShowing(NewStreakFragment.TAG) ||
-            supportFragmentManager.findFragmentByTag("AdSkip") != null
+            supportFragmentManager.findFragmentByTag("AdSkip") != null ||
+            // Reklam panelinden açılan abonelik akışı da örtüyor (bkz. subscriptionFlowBlockReason).
+            subscriptionFlowBlockReason() != null
 
     /**
      * Görevler'e dönüş (kupa testi, günlük soru) sürerken ekranı dokunmaya kapatır ya da açar.
@@ -4722,6 +4847,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (dialogStillShowing(NewStreakFragment.TAG)) return "new_streak_prompt"
         if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        subscriptionFlowBlockReason()?.let { return it }
         if (dialogStillShowing("RatingDialog")) return "rating_showing"
         if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
         val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)

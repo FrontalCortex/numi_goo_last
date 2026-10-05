@@ -208,7 +208,6 @@ class AbacusFragment : Fragment() {
     private val guideContentList = mutableListOf<GuideContent>()
     private var currentGuideIndex = 0
     private lateinit var panelContent: View
-    private lateinit var ivGuideImage: ImageView
     private lateinit var tvGuideText: TextView
     private lateinit var stepDotsContainer: LinearLayout
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null // Mevcut baloncuk animasyonu
@@ -384,7 +383,6 @@ class AbacusFragment : Fragment() {
      */
     private fun setupGuidePanel() {
         panelContent = binding.panelContent
-        ivGuideImage = binding.ivGuideImage
         tvGuideText = binding.tvGuideText
         stepDotsContainer = binding.stepDotsContainer
         
@@ -881,8 +879,8 @@ class AbacusFragment : Fragment() {
         
         val content = guideContentList[index]
         
-        // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        // Sobi'nin hâli ve yazıyı güncelle
+        binding.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -923,8 +921,8 @@ class AbacusFragment : Fragment() {
         
         val content = guideContentList[index]
         
-        // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        // Sobi'nin hâli ve yazıyı güncelle
+        binding.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle

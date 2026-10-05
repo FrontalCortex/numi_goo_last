@@ -14,8 +14,8 @@ data class FollowUser(
     val firebaseUid: String,
     val name: String,
     val userId: String,
-    /** 1–12 → show avatar_ic{N} drawable; 0 → show letter circle */
-    val selectedAvatar: Int = 0,
+    /** publicProfiles.avatarConfig; null → harfli daire. */
+    val avatarConfig: String? = null,
     /** true → this person is NOT followed back yet → show "+" button */
     val showFollowButton: Boolean = false,
     /**
@@ -49,24 +49,12 @@ class FollowUserAdapter(
 
         fun bind(item: FollowUser, position: Int) {
             binding.root.setOnClickListener { onItemClick(item) }
-            if (item.selectedAvatar in 1..12) {
-                // Show the actual avatar drawable; hide the letter TextView
-                binding.tvAvatarLetter.visibility = View.INVISIBLE
-                val resId = binding.root.context.resources.getIdentifier(
-                    "avatar_ic${item.selectedAvatar}", "drawable",
-                    binding.root.context.packageName
-                )
-                if (resId != 0) {
-                    binding.tvAvatarLetter.background = null
-                    // Reuse the TextView's size as a frame; overlay via ImageView trick:
-                    // Since item_follow_user uses a single TextView for the avatar slot,
-                    // we set a drawable as background and clear the text.
-                    binding.tvAvatarLetter.visibility = View.VISIBLE
-                    binding.tvAvatarLetter.text = ""
-                    binding.tvAvatarLetter.setBackgroundResource(resId)
-                } else {
-                    showLetterAvatar(item, position)
-                }
+            val avatar = AvatarView.drawableFor(
+                binding.root.context, item.avatarConfig, binding.tvAvatarLetter.layoutParams.width,
+            )
+            if (avatar != null) {
+                binding.tvAvatarLetter.text = ""
+                binding.tvAvatarLetter.background = avatar
             } else {
                 showLetterAvatar(item, position)
             }

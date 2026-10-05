@@ -151,6 +151,7 @@ object AnalyticsLogger {
     private const val P_ENERGY_AFTER = "energy_after"
     private const val P_LESSONS_THIS_SESSION = "lessons_this_session"
     private const val P_VIEW_NO = "view_no"
+    private const val P_TRIAL_OFFER = "trial_offer"
     private const val P_DWELL_BUCKET = "dwell_bucket"
     private const val P_DWELL_MS = "dwell_ms"
     private const val P_OUTCOME = "outcome"
@@ -872,10 +873,13 @@ object AnalyticsLogger {
      *
      * @param viewNo Kullanıcının bu paneli kaçıncı görüşü, kova hâlinde ("01"…"09", "10+").
      *   Kalıcı sayaçtan gelir; bkz. [AdSkipStats].
+     * @param trialOffer Panelin hangi sürümü gösterildi: ücretsiz deneme teklifi (true) ya da
+     *   denemesini kullanmış kullanıcıya Pro aboneliği (false). İkisinin dönüşümü ayrı okunmalı.
      */
-    fun logAdSkipShown(viewNo: String) = safe { fa ->
+    fun logAdSkipShown(viewNo: String, trialOffer: Boolean) = safe { fa ->
         fa.logEvent(EV_AD_SKIP_SHOWN) {
             param(P_VIEW_NO, sanitize(viewNo))
+            param(P_TRIAL_OFFER, if (trialOffer) "yes" else "no")
         }
     }
 

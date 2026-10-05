@@ -10,19 +10,18 @@
     android:background="@color/background_color"
     android:layout_gravity="center"
     android:paddingHorizontal="24dp"
-    android:paddingTop="80dp">
+    android:paddingTop="48dp">
 
-    <!-- Karakter ve animasyonlar için bir ImageView -->
-    <!-- tools:visibility="gone" = Layout Editor'da çizilmez, Android Studio çökmesi önlenir; uygulama çalışırken görünür -->
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="center"
-        tools:visibility="gone"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_fileName="animation_one.json" />
+    <!--
+      Sobi: başarısız derste hep üzgün → kararlı. Başlık, açıklama, kutular ve düğme ekranın
+      altında toplanıyor; Sobi üstte kalan bütün yeri kaplıyor (çizim kendini kareye
+      sığdırıp ortalıyor).
+    -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/mascotView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <!-- Başlık -->
     <TextView
@@ -41,8 +40,7 @@
         android:text="Başarı oranı %80'den düşük!"
         android:textColor="#E00000"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp"/>
+        android:textStyle="bold"/>
 
     <!-- Sonuç kutuları -->
     <LinearLayout
@@ -50,7 +48,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="32dp">
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="16dp">
 
         <!-- Toplam Puan -->
         <LinearLayout
@@ -106,10 +105,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
     <!-- Puanı Al Butonu -->
     <Button
         android:id="@+id/claimButton"
@@ -120,6 +115,6 @@
         android:layout_marginBottom="20dp"
         android:textStyle="bold"
         android:textColor="#101820"
-        android:backgroundTint="#29B6F6"
+        android:backgroundTint="#8CC63F"
         android:textSize="18sp"/>
 </LinearLayout>

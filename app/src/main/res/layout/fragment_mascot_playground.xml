@@ -67,6 +67,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Alt boşluk büyük: listenin sonu telefonun alt çubuğunun arkasında kalıyordu. -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -83,7 +84,7 @@
             android:layout_height="wrap_content"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="24dp"
+            android:paddingBottom="120dp"
             app:chipSpacingHorizontal="8dp"
             app:chipSpacingVertical="4dp"
             app:singleSelection="true" />

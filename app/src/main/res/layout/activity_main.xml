@@ -362,6 +362,7 @@
         app:itemPaddingTop="@dimen/main_bottom_nav_item_padding_top"
         app:itemPaddingBottom="@dimen/main_bottom_nav_item_padding_bottom"
         app:itemIconTint="@null"
+        app:itemBackground="@drawable/bottom_nav_item_bg"
         app:itemTextColor="@null"
         app:itemTextAppearanceActive="@style/TextAppearance.NumiGoo.BottomNav"
         app:itemTextAppearanceInactive="@style/TextAppearance.NumiGoo.BottomNav"

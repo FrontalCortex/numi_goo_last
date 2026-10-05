@@ -33,10 +33,11 @@ const PUBLIC_PROFILE_FIELDS = [
   'uid',
   'name',
   'userId',
-  'selectedAvatar',
+  'avatarConfig',
   'plan',
   'createdAt',
   'totalTimeSpent',
+  'longestStreak',
   'followersCount',
   'followingCount',
 ];

@@ -54,20 +54,6 @@ class ChestResult : Fragment() {
     private val runningAnimators = mutableListOf<Animator>()
     private var isViewBeingDestroyed: Boolean = false
     private var shouldIncrementChestRecordBreakMission: Boolean = false
-    private val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json"
-    )
 
 
     override fun onCreateView(
@@ -100,7 +86,7 @@ class ChestResult : Fragment() {
         continueFragment()
         prepareInitialUiState()
         setupStarSound()
-        showRandomAnimation()
+        playEndMascot()
         setupStarMarkerPositions()
         startRevealSequence()
         record()
@@ -319,10 +305,13 @@ class ChestResult : Fragment() {
         }
     }
 
-    private fun showRandomAnimation() {
-        val randomAnim = animations.random()
-        binding.lottieView.setAnimation(randomAnim)
-        binding.lottieView.playAnimation()
+    /**
+     * Sandık sonucu Sobi'si: dersle aynı torbadan sıradaki sahne ([LessonEndMascot]).
+     * Ekran sağdan kayarak girerken Sobi bekliyor; giriş bitince sahne başlıyor.
+     */
+    private fun playEndMascot() {
+        val emote = LessonEndMascot.nextSuccess(requireContext())
+        binding.mascotView.postDelayed({ _binding?.mascotView?.play(emote) }, LessonEndMascot.ENTER_DELAY_MS)
     }
 
     private fun prepareInitialUiState() {

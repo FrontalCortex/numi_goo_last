@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Alt bar öğe arka planı: seçili sekmenin arkasında çerçeveli, köşeleri yuvarlak kutu.
+     Seçili olmayan öğelerde arka plan yok. Inset'ler kutuyu ikonun çevresine sığdırır. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <inset
+            android:insetLeft="7dp"
+            android:insetRight="7dp"
+            android:insetTop="5dp"
+            android:insetBottom="5dp">
+            <shape android:shape="rectangle">
+                <corners android:radius="14dp" />
+                <solid android:color="@color/bright_background_color" />
+                <stroke
+                    android:width="2dp"
+                    android:color="@color/bottom_nav_selected_stroke" />
+            </shape>
+        </inset>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

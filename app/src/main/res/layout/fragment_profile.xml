@@ -47,7 +47,52 @@
 
     </LinearLayout>
 
+    <!--
+      Kendi profilimizde sabit üst panel: ad ve ayarlar. Kaydırınca yerinde kalıyor; rengi avatarın
+      arka planı (kodda), telefonun durum çubuğu da aynı renge boyanıyor. Alttaki çizgi yalnızca
+      içerik aşağı kaydırılmışken görünüyor (Duolingo gibi). Başkasının profilinde gizli.
+    -->
+    <FrameLayout
+        android:id="@+id/profileTopPanel"
+        android:layout_width="match_parent"
+        android:layout_height="56dp">
+
+        <TextView
+            android:id="@+id/tvTopLeftName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="64dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Kullanıcı Adı"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btnAccountSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Ayarlar"
+            android:padding="10dp"
+            android:src="@drawable/setting_ic"
+            android:tint="@color/white" />
+
+        <View
+            android:id="@+id/profileTopDivider"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:alpha="0" />
+    </FrameLayout>
+
     <ScrollView
+        android:id="@+id/profileScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -58,7 +103,36 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:clipToPadding="false">
+
+        <!--
+          Avatar alanı: ekran genişliğinde (kenar boşluğunu negatif marjla aşıyor; bunun için üstteki
+          LinearLayout clipToPadding=false, yoksa kenar boşluğunda kırpılıyordu), arka planı
+          avatarın arka plan rengi (kodda). Avatar alt kenara oturuyor; gövdesi kesilmiş gibi durmasın.
+        -->
+        <FrameLayout
+            android:id="@+id/avatarHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-16dp"
+            android:layout_marginEnd="-16dp"
+            android:layout_marginBottom="16dp"
+            android:foreground="?attr/selectableItemBackground">
+
+            <!-- Tıklama avatarHeader'da: renkli alanın neresine dokunulsa düzenleme ekranı açılıyor. -->
+            <ImageView
+                android:id="@+id/imgProfilePhoto"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginTop="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/non_user"
+                android:contentDescription="Profil Fotoğrafı" />
+        </FrameLayout>
 
         <!-- 1. Üst Alan - Kullanıcı Bilgileri -->
         <androidx.cardview.widget.CardView
@@ -79,18 +153,6 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical">
-
-                <!-- Profil Fotoğrafı (Avatar) -->
-                <ImageView
-                    android:id="@+id/imgProfilePhoto"
-                    android:layout_width="300dp"
-                    android:layout_height="300dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/non_user"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Profil Fotoğrafı" />
 
                 <!-- Kullanıcı Adı ve Katılım Tarihi -->
                 <TextView
@@ -130,7 +192,6 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
                             android:text="Takip edilen"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
@@ -158,7 +219,6 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
                             android:text="Takipçi"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
@@ -189,26 +249,6 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvTopLeftName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:text="Kullanıcı Adı"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <ImageButton
-                    android:id="@+id/btnAccountSettings"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="top|end"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Ayarlar"
-                    android:padding="8dp"
-                    android:src="@drawable/setting_ic"
-                    android:tint="@color/white" />
             </FrameLayout>
         </androidx.cardview.widget.CardView>
 

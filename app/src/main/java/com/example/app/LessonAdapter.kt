@@ -13,6 +13,8 @@ import android.content.Intent
 import android.widget.Button
 import android.content.Context
 import android.graphics.ColorMatrix
+import android.graphics.drawable.GradientDrawable
+import androidx.core.view.drawToBitmap
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
@@ -27,6 +29,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
+import com.google.android.material.card.MaterialCardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.appcompat.app.AppCompatActivity
@@ -51,6 +54,11 @@ class LessonAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     companion object {
         private const val LESSON_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
+        // Ders paneli açıkken üst paneli ve alt menüyü örten karartmalar (addChromeDims)
+        const val CHROME_DIM_TAG = "lesson_panel_chrome_dim"
+
+        /** Ders paneli açılmadan önceki üst ve alt sistem şeridi renkleri (dimSystemBars). */
+        var savedBarColors: IntArray? = null
         private val lastSeenFilledSegments = mutableMapOf<String, Int>()
         private val playedFinalGoldAnimationKeys = mutableSetOf<String>()
     }
@@ -156,100 +164,122 @@ class LessonAdapter(
             scrimView.alpha = 0f
         }
 
-        // Eğer daha önce oluşturulmuş bir bottom sheet varsa kaldır
-        coordinatorLayout.findViewWithTag<View>("bottom_sheet")?.let {
+        // Önceki panel açıksa kaldır.
+        coordinatorLayout.findViewWithTag<View>(LessonPanel.TAG)?.let {
             coordinatorLayout.removeView(it)
         }
 
-        // Bottom sheet'i inflate et
-        val bottomSheetView = LayoutInflater.from(context)
-            .inflate(R.layout.lesson_bottom_sheet, coordinatorLayout, false)
-        bottomSheetView.tag = "bottom_sheet"
+        // Panel (lesson_popover): tıklanan karta bağlı, ekranla aynı zeminli, durum renginde çerçeveli.
+        val panelRoot = LayoutInflater.from(context)
+            .inflate(R.layout.lesson_popover, coordinatorLayout, false)
+        panelRoot.tag = LessonPanel.TAG
 
-        // View'ları bul
-        val titleText = bottomSheetView.findViewById<TextView>(R.id.lessonTitle)
-        val descriptionText = bottomSheetView.findViewById<TextView>(R.id.lessonDescription)
-        val actionButton = bottomSheetView.findViewById<Button>(R.id.actionButton)
-        val bottomSheetLayout = bottomSheetView.findViewById<LinearLayout>(R.id.bottomSheetLayout)
-        val againTutorial = bottomSheetView.findViewById<TextView>(R.id.againTutorial)
-        val record = bottomSheetView.findViewById<TextView>(R.id.recordText)
-        val fireAnim = bottomSheetView.findViewById<LottieAnimationView>(R.id.fireAnimID)
-        val recordLayout = bottomSheetView.findViewById<LinearLayout>(R.id.recordLayout)
+        val panelCard = panelRoot.findViewById<LinearLayout>(R.id.lessonPanelCard)
+        val panelArrow = panelRoot.findViewById<PanelPointerView>(R.id.lessonPanelArrow)
+        val cardSnapshot = panelRoot.findViewById<ImageView>(R.id.lessonPanelCardSnapshot)
+        val kindText = panelRoot.findViewById<TextView>(R.id.lessonKindText)
+        val panelIcon = panelRoot.findViewById<ImageView>(R.id.lessonPanelIcon)
+        val titleText = panelRoot.findViewById<TextView>(R.id.lessonTitle)
+        val stepRow = panelRoot.findViewById<View>(R.id.lessonPanelStepRow)
+        val stepText = panelRoot.findViewById<TextView>(R.id.lessonPanelStepText)
+        val stepBar = panelRoot.findViewById<SegmentBarView>(R.id.lessonPanelStepBar)
+        val descriptionText = panelRoot.findViewById<TextView>(R.id.lessonDescription)
+        val actionButton = panelRoot.findViewById<MaterialButton>(R.id.actionButton)
+        val againTutorial = panelRoot.findViewById<TextView>(R.id.againTutorial)
+        val record = panelRoot.findViewById<TextView>(R.id.recordText)
+        val recordLayout = panelRoot.findViewById<LinearLayout>(R.id.recordLayout)
 
+        // Kapatma: panel solup kaldırılıyor, karartma kapanıyor, rekor nabzı duruyor.
+        // Dışarıdan (MapFragment, maraton rehberi) LessonPanel.dismiss ile çağrılıyor.
+        var dismissed = false
+        val dismissPanel: () -> Unit = {
+            if (!dismissed) {
+                dismissed = true
+                (recordLayout.tag as? ValueAnimator)?.cancel()
+                recordLayout.tag = null
+                panelRoot.animate().alpha(0f).setDuration(140L)
+                    .withEndAction { coordinatorLayout.removeView(panelRoot) }
+                    .start()
+                if (!isGuidePanelVisible) {
+                    scrimView.animate().alpha(0f).setDuration(140L)
+                        .withEndAction { scrimView.visibility = View.GONE }
+                        .start()
+                }
+                removeChromeDims(activity)
+            }
+        }
+        panelRoot.setTag(R.id.lessonPanelCard, dismissPanel)
 
-        // İçerikleri ayarla
+        // İçerik ve renkler: açık (mavi), bitmiş (altın), kilitli (gri) — haritadaki kartla aynı dil.
+        val isChest = item.type == LessonItem.TYPE_CHEST
+        val stepCount = item.stepCount.coerceAtLeast(1)
+        val doneSteps = if (item.stepIsFinish) stepCount
+            else item.stepCompletionStatus.count { it }.coerceIn(0, stepCount)
+        val state = when {
+            !item.isCompleted -> PanelState.LOCKED
+            item.stepIsFinish -> PanelState.DONE
+            else -> PanelState.OPEN
+        }
+        val palette = panelPalette(state)
+        val density = context.resources.displayMetrics.density
+        val screenBg = ContextCompat.getColor(context, R.color.background_color)
+        panelCard.background = GradientDrawable().apply {
+            cornerRadius = 18f * density
+            setColor(screenBg)
+            setStroke((2f * density).toInt(), palette.border)
+        }
+        panelArrow.setColors(screenBg, palette.border)
+        kindText.text = if (isChest) "ÜNİTE MARATONU" else "DERS"
+        kindText.setTextColor(palette.accentText)
         titleText.text = item.title
+        titleText.setTextColor(
+            if (state == PanelState.LOCKED) ContextCompat.getColor(context, R.color.lesson_card_locked_text)
+            else android.graphics.Color.WHITE,
+        )
+        if (state == PanelState.LOCKED) {
+            panelIcon.colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+            panelIcon.alpha = 0.6f
+        }
+        stepRow.visibility = if (isChest || state == PanelState.LOCKED) View.GONE else View.VISIBLE
+        stepBar.fillColor = palette.fill
+        stepBar.trackColor = ContextCompat.getColor(context, R.color.lesson_panel_track)
+        stepBar.setSegmentState(stepCount, doneSteps)
+        stepText.text = "$doneSteps/$stepCount"
+        actionButton.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.buttonBg)
+        actionButton.setTextColor(palette.buttonText)
 
         if (item.isCompleted) {
-            if(item.tutorialNumber != 0 && item.tutorialIsFinish){
-                againTutorial.visibility = View.VISIBLE
-            }
-            else{
-
-                againTutorial.visibility = View.INVISIBLE
-            }
-            if(item.stepIsFinish){
-                if(item.type == 2){
-                    // Buton metnini başta boş bırak (plan kontrolü tamamlanana kadar)
-                    actionButton.text = ""
-                    actionButton.isEnabled = false // Plan kontrolü tamamlanana kadar devre dışı
-                    if (globalPartId in setOf(4, 5)) {
-                        recordLayout.visibility = View.GONE
-                    } else {
-                        recordLayout.setBackgroundResource(R.drawable.record_background)
-                        // Abonelik durumuna göre buton metnini ayarla
-                        record.text = "Rekor: ${item.record}"
-                        fireAnim.visibility = View.VISIBLE
+            againTutorial.visibility =
+                if (item.tutorialNumber != 0 && item.tutorialIsFinish) View.VISIBLE else View.GONE
+            if (item.stepIsFinish) {
+                if (isChest) {
+                    // Rekor satırı (4. ve 5. bölümde yok). Maraton rehberinin son adımı bunu gösteriyor.
+                    if (globalPartId !in setOf(4, 5)) {
+                        recordLayout.visibility = View.VISIBLE
+                        record.text = "Rekor: ${item.record ?: "—"}"
                     }
-                    // GuidePanel'in son adımında animasyon başlatma işlemi MapFragment'te yapılıyor
-                    // Burada animasyon başlatmıyoruz çünkü kontrol ve başlatma MapFragment'te setOnLastStepReachedListener içinde yapılıyor
-
                     actionButton.text = "Tekrar dene"
-                    actionButton.isEnabled = true
-                }
-                else{
+                } else {
                     actionButton.text = "Gözden geçir"
                 }
-                descriptionText.text = "Ders Tamamlandı"
-                // Progress bar rengini güncelle
             } else {
-                descriptionText.text = "Ders: ${item.currentStep}/${item.stepCount}"
-                bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.panel_background)
-
-                //tutorial olanlarda ve tutorialIsFinish olanlarda çıkacak.
-                actionButton.apply {
-                    text = "BAŞLAT"
-                    actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
-                    // Beyaz, köşeleri yuvarlatılmış
-                    actionButton.setBackgroundColor(context.getColor(R.color.lesson_completed))
-                    setTextColor(ContextCompat.getColor(context, R.color.panel_background))
-                    isEnabled = true
-                    // İkon ekle (solda)
-                }
+                actionButton.text = if (doneSteps > 0) "Devam et" else "Başla"
             }
+            actionButton.isEnabled = true
         } else {
-            descriptionText.text = "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"
-            titleText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
-            againTutorial.visibility = View.INVISIBLE
-            descriptionText.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
-            bottomSheetLayout.backgroundTintList = ContextCompat.getColorStateList(context, R.color.background_color)
-
-            actionButton.text = "KİLİTLİ"
-            actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
-            actionButton.setBackgroundColor(context.getColor(R.color.circleBackground_color))
-            actionButton.setTextColor(ContextCompat.getColor(context, R.color.lesson_locked))
+            descriptionText.visibility = View.VISIBLE
+            descriptionText.text = "Kilidi açmak için önceki dersleri tamamla."
+            againTutorial.visibility = View.GONE
+            actionButton.text = "Kilitli"
             actionButton.isEnabled = false
         }
 
-        // Bottom sheet'i CoordinatorLayout'a ekle
-        coordinatorLayout.addView(bottomSheetView)
+        // Paneli ekle; konumu ölçüldükten sonra (aşağıda) veriliyor.
+        coordinatorLayout.addView(panelRoot)
 
-        // BottomSheetBehavior oluştur
-        val behavior = BottomSheetBehavior.from(bottomSheetLayout)
-        
-        // GuidePanel açıksa bottom sheet'in tıklanabilirliğini engelle
+        // GuidePanel açıksa panelin tıklanabilirliğini engelle (rehberin hedefi Rekor satırı)
         if (isGuidePanelVisible) {
-            disableBottomSheetInteractions(bottomSheetView, bottomSheetLayout, actionButton, againTutorial, behavior)
+            disableBottomSheetInteractions(panelRoot, panelCard, actionButton, againTutorial)
         }
 
         // Rekor alanı: GuidePanel kapalıyken liderlik tablosu (RecordFragment).
@@ -285,8 +315,7 @@ class LessonAdapter(
                     }
                     (act as? MainActivity)?.runAbacusOverlayTransaction("record") { openRecord() }
                         ?: openRecord()
-                    behavior.isHideable = true
-                    behavior.state = BottomSheetBehavior.STATE_HIDDEN
+                    dismissPanel()
                 }
             }
         } else {
@@ -296,64 +325,21 @@ class LessonAdapter(
             }
         }
 
-        // Scrim view'ı göster ve tıklama listener'ı ekle (sadece GuidePanel açık değilse)
+        // Karartma: panel dışına dokununca panel kapanıyor (rehber açıkken karartma yok).
         if (!isGuidePanelVisible) {
             scrimView.visibility = View.VISIBLE
             scrimView.animate()
                 .alpha(0.5f)
-                .setDuration(300)
+                .setDuration(200)
                 .start()
-
-            // Scrim'e tıklandığında bottom sheet'i kapat
-            scrimView.setOnClickListener {
-                // Bottom sheet'i gizlenebilir yap ve aşağı kaydır
-                behavior.isHideable = true
-                behavior.state = BottomSheetBehavior.STATE_HIDDEN
-            }
+            scrimView.setOnClickListener { dismissPanel() }
+            addChromeDims(activity, dismissPanel)
         } else {
-            // GuidePanel açıkken scrimView tıklanamaz ve görünmez
             scrimView.setOnClickListener(null)
         }
 
-        // Bottom sheet callback'i ekle
-        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    // recordLayout animasyonunu durdur (eğer varsa)
-                    val recordLayout = bottomSheetView.findViewById<LinearLayout>(R.id.recordLayout)
-                    val animator = recordLayout?.tag as? ValueAnimator
-                    animator?.cancel()
-                    recordLayout?.tag = null
-                    
-                    // Bottom sheet tamamen kapandığında view'ı kaldır
-                    coordinatorLayout.removeView(bottomSheetView)
-
-                    // Scrim'i animate ederek kapat (sadece GuidePanel açık değilse)
-                    if (!isGuidePanelVisible) {
-                        scrimView.animate()
-                            .alpha(0f)
-                            .setDuration(100)
-                            .withEndAction {
-                                scrimView.visibility = View.GONE
-                            }
-                            .start()
-                    }
-                }
-            }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                // Kaydırma sırasında arka plan transparanlığını ayarla (sadece GuidePanel açık değilse)
-                if (!isGuidePanelVisible) {
-                    val alpha = 0.5f * (slideOffset + 1) // 0f ile 0.5f arası
-                    scrimView.alpha = alpha
-                }
-            }
-        })
-
         againTutorial.setOnClickListener{
-            // Bottom sheet'i aşağı doğru kaydırarak gizle
-            behavior.isHideable = true
-            behavior.state = BottomSheetBehavior.STATE_HIDDEN
+            dismissPanel()
 
             // Activity'yi bul ve FragmentActivity olarak cast et
             val activity = context as FragmentActivity
@@ -399,7 +385,7 @@ class LessonAdapter(
                                 partId = globalPartId,
                                 lessonId = item.stableId,
                             )
-                            behavior.isHideable = true; behavior.state = BottomSheetBehavior.STATE_HIDDEN; showEnergyWarning(context)
+                            dismissPanel(); showEnergyWarning(context)
                             return@getCurrentPlan
                         }
                         // Enerjiyi kullan
@@ -418,39 +404,198 @@ class LessonAdapter(
                     EnergySessionCounter.onLessonStarted()
 
                     // Ders başlat
-                    continueWithLesson(item, behavior)
+                    continueWithLesson(item, dismissPanel)
                 }
             }
-            else {
-                // Kilitli durum için sadece collapse et
-                behavior.state = BottomSheetBehavior.STATE_COLLAPSED
-            }
+            // Kilitli: düğme zaten devre dışı.
         }
 
-        // Lesson kartının pozisyonunu al
-        val lessonView = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
-            .layoutManager?.findViewByPosition(position)
-
-        lessonView?.let {
-            val location = IntArray(2)
-            it.getLocationInWindow(location)
-            val lessonY = location[1]
-
-            // Bottom sheet'in peekHeight'ını lesson kartının altına ayarla
-            behavior.peekHeight = lessonY + it.height
-        }
-
-        // Bottom sheet'i göster
-        behavior.isHideable = true
-        behavior.state = BottomSheetBehavior.STATE_HIDDEN  // Önce gizli duruma getir
-        bottomSheetView.post {  // Bir sonraki frame'de göster
-            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        // Konum: tıklanan kartın altında (yer yoksa üstünde); panel ölçüldükten sonra.
+        val recycler = activity.findViewById<RecyclerView>(R.id.lessonsRecyclerView)
+        val itemView = recycler?.layoutManager?.findViewByPosition(position)
+        val cardView = itemView?.findViewById<View>(R.id.lessonCard) ?: itemView
+        panelRoot.post {
+            placeLessonPanel(
+                coordinatorLayout, panelCard, panelArrow, cardSnapshot, cardView,
+                showSnapshot = !isGuidePanelVisible,
+            )
         }
     }
-    
-    private fun continueWithLesson(item: LessonItem, behavior: BottomSheetBehavior<LinearLayout>) {
-        behavior.isHideable = true
-        behavior.state = BottomSheetBehavior.STATE_HIDDEN
+
+    /**
+     * Ders paneli açıkken karartma yalnızca harita alanını (coordinator) örtüyordu; üstteki
+     * para paneli ve alttaki menü aydınlık ve tıklanabilir kalıyordu. Bu ikisinin üstüne de
+     * aynı karartma konuyor (pencere kökünde, görünüm sınırlarına); dokununca panel kapanıyor.
+     */
+    private fun addChromeDims(activity: Activity, onTap: () -> Unit) {
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+        removeChromeDims(activity)
+        val contentLoc = IntArray(2).also { content.getLocationInWindow(it) }
+        for (id in intArrayOf(R.id.currencyPanel, R.id.bottomNavigationID)) {
+            val target = activity.findViewById<View>(id) ?: continue
+            if (!target.isShown || target.width == 0 || target.height == 0) continue
+            val loc = IntArray(2).also { target.getLocationInWindow(it) }
+            val dim = View(activity).apply {
+                tag = CHROME_DIM_TAG
+                layoutParams = ViewGroup.LayoutParams(target.width, target.height)
+                x = (loc[0] - contentLoc[0]).toFloat()
+                y = (loc[1] - contentLoc[1]).toFloat()
+                setBackgroundColor(android.graphics.Color.BLACK)
+                alpha = 0f
+                elevation = 999f
+                isClickable = true
+                setOnClickListener { onTap() }
+            }
+            content.addView(dim)
+            dim.animate().alpha(0.5f).setDuration(200L).start()
+        }
+        dimSystemBars(activity, dim = true)
+    }
+
+    /**
+     * Telefonun üst (saat, pil) ve alt (gezinme tuşları) şeritleri de aynı oranda (%50 siyah)
+     * koyulaşıyor, panel kapanınca eski renklerine dönüyor; ekran tek parça kararmış görünsün.
+     * Eski renkler ilk karartmada saklanıyor. (Android 15+ şerit rengini yok sayıyor; orada etkisiz.)
+     */
+    private fun dimSystemBars(activity: Activity, dim: Boolean) {
+        val window = activity.window ?: return
+        if (dim && savedBarColors == null) {
+            savedBarColors = intArrayOf(window.statusBarColor, window.navigationBarColor)
+        }
+        val saved = savedBarColors ?: return
+        val evaluator = ArgbEvaluator()
+        val fromStatus = window.statusBarColor
+        val fromNav = window.navigationBarColor
+        val toStatus = if (dim) evaluator.evaluate(0.5f, saved[0], android.graphics.Color.BLACK) as Int else saved[0]
+        val toNav = if (dim) evaluator.evaluate(0.5f, saved[1], android.graphics.Color.BLACK) as Int else saved[1]
+        if (!dim) savedBarColors = null
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = if (dim) 200L else 140L
+            addUpdateListener { va ->
+                val p = va.animatedValue as Float
+                window.statusBarColor = evaluator.evaluate(p, fromStatus, toStatus) as Int
+                window.navigationBarColor = evaluator.evaluate(p, fromNav, toNav) as Int
+            }
+            start()
+        }
+    }
+
+    private fun removeChromeDims(activity: Activity) {
+        dimSystemBars(activity, dim = false)
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
+        while (true) {
+            val dim = content.findViewWithTag<View>(CHROME_DIM_TAG) ?: break
+            dim.tag = null
+            dim.isClickable = false
+            dim.animate().alpha(0f).setDuration(140L).withEndAction { content.removeView(dim) }.start()
+        }
+    }
+
+    private enum class PanelState { OPEN, DONE, LOCKED }
+
+    private class PanelPalette(
+        val border: Int,
+        val accentText: Int,
+        val fill: Int,
+        val buttonBg: Int,
+        val buttonText: Int,
+    )
+
+    /** Ders panelinin durum renkleri (kartlarla aynı: açık mavi, bitmiş altın, kilitli gri). */
+    private fun panelPalette(state: PanelState): PanelPalette {
+        fun c(id: Int) = ContextCompat.getColor(context, id)
+        return when (state) {
+            PanelState.OPEN -> PanelPalette(
+                border = c(R.color.lesson_center_blue),
+                accentText = c(R.color.lesson_panel_open_accent),
+                fill = c(R.color.lesson_center_blue),
+                buttonBg = c(R.color.lesson_center_blue),
+                buttonText = android.graphics.Color.WHITE,
+            )
+            PanelState.DONE -> PanelPalette(
+                border = c(R.color.lesson_center_gold),
+                accentText = c(R.color.lesson_center_gold),
+                fill = c(R.color.lesson_center_gold),
+                buttonBg = c(R.color.lesson_center_gold),
+                buttonText = c(R.color.lesson_card_done_text),
+            )
+            PanelState.LOCKED -> PanelPalette(
+                border = c(R.color.lesson_locked),
+                accentText = c(R.color.lesson_card_locked_fill),
+                fill = c(R.color.lesson_card_locked_fill),
+                buttonBg = c(R.color.lesson_panel_track),
+                buttonText = c(R.color.lesson_card_locked_fill),
+            )
+        }
+    }
+
+    /**
+     * Paneli tıklanan kartın altına (sığmazsa üstüne) yerleştirir, oku kartın ortasına hizalar,
+     * karartmanın üstüne kartın bir görüntüsünü koyar ve paneli karttan büyüyerek açar. Kart
+     * listede görünmüyorsa panel ekranın ortasında, oksuz açılıyor.
+     */
+    private fun placeLessonPanel(
+        coordinator: View,
+        panel: View,
+        arrow: PanelPointerView,
+        snapshot: ImageView,
+        card: View?,
+        showSnapshot: Boolean,
+    ) {
+        val density = context.resources.displayMetrics.density
+        val gap = 6f * density
+        val edge = 12f * density
+        val overlap = 2f * density
+        val arrowH = arrow.height.toFloat()
+        val panelH = panel.height.toFloat()
+        val coordH = coordinator.height.toFloat()
+        val coordLoc = IntArray(2).also { coordinator.getLocationInWindow(it) }
+        var pointUp = true
+        var panelY = (coordH - panelH) / 2f
+        var arrowCenterX = panel.left + panel.width / 2f
+        val hasCard = card != null && card.isAttachedToWindow && card.height > 0
+        if (hasCard) {
+            val loc = IntArray(2).also { card!!.getLocationInWindow(it) }
+            val cardTop = (loc[1] - coordLoc[1]).toFloat()
+            val cardBottom = cardTop + card!!.height
+            val cardLeft = (loc[0] - coordLoc[0]).toFloat()
+            val fitsBelow = cardBottom + gap + arrowH + panelH + edge <= coordH
+            val fitsAbove = cardTop - gap - arrowH - panelH - edge >= 0f
+            pointUp = fitsBelow || !fitsAbove
+            panelY = if (pointUp) cardBottom + gap + arrowH - overlap
+                else cardTop - gap - arrowH + overlap - panelH
+            panelY = panelY.coerceIn(edge, (coordH - panelH - edge).coerceAtLeast(edge))
+            arrowCenterX = cardLeft + card.width / 2f
+            arrow.pointUp = pointUp
+            arrow.x = arrowCenterX - arrow.width / 2f
+            arrow.y = if (pointUp) panelY - arrowH + overlap else panelY + panelH - overlap
+            arrow.alpha = 0f
+            arrow.visibility = View.VISIBLE
+            arrow.animate().alpha(1f).setStartDelay(60L).setDuration(160L).start()
+            if (showSnapshot) {
+                runCatching { card.drawToBitmap() }.getOrNull()?.let { bmp ->
+                    snapshot.setImageBitmap(bmp)
+                    snapshot.x = cardLeft
+                    snapshot.y = cardTop
+                    snapshot.visibility = View.VISIBLE
+                }
+            }
+        }
+        panel.y = panelY
+        panel.pivotX = (arrowCenterX - panel.left).coerceIn(0f, panel.width.toFloat())
+        panel.pivotY = if (pointUp) 0f else panelH
+        panel.scaleX = 0.92f
+        panel.scaleY = 0.92f
+        panel.alpha = 0f
+        panel.visibility = View.VISIBLE
+        panel.animate().scaleX(1f).scaleY(1f).alpha(1f)
+            .setDuration(180L)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+    }
+
+    private fun continueWithLesson(item: LessonItem, dismissPanel: () -> Unit) {
+        dismissPanel()
 
         val activity = context as FragmentActivity
         (activity as? MainActivity)?.dismissMapLessonOverlayChrome()
@@ -924,13 +1069,13 @@ class LessonAdapter(
 
         return when (viewType) {
             LessonItem.TYPE_LESSON -> LessonViewHolder(
-                inflater.inflate(R.layout.item_lesson, parent, false)
+                inflater.inflate(R.layout.item_lesson_card, parent, false)
             )
             LessonItem.TYPE_HEADER -> HeaderViewHolder(
                 inflater.inflate(R.layout.item_header, parent, false)
             )
             LessonItem.TYPE_CHEST -> LessonViewHolder(
-                inflater.inflate(R.layout.item_lesson, parent, false)
+                inflater.inflate(R.layout.item_lesson_card, parent, false)
             )
             LessonItem.TYPE_RACE -> RaceViewHolder(
                 inflater.inflate(R.layout.item_race, parent, false)
@@ -1012,40 +1157,59 @@ class LessonAdapter(
     }
 
     // ViewHolder sınıfları
-    private enum class ChestStarSlot {
-        YellowOn,
-        LightGrayOn,
-        Off,
-    }
-
+    /**
+     * Ders ve sandık kartı ([R.layout.item_lesson_card]): solda kitap ikonu, ortada başlık ve
+     * altında ilerleme — derste adım dilimleri ve "2/5", sandıkta (hep tek adımlı) kazanılan
+     * yıldızlar —, sağda durum ikonu.
+     *
+     * Durumlar ([LessonItem.isCompleted] = açık mı):
+     *  - kilitli: gri kart, soluk ikon, kilit;
+     *  - açık: mavi kart, beyaz kenar, ok; bitmemişse kart hafifçe "nefes alıyor";
+     *  - bitmiş: bütün kart altın, yazılar ve dilimler koyu kahve, onay.
+     * Dersten dönünce yeni biten dilim animasyonla doluyor; son dilimde kart altına dönüyor
+     * (bir kez; sonra kalıcı — eski daire halkasındaki mantığın aynısı).
+     */
     inner class LessonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val chestStarLightGrayFilter = PorterDuffColorFilter(
-            ContextCompat.getColor(context, R.color.chest_star_light_gray),
-            PorterDuff.Mode.SRC_IN,
-        )
-
+        private val lessonCard: MaterialCardView = itemView.findViewById(R.id.lessonCard)
         private val lessonIcon: ImageView = itemView.findViewById(R.id.lessonIcon)
-        private val chestStarsRow: LinearLayout = itemView.findViewById(R.id.chestStarsRow)
-        private val chestStar1: ImageView = itemView.findViewById(R.id.chestStar1)
-        private val chestStar2: ImageView = itemView.findViewById(R.id.chestStar2)
-        private val chestStar3: ImageView = itemView.findViewById(R.id.chestStar3)
-        private val lessonCard: CardView = itemView.findViewById(R.id.lessonCard)
-        private val progressBar: CircleProgressBar = itemView.findViewById(R.id.progressBar)
-        private val lessonGoldShinePrimary: View = itemView.findViewById(R.id.lessonGoldShinePrimary)
-        private val lessonGoldShineSecondary: View = itemView.findViewById(R.id.lessonGoldShineSecondary)
+        private val lessonTitle: TextView = itemView.findViewById(R.id.lessonTitle)
+        private val stepRow: View = itemView.findViewById(R.id.lessonStepRow)
+        private val stepBar: SegmentBarView = itemView.findViewById(R.id.lessonStepBar)
+        private val stepText: TextView = itemView.findViewById(R.id.lessonStepText)
+        private val chestStarsRow: View = itemView.findViewById(R.id.chestStarsRow)
+        private val chestStars: List<ImageView> = listOf(
+            itemView.findViewById(R.id.chestStar1),
+            itemView.findViewById(R.id.chestStar2),
+            itemView.findViewById(R.id.chestStar3),
+        )
+        private val stateIcon: ImageView = itemView.findViewById(R.id.lessonStateIcon)
         private var progressBreathingAnimator: ValueAnimator? = null
         private var progressIncreaseAnimator: ValueAnimator? = null
         private var progressIncreaseStepCount: Int = 0
         private var progressIncreaseTargetFilled: Int = 0
         private var finalGoldAnimator: AnimatorSet? = null
 
+        private val white = ContextCompat.getColor(context, android.R.color.white)
+        private val openBg = ContextCompat.getColor(context, R.color.lesson_center_blue)
+        private val doneBg = ContextCompat.getColor(context, R.color.lesson_center_gold)
+        private val doneText = ContextCompat.getColor(context, R.color.lesson_card_done_text)
+        private val doneFill = ContextCompat.getColor(context, R.color.lesson_card_done_fill)
+        private val doneTrack = ContextCompat.getColor(context, R.color.lesson_card_done_track)
+        private var isChestCard = false
+        private var chestEarned = 0
+        private val openTrack = ContextCompat.getColor(context, R.color.lesson_card_open_track)
+        private val lockedText = ContextCompat.getColor(context, R.color.lesson_card_locked_text)
+        private val lockedTrack = ContextCompat.getColor(context, R.color.lesson_card_locked_track)
+        private val lockedFill = ContextCompat.getColor(context, R.color.lesson_card_locked_fill)
+        private val iconLockedFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+
         private fun cancelProgressIncreaseAnimation(applyFinalState: Boolean = true) {
             finalGoldAnimator?.cancel()
             finalGoldAnimator = null
-            
+
             val animator = progressIncreaseAnimator ?: return
             if (applyFinalState && progressIncreaseStepCount > 0) {
-                progressBar.setSegmentState(
+                setSegments(
                     progressIncreaseStepCount,
                     progressIncreaseTargetFilled.coerceIn(0, progressIncreaseStepCount),
                 )
@@ -1054,36 +1218,10 @@ class LessonAdapter(
             progressIncreaseAnimator = null
         }
 
-        fun updateProgress(progress: Float) {
-            // Mevcut progress değerini al
-            val currentProgress = progressBar.progress
-
-            // Animasyon oluştur
-            val animator = ValueAnimator.ofFloat(currentProgress, progress)
-            animator.duration = 500 // 500ms sürecek
-            animator.interpolator = AccelerateDecelerateInterpolator() // Yumuşak geçiş için
-
-            animator.addUpdateListener { animation ->
-                val animatedValue = animation.animatedValue as Float
-                progressBar.setProgressValue(animatedValue)
-            }
-
-            // Animasyonu başlat
-            animator.start()
-        }
-
-        fun updateProgressBarColor(color: Int) {
-            progressBar.setProgressColor(color)
-        }
-        private fun applyStepSegments(item: LessonItem) {
-            val safeStepCount = item.stepCount.coerceAtLeast(1)
-            val completedSteps = item.stepCompletionStatus.count { it }
-            val filledSegments = if (item.stepIsFinish) safeStepCount else completedSteps
-            progressBar.setSegmentGapAngle(16f)
-            progressBar.setSegmentState(
-                segmentCount = safeStepCount,
-                completedSegments = filledSegments.coerceIn(0, safeStepCount),
-            )
+        /** Dilimleri ve "dolu/toplam" yazısını birlikte günceller. */
+        private fun setSegments(count: Int, filled: Int) {
+            stepBar.setSegmentState(count, filled)
+            stepText.text = "$filled/$count"
         }
 
         /**
@@ -1096,27 +1234,48 @@ class LessonAdapter(
         private fun lessonProgressKey(item: LessonItem): String =
             "${item.type}_${item.stableId}"
 
-
-        private fun applyPersistentFinalGoldState() {
-            lessonCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_center_gold))
-            progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_gold))
-            progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_gold))
-            progressBar.scaleX = 0.35f
-            progressBar.scaleY = 0.35f
-            progressBar.alpha = 0f
-            lessonGoldShinePrimary.alpha = 0.75f
-            lessonGoldShineSecondary.alpha = 0.55f
+        /** Açık / kilitli kartın temel görünümü (bitmiş hâlin altın dokunuşları ayrı). */
+        private fun applyBaseLook(unlocked: Boolean) {
+            if (unlocked) {
+                lessonCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_center_blue))
+                lessonCard.strokeColor = white
+                lessonTitle.setTextColor(white)
+                stepText.setTextColor(white)
+                stepBar.fillColor = white
+                stepBar.trackColor = openTrack
+                lessonIcon.colorFilter = null
+                lessonIcon.alpha = 1f
+                stateIcon.setImageResource(R.drawable.ic_lesson_card_chevron)
+                stateIcon.imageTintList = android.content.res.ColorStateList.valueOf(white)
+            } else {
+                lessonCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_locked))
+                lessonCard.strokeColor = android.graphics.Color.TRANSPARENT
+                lessonTitle.setTextColor(lockedText)
+                stepText.setTextColor(lockedText)
+                stepBar.fillColor = lockedFill
+                stepBar.trackColor = lockedTrack
+                lessonIcon.colorFilter = iconLockedFilter
+                lessonIcon.alpha = 0.6f
+                stateIcon.setImageResource(R.drawable.lock_ic)
+                stateIcon.imageTintList = android.content.res.ColorStateList.valueOf(lockedText)
+            }
+            stateIcon.scaleX = 1f
+            stateIcon.scaleY = 1f
         }
 
-        private fun resetGoldEffectVisuals(baseCardColor: Int) {
-            lessonCard.setCardBackgroundColor(baseCardColor)
-            progressBar.scaleX = 1f
-            progressBar.scaleY = 1f
-            progressBar.alpha = 1f
-            lessonGoldShinePrimary.alpha = 0f
-            lessonGoldShineSecondary.alpha = 0f
-            lessonGoldShinePrimary.translationX = 0f
-            lessonGoldShineSecondary.translationX = 0f
+        /** Bitmiş kart: bütün kart altın, yazılar ve dolu dilimler koyu kahve, sağda onay. */
+        private fun applyPersistentFinalGoldState() {
+            lessonCard.setCardBackgroundColor(doneBg)
+            lessonCard.strokeColor = android.graphics.Color.TRANSPARENT
+            lessonTitle.setTextColor(doneText)
+            stepText.setTextColor(doneText)
+            stepBar.fillColor = doneFill
+            stepBar.trackColor = doneTrack
+            stateIcon.setImageResource(R.drawable.ic_lesson_card_check)
+            stateIcon.imageTintList = android.content.res.ColorStateList.valueOf(doneText)
+            stateIcon.scaleX = 1f
+            stateIcon.scaleY = 1f
+            if (isChestCard) bindChestStars(chestEarned, unlocked = true, done = true)
         }
 
         private fun persistFinalGoldVisualState(item: LessonItem, key: String) {
@@ -1129,60 +1288,56 @@ class LessonAdapter(
             }
         }
 
-        private fun playFinalGoldMergeAnimation(item: LessonItem, baseCardColor: Int, key: String) {
+        /** Son dilim dolunca: mavi kart altına dönüyor, yazılar ve dilimler koyu kahveye, ok onaya. */
+        private fun playFinalGoldMergeAnimation(item: LessonItem, key: String) {
             if (playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) {
                 persistFinalGoldVisualState(item, key)
                 applyPersistentFinalGoldState()
                 return
             }
             stopProgressBreathingAnimation()
-            val goldCardColor = ContextCompat.getColor(context, R.color.lesson_center_gold)
-            val goldRingColor = ContextCompat.getColor(context, R.color.lesson_ring_gold)
-            progressBar.setProgressColor(goldRingColor)
-            progressBar.setBackgroundRingColor(goldRingColor)
 
-            val colorAnim = ValueAnimator.ofObject(
-                ArgbEvaluator(),
-                baseCardColor,
-                goldCardColor,
-            ).apply {
-                duration = 340L
+            val argb = ArgbEvaluator()
+            val colorAnim = ValueAnimator.ofFloat(0f, 1f).apply {
+                duration = 520L
+                interpolator = AccelerateDecelerateInterpolator()
                 addUpdateListener { va ->
-                    lessonCard.setCardBackgroundColor(va.animatedValue as Int)
+                    val f = va.animatedValue as Float
+                    lessonCard.setCardBackgroundColor(argb.evaluate(f, openBg, doneBg) as Int)
+                    lessonCard.strokeColor = argb.evaluate(f, white, android.graphics.Color.TRANSPARENT) as Int
+                    val text = argb.evaluate(f, white, doneText) as Int
+                    lessonTitle.setTextColor(text)
+                    stepText.setTextColor(text)
+                    stepBar.fillColor = argb.evaluate(f, white, doneFill) as Int
                 }
             }
 
-            val ringMerge = AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(progressBar, View.SCALE_X, 1f, 0.35f),
-                    ObjectAnimator.ofFloat(progressBar, View.SCALE_Y, 1f, 0.35f),
-                    ObjectAnimator.ofFloat(progressBar, View.ALPHA, 1f, 0f),
-                )
+            // Ok küçülüp kayboluyor, yerine altın onay büyüyerek geliyor.
+            val iconSwap = ValueAnimator.ofFloat(0f, 1f).apply {
                 duration = 520L
-                interpolator = AccelerateDecelerateInterpolator()
-            }
-
-            val shinePrimary = AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(lessonGoldShinePrimary, View.ALPHA, 0f, 0.95f, 0.75f),
-                    ObjectAnimator.ofFloat(lessonGoldShinePrimary, View.TRANSLATION_X, -8f, 8f),
-                )
-                duration = 430L
-                startDelay = 140L
-                interpolator = AccelerateDecelerateInterpolator()
-            }
-            val shineSecondary = AnimatorSet().apply {
-                playTogether(
-                    ObjectAnimator.ofFloat(lessonGoldShineSecondary, View.ALPHA, 0f, 0.85f, 0.55f),
-                    ObjectAnimator.ofFloat(lessonGoldShineSecondary, View.TRANSLATION_X, 7f, -6f),
-                )
-                duration = 470L
-                startDelay = 170L
-                interpolator = AccelerateDecelerateInterpolator()
+                var swapped = false
+                addUpdateListener { va ->
+                    val p = va.animatedValue as Float
+                    if (p < 0.5f) {
+                        val s = 1f - p * 2f
+                        stateIcon.scaleX = s
+                        stateIcon.scaleY = s
+                    } else {
+                        if (!swapped) {
+                            swapped = true
+                            stateIcon.setImageResource(R.drawable.ic_lesson_card_check)
+                            stateIcon.imageTintList = android.content.res.ColorStateList.valueOf(doneText)
+                        }
+                        val q = (p - 0.5f) * 2f
+                        val s = q * (1f + 0.25f * kotlin.math.sin(Math.PI * q).toFloat())
+                        stateIcon.scaleX = s
+                        stateIcon.scaleY = s
+                    }
+                }
             }
 
             finalGoldAnimator = AnimatorSet().apply {
-                playTogether(colorAnim, ringMerge, shinePrimary, shineSecondary)
+                playTogether(colorAnim, iconSwap)
                 addListener(object : AnimatorListenerAdapter() {
                     override fun onAnimationEnd(animation: Animator) {
                         persistFinalGoldVisualState(item, key)
@@ -1196,20 +1351,18 @@ class LessonAdapter(
             }
         }
 
-        private fun applyStepSegmentsWithIncreaseAnimation(item: LessonItem, baseCardColor: Int) {
+        private fun applyStepSegmentsWithIncreaseAnimation(item: LessonItem) {
             cancelProgressIncreaseAnimation(applyFinalState = true)
             val safeStepCount = item.stepCount.coerceAtLeast(1)
             val completedSteps = item.stepCompletionStatus.count { it }
             val targetFilled = if (item.stepIsFinish) safeStepCount else completedSteps.coerceIn(0, safeStepCount)
             val key = lessonProgressKey(item)
-            progressBar.setSegmentGapAngle(16f)
             if ((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && targetFilled == safeStepCount) {
+                setSegments(safeStepCount, targetFilled)
                 persistFinalGoldVisualState(item, key)
                 applyPersistentFinalGoldState()
                 lastSeenFilledSegments[key] = targetFilled
                 return
-            } else {
-                resetGoldEffectVisuals(baseCardColor)
             }
             val pending = GlobalValues.pendingLessonProgressAnimations[key]
             val shouldConsumePending = GlobalValues.canConsumePendingLessonProgressAnimations && pending != null
@@ -1223,29 +1376,30 @@ class LessonAdapter(
                 if (shouldConsumePending) {
                     progressIncreaseStepCount = safeStepCount
                     progressIncreaseTargetFilled = targetFilled
-                    progressBar.setSegmentState(safeStepCount, previousFilled)
+                    setSegments(safeStepCount, previousFilled)
                     progressIncreaseAnimator = ValueAnimator.ofFloat(previousFilled.toFloat(), targetFilled.toFloat()).apply {
                         duration = ((targetFilled - previousFilled) * 900L).coerceAtLeast(1800L)
                         interpolator = AccelerateDecelerateInterpolator()
                         addUpdateListener { animator ->
                             val current = animator.animatedValue as Float
-                            progressBar.setSegmentProgress(current)
+                            stepBar.setSegmentProgress(current)
+                            stepText.text = "${current.toInt()}/$safeStepCount"
                         }
                         addListener(object : AnimatorListenerAdapter() {
                             var isCancelled = false
-                            
+
                             override fun onAnimationCancel(animation: Animator) {
                                 isCancelled = true
                                 progressIncreaseAnimator = null
-                                progressBar.setSegmentState(safeStepCount, targetFilled)
+                                setSegments(safeStepCount, targetFilled)
                             }
-                            
+
                             override fun onAnimationEnd(animation: Animator) {
                                 if (isCancelled) return
                                 progressIncreaseAnimator = null
-                                progressBar.setSegmentState(safeStepCount, targetFilled)
+                                setSegments(safeStepCount, targetFilled)
                                 if (targetFilled == safeStepCount) {
-                                    playFinalGoldMergeAnimation(item, baseCardColor, key)
+                                    playFinalGoldMergeAnimation(item, key)
                                 }
                             }
                         })
@@ -1254,14 +1408,14 @@ class LessonAdapter(
                     GlobalValues.pendingLessonProgressAnimations.remove(key)
                     lastSeenFilledSegments[key] = targetFilled
                 } else if (pending != null) {
-                    progressBar.setSegmentState(safeStepCount, previousFilled)
+                    setSegments(safeStepCount, previousFilled)
                     lastSeenFilledSegments[key] = previousFilled
                 } else {
-                    progressBar.setSegmentState(safeStepCount, targetFilled)
+                    setSegments(safeStepCount, targetFilled)
                     lastSeenFilledSegments[key] = targetFilled
                 }
             } else {
-                progressBar.setSegmentState(safeStepCount, targetFilled)
+                setSegments(safeStepCount, targetFilled)
                 if (shouldConsumePending) {
                     GlobalValues.pendingLessonProgressAnimations.remove(key)
                 }
@@ -1270,24 +1424,25 @@ class LessonAdapter(
                     !playedFinalGoldAnimationKeys.contains(key) &&
                     !item.finalGoldVisualUnlocked
                 ) {
-                    playFinalGoldMergeAnimation(item, baseCardColor, key)
+                    playFinalGoldMergeAnimation(item, key)
                 }
                 lastSeenFilledSegments[key] = targetFilled
             }
         }
 
+        /** Açık ve bitmemiş kart hafifçe büyüyüp küçülüyor ("sıradaki ders"). */
         private fun startProgressBreathingAnimation() {
             progressBreathingAnimator?.cancel()
-            progressBar.scaleX = 1f
-            progressBar.scaleY = 1f
-            progressBreathingAnimator = ValueAnimator.ofFloat(1f, 1.08f, 1f).apply {
-                duration = 2200L
+            lessonCard.scaleX = 1f
+            lessonCard.scaleY = 1f
+            progressBreathingAnimator = ValueAnimator.ofFloat(1f, 1.02f, 1f).apply {
+                duration = 2400L
                 repeatCount = ValueAnimator.INFINITE
                 interpolator = AccelerateDecelerateInterpolator()
                 addUpdateListener { animation ->
                     val scale = animation.animatedValue as Float
-                    progressBar.scaleX = scale
-                    progressBar.scaleY = scale
+                    lessonCard.scaleX = scale
+                    lessonCard.scaleY = scale
                 }
                 start()
             }
@@ -1296,208 +1451,83 @@ class LessonAdapter(
         fun stopProgressBreathingAnimation() {
             progressBreathingAnimator?.cancel()
             progressBreathingAnimator = null
-            progressBar.scaleX = 1f
-            progressBar.scaleY = 1f
+            lessonCard.scaleX = 1f
+            lessonCard.scaleY = 1f
             cancelProgressIncreaseAnimation(applyFinalState = true)
         }
 
-        private fun applyChestStarSlot(iv: ImageView, slot: ChestStarSlot) {
-            when (slot) {
-                ChestStarSlot.YellowOn -> {
+        /** Sandığın kazandığı yıldız sayısı (bitmemişse 0); eski kupa ikonları da sayılıyor. */
+        private fun chestStarCount(item: LessonItem): Int {
+            if (!item.stepIsFinish) return 0
+            return when (item.stepCupIcon) {
+                R.drawable.chest_stars_tier3, R.drawable.cup_ic3 -> 3
+                R.drawable.chest_stars_tier2, R.drawable.cup_ic2 -> 2
+                R.drawable.chest_stars_tier1, R.drawable.cup_ic -> 1
+                else -> 0
+            }
+        }
+
+        /**
+         * Sandık yıldızları. Bitmiş (altın) kartta açık sarı yıldız zeminde kayboluyordu: orada
+         * kazanılanlar koyu kahve dolu, kazanılmayanlar soluk.
+         */
+        private fun bindChestStars(earned: Int, unlocked: Boolean, done: Boolean = false) {
+            chestStars.forEachIndexed { i, iv ->
+                if (i < earned) {
                     iv.setImageResource(R.drawable.star_on_ic)
-                    iv.colorFilter = null
-                }
-                ChestStarSlot.LightGrayOn -> {
-                    iv.setImageResource(R.drawable.star_on_ic)
-                    iv.colorFilter = chestStarLightGrayFilter
-                }
-                ChestStarSlot.Off -> {
+                    iv.imageTintList = if (done) android.content.res.ColorStateList.valueOf(doneFill) else null
+                    iv.alpha = 1f
+                } else {
                     iv.setImageResource(R.drawable.star_off_ic)
-                    iv.colorFilter = null
-                }
-            }
-        }
-
-        private fun setChestStarsRowThreeStarMode(three: Boolean) {
-            if (three) {
-                chestStarsRow.gravity = Gravity.CENTER_VERTICAL
-                listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
-                    iv.scaleX = 1f
-                    iv.scaleY = 1f
-                }
-                chestStar2.visibility = View.VISIBLE
-                chestStar3.visibility = View.VISIBLE
-                listOf(chestStar1, chestStar2, chestStar3).forEach { iv ->
-                    val lp = iv.layoutParams as LinearLayout.LayoutParams
-                    lp.width = 0
-                    lp.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    lp.weight = 1f
-                    iv.layoutParams = lp
-                }
-            } else {
-                chestStar2.visibility = View.GONE
-                chestStar3.visibility = View.GONE
-                chestStarsRow.gravity = Gravity.CENTER
-                val singleStarSize =
-                    itemView.resources.getDimensionPixelSize(R.dimen.map_lesson_icon_size)
-                val lp1 = chestStar1.layoutParams as LinearLayout.LayoutParams
-                lp1.width = singleStarSize
-                lp1.height = singleStarSize
-                lp1.weight = 0f
-                chestStar1.layoutParams = lp1
-                chestStar1.scaleX = 1f
-                chestStar1.scaleY = 1f
-            }
-        }
-
-        private fun bindChestStarsRow(tierResId: Int, isCompleted: Boolean) {
-            when (tierResId) {
-                0, R.drawable.chest_stars_tier0 -> {
-                    setChestStarsRowThreeStarMode(false)
-                    val slot = if (isCompleted) ChestStarSlot.YellowOn else ChestStarSlot.LightGrayOn
-                    applyChestStarSlot(chestStar1, slot)
-                }
-                R.drawable.chest_stars_tier3 -> {
-                    setChestStarsRowThreeStarMode(true)
-                    val t = Triple(
-                        ChestStarSlot.YellowOn,
-                        ChestStarSlot.YellowOn,
-                        ChestStarSlot.YellowOn,
-                    )
-                    applyChestStarSlot(chestStar1, t.first)
-                    applyChestStarSlot(chestStar2, t.second)
-                    applyChestStarSlot(chestStar3, t.third)
-                }
-                R.drawable.chest_stars_tier2 -> {
-                    setChestStarsRowThreeStarMode(true)
-                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
-                }
-                R.drawable.chest_stars_tier1 -> {
-                    setChestStarsRowThreeStarMode(true)
-                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar2, ChestStarSlot.Off)
-                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
-                }
-                R.drawable.cup_ic3 -> {
-                    setChestStarsRowThreeStarMode(true)
-                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar3, ChestStarSlot.YellowOn)
-                }
-                R.drawable.cup_ic2 -> {
-                    setChestStarsRowThreeStarMode(true)
-                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar2, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
-                }
-                R.drawable.cup_ic -> {
-                    setChestStarsRowThreeStarMode(true)
-                    applyChestStarSlot(chestStar1, ChestStarSlot.YellowOn)
-                    applyChestStarSlot(chestStar2, ChestStarSlot.Off)
-                    applyChestStarSlot(chestStar3, ChestStarSlot.Off)
-                }
-                else -> {
-                    setChestStarsRowThreeStarMode(false)
-                    val slot = if (isCompleted) ChestStarSlot.YellowOn else ChestStarSlot.LightGrayOn
-                    applyChestStarSlot(chestStar1, slot)
+                    iv.imageTintList = if (done) android.content.res.ColorStateList.valueOf(doneFill) else null
+                    iv.alpha = when {
+                        done -> 0.3f
+                        unlocked -> 1f
+                        else -> 0.55f
+                    }
                 }
             }
         }
 
         fun bind(item: LessonItem) {
-            fun applyCupIcon() {
-                var resId = item.stepCupIcon
-                if (resId == 0) {
-                    resId = R.drawable.chest_stars_tier0
-                    item.stepCupIcon = resId
-                }
-                val normalized = when (resId) {
-                    R.drawable.chest_stars_tier0,
-                    R.drawable.chest_stars_tier1,
-                    R.drawable.chest_stars_tier2,
-                    R.drawable.chest_stars_tier3,
-                    R.drawable.cup_ic,
-                    R.drawable.cup_ic2,
-                    R.drawable.cup_ic3 -> resId
-                    else -> {
-                        item.stepCupIcon = R.drawable.chest_stars_tier0
-                        R.drawable.chest_stars_tier0
-                    }
-                }
-                bindChestStarsRow(normalized, item.isCompleted)
+            stopProgressBreathingAnimation()
+            val isChest = item.type == LessonItem.TYPE_CHEST
+            isChestCard = isChest
+            val unlocked = item.isCompleted
+
+            if (isChest && adapterPosition == MarathonGuideStore.firstMarathonLessonIndex()) {
+                LessonProgressDiag.logItem(
+                    "LessonAdapter.bind",
+                    GlobalLessonData.globalPartId,
+                    adapterPosition,
+                    item,
+                    "marathonCardUI",
+                )
             }
 
-            when (item.type) {
-                LessonItem.TYPE_CHEST -> {
-                    if (adapterPosition == MarathonGuideStore.firstMarathonLessonIndex()) {
-                        LessonProgressDiag.logItem(
-                            "LessonAdapter.bind",
-                            GlobalLessonData.globalPartId,
-                            adapterPosition,
-                            item,
-                            "marathonCardUI",
-                        )
-                    }
-                    val backgroundColor = if (item.isCompleted) {
-                        ContextCompat.getColor(context, R.color.lesson_center_blue)
-                    } else {
-                        ContextCompat.getColor(context, R.color.lesson_locked)
-                    }
-                    lessonCard.setCardBackgroundColor(backgroundColor)
-                    progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_active_blue))
-                    progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_inactive_dark))
+            lessonTitle.text = item.title
+            stepRow.visibility = if (isChest) View.GONE else View.VISIBLE
+            chestStarsRow.visibility = if (isChest) View.VISIBLE else View.GONE
+            if (isChest) {
+                // Eski kayıtlardaki tanınmayan kupa ikonu sıfırlanıyor (daire sürümündeki gibi).
+                if (item.stepCupIcon == 0) item.stepCupIcon = R.drawable.chest_stars_tier0
+                chestEarned = chestStarCount(item)
+                bindChestStars(chestEarned, unlocked)
+            }
+            applyBaseLook(unlocked)
 
-                    lessonCard.setOnClickListener {
-                        // TYPE_CHEST kartına tıklandığında da internet + login kontrolü yap
-                        (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
-                            showLessonBottomSheet(item, adapterPosition)
-                        }
-                    }
-
-                    lessonIcon.visibility = View.GONE
-                    chestStarsRow.visibility = View.VISIBLE
-                    // Bitmemişse 3 kapalı yıldız; bitmişse stepCupIcon (tier0–3).
-                    if (item.stepIsFinish) {
-                        applyCupIcon()
-                    } else {
-                        item.stepCupIcon = R.drawable.chest_stars_tier0
-                        bindChestStarsRow(R.drawable.chest_stars_tier0, item.isCompleted)
-                    }
-                    applyStepSegmentsWithIncreaseAnimation(item, backgroundColor)
-                    val key = lessonProgressKey(item)
-                    if (!((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && item.stepIsFinish)) {
-                        startProgressBreathingAnimation()
-                    }
-
+            lessonCard.setOnClickListener {
+                // Karta tıklanınca internet + giriş kontrolü, sonra ders paneli.
+                (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
+                    showLessonBottomSheet(item, adapterPosition)
                 }
+            }
 
-                LessonItem.TYPE_LESSON -> {
-                    lessonIcon.visibility = View.VISIBLE
-                    chestStarsRow.visibility = View.GONE
-                    lessonIcon.setImageResource(R.drawable.book_icon)
-                    val backgroundColor = if (item.isCompleted) {
-                        ContextCompat.getColor(context, R.color.lesson_center_blue)
-                    } else {
-                        ContextCompat.getColor(context, R.color.lesson_locked)
-                    }
-                    lessonCard.setCardBackgroundColor(backgroundColor)
-                    progressBar.setProgressColor(ContextCompat.getColor(context, R.color.lesson_ring_active_blue))
-                    progressBar.setBackgroundRingColor(ContextCompat.getColor(context, R.color.lesson_ring_inactive_dark))
-                    lessonCard.setOnClickListener {
-                        // TYPE_LESSON kartına tıklandığında da internet + login kontrolü yap
-                        (itemView.context as? MainActivity)?.requireOnlineAndLoggedInOrLogin {
-                            showLessonBottomSheet(item, adapterPosition)
-                        }
-                    }
-
-                    applyStepSegmentsWithIncreaseAnimation(item, backgroundColor)
-                    val key = lessonProgressKey(item)
-                    if (!((playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && item.stepIsFinish)) {
-                        startProgressBreathingAnimation()
-                    }
-                }
+            applyStepSegmentsWithIncreaseAnimation(item)
+            val key = lessonProgressKey(item)
+            val goldDone = (playedFinalGoldAnimationKeys.contains(key) || item.finalGoldVisualUnlocked) && item.stepIsFinish
+            if (unlocked && !item.stepIsFinish && !goldDone) {
+                startProgressBreathingAnimation()
             }
         }
     }
@@ -1638,7 +1668,6 @@ class LessonAdapter(
         bottomSheetLayout: LinearLayout,
         actionButton: Button,
         againTutorial: TextView,
-        behavior: BottomSheetBehavior<LinearLayout>
     ) {
         // Bottom sheet view'ın tıklanabilirliğini kapat
         // Touch event'leri GuidePanel'e iletmek için consume etmiyoruz
@@ -1671,9 +1700,6 @@ class LessonAdapter(
             setOnClickListener(null) // Click listener'ı kaldır
             setOnTouchListener { _, _ -> true } // Sadece text için touch event'leri consume et
         }
-        
-        // BottomSheetBehavior'ın drag özelliğini kapat (kaydırma engellenmeli)
-        behavior.isDraggable = false
         
         // BottomSheetView'in touch event'lerini GuidePanel'e iletmek için
         // Eğer touch event BottomSheet'in içindeki tıklanabilir elementlere geliyorsa consume et,

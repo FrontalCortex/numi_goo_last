@@ -94,6 +94,16 @@ class ProDiffirentFragment : DialogFragment() {
         }
     }
 
+    /**
+     * Ders sonrası kuyruğu bu panel açıkken bekliyordu (MainActivity.subscriptionFlowBlockReason);
+     * kapanınca sıradaki ekran (rozet, yeni seri…) açılsın. Plan'a geçerken de çağrılıyor,
+     * zararsız: o anda plan açık olduğu için kuyruk beklemeye devam ediyor.
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("ProDiffirent.dismiss")
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

@@ -1285,6 +1285,36 @@ hepsini denemek için Görevler'e bir kart.
     (sunucu `acquisitionSource`'u serbest metin alıyor, izin listesi yok). Sıra karıştırılmıyor
     (kullanıcı istemedi).
   - Giriş ekranında `tvBody` alt boşluğunu kullanıcı kendisi 48dp yaptı; dokunma.
+- **Abonelik akışı ders sonrası kuyruğunu bekletiyor (04.10.2026; kuruldu, cihazda
+  denenmedi, commit edilmedi):** kullanıcı: ders sonu reklam → reklam atlama paneli → "Pro'ya
+  geç" → Pro paneli açılırken arkada rozet kutlaması ya da yeni seri sorusu başlıyordu.
+  Sebep: kapılar yalnızca `AdSkip`'e bakıyordu; panel Pro'yu açıp 500 ms sonra kendini
+  kapatınca kuyruk "engel yok" deyip sıradakini Pro'nun ALTINDA açıyordu.
+  - `MainActivity.subscriptionFlowBlockReason()`: `ProDiffirent` / `Plan` dialog'u açık ya da
+    `BillingManager.isPurchaseFlowActive()` (launchPurchase → onPurchasesUpdated arası; 2 dk
+    güvenlik sınırı). Eklendiği kapılar: `marathonGuideMapBlockReason` (harita kuyruğu,
+    tanıtım, rehber hepsi buradan geçiyor), `offMapNewStreakBlockReason` (Görevler/yarış
+    dönüşündeki yeni seri), `isTasksReturnCovered` (Görevler dönüş sonucu).
+  - Kuyruğu dürtenler: `ProDiffirentFragment.onDismiss`, `PlanFragment.onDismiss`,
+    `BillingManager.onPurchaseFlowEnded` (MainActivity'de bir kez kuruluyor;
+    `installDefaultBillingCallbacks` dokunmuyor). Log: `PostLessonQueue` →
+    `bekliyor | block=pro_panel_showing / plan_showing / purchase_flow`.
+  - Bilinen sınır: Görevler/yarış dönüşü yolları en fazla 3 dk bekliyor (eski bütçe); kullanıcı
+    abonelik ekranlarında daha uzun kalırsa o sonuçlar yine açılır. Harita kuyruğunda bekleyen
+    iş kaybolmuyor (bekçi 2 dk sonra yalnızca kilidi bırakıyor, kapanış dürtüsü sürdürüyor).
+- **Reklam atlama paneli iki sürümlü (04.10.2026; kuruldu, cihazda görülmedi, commit
+  edilmedi):** kullanıcı "denemeyi kullanmamışsa bugünkü gibi, kullanmışsa Pro aboneliği
+  anlatsın, müzik çalmayabilir, konfeti ikisinde" dedi. Koşul Play'in deneme hakkı:
+  `BillingManager.freeTrialDays(SUB_PRO)` (düğme metni `SubscriptionCta` de buna bakıyor).
+  - Hakkı var: "N günlük ücretsiz PRO / denemesiyle reklamları atla!" (N Play teklifinden),
+    zil + "Deneme süren sona ermeden önce bildirim alacaksın.", müzik + alkış.
+  - Hakkı yok: "PRO ile reklamsız, / kesintisiz öğren!", yeşil onay ikonu (tint kaldırılıyor) +
+    "Aboneliğini istediğin zaman iptal edebilirsin.", müzik ve alkış YOK; konfeti
+    (görsel) iki sürümde de; sesler (patlama dahil) yalnızca deneme sürümünde (kullanıcı: tek başına konfeti sesi amatör).
+  - Ölçüm: `ad_skip_shown`'a `trial_offer` = yes/no.
+  - Not: soru tanıtımının (AskQuestionOpen) otomatik açılma koşulu deneme hakkı DEĞİL; oturum
+    açık + öğretmen değil + Pro/Premium değil + cihaz hoş geldin kredisini almamış
+    (`WelcomeCreditEligibility`). Kullanıcıya açıklandı.
 - **Commit + deploy (03.10.2026 23:21):** kullanıcı isteğiyle bu bölümdeki her şey
   `28d6c35`'te commit edilip push edildi (test anahtarları kapatıldı; `.firebase` önbelleği,
   `.idea` ayarı ve `package-lock.json` dışarıda). "Deploy Cloud Functions" iş akışı başarılı
@@ -1397,8 +1427,234 @@ hepsini denemek için Görevler'e bir kart.
   beyaz. Android 15+ (çubuk rengi yok sayılıyor, içerik çubukların altına uzanıyor) için
   üst görünüme durum çubuğu, alt beyaz bölüme gezinme çubuğu kadar dolgu ekleniyor;
   telefon Android 13 olduğu için o yol DENENMEDİ.
-- **TEST ANAHTARLARI AÇIK:** `NewStreakPromptDebug.FORCE = true` ve `AdSkipDebug.FORCE = true`
-  (kullanıcı istedi). Commit'ten önce ikisi de `false` yapılmalı.
+- Test anahtarları (`AskQuestionPromoDebug`, `NewStreakPromptDebug`, `AdSkipDebug` FORCE)
+  04.10.2026'da kullanıcının isteğiyle yeniden KAPATILDI (false). `StreakDiag.ENABLED` bir test
+  anahtarı değil, teşhis logu; yayın öncesi listesinde.
+
+## Ders sonu Sobi sahneleri (04.10.2026 — oyun alanına eklendi, commit edilmedi)
+
+- Kullanıcı ders sonu ekranları (`fragment_lesson_result`, `fragment_lesson_result_false`,
+  `fragment_chest_result`) için seçenek tablosundaki BÜTÜN animasyonların Görevler →
+  "Karakter Animasyonu" kartına eklenmesini istedi; hangisinin hangi ekrana gideceğine
+  KENDİSİ karar verecek. Henüz hiçbir ekrana bağlanmadı.
+- `BunnyMascotView.Emote`'a eklenenler (ALARM'dan sonra): WEIGHTS (boncuk halteri), SKATE
+  (kaykay + ollie + havalı gözlük), SKATE_FALL (taşa takılıp düşüyor, sersem, kalkıp
+  silkeleniyor, kararlı yumruk, koşarak çıkış), FOOTBALL (3 sektirme + kafa golü),
+  BASKETBALL (2 sektirme + potaya atış, file sallanıyor), GUITAR (notalar), JUGGLE (3
+  soroban boncuğuyla kaskad), PERFECT (yıldız patlaması + taç + gözlük finali), STARS
+  (sandık yıldızları; `starCount` 0..3 verilirse o kadar, -1 = deneme için 3), DETERMINED
+  (üzgün → nefes → kararlı yumruk).
+- Yeni kanallar 49–59 (TILT gövde eğimi ayaklar etrafında, KICK_L/R bacak tekmesi, eşya
+  görünürlükleri, BROWS_DET kararlı kaşlar). Çizimler dosyanın "ders sonu sahneleri"
+  bölümünde; zaman/ölçü sabitleri companion'da W_ / SK_ / SF_ / FB_ / BB_ / JG_ / PF_ /
+  ST_ / DT_ önekli.
+- GITAR artık `guitar.xml` (elektro gitar) ile çiziliyor: gövde ekranda solda, sap sağa-yukarı;
+  soldaki pati tellere vuruyor (bunun için yeni kanal `FRONT_L_Y` = 60, COUNT 61), sağdaki
+  sapta. Cihazda kare kare görüldü, düzgün.
+- Kullanıcı "havalı/sert görünmeye çalışan ama tatlı" sahneler istiyor (örnek: kovboy
+  şapkası `cowboy_hat.xml`, yüz gizli → baş kalkar, gözler kısılır, el bele gider, silah
+  yerine havuç çıkarıp ısırır). Seçenekler sunuldu, kullanıcının seçimi bekleniyor.
+- Cihazda yalnızca halter ve yıldızlar kare kare görüldü; halter çubuğu/boncukları
+  büyütüldü, yıldızlar kulakların üstünden yanlara alındı — bu iki düzeltme derlendi
+  ama KURULMADI (kullanıcı o sırada telefonda sahneleri deniyordu). Diğer sekiz sahnenin
+  geometrisi (top–ayak/kafa hizası, pota yeri, düşmede yıldızların başın üstüne denk
+  gelmesi, gitar–pati hizası, hokkabazlık yüksekliği) kontrol edilmedi.
+
+## Havalı ama tatlı sahneler (04.10.2026 — yazıldı ve derlendi, CİHAZDA DENENMEDİ, commit edilmedi)
+
+- Yeni hâller: COWBOY (cowboy_hat.xml, eğik), COWBOY_FRONT (cowboy_hat_bandana.xml ikiye bölündü:
+  `cowboy_hat_front.xml` + `bandana.xml`), KARATE (bant ve tahta elle çizildi), NINJA (maske
+  elle çizildi), BOXER (boxing_gloves.xml), PIRATE (pirates_hat.xml; göz bandı ve dürbün elle).
+- Yeni kanallar 61–76 (HAT_A … SWEAT, COUNT 77), Mouth.CHEW / SMIRK, kısık göz (SQUINT).
+  Kod "havalı ama tatlı sahneler" bölümünde, sabitler CB_ / KR_ / NJ_ / BX_ / PR_.
+- Şapka/bant/maske yerleşimi bilgisayarda önizlemeyle ayarlandı (scratchpad hats*.js);
+  hareketler cihazda HİÇ görülmedi. Sıradaki iş: kurup altı sahneyi kare kare kontrol etmek
+  (özellikle kılıf–el hizası, havucun ağza denk gelmesi, karate vuruşunun tahtaya değmesi,
+  dürbünün göze oturması, kulak tokadı).
+
+## Bir kez oyna, son hâlde bekle (04.10.2026 — kuruldu, kullanıcı inceliyor)
+
+- `Emote.holdFromMs`: verilen hâl bir kez oynuyor, sonra yalnızca son bölümü (holdFromMs..süre)
+  döngüde. Bekleme bölümündeki salınımlar bölüm boyuna tam oturuyor (env kullanılmıyor).
+  Bekleyenler: PERFECT, COWBOY(+FRONT), KARATE, NINJA, BOXER, PIRATE, GLASSES, MUSCLE, RAPPER.
+  Ders sonu sahnelerinin ilk partisi (WEIGHTS…DETERMINED) hâlâ baştan dönüyor.
+- Korsan zıplamıyor, dürbünle bakmaya devam ediyor; ninja kaçmıyor, gergin sağa sola bakıyor;
+  Mükemmel: zıplama/yıldız patlaması yok, taç + gözlük düşüp zafer işaretiyle poz.
+- Yeni: GLASSES (gözlük kayıyor, baş hareketiyle yerine), MUSCLE (minicik kas tümsekleri),
+  RAPPER (`rap_hat.xml` aynalanıp yana çevrili kep, elle çizilmiş altın zincir; kep uçuyor,
+  yakalayıp geri atıyor).
+- Oyun alanı listesinin sonu alt çubuğun arkasında kalıyordu: ChipGroup paddingBottom 120dp.
+- Kullanıcı: telefonda kare kare kontrolü o istemedikçe YAPMA; o bakıp değişiklik/silme
+  listesini verecek.
+
+## Silinen ve düzeltilen sahneler (04.10.2026 — kuruldu, kullanıcı bakacak)
+
+- Kullanıcının isteğiyle SİLİNDİ: BOXER, COWBOY (eğik şapka), MUSCLE, SKATE_FALL, FOOTBALL,
+  BASKETBALL (kodları, kanalları, sabitleri). Kullanılmayan asset'ler de silindi:
+  `cowboy_hat.xml`, `boxing_gloves.xml`, `cowboy_hat_bandana.xml` (ondan bölünen
+  `cowboy_hat_front.xml` + `bandana.xml` kullanılıyor).
+- Kovboy önden: şapka inerken kafa öne eğiliyor — yeni `HEAD_PITCH` kanalı: kafa boyna doğru
+  basılıyor (PITCH_SQUASH), yüz aşağı kayıyor (PITCH_FACE_DY), kulaklar kısalıyor (PITCH_EAR).
+- Rapçi yeniden döngüde (6 sn = 12 vuruş). Ninja dumandan sonra kısık gözlerle sinsi sinsi
+  sağa sola süzülüyor (sneakyLook; ter damlası kaldırıldı). Gitar: tellere vuran pati omuzdan
+  açısal sallanıyor (yeni `FRONT_L_ROT` kanalı).
+
+## Ders sonu için seçilen sahneler (04.10.2026, kullanıcı)
+
+- BAĞLANDI: `LessonEndMascot` (yeni dosya). Başarılı ders (LessonResult) ve sandık sonucu
+  (ChestResult) dokuz sahneden (GUITAR, JUGGLE, PERFECT, COWBOY_FRONT, KARATE, NINJA, PIRATE,
+  GLASSES, RAPPER) TORBA usulü seçiyor: karışık sıra, torba bitmeden tekrar yok, iki ekran
+  aynı torbayı paylaşıyor, torba SharedPreferences `lesson_end_mascot`ta. Başarısız ders
+  (LessonResultFalse) hep DETERMINED; o artık kararlı pozda bekliyor (holdFromMs 3300).
+  Üç düzende Lottie alanı yerine 200dp `mascotView`; sahne ekran girişinden 450 ms sonra.
+  Kullanıcının kararı: Mükemmel de torbada eşit (yalnızca hatasız derse ayrılmadı), sandıkta
+  da torba (Korsan önceliği yok).
+- Bu üç ekrandan çıkan 11 Lottie (assets/animation_one + animaton_two…twelve, ~1,2 MB)
+  kullanıcının onayıyla SİLİNDİ; animaton_thirteen abaküs ve körleme ekranlarında kullanıldığı için duruyor.
+- PERFECT: pozdan sonra (bekleme bölümünde) sağdan soldan foto flaşları patlıyor, her
+  flaşta gözlükte parıltı (`drawPhotoFlashes`, FLASH_* sabitleri). Kuruldu, kullanıcı bakacak.
+- Flaşlar artık Sobi'nin üstünde (kafa/gövde) ve her flaşta tavşan bir an beyaza çekiliyor
+  (tavşan bir katmana çiziliyor, SRC_ATOP ile yalnızca çizili yerleri; `photoFlashTint`).
+- CROWN (Pro paneli de bunu oynatıyor): taç ve gözlük baştan takılı, Mükemmel'in zafer pozu,
+  aynı flaşlar; süre 4 sn (flaş döngüsü 2 sn'nin katı).
+- Flaş artık YALNIZCA tavşanın anlık beyazlaması (`photoFlashTint`, 0,18 sn; sırayla soldan ve
+  sağdan: gelen yan parlak, öbürü soluk — iki LinearGradient, `lastFlashFromLeft`): ışınlar, hale
+  ("dalga"), çekirdek, flaşta gözlük parıltısı ve CROWN'daki taç yıldızları kaldırıldı.
+- JUGGLE: palyaço burnu + yaka beğenilmedi, kaldırıldı; yerine `jester_hat.xml` soytarı şapkası
+  (JESTER_A, JESTER_* sabitleri). Kullanıcı yarıya küçülttürdü: 0,17 ölçek, kulakların
+  arasında 3° yatık (10° fazla eğik bulundu); kulaklar normal. Önizleme: scratchpad jester.js.
+
+## Seri ekranından dönüşte harita geri düğmesi kayboluyordu (04.10.2026 — düzeltildi, kuruldu)
+
+- `updateCurrencyPanelVisibility` lessonPartBackButton'ı harita/mağaza dışında gizliyordu;
+  seri ekranı da mağaza gibi haritanın üstüne ekleniyor ama istisnada yoktu. StreakFragment
+  istisnaya eklendi. Kullanıcı cihazda deneyecek.
+
+## Ders sonucu düzeni (04.10.2026 — kuruldu, kullanıcı bakacak)
+
+- fragment_lesson_result ve fragment_lesson_result_false: başlık(lar) ve kutular düğmenin
+  hemen üstünde; Sobi (mascotView) üstte kalan bütün yeri kaplıyor (weight=1, çizim kendini
+  kareye sığdırıyor), paddingTop 80→48dp. chest_result DEĞİŞMEDİ (istenmedi).
+
+## Öğretmen görselleri (teacher_emotes_*) yerine Sobi — sırayla (04.10.2026 başladı)
+
+- Kullanım yerleri: MapFragment.showGuidePanel (gpt4, gpt3; GuidePanelView), GuideHelper
+  rehberleri 1–6 (AbacusFragment + BlindingLessonFragment, ivGuideImage), varsayılan src
+  fragment_abacus.xml (stick) ve view_guide_panel.xml (gpt3). Üç PNG ~5,1 MB.
+- Yeni hâller: TEACH_TALK (anlatma), TEACH_POINT (havuçla aşağıyı gösterip iki kez dokunma),
+  TEACH_WARN (kararlı kaşlar, havucu "olmaz" diye sallama); hepsi elde havuç (THINK kolu,
+  HCARROT_*). Rehber sayfası için hâl RASTGELE değil, içeriğe göre seçiliyor (kullanıcı onayı).
+- `GuideContent.emote` + `GuideVisual.bind`: emote varsa resim gizlenip Sobi oynuyor. Düzenlerde
+  resim ve Sobi `guideVisual` FrameLayout'unda (kutu görünenin boyunu alıyor; Sobi 140dp,
+  `guide_mascot_size`), yazı kutuya göre ortalanıyor.
+- Kullanıcı düzeltmesi: Sobi konuşmuyor (Mouth.HAPPY, gülüyor); üç hâlde de tek hareket havucun
+  ağır ağır sağa sola sallanması (TEACH_SWAY_DEG); uyarı da güler yüzlü (kızma kaldırıldı).
+  Rehber 1'de yazma efekti ve ses kaldırıldı, guide1_0…4.mp3 silindi (başka yerde yoktu).
+  Rehber 6'nın sesi ve yazma efekti duruyor (guide6_0).
+- BİTEN: rehber 1 (toplama): anlat → göster → göster → göster → uyar.
+- BİTEN: rehber 2 (sihirli değnek / kural tablosu): anlat → göster; guide2_0/2_1.mp3 silindi.
+- BİTEN: rehber 3 (kurallar kitabı): anlat → göster; guide3_0/3_1.mp3 silindi.
+- BİTEN: rehber 4 (tabloyu abaküse alma): anlat → göster → göster; guide4_0…4_2.mp3 silindi.
+- BİTEN: rehber 5 (sayıyı geçme oku): göster → anlat; guide5_0/5_1.mp3 silindi.
+- BİTEN: rehber 6 (abaküs boyutu): göster; guide6_0.mp3 silindi. Artık hiçbir rehberde ses ve
+  yazma efekti kullanılmıyor (GuideContent alanları ve çalma kodu duruyor).
+- BİTEN: harita maraton rehberi (GuidePanelView): anlat → göster; GuidePanelData artık (emote, text).
+- TEMİZLİK: GuideContent.imageResource, GuideVisual, ivGuideImage ve resim kutusu (FrameLayout)
+  kaldırıldı; düzenlerde doğrudan `guideMascot`. Üç öğretmen PNG'si (~5,1 MB) SİLİNDİ. İş bitti.
+
+## Harita: ders/sandık daireleri yerine alt alta kartlar (05.10.2026 — kuruldu, kullanıcı bakacak)
+
+- Yeni `item_lesson_card.xml` + `SegmentBarView` (dilimli düz adım çubuğu; CircleProgressBar'ın
+  segment yöntemlerinin karşılığı). LessonAdapter.LessonViewHolder yeniden yazıldı; dolma
+  animasyonu (pendingLessonProgressAnimations), kalıcı altın (finalGoldVisualUnlocked) ve nefes
+  alma mantığı aynen taşındı. Nefes alma artık yalnızca AÇIK ve bitmemiş kartta (eskiden
+  kilitlilerde de vardı).
+- Durumlar: kilitli gri + kilit; açık mavi + beyaz kenar + ok; bitmiş: BÜTÜN KART ALTIN
+  (lesson_center_gold), yazı/dilim koyu kahve, onay (kullanıcı A seçeneğini seçti). Bitişte mavi→altın
+  renk geçişi; parlama şeritleri kullanıcının isteğiyle kaldırıldı (lesson_card_shine_* silindi).
+  Bitmiş sandıkta yıldızlar koyu kahve (star_on_ic altın zeminde görünmüyordu).
+  Sandık (27 sandığın hepsi tek adımlı): adım çubuğu yerine 3 yıldız (stepCupIcon → 0–3).
+  İkon şimdilik ders ve sandıkta `profile_book_ic3`. Tıklayınca yine showLessonBottomSheet.
+- Kaldırılanlar: DynamicOffsetDecoration.kt, item_lesson.xml, yalnız onlara ait 6 boyut.
+  LessonItem.offset verisi (169 satır) duruyor, kullanılmıyor. Basma animasyonu yeni
+  `lesson_card_press_animator` (0,97; daireninki 0,80 geniş kartta fazlaydı).
+
+## Ders paneli: alttan açılan panel yerine karta bağlı panel (05.10.2026 — derlendi, KURULMADI: telefon "unauthorized")
+
+- `lesson_popover.xml` + `PanelPointerView` (ok) + `LessonPanel` (dışarıdan kapatma). Panel tıklanan
+  kartın altında (sığmazsa üstünde) açılıyor, ok kartı gösteriyor, kartın görüntüsü karartmanın
+  üstüne konuyor (drawToBitmap); zemin ekranla aynı, çerçeve durum rengi (açık mavi, bitmiş
+  altın, kilitli gri). Karartma üst para panelini ve alt menüyü de örtüyor (addChromeDims, pencere
+  kökünde; dokununca kapanıyor); telefonun üst/alt sistem şeritleri de %50 koyulaşıp geri dönüyor
+  (dimSystemBars, LessonAdapter.savedBarColors). Düğmeler: Başla / Devam et / Gözden geçir / Tekrar dene (sandık) / Kilitli.
+- Kök hâlâ "bottom_sheet" etiketiyle (LessonPanel.TAG) bulunuyor; Rekor satırı (recordLayout)
+  kimliği korundu — maraton rehberinin son adımı onu yanıp söndürüp tıklatıyor, kapatma artık
+  LessonPanel.dismiss. Rehber açıkken karartma yok ve düğmeler kapalı (eskisi gibi).
+- Silindi: lesson_bottom_sheet.xml, record_background.xml. lesson_sheet_* boyutları DURUYOR
+  (race_lesson_bottom_sheet de kullanıyor — bir an silinip geri konuldu).
+
+## Harita: sabit bölüm başlığı kaldırıldı, soru düğmesi sağ altta (05.10.2026 — derlendi, KURULMADI: telefon offline)
+
+- StickyLinear (stickyHeader, kısım/ünite + bölüm adı) ve updateStickyHeader / safeColorRes kaldırıldı;
+  listedeki TYPE_HEADER başlıkları yetiyor (kullanıcı ünite bilgisini istemedi). Kullanılmayan
+  map_sticky_* boyutları silindi (map_sticky_padding_horizontal ve map_sticky_recycler_padding_top
+  başka yerde kullanıldığı için duruyor).
+- askQuestionButton sağ alt köşede (16dp); liste altına 92dp boşluk (map_list_padding_bottom) ki son
+  kart düğmenin altında kalmasın.
+
+## Alt bar: seçili sekme kutusu ve zıplama (05.10.2026 — kuruldu, kullanıcı bakacak; commit edilmedi)
+
+Kullanıcı sekme geçişini "hissedemediğini" söyledi: her menü öğesinin tek ikonu var ve
+`itemIconTint="@null"`, yani seçili/seçisiz hâl birebir aynıydı. Ara çözüm:
+- `drawable/bottom_nav_item_bg.xml` → `app:itemBackground`: seçili sekmenin arkasında
+  `bright_background_color` dolgulu, 2dp `bottom_nav_selected_stroke` (#49C0F8) çerçeveli, 14dp
+  köşeli kutu. Tema MaterialComponents olduğu için M3 active indicator yok; çerçeve onunla
+  zaten çizilemezdi.
+- `MainActivity.bounceBottomNavIcon`: seçimde ikon 0.85'ten Overshoot ile 1'e (280ms) + hafif titreşim.
+- Sonraki adım (kullanıcıyla konuşuldu): Duolingo tarzı renkli ikonlar; yalnızca drawable'lar değişecek.
+  İlki yapıldı: ev sekmesi `home_ic` yerine kullanıcının verdiği renkli `home_ic1` (kuruldu).
+  Sonra: görevler `missions_ic3`, mağaza `shop_ic1`, sohbet `chat_credit_ic2`, keşfet `explore_ic1`;
+  profil sekmesi kullanıcının avatarı. Eski `home_ic`, `tasks_ic`, `shop_ic`, `chat_ic`, `explore_ic` artık
+  hiçbir yerde kullanılmıyor (silinmedi).
+
+## Avatar: Personas (05.10.2026 — profile bağlandı, kuruldu; commit/deploy edilmedi)
+
+**Profile bağlandı:** eski 12'li AvatarPickerFragment, fragment_avatar_picker, avatar_ic1-12 ve
+kullanılmayan profile_ic1/3/4/5 silindi (profile_ic1/3/4/5 index'te "A" olarak duruyordu; diskten
+silindi, index'ten değil). Profil fotoğrafına dokununca AvatarCustomFragment (replace + back stack).
+Kayıt: `users/{uid}.avatarConfig` + yerel kopya (uid'ye göre). Alt bar profil ikonu =
+avatar (`MainActivity.refreshProfileNavIcon`; açılışta checkSubscriptionAndUpdateEnergy'nin
+okuduğu users dokümanından eşitleniyor, ek okuma yok). Takipçi/arkadaş arama listeleri
+`publicProfiles.avatarConfig`'ten çiziyor. Görevler'deki test kartı kaldırıldı. Renk değerleri
+SVG'ye yazılmadan önce doğrulanıyor (başkasının yazdığı metin). Bekleyen deploy: aşağıda.
+
+**Profil üstü (Duolingo gibi):** avatar dairesiz, `avatarHeader` tam genişlikte avatarın arka plan
+rengiyle; ad + ayarlar `profileTopPanel`'de ScrollView DIŞINDA sabit, aynı renkte, yazı/ikon zemine
+göre koyu/beyaz; kaydırınca altta `profileTopDivider` çizgisi. Durum çubuğu
+`MainActivity.setStatusBarTint` ile boyanıyor (Android 15+ statusBarColor'ı yok saydığı için
+android.R.id.content'e şerit görünüm; currencyPanelDivider gizleniyor). Profil onResume/onPause/
+onHiddenChanged'da açıp kapatıyor. Başkasının profilinde panel ve boyama yok.
+
+**Son durum:** kullanıcı Personas'ı uygulamaya daha uygun buldu; Avataaars KALDIRILDI (parça dosyası,
+lisans, AvatarStyle girişi). Yapı çok stilli kaldı; tek stil varken tür çipleri gizli. Ücret
+önerisi: tüm stil değil, Personas içindeki bazı parçalar altın/Pro ile açılsın. "Yok" kutularında
+forbidden_ic. Aşağıdaki ayrıntıların Avataaars kısımları artık geçmiş.
+
+Kullanıcı cinsiyet sormak yerine özelleştirilebilir avatar istedi. Elle çizilen ilk deneme
+beğenilmedi, kaldırıldı. Şimdi DiceBear'ın iki stili (9.4.2), Görevler → "Avatar Custom" kartında;
+ekranın üstünde tür seçimi. Profile/alt bara bağlanması kullanıcının ONAYINI bekliyor.
+- Avatar = Avataaars (Pablo Stanley; kişisel+ticari ücretsiz). Personas = Draftbit, **CC BY 4.0:
+  ücretli satılabilir ama uygulamada "Personas by Draftbit" kaynak gösterimi ŞART** (henüz yok).
+  Lisanslar design/avatar/*_LICENSE.txt. Kullanıcı Personas'ı ücretli yapmayı düşünüyor.
+- Parçalar design/avatar/gen.mjs ile `assets/avatar/<stil>_parts.json`a çıkarıldı (renk
+  `{{c:..}}`, iç parça `{{p:..}}` yer tutucu). gen.mjs mix-blend-mode'u (AndroidSVG desteklemiyor)
+  yaklaşık normal karıştırmaya çeviriyor; Personas'ta yoğun kullanılıyordu.
+- `AvatarStyle` (AvatarArt.kt) her türün sekmelerini, varsayılanlarını, tuvalini tanımlar;
+  `AvatarArt.buildSvg` SVG kurar, `AvatarView` AndroidSVG (`com.caverock:androidsvg-aar:1.4`, YENİ
+  bağımlılık) ile Picture'a çizer. Avataaars'ta şapka/gözlük kıyafet rengini, sakal saç rengini alır.
+- `AvatarConfig(style, values)` seçenek ADLARINI tutar; `AvatarStore` her türün son hâlini ayrı +
+  etkin türü tutar (yalnızca SharedPreferences, Firestore yok).
+- Personas tarayıcıda (aynı SVG) kontrol edildi; AndroidSVG çıktısı telefonda görülmedi.
 
 ## Yakında yapılanlar — tekrar etmeyin
 
@@ -1438,7 +1694,13 @@ fonksiyonlar gidiyor. Cloud Functions denetim kayıtlarında deploy'lar
 kapsıyor. Aşağıdaki "yalnızca şu iki fonksiyon deploy edildi" ifadesi muhtemelen yanlıştı:
 o push hepsini göndermiş olmalı.
 
-Bekleyen deploy yok.
+**Bekleyen (05.10.2026, avatar):** commit edilmedi, deploy edilmedi.
+- `functions/index.js` → `mirrorPublicProfile`: `PUBLIC_PROFILE_FIELDS`'a `avatarConfig` eklendi,
+  `selectedAvatar` çıkarıldı. Deploy edilene kadar başkalarının avatarı listelerde/profilde
+  görünmez (harfli daire / non_user); kendi avatarın etkilenmez. Mevcut publicProfiles
+  dokümanları kullanıcı avatarını bir kez kaydedince güncellenir (trigger users yazımında).
+- `firestore.rules` → users update: `avatarConfig` string ve < 400 karakter. Rules ayrı deploy
+  (`firebase deploy --only firestore:rules`); push iş akışı yalnızca functions gönderiyor.
 
 `claimCupPathChest` (kupa yolu sandık enderliği) kullanıcı tarafından deploy edildi; bunu
 02.10.2026'da kullanıcı bildirdi, deploy zamanı Firebase konsolundan ayrıca **doğrulanmadı**.

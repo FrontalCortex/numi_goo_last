@@ -157,7 +157,6 @@ class BlindingLessonFragment : Fragment() {
     
     // Guide UI Variables
     private lateinit var panelContent: View
-    private lateinit var ivGuideImage: ImageView
     private lateinit var tvGuideText: TextView
     private lateinit var stepDotsContainer: LinearLayout
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null
@@ -393,7 +392,6 @@ class BlindingLessonFragment : Fragment() {
 
     private fun initializeGuideSystem() {
         panelContent = binding.guidePanelInclude.panelContent
-        ivGuideImage = binding.guidePanelInclude.ivGuideImage
         tvGuideText = binding.guidePanelInclude.tvGuideText
         stepDotsContainer = binding.guidePanelInclude.stepDotsContainer
 
@@ -2958,7 +2956,7 @@ class BlindingLessonFragment : Fragment() {
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        binding.guidePanelInclude.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -3000,7 +2998,7 @@ class BlindingLessonFragment : Fragment() {
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        binding.guidePanelInclude.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle

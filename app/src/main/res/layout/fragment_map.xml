@@ -6,69 +6,21 @@
     android:layout_height="match_parent"
     android:background="@color/background_color">
 
-    <LinearLayout
-        android:id="@+id/StickyLinear"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        android:paddingHorizontal="@dimen/map_sticky_padding_horizontal"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:elevation="1dp"
-        android:clickable="true"
-        android:focusable="true">
-        <LinearLayout
-            android:id="@+id/stickyHeader"
-            android:layout_height="wrap_content"
-            android:layout_width="match_parent"
-            android:orientation="vertical"
-            android:background="@drawable/corner_background"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-            <!-- KISIM/ÜNİTE BİLGİSİ İÇİN YENİ TEXTVIEW -->
-            <TextView
-                android:id="@+id/stickySectionUnit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="10dp"
-                android:paddingLeft="5dp"
-                android:text="1. KISIM, 2. ÜNİTE"
-                android:textColor="#C7C5C5"
-                android:textStyle="bold"
-                android:textSize="@dimen/map_sticky_unit_text_size"
-                android:gravity="center"
-                android:visibility="visible" />
+    <!-- Sabit bölüm başlığı (StickyLinear) kaldırıldı: listedeki bölüm başlıkları yetiyor. -->
 
-            <TextView
-                android:id="@+id/stickyHeaderTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="#fff"
-                android:textSize="@dimen/map_sticky_title_text_size"
-                android:paddingBottom="@dimen/map_sticky_title_padding_bottom"
-                android:paddingLeft="@dimen/map_sticky_text_horizontal_inset"
-                android:visibility="visible"
-                android:gravity="center"
-                android:text="5'lik toplama"
-                android:textStyle="bold"/>
-        </LinearLayout>
-
-    </LinearLayout>
-
+    <!-- Soru düğmesi sağ altta: ortada kartların sağ ucunu (ok, "0/3") örtüyordu. -->
     <ImageView
         android:id="@+id/askQuestionButton"
         android:layout_width="@dimen/map_fab_size"
         android:layout_height="@dimen/map_fab_size"
-        android:layout_marginEnd="6dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
         android:textAllCaps="false"
         android:padding="8dp"
         android:elevation="1dp"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         android:src="@drawable/teacher_ask_ic"/>
 
@@ -79,7 +31,7 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:paddingTop="@dimen/map_sticky_recycler_padding_top"
-        android:paddingBottom="16dp"
+        android:paddingBottom="@dimen/map_list_padding_bottom"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

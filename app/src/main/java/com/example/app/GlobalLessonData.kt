@@ -826,7 +826,7 @@ object GlobalLessonData {
                     type = LessonItem.TYPE_LESSON,
                     title = "3-4-5 Basamaklı Sayılar",
                     offset = 30,
-                    isCompleted = true,
+                    isCompleted = false,
                     stepCount = 2,
                     currentStep = 1,
                     finishStepNumber = 1004,

@@ -18,6 +18,8 @@
     <color name="lesson_locked">#505D66</color>
     <color name="background_color">#141F23</color>
     <color name="bright_background_color">#203137</color>
+    <!-- Alt barda seçili sekme kutusunun çerçevesi -->
+    <color name="bottom_nav_selected_stroke">#49C0F8</color>
     <color name="circleBackground_color">#383535</color>
     <color name="badge_piece_row_divider">#40A7B4C3</color>
     <color name="circleForeground_color">#8A7E18</color>
@@ -52,6 +54,19 @@
     <color name="lesson_ring_inactive_dark">#465764</color>
     <color name="lesson_center_gold">#F4C542</color>
     <color name="lesson_ring_gold">#FFD54F</color>
+    <!-- Haritadaki ders kartı (item_lesson_card) -->
+    <color name="lesson_card_open_track">#47FFFFFF</color>
+    <color name="lesson_card_locked_text">#C5CDD3</color>
+    <color name="lesson_card_locked_track">#3E4A52</color>
+    <color name="lesson_card_locked_fill">#8A98A2</color>
+    <color name="lesson_card_done_text">#4A3000</color>
+    <color name="lesson_card_done_fill">#8A5A00</color>
+    <color name="lesson_card_done_track">#E0B23A</color>
+    <!-- Haritadaki ders paneli (lesson_popover) -->
+    <color name="lesson_panel_open_accent">#8FD3F7</color>
+    <color name="lesson_panel_track">#2B3B44</color>
+    <color name="lesson_panel_record_bg">#2A2416</color>
+    <color name="lesson_panel_record_text">#FFD9A0</color>
 
 
 

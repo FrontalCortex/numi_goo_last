@@ -20,21 +20,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 class LessonResultFalse : Fragment() {
     private var _binding: FragmentLessonResultFalseBinding? = null
     private val binding get() = _binding!!
-    private val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json"
-    )
-    private var currentAnimIndex = 0
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
@@ -179,7 +164,7 @@ class LessonResultFalse : Fragment() {
         }
 
         // Animasyonları başlat
-        showRandomAnimation()
+        playEndMascot()
 
 
     }
@@ -203,20 +188,15 @@ class LessonResultFalse : Fragment() {
         } else {
             binding.resultTitleComment.text = "Başarı oranı %80'den düşük!"
         }
-
-        // Başarı durumuna göre farklı animasyon gösterebilirsiniz
-        /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı
-            binding.lottieView.setAnimation("success.json")
-        } else {
-            binding.lottieView.setAnimation("try_again.json")
-        }
-        binding.lottieView.playAnimation()*/
     }
 
-    private fun showRandomAnimation() {
-        val randomAnim = animations.random()
-        binding.lottieView.setAnimation(randomAnim)
-        binding.lottieView.playAnimation()
+    /**
+     * Ders sonu Sobi'si: başarısız derste hep üzgün → kararlı ([LessonEndMascot]).
+     * Ekran sağdan kayarak girerken Sobi bekliyor; giriş bitince sahne başlıyor.
+     */
+    private fun playEndMascot() {
+        val emote = LessonEndMascot.FAILURE
+        binding.mascotView.postDelayed({ _binding?.mascotView?.play(emote) }, LessonEndMascot.ENTER_DELAY_MS)
     }
 
 

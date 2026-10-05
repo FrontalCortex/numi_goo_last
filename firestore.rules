@@ -107,7 +107,11 @@ service cloud.firestore {
         (isSelf(userId)
           && !changed().hasAny(serverOnlyFields())
           && !changed().hasAny(['userId', 'uid', 'email', 'createdAt', 'role'])
-          && birthYearSetOnce())
+          && birthYearSetOnce()
+          // Avatar başkalarının ekranında çiziliyor (publicProfiles); kısa bir metin olmalı.
+          && (!changed().hasAny(['avatarConfig'])
+              || (request.resource.data.avatarConfig is string
+                  && request.resource.data.avatarConfig.size() < 400)))
         // Onaylı öğretmen: yalnızca kısıtlama/yasaklama alanları.
         || (isTeacher() && changed().hasOnly([
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',

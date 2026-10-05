@@ -23,16 +23,12 @@
         android:clipChildren="false"
         android:clipToPadding="false">
 
-    <!-- Karakter ve animasyonlar için bir ImageView -->
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
+    <!-- Sobi: başarı sahnesi (LessonEndMascot torbasından; dersle aynı torba) -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/mascotView"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:layout_gravity="center"
-        tools:visibility="gone"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_fileName="animation_one.json" />
+        android:layout_gravity="center" />
 
     <!-- Başlık -->
     <TextView

@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/map"
-        android:icon="@drawable/home_ic"
+        android:icon="@drawable/home_ic1"
         app:showAsAction="always"
         >
 
@@ -17,26 +17,26 @@
     </item>
     <item
         android:id="@+id/tasks"
-        android:icon="@drawable/tasks_ic"
+        android:icon="@drawable/missions_ic3"
         app:showAsAction="always">
 
     </item>
     <item
         android:id="@+id/shop"
-        android:icon="@drawable/shop_ic"
+        android:icon="@drawable/shop_ic1"
         app:showAsAction="always">
 
     </item>
     <item
         android:id="@+id/notification"
-        android:icon="@drawable/chat_ic"
+        android:icon="@drawable/chat_credit_ic2"
         app:showAsAction="always">
 
     </item>
 
     <item
         android:id="@+id/explore"
-        android:icon="@drawable/explore_ic"
+        android:icon="@drawable/explore_ic1"
         app:showAsAction="always">
 
     </item>

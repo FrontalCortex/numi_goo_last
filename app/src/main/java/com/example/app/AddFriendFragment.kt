@@ -217,12 +217,12 @@ class AddFriendFragment : Fragment() {
                 val name = doc.getString("name") ?: return@mapNotNull null
                 val userId = doc.getString("userId") ?: return@mapNotNull null
                 if (userId == currentUserId) return@mapNotNull null
-                val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
+                val avatarConfig = doc.getString(AvatarStore.FIRESTORE_FIELD)
                 FriendSearchResult(
                     firebaseUid = doc.id,
                     name = name,
                     userId = userId,
-                    selectedAvatar = selectedAvatar
+                    avatarConfig = avatarConfig
                 )
             }
         }

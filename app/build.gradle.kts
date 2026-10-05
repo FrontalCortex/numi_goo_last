@@ -156,6 +156,10 @@ dependencies {
 
     implementation ("com.github.bumptech.glide:glide:4.16.0")
 
+    // Avatar (Personas) parçalarını SVG olarak çizmek için; VectorDrawable maske ve
+    // gradyanları desteklemiyor. Bkz. AvatarArt.
+    implementation("com.caverock:androidsvg-aar:1.4")
+
     // Firebase dependencies
     // Email link (passwordless) migration away from Dynamic Links requires newer Auth SDKs.
     // Use BoM 32.7.0 to stay compatible with Kotlin 1.9.x in this project.

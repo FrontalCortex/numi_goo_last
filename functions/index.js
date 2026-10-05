@@ -910,7 +910,9 @@ const PUBLIC_PROFILE_FIELDS = [
   'uid',
   'name',
   'userId',
-  'selectedAvatar',
+  // Avatar: seçilen parça adları ve renkler (AvatarConfig.encode). Eski 12'li avatarın
+  // 'selectedAvatar' alanı artık okunmuyor, aynalanmıyor.
+  'avatarConfig',
   'plan',
   'createdAt',
   'totalTimeSpent',
@@ -1370,7 +1372,7 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
  * kimlik sağlayıcısının barındırdığı adresler kabul ediliyor.
  *
  * Uygulama profil fotoğrafı yüklemeye başlarsa (şu an avatarlar yerel çizimler,
- * bkz. publicProfiles.selectedAvatar) buraya 'firebasestorage.googleapis.com' eklenmeli.
+ * bkz. publicProfiles.avatarConfig) buraya 'firebasestorage.googleapis.com' eklenmeli.
  */
 const LEADERBOARD_AVATAR_HOSTS = new Set([
   'lh3.googleusercontent.com',

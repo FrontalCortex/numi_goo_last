@@ -24,7 +24,7 @@ class GuidePanelView @JvmOverloads constructor(
     private lateinit var guidePanelRoot: View
     private lateinit var panelContent: ConstraintLayout
     private lateinit var stepDotsContainer: LinearLayout
-    private lateinit var ivGuideImage: ImageView
+    private lateinit var guideMascot: BunnyMascotView
     private lateinit var tvGuideText: TextView
     private lateinit var btnBack: ImageButton
     private lateinit var btnForward: ImageButton
@@ -50,7 +50,7 @@ class GuidePanelView @JvmOverloads constructor(
         guidePanelRoot = view.findViewById(R.id.guidePanelRoot)
         panelContent = view.findViewById(R.id.panelContent)
         stepDotsContainer = view.findViewById(R.id.stepDotsContainer)
-        ivGuideImage = view.findViewById(R.id.ivGuideImage)
+        guideMascot = view.findViewById(R.id.guideMascot)
         tvGuideText = view.findViewById(R.id.tvGuideText)
         btnBack = view.findViewById(R.id.btnBack)
         btnForward = view.findViewById(R.id.btnForward)
@@ -144,7 +144,7 @@ class GuidePanelView @JvmOverloads constructor(
 
         val currentData = guideDataList[currentIndex]
 
-        ivGuideImage.setImageResource(currentData.imageResId)
+        guideMascot.play(currentData.emote)
         tvGuideText.text = currentData.text
         tvGuideText.visibility = View.VISIBLE
 

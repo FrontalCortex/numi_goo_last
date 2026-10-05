@@ -20,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,6 +51,12 @@ class ProfileFragment : Fragment() {
 
     companion object {
         private const val ARG_TARGET_UID = "target_uid"
+
+        /** imgProfilePhoto'nun boyutu (fragment_profile.xml); avatar bu boyutta bitmap'e çiziliyor. */
+        private const val AVATAR_SIZE_DP = 240
+
+        /** Açık avatar zemininde ad ve ayarlar ikonu bu renkte. */
+        private const val HEADER_DARK_TEXT = 0xFF3C3C3C.toInt()
 
         /** Kendi profiliniz için: ProfileFragment() */
         /** Başkasının profili için: ProfileFragment.newInstance(uid) */
@@ -169,22 +174,19 @@ class ProfileFragment : Fragment() {
 
         setupClickListeners()
 
-        // AvatarPickerFragment sadece kendi profilimizde aktif
-        if (!isOtherUser) {
-            setFragmentResultListener(AvatarPickerFragment.REQUEST_KEY) { _, bundle ->
-                val avatarIndex = bundle.getInt(AvatarPickerFragment.KEY_AVATAR_INDEX, 0)
-                if (avatarIndex in 1..12) {
-                    updateAvatarImage(avatarIndex)
-                }
-            }
+        // Sabit üst panelin altındaki çizgi yalnızca içerik aşağı kaydırılmışken görünür; en üstte
+        // panel avatar alanıyla tek parça duruyor.
+        binding.profileScroll.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            binding.profileTopDivider.alpha = if (scrollY > 0) 1f else 0f
         }
-        
+
         // Verileri yükle
         loadUserData()
     }
     
     override fun onResume() {
         super.onResume()
+        if (!isOtherUser) (activity as? MainActivity)?.setStatusBarTint(headerColor)
         resumeCupAnimations()
         if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
@@ -212,15 +214,47 @@ class ProfileFragment : Fragment() {
         binding.tvLongestStreak.visibility = View.VISIBLE
     }
 
-    /** Verilen avatar indeksine göre (1-12) imgProfilePhoto'yu günceller. */
-    private fun updateAvatarImage(index: Int) {
+    /**
+     * Profildeki büyük avatarı çizer. [config] null ise (başkasının avatarı yoksa) non_user.
+     * Kendi profilimizde ağı beklemeden yerel kopya gösteriliyor; bkz. [AvatarStore].
+     *
+     * Avatar dairesiz çiziliyor; arka plan rengi bütün avatar alanını, kendi profilimizde sabit üst
+     * paneli ve telefonun durum çubuğunu kaplıyor (Duolingo gibi).
+     */
+    private fun showAvatar(config: AvatarConfig?) {
         if (!isAdded || view == null) return
-        val resId = resources.getIdentifier("avatar_ic$index", "drawable", requireContext().packageName)
-        if (resId != 0) {
-            binding.imgProfilePhoto.setImageResource(resId)
-        } else {
+        if (config == null) {
             binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+            applyHeaderColor(null)
+            return
         }
+        val sizePx = (AVATAR_SIZE_DP * resources.displayMetrics.density).toInt()
+        binding.imgProfilePhoto.setImageBitmap(
+            AvatarView.toBitmap(requireContext(), config, sizePx, withBackground = false),
+        )
+        val bg = config.values["backgroundColor"]
+            ?.let { runCatching { Color.parseColor("#$it") }.getOrNull() }
+        applyHeaderColor(bg)
+    }
+
+    /** Avatar alanının ve (kendi profilimizde) üst panel ile durum çubuğunun rengi. */
+    private var headerColor: Int? = null
+
+    private fun applyHeaderColor(color: Int?) {
+        headerColor = color
+        val bg = color ?: ContextCompat.getColor(requireContext(), R.color.background_color)
+        binding.avatarHeader.setBackgroundColor(bg)
+        if (isOtherUser) return
+        binding.profileTopPanel.setBackgroundColor(bg)
+        // Açık zeminde (pastel arka planların çoğu) yazı ve ikon koyu, koyu zeminde beyaz.
+        val light = androidx.core.graphics.ColorUtils.calculateLuminance(bg) > 0.5
+        val fg = if (light) HEADER_DARK_TEXT else Color.WHITE
+        binding.tvTopLeftName.setTextColor(fg)
+        binding.btnAccountSettings.setColorFilter(fg)
+        binding.profileTopDivider.setBackgroundColor(
+            androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
+        )
+        if (isResumed) (activity as? MainActivity)?.setStatusBarTint(color)
     }
     
     private fun reloadUserData() {
@@ -254,8 +288,8 @@ class ProfileFragment : Fragment() {
             return
         }
 
-        // Varsayılan olarak non_user göster
-        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+        // Kendi profilimizde yerel avatar hemen; başkasınınki Firestore'dan gelene kadar non_user.
+        showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
 
         // Başkasının profilinde `users` dokümanı okunamaz (yalnızca sahibi ve onaylı
         // öğretmenler okuyabilir — bkz. firestore.rules). Görüntülenecek alanlar
@@ -273,12 +307,15 @@ class ProfileFragment : Fragment() {
                     loadAbacusPreview(uid)
                     if (!isOtherUser) loadCupPathScores() else loadCupPathScoresForUser(uid)
 
-                    // Avatar seçimini Firestore'dan oku
-                    val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
-                    if (selectedAvatar in 1..12) {
-                        updateAvatarImage(selectedAvatar)
+                    val remoteAvatar = doc.getString(AvatarStore.FIRESTORE_FIELD)
+                    if (isOtherUser) {
+                        showAvatar(AvatarConfig.decode(remoteAvatar))
                     } else {
-                        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+                        // Yeni cihaz / yeniden kurulum: Firestore'daki avatar yerele alınır.
+                        if (AvatarStore.applyRemote(requireContext(), remoteAvatar)) {
+                            (activity as? MainActivity)?.refreshProfileNavIcon()
+                        }
+                        showAvatar(AvatarStore.loadActive(requireContext()))
                     }
 
                     // Kullanıcı Adı (Sol üstte büyük)
@@ -354,7 +391,7 @@ class ProfileFragment : Fragment() {
                 } else {
                     BadgeProgressRepository.update(UserBadgeProgress())
                     bindRandomProfileBadges()
-                    binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+                    showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
                     binding.tvLongestStreak.text = "En uzun seri: 0 gün"
                     hideLoadingState()
                     isDataLoaded = true
@@ -1218,7 +1255,9 @@ class ProfileFragment : Fragment() {
             // --- Başkasının profili ---
             // Ayarlar gizli
             binding.btnAccountSettings.visibility = View.GONE
-            // tvTopLeftName'in solundaki alanda settings ikonu olmayacak, üstüne yazma ihtiyacı yok
+            // Ad ve ayarların sabit paneli yalnızca kendi profilimizde; burada geri düğmeli
+            // otherUserProfileTopBar onun yerini alıyor.
+            binding.profileTopPanel.visibility = View.GONE
 
             // Üst panel: geri butonu + bakılan kullanıcının adı (fragment_followers_following'teki toolbar ile aynı görünüm)
             binding.otherUserProfileTopBar.visibility = View.VISIBLE
@@ -1226,8 +1265,8 @@ class ProfileFragment : Fragment() {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
 
-            // Avatar tıklanamaz
-            binding.imgProfilePhoto.isClickable = false
+            // Avatar tıklanamaz (dinleyici yalnızca kendi profilimizde kuruluyor)
+            binding.avatarHeader.isClickable = false
 
             // Arkadaş Ekle butonu → TAKİP ET. Metin ve tıklama davranışı tek yerden kuruluyor
             // (bkz. applyFollowButtonState); asıl durum loadUserData -> updateFollowButtonState
@@ -1276,9 +1315,18 @@ class ProfileFragment : Fragment() {
                     .commit()
             }
 
-            // Avatar tıklandığında AvatarPickerFragment'i aç
-            binding.imgProfilePhoto.setOnClickListener {
-                AvatarPickerFragment().show(requireActivity().supportFragmentManager, AvatarPickerFragment.TAG)
+            // Avatara ya da etrafındaki renkli alana dokununca avatar düzenleme ekranı.
+            binding.avatarHeader.setOnClickListener {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right,
+                    )
+                    .replace(R.id.fragmentContainerID, AvatarCustomFragment())
+                    .addToBackStack(null)
+                    .commit()
             }
         }
 
@@ -1722,6 +1770,18 @@ class ProfileFragment : Fragment() {
             .replace(R.id.fragmentContainerID, CupHistoryFragment.newInstance(uid, field, title, animFile))
             .addToBackStack(null)
             .commit()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Başka bir ekrana geçerken durum çubuğu uygulamanın kendi rengine dönsün.
+        if (!isOtherUser) (activity as? MainActivity)?.setStatusBarTint(null)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (isOtherUser) return
+        (activity as? MainActivity)?.setStatusBarTint(if (hidden) null else headerColor)
     }
 
     override fun onDestroyView() {

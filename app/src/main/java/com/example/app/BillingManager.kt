@@ -54,6 +54,13 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     /** Kullanıcıya gösterilecek hata mesajı. İptal edilen satın almalarda çağrılmaz. */
     var onError: ((message: String) -> Unit)? = null
 
+    /**
+     * Satın alma akışı bitti (sonuç geldi ya da akış hiç açılamadı). MainActivity ders sonrası
+     * kuyruğunu dürtmek için kuruyor; ekranlara göre değişen geri çağrılardan değil, bir kez
+     * kuruluyor ([installDefaultBillingCallbacks] buna dokunmuyor).
+     */
+    var onPurchaseFlowEnded: (() -> Unit)? = null
+
     private val billingClient = BillingClient.newBuilder(appContext)
         .setListener(this)
         .enablePendingPurchases(
@@ -267,9 +274,42 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
 
     // ── Satın alma başlatma ─────────────────────────────────────────────────
 
+    /**
+     * Satın alma akışının başladığı an (monoton saat); 0 = akış yok.
+     *
+     * Ders sonrası ekran kuyruğu (rozet, yeni seri…) bunu soruyor ([isPurchaseFlowActive]).
+     * Plan ekranı satın almayı başlatıp HEMEN kapanıyor, Play'in ödeme penceresi ise
+     * asenkron geliyor (önce mevcut abonelik sorgusu). Aradaki boşlukta uygulama hâlâ önde
+     * olduğu için kuyruk "engel yok" deyip rozeti açıyor, ödeme penceresi onun üstüne
+     * geliyordu; kullanıcı dönünce kutlamayı yarısından görüyordu.
+     */
+    @Volatile private var purchaseFlowStartedAtMs = 0L
+
+    /**
+     * Satın alma akışı sürüyor mu: başlatıldı, sonucu ([onPurchasesUpdated]) henüz gelmedi.
+     *
+     * Süre sınırı yalnızca güvenlik ağı: sonuç bir sebeple hiç gelmezse kuyruk sonsuza kadar
+     * kilitli kalmasın. Ödeme penceresi açıkken uygulama zaten arka planda (kuyruk o sırada
+     * kendiliğinden bekliyor), yani sınır pratikte yalnızca pencere açılana kadarki boşluğu
+     * ve dönüşteki kısa anı kapsıyor.
+     */
+    fun isPurchaseFlowActive(): Boolean {
+        val startedAt = purchaseFlowStartedAtMs
+        return startedAt != 0L &&
+            android.os.SystemClock.elapsedRealtime() - startedAt < PURCHASE_FLOW_MAX_MS
+    }
+
+    private fun endPurchaseFlow() {
+        if (purchaseFlowStartedAtMs == 0L) return
+        purchaseFlowStartedAtMs = 0L
+        main.post { onPurchaseFlowEnded?.invoke() }
+    }
+
     fun launchPurchase(activity: Activity, productId: String) {
+        purchaseFlowStartedAtMs = android.os.SystemClock.elapsedRealtime()
         val details = productDetails[productId]
         if (details == null) {
+            endPurchaseFlow()
             onError?.invoke("Ürün şu anda alınamıyor. Daha sonra tekrar deneyin.")
             // Ürün bilgisi eksikse bağlantı kopmuş olabilir; sessizce tazele.
             start()
@@ -340,6 +380,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         if (details.productType == BillingClient.ProductType.SUBS) {
             val offerToken = bestOffer(details)?.offerToken
             if (offerToken == null) {
+                endPurchaseFlow()
                 onError?.invoke("Abonelik teklifi bulunamadı.")
                 return
             }
@@ -381,6 +422,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
 
         val result = billingClient.launchBillingFlow(activity, flowBuilder.build())
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            endPurchaseFlow()
             Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
             onError?.invoke("Satın alma başlatılamadı.")
             return
@@ -398,6 +440,9 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     // ── Satın alma sonuçları ────────────────────────────────────────────────
 
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
+        // Akış bitti (satın aldı, vazgeçti ya da hata): bekleyen ders sonrası ekranları
+        // artık gösterilebilir; kuyruk dönüşteki onResume'da ya da bekçisinin turunda soruyor.
+        endPurchaseFlow()
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
                 purchases?.forEach { purchase ->
@@ -576,5 +621,8 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         private const val FN_SUBSCRIPTION = "redeemGooglePlaySubscription"
         private const val MAX_RECONNECT_ATTEMPTS = 5
         private const val RECONNECT_BASE_DELAY_MS = 1000L
+
+        /** [isPurchaseFlowActive]'in güvenlik sınırı. */
+        private const val PURCHASE_FLOW_MAX_MS = 120_000L
     }
 }

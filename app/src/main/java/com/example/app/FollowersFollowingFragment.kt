@@ -173,10 +173,10 @@ class FollowersFollowingFragment : Fragment() {
                         if (!isAdded) return@addOnSuccessListener
                         binding.progressBar.visibility = View.GONE
 
-                        // Build a map uid → selectedAvatar
+                        // uid → avatarConfig (publicProfiles)
                         val avatarMap = userDocs.associateBy(
                             keySelector = { it.id },
-                            valueTransform = { it.getLong("selectedAvatar")?.toInt() ?: 0 }
+                            valueTransform = { it.getString(AvatarStore.FIRESTORE_FIELD) }
                         )
 
                         val users = snap.documents.mapNotNull { doc ->
@@ -189,7 +189,7 @@ class FollowersFollowingFragment : Fragment() {
                                 firebaseUid = uid,
                                 name = name,
                                 userId = userId,
-                                selectedAvatar = avatarMap[uid] ?: 0,
+                                avatarConfig = avatarMap[uid],
                                 showFollowButton = showFollowButton,
                                 // X yalnızca "Takip Edilen" sekmesinde: oradaki herkesi zaten
                                 // takip ediyorum, yani X'in anlamı tek. Bkz. [FollowUser].

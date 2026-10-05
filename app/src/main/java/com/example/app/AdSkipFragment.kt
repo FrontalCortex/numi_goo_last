@@ -71,15 +71,21 @@ class AdSkipFragment : DialogFragment() {
         // Maskot reklamı değnekle yok edip havalı poz veriyor; panel açık kaldıkça döngüde.
         binding.centerGraphic.play(BunnyMascotView.Emote.AD_MAGIC)
 
-        playSounds()
+        val billing = (activity as? MainActivity)?.billingManager
+        val trialDays = billing?.freeTrialDays(BillingCatalog.SUB_PRO)
+        bindOffer(trialDays)
+
+        // Sesler (konfeti patlaması + müzik + alkış) yalnızca deneme teklifinde. Denemesini
+        // kullanmış kullanıcıya panel sessiz açılıyor; konfeti görseli yine var.
+        if (trialDays != null) playSounds()
 
         viewNoBucket = AdSkipStats.viewBucket(AdSkipStats.nextViewNo(requireContext()))
         shownAtMs = SystemClock.elapsedRealtime()
-        AnalyticsLogger.logAdSkipShown(viewNoBucket)
+        AnalyticsLogger.logAdSkipShown(viewNoBucket, trialOffer = trialDays != null)
 
         // Bu ekran satın alma başlatmıyor (huniyi ProDiffirent → Plan diye sürdürüyor) ama
         // düğmede deneme vaadi var; uygun olmayan kullanıcıya o vaadi göstermemek gerekiyor.
-        SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.btnTryFreeText)
+        SubscriptionCta.apply(billing, binding.btnTryFreeText)
 
         binding.btnTryFree.setOnClickListener {
             logClosed(AnalyticsLogger.AD_SKIP_TRY_FREE)
@@ -132,6 +138,40 @@ class AdSkipFragment : DialogFragment() {
         )
     }
 
+    /**
+     * Panelin iki sürümü, kullanıcının ücretsiz deneme hakkına göre.
+     *
+     * Deneme hakkını Play tutuyor (Google hesabı başına bir kez); [BillingManager.freeTrialDays]
+     * null ise kullanıcı denemesini kullanmış (ya da teklif tanımlı değil). Düğme metni
+     * ([SubscriptionCta]) de aynı bilgiye bakıyor, başlık onunla çelişmesin diye.
+     *
+     *  - Hakkı var: "N günlük ücretsiz PRO / denemesiyle reklamları atla!" ve "deneme bitmeden
+     *    haber vereceğiz" satırı (gün sayısı Play'deki tekliften).
+     *  - Hakkı yok: denemeden söz edilmiyor — "PRO ile reklamsız, / kesintisiz öğren!" ve
+     *    zil yerine onay işaretiyle "istediğin zaman iptal edebilirsin". Deneme vaadi, onu
+     *    kullanmış birine yalan olurdu.
+     */
+    private fun bindOffer(trialDays: Int?) {
+        if (trialDays != null) {
+            binding.titleText1.text = "$trialDays günlük ücretsiz PRO"
+            binding.titleText2.text = "denemesiyle reklamları atla!"
+            binding.reminderText.text = "Deneme süren sona ermeden önce bildirim alacaksın."
+            return
+        }
+        binding.titleText1.text = "PRO ile reklamsız,"
+        binding.titleText2.text = "kesintisiz öğren!"
+        binding.bellIcon.setImageResource(R.drawable.correct_ic)
+        // Zil gri boyanıyor (layout'ta tint); yeşil onay işareti boyansa gri kareye dönerdi.
+        binding.bellIcon.imageTintList = null
+        binding.reminderText.text = "Aboneliğini istediğin zaman iptal edebilirsin."
+    }
+
+    /**
+     * Konfeti patlaması, enerjik müzik ve alkış — yalnızca deneme teklifinde çağrılıyor:
+     * hediye gibi sunulan ücretsiz denemeye kutlama yakışıyor, ücretli aboneliği aynı coşkuyla
+     * satmak ısrarcı duruyor. Patlama sesleri de birlikte gidiyor: müziksiz, tek başına çalan
+     * konfeti sesi amatör duruyordu (kullanıcı geri bildirimi).
+     */
     private fun playSounds() {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return

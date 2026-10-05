@@ -1207,7 +1207,7 @@ class MapFragment : Fragment() {
                 // MapFragment için: recordLayout animasyonu
                 val activity = requireActivity()
                 val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
-                val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
+                val bottomSheetView = coordinatorLayout?.findViewWithTag<View>(LessonPanel.TAG)
                 val recordLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.recordLayout)
 
                 recordLayout?.let { recordLayoutView ->
@@ -1226,16 +1226,8 @@ class MapFragment : Fragment() {
                         recordLayoutView.scaleY = 1f
 
 
-                        // BottomSheet'i kapat
-                        val activity = requireActivity()
-                        val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
-                        val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
-                        val bottomSheetLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.bottomSheetLayout)
-                        bottomSheetLayout?.let { layout ->
-                            val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(layout)
-                            behavior.isHideable = true
-                            behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
-                        }
+                        // Ders panelini kapat
+                        LessonPanel.dismiss(requireActivity())
 
                         enableMainActivityViews()
                         enableMapFragmentViews()
@@ -1281,11 +1273,11 @@ class MapFragment : Fragment() {
         // Guide panel verilerini oluştur
         val guideData = listOf(
             GuidePanelData(
-                imageResId = R.drawable.teacher_emotes_gpt4,
+                emote = BunnyMascotView.Emote.TEACH_TALK,
                 text = "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."
             ),
             GuidePanelData(
-                imageResId = R.drawable.teacher_emotes_gpt3,
+                emote = BunnyMascotView.Emote.TEACH_POINT,
                 text = "Ünite maratonu panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
             )
             // Daha fazla resim/text eklenebilir
@@ -1675,48 +1667,13 @@ class MapFragment : Fragment() {
         // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            val stickyLinear = binding.root.findViewById<LinearLayout>(R.id.StickyLinear)
-            val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
-            val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
-            val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-            
-            val maxOffsetPx = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
-            val cardPx = resources.getDimensionPixelSize(R.dimen.map_lesson_card_size)
-            val itemPadPx = resources.getDimensionPixelSize(R.dimen.map_lesson_item_padding)
-            val safetyPx = resources.getDimensionPixelSize(R.dimen.map_lesson_offset_edge_margin)
-
-            addItemDecoration(
-                DynamicOffsetDecoration(
-                    maxOffsetPx = maxOffsetPx,
-                    lessonCardSizePx = cardPx,
-                    lessonItemHorizontalPaddingTotalPx = itemPadPx * 2,
-                    edgeSafetyMarginPx = safetyPx,
-                )
-            )
+            // Dersler alt alta kartlar (item_lesson_card); eski sağa-sola kaydırmalı yol
+            // (DynamicOffsetDecoration, LessonItem.offset) kaldırıldı. offset verisi duruyor, kullanılmıyor.
 
             // Adapter'ı bağla
             adapter = lessonsAdapter
 
-            // Scroll listener'ı ekle
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    android.util.Log.d("MapFragment", "Scroll detected: dx=$dx, dy=$dy")
-                    updateStickyHeader(recyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
-                }
-            })
-
-            // Recycler sınırı artık tüm fragment: sticky yüksekliği kadar üst inset ver.
-            // Böylece item'ler sticky alana kayarken kesilmez, sticky'nin altında akıyormuş gibi görünür.
-            val extraTopGap = resources.getDimensionPixelSize(R.dimen.map_sticky_recycler_padding_top)
-            val applyTopInset = {
-                val stickyHeight = stickyLinear?.height ?: 0
-                setPadding(paddingLeft, stickyHeight + extraTopGap, paddingRight, paddingBottom)
-            }
-            stickyLinear?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                applyTopInset()
-            }
-            post { applyTopInset() }
+            // Sabit bölüm başlığı kaldırıldı; listenin üst boşluğu düzenden (paddingTop).
 
             // Genişlik ilk kez >0 olduğunda decoration’ları yeniden ölç (post bazen erken kalabiliyor)
             addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
@@ -1732,18 +1689,11 @@ class MapFragment : Fragment() {
                 }
             })
 
-            // İlk yüklemede sticky header + decoration yenileme
+            // İlk açılışta (restore yoksa) liste en baştan başlasın.
             post {
-                android.util.Log.d("MapFragment", "Initial update of sticky header")
-                updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
                 invalidateItemDecorations()
-
-                // İlk açılışta (restore yoksa) ilk item'ı sticky'nin altında başlat.
                 if (GlobalValues.scrollPosition <= 0) {
-                    val stickyHeight = stickyLinear?.height ?: 0
-                    val initialOffset = stickyHeight + extraTopGap
-                    (layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(0, initialOffset)
+                    (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(0, 0)
                 }
             }
         }
@@ -1930,60 +1880,6 @@ class MapFragment : Fragment() {
         // ederken kilidi açıyor (bkz. MainActivity.schedulePostLessonQueueWatchdog).
     }
 
-    /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
-    private fun safeColorRes(colorResId: Int): Int {
-        val ctx = requireContext()
-        return try {
-            if (ctx.resources.getResourceTypeName(colorResId) == "color") {
-                ContextCompat.getColor(ctx, colorResId)
-            } else {
-                ContextCompat.getColor(ctx, android.R.color.darker_gray)
-            }
-        } catch (_: Exception) {
-            ContextCompat.getColor(ctx, android.R.color.darker_gray)
-        }
-    }
-
-    private fun updateStickyHeader(
-        recyclerView: RecyclerView,
-        stickyHeader: LinearLayout,
-        stickySectionUnit: TextView,
-        stickyHeaderTitle: TextView
-    ) {
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val adapter = recyclerView.adapter as? LessonAdapter ?: return
-        val firstVisible = layoutManager.findFirstVisibleItemPosition()
-
-        android.util.Log.d("MapFragment", "Updating sticky header for position: $firstVisible")
-
-        var headerTitle: String? = null
-        var sectionUnit: String? = null
-        for (i in firstVisible downTo 0) {
-            val item = adapter.getItem(i)
-            if (item.type == LessonItem.TYPE_HEADER) {
-                headerTitle = item.title
-                sectionUnit = "${item.stepCount}. KISIM, ${item.currentStep}. ÜNİTE"
-
-                val colorRes = item.color
-                if (colorRes != null) {
-                    val color = safeColorRes(colorRes)
-                    android.util.Log.d("MapFragment", "Setting color for header: $headerTitle, colorRes: $colorRes")
-                    stickyHeader.backgroundTintList = ColorStateList.valueOf(color)
-                }
-                break
-            }
-        }
-        if (headerTitle != null) {
-            stickySectionUnit.text = sectionUnit
-            stickyHeaderTitle.text = headerTitle
-            stickyHeader.visibility = View.VISIBLE
-            android.util.Log.d("MapFragment", "Header visible: $headerTitle")
-        } else {
-            stickyHeader.visibility = View.GONE
-            android.util.Log.d("MapFragment", "No header found, hiding sticky header")
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         // ensureUnlockedForMapReturn sayacı zorla 0'a çektiyse bizim acquire'ımız da gitti;
@@ -1997,17 +1893,6 @@ class MapFragment : Fragment() {
         }
         if (::lessonsAdapter.isInitialized) {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
-        }
-        // Fragment yeniden görünür olduğunda sticky header'ı güncelle
-        binding.lessonsRecyclerView.post {
-            if (!isAdded) return@post
-            val activity = activity ?: return@post
-            val stickyHeader = activity.findViewById<LinearLayout>(R.id.stickyHeader)
-            val stickySectionUnit = activity.findViewById<TextView>(R.id.stickySectionUnit)
-            val stickyHeaderTitle = activity.findViewById<TextView>(R.id.stickyHeaderTitle)
-            if (stickyHeader != null && stickySectionUnit != null && stickyHeaderTitle != null) {
-                updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
-            }
         }
         view?.post {
             if (!isAdded) return@post

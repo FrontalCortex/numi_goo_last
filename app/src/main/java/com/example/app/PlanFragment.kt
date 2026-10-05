@@ -138,6 +138,16 @@ class PlanFragment : DialogFragment() {
         applyLivePrices()
     }
 
+    /**
+     * Ders sonrası kuyruğu bu ekran açıkken bekliyordu (MainActivity.subscriptionFlowBlockReason);
+     * kapanınca sıradaki ekran açılsın. Satın almaya basılarak kapandıysa ödeme akışı sürdüğü
+     * için kuyruk beklemeye devam ediyor; akış bitince BillingManager haber veriyor.
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("Plan.dismiss")
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

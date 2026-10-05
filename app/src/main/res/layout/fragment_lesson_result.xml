@@ -13,18 +13,18 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:paddingHorizontal="24dp"
-    android:paddingTop="80dp">
+    android:paddingTop="48dp">
 
-    <!-- Karakter ve animasyonlar için bir ImageView -->
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="center"
-        tools:visibility="gone"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_fileName="animation_one.json" />
+    <!--
+      Sobi: başarılı ders sahnesi (LessonEndMascot torbasından). Başlık, kutular ve düğme
+      ekranın altında toplanıyor; Sobi üstte kalan bütün yeri kaplıyor (çizim kendini kareye
+      sığdırıp ortalıyor).
+    -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/mascotView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <!-- Başlık -->
     <TextView
@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="32dp">
+        android:layout_marginTop="12dp">
 
         <!-- Toplam Puan -->
         <LinearLayout
@@ -109,10 +109,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
     <!-- Puanı Al Butonu -->
     <Button
         android:id="@+id/claimButton"
