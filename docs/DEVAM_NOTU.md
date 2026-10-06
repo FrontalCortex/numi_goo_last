@@ -23,6 +23,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Liderlik tablosunda uygulama avatarı (06.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Kayıt ekranı (`RecordFragment` + `RecordLeaderboardAdapter`) Google hesabının fotoğrafını
+(`entries.photoUrl`) değil `publicProfiles.avatarConfig`'i [AvatarView] ile çiziyor.
+`LessonLeaderboardRepository.listenLeaderboard` girişleri önce hemen yayıyor, eksik avatarları
+30'arlı `whereIn(documentId)` ile okuyup ikinci kez yayıyor; uid → avatar süreç boyunca
+önbellekte. Kendi satırımız yerel `AvatarStore`'dan. Avatarı olmayan → varsayılan PERSONAS.
+Sunucu (`submitLeaderboardScore`) artık `photoUrl` yazmıyor; rekor kırılan girişte alanı
+siliyor. Eski girişler için tek seferlik `functions/scripts/strip-leaderboard-photo-urls.js`
+(hizmet hesabı gerekiyor, önce `DRY_RUN=1`) — ÇALIŞTIRILMADI.
+
 ## Ders kilitleri üretime çekildi (06.10.2026 — derlendi, cihazda DENENMEDİ)
 
 `GlobalLessonData.createLessonItems` 1–6: `p1_i01` dışındaki bütün ders/sandık item'leri

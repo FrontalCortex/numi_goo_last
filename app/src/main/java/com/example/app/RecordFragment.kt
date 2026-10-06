@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
 import com.example.app.databinding.FragmentRecordBinding
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
@@ -113,6 +112,8 @@ class RecordFragment : Fragment() {
             partId = partId,
             lessonKey = lessonKey,
             season = season,
+            ownAvatarConfig = AvatarStore.loadActive(requireContext())
+                .takeIf { AvatarStore.hasSaved(requireContext()) }?.encode(),
             onUpdate = { entries ->
                 if (!isAdded) return@listenLeaderboard
                 bindLeaderboard(entries)
@@ -185,13 +186,11 @@ class RecordFragment : Fragment() {
         binding.firstPlaceSection.visibility = View.VISIBLE
         binding.firstPlaceName.text = first.displayName.ifBlank { getString(R.string.record_leaderboard_title) }
         binding.firstPlaceTime.text = first.recordLabel
-        val url = first.photoUrl
-        if (!url.isNullOrBlank()) {
-            Glide.with(binding.firstPlaceAvatar).load(url).fitCenter().into(binding.firstPlaceAvatar)
-        } else {
-            Glide.with(binding.firstPlaceAvatar).clear(binding.firstPlaceAvatar)
-            binding.firstPlaceAvatar.setImageResource(android.R.drawable.sym_def_app_icon)
-        }
+        binding.firstPlaceAvatar.setImageBitmap(
+            RecordLeaderboardAdapter.leaderboardAvatarBitmap(
+                requireContext(), first.avatarConfig, binding.firstPlaceAvatar.layoutParams.width,
+            )
+        )
 
         val rest = entries.drop(1)
         if (rest.isEmpty()) {

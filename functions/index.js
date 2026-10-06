@@ -1503,38 +1503,6 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
 });
 
 /**
- * Liderlik tablosunda gösterilebilecek avatar adresleri.
- *
- * Bu adres, tahtayı açan HER ÇOCUĞUN cihazında indiriliyor (RecordFragment /
- * RecordLeaderboardAdapter → Glide). Serbest bırakılsaydı, kendi sunucusunu adres olarak
- * yazan biri tabloyu gören her çocuğun IP adresini toplayabilirdi. Bu yüzden yalnızca
- * kimlik sağlayıcısının barındırdığı adresler kabul ediliyor.
- *
- * Uygulama profil fotoğrafı yüklemeye başlarsa (şu an avatarlar yerel çizimler,
- * bkz. publicProfiles.avatarConfig) buraya 'firebasestorage.googleapis.com' eklenmeli.
- */
-const LEADERBOARD_AVATAR_HOSTS = new Set([
-  'lh3.googleusercontent.com',
-  'lh4.googleusercontent.com',
-  'lh5.googleusercontent.com',
-  'lh6.googleusercontent.com',
-]);
-
-/** Beyaz listede olmayan ya da bozuk adres için boş döner; istemci harf rozetine düşer. */
-function safeLeaderboardAvatarUrl(raw) {
-  if (typeof raw !== 'string' || raw.length === 0 || raw.length > 511) return '';
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch (e) {
-    return '';
-  }
-  if (parsed.protocol !== 'https:') return '';
-  if (!LEADERBOARD_AVATAR_HOSTS.has(parsed.hostname)) return '';
-  return parsed.toString();
-}
-
-/**
  * Sunucu saatine göre sezon bilgisi.
  *
  * NEDEN VAR
@@ -1610,6 +1578,10 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   //
   // Ad, sunucunun yazdığı publicProfiles aynasından okunuyor (istemci yazımı kapalı,
   // bkz. mirrorPublicProfile). Ayna henüz oluşmamışsa kimlik jetonundaki ada düşülüyor.
+  //
+  // Fotoğraf hiç yazılmıyor. Eskiden kimlik jetonundaki Google hesap fotoğrafı (`photoUrl`)
+  // girişe konuyordu; giriş yapmış herkesin okuyabildiği bir yerde çocuğun gerçek fotoğrafı
+  // duruyordu. Tablo artık uygulama avatarını publicProfiles.avatarConfig'ten çiziyor.
   const publicSnap = await db.collection('publicProfiles').doc(uid).get();
   const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
   const authToken = context.auth.token || {};
@@ -1617,7 +1589,6 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   const nameFromToken = typeof authToken.name === 'string' ? authToken.name.trim() : '';
   const displayName =
     nameFromProfile.slice(0, 127) || nameFromToken.slice(0, 127) || 'Kullanıcı';
-  const photoUrl = safeLeaderboardAvatarUrl(authToken.picture);
 
   // Sezonu SUNUCU saatine göre hesapla — istemciye güvenilmez.
   const { currentSeason } = require('./seasonCalendar');
@@ -1643,7 +1614,9 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
         recordScore,
         recordLabel: String(recordScore),
         displayName,
-        photoUrl,
+        // merge:true eski alanı korurdu; önceki sürümün yazdığı fotoğraf adresi rekor
+        // kırıldığında siliniyor. Kalanları scripts/strip-leaderboard-photo-urls.js temizler.
+        photoUrl: admin.firestore.FieldValue.delete(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       if (titleUnit) entryData.titleUnit = titleUnit;

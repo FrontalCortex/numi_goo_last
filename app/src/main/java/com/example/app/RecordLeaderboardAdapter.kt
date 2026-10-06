@@ -1,12 +1,13 @@
 package com.example.app
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.google.firebase.auth.FirebaseAuth
 import com.example.app.databinding.ItemRecordLeaderboardRowBinding
 import com.example.app.LessonLeaderboardRepository.LeaderboardEntry
@@ -49,13 +50,7 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
             binding.rowRankBadge.setTextColor(ContextCompat.getColor(ctx, R.color.black))
             binding.rowRankBadge.background = ContextCompat.getDrawable(ctx, badgeDrawableForRank(entry.rewardRank))
 
-            val url = entry.photoUrl
-            if (!url.isNullOrBlank()) {
-                Glide.with(binding.rowAvatar).load(url).circleCrop().into(binding.rowAvatar)
-            } else {
-                Glide.with(binding.rowAvatar).clear(binding.rowAvatar)
-                binding.rowAvatar.setImageResource(android.R.drawable.sym_def_app_icon)
-            }
+            binding.rowAvatar.setImageBitmap(leaderboardAvatarBitmap(ctx, entry.avatarConfig, binding.rowAvatar.layoutParams.width))
         }
 
         private fun badgeDrawableForRank(rank: Int): Int = when (rank) {
@@ -68,6 +63,12 @@ class RecordLeaderboardAdapter : ListAdapter<LeaderboardEntry, RecordLeaderboard
     }
 
     companion object {
+        /** Avatarı olmayan (ya da henüz okunmamış) satırlar için de varsayılan avatar çizilir. */
+        fun leaderboardAvatarBitmap(context: Context, avatarConfig: String?, sizePx: Int): Bitmap {
+            val config = AvatarConfig.decode(avatarConfig) ?: AvatarConfig.default(AvatarStyle.PERSONAS)
+            return AvatarView.toBitmap(context, config, sizePx.coerceAtLeast(1))
+        }
+
         private val DIFF = object : DiffUtil.ItemCallback<LeaderboardEntry>() {
             override fun areItemsTheSame(
                 oldItem: LeaderboardEntry,

@@ -3,7 +3,9 @@ package com.example.app
 import android.util.Log
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -23,7 +25,6 @@ object LessonLeaderboardRepository {
     private const val F_SCORE = "recordScore"
     private const val F_LABEL = "recordLabel"
     private const val F_NAME = "displayName"
-    private const val F_PHOTO = "photoUrl"
     private const val F_UPDATED = "updatedAt"
     private const val F_TITLE_UNIT = "titleUnit"
 
@@ -152,13 +153,32 @@ object LessonLeaderboardRepository {
         val rewardRank: Int,
         val displayName: String,
         val recordLabel: String,
-        val photoUrl: String?,
+        /**
+         * Uygulama içi avatar (publicProfiles.avatarConfig, [AvatarConfig.encode] biçiminde).
+         * null: henüz okunmadı ya da kullanıcının avatarı yok → çizen taraf varsayılan avatarı koyar.
+         *
+         * Girişteki `photoUrl` (Google hesabının fotoğrafı) artık gösterilmiyor: tabloda
+         * uygulamadaki avatarlar görünmeli.
+         */
+        val avatarConfig: String?,
     )
+
+    /**
+     * uid → avatarConfig ("" = profilde avatar yok). Süreç boyunca tutuluyor: tahta her
+     * açıldığında 100 profili yeniden okumamak için. Başkası avatarını değiştirirse uygulama
+     * yeniden açılana kadar eskisi görünür; kendi avatarımız her zaman yerelden geliyor.
+     */
+    private val avatarCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** Firestore `whereIn` en fazla 30 değer alıyor. */
+    private const val AVATAR_QUERY_CHUNK = 30
 
     fun listenLeaderboard(
         partId: Int,
         lessonKey: String,
         season: Int = SeasonClock.currentSeason(),
+        /** Kendi satırımız için yerel avatar (alt bardaki ile aynı); ağ beklenmez. */
+        ownAvatarConfig: String? = null,
         onUpdate: (List<LeaderboardEntry>) -> Unit,
         onError: (Exception) -> Unit,
     ): ListenerRegistration {
@@ -169,28 +189,73 @@ object LessonLeaderboardRepository {
             .orderBy(F_SCORE, Query.Direction.DESCENDING)
             .limit(LEADERBOARD_LIST_QUERY_LIMIT)
 
-        return q.addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                onError(e)
-                return@addSnapshotListener
-            }
-            if (snapshot == null) {
-                onUpdate(emptyList())
-                return@addSnapshotListener
-            }
-            val docs = snapshot.documents
+        val ownUid = FirebaseAuth.getInstance().currentUser?.uid
+        val useOwnLocal = !ownUid.isNullOrBlank() && !ownAvatarConfig.isNullOrBlank()
+        var active = true
+        // Avatar okuması dönmeden yeni anlık görüntü gelirse eski listeyi yeniden yaymamak için.
+        var latestDocs: List<DocumentSnapshot> = emptyList()
+
+        fun buildList(docs: List<DocumentSnapshot>): List<LeaderboardEntry> {
             val ranks = competitionRanksForOrderedDocs(docs)
-            val list = docs.mapIndexed { index, doc ->
+            return docs.mapIndexed { index, doc ->
+                val avatar = if (useOwnLocal && doc.id == ownUid) ownAvatarConfig
+                else avatarCache[doc.id]?.takeIf { it.isNotBlank() }
                 LeaderboardEntry(
                     userId = doc.id,
                     displayRank = index + 1,
                     rewardRank = ranks[index],
                     displayName = doc.getString(F_NAME) ?: "",
                     recordLabel = doc.getString(F_LABEL) ?: "",
-                    photoUrl = doc.getString(F_PHOTO)?.takeIf { it.isNotBlank() }
+                    avatarConfig = avatar,
                 )
             }
-            onUpdate(list)
+        }
+
+        val inner = q.addSnapshotListener { snapshot, e ->
+            if (!active) return@addSnapshotListener
+            if (e != null) {
+                onError(e)
+                return@addSnapshotListener
+            }
+            if (snapshot == null) {
+                latestDocs = emptyList()
+                onUpdate(emptyList())
+                return@addSnapshotListener
+            }
+            val docs = snapshot.documents
+            latestDocs = docs
+            // Önce elimizdekiyle hemen çiz; eksik avatarlar gelince bir kez daha.
+            onUpdate(buildList(docs))
+
+            val missing = docs.map { it.id }
+                .filterNot { useOwnLocal && it == ownUid }
+                .filterNot { avatarCache.containsKey(it) }
+            if (missing.isEmpty()) return@addSnapshotListener
+
+            val chunks = missing.chunked(AVATAR_QUERY_CHUNK)
+            val tasks = chunks.map { chunk ->
+                db.collection("publicProfiles")
+                    .whereIn(FieldPath.documentId(), chunk)
+                    .get()
+            }
+            Tasks.whenAllComplete(tasks).addOnCompleteListener {
+                tasks.forEachIndexed { i, task ->
+                    if (!task.isSuccessful) {
+                        Log.w(TAG, "listenLeaderboard: avatarlar okunamadı", task.exception)
+                        return@forEachIndexed
+                    }
+                    val found = task.result?.documents.orEmpty()
+                        .associate { it.id to (it.getString(AvatarStore.FIRESTORE_FIELD) ?: "") }
+                    // Profili olmayanlar da "" ile işaretlenir; her açılışta yeniden sorulmasın.
+                    chunks[i].forEach { uid -> avatarCache[uid] = found[uid] ?: "" }
+                }
+                if (active && latestDocs === docs) onUpdate(buildList(docs))
+            }
+        }
+
+        return ListenerRegistration {
+            active = false
+            inner.remove()
         }
     }
 }

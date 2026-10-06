@@ -144,7 +144,6 @@ async function seedOneBoard(partId, lessonIndex, season, score, count, titleUnit
       recordLabel: String(score),
       displayName: `Test Oyuncu ${i + 1}`,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      photoUrl: '',
       titleUnit,
     });
   }
