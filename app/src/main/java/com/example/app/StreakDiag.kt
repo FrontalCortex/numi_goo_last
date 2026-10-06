@@ -31,7 +31,7 @@ object StreakDiag {
     const val LOG_TAG = "StreakDiag"
 
     /** Yayına çıkarken false. Teşhis satırları ucuz ama kullanıcıya faydası yok. */
-    const val ENABLED = true
+    const val ENABLED = false
 
     private val seq = AtomicInteger(0)
 
