@@ -1678,7 +1678,7 @@ olunca akış kodu hiç taşınmadı (kullanıcıyla riskli yol olarak konuşuld
   kapanışı (çalışma süresi duruyor mu), görev sandığı, kupa testi gidiş-dönüş, haritadan otomatik
   kupa yolu yönlendirmesi, iki sekme arasında geçiş.
 
-## Onaysız öğretmen hesabı kısıtlamaları (06.10.2026 — kuruldu, kullanıcı bakacak; commit edilmedi)
+## Onaysız öğretmen hesabı kısıtlamaları (06.10.2026 — commit 726b6fc, push edildi; cihaza KURULMADI)
 
 Kural: onaysız öğretmen hiçbir şey yapamaz. Karar tek yerde: `MainActivity.isUnapprovedTeacher()`
 (rol = AuthManager önbelleği, onay = energyManager'ın uid'ye özel kaydı; kayıt yoksa onaysız sayılır).
@@ -1697,7 +1697,7 @@ Kural: onaysız öğretmen hiçbir şey yapamaz. Karar tek yerde: `MainActivity.
 - Görevler/Kupa Yolu: kupa yolu, abaküs pratiği, günlük soru kartı ve günlük ödül alma kapıda.
   Karakter animasyonu (MascotPlayground) bilerek açık: izleme ekranı, ödül/can yok.
 - Panelde "Hesabınız onay bekliyor" yazısı (`teacherApprovalPendingText`), dokununca aynı pencere.
-- Sunucu (functions/index.js, DEPLOY EDİLMEDİ): `assertNotUnapprovedTeacher` →
+- Sunucu (functions/index.js, push ile deploy tetiklendi, sonucu doğrulanmadı): `assertNotUnapprovedTeacher` →
   updateUserWallet (yalnız harcama), buyStreakFreeze, buyEnergyWithKeys. verifyRegistrationCode
   öğretmene `keys: 0` veriyor. Play satın alma doğrulaması bilerek engellenmedi (para alınmışsa
   ürün verilmeli). `AuthManager.registerTeacher` ölü kod (çağıran yok) — rules `keys == 1`
