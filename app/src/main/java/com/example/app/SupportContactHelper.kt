@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -11,7 +12,11 @@ object SupportContactHelper {
     private const val SUPPORT_EMAIL = "sorobit.support@gmail.com"
 
     fun openSupportEmail(fragment: Fragment, subject: String? = null, body: String? = null) {
-        val context = fragment.requireContext()
+        openSupportEmail(fragment.requireContext(), subject, body)
+    }
+
+    /** Fragment'ı olmayan yerler için (ör. LessonAdapter'ın ders paneli). */
+    fun openSupportEmail(context: Context, subject: String? = null, body: String? = null) {
         val mailtoIntent = Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("mailto:$SUPPORT_EMAIL")
             if (!subject.isNullOrBlank()) putExtra(Intent.EXTRA_SUBJECT, subject)
@@ -27,16 +32,16 @@ object SupportContactHelper {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         try {
-            fragment.startActivity(mailtoIntent)
+            context.startActivity(mailtoIntent)
         } catch (_: ActivityNotFoundException) {
             try {
-                fragment.startActivity(Intent.createChooser(browserIntent, null))
+                context.startActivity(Intent.createChooser(browserIntent, null))
             } catch (_: ActivityNotFoundException) {
                 Toast.makeText(context, "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
             }
         } catch (_: SecurityException) {
             try {
-                fragment.startActivity(Intent.createChooser(browserIntent, null))
+                context.startActivity(Intent.createChooser(browserIntent, null))
             } catch (_: Exception) {
                 Toast.makeText(context, "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
             }

@@ -1678,6 +1678,34 @@ olunca akış kodu hiç taşınmadı (kullanıcıyla riskli yol olarak konuşuld
   kapanışı (çalışma süresi duruyor mu), görev sandığı, kupa testi gidiş-dönüş, haritadan otomatik
   kupa yolu yönlendirmesi, iki sekme arasında geçiş.
 
+## Onaysız öğretmen hesabı kısıtlamaları (06.10.2026 — kuruldu, kullanıcı bakacak; commit edilmedi)
+
+Kural: onaysız öğretmen hiçbir şey yapamaz. Karar tek yerde: `MainActivity.isUnapprovedTeacher()`
+(rol = AuthManager önbelleği, onay = energyManager'ın uid'ye özel kaydı; kayıt yoksa onaysız sayılır).
+- currencyPanel: altın/anahtar/can zaten tüm öğretmenlerde gizliydi; onaysızda ayrıca
+  `streakContainer`, `creditIcon/Text` ve **`energyIconFrame`** (∞ rozetinin kabı) gizli.
+  `applyTeacherCurrencyPanel()` her `checkSubscriptionAndUpdateEnergy` cevabında yeniden çalışır.
+- Altın/anahtar 0: `UserWalletFirestore.visibleBalance` — dinleyici ve önbellek düzeyinde, yani
+  panel, mağaza ve özelleştirme hep 0 görür ve harcayamaz. Sunucudaki bakiyeye dokunulmadı.
+- Can zaten 0'dı (EnergyManager.isEnergyBlocked + sunucu hasInfiniteEnergy).
+- Ders başlatma (normal ders, anlatımı tekrar izle, yarış) → `TeacherApprovalGate.showNotApprovedDialog`
+  (askQuestion ile aynı pencere, "Destek ile İletişime Geç" butonu eklendi; konu + kullanıcı ID dolu).
+- Kapı: `TeacherApprovalGate.blockIfUnapproved(context)` (uyarıyı gösterip true döner).
+- Mağaza hiç açılmıyor (`openShopFragment` kapısı); `BillingManager.launchPurchase` de son kapı
+  (Pro tanıtımı → plan ekranı yolu). Kullanıcının istediği `shopSuperCard` gizleme bu yüzden
+  gereksiz kaldı ve kaldırıldı.
+- Görevler/Kupa Yolu: kupa yolu, abaküs pratiği, günlük soru kartı ve günlük ödül alma kapıda.
+  Karakter animasyonu (MascotPlayground) bilerek açık: izleme ekranı, ödül/can yok.
+- Panelde "Hesabınız onay bekliyor" yazısı (`teacherApprovalPendingText`), dokununca aynı pencere.
+- Sunucu (functions/index.js, DEPLOY EDİLMEDİ): `assertNotUnapprovedTeacher` →
+  updateUserWallet (yalnız harcama), buyStreakFreeze, buyEnergyWithKeys. verifyRegistrationCode
+  öğretmene `keys: 0` veriyor. Play satın alma doğrulaması bilerek engellenmedi (para alınmışsa
+  ürün verilmeli). `AuthManager.registerTeacher` ölü kod (çağıran yok) — rules `keys == 1`
+  istediği için ona dokunulmadı.
+- Kurulmadı: telefon bağlantısı koptu, emülatörde yer yok.
+- Sıradaki: kullanıcı onaylı öğretmen ayarlarını söyleyecek (onaylı öğretmende ∞ rozeti kalbi
+  olmadan tek başına görünüyor — o sırada konuşulacak).
+
 ## Yakında yapılanlar — tekrar etmeyin
 
 - **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki

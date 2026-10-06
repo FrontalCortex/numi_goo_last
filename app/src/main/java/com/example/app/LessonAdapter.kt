@@ -340,6 +340,8 @@ class LessonAdapter(
 
         againTutorial.setOnClickListener{
             dismissPanel()
+            // Anlatımı tekrar izlemek can harcamıyor ama o da bir ders başlatmak.
+            if (TeacherApprovalGate.blockIfUnapproved(context)) return@setOnClickListener
 
             // Activity'yi bul ve FragmentActivity olarak cast et
             val activity = context as FragmentActivity
@@ -367,6 +369,12 @@ class LessonAdapter(
         }
         // Button tıklama
         actionButton.setOnClickListener {
+            // Onaysız öğretmenin canı her zaman 0; bu kontrol olmasa çocuğa yazılmış "canın
+            // bitti, bekle ya da satın al" uyarısını görürdü. Asıl sebep onay; ona yönlendir.
+            if (TeacherApprovalGate.blockIfUnapproved(context)) {
+                dismissPanel()
+                return@setOnClickListener
+            }
             // Tıklamanın ilk anından itibaren 0.4 sn tüm ekranı kilitle.
             blockAllTouchesForActionTransition()
             if (item.isCompleted) {
@@ -1012,6 +1020,10 @@ class LessonAdapter(
         })
 
         actionButton.setOnClickListener {
+            if (TeacherApprovalGate.blockIfUnapproved(context)) {
+                dismissSheet()
+                return@setOnClickListener
+            }
             if (isLockedRace) {
                 showRaceFastForwardPanel(raceItem, clickedIndex, racePartId) {
                     dismissSheet()

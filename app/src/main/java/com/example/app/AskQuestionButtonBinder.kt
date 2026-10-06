@@ -138,7 +138,7 @@ object AskQuestionButtonBinder {
                 showRestrictedDialog(fragment, doc)
             }
             isTeacher && doc.getBoolean("teacherApproved") != true -> {
-                showMessage(fragment, R.string.ask_question_teacher_not_approved)
+                TeacherApprovalGate.showNotApprovedDialog(fragment.requireContext())
             }
             !isTeacher && credits < 1 && hasProPlan -> {
                 // Pro üyesine de aynı ekran açılıyor, yalnızca kredi satın alma düzeniyle.
@@ -159,13 +159,6 @@ object AskQuestionButtonBinder {
                 onAllowedClick()
             }
         }
-    }
-
-    private fun showMessage(fragment: Fragment, messageResId: Int) {
-        AlertDialog.Builder(fragment.requireContext())
-            .setMessage(messageResId)
-            .setPositiveButton(R.string.ask_question_alert_ok, null)
-            .show()
     }
 
     private fun showRestrictedDialog(fragment: Fragment, doc: DocumentSnapshot) {

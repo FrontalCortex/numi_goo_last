@@ -709,19 +709,30 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 when (row) {
                     is BulletinRow.Standard -> {
                         when (row.id) {
-                            "cup_path" -> showCupPathPanel()
+                            // Karakter animasyonu yalnızca izleme ekranı: ödül yok, can yok.
                             "mascot_animation" -> openAbacusContainerFragment(MascotPlaygroundFragment())
-                            else -> openAbacusContainerFragment(AbacusPracticeFragment())
+                            // Onaysız öğretmen ders yapamıyor; kupa testi ve abaküs pratiği de
+                            // birer ders. Kapı olmasa kupa testi can 0 diye mağazaya yolluyordu.
+                            "cup_path" -> if (!TeacherApprovalGate.blockIfUnapproved(activity)) showCupPathPanel()
+                            else -> if (!TeacherApprovalGate.blockIfUnapproved(activity)) {
+                                openAbacusContainerFragment(AbacusPracticeFragment())
+                            }
                         }
                     }
                     else -> Unit
                 }
             },
             onDailyQuestionCardClick = { displayState ->
-                addLaunchTouchBlocker()
-                handleDailyQuestionCardClick(displayState)
+                // Kapı dokunma kilidinden ÖNCE: kilit dersin açılmasıyla kalkıyor, ders
+                // açılmayınca ekran kilitli kalırdı.
+                if (!TeacherApprovalGate.blockIfUnapproved(activity)) {
+                    addLaunchTouchBlocker()
+                    handleDailyQuestionCardClick(displayState)
+                }
             },
-            onDailyQuestionProgressClaim = { periodKey -> onDailyQuestionProgressClaimTapped(periodKey) },
+            onDailyQuestionProgressClaim = { periodKey ->
+                if (!TeacherApprovalGate.blockIfUnapproved(activity)) onDailyQuestionProgressClaimTapped(periodKey)
+            },
             onDailyQuestionProgressIncompleteTap = { showDailyQuestionClaimRequiresCompleteToast() },
             onDailyQuestionPeriodRolledOver = { onDailyQuestionPeriodRolledOver() },
             onBrokenHeartHealFinished = { onDailyQuestionBrokenHeartHealFinished() },

@@ -137,6 +137,9 @@
     <string name="record_season_countdown_hours_minutes">%1$d sa %2$d dk</string>
 
     <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
+    <string name="teacher_approval_pending_banner">Hesabınız onay bekliyor</string>
+    <string name="teacher_not_approved_contact_support">Destek ile İletişime Geç</string>
+    <string name="teacher_not_approved_support_subject">Öğretmen hesabı onayı</string>
     <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
     <string name="ask_question_alert_ok">Tamam</string>
 

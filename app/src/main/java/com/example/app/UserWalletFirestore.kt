@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.content.Context
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -85,6 +86,24 @@ object UserWalletFirestore {
         FIELD_CURRENCY to DEFAULT_CURRENCY,
     )
 
+    /**
+     * Onaylanmamış öğretmenin altını ve anahtarı istemcide 0 sayılır.
+     *
+     * Bu hesap hiçbir şey yapamıyor; ama kayıtta herkese verilen anahtar ve önceden kalmış
+     * bakiye mağazada (can alma) ve abaküs özelleştirmede harcanabiliyordu. Sıfırlama tek
+     * tek ekranlarda değil burada yapılıyor, çünkü bakiyeyi okuyan herkes (üst panel,
+     * mağaza, özelleştirme) ya bu dinleyiciden ya da onun yazdığı önbellekten okuyor.
+     *
+     * Sunucudaki gerçek bakiyeye dokunulmuyor: hesap onaylanınca `teacherApproved`
+     * değişikliği dinleyiciyi yeniden tetikler ve gerçek değer kendiliğinden görünür.
+     * Gerçek engel değil, arayüz kuralı — sunucu bu hesabın harcamasını ayrıca reddetmiyor.
+     */
+    private fun visibleBalance(doc: DocumentSnapshot, value: Int): Int {
+        val unapprovedTeacher = doc.getString("role") == "TEACHER" &&
+            doc.getBoolean("teacherApproved") != true
+        return if (unapprovedTeacher) 0 else value
+    }
+
     fun loadWallet(
         context: Context,
         uid: String,
@@ -113,6 +132,8 @@ object UserWalletFirestore {
                         .document(uid)
                         .update(patch)
                 }
+                keys = visibleBalance(doc, keys)
+                currency = visibleBalance(doc, currency)
                 cacheLocally(context, keys, currency)
                 onResult(UserWallet(keys = keys, currency = currency))
             }
@@ -134,8 +155,11 @@ object UserWalletFirestore {
             .document(uid)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-                val keys = snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS
-                val currency = snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context)
+                val keys = visibleBalance(snapshot, snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS)
+                val currency = visibleBalance(
+                    snapshot,
+                    snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context),
+                )
                 val credits = snapshot.getLong(FIELD_QUESTION_CREDITS)?.toInt() ?: 0
                 cacheLocally(context, keys, currency)
                 onUpdate(

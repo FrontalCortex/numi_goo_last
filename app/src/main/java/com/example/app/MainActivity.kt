@@ -598,22 +598,16 @@ class MainActivity : AppCompatActivity() {
             )
         }
         coin = binding.currencyText
-        binding.currencyText.text = UserWalletFirestore.getCachedCurrency(this).toString()
-        binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
-        auth.currentUser?.uid?.let { refreshWalletFromFirestore() }
 
-        // Öğretmen hesabında currencyPanel içindeki diamond/coin, anahtar ve enerji ikonlarını gizle
-        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) {
-            binding.diamondID.visibility = View.GONE
-            binding.currencyText.visibility = View.GONE
-            binding.keyIcon.visibility = View.GONE
-            binding.keyText.visibility = View.GONE
-            binding.energyIcon.visibility = View.GONE
-            binding.energyText.visibility = View.GONE
-        }
-        
-        // Enerji sistemini başlat — callback ayarlandığında zaten ilk değeri çeker
+        // Onay durumu (isUnapprovedTeacher) energyManager'ın yerel kaydından okunuyor; panel
+        // ondan sonra çizilmeli.
         energyManager = EnergyManager(this)
+
+        refreshWalletUi()
+        auth.currentUser?.uid?.let { refreshWalletFromFirestore() }
+        applyTeacherCurrencyPanel()
+
+        // Enerji sistemini başlat — callback ayarlandığında zaten ilk değeri çeker
         energyManager.setEnergyUpdateCallback { energy ->
             updateEnergyDisplay(energy)
         }
@@ -2262,6 +2256,54 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Rol öğretmen ama hesap henüz onaylanmamış.
+     *
+     * Onay, energyManager'ın kullanıcıya özel yerel kaydından okunuyor; ilk girişte o kayıt
+     * boş olduğu için hesap Firestore cevabı gelene kadar onaysız sayılır. Yanlış yön bu
+     * değil: yeni öğretmen hesapları zaten onaysız açılıyor, onaylı biri ise ilk girişte
+     * bir anlığına kısıtlı panel görür ve [checkSubscriptionAndUpdateEnergy] düzeltir.
+     */
+    fun isUnapprovedTeacher(): Boolean {
+        if (authManager.getCurrentUserType() != AuthManager.ROLE_TEACHER) return false
+        if (!::energyManager.isInitialized) return true
+        return !energyManager.isTeacherApproved()
+    }
+
+    /**
+     * Öğretmen hesabında currencyPanel'in hangi parçalarının görüneceği.
+     *
+     * Onay durumu oturum ortasında değişebildiği için (destek hesabı onaylar) yalnızca
+     * onCreate'te değil, her [checkSubscriptionAndUpdateEnergy] cevabında yeniden çalışır;
+     * bu yüzden iki yön de açıkça yazılır.
+     */
+    private fun applyTeacherCurrencyPanel() {
+        if (!::binding.isInitialized) return
+        if (authManager.getCurrentUserType() != AuthManager.ROLE_TEACHER) return
+        // Öğretmenin altını, anahtarı ve canı yok; bunlar onaydan bağımsız gizli.
+        binding.diamondID.visibility = View.GONE
+        binding.currencyText.visibility = View.GONE
+        binding.keyIcon.visibility = View.GONE
+        binding.keyText.visibility = View.GONE
+        binding.energyIcon.visibility = View.GONE
+        binding.energyText.visibility = View.GONE
+        // Onaysız hesap ders yapamıyor ve soru soramıyor: serisi ve danışma kredisi
+        // anlamsız. Kabın tamamı gizleniyor; yalnızca ikon gizlenince "∞" rozeti boşlukta
+        // tek başına kalıyordu.
+        val unapproved = isUnapprovedTeacher()
+        val restricted = if (unapproved) View.GONE else View.VISIBLE
+        binding.streakContainer.visibility = restricted
+        binding.creditIcon.visibility = restricted
+        binding.creditText.visibility = restricted
+        binding.energyIconFrame.visibility = restricted
+        // Panel boş bir şerit kalınca öğretmen neden hiçbir şey yapamadığını ancak bir yere
+        // dokununca öğreniyordu. Yazıya dokunmak da aynı pencereyi (destek butonuyla) açar.
+        binding.teacherApprovalPendingText.visibility = if (unapproved) View.VISIBLE else View.GONE
+        binding.teacherApprovalPendingText.setOnClickListener {
+            TeacherApprovalGate.showNotApprovedDialog(this)
+        }
+    }
+
+    /**
      * Üst bardaki günlük seri göstergesini tazeler.
      *
      * Seri kırıkken alev gri ve sayı 0: "bugün yapılacak bir şey var" mesajı, hiç
@@ -2468,6 +2510,9 @@ class MainActivity : AppCompatActivity() {
                     GlobalValues.isTeacherApproved = teacherApproved
                     energyManager.setUserPlan(plan)
                     energyManager.setUserRoleApproval(role, teacherApproved)
+                    // Onay şimdi öğrenilmiş ya da değişmiş olabilir. Bakiyeyi cüzdan
+                    // dinleyicisi kendisi düzeltiyor (bkz. UserWalletFirestore.visibleBalance).
+                    applyTeacherCurrencyPanel()
 
                     // Onaysız öğretmende enerji her zaman 0'dır ve sonsuz sayılmaz;
                     // bu yüzden kilit kontrolü sonsuzdan önce gelir.
@@ -5083,6 +5128,9 @@ class MainActivity : AppCompatActivity() {
      */
     fun openShopFragment(focusStreakFreeze: Boolean = false) {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
+        // Hiçbir şey yapamayan hesaptan para almak: iade talebi ve kötü yorum. Mağazanın her
+        // girişi (üst panel, kupa yolu canı, can uyarısı) buradan geçiyor.
+        if (TeacherApprovalGate.blockIfUnapproved(this)) return
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         if (current is ShopFragment) return
 

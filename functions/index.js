@@ -621,7 +621,9 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
         role: roleForUser,
         first_tutorial_shown: false,
         createdAt: admin.firestore.Timestamp.now(),
-        keys: 1,
+        // Öğretmen onaysız açılıyor ve onaysız öğretmen harcama yapamıyor
+        // (assertNotUnapprovedTeacher); hoş geldin anahtarı yalnızca öğrenciye.
+        keys: roleForUser === 'TEACHER' ? 0 : 1,
         currency: 0
       };
 
@@ -1378,6 +1380,9 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
       }
 
       const userData = doc.data();
+      // Yalnızca harcama: artırma yalnızca bir harcamanın geri alınması olabiliyor ve
+      // harcaması reddedilen hesabın geri alacağı bir şey olmuyor.
+      if (!isCredit) assertNotUnapprovedTeacher(userData);
       const currentKeys = Number.parseInt(userData.keys, 10) || 0;
       const currentCurrency = Number.parseInt(userData.currency, 10) || 0;
 
@@ -5575,6 +5580,7 @@ exports.buyStreakFreeze = functions.https.onCall(async (data, context) => {
     if (state.freezes >= STREAK_FREEZE_MAX_HELD) {
       throw new functions.https.HttpsError('already-exists', 'Zaten bir seri dondurman var.');
     }
+    assertNotUnapprovedTeacher(userSnap.data());
     const currency = Number.parseInt(userSnap.data().currency, 10) || 0;
     if (currency < STREAK_FREEZE_COST) {
       throw new functions.https.HttpsError('failed-precondition', 'Yetersiz altın.');
@@ -6136,13 +6142,30 @@ function effectivePlan(userData) {
   return stored;
 }
 
+/** Rolü öğretmen ama hesabı henüz onaylanmamış (istemcide MainActivity.isUnapprovedTeacher). */
+function isUnapprovedTeacher(userData) {
+  return (userData.role || '') === 'TEACHER' && userData.teacherApproved !== true;
+}
+
+/**
+ * Onaysız öğretmen hiçbir şey yapamaz; harcama yapan çağrılar bununla başlar.
+ *
+ * İstemci bu hesapta bakiyeyi zaten 0 gösteriyor ve mağazayı açtırmıyor
+ * (UserWalletFirestore.visibleBalance, TeacherApprovalGate). Ama sunucudaki gerçek bakiye
+ * duruyor — eski kayıtlarda herkese 1 anahtar verildi — ve eski bir sürüm ya da doğrudan
+ * çağrı onu harcayabilirdi. Asıl engel burası.
+ */
+function assertNotUnapprovedTeacher(userData) {
+  if (isUnapprovedTeacher(userData)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Hesabınız henüz onaylanmadı.');
+  }
+}
+
 function hasInfiniteEnergy(userData) {
   const plan = effectivePlan(userData);
-  const role = userData.role || '';
-  const teacherApproved = userData.teacherApproved === true;
   // Onaysız öğretmen: enerji her zaman 0 (sonsuz değil).
-  if (role === 'TEACHER' && !teacherApproved) return false;
-  return teacherApproved || plan === 'Pro' || plan === 'Premium';
+  if (isUnapprovedTeacher(userData)) return false;
+  return userData.teacherApproved === true || plan === 'Pro' || plan === 'Premium';
 }
 
 function computeCurrentEnergy(fullTime, now, cfg) {
@@ -6264,6 +6287,7 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
   const uid = context.auth.uid;
 
   const result = await applyEnergyDelta(uid, +1, null, (userData) => {
+    assertNotUnapprovedTeacher(userData);
     const currentKeys = Number.parseInt(userData.keys, 10) || 0;
     if (currentKeys < ENERGY_KEY_COST) {
       throw new functions.https.HttpsError('failed-precondition', 'Yetersiz anahtar bakiyesi.');

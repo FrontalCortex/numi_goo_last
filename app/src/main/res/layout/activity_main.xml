@@ -121,7 +121,28 @@
             android:layout_height="1dp"
             android:layout_weight="1"/>
 
+        <!-- Yalnızca onaysız öğretmende (bkz. MainActivity.applyTeacherCurrencyPanel). O hesapta
+             paneldeki her şey gizli; yazı iki yanında ikişer boşluk kalan bu yerde ortalanıyor. -->
+        <TextView
+            android:id="@+id/teacherApprovalPendingText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:paddingVertical="4dp"
+            android:text="@string/teacher_approval_pending_banner"
+            android:textColor="#FFB74D"
+            android:textSize="@dimen/main_energy_text_size"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:drawableStartCompat="@drawable/ic_schedule_clock"
+            app:drawableTint="#FFB74D" />
+
+        <!-- Öğretmen hesabında yalnızca energyIcon gizleniyordu; kardeşi olan "∞" rozeti
+             kabın içinde kalıp tek başına görünebiliyordu. Gizleme bu kaba yapılır. -->
         <FrameLayout
+            android:id="@+id/energyIconFrame"
             android:layout_width="@dimen/main_energy_icon_size"
             android:layout_height="@dimen/main_energy_icon_size">
 
