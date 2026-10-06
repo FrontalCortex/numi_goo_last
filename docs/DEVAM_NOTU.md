@@ -1831,8 +1831,9 @@ cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS
 - Yeni tür `pool` (functions/notifications.js): `pref: null` (öğretmenin işi, öğrenciye
   yönelik tercih listesinde yeri yok), tavansız, gece sessiz kanala düşüyor — düşürmek
   olmazdı, 48 saatlik pencerede her saat önemli.
-- Sorgu `(status, createdAtMs)` indeksini kullanıyor; **yeni indeks gerekmedi**, iade taraması
-  (`runUnansweredQuestionRefund`) aynısını kullanıyor.
+- Sorgu `(status, createdAtMs)` indeksini kullanıyor. **BU İNDEKS YOKTU ve tarama ilk turunda
+  düştü** — bkz. yukarıdaki "Kredi iadesi bir aydır hiç çalışmıyormuş". İndeks 06.10.2026'da
+  eklendi; aynı eksik bir aydır kredi iadesini de durduruyordu.
 - Öğretmenler `role == 'TEACHER'` ile çekilip `teacherApproved` kodda filtreleniyor: iki
   eşitlik filtresi yeni bir bileşik indeks isteyebilirdi, öğretmen sayısı küçük.
 - Metin `teacherPoolText` (saf, testli): toplam yeniye eşitse tekrar etmiyor, onun yerine
@@ -1846,6 +1847,44 @@ cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS
 **DENENMEYEN:** Cihazda hiç görülmedi. Denemek için bir öğrenci hesabından soru sor, 10 dakika
 içinde öğretmen cihazına bildirim düşmeli. **İlk deploy'dan sonraki İLK tarama imleci kurar ve
 bildirim göndermez** — ikinci turu beklemek gerekiyor.
+
+## KREDİ İADESİ BİR AYDIR HİÇ ÇALIŞMIYORMUŞ (06.10.2026 — eksik indeks, düzeltildi)
+
+Bildirim deploy'u sonrası logları okurken çıktı ve bildirimlerle ilgisi yok: **48 saatlik
+kredi iadesi taraması (`reconcileUnansweredQuestions`) 04.09.2026'dan beri her saat
+`FAILED_PRECONDITION` ile düşüyordu.**
+
+```
+Error: 9 FAILED_PRECONDITION: The query requires an index.
+```
+
+**Sebep:** `runUnansweredQuestionRefund` sorgusu `status == 'pending'` + `createdAtMs < cutoff`
+yapıyor ama `firestore.indexes.json`'da `createdAtMs` alanı için HİÇ indeks yoktu. Var olan
+indeks `(status, createdAt DESCENDING)` — `createdAt` bir Timestamp, `createdAtMs` ise sayı;
+ayrı alanlar, ayrı indeksler. `createdAtMs` sorgusu `8fc4e2e` (04.09.2026) ile geldi ve
+indeksi hiç eklenmemiş.
+
+**Sonucu:** cevapsız kalan soruların kredisi öğrencilere bir aydır geri verilmiyordu. Hata
+sessiz: fonksiyon düşüyor, kullanıcı tarafında hiçbir belirti yok, kimse şikâyet etmiyor
+çünkü krediyi beklediğini bilen yok.
+
+**Nasıl görüldü:** aynı eksik indeks yeni `notifyTeacherPool` taramasını da düşürdü (o da
+`(status, createdAtMs)` sorguluyor). Yeni fonksiyonun hatası, bir aydır duran eski hatanın
+üstünü açtı.
+
+**Düzeltme:** `(status ASC, createdAtMs ASC)` indeksi `firestore.indexes.json`'a eklendi.
+İndeksler `deploy-rules.yml` iş akışıyla gidiyor, yani push yeterli.
+
+**DİKKAT — indeks oluşunca biriken iadeler bir kerede işlenecek.** Bir aydır iade edilmemiş
+sorular varsa tarama hepsini aynı turda iade eder ve her biri için öğrenciye "kredin geri
+verildi" bildirimi gider (bildirim bugün eklendi, `account` türü tavansız). Tek test
+kullanıcısında sorun değil; yayında olsaydı bir kullanıcıya üst üste birkaç bildirim
+gidebilirdi.
+
+**DERS:** yeni bir Firestore sorgusu yazarken indeksin VAR OLDUĞUNU varsaymak yetmiyor,
+`firestore.indexes.json` içinde alan adıyla aranmalı. Bu turda ben de aynı hatayı yaptım —
+"(status, createdAtMs) indeksi zaten var, iade taraması kullanıyor" diye yazdım; iade
+taraması onu kullanmıyordu, çünkü indeks hiç yoktu.
 
 ## Kalan bildirimlerin hepsi (06.10.2026 — yazıldı ve derlendi, HİÇBİRİ cihazda DENENMEDİ)
 
