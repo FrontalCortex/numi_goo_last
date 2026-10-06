@@ -12,9 +12,11 @@ const db = admin.firestore();
 const seasonLeaderboardFinalize = require('./seasonLeaderboardFinalize');
 const {
   STREAK_REMINDER_LOCAL_HOUR,
+  SECOND_CHANCE_LOCAL_HOUR,
   normalizeReminderHour,
   reminderHourUtc,
   streakReminderDecision,
+  secondChanceDecision,
 } = require('./streakReminder');
 const {
   notificationDecision,
@@ -24,8 +26,18 @@ const {
   localHourOf,
   normalizeOffset,
 } = require('./notifications');
-exports.finalizeSeasonLeaderboardMedals =
-  seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
+const {
+  currentSeason,
+  millisUntilCurrentSeasonEnds,
+} = require('./seasonCalendar');
+// `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
+// geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
+exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
+  functions,
+  admin,
+  db,
+  (uid, options) => sendUserNotification(uid, options),
+);
 
 // Config yükleme kontrolü için
 
@@ -2303,6 +2315,405 @@ exports.reconcileUnansweredQuestions = functions
     await runUnansweredQuestionRefund();
     return null;
   });
+
+// ─── BEKLEYEN KUPA YOLU SANDIĞI ─────────────────────────────────────────────
+//
+// NEDEN
+//   Kupa puanı bir eşiği geçtiğinde sandık hak ediliyor ama AÇILMASI kullanıcının elinde
+//   (`claimCupPathChest`). Eşiği geçip sandığını hiç açmamış kullanıcının elinde duran bir
+//   ödül var ve bunu bilmiyor. Toplanmamış ödül hatırlatması, kataloğun en zararsız bildirim
+//   türü: yeni bir iş istemiyor, zaten kazanılmış bir şeyi hatırlatıyor.
+//
+// NEDEN GÜNDE BİR, SAATTE BİR DEĞİL
+//   Bu tarama kullanıcı başına İKİ alt koleksiyon okuması gerektiriyor (kupa puanı +
+//   sandık defteri). Saatlik çalışsa aynı okumalar günde 24 kez yapılırdı; bildirimin
+//   değeri bu maliyeti karşılamıyor. Günde bir kez, UTC 14:00'te çalışıyor.
+//
+//   Yerel saat filtresi YOK ve gerekmiyor: tür `reward`, yani sessiz saate denk gelen
+//   kullanıcıda bildirim kendiliğinden düşüyor (bkz. notifications.js → quiet: 'drop').
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const CHEST_NOTICE_SCAN_LIMIT = 2000;
+
+/** Aynı anda kaç kullanıcı incelensin. */
+const CHEST_NOTICE_CONCURRENCY = 20;
+
+/**
+ * Kupa puanları ve sandık defterine bakıp açılmamış sandık sayısını bulur.
+ *
+ * Saf: altı kupa alanının hepsi ayrı ayrı eşik tutuyor ve mantık emülatör olmadan test
+ * edilebilsin diye (bkz. scripts/test-notifications.js).
+ *
+ * @param cupData    `cupWayProgress/progress` dokümanı.
+ * @param ledgerData `cupPathRewards/progress` dokümanı.
+ * @returns Açılmayı bekleyen sandık sayısı.
+ */
+function pendingChestCount(cupData, ledgerData) {
+  let pending = 0;
+  for (const cupField of CUP_PATH_FIELDS) {
+    const score = Math.trunc(Number((cupData && cupData[cupField]) || 0));
+    if (!Number.isFinite(score) || score <= CUP_PATH_START) continue;
+    const entry = readCupPathEntry(ledgerData || {}, cupField);
+    const next = nextCupPathMilestone(entry.lastClaimed);
+    // `next === 0` yol bitti demek; o alanda açılacak sandık kalmamış.
+    if (next > 0 && score >= next) pending++;
+  }
+  return pending;
+}
+
+/** Bekleyen sandık bildiriminin metni. */
+function chestNoticeText(count) {
+  return {
+    title: count === 1 ? 'Seni bekleyen bir sandık var' : `Seni bekleyen ${count} sandık var`,
+    body: 'Kupa yolunda hak ettiğin ödülü açmayı unutmuşsun.',
+  };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runPendingChestNotices() {
+  // Kupa puanı olan kullanıcılar: puanı hiç olmayanda açılacak sandık da olamaz.
+  const snap = await db
+    .collectionGroup('cupWayProgress')
+    .limit(CHEST_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += CHEST_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + CHEST_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        const uid = doc.ref.parent.parent && doc.ref.parent.parent.id;
+        if (!uid) return;
+        try {
+          const ledgerSnap = await db
+            .collection('users')
+            .doc(uid)
+            .collection('cupPathRewards')
+            .doc('progress')
+            .get();
+
+          const pending = pendingChestCount(
+            doc.data() || {},
+            ledgerSnap.exists ? ledgerSnap.data() || {} : {}
+          );
+          if (pending <= 0) {
+            counts.skipped++;
+            return;
+          }
+
+          const text = chestNoticeText(pending);
+          const result = await sendUserNotification(uid, {
+            type: 'reward',
+            topic: 'chest_waiting',
+            title: text.title,
+            body: text.body,
+          });
+          if (result.sent) counts.sent++;
+          else counts.skipped++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runPendingChestNotices: hata', { uid, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runPendingChestNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendPendingChestNotices = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('0 14 * * *')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runPendingChestNotices();
+    return null;
+  });
+
+// Testler için.
+exports._pendingChestCount = pendingChestCount;
+exports._chestNoticeText = chestNoticeText;
+exports._runPendingChestNotices = runPendingChestNotices;
+
+// ─── ENERJİ DOLDU BİLDİRİMİ ─────────────────────────────────────────────────
+//
+// NEDEN
+//   Enerjisi bitip oyundan çıkan kullanıcı, enerjinin dolduğunu ancak uygulamayı açarsa
+//   öğreniyor. Dolum zamanı sunucuda zaten tutuluyor (`energy_full_time`), yani bildirim
+//   için yeni bir veri gerekmiyordu.
+//
+// OKUL SAATLERİ — bu bildirimin en önemli kısıtı
+//   Bu, kataloğun en açık "geri dön ve oyna" bildirimi ve kitle 7–10 yaş. Okul saatinde
+//   çocuğun telefonunu titretmek savunulamaz; mağaza politikası (Play Families) tarafında da
+//   risk. Bu yüzden yalnızca [ENERGY_NOTICE_LOCAL_HOURS] penceresinde, yani okul sonrası
+//   gönderiliyor. Tavan ve kendiliğinden susma da bunun üstüne geliyor: ilgilenmeyen
+//   kullanıcıda beş gönderimde kapanıyor.
+//
+// KİME GİTMİYOR
+//   Sonsuz enerjisi olanlara (Pro, Premium, onaylı öğretmen) — onlar için dolum diye bir şey
+//   yok, `energy_full_time` alanı anlamsız.
+
+/** Enerjisi bu süre içinde dolmuş kullanıcılara bildirim gönderilir. */
+const ENERGY_NOTICE_WINDOW_MS = 70 * 60 * 1000;
+
+/** Bildirimin gönderilebileceği yerel saat aralığı: okul sonrası (dahil–dışında). */
+const ENERGY_NOTICE_LOCAL_HOURS = { from: 15, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const ENERGY_NOTICE_SCAN_LIMIT = 1000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const ENERGY_NOTICE_CONCURRENCY = 25;
+
+/**
+ * Bu kullanıcıya enerji bildirimi gönderilmeli mi.
+ *
+ * Saf: okul saati penceresi ve sonsuz enerji muafiyeti emülatör olmadan test edilebilsin
+ * diye (bkz. scripts/test-notifications.js).
+ *
+ * @param infiniteEnergy `hasInfiniteEnergy(userData)` sonucu.
+ */
+function energyNoticeDecision({ infiniteEnergy, utcOffsetMinutes }, nowMs) {
+  if (infiniteEnergy) return null;
+
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < ENERGY_NOTICE_LOCAL_HOURS.from || localHour >= ENERGY_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  return {
+    text: {
+      title: 'Enerjin doldu',
+      body: 'Kaldığın yerden devam edebilirsin.',
+    },
+  };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runEnergyFullNotices(nowMs) {
+  // Enerjisi SON BİR SAAT İÇİNDE dolmuş olanlar. Tek alan aralık sorgusu, yeni indeks
+  // gerekmiyor. "Dolu olan herkes" sorgulanamazdı: çoğu kullanıcının enerjisi dolu ve
+  // onlara her saat bildirim gitmesi anlamsız olurdu.
+  const snap = await db
+    .collection('users')
+    .where(ENERGY_FIELD, '>', nowMs - ENERGY_NOTICE_WINDOW_MS)
+    .where(ENERGY_FIELD, '<=', nowMs)
+    .limit(ENERGY_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += ENERGY_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + ENERGY_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        try {
+          const userData = doc.data() || {};
+          const decision = energyNoticeDecision(
+            {
+              infiniteEnergy: hasInfiniteEnergy(userData),
+              utcOffsetMinutes: userData.utcOffsetMinutes,
+            },
+            nowMs
+          );
+          if (!decision) {
+            counts.skipped++;
+            return;
+          }
+
+          const result = await sendUserNotification(doc.id, {
+            type: 'reward',
+            topic: 'energy_full',
+            title: decision.text.title,
+            body: decision.text.body,
+            userData,
+          });
+          if (result.sent) counts.sent++;
+          else counts.skipped++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runEnergyFullNotices: hata', { uid: doc.id, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runEnergyFullNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendEnergyFullNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runEnergyFullNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._energyNoticeDecision = energyNoticeDecision;
+exports._runEnergyFullNotices = runEnergyFullNotices;
+
+// ─── SEZON BİTİŞ BİLDİRİMİ ──────────────────────────────────────────────────
+//
+// KULLANICI TASARIMI (05.10.2026)
+//   "Sezonun bitmesine 4 saat kala herkese: Sezon 4 saat sonra bitecek, liderlik tablo
+//   sıranı gözden geçir."
+//
+// NEDEN METİNDE SABİT "4 SAAT" YOK
+//   Sezon bitişi sabit bir UTC anı (`SEASON_ANCHOR_UTC_MS`, haftalık), yani "4 saat kala"
+//   herkes için AYNI an. O an bazı saat dilimlerinde gecenin bir yarısı: Endonezya (+7) için
+//   15.05, Türkiye (+3) için 11.05, ama ABD batı yakası (-7) için 01.05. Gece bildirimi
+//   göndermek bu özelliğin amacını bozar; ertelemek de işe yaramaz, çünkü sezon bitiyor.
+//
+//   Çözüm: bildirim kullanıcının yerel saatine göre uygun bir pencerede gönderiliyor ve
+//   metin O ANDA kalan gerçek süreyi söylüyor. Böylece kullanıcının istediği bilgi (kaç saat
+//   kaldı) korunuyor ama saate çivilenmiş olmuyoruz.
+//
+// KİME
+//   Herkese (kullanıcı kararı). Tavana tabi ve öncelikli konu: tavanın son slotu bunun için
+//   ayrılmış (bkz. notifications.js → PRIORITY_TOPICS), yani sezonun son günü sandık
+//   bildirimi bunu düşüremiyor. İlgilenmeyen kullanıcıda kendiliğinden susuyor — üst üste
+//   beş sezon açılmazsa konu kapanıyor.
+
+/** Sezon bitişine bu aralıkta kalanlara bildirim gönderilebilir (saat). */
+const SEASON_NOTICE_WINDOW_HOURS = { min: 2, max: 12 };
+
+/** Bildirimin gönderilebileceği yerel saat aralığı (dahil–dışında). */
+const SEASON_NOTICE_LOCAL_HOURS = { from: 10, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const SEASON_NOTICE_SCAN_LIMIT = 5000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const SEASON_NOTICE_CONCURRENCY = 25;
+
+/**
+ * Sezon bitiş bildiriminin metni.
+ *
+ * Kalan süre metne giriyor ama GÜN adı girmiyor ("yarın" / "bugün"): aynı UTC anı bazı
+ * dilimlerde bugün, bazılarında yarın oluyor ve gün adı o kullanıcılarda yanlış olurdu.
+ * Saat sayısı her dilimde doğru.
+ */
+function seasonNoticeText(hoursLeft) {
+  const h = Math.max(1, Math.round(hoursLeft));
+  const title = h === 1 ? 'Sezon bir saat sonra bitiyor' : `Sezon ${h} saat sonra bitiyor`;
+  return { title, body: 'Liderlik tablosundaki sıranı gözden geçir.' };
+}
+
+/**
+ * Bu kullanıcıya sezon bitiş bildirimi gönderilmeli mi.
+ *
+ * Saf: pencere, yerel saat ve sezon başına tek gönderim emülatör olmadan test edilebilsin
+ * diye (bkz. scripts/test-notifications.js).
+ *
+ * @param season       Bitmekte olan sezon numarası.
+ * @param msLeft       Sezon bitişine kalan süre (ms).
+ * @param sentSeason   Defterdeki `seasonNotice` — en son hangi sezon için gönderildiği.
+ */
+function seasonNoticeDecision({ season, msLeft, sentSeason, utcOffsetMinutes }, nowMs) {
+  const hoursLeft = msLeft / 3600000;
+  if (hoursLeft <= SEASON_NOTICE_WINDOW_HOURS.min) return null;
+  if (hoursLeft > SEASON_NOTICE_WINDOW_HOURS.max) return null;
+
+  // Bu sezon için zaten gönderilmiş. Sezon numarası karşılaştırılıyor, bayrak değil:
+  // bir sonraki sezonda bildirim yeniden gidiyor.
+  if (Number(sentSeason) === season) return null;
+
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < SEASON_NOTICE_LOCAL_HOURS.from || localHour >= SEASON_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  return { season, text: seasonNoticeText(hoursLeft) };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runSeasonEndingNotices(nowMs) {
+  const msLeft = millisUntilCurrentSeasonEnds(nowMs);
+  const hoursLeft = msLeft / 3600000;
+
+  // Pencere dışındaysa HİÇ OKUMA YAPILMIYOR. Bu tarama bütün kullanıcıları gezmek zorunda
+  // (bildirim herkese gidiyor ve "yerel saati uygun olanlar" diye sorgulanamıyor), yani
+  // saatlik çalışmanın her turunda okumak pahalıya gelirdi. Sezon haftalık, pencere ~10
+  // saat: okuma haftada bir, o pencerede yapılıyor.
+  if (hoursLeft <= SEASON_NOTICE_WINDOW_HOURS.min || hoursLeft > SEASON_NOTICE_WINDOW_HOURS.max) {
+    return { skipped: 'out_of_window', hoursLeft: Math.round(hoursLeft) };
+  }
+
+  const season = currentSeason(nowMs);
+  const snap = await db.collection('users').limit(SEASON_NOTICE_SCAN_LIMIT).get();
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0, season };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += SEASON_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + SEASON_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        try {
+          const ledgerSnap = await notifyLedgerRef(doc.id).get();
+          const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+          const decision = seasonNoticeDecision(
+            {
+              season,
+              msLeft,
+              sentSeason: ledger.seasonNotice,
+              utcOffsetMinutes: doc.get('utcOffsetMinutes'),
+            },
+            nowMs
+          );
+          if (!decision) {
+            counts.skipped++;
+            return;
+          }
+
+          const result = await sendUserNotification(doc.id, {
+            type: 'reward',
+            topic: 'season_ending',
+            title: decision.text.title,
+            body: decision.text.body,
+            userData: doc.data(),
+          });
+          if (!result.sent) {
+            counts.skipped++;
+            return;
+          }
+          await notifyLedgerRef(doc.id).set({ seasonNotice: season }, { merge: true });
+          counts.sent++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runSeasonEndingNotices: hata', { uid: doc.id, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runSeasonEndingNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendSeasonEndingNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runSeasonEndingNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._seasonNoticeText = seasonNoticeText;
+exports._seasonNoticeDecision = seasonNoticeDecision;
+exports._runSeasonEndingNotices = runSeasonEndingNotices;
 
 // ─── DENEME SÜRESİ BİTİŞ BİLDİRİMİ ─────────────────────────────────────────
 //
@@ -4819,6 +5230,10 @@ function reminderPatch(utcOffsetMinutes, chosenHour, storedHour) {
   const localHour = chosenHour ?? storedHour ?? STREAK_REMINDER_LOCAL_HOUR;
   const patch = {
     reminderHourUtc: reminderHourUtc(utcOffsetMinutes, localHour),
+    // Kırılma öncesi ikinci hatırlatmanın UTC saati. Kullanıcının seçimine bağlı DEĞİL,
+    // sabit yerel 20:00 — sessiz saatlerin bir saat öncesi. Ayrı alan olması gerekiyordu:
+    // tarama kullanıcıları indeksli tek bir eşitlikle seçiyor.
+    secondReminderHourUtc: reminderHourUtc(utcOffsetMinutes, SECOND_CHANCE_LOCAL_HOUR),
     utcOffsetMinutes,
     lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
   };
@@ -5335,12 +5750,40 @@ const STREAK_REMINDER_CONCURRENCY = 25;
 /** Fonksiyonun kendine ayırdığı süre; aşarsa kalanları bir sonraki saate bırakıyor. */
 const STREAK_REMINDER_BUDGET_MS = 480_000;
 
-/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
-async function runStreakReminderScan(hourUtc, nowMs) {
-  const deadline = Date.now() + STREAK_REMINDER_BUDGET_MS;
+/**
+ * İki hatırlatma geçişinin tanımı.
+ *
+ * İkisi de aynı gövdeyi kullanıyor; yalnızca hangi alanla seçildikleri, hangi kararı
+ * sordukları ve gönderimi nereye işaretledikleri farklı. Ayrı iki tarama yazmak aynı
+ * token/gönderim/işaretleme mantığını kopyalamak olurdu.
+ *
+ * `data.type` ikisinde de `streak_reminder`: sahadaki eski istemci sürümleri ayrıştırmayı
+ * ona göre yapıyor. Aynı tür olduğu için ikisi aynı bildirim kimliğini de paylaşıyor, yani
+ * akşam gelen ikinci hatırlatma birincinin yerini alıyor — çekmecede iki seri bildirimi
+ * yığılmıyor.
+ */
+const STREAK_REMINDER_PASSES = [
+  {
+    name: 'first',
+    hourField: 'reminderHourUtc',
+    sentField: 'reminderSentDay',
+    topic: 'streak_reminder',
+    decide: streakReminderDecision,
+  },
+  {
+    name: 'second',
+    hourField: 'secondReminderHourUtc',
+    sentField: 'secondReminderSentDay',
+    topic: 'streak_second_chance',
+    decide: secondChanceDecision,
+  },
+];
+
+/** Bir geçişin gövdesi: seç, karar ver, gönder, işaretle. */
+async function runStreakReminderPass(pass, hourUtc, nowMs, deadline) {
   const snap = await db
     .collectionGroup('streak')
-    .where('reminderHourUtc', '==', hourUtc)
+    .where(pass.hourField, '==', hourUtc)
     .limit(STREAK_REMINDER_SCAN_LIMIT)
     .get();
 
@@ -5349,7 +5792,10 @@ async function runStreakReminderScan(hourUtc, nowMs) {
 
   for (let i = 0; i < docs.length; i += STREAK_REMINDER_CONCURRENCY) {
     if (Date.now() > deadline) {
-      console.warn('sendStreakReminders: süre doldu, kalanlar bir sonraki saate', counts);
+      console.warn('sendStreakReminders: süre doldu, kalanlar bir sonraki saate', {
+        pass: pass.name,
+        ...counts,
+      });
       break;
     }
     const chunk = docs.slice(i, i + STREAK_REMINDER_CONCURRENCY);
@@ -5362,14 +5808,19 @@ async function runStreakReminderScan(hourUtc, nowMs) {
           ? d.lastSeenAt.toMillis()
           : null;
 
-        const decision = streakReminderDecision(
+        const decision = pass.decide(
           {
             utcOffsetMinutes: d.utcOffsetMinutes,
             lastDay: typeof d.lastDay === 'string' ? d.lastDay : '',
             reminderSentDay: typeof d.reminderSentDay === 'string' ? d.reminderSentDay : '',
+            secondReminderSentDay:
+              typeof d.secondReminderSentDay === 'string' ? d.secondReminderSentDay : '',
             lastSeenMs: lastSeen,
             current: Math.max(0, Math.trunc(Number(d.current) || 0)),
             goalMinutes: Math.trunc(Number(d.goalMinutes) || 0),
+            // Birinci hatırlatmanın metni dondurma varsa değişiyor, ikinci hatırlatma ise
+            // dondurması olana hiç gitmiyor.
+            freezes: Math.max(0, Math.trunc(Number(d.freezes) || 0)),
           },
           nowMs
         );
@@ -5387,7 +5838,7 @@ async function runStreakReminderScan(hourUtc, nowMs) {
           // ayrıştırma anahtarı, bu yüzden data'da elle veriliyor.
           const result = await sendUserNotification(uid, {
             type: 'streak',
-            topic: 'streak_reminder',
+            topic: pass.topic,
             title: decision.text.title,
             body: decision.text.body,
             data: { type: 'streak_reminder' },
@@ -5397,12 +5848,12 @@ async function runStreakReminderScan(hourUtc, nowMs) {
             if (result.reason === 'no_token') counts.noToken++;
             else if (result.reason === 'delivery_failed') counts.failed++;
             else counts.skipped++;
-            // Gönderilmediyse `reminderSentDay` işaretlenmiyor: tercihi kapalıysa yarın da
-            // gitmeyecek (zararsız), ama geçici bir aksaklıksa bir sonraki saatte denenir.
+            // Gönderilmediyse gün işaretlenmiyor: tercihi kapalıysa yarın da gitmeyecek
+            // (zararsız), ama geçici bir aksaklıksa bir sonraki saatte denenir.
             return;
           }
           counts.sent++;
-          await doc.ref.set({ reminderSentDay: decision.today }, { merge: true });
+          await doc.ref.set({ [pass.sentField]: decision.today }, { merge: true });
         } catch (e) {
           counts.failed++;
         }
@@ -5410,8 +5861,23 @@ async function runStreakReminderScan(hourUtc, nowMs) {
     );
   }
 
-  console.log('sendStreakReminders tamamlandı', { hourUtc, ...counts });
   return counts;
+}
+
+/**
+ * Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı.
+ *
+ * İki geçiş SIRAYLA çalışıyor, paralel değil: ikisinin de süre bütçesi ortak ve birinci
+ * geçiş (kullanıcının kendi seçtiği saat) ikinciden önce gelmeli.
+ */
+async function runStreakReminderScan(hourUtc, nowMs) {
+  const deadline = Date.now() + STREAK_REMINDER_BUDGET_MS;
+  const result = {};
+  for (const pass of STREAK_REMINDER_PASSES) {
+    result[pass.name] = await runStreakReminderPass(pass, hourUtc, nowMs, deadline);
+  }
+  console.log('sendStreakReminders tamamlandı', { hourUtc, ...result });
+  return result;
 }
 
 exports.sendStreakReminders = functions

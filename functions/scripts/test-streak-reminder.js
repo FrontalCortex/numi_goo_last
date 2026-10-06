@@ -7,10 +7,14 @@
  *   node functions/scripts/test-streak-reminder.js
  */
 const {
+  SECOND_CHANCE_LOCAL_HOUR,
+  SECOND_CHANCE_MIN_STREAK,
   localDayId,
   normalizeReminderHour,
   reminderHourUtc,
   streakReminderDecision,
+  streakReminderText,
+  secondChanceDecision,
 } = require('../streakReminder');
 
 let pass = 0;
@@ -93,6 +97,72 @@ const fresh = streakReminderDecision(
 );
 check('seri yoksa yeniden başlamaya davet', fresh.text.body.includes('yeni serini'), true);
 check('hedef dakikası metne giriyor', fresh.text.body.includes('20 dakika'), true);
+
+// Dondurması olan kullanıcının serisi bugün kırılmıyor, ama dondurma 4000 altın ve yarın
+// harcanacak. Metin bunu söylüyor; ton davet ("sakla"), tehdit değil.
+const withFreeze = streakReminderDecision(
+  { utcOffsetMinutes: OFFSET, lastDay: '2026-09-22', current: 12, goalMinutes: 5, lastSeenMs: daysAgo(1), freezes: 1 },
+  NOW
+);
+check('dondurma varsa metin değişiyor', withFreeze.text.body.includes('dondurmanı yarına sakla'), true);
+check('dondurma metninde seri sayısı yok', withFreeze.text.body.includes('12 günlük'), false);
+
+console.log('\n=== İKİNCİ ŞANS: SAAT ===');
+check(
+  `yerel ${SECOND_CHANCE_LOCAL_HOUR}:00 → UTC (Türkiye +3)`,
+  reminderHourUtc(OFFSET, SECOND_CHANCE_LOCAL_HOUR),
+  17
+);
+check(
+  `yerel ${SECOND_CHANCE_LOCAL_HOUR}:00 → UTC (Kaliforniya -7)`,
+  reminderHourUtc(-420, SECOND_CHANCE_LOCAL_HOUR),
+  3
+);
+
+console.log('\n=== İKİNCİ ŞANS: KARAR ===');
+// Taban durum: ilk hatırlatma bugün gitmiş, hedef tutturulmamış, seri uzun, dondurma yok.
+const base = {
+  utcOffsetMinutes: OFFSET,
+  lastDay: '2026-09-22',
+  reminderSentDay: TODAY,
+  secondReminderSentDay: '',
+  current: 5,
+  goalMinutes: 5,
+  freezes: 0,
+  lastSeenMs: daysAgo(1),
+};
+const why = (patch) => {
+  const r = secondChanceDecision({ ...base, ...patch }, NOW);
+  return r.send ? 'send' : r.reason;
+};
+
+check('taban durum gönderiliyor', why({}), 'send');
+check('bugün hedefi tutturmuş', why({ lastDay: TODAY }), 'goal_done');
+check('bugün ikinci hatırlatma gitmiş', why({ secondReminderSentDay: TODAY }), 'already_sent');
+check(
+  `serisi ${SECOND_CHANCE_MIN_STREAK}'ten kısa`,
+  why({ current: SECOND_CHANCE_MIN_STREAK - 1 }),
+  'short_streak'
+);
+check('tam eşikte gönderiliyor', why({ current: SECOND_CHANCE_MIN_STREAK }), 'send');
+// Dondurması olana ikinci bildirim gereksiz: seri bugün kırılmıyor ve birinci hatırlatma
+// dondurmadan zaten söz etti.
+check('dondurması var', why({ freezes: 1 }), 'has_freeze');
+// Birinci hatırlatma gitmediyse ikincisi de gitmesin; aksi halde tercihi kapalı kullanıcıya
+// ya da hiç hatırlatma almamış kullanıcıya ulaşırdı.
+check('birinci hatırlatma bugün gitmemiş', why({ reminderSentDay: '' }), 'no_first');
+check('bir haftadır uygulamayı açmamış', why({ lastSeenMs: daysAgo(9) }), 'idle');
+check('saat dilimi bilinmiyor', why({ utcOffsetMinutes: undefined }), 'no_offset');
+
+const second = secondChanceDecision(base, NOW);
+check('metin seri sayısını söylüyor', second.text.title.includes('5 günlük'), true);
+check('metin hedef dakikasını söylüyor', second.text.body.includes('5 dakikan'), true);
+// Aynı metni ikinci kez göndermek kullanıcıya bir şey söylemez, yalnızca tekrar eder.
+check(
+  'ikinci şans metni birinciden farklı',
+  second.text.title === streakReminderText(base.current, base.goalMinutes, 0).title,
+  false
+);
 
 console.log(`\n${pass} geçti, ${fail} kaldı`);
 process.exit(fail > 0 ? 1 : 0);

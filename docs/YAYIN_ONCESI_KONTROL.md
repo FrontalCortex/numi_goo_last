@@ -162,6 +162,48 @@ aboneliğiyle hiçbir eşik yakalanmıyor. Gerçek deneme süresi olmadan bu bil
 10. **Üç cihaz sınırı.** Tavan 2'den 3'e çıkarıldı; üçüncü cihazın gerçekten bildirim aldığı
     görülmedi (üç cihaz gerekiyor).
 
+### Soru durumu
+
+11. **Üç geçiş de bildirim gönderiyor mu:** öğretmen soruyu aldı · çözüldü · kredi iade
+    edildi. İadeyi beklemeden denemek için Firestore'dan sorunun `createdAtMs` alanı 48
+    saatten eskiye çekilebilir.
+12. **"Çözüldü" susturması çalışıyor mu.** Öğretmen son mesajını yazıp 5 dakika içinde soruyu
+    kapatırsa "çözüldü" bildirimi GİTMEMELİ (o mesajın sohbet bildirimi zaten gitti). 5
+    dakika sonra kapatırsa gitmeli.
+13. **Bildirim kimliği çakışması.** Öğretmen mesaj yazsın (sohbet bildirimi düşsün), hemen
+    ardından soruyu kapatsın: iki bildirim ÇEKMECEDE AYRI AYRI durmalı, biri diğerini
+    silmemeli.
+
+### Seri
+
+14. **Dondurma varyantı.** Dondurması olan kullanıcının akşam hatırlatması "dondurmanı yarına
+    sakla" demeli, seri sayısını söylememeli.
+15. **İkinci şans (yerel 20.00).** Serisi 3+ olan, dondurması olmayan, birinci hatırlatmayı
+    almış ve hedefi tutturmamış kullanıcıya gitmeli. **Mevcut kullanıcılarda
+    `secondReminderHourUtc` alanı yok** — bir kez `submitStreakDay` çağrılana kadar bu
+    bildirim gitmiyor, yani ilk günlerde "çalışmıyor" sanılabilir.
+16. **İki hatırlatma tek bildirim kimliği paylaşıyor.** Akşam 19.00'da birinci, 20.00'de
+    ikinci gelirse çekmecede TEK bildirim kalmalı (ikincisi birincinin yerini alır).
+
+### Sezon, enerji, sandık
+
+17. **Sezon bitişi metni.** Kalan saati doğru söylüyor mu ve gün adı ("yarın"/"bugün")
+    söylemiyor mu. Saat dilimi farklı bir cihazda da bakılmalı: metin her dilimde doğru
+    olmak zorunda.
+18. **Sezon bildirimi gece gitmiyor mu.** Pencere yerel 10.00–21.00. Sezon bitişi sabit bir
+    UTC anı olduğu için bazı dilimlerde bu pencere hiç yakalanmaz ve bildirim o kullanıcılara
+    GİTMEZ — beklenen davranış, eksiklik değil.
+19. **Madalya bildirimi yalnızca kazanana.** Madalya almayan kullanıcıya gitmemeli. Ayrıca
+    sezon sonu işlemi yarıda kalıp tekrarlanırsa bildirim İKİNCİ KEZ gitmemeli (transaction
+    dışında gönderiliyor, ama gerçek bir tekrarda görülmedi).
+20. **Enerji bildirimi okul saatinde gitmiyor mu.** Pencere yerel 15.00–21.00. Pro/Premium ve
+    onaylı öğretmene hiç gitmemeli.
+21. **Sandık bildirimi doğru sayıyor mu.** Birden fazla kupa alanında bekleyen sandık varsa
+    sayı doğru olmalı; açılmış sandık sayılmamalı. Günde bir kez, UTC 14.00'te çalışıyor.
+22. **Toplam bildirim sayısı.** Asıl risk tek tek türler değil toplam: aktif bir kullanıcının
+    sohbet dışında günde kaç bildirim aldığına bakılmalı. Hedef günde ortalama 1, en fazla 2.
+    `notifyLedger.history` bu sayıyı kullanıcı başına gün gün tutuyor.
+
 ---
 
 ## 6. Sürüm alırken

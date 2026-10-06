@@ -1847,6 +1847,90 @@ cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS
 içinde öğretmen cihazına bildirim düşmeli. **İlk deploy'dan sonraki İLK tarama imleci kurar ve
 bildirim göndermez** — ikinci turu beklemek gerekiyor.
 
+## Kalan bildirimlerin hepsi (06.10.2026 — yazıldı ve derlendi, HİÇBİRİ cihazda DENENMEDİ)
+
+Kullanıcı "testlerle uğraşmak istemiyorum, sen bildirimleri ekle, ileride test'teyken zaten
+görürüz" dedi. Plandaki 4. ve 5. maddenin tamamı bir turda yazıldı. **Canlıda
+doğrulanacakların listesi `docs/YAYIN_ONCESI_KONTROL.md` → "Yayından sonra canlıda
+doğrulanacaklar" bölümünde.**
+
+### Seri: dondurma varyantı ve kırılma öncesi ikinci şans
+
+- **Dondurma varyantı** (`streakReminder.js` → `streakReminderText`): dondurması olan
+  kullanıcıya akşam hatırlatması "Bugün N dakika çalış, **dondurmanı yarına sakla**" diyor.
+  Dondurma 4000 altın ve yarın harcanacak; bilgi aynı, ton davet — "harcanacak" yerine
+  "sakla".
+- **İkinci şans** (`secondChanceDecision`): yerel **20:00**, sessiz saatlerin bir saat
+  öncesi. Dört şart birden: serisi ≥ 3, dondurması YOK, birinci hatırlatma bugün gitmiş,
+  hedef hâlâ tutturulmamış. Bu şartlar olmadan günde iki hatırlatma demek olurdu.
+- Saat ayrı bir alandan geliyor: `secondReminderHourUtc` (sabit yerel 20:00, kullanıcının
+  seçimine bağlı DEĞİL). `reminderPatch` yazıyor. **Mevcut kullanıcılarda alan yok**, bir kez
+  `submitStreakDay` çağrılınca doluyor — yani ikinci hatırlatma onlara hemen gitmiyor,
+  kendiliğinden düzeliyor.
+- Tarama tek fonksiyonda iki geçiş (`STREAK_REMINDER_PASSES`): aynı token/gönderim/işaretleme
+  gövdesini kopyalamamak için. İkisi de `data.type = streak_reminder` gönderiyor, yani eski
+  istemciler ikisini de tanıyor ve aynı bildirim kimliğini paylaşıyorlar — akşam gelen ikinci
+  hatırlatma birincinin yerini alıyor, çekmecede iki seri bildirimi yığılmıyor.
+
+### Sezon bitişi (`sendSeasonEndingNotices`, saatte bir)
+
+Kullanıcı tasarımı: "bitmesine 4 saat kala herkese, sıranı gözden geçir."
+
+**Metinde sabit "4 saat" YOK ve bu bilinçli.** Sezon bitişi sabit bir UTC anı
+(`SEASON_ANCHOR_UTC_MS`), yani "4 saat kala" herkes için aynı an: Endonezya (+7) için 15.05,
+Türkiye (+3) için 11.05, ABD batı yakası (-7) için **01.05**. Gece bildirimi bu özelliğin
+amacını bozar, ertelemek de işe yaramaz (sezon bitiyor). Çözüm: pencere 2–12 saat, gönderim
+kullanıcının yerel saatiyle 10.00–21.00 arasında, metin O ANDA kalan gerçek süreyi söylüyor
+("Sezon 4 saat sonra bitiyor"). Metin GÜN adı söylemiyor ("yarın"/"bugün"): aynı UTC anı bazı
+dilimlerde bugün, bazılarında yarın.
+
+Pencere dışındaysa **hiç okuma yapılmıyor** — bildirim herkese gittiği için tarama bütün
+kullanıcıları gezmek zorunda ve bu her saat yapılamaz. Sezon haftalık, pencere ~10 saat.
+
+Sezon başına tek gönderim: `notifyLedger.seasonNotice` = sezon numarası (bayrak değil, yani
+sonraki sezonda yeniden gidiyor). Öncelikli konu (`PRIORITY_TOPICS`), yani tavanın son slotu
+bunun için ayrılmış.
+
+### Sezon madalyası (`finalizeSeasonLeaderboardMedals` içinde)
+
+"Sezon bitti, madalyan hazır." **Yalnızca madalya KAZANANA** gidiyor; kazanmayana
+gönderilmiyor, çünkü açtığında hiçbir şey bulamayan kullanıcı o bildirime bir daha güvenmez.
+Ayrım bedava — kimin ne kazandığı zaten hesaplanıyor (`addedSomething`).
+
+Bildirim **transaction'ın DIŞINDA**: Firestore çakışmada transaction gövdesini yeniden
+çalıştırıyor, içeride gönderilse bildirim ikinci kez giderdi.
+`scheduleFinalize(functions, admin, db, notify)` — bildirim gönderici dışarıdan geçiyor,
+çünkü modül `index.js`'teki `sendUserNotification`'a erişemiyor.
+
+### Enerji doldu (`sendEnergyFullNotices`, saatte bir)
+
+Yerel **15.00–21.00** penceresi, yani okul sonrası. Bu kataloğun en açık "geri dön ve oyna"
+bildirimi ve kitle 7–10 yaş: okul saatinde çocuğun telefonunu titretmek savunulamaz ve Play
+Families tarafında risk. Sonsuz enerjisi olanlara (Pro, Premium, onaylı öğretmen)
+gönderilmiyor — onlar için dolum diye bir şey yok.
+
+Sorgu `energy_full_time` üzerinde aralık (son ~70 dakikada dolanlar); yeni indeks gerekmedi.
+"Enerjisi dolu olan herkes" sorgulanamazdı — çoğu kullanıcının enerjisi dolu.
+
+### Bekleyen kupa yolu sandığı (`sendPendingChestNotices`, GÜNDE BİR, UTC 14.00)
+
+Eşiği geçip sandığını açmamış kullanıcıya. Kataloğun en zararsız bildirimi: yeni bir iş
+istemiyor, zaten kazanılmış bir ödülü hatırlatıyor.
+
+**Neden günde bir:** tarama kullanıcı başına iki alt koleksiyon okuması gerektiriyor (kupa
+puanı + sandık defteri). Saatlik çalışsa aynı okumalar günde 24 kez yapılırdı ve bildirimin
+değeri bu maliyeti karşılamıyor. Yerel saat filtresi yok ve gerekmiyor: tür `reward`, yani
+sessiz saate denk gelen kullanıcıda kendiliğinden düşüyor.
+
+### Test
+
+`npm run test:notifications` 99'dan **126 kontrole** çıktı; `test:reminder` 32'den 48'e.
+Sunucu test takımının sekizi de geçiyor, istemci derlemesi temiz.
+
+Testleri yazarken `grabConst` yardımcısında bir tuzak çıktı ve düzeltildi: tek satırlık regex
+çok satırlı sabitleri (`const CUP_PATH_FIELDS = [` ... `];`) bulamıyordu. Artık parantez
+dengesi takip ediliyor.
+
 ## Soru durumu bildirimleri (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
 
 Öğrenci sorusunun ne olduğunu yalnızca uygulamayı açarsa öğreniyordu. Üç geçiş de onun için

@@ -209,7 +209,7 @@ async function deleteLeaderboardBoard(db, boardRef) {
  * Sezon S bitti sayılır: uygulama içi [currentSeason] = S+1 veya daha büyükken S ödüllendirilir.
  * Kullanıcı rozet alanları yazıldıktan sonra bu sezona ait lessonLeaderboards dokümanları silinir (depolama).
  */
-async function finalizeSeason(db, season, deadlineMs) {
+async function finalizeSeason(db, season, deadlineMs, notify) {
   const outOfTime = () => Date.now() >= deadlineMs;
   const boardsSnap = await db.collection('lessonLeaderboards').where('season', '==', season).get();
   if (boardsSnap.empty) {
@@ -277,6 +277,10 @@ async function finalizeSeason(db, season, deadlineMs) {
           console.log(`finalizeSeasonLeaderboardMedals: uid=${uid} kullanıcısı artık yok, ödül atlanıyor`);
           return;
         }
+        // Transaction'ın dışında tutuluyor: bildirim bir YAN ETKİ ve transaction yeniden
+        // denenebilir (Firestore çakışmada gövdeyi tekrar çalıştırıyor), yani içeride
+        // gönderilen bildirim ikinci kez gidebilirdi.
+        let awardedMedal = false;
         await db.runTransaction(async (t) => {
           const stateSnap = await t.get(stateRef);
           const d = stateSnap.data() || {};
@@ -310,10 +314,23 @@ async function finalizeSeason(db, season, deadlineMs) {
             mergedCup.length !== exCup.length;
           if (addedSomething && hasLeaderboardRewardInc(inc)) {
             payload.pendingLeaderboardRewardSeason = season;
+            awardedMedal = true;
           }
 
           t.set(stateRef, payload, { merge: true });
         });
+
+        // Madalya kazanana bildirim. Kazanmayana GÖNDERİLMİYOR: açtığında hiçbir şey
+        // bulamayan kullanıcı o bildirime bir daha güvenmez. Ayrım bedava — kimin ne
+        // kazandığı yukarıda zaten hesaplandı.
+        if (awardedMedal && notify) {
+          await notify(uid, {
+            type: 'reward',
+            topic: 'season_medals',
+            title: 'Sezon bitti, madalyan hazır',
+            body: 'Kazandığın ödüllere bakmak için dokun.',
+          });
+        }
       } catch (e) {
         console.error(`finalizeSeasonLeaderboardMedals: uid=${uid}`, e);
       }
@@ -352,7 +369,7 @@ async function finalizeSeason(db, season, deadlineMs) {
   return true;
 }
 
-async function runOnce(db, admin, deadlineMs) {
+async function runOnce(db, admin, deadlineMs, notify) {
   const cursorRef = db.doc(SYSTEM_CURSOR);
   const maxCatchUp = 50;
   for (let i = 0; i < maxCatchUp; i++) {
@@ -392,7 +409,7 @@ async function runOnce(db, admin, deadlineMs) {
     const seasonToProcess = last + 1;
     // İmleç yalnızca sezon TAM bittiğinde ilerliyor. Yarıda kalırsa bir sonraki çalışma
     // aynı sezonu baştan alıyor; ödül birleştirmesi tekrarı eklemediği için bu güvenli.
-    const completed = await finalizeSeason(db, seasonToProcess, deadlineMs);
+    const completed = await finalizeSeason(db, seasonToProcess, deadlineMs, notify);
     if (!completed) return;
     await cursorRef.set(
       {
@@ -419,7 +436,7 @@ async function runOnce(db, admin, deadlineMs) {
  *   döngüde dağıtıldığı için fark edilmez. runOnce zaten geride kalmış sezonları
  *   (maxCatchUp'a kadar) toparlıyor, yani bir çalıştırma kaçsa bile kayıp olmuyor.
  */
-function scheduleFinalize(functions, admin, db) {
+function scheduleFinalize(functions, admin, db, notify) {
   return functions
     .runWith({ timeoutSeconds: 300, memory: '512MB' })
     .pubsub.schedule('every 5 minutes')
@@ -428,7 +445,7 @@ function scheduleFinalize(functions, admin, db) {
       // Fonksiyonun 300 saniyesinden pay ayrılıyor: iş bütçesi dolunca çalışma kendi
       // isteğiyle duruyor ve imleci ilerletmiyor. Zorla kesilseydi de veri bozulmazdı
       // (imleç zaten ilerlemezdi) ama son log satırları ve temizlik yarıda kalırdı.
-      await runOnce(db, admin, Date.now() + FINALIZE_BUDGET_MS);
+      await runOnce(db, admin, Date.now() + FINALIZE_BUDGET_MS, notify);
       return null;
     });
 }

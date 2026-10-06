@@ -61,10 +61,26 @@ function grabFunction(name) {
   throw new Error(`kapanmadı: ${name}`);
 }
 
+/**
+ * Kaynaktan bir sabit tanımını çeker — çok satırlı dizi/nesne dahil.
+ *
+ * Tek satırlık bir regex yetmiyordu: `const CUP_PATH_FIELDS = [` ile başlayıp satırlar
+ * sonra kapanan tanımlar sahada çoğunlukta. Parantez dengesi takip ediliyor ve derinlik
+ * sıfıra döndüğünde ilk `;` sonu kabul ediliyor.
+ */
 function grabConst(name) {
-  const m = indexSrc.match(new RegExp(`^const ${name} = .*;$`, 'm'));
-  if (!m) throw new Error(`kaynakta bulunamadı: const ${name}`);
-  return m[0];
+  const marker = `\nconst ${name} = `;
+  const at = indexSrc.indexOf(marker);
+  if (at < 0) throw new Error(`kaynakta bulunamadı: const ${name}`);
+  const start = at + 1;
+  let depth = 0;
+  for (let j = start; j < indexSrc.length; j++) {
+    const c = indexSrc[j];
+    if (c === '[' || c === '{' || c === '(') depth++;
+    else if (c === ']' || c === '}' || c === ')') depth--;
+    else if (c === ';' && depth === 0) return indexSrc.slice(start, j + 1);
+  }
+  throw new Error(`kapanmadı: const ${name}`);
 }
 
 /**
@@ -538,6 +554,92 @@ check(
   questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).body,
   '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.'
 );
+
+console.log('\n=== SEZON BİTİŞİ ===');
+const seasonNoticeDecision = evalFromIndex(
+  'seasonNoticeDecision',
+  ['seasonNoticeText'],
+  ['SEASON_NOTICE_WINDOW_HOURS', 'SEASON_NOTICE_LOCAL_HOURS']
+);
+const HOUR = 3600000;
+const seasonBase = { season: 7, msLeft: 4 * HOUR, sentSeason: null, utcOffsetMinutes: 0 };
+const seasonOf = (patch) => seasonNoticeDecision({ ...seasonBase, ...patch }, NOON);
+
+check('4 saat kaldı → gönderiliyor', seasonOf({}) !== null, true);
+check('1 saat kaldı → pencere geçti', seasonOf({ msLeft: 1 * HOUR }), null);
+check('20 saat kaldı → pencere gelmedi', seasonOf({ msLeft: 20 * HOUR }), null);
+check('12 saat sınırı dahil', seasonOf({ msLeft: 12 * HOUR }) !== null, true);
+// Sezon numarası karşılaştırılıyor, bayrak değil: bir sonraki sezonda bildirim yeniden gider.
+check('bu sezon için gönderilmiş', seasonOf({ sentSeason: 7 }), null);
+check('önceki sezonun kaydı engellemiyor', seasonOf({ sentSeason: 6 }) !== null, true);
+// Gece bildirimi bu özelliğin amacını bozar; ertelemek de işe yaramaz, sezon bitiyor.
+check('yerel saat 03:00 → gönderilmiyor', seasonOf({ utcOffsetMinutes: -540 }), null);
+check('yerel saat 22:00 → gönderilmiyor', seasonOf({ utcOffsetMinutes: 600 }), null);
+check('saat dilimi bilinmiyorsa gönderilmiyor', seasonOf({ utcOffsetMinutes: null }), null);
+
+// Metin kalan süreyi söylüyor ama GÜN adı söylemiyor: aynı UTC anı bazı dilimlerde bugün,
+// bazılarında yarın oluyor.
+check('metin kalan saati söylüyor', seasonOf({ msLeft: 4 * HOUR }).text.title, 'Sezon 4 saat sonra bitiyor');
+check('tekil saat', seasonOf({ msLeft: 2.4 * HOUR }).text.title, 'Sezon 2 saat sonra bitiyor');
+check('metinde gün adı yok', /yarın|bugün/i.test(seasonOf({}).text.title), false);
+
+console.log('\n=== ENERJİ DOLDU ===');
+const energyNoticeDecision = evalFromIndex(
+  'energyNoticeDecision',
+  [],
+  ['ENERGY_NOTICE_LOCAL_HOURS']
+);
+const energyOf = (patch) =>
+  energyNoticeDecision({ infiniteEnergy: false, utcOffsetMinutes: 180, ...patch }, NOON);
+
+// NOON = 12:00 UTC; +180 → yerel 15:00, okul sonrası penceresinin başı.
+check('yerel 15:00 → gönderiliyor', energyOf({}) !== null, true);
+// Okul saatinde çocuğun telefonunu titretmek savunulamaz (kitle 7–10 yaş, Play Families).
+check('yerel 12:00 (okul saati) → gönderilmiyor', energyOf({ utcOffsetMinutes: 0 }), null);
+check('yerel 09:00 → gönderilmiyor', energyOf({ utcOffsetMinutes: -180 }), null);
+check('yerel 21:00 → gönderilmiyor', energyOf({ utcOffsetMinutes: 540 }), null);
+check('yerel 20:00 → gönderiliyor', energyOf({ utcOffsetMinutes: 480 }) !== null, true);
+// Sonsuz enerjisi olanda dolum diye bir şey yok, alan anlamsız.
+check('sonsuz enerji → gönderilmiyor', energyOf({ infiniteEnergy: true }), null);
+check('saat dilimi bilinmiyorsa gönderilmiyor', energyOf({ utcOffsetMinutes: null }), null);
+
+console.log('\n=== BEKLEYEN SANDIK ===');
+const pendingChestCount = evalFromIndex(
+  'pendingChestCount',
+  ['readCupPathEntry', 'nextCupPathMilestone', 'isCupPathMilestone'],
+  ['CUP_PATH_FIELDS', 'CUP_PATH_START', 'CUP_PATH_STEP', 'CUP_PATH_MAX']
+);
+const chestNoticeText = evalFromIndex('chestNoticeText');
+
+check('puan yok → sandık yok', pendingChestCount({}, {}), 0);
+check(
+  'puan başlangıçta → sandık yok',
+  pendingChestCount({ addition_abacus_cup: 200 }, {}),
+  0
+);
+// İlk eşik 300 (CUP_PATH_START 200 + STEP 100); defter boşken lastClaimed 200 sayılıyor.
+check(
+  'ilk eşiği geçmiş, hiç açmamış → 1 sandık',
+  pendingChestCount({ addition_abacus_cup: 300 }, {}),
+  1
+);
+check(
+  'eşiğin bir altı → sandık yok',
+  pendingChestCount({ addition_abacus_cup: 299 }, {}),
+  0
+);
+check(
+  'açılmışsa sayılmıyor',
+  pendingChestCount({ addition_abacus_cup: 300 }, { addition_abacus_cup: { lastClaimed: 300 } }),
+  0
+);
+check(
+  'iki ayrı kupada bekleyen sandık',
+  pendingChestCount({ addition_abacus_cup: 400, impact_abacus_cup: 500 }, {}),
+  2
+);
+check('tekil metin', chestNoticeText(1).title, 'Seni bekleyen bir sandık var');
+check('çoğul metin', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
 
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
 process.exit(fail === 0 ? 0 : 1);
