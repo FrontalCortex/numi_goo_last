@@ -709,7 +709,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 when (row) {
                     is BulletinRow.Standard -> {
                         when (row.id) {
-                            // Karakter animasyonu yalnızca izleme ekranı: ödül yok, can yok.
+                            // Kart yalnızca onaylı öğretmende listede (bkz. submitBulletinList).
                             "mascot_animation" -> openAbacusContainerFragment(MascotPlaygroundFragment())
                             // Onaysız öğretmen ders yapamıyor; kupa testi ve abaküs pratiği de
                             // birer ders. Kapı olmasa kupa testi can 0 diye mağazaya yolluyordu.
@@ -828,22 +828,32 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
      */
     private fun submitBulletinList() {
         val rows = if (isMissionsMode) {
-            listOf(
-                BulletinRow.Missions(missionsRevision),
-                BulletinRow.DailyQuestion(dailyCardState),
-                BulletinRow.Standard(
-                    id = "daily_card",
-                    title = "Abaküs",
-                    subtitle = "Abaküste pratik yaparak kendini geliştir.",
-                    iconRes = R.drawable.abacus_svg_ic,
-                ),
-                BulletinRow.Standard(
-                    id = "mascot_animation",
-                    title = "Karakter Animasyonu",
-                    subtitle = "Maskotun bütün hareketlerini dene.",
-                    colorRes = android.R.color.holo_purple
-                ),
-            )
+            buildList<BulletinRow> {
+                add(BulletinRow.Missions(missionsRevision))
+                add(BulletinRow.DailyQuestion(dailyCardState))
+                add(
+                    BulletinRow.Standard(
+                        id = "daily_card",
+                        title = "Abaküs",
+                        subtitle = "Abaküste pratik yaparak kendini geliştir.",
+                        iconRes = R.drawable.abacus_svg_ic,
+                    )
+                )
+                // Şimdilik yalnızca onaylı öğretmende: maskot hâllerini deneme ekranı, çocuğa
+                // gösterilecek bir içerik değil. Onay sunucudan sonra öğrenilirse kart bir
+                // sonraki liste tazelemesinde gelir (onay yerelde saklandığı için yalnızca
+                // ilk açılışta).
+                if ((activity as? MainActivity)?.isApprovedTeacher() == true) {
+                    add(
+                        BulletinRow.Standard(
+                            id = "mascot_animation",
+                            title = "Karakter Animasyonu",
+                            subtitle = "Maskotun bütün hareketlerini dene.",
+                            colorRes = android.R.color.holo_purple
+                        )
+                    )
+                }
+            }
         } else {
             listOf(
                 BulletinRow.Standard(
@@ -1447,17 +1457,17 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // Arka planda Firestore verilerini çek ve gelince paneli güncelle
         GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
-            val active1 = items1.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            val active1 = cupPartActive(items1)
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
-                val active2 = items2.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                val active2 = cupPartActive(items2)
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val active3 = items3.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    val active3 = cupPartActive(items3)
                     GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
-                        val active4 = items4.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        val active4 = cupPartActive(items4)
                         GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
-                            val active5 = items5.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            val active5 = cupPartActive(items5)
                             GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
-                                val active6 = items6.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                                val active6 = cupPartActive(items6)
                                 
                                 if (isAdded) {
                                     requireActivity().runOnUiThread {
@@ -2397,17 +2407,17 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
         // 1. Kilit/Aktif durumlarını güncelle
         GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
-            val active1 = items1.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            val active1 = cupPartActive(items1)
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
-                val active2 = items2.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                val active2 = cupPartActive(items2)
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val active3 = items3.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    val active3 = cupPartActive(items3)
                     GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
-                        val active4 = items4.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        val active4 = cupPartActive(items4)
                         GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
-                            val active5 = items5.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            val active5 = cupPartActive(items5)
                             GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
-                                val active6 = items6.lastOrNull { it.type == com.example.app.model.LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                                val active6 = cupPartActive(items6)
                                 if (isAdded && dialog.isShowing) {
                                     requireActivity().runOnUiThread {
                                         setupCupPathCard(contentView, R.id.card1View, R.id.card1Title, R.id.card1CupIcon, R.id.card1CupValue, R.id.card1DinoAnim, active1)
@@ -2604,17 +2614,17 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
         val context = requireContext()
         GlobalLessonData.loadLessonItemsForPart(context, 1) { items1 ->
-            val active1 = items1.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+            val active1 = cupPartActive(items1)
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
-                val active2 = items2.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                val active2 = cupPartActive(items2)
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val active3 = items3.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                    val active3 = cupPartActive(items3)
                     GlobalLessonData.loadLessonItemsForPart(context, 4) { items4 ->
-                        val active4 = items4.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                        val active4 = cupPartActive(items4)
                         GlobalLessonData.loadLessonItemsForPart(context, 5) { items5 ->
-                            val active5 = items5.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                            val active5 = cupPartActive(items5)
                             GlobalLessonData.loadLessonItemsForPart(context, 6) { items6 ->
-                                val active6 = items6.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+                                val active6 = cupPartActive(items6)
                                 if (!isAdded) {
                                     releaseLaunchTouchBlocker()
                                     return@loadLessonItemsForPart
@@ -3208,6 +3218,18 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
             )
             lottieView.invalidate()
         }
+    }
+
+    /**
+     * Kupa yolunda bir bölümün kartı açık mı: bölümün son sandığı bitmişse açık.
+     *
+     * Onaylı öğretmende hepsi açık. Onun dersleri tek seferde açılıyor
+     * (GlobalLessonData.unlockLessonsForApprovedTeacherOnce) ama sandıkları bitmiş sayılmıyor;
+     * bu kural olmasa kupa yolu öğretmene hiç açılmazdı.
+     */
+    private fun cupPartActive(items: List<LessonItem>): Boolean {
+        if ((activity as? MainActivity)?.isApprovedTeacher() == true) return true
+        return items.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
     }
 
     private fun releaseLaunchTouchBlocker() {

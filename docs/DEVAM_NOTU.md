@@ -1703,8 +1703,48 @@ Kural: onaysız öğretmen hiçbir şey yapamaz. Karar tek yerde: `MainActivity.
   ürün verilmeli). `AuthManager.registerTeacher` ölü kod (çağıran yok) — rules `keys == 1`
   istediği için ona dokunulmadı.
 - Kurulmadı: telefon bağlantısı koptu, emülatörde yer yok.
-- Sıradaki: kullanıcı onaylı öğretmen ayarlarını söyleyecek (onaylı öğretmende ∞ rozeti kalbi
-  olmadan tek başına görünüyor — o sırada konuşulacak).
+
+## Onaylı öğretmen hesabı (06.10.2026 — telefona kuruldu, kullanıcı bakacak; commit + push edildi)
+
+Karar: `MainActivity.isApprovedTeacher()`. Kullanıcı "para/anahtar 9999999, can sonsuz" istedi;
+9999999 hesaba YAZILMADI (harcadıkça azalır, onay geri alınınca elle silinir, iade/tavan
+denetimlerine karışır) — "sınırsız" kuralı kuruldu, kullanıcı bu öneriyi kabul etti.
+- Cüzdan kipi: `UserWalletFirestore` NORMAL / LOCKED (onaysız → 0) / UNLIMITED (onaylı →
+  `UNLIMITED_BALANCE` = 9_999_999, yalnızca görünen değer). Önbellek GERÇEK değeri tutar, kip
+  okurken uygulanır (`getCachedKeys/Currency`, dinleyici, `applyDelta` sonucu). Abaküs
+  özelleştirme başlığı `displayText` ile "∞" gösteriyor. Onaylı öğretmenin harcaması analitiğe
+  yazılmıyor.
+- Sunucu: `updateUserWallet` onaylı öğretmende bakiyeye dokunmadan başarılı döner (harcamada
+  kaydedilmeyen bir rollbackToken verir; geri alma da no-op). **Deploy edilmeden** onaylı
+  öğretmenin altınla/anahtarla aldığı şey sunucuda "yetersiz bakiye" ile düşer. Seri dondurma ve
+  anahtarla can sunucuda değişmedi: yalnızca mağazadan alınıyor, mağaza öğretmene kapalı.
+- Üst panel: bütün öğretmenlerde seri, kredi ve can kabı gizli; `teacherApprovalPendingText`
+  onaylıda "Öğretmen hesabı" (yeşil, `ic_teacher_verified`, tıklanmaz), onaysızda "Hesabınız onay
+  bekliyor" (turuncu, saat, tıklanınca destek uyarısı).
+- Mağaza ve `launchPurchase`: `TeacherApprovalGate.blockPurchasesForTeacher` — onaysıza onay
+  uyarısı, onaylıya "her şey sınırsız" mesajı.
+- Dersler: `GlobalLessonData.unlockLessonsForApprovedTeacherOnce` — 1–6'da ders/sandık
+  `isCompleted = true`, 7–8'de `raceBusyLevel` 2 → 1 (0'a, yani çözülmüşe dokunmaz). Bayrak
+  `users/{uid}.teacherLessonsUnlocked`, sekiz bölüm yazılınca konuyor; tetik
+  `checkSubscriptionAndUpdateEnergy`. `seedAllLessonProgressIfMissing` sürerken bekliyor
+  (`seedInFlight`/`afterSeed`), yoksa aynı boş bölümde sonra yazan kazanırdı. Bellekteki bölüm de
+  dönüştürülüyor (yarışta merge eşit ilerlemede belleği seçiyor).
+- PartSelection: onaylı öğretmende 1–8 hepsi açık (sandıklar bitmiş sayılmadığı için "önceki
+  bölümü bitir" kuralı kapalı tutardı).
+- Kupa yolu: `TasksFragment.cupPartActive` — onaylı öğretmende 6 kart açık (18 tekrar eden
+  "son sandık bitti mi" satırı bu fonksiyona toplandı). Not: 1–6 haritalarında yarış item'ı
+  YOK (şablonda TYPE_RACE yok); "yarış item'ları kapalı" demem yanlıştı, kullanıcıya düzeltildi.
+- Öğretmen ayrımı (madde 5), hepsi rol = TEACHER (onaylı + onaysız):
+  - Liderlik: `submitLeaderboardScore` öğretmende yazmadan `{success, skipped:'teacher'}` döner.
+    Tahta yalnızca sunucudan yazılıyor (rules `write: false`), tek kapı yeterli. Bu sezon
+    öğretmenin daha önce yazılmış kaydı varsa sezon sonunda tahtayla birlikte silinir.
+  - Bildirim: `sendUserNotification` öğretmene yalnızca `TEACHER_NOTIFICATION_TOPICS`
+    (`chat`, `teacher_pool`) gönderir — izin listesi, bilerek.
+  - Analitik: `AnalyticsLogger.setUserRole` → kullanıcı özelliği `user_role`
+    (student / teacher / teacher_pending), her `checkSubscriptionAndUpdateEnergy`'de. GA4'te
+    kullanıcı kapsamlı özel boyut olarak elle tanımlanmalı.
+- Görevler'deki "Karakter Animasyonu" kartı şimdilik yalnızca onaylı öğretmende listede
+  (`submitBulletinList`).
 
 ## Yakında yapılanlar — tekrar etmeyin
 

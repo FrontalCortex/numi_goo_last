@@ -67,8 +67,14 @@ class PartSelectionFragment : Fragment() {
         if (!isAdded) return
 
         val hasProPlan = PlanStatus.isProPlan(plan) || teacherApproved
-        
-        val getPartState = { partId: Int ->
+
+        val getPartState = getPartState@{ partId: Int ->
+            // Onaylı öğretmende bölüm sırası yok: dersleri tek seferde açılıyor
+            // (GlobalLessonData.unlockLessonsForApprovedTeacherOnce) ama sandıkları bitmiş
+            // sayılmıyor, yani aşağıdaki "önceki bölümü bitir" kuralı 2–8'i kapalı tutardı.
+            if (teacherApproved) {
+                return@getPartState PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
+            }
             when (partId) {
                 1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
                 2 -> PartState(2, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")

@@ -27,6 +27,25 @@ object TeacherApprovalGate {
         return true
     }
 
+    /**
+     * Mağaza ve satın alma kapısı: bütün öğretmen hesaplarında kapalı.
+     *
+     * Onaysız öğretmen hiçbir şey yapamıyor; onaylı öğretmenin altını, anahtarı ve canı
+     * sınırsız. İkisinin de satın alacağı bir şey yok — bir satın alma ancak yanlışlıkla
+     * olur ve iade talebiyle biter. Uyarılar farklı: onaysıza onay ve destek, onaylıya
+     * neden gerek olmadığı.
+     */
+    fun blockPurchasesForTeacher(context: Context?): Boolean {
+        val main = context as? MainActivity ?: return false
+        if (blockIfUnapproved(main)) return true
+        if (!main.isApprovedTeacher()) return false
+        AlertDialog.Builder(main)
+            .setMessage(R.string.teacher_shop_unlimited)
+            .setPositiveButton(R.string.ask_question_alert_ok, null)
+            .show()
+        return true
+    }
+
     fun showNotApprovedDialog(context: Context) {
         AlertDialog.Builder(context)
             .setMessage(R.string.ask_question_teacher_not_approved)

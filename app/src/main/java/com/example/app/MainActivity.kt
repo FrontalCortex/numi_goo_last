@@ -2269,6 +2269,10 @@ class MainActivity : AppCompatActivity() {
         return !energyManager.isTeacherApproved()
     }
 
+    /** Onaylı öğretmen: altın, anahtar ve can sınırsız. Kaynak [isUnapprovedTeacher] ile aynı. */
+    fun isApprovedTeacher(): Boolean =
+        authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER && !isUnapprovedTeacher()
+
     /**
      * Öğretmen hesabında currencyPanel'in hangi parçalarının görüneceği.
      *
@@ -2286,20 +2290,35 @@ class MainActivity : AppCompatActivity() {
         binding.keyText.visibility = View.GONE
         binding.energyIcon.visibility = View.GONE
         binding.energyText.visibility = View.GONE
-        // Onaysız hesap ders yapamıyor ve soru soramıyor: serisi ve danışma kredisi
-        // anlamsız. Kabın tamamı gizleniyor; yalnızca ikon gizlenince "∞" rozeti boşlukta
+        // Kredi: öğretmen soru sormuyor, gönderiyor. Seri: ödülü altın ve öğretmenin altını
+        // ya yok ya sınırsız. Can: ya hep 0 ya sınırsız; onaylıda üç tane "∞" göstermek bilgi
+        // vermez. Kabın tamamı gizleniyor; yalnızca ikon gizlenince "∞" rozeti boşlukta
         // tek başına kalıyordu.
+        binding.streakContainer.visibility = View.GONE
+        binding.creditIcon.visibility = View.GONE
+        binding.creditText.visibility = View.GONE
+        binding.energyIconFrame.visibility = View.GONE
+        // Panelde yalnızca hesabın durumu kalıyor. Onaysızda yazıya dokunmak destek butonlu
+        // uyarıyı açıyor: panel boş kalınca öğretmen neden hiçbir şey yapamadığını ancak bir
+        // yere dokununca öğreniyordu.
         val unapproved = isUnapprovedTeacher()
-        val restricted = if (unapproved) View.GONE else View.VISIBLE
-        binding.streakContainer.visibility = restricted
-        binding.creditIcon.visibility = restricted
-        binding.creditText.visibility = restricted
-        binding.energyIconFrame.visibility = restricted
-        // Panel boş bir şerit kalınca öğretmen neden hiçbir şey yapamadığını ancak bir yere
-        // dokununca öğreniyordu. Yazıya dokunmak da aynı pencereyi (destek butonuyla) açar.
-        binding.teacherApprovalPendingText.visibility = if (unapproved) View.VISIBLE else View.GONE
-        binding.teacherApprovalPendingText.setOnClickListener {
-            TeacherApprovalGate.showNotApprovedDialog(this)
+        val label = binding.teacherApprovalPendingText
+        label.visibility = View.VISIBLE
+        label.setText(if (unapproved) R.string.teacher_approval_pending_banner else R.string.teacher_account_banner)
+        val color = android.graphics.Color.parseColor(if (unapproved) "#FFB74D" else "#81C784")
+        label.setTextColor(color)
+        androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(
+            label,
+            android.content.res.ColorStateList.valueOf(color),
+        )
+        label.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            if (unapproved) R.drawable.ic_schedule_clock else R.drawable.ic_teacher_verified, 0, 0, 0,
+        )
+        if (unapproved) {
+            label.setOnClickListener { TeacherApprovalGate.showNotApprovedDialog(this) }
+        } else {
+            label.setOnClickListener(null)
+            label.isClickable = false
         }
     }
 
@@ -2513,6 +2532,20 @@ class MainActivity : AppCompatActivity() {
                     // Onay şimdi öğrenilmiş ya da değişmiş olabilir. Bakiyeyi cüzdan
                     // dinleyicisi kendisi düzeltiyor (bkz. UserWalletFirestore.visibleBalance).
                     applyTeacherCurrencyPanel()
+                    AnalyticsLogger.setUserRole(
+                        when {
+                            role != AuthManager.ROLE_TEACHER -> AnalyticsLogger.USER_ROLE_STUDENT
+                            teacherApproved -> AnalyticsLogger.USER_ROLE_TEACHER
+                            else -> AnalyticsLogger.USER_ROLE_TEACHER_PENDING
+                        },
+                    )
+                    // Onaylı öğretmenin dersleri ilk seferde açılır; bayrak aynı dokümanda,
+                    // ayrı okuma yok.
+                    if (role == AuthManager.ROLE_TEACHER && teacherApproved &&
+                        doc.getBoolean(GlobalLessonData.FIELD_TEACHER_LESSONS_UNLOCKED) != true
+                    ) {
+                        GlobalLessonData.unlockLessonsForApprovedTeacherOnce(applicationContext, currentUser.uid)
+                    }
 
                     // Onaysız öğretmende enerji her zaman 0'dır ve sonsuz sayılmaz;
                     // bu yüzden kilit kontrolü sonsuzdan önce gelir.
@@ -5128,9 +5161,9 @@ class MainActivity : AppCompatActivity() {
      */
     fun openShopFragment(focusStreakFreeze: Boolean = false) {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
-        // Hiçbir şey yapamayan hesaptan para almak: iade talebi ve kötü yorum. Mağazanın her
-        // girişi (üst panel, kupa yolu canı, can uyarısı) buradan geçiyor.
-        if (TeacherApprovalGate.blockIfUnapproved(this)) return
+        // Öğretmenin satın alacağı bir şey yok (bkz. TeacherApprovalGate.blockPurchasesForTeacher).
+        // Mağazanın her girişi (üst panel, kupa yolu canı, özelleştirme) buradan geçiyor.
+        if (TeacherApprovalGate.blockPurchasesForTeacher(this)) return
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
         if (current is ShopFragment) return
 

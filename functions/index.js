@@ -1386,6 +1386,17 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
       const currentKeys = Number.parseInt(userData.keys, 10) || 0;
       const currentCurrency = Number.parseInt(userData.currency, 10) || 0;
 
+      // Onaylı öğretmen: harcama da geri alma da bakiyeye dokunmaz. İstemcinin geri alma
+      // akışı jeton beklediği için harcamada yine bir jeton dönüyor; hiçbir yere
+      // kaydedilmediğinden geri alma çağrısı da aynı no-op'a düşüyor.
+      if (isApprovedTeacher(userData)) {
+        return {
+          keys: currentKeys,
+          currency: currentCurrency,
+          rollbackToken: isCredit ? null : require('crypto').randomUUID(),
+        };
+      }
+
       const newKeys = currentKeys + deltaKeys;
       const newCurrency = currentCurrency + deltaCurrency;
 
@@ -1580,6 +1591,15 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
   }
   if (!Number.isFinite(recordScore) || recordScore <= 0 || recordScore > 2000) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz recordScore (1-2000 aralığında olmalı).');
+  }
+
+  // Öğretmen tahtaya girmez: tahta çocukların yarıştığı yer ve sezon sonu madalyası
+  // (seasonLeaderboardFinalize) buradan dağıtılıyor. Onaylı öğretmenin bütün dersleri açık ve
+  // canı sınırsız; sınırsız denemeyle ilk sıraları ve o madalyaları çocukların elinden
+  // alırdı. Hata değil başarı dönüyor: istemci için "rekor kırılmadı" ile aynı sonuç.
+  const submitterSnap = await db.collection('users').doc(uid).get();
+  if (submitterSnap.exists && submitterSnap.get('role') === 'TEACHER') {
+    return { success: true, skipped: 'teacher' };
   }
 
   // İSİM VE AVATAR İSTEMCİDEN ALINMAZ.
@@ -4318,6 +4338,9 @@ function isDeadTokenError(error) {
  * @param userData Çağıran taraf kullanıcı dokümanını zaten okuduysa — fazladan okuma olmasın.
  * @returns `{ sent: boolean, reason?: string }`
  */
+/** Öğretmene gidebilen bildirim konuları: öğrenci mesajı ve havuza düşen soru. */
+const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool']);
+
 async function sendUserNotification(uid, { type, topic, title, body, data = {}, userData = null }) {
   if (!uid) return { sent: false, reason: 'no_uid' };
   const nowMs = Date.now();
@@ -4327,6 +4350,15 @@ async function sendUserNotification(uid, { type, topic, title, body, data = {}, 
     const snap = await db.collection('users').doc(uid).get();
     if (!snap.exists) return { sent: false, reason: 'no_user' };
     user = snap.data() || {};
+  }
+
+  // Öğretmen yalnızca öğretmenlik işinin bildirimlerini alır. Seri, can, sandık, sezon ve
+  // deneme bildirimleri çocuğa yazılmış; onaylı öğretmenin canı sınırsız, serisi panelde bile
+  // yok. Engel listesi değil İZİN listesi: yeni bir öğrenci bildirimi eklenip burası
+  // unutulursa öğretmene garip bir bildirim gitmesin, en kötü ihtimalle yeni bir öğretmen
+  // bildirimi test sırasında gelmez ve fark edilir.
+  if (user.role === 'TEACHER' && !TEACHER_NOTIFICATION_TOPICS.has(topic)) {
+    return { sent: false, reason: 'teacher_topic' };
   }
 
   const tokens = fcmTokensFor(user);
@@ -6148,10 +6180,20 @@ function isUnapprovedTeacher(userData) {
 }
 
 /**
+ * Onaylı öğretmenin altını ve anahtarı sınırsız (istemcide UserWalletFirestore'un
+ * UNLIMITED kipi). Bakiyeye büyük bir sayı YAZILMIYOR: harcayınca azalırdı, onay geri
+ * alınınca elle silinmesi gerekirdi ve iade/tavan denetimlerine karışırdı. Bunun yerine
+ * harcama çağrıları bu hesapta bakiyeye dokunmadan başarılı döner.
+ */
+function isApprovedTeacher(userData) {
+  return (userData.role || '') === 'TEACHER' && userData.teacherApproved === true;
+}
+
+/**
  * Onaysız öğretmen hiçbir şey yapamaz; harcama yapan çağrılar bununla başlar.
  *
  * İstemci bu hesapta bakiyeyi zaten 0 gösteriyor ve mağazayı açtırmıyor
- * (UserWalletFirestore.visibleBalance, TeacherApprovalGate). Ama sunucudaki gerçek bakiye
+ * (UserWalletFirestore wallet kipi, TeacherApprovalGate). Ama sunucudaki gerçek bakiye
  * duruyor — eski kayıtlarda herkese 1 anahtar verildi — ve eski bir sürüm ya da doğrudan
  * çağrı onu harcayabilirdi. Asıl engel burası.
  */

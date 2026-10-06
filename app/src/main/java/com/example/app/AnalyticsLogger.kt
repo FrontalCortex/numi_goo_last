@@ -616,6 +616,29 @@ object AnalyticsLogger {
         fa.setUserProperty("acquisition_source", clean.take(USER_PROPERTY_MAX))
     }
 
+    // ── Kullanıcı rolü ──────────────────────────────────────────────────────
+
+    const val USER_ROLE_STUDENT = "student"
+    const val USER_ROLE_TEACHER = "teacher"
+    const val USER_ROLE_TEACHER_PENDING = "teacher_pending"
+
+    /**
+     * Kullanıcının rolü: [USER_ROLE_STUDENT], [USER_ROLE_TEACHER] (onaylı) veya
+     * [USER_ROLE_TEACHER_PENDING] (onay bekliyor).
+     *
+     * Olaylar öğrenci ve öğretmen ayrımı yapmadan aynı yere gidiyordu. Onaylı öğretmenin
+     * bütün dersleri açık ve canı sınırsız; onun ders, can ve harcama olayları "çocuklar
+     * kaçıncı derste bırakıyor", "kaç çocuk can duvarına çarptı" gibi ölçümleri bozardı.
+     * Kullanıcı özelliği bütün raporlarda filtre olarak kullanılabiliyor — GA4'te
+     * `user_role` adıyla kullanıcı kapsamlı özel boyut tanımlanması gerekiyor.
+     *
+     * Her abonelik kontrolünde tekrar yazılıyor; Firebase aynı değeri yazmayı ucuza
+     * hallediyor ve onay oturum ortasında değişebiliyor.
+     */
+    fun setUserRole(role: String) = safe { fa ->
+        fa.setUserProperty("user_role", role)
+    }
+
     // ── Ders sonu anketi ────────────────────────────────────────────────────
     // Eskiden `questionPanel` / `questionPanelTutorial` altındaki choice{N} sayaçlarıydı.
     // Kullanıcının yazdığı SERBEST METİN buraya gelmez, Firestore'da kalır.

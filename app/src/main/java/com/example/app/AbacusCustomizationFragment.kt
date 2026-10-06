@@ -144,8 +144,8 @@ class AbacusCustomizationFragment : Fragment() {
         if (uid != null) {
             UserWalletFirestore.loadWallet(requireContext(), uid, onResult = { wallet ->
                 if (walletLiveValueSeen) return@loadWallet
-                currencyText?.text = wallet.currency.toString()
-                keyText?.text = wallet.keys.toString()
+                currencyText?.text = UserWalletFirestore.displayText(v.context, wallet.currency)
+                keyText?.text = UserWalletFirestore.displayText(v.context, wallet.keys)
             })
             walletListener?.remove()
             walletListener = UserWalletFirestore.listenToWallet(
@@ -153,8 +153,8 @@ class AbacusCustomizationFragment : Fragment() {
                 uid = uid,
                 onUpdate = { wallet ->
                     walletLiveValueSeen = true
-                    currencyText?.text = wallet.currency.toString()
-                    keyText?.text = wallet.keys.toString()
+                    currencyText?.text = UserWalletFirestore.displayText(v.context, wallet.currency)
+                    keyText?.text = UserWalletFirestore.displayText(v.context, wallet.keys)
                 },
             )
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
@@ -1634,8 +1634,8 @@ class AbacusCustomizationFragment : Fragment() {
 
     private fun refreshCurrencyUi() {
         val ctx = context ?: return
-        currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
-        keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
+        currencyText?.text = UserWalletFirestore.displayText(ctx, UserWalletFirestore.getCachedCurrency(ctx))
+        keyText?.text = UserWalletFirestore.displayText(ctx, UserWalletFirestore.getCachedKeys(ctx))
         (activity as? MainActivity)?.refreshWalletUi()
     }
 

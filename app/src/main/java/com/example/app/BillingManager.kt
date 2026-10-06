@@ -306,9 +306,9 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     }
 
     fun launchPurchase(activity: Activity, productId: String) {
-        // Mağaza onaysız öğretmene zaten açılmıyor; bu, mağaza dışındaki girişler için
-        // (Pro tanıtımı → plan ekranı) son kapı.
-        if (TeacherApprovalGate.blockIfUnapproved(activity)) return
+        // Mağaza öğretmene zaten açılmıyor; bu, mağaza dışındaki girişler için (Pro tanıtımı →
+        // plan ekranı) son kapı.
+        if (TeacherApprovalGate.blockPurchasesForTeacher(activity)) return
         purchaseFlowStartedAtMs = android.os.SystemClock.elapsedRealtime()
         val details = productDetails[productId]
         if (details == null) {

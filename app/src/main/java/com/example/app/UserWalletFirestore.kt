@@ -87,22 +87,55 @@ object UserWalletFirestore {
     )
 
     /**
-     * Onaylanmamış öğretmenin altını ve anahtarı istemcide 0 sayılır.
+     * Öğretmen hesabının cüzdanı istemcide gerçek bakiyeyle değil, kipiyle görünür:
+     * - onaysız öğretmen: altın ve anahtar 0 — hiçbir şey yapamıyor, kayıtta verilmiş
+     *   anahtarı da harcayamamalı;
+     * - onaylı öğretmen: sınırsız ([UNLIMITED_BALANCE]) — "yeter mi" kontrolleri
+     *   (özelleştirme, yarış hızlandırma, günlük soru devamı) kendiliğinden geçer.
      *
-     * Bu hesap hiçbir şey yapamıyor; ama kayıtta herkese verilen anahtar ve önceden kalmış
-     * bakiye mağazada (can alma) ve abaküs özelleştirmede harcanabiliyordu. Sıfırlama tek
-     * tek ekranlarda değil burada yapılıyor, çünkü bakiyeyi okuyan herkes (üst panel,
-     * mağaza, özelleştirme) ya bu dinleyiciden ya da onun yazdığı önbellekten okuyor.
+     * Kip tek tek ekranlarda değil burada uygulanıyor, çünkü bakiyeyi okuyan herkes (üst
+     * panel, mağaza, özelleştirme) ya bu dinleyiciden, ya [applyDelta] sonucundan ya da
+     * önbellekten okuyor. Önbellek GERÇEK değeri tutar, kip okurken uygulanır: kip
+     * değişince (destek onaylar ya da onayı geri alır) eski değer yanlış kipte kalmaz.
      *
-     * Sunucudaki gerçek bakiyeye dokunulmuyor: hesap onaylanınca `teacherApproved`
-     * değişikliği dinleyiciyi yeniden tetikler ve gerçek değer kendiliğinden görünür.
-     * Gerçek engel değil, arayüz kuralı — sunucu bu hesabın harcamasını ayrıca reddetmiyor.
+     * Sunucudaki bakiyeye dokunulmuyor; onaylı öğretmende harcama sunucuda no-op
+     * (functions/index.js → isApprovedTeacher), onaysızda reddediliyor.
      */
-    private fun visibleBalance(doc: DocumentSnapshot, value: Int): Int {
-        val unapprovedTeacher = doc.getString("role") == "TEACHER" &&
-            doc.getBoolean("teacherApproved") != true
-        return if (unapprovedTeacher) 0 else value
+    private const val PREF_WALLET_MODE = "wallet_mode"
+    private const val MODE_NORMAL = 0
+    private const val MODE_LOCKED = 1
+    private const val MODE_UNLIMITED = 2
+
+    /** Onaylı öğretmenin görünen bakiyesi. Hesaba yazılmaz; yalnızca karşılaştırmalar için. */
+    const val UNLIMITED_BALANCE = 9_999_999
+
+    private fun modeOf(doc: DocumentSnapshot): Int = when {
+        doc.getString("role") != "TEACHER" -> MODE_NORMAL
+        doc.getBoolean("teacherApproved") == true -> MODE_UNLIMITED
+        else -> MODE_LOCKED
     }
+
+    private fun rememberMode(context: Context, doc: DocumentSnapshot) {
+        walletPrefs(context).edit().putInt(PREF_WALLET_MODE, modeOf(doc)).apply()
+    }
+
+    private fun visible(context: Context, raw: Int): Int =
+        when (walletPrefs(context).getInt(PREF_WALLET_MODE, MODE_NORMAL)) {
+            MODE_LOCKED -> 0
+            MODE_UNLIMITED -> UNLIMITED_BALANCE
+            else -> raw
+        }
+
+    /** Bakiye sayı yerine "∞" ile gösterilmeli mi (onaylı öğretmen). */
+    fun isUnlimited(context: Context): Boolean =
+        walletPrefs(context).getInt(PREF_WALLET_MODE, MODE_NORMAL) == MODE_UNLIMITED
+
+    /**
+     * Bakiyenin ekrandaki metni. Yalnızca geri OKUNMAYAN metinler için: MainActivity ve
+     * mağaza harcamada bakiyeyi kendi metinlerinden parse ediyor, onlara "∞" yazılamaz.
+     */
+    fun displayText(context: Context, value: Int): String =
+        if (isUnlimited(context)) "∞" else value.toString()
 
     fun loadWallet(
         context: Context,
@@ -132,14 +165,13 @@ object UserWalletFirestore {
                         .document(uid)
                         .update(patch)
                 }
-                keys = visibleBalance(doc, keys)
-                currency = visibleBalance(doc, currency)
+                rememberMode(context, doc)
                 cacheLocally(context, keys, currency)
-                onResult(UserWallet(keys = keys, currency = currency))
+                onResult(UserWallet(keys = visible(context, keys), currency = visible(context, currency)))
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
-                val keys = walletPrefs(context).getInt(FIELD_KEYS, DEFAULT_KEYS)
+                val keys = getCachedKeys(context)
                 val currency = getCachedCurrency(context)
                 onResult(UserWallet(keys = keys, currency = currency))
             }
@@ -155,17 +187,15 @@ object UserWalletFirestore {
             .document(uid)
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-                val keys = visibleBalance(snapshot, snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS)
-                val currency = visibleBalance(
-                    snapshot,
-                    snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context),
-                )
+                val keys = snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS
+                val currency = snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context)
                 val credits = snapshot.getLong(FIELD_QUESTION_CREDITS)?.toInt() ?: 0
+                rememberMode(context, snapshot)
                 cacheLocally(context, keys, currency)
                 onUpdate(
                     UserWallet(
-                        keys,
-                        currency,
+                        visible(context, keys),
+                        visible(context, currency),
                         questionCredits = credits,
                         plan = PlanStatus.effectivePlan(snapshot),
                     )
@@ -228,11 +258,14 @@ object UserWalletFirestore {
             .call(data)
             .addOnSuccessListener { result ->
                 val resultData = result.data as? Map<*, *>
-                val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
-                val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
-
-                cacheLocally(context, keys, currency)
-                logSpend(keyDelta, currencyDelta, reason, itemId)
+                // Sunucu GERÇEK bakiyeyi döndürüyor; önbelleğe o yazılır, ekrana kipiyle gider.
+                val rawKeys = (resultData?.get("keys") as? Number)?.toInt() ?: rawCachedKeys(context)
+                val rawCurrency = (resultData?.get("currency") as? Number)?.toInt() ?: rawCachedCurrency(context)
+                cacheLocally(context, rawKeys, rawCurrency)
+                val keys = visible(context, rawKeys)
+                val currency = visible(context, rawCurrency)
+                // Onaylı öğretmenin "harcaması" gerçek değil (sunucuda no-op); öğrenci ölçümüne karışmasın.
+                if (!isUnlimited(context)) logSpend(keyDelta, currencyDelta, reason, itemId)
                 onSuccess?.invoke(
                     UserWallet(
                         keys = keys,
@@ -269,10 +302,16 @@ object UserWalletFirestore {
         if (currencyDelta < 0) AnalyticsLogger.logGoldSpent(id, -currencyDelta)
     }
 
-    fun getCachedKeys(context: Context): Int =
+    /** Görünen anahtar bakiyesi: öğretmen kipi uygulanmış (bkz. [visible]). */
+    fun getCachedKeys(context: Context): Int = visible(context, rawCachedKeys(context))
+
+    /** Görünen altın bakiyesi: öğretmen kipi uygulanmış (bkz. [visible]). */
+    fun getCachedCurrency(context: Context): Int = visible(context, rawCachedCurrency(context))
+
+    private fun rawCachedKeys(context: Context): Int =
         walletPrefs(context).getInt(FIELD_KEYS, DEFAULT_KEYS)
 
-    fun getCachedCurrency(context: Context): Int =
+    private fun rawCachedCurrency(context: Context): Int =
         walletPrefs(context).getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
 
     /** Yalnızca altın bakiyesini önbelleğe yazar (MainActivity.saveCurrency için). */

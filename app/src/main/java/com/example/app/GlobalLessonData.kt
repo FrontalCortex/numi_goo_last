@@ -333,9 +333,14 @@ object GlobalLessonData {
         }
         val appCtx = context.applicationContext
         var idx = 0
+        seedInFlight = true
         fun processNext() {
             if (idx >= SEED_PART_IDS.size) {
                 Log.d(LOG_TAG, "seedAllLessonProgressIfMissing completed for uid=${uid.take(8)}...")
+                seedInFlight = false
+                val waiting = afterSeed.toList()
+                afterSeed.clear()
+                waiting.forEach { it() }
                 return
             }
             val partId = SEED_PART_IDS[idx]
@@ -366,6 +371,115 @@ object GlobalLessonData {
                 }
         }
         processNext()
+    }
+
+    /**
+     * [seedAllLessonProgressIfMissing] sürüyor mu. Öğretmen açması onu bekliyor: ikisi aynı
+     * boş bölümü aynı anda okursa ikisi de "boş" görüp yazar ve sonra gelen kazanır —
+     * tohumlama sonra gelirse açılmış dersler şablondaki kilitli hâline dönerdi ve bayrak
+     * zaten yazıldığı için bir daha açılmazdı. Hepsi ana iş parçacığında (Firestore
+     * geri çağrıları), kilit gerekmiyor.
+     */
+    private var seedInFlight = false
+    private val afterSeed = mutableListOf<() -> Unit>()
+
+    /** `users/{uid}` alanı: onaylı öğretmenin dersleri bir kez açıldı mı. */
+    const val FIELD_TEACHER_LESSONS_UNLOCKED = "teacherLessonsUnlocked"
+    private var teacherUnlockRunning = false
+
+    /**
+     * Onaylı öğretmenin derslerini İLK SEFERDE açar; sonrasında öğretmen kendi ilerlemesiyle
+     * devam eder.
+     *
+     * - 1–6: türü ders veya sandık olan her item `isCompleted = true` (başlık ve yarış
+     *   item'larına dokunulmuyor).
+     * - 7–8: kilitli (`raceBusyLevel == 2`) her item 1'e, yani "BAŞLAT"a çekiliyor.
+     *   Çözülmüş (0) item'a dokunulmuyor: hesap onaylanmadan önce yarış çözmüş bir öğretmenin
+     *   "TAMAMLANDI"sı geri alınmasın. Yeni hesapta 0 olan item yok, hepsi 1 olur.
+     *
+     * İkisi de yalnızca AÇAR, hiçbir ilerlemeyi geri almaz. Tek seferliği
+     * [FIELD_TEACHER_LESSONS_UNLOCKED] bayrağı sağlıyor ve bayrak ancak sekiz bölümün hepsi
+     * yazıldıktan sonra konuyor; yarıda kalırsa bir sonraki açılışta baştan denenir (açma
+     * kuralları zaten tekrar uygulanabilir olduğu için zararsız). Bayrak hesapta, cihazda
+     * değil: öğretmen başka cihazdan girince yeniden açılmaz.
+     *
+     * Çağıran bayrağın yokluğunu ve onayı zaten kontrol etmiş olmalı (MainActivity, kendi
+     * okuduğu kullanıcı dokümanından).
+     */
+    fun unlockLessonsForApprovedTeacherOnce(context: Context, uid: String) {
+        if (seedInFlight) {
+            afterSeed.add { unlockLessonsForApprovedTeacherOnce(context, uid) }
+            return
+        }
+        // checkSubscriptionAndUpdateEnergy oturumda birkaç kez çalışıyor.
+        if (teacherUnlockRunning) return
+        teacherUnlockRunning = true
+        val appCtx = context.applicationContext
+        var idx = 0
+        fun finish(success: Boolean) {
+            teacherUnlockRunning = false
+            if (!success) return
+            firestore.collection("users").document(uid)
+                .update(FIELD_TEACHER_LESSONS_UNLOCKED, true)
+                .addOnFailureListener { e -> Log.w(LOG_TAG, "teacherUnlock: bayrak yazılamadı", e) }
+            // Bellekteki bölüm de açılsın. Gerçek zamanlı dinleyici bunu tek başına
+            // yapamıyor: yarışta birleştirme, ilerlemesi eşit olan iki item'dan BELLEKTEKİNİ
+            // seçiyor, yani buluttaki 1 bellekteki 2'yi yenemezdi.
+            if (FirebaseAuth.getInstance().currentUser?.uid == uid && _lessonItems.isNotEmpty()) {
+                _lessonItems = withDerivedUnlocks(globalPartId, withTeacherUnlocks(globalPartId, _lessonItems))
+                LessonManager.refreshLessonsFromGlobalData()
+            }
+            Log.d(LOG_TAG, "teacherUnlock: tamamlandı uid=${uid.take(8)}")
+        }
+        fun processNext() {
+            if (idx >= SEED_PART_IDS.size) {
+                finish(success = true)
+                return
+            }
+            val partId = SEED_PART_IDS[idx]
+            idx++
+            readLessonItemsFromFirestore(uid, partId) { cloudItems, error ->
+                if (error != null) {
+                    Log.w(LOG_TAG, "teacherUnlock: okuma başarısız part=$partId", error)
+                    finish(success = false)
+                    return@readLessonItemsFromFirestore
+                }
+                // Bölüm hiç oynanmamışsa bütün liste yazılıyor: applyDefaultLessonItems'ın
+                // ilk yüklemede yazacağı listenin aynısı, yalnızca açılmış hâli.
+                val base = cloudItems ?: buildDefaultLessonItemsForPart(appCtx, partId)
+                val unlocked = withTeacherUnlocks(partId, base)
+                val toWrite = if (cloudItems == null) {
+                    unlocked
+                } else {
+                    unlocked.filterIndexed { i, item -> item != base[i] }
+                }
+                if (toWrite.isEmpty()) {
+                    processNext()
+                    return@readLessonItemsFromFirestore
+                }
+                writeAllItemsToFirestore(uid, partId, toWrite) { e ->
+                    if (e != null) {
+                        Log.w(LOG_TAG, "teacherUnlock: yazma başarısız part=$partId", e)
+                        finish(success = false)
+                    } else {
+                        processNext()
+                    }
+                }
+            }
+        }
+        processNext()
+    }
+
+    /** [unlockLessonsForApprovedTeacherOnce]'ın açma kuralı; yalnızca açar, hiçbir şeyi kilitlemez. */
+    private fun withTeacherUnlocks(partId: Int, items: List<LessonItem>): List<LessonItem> = when (partId) {
+        in 1..6 -> items.map { item ->
+            val playable = item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST
+            if (playable && !item.isCompleted) item.copy(isCompleted = true) else item
+        }
+        7, 8 -> items.map { item ->
+            if (item.raceBusyLevel == 2) item.copy(raceBusyLevel = 1) else item
+        }
+        else -> items
     }
 
     /**

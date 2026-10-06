@@ -138,6 +138,8 @@
 
     <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
     <string name="teacher_approval_pending_banner">Hesabınız onay bekliyor</string>
+    <string name="teacher_account_banner">Öğretmen hesabı</string>
+    <string name="teacher_shop_unlimited">Öğretmen hesabında altın, anahtar ve can sınırsızdır; satın almanız gereken bir şey yok.</string>
     <string name="teacher_not_approved_contact_support">Destek ile İletişime Geç</string>
     <string name="teacher_not_approved_support_subject">Öğretmen hesabı onayı</string>
     <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
