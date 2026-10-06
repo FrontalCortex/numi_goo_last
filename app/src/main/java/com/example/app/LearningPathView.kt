@@ -1,5 +1,7 @@
 package com.example.app
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -159,8 +161,11 @@ class LearningPathView @JvmOverloads constructor(
      *
      * @param startDelayMs Ekrana kayarak geliyorsa kayma bitince başlasın diye: kayarken çizilen
      *   ilk kareler görünmüyor, tel yarıda başlamış gibi duruyordu.
+     * @param onEnd Çizim sonuna kadar oynayınca çağrılır. Yarıda kesilirse (yeniden oynatma,
+     *   görünümün ekrandan kalkması) çağrılmaz: yeniden oynatmada yalnızca yenisinin bitişi
+     *   sayılmalı, yoksa eskisi düğmeyi erkenden açardı.
      */
-    fun playIntro(startDelayMs: Long = 0L) {
+    fun playIntro(startDelayMs: Long = 0L, onEnd: (() -> Unit)? = null) {
         animator?.cancel()
         elapsed = 0f
         invalidate()
@@ -171,6 +176,17 @@ class LearningPathView @JvmOverloads constructor(
             addUpdateListener {
                 elapsed = it.animatedValue as Float
                 invalidate()
+            }
+            if (onEnd != null) {
+                addListener(object : AnimatorListenerAdapter() {
+                    private var cancelled = false
+                    override fun onAnimationCancel(animation: Animator) {
+                        cancelled = true
+                    }
+                    override fun onAnimationEnd(animation: Animator) {
+                        if (!cancelled) onEnd()
+                    }
+                })
             }
             start()
         }

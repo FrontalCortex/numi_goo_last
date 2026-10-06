@@ -736,9 +736,11 @@ class UserInfoFragment : Fragment() {
             }
             Step.SOURCE -> renderSourceStep()
             Step.GOAL -> renderGoalStep()
+            // Düğme yol çizimi bitene kadar kapalı: ekranın anlattığı şey o sıralı belirme,
+            // çizim bitmeden geçilirse çocuk tabloyu hiç görmeden atlıyordu.
             Step.ROADMAP -> {
+                updateContinueButton(enabled = false)
                 renderRoadmap()
-                updateContinueButton(enabled = true)
             }
             // Soru yok, seçim yok: düğme her zaman açık; alev gün sorusunda geliyor.
             Step.CHALLENGE_INTRO -> {
@@ -892,7 +894,12 @@ class UserInfoFragment : Fragment() {
                 LearningPathView.Milestone(R.drawable.brain, "Kafadan hesap ustası ol", labels[2]),
             ),
         )
-        binding.learningPath.playIntro(startDelayMs = STEP_ANIM_MS + 80L)
+        binding.learningPath.playIntro(startDelayMs = STEP_ANIM_MS + 80L) {
+            // Bu arada geri dönülüp başka adıma geçildiyse o adımın düğme durumuna dokunma.
+            if (_binding != null && currentStep == Step.ROADMAP) {
+                updateContinueButton(enabled = true)
+            }
+        }
     }
 
     /**
