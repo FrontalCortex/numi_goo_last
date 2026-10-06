@@ -103,6 +103,9 @@ class SoundSettingsFragment : Fragment() {
 
         switchNotifications.setOnCheckedChangeListener { _, isChecked ->
             if (suppressNotifyListeners) return@setOnCheckedChangeListener
+            // Guard'dan SONRA: programatik değişimler (alttaki üç anahtarın eşitlenmesi)
+            // kullanıcı hareketi değil, ölçüme gitmemeli.
+            AnalyticsLogger.notificationPrefChanged(AnalyticsLogger.NOTIFY_TYPE_ALL, isChecked)
             NotificationPrefs.setAll(ctx, isChecked)
             suppressNotifyListeners = true
             notifySwitches.values.forEach { it.isChecked = isChecked }
@@ -112,6 +115,7 @@ class SoundSettingsFragment : Fragment() {
         notifySwitches.forEach { (type, box) ->
             box.setOnCheckedChangeListener { _, isChecked ->
                 if (suppressNotifyListeners) return@setOnCheckedChangeListener
+                AnalyticsLogger.notificationPrefChanged(type, isChecked)
                 NotificationPrefs.setEnabled(ctx, type, isChecked)
                 suppressNotifyListeners = true
                 switchNotifications.isChecked = notifySwitches.values.any { it.isChecked }

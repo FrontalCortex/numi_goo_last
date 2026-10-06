@@ -247,6 +247,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(notificationId, notification)
+        // Açılma oranının paydası; sunucunun gönderdiği değil kullanıcının GÖRDÜĞÜ sayı.
+        AnalyticsLogger.notificationShown(topic)
     }
 
     /**
@@ -317,6 +319,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
             .notify(notificationId, notification)
+        AnalyticsLogger.notificationShown(topic)
     }
 
     /**

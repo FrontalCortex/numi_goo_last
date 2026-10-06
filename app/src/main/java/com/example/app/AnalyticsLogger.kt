@@ -68,6 +68,8 @@ object AnalyticsLogger {
     private const val EV_PLAN_SHOWN = "plan_shown"
     private const val EV_SIGNUP_STEP = "signup_step"
     private const val EV_NOTIFICATION_OPENED = "notification_opened"
+    private const val EV_NOTIFICATION_SHOWN = "notification_shown"
+    private const val EV_NOTIFICATION_PREF_CHANGED = "notification_pref_changed"
     private const val EV_QUESTION_ASKED = "question_asked"
     private const val EV_QUESTION_ANSWERED = "question_answered"
     private const val EV_QUESTION_CHAT_OPENED = "question_chat_opened"
@@ -168,6 +170,7 @@ object AnalyticsLogger {
     private const val P_SIGNUP_ROLE = "signup_role"
     private const val P_MEDIA_TYPE = "media_type"
     private const val P_NOTIFY_TOPIC = "notify_topic"
+    private const val P_NOTIFY_ENABLED = "notify_enabled"
     private const val P_WAIT_HOURS = "wait_hours"
     private const val P_QUESTION_STATUS = "question_status"
     private const val P_UNIT_TITLE = "unit_title"
@@ -246,6 +249,12 @@ object AnalyticsLogger {
         // İleri = canı/seriyi erken açmaya çalışan yön; geri = çoğunlukla dürüst bozulma.
         return (if (skewMs > 0) "ahead_" else "behind_") + size
     }
+
+    /**
+     * [notificationPrefChanged] ana anahtar değeri: kullanıcı üç türü birden değiştirdi.
+     * Tek tür değerleri [NotificationPrefs.ALL] kümesinden geliyor (chat, streak, reward).
+     */
+    const val NOTIFY_TYPE_ALL = "all"
 
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
@@ -1258,6 +1267,54 @@ object AnalyticsLogger {
     fun notificationOpened(topic: String) = safe { fa ->
         fa.logEvent(EV_NOTIFICATION_OPENED) {
             param(P_NOTIFY_TOPIC, sanitize(topic))
+        }
+    }
+
+    /**
+     * Bildirim kullanıcıya GERÇEKTEN gösterildi.
+     *
+     * ## Neden gerekli — açılma oranının paydası
+     * [notificationOpened] tek başına "kaç kez açıldı" diyor, "kaç kez gösterildi" demiyor.
+     * Gönderim sayısı sunucuda (`functions/notifications.js`) tutuluyor, yani oranı GA4
+     * içinde hesaplamak mümkün değildi: payı bir yerde, paydası başka yerde duruyordu.
+     *
+     * Burası gösterimin gerçekleştiği an ([MyFirebaseMessagingService] `notify()` çağrıları),
+     * yani sunucunun gönderdiği değil kullanıcının gördüğü sayı. İkisi arasındaki fark da
+     * ayrıca bilgi: istemci tarafında tercih kapalı olduğu için düşen bildirimler orada
+     * görünür (bkz. `NotificationPrefs.isEnabled` kontrolü).
+     *
+     * `notification_shown` → `notification_opened` hunisi tamamen GA4 içinde kuruluyor.
+     *
+     * @param topic Sunucunun verdiği konu etiketi; [notificationOpened] ile aynı küme,
+     *   böylece iki olay aynı boyutta eşleşiyor.
+     */
+    fun notificationShown(topic: String) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_SHOWN) {
+            param(P_NOTIFY_TOPIC, sanitize(topic))
+        }
+    }
+
+    /**
+     * Kullanıcı bir bildirim türünü açtı ya da kapattı ([SoundSettingsFragment]).
+     *
+     * ## Neden gerekli
+     * [notificationOpened] hangi bildirimin işe yaradığını söylüyor; hangisinin kullanıcıyı
+     * bıktırdığını söylemiyor. Oysa bu yapının asıl riski tam olarak o: açılmayan bildirim
+     * hata üretmiyor, sadece yoruyor ve sonunda kullanıcı bildirimleri tamamen kapatıyor.
+     * Kapatma geri dönüşü olan bir hareket değil — kapatan kullanıcı bir daha açmıyor.
+     *
+     * Tür için ayrı bir parametre AÇILMADI; [P_NOTIFY_TOPIC] yeniden kullanılıyor. GA4'ün
+     * ücretsiz sürümünde olay kapsamlı boyut yuvası 50 ile sınırlı ve doldu. Aynı boyutu
+     * birden çok olayın paylaşması bu projede zaten kurulu bir desen (bkz. `question_no`,
+     * `view_no`): raporda olay adıyla süzülüyor.
+     *
+     * @param type `chat`, `streak`, `reward` ya da [NOTIFY_TYPE_ALL] (ana anahtar).
+     * @param enabled true: açtı. Metrik olarak ortalaması "açık kalma oranı"nı veriyor.
+     */
+    fun notificationPrefChanged(type: String, enabled: Boolean) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_PREF_CHANGED) {
+            param(P_NOTIFY_TOPIC, sanitize(type))
+            param(P_NOTIFY_ENABLED, if (enabled) 1L else 0L)
         }
     }
 
