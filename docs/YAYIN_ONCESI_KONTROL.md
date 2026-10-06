@@ -111,7 +111,60 @@ sebebi "acaba unuttum mu?" diye aramana gerek kalmaması:
 
 ---
 
-## 5. Sürüm alırken
+## 5. Yayından sonra canlıda doğrulanacaklar
+
+Test ortamında DOĞRULANAMAYAN, yalnızca gerçek kullanıcı verisiyle görülebilecek şeyler.
+Hepsi sessizce başarısız olabilir — hiçbiri hata üretmiyor, yalnızca beklenen şey olmuyor.
+
+### Deneme süresi bitiş bildirimi
+
+**Neden burada:** test aboneliği 5 dakikada yenilenip ~30 dakikada bitiyor (bkz.
+DEVAM_NOTU → "Denemek için Pro gerekiyor"). Bildirim eşikleri 3 gün ve 1 gün, yani test
+aboneliğiyle hiçbir eşik yakalanmıyor. Gerçek deneme süresi olmadan bu bildirimin uçtan uca
+çalıştığı görülemez.
+
+1. **`planTrialEndsAt` doluyor mu.** Firestore → `users/{uid}`. Deneme aboneliği başlatan
+   ilk gerçek kullanıcıda bu alan dolmalı. Boş kalıyorsa deneme tespiti yanlış çalışıyor
+   (bkz. aşağıdaki madde) ve bildirim hiç gitmez.
+2. **Deneme tespiti doğru mu.** Cloud Functions logu → "Abonelik senkronu" kaydı,
+   `trial` ve `offerId` alanları. Beklenen: deneme satın almasında `trial: true` ve `offerId`
+   dolu. `trial: false` geliyorsa `offerId`'nin ne döndüğüne bakılıp `isTrialPeriod`
+   düzeltilmeli — tespit Play'in `offerDetails.offerId` alanına dayanıyor ve bu dolaylı bir
+   sinyal (Play API v2'de deneme durumu için alan yok).
+3. **Yanlış kullanıcıya gitmiyor mu.** `isTrialPeriod` "teklif uygulanmış = deneme" kabul
+   ediyor; Play Console'da ücretsiz deneme dışında teklif olmadığı varsayımına dayanıyor.
+   Console'a indirimli ilk ay / tanıtım fiyatı eklenirse o aboneler de deneme sayılır ve
+   yanlış bildirim alır. **Yeni bir teklif eklenirse bu kod önce düzeltilmeli**
+   (`offerTags`'e geçilerek).
+4. **Metin doğru eşikte mi.** "3 gün sonra bitiyor" ve "yarın bitiyor" varyantları, yerel
+   saat 10.00–21.00 penceresinde. Gece gelen bir deneme bildirimi bu özelliğin amacını
+   bozar.
+
+### Öğretmen havuzu bildirimi
+
+5. **İlk tarama sessiz.** Deploy sonrası ilk tarama yalnızca imleci kuruyor, bildirim
+   göndermiyor (yoksa havuzdaki birikmiş eski soruları "yeni" sayardı). İlk bildirim ikinci
+   turda, yani 10–20 dakika sonra. Bunu "çalışmıyor" sanmamak gerekiyor.
+6. **Toplulaştırma gerçekten topluyor mu.** Aynı 10 dakikada iki öğrenci soru sorarsa
+   öğretmene İKİ değil BİR bildirim gitmeli ("Havuzda 2 yeni soru var").
+
+### Bildirim ölçümü
+
+7. **`notification_opened` geliyor mu.** Analytics DebugView'da
+   (`adb shell setprop debug.firebase.analytics.app com.numigo.app`), bildirime dokunduktan
+   sonra `notify_topic` parametresiyle. Gelmiyorsa hangi bildirimin işe yaradığı ölçülemiyor
+   ve "üst üste açılmayan konu susar" kuralı da hiç tetiklenmiyor demektir.
+8. **Tavan ve rezerve slot.** Tavana tabi tek tür oyun bildirimleri ve henüz tek bir oyun
+   bildirimi yazılmadı; tavanın gerçekten dolması ilk ödül bildirimiyle test edilebilir.
+9. **Ölü token temizliği.** Uygulamayı kaldıran bir kullanıcının token'ı
+   `users/{uid}.fcmDevices` listesinden düşmeli (`pruneDeadToken`). Düşmüyorsa taramaların
+   `failed` sayısı şişer ve gerçek hataları gizler.
+10. **Üç cihaz sınırı.** Tavan 2'den 3'e çıkarıldı; üçüncü cihazın gerçekten bildirim aldığı
+    görülmedi (üç cihaz gerekiyor).
+
+---
+
+## 6. Sürüm alırken
 
 - `app/build.gradle.kts` içinde `versionCode` ve `versionName` artırıldı mı.
 - Firestore kuralları ve Cloud Functions deploy edildi mi (`docs/FIRESTORE_RULES_DEPLOY.md`).

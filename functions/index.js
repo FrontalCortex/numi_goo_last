@@ -1794,6 +1794,18 @@ function isTrialPeriod(subscription) {
   );
 }
 
+/** Play'in döndürdüğü teklif kimlikleri. Yalnızca teşhis/log için. */
+function subscriptionOfferIds(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items
+    .map((item) =>
+      item && item.offerDetails && typeof item.offerDetails.offerId === 'string'
+        ? item.offerDetails.offerId.trim()
+        : ''
+    )
+    .filter((id) => !!id);
+}
+
 /** Play'in döndürdüğü abonelikteki ürün kimlikleri (satır öğesi sırasıyla). */
 function subscriptionProductIds(subscription) {
   const items = (subscription && subscription.lineItems) || [];
@@ -2810,6 +2822,12 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
     // `|| 0`, Math.round'un negatif sıfır üretmesini engelliyor (logda "-0" görünüyordu).
     expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) || 0 : null,
     plan: stillValid ? entry.plan : 'Free',
+    // Deneme tespiti sahada doğrulanabilsin diye loglanıyor: `isTrialPeriod` dolaylı bir
+    // sinyale bakıyor (offerDetails.offerId) ve yanlış sonuç hiçbir hata üretmiyor —
+    // deneme bitiş bildirimi yalnızca sessizce hiç gitmiyor. Teklifin kimliği de yazılıyor,
+    // çünkü ileride birden fazla teklif olursa ayrımı o yapacak.
+    trial: isTrialPeriod(subscription),
+    offerId: subscriptionOfferIds(subscription).join(',') || null,
   });
 
   const userRef = db.collection('users').doc(uid);

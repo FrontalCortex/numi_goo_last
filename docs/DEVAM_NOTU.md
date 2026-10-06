@@ -1883,9 +1883,30 @@ alındığında Play artık teklif döndürmediği için alan kendiliğinden nul
 yenilenecek" gönderilmiyor. Play yenileme e-postasını zaten atıyor ve aylık abonede dönem
 başına iki bildirim değerli bir şey söylemiyor.
 
-**DENENMEYEN.** Gerçek bir deneme aboneliği gerekiyor; `isTrialPeriod`'un sahadaki Play
-yanıtında doğru çalıştığı GÖRÜLMEDİ — yalnızca uydurma yanıtlarla test edildi. İlk gerçek
-denemede `syncSubscriptionForToken` logundan `planTrialEndsAt`'in dolduğu doğrulanmalı.
+**`planTrialEndsAt` NEDEN BOŞ GÖRÜNÜYOR** (kullanıcı 06.10.2026'da sordu)
+Alan geriye dönük YAZILMIYOR. Yalnızca bir abonelik doğrulaması çalıştığında yazılıyor:
+yeni satın alma, Play yenileme bildirimi (RTDN) ya da istemcinin yeniden doğrulatması. Yani
+mevcut bir abonelik varsa bile, deploy'dan sonra hiç doğrulama çalışmadıysa alan yok. Ayrıca
+alan yalnızca DENEME dönemindeyken doluyor; ödenmiş dönemde `null`.
+
+**NASIL TEST EDİLİR — yayını beklemek gerekmiyor, iş ikiye ayrılıyor**
+
+*Tespitin çalıştığı (şimdi, test aboneliğiyle):* Pro test aboneliği al ve Firestore →
+`users/{uid}` → `planTrialEndsAt`'e bak; Cloud Functions logunda "Abonelik senkronu" kaydında
+`trial` ve `offerId` yazıyor (06.10.2026'da log'a eklendi, tam bu yüzden). Deneme hakkı
+duruyorsa `trial: true` ve `offerId` dolu gelmeli — `isTrialPeriod`'un gerçek Play yanıtında
+çalıştığının kanıtı bu. Deneme hakkı tükenmişse `trial: false` gelir ve tespit doğrulanmaz.
+
+*Bildirimin gittiği (şimdi, elle):* Test aboneliğinde deneme 5 dakikada bitiyor, yani 3
+gün / 1 gün eşikleri HİÇ yakalanmıyor. Bildirimi görmek için Firestore Console'dan alanı elle
+yaz — `node -e "console.log(Date.now() + 2.5*86400000)"` çıktısını `users/{uid}` dokümanına
+`planTrialEndsAt` (number) olarak gir. Koşullar: `utcOffsetMinutes` dolu olmalı (uygulamayı
+bir kez aç), yerel saat 10.00–21.00 arasında olmalı, `notifyLedger/state` dokümanında
+`trialNotice` olmamalı. Tarama saatte bir çalışıyor, yani en fazla bir saat. 0.5 güne ayarlayıp
+"yarın bitiyor" varyantı da görülebilir (önce `trialNotice` silinmeli).
+
+*Uçtan uca (yayından sonra):* bkz. `docs/YAYIN_ONCESI_KONTROL.md` → "Yayından sonra canlıda
+doğrulanacaklar".
 
 **Test:** `npm run test:notifications` 88 kontrole çıktı (deneme tespiti, eşik seçimi, yerel
 saat penceresi, tekrar engelleme, havuz metni). Testleri yazarken `grabFunction`
