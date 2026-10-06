@@ -876,6 +876,103 @@ async function deleteStorageFiles(paths) {
   );
 }
 
+// ─── SORU DURUMU BİLDİRİMLERİ ───────────────────────────────────────────────
+//
+// NEDEN
+//   Öğrenci sorusunun ne olduğunu yalnızca uygulamayı açarsa öğreniyordu. Üç geçişin üçü de
+//   onun için bir haber ve üçü de sessizdi:
+//
+//     • Öğretmen soruyu aldı — bekleyiş bitti, cevap yolda.
+//     • Soru çözüldü — sohbet kapandı, artık mesaj yazamıyor.
+//     • Cevap gelmedi, kredi iade edildi — PARA. Haber verilmeyen iade, kullanıcı tarafında
+//       "param gitti" olarak kalıyor ve hiçbir yerde karşılığı görünmüyor.
+//
+//   Üçü de `account` türü: tavansız ve uygulama içinden kapatılamaz. Kaçırmak kullanıcının
+//   aleyhine ve yerine geçecek başka bir kanal yok.
+//
+// ÇÖZÜLDÜ BİLDİRİMİNDE BİR İNCELİK
+//   Öğretmen çoğunlukla son cevabını yazıp hemen ardından soruyu kapatıyor. O mesaj için
+//   sohbet bildirimi ZATEN gitti; peşine "çözüldü" göndermek aynı olayı iki kez haber
+//   vermek olurdu. Bu yüzden son mesajın üstünden [RESOLVED_NOTICE_QUIET_MS] geçmediyse
+//   bildirim gönderilmiyor.
+
+/** Son mesajdan bu süre içinde kapatılan soru için "çözüldü" bildirimi gönderilmiyor. */
+const RESOLVED_NOTICE_QUIET_MS = 5 * 60 * 1000;
+
+/** Firestore Timestamp → ms; alan yoksa ya da beklenen biçimde değilse null. */
+function timestampMillis(value) {
+  if (value && typeof value.toMillis === 'function') return value.toMillis();
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Soru dokümanındaki durum değişimi öğrenciye bir bildirim gerektiriyor mu.
+ *
+ * Saf: üç geçiş ve "çözüldü" susturması emülatör olmadan test edilebilsin diye
+ * (bkz. scripts/test-notifications.js).
+ *
+ * @returns `{ topic, title, body }` ya da null.
+ */
+function questionStatusNotice(before, after, nowMs) {
+  const from = (before && before.status) || '';
+  const to = (after && after.status) || '';
+  if (!to || from === to) return null;
+
+  if (from === 'pending' && to === 'claimed') {
+    return {
+      topic: 'question_claimed',
+      title: 'Öğretmenin sorunu aldı',
+      body: 'Cevap geldiğinde haber vereceğiz.',
+    };
+  }
+
+  if (to === 'resolved') {
+    // Öğretmen son mesajını yazıp hemen kapattıysa o mesajın bildirimi zaten gitti.
+    const lastMessageMs = timestampMillis(after && after.lastMessageAt);
+    if (lastMessageMs && nowMs - lastMessageMs < RESOLVED_NOTICE_QUIET_MS) return null;
+    return {
+      topic: 'question_resolved',
+      title: 'Sorun çözüldü olarak işaretlendi',
+      body: 'Öğretmenin cevabını sohbette okuyabilirsin.',
+    };
+  }
+
+  // Kredi gerçekten iade edildiyse (bkz. runUnansweredQuestionRefund). `expired` durumu
+  // tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular da iade edilmeden
+  // kapanabiliyor ve onlar için söylenecek bir şey yok.
+  if (to === 'expired' && after && after.creditRefunded === true) {
+    return {
+      topic: 'credit_refunded',
+      title: 'Soruna cevap gelemedi',
+      body: '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.',
+    };
+  }
+
+  return null;
+}
+
+/** Durum değişimi bildirimini öğrenciye gönderir. Hata hiçbir koşulda trigger'ı düşürmüyor. */
+async function notifyQuestionStatusChange(before, after, questionId) {
+  try {
+    const notice = questionStatusNotice(before, after, Date.now());
+    if (!notice) return;
+    const studentUid = (after && after.studentUid) || '';
+    if (!studentUid) return;
+
+    await sendUserNotification(studentUid, {
+      type: 'account',
+      topic: notice.topic,
+      title: notice.title,
+      body: notice.body,
+      // Bildirime dokunan öğrenci doğrudan sorusuna gitsin.
+      data: { questionId: String(questionId) },
+    });
+  } catch (error) {
+    console.error('notifyQuestionStatusChange başarısız', { questionId, error: error.message });
+  }
+}
+
 // Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları + Storage
 // medyasını kalıcı sil
 exports.onQuestionUpdated = functions.firestore
@@ -883,6 +980,11 @@ exports.onQuestionUpdated = functions.firestore
   .onUpdate(async (change, context) => {
     const after = change.after.data();
     const questionId = context.params.questionId;
+
+    // Durum değişimi bildirimi — aşağıdaki silme mantığından önce ve ondan tamamen bağımsız.
+    // Silme yolu erken dönüşlerle dolu (yalnızca iki taraf da sildiyse çalışıyor); bildirim
+    // oraya karışsa geçişlerin çoğunda hiç çalışmazdı.
+    await notifyQuestionStatusChange(change.before.data(), after, questionId);
     const deletedForUids = Array.isArray(after.deletedForUids) ? after.deletedForUids : [];
     const studentUid = after.studentUid || '';
     const claimedByTeacherUid = after.claimedByTeacherUid || '';
@@ -2497,6 +2599,7 @@ exports.notifyTeacherPool = functions
 // Testler için.
 exports._teacherPoolText = teacherPoolText;
 exports._runTeacherPoolNotify = runTeacherPoolNotify;
+exports._questionStatusNotice = questionStatusNotice;
 
 /** Kapanan (çözülen ya da cevapsız kalıp iade edilen) bir soru bu süre sonunda silinir. */
 const CLOSED_QUESTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;

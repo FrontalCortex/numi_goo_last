@@ -1847,6 +1847,44 @@ cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS
 içinde öğretmen cihazına bildirim düşmeli. **İlk deploy'dan sonraki İLK tarama imleci kurar ve
 bildirim göndermez** — ikinci turu beklemek gerekiyor.
 
+## Soru durumu bildirimleri (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Öğrenci sorusunun ne olduğunu yalnızca uygulamayı açarsa öğreniyordu. Üç geçiş de onun için
+bir haberdi ve üçü de sessizdi. Hepsi `account` türü: tavansız, uygulama içinden
+kapatılamaz — kaçırmak kullanıcının aleyhine ve yerine geçecek kanal yok.
+
+- `functions/index.js` → `questionStatusNotice` (saf, testli) + `notifyQuestionStatusChange`,
+  `onQuestionUpdated` trigger'ı içinden çağrılıyor.
+- **pending → claimed:** "Öğretmenin sorunu aldı / Cevap geldiğinde haber vereceğiz."
+- **→ resolved:** "Sorun çözüldü olarak işaretlendi / Öğretmenin cevabını sohbette
+  okuyabilirsin." Çözüldü işaretlemesi yalnızca ÖĞRETMENE açık (`updateTeacherClaimUi`,
+  `resolveButton` öğrenciye hiç görünmüyor), yani bildirim öğrenciye gidiyor ve doğru taraf.
+- **→ expired, `creditRefunded == true`:** "Soruna cevap gelemedi / 1 danışma kredin geri
+  verildi." `expired` tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular iade
+  edilmeden kapanabiliyor.
+
+**ÇÖZÜLDÜ BİLDİRİMİNDEKİ İNCELİK**
+Öğretmen çoğunlukla son cevabını yazıp hemen ardından soruyu kapatıyor; o mesaj için sohbet
+bildirimi ZATEN gitti. Son mesajın üstünden `RESOLVED_NOTICE_QUIET_MS` (5 dk) geçmediyse
+"çözüldü" bildirimi gönderilmiyor — aynı olayı iki kez haber vermemek için.
+
+**TRIGGER'A NASIL EKLENDİ — dikkat edilen yer**
+`onQuestionUpdated` silme işi yapıyor ve erken dönüşlerle dolu (yalnızca iki taraf da
+"listeden sil" dediyse çalışıyor). Bildirim çağrısı o mantığın İÇİNE değil ÖNÜNE konuldu;
+içine girseydi geçişlerin çoğunda hiç çalışmazdı. Silme mantığına dokunulmadı.
+
+**BİLDİRİM KİMLİĞİ ÇAKIŞMASI — kolayca gözden kaçacak bir tuzak**
+Soru durumu bildirimi `"account:$questionId".hashCode()` kullanıyor. Önek şart: soru sohbeti
+bildirimleri de `questionId.hashCode()` kullanıyor ve önek olmasa öğretmenin yazdığı mesajın
+bildirimi, peşinden gelen durum bildirimiyle SİLİNİRDİ. Aynı sorunun ardışık durum
+bildirimleri ise bilerek aynı kimliği paylaşıyor (sorunun güncel durumu tek bildirimde);
+farklı soruların bildirimleri birbirini ezmiyor.
+
+**DENENMEYEN.** Cihazda hiç görülmedi. Denemek için öğretmen hesabından bir soruyu sahiplen
+(öğrenci cihazına "öğretmenin sorunu aldı" düşmeli), sonra 5 dakika bekleyip çözüldü işaretle.
+Kredi iadesi 48 saat beklemek yerine Firestore Console'dan `createdAtMs` alanını 48 saatten
+eskiye çekip saatlik taramayı beklemekle denenebilir.
+
 ## Deneme süresi bitiş bildirimi (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
 
 Bir büyüme fikri değil, kapatılan bir AÇIK: reklam atlama panelinde kullanıcıya "Deneme süren

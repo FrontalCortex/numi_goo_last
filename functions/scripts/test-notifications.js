@@ -469,5 +469,75 @@ check(
   null
 );
 
+console.log('\n=== SORU DURUMU BİLDİRİMLERİ ===');
+const questionStatusNotice = evalFromIndex(
+  'questionStatusNotice',
+  ['timestampMillis'],
+  ['RESOLVED_NOTICE_QUIET_MS']
+);
+const topicOf = (b, a, now = NOON) => {
+  const r = questionStatusNotice(b, a, now);
+  return r ? r.topic : null;
+};
+
+check(
+  'öğretmen soruyu aldı',
+  topicOf({ status: 'pending' }, { status: 'claimed' }),
+  'question_claimed'
+);
+check('durum değişmediyse bildirim yok', topicOf({ status: 'claimed' }, { status: 'claimed' }), null);
+check(
+  'sahiplenme dışı geçişler sessiz (örn. claimed → pending)',
+  topicOf({ status: 'claimed' }, { status: 'pending' }),
+  null
+);
+
+// Çözüldü: öğretmen son mesajını yazıp hemen kapattıysa o mesajın bildirimi zaten gitti.
+check(
+  'çözüldü — son mesajdan uzun süre sonra kapatıldı',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: NOON - 20 * 60000 }),
+  'question_resolved'
+);
+check(
+  'çözüldü — son mesajdan hemen sonra kapatıldı, bildirim YOK',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: NOON - 60000 }),
+  null
+);
+check(
+  'çözüldü — hiç mesaj yoksa gönderiliyor',
+  topicOf({ status: 'claimed' }, { status: 'resolved' }),
+  'question_resolved'
+);
+// Firestore Timestamp nesnesi de kabul edilmeli (sahada gelen biçim bu).
+check(
+  'çözüldü — Timestamp nesnesi okunuyor',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: { toMillis: () => NOON - 60000 } }),
+  null
+);
+
+check(
+  'kredi iade edildi',
+  topicOf({ status: 'pending' }, { status: 'expired', creditRefunded: true }),
+  'credit_refunded'
+);
+// `expired` tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular iade edilmeden
+// kapanabiliyor ve onlar için söylenecek bir şey yok.
+check(
+  'iade edilmeden kapanan soru sessiz',
+  topicOf({ status: 'pending' }, { status: 'expired' }),
+  null
+);
+check(
+  'iade bayrağı false ise sessiz',
+  topicOf({ status: 'pending' }, { status: 'expired', creditRefunded: false }),
+  null
+);
+
+check(
+  'metin iade edilen kredi sayısını söylüyor',
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).body,
+  '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.'
+);
+
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
 process.exit(fail === 0 ? 0 : 1);

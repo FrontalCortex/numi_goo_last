@@ -93,7 +93,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
-        showSimpleNotification(type, topic, channelId, title, body)
+        showSimpleNotification(type, topic, channelId, title, body, data["questionId"], recipientUid)
     }
 
     override fun onNewToken(token: String) {
@@ -262,10 +262,25 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         topic: String,
         channelId: String,
         title: String,
-        body: String
+        body: String,
+        questionId: String?,
+        recipientUid: String?
     ) {
         createChannelIfNeeded(channelId)
-        val notificationId = notificationIdFor(type)
+
+        // Bir soruya bağlı bildirim (soru durumu değişimi) o soruya özel kimlik alıyor:
+        // iki ayrı sorunun kredisi iade edildiğinde ikinci bildirim birincinin yerini
+        // almasın. Aynı sorunun ardışık durum bildirimleri ise BİLEREK aynı kimliği
+        // paylaşıyor — sorunun güncel durumu tek bildirimde.
+        //
+        // "account:" öneki şart: soru sohbeti bildirimleri de questionId'den türetilmiş
+        // kimlik kullanıyor (bkz. showNotification) ve önek olmasa öğretmenin yazdığı
+        // mesajın bildirimi, peşinden gelen durum bildirimiyle silinirdi.
+        val notificationId = if (!questionId.isNullOrEmpty()) {
+            "account:$questionId".hashCode() and 0x7FFFFFFF
+        } else {
+            notificationIdFor(type)
+        }
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -273,6 +288,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             // Havuz bildirimi doğrudan Havuz sekmesini açıyor; öteki türlerde uygulamanın
             // normal açılışı doğru yer.
             if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
+            // Soru durumu bildirimine dokunan öğrenci doğrudan sorusuna gitsin.
+            // MainActivity ikisini birlikte bekliyor (bkz. handleOpenQuestionIdFromIntent).
+            if (!questionId.isNullOrEmpty() && !recipientUid.isNullOrEmpty()) {
+                putExtra(MainActivity.EXTRA_OPEN_QUESTION_ID, questionId)
+                putExtra(MainActivity.EXTRA_NOTIFICATION_RECIPIENT_UID, recipientUid)
+            }
         }
         val pendingIntent = PendingIntent.getActivity(
             this,
