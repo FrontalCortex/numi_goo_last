@@ -23,6 +23,25 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Ders kilitleri üretime çekildi (06.10.2026 — derlendi, cihazda DENENMEDİ)
+
+`GlobalLessonData.createLessonItems` 1–6: `p1_i01` dışındaki bütün ders/sandık item'leri
+`isCompleted = false`. Ayrıca 14 sandıkta kalmış test artığı `stepIsFinish = true` silindi:
+`withDerivedUnlocks` bitmiş sandığın arkasındaki dersi kendiliğinden açıyordu ve
+`PartSelectionFragment` 2. ve 3. bölümün son sandığı "bitmiş" göründüğü için 5. ve 6. bölümü
+1. bölüm biter bitmez açıyordu. Yeni sandık bitişinde ilk bitiş görev sayaçları da artık çalışır.
+
+**Yalnızca yeni hesapları etkiler.** `LessonProgressMerge` `isCompleted`'ı `local || remote`
+birleştiriyor; mevcut hesaplardaki açık dersler açık kalır. Denemek için yeni hesap gerekir.
+
+**Açık kalan — 4. ve 5. bölüm sandıkları** (onay bekliyor, ders sonu akışına dokunuyor):
+`ChestFragment.updateMapProgress` sonraki item'ı `cupPoint1 != null` ise +2 atlayarak buluyor.
+4. ve 5. bölüm sandıklarında `cupPoint1` yok, yani açılan item başlık oluyor, sonraki ders
+değil. `withDerivedUnlocks` bunu bölüm yeniden yüklenince kapatıyor ama hemen değil: gerçek
+zamanlı dinleyici `sameProgressState` eşit çıktığı için erken dönüyor. Önerilen düzeltme
+`cupPoint1` yerine "sonraki item başlık mı" kontrolü; 1–3 ve 6'da davranış aynı kalır
+(şablon tarandı: her sandıktan sonra başlık geliyor, hiçbir dersten sonra gelmiyor).
+
 ## Sıradaki iş 1 — güvenlik ağı sandık ekrandayken kilidi açıyor (teşhis tamam, düzeltme yapılmadı)
 
 **Belirti:** Görünür bir belirti gözlenmedi (sandık tam ekran ve alt barı örtüyor), ama sandık
