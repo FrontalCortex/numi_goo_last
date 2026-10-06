@@ -1886,6 +1886,22 @@ gidebilirdi.
 "(status, createdAtMs) indeksi zaten var, iade taraması kullanıyor" diye yazdım; iade
 taraması onu kullanmıyordu, çünkü indeks hiç yoktu.
 
+### İkinci eksik indeks: `secondReminderHourUtc` (aynı gün, aynı sebep)
+
+Yukarıdaki indeks eklendikten sonra canlı indeks listesi okunurken çıktı. İkinci şans
+hatırlatması `collectionGroup('streak').where('secondReminderHourUtc', '==', hourUtc)`
+sorguluyor ve **tek alanlı collectionGroup sorguları otomatik indekslenmiyor** — açıkça
+`fieldOverrides` içinde `queryScope: COLLECTION_GROUP` tanımlanmak zorunda. İkizi
+`reminderHourUtc` için tam bu yüzden bir override vardı; yeni alan için eklenmemişti.
+
+Tarama saatlik olduğu için henüz çalışmamıştı, yani hata loglara hiç düşmedi: ilk turunda
+`FAILED_PRECONDITION` verecekti. Override eklendi.
+
+**Kural olarak yazalım:** `streak` (ya da başka bir alt koleksiyon) üzerinde yeni bir
+collectionGroup sorgusu eklenirse, filtrelenen alan için `fieldOverrides`'a
+`COLLECTION_GROUP` kapsamlı indeks eklenmeli. Normal koleksiyon sorgularında bu gerekmiyor,
+tek alan indeksleri otomatik.
+
 ## Kalan bildirimlerin hepsi (06.10.2026 — yazıldı ve derlendi, HİÇBİRİ cihazda DENENMEDİ)
 
 Kullanıcı "testlerle uğraşmak istemiyorum, sen bildirimleri ekle, ileride test'teyken zaten
