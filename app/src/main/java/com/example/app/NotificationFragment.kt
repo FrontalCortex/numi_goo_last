@@ -77,6 +77,7 @@ class NotificationFragment : Fragment() {
         private const val KEY_STUDENT_TAB = "student_tab"
         private const val KEY_REPORTS_SUB_TAB = "reports_sub_tab"
         private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
+        private const val ARG_FORCE_TEACHER_POOL = "force_teacher_pool"
         private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
         private const val ARG_TEACHER_SELECTION_MODE = "teacher_selection_mode"
         private const val ARG_MEDIA_TYPE = "teacher_media_type"
@@ -93,6 +94,19 @@ class NotificationFragment : Fragment() {
                     putBoolean(ARG_FORCE_TEACHER_CHATS, fromTeacher)
                     putBoolean(ARG_FORCE_STUDENT_BEKLEYEN, !fromTeacher)
                 }
+            }
+        }
+
+        /**
+         * Havuz bildirimine dokunan öğretmen için: HAVUZ sekmesi zorla seçili açılsın.
+         *
+         * `teacherTab` varsayılanı zaten POOL ama bu yetmiyor — öğretmen son olarak Sohbetler
+         * sekmesinde kaldıysa kaydedilmiş durum onu geri getiriyor. Bildirim "havuzda yeni
+         * soru var" diyorsa açılan ekran havuz olmak zorunda.
+         */
+        fun newForTeacherPool(): NotificationFragment {
+            return NotificationFragment().apply {
+                arguments = Bundle().apply { putBoolean(ARG_FORCE_TEACHER_POOL, true) }
             }
         }
 
@@ -138,6 +152,7 @@ class NotificationFragment : Fragment() {
         binding.questionsRecyclerView.adapter = adapter
 
         val forceTeacherChats = arguments?.getBoolean(ARG_FORCE_TEACHER_CHATS) == true
+        val forceTeacherPool = arguments?.getBoolean(ARG_FORCE_TEACHER_POOL) == true
         val forceStudentBekleyen = arguments?.getBoolean(ARG_FORCE_STUDENT_BEKLEYEN) == true
         val fromTeacherSelection = arguments?.getBoolean(ARG_TEACHER_SELECTION_MODE) == true
 
@@ -145,6 +160,10 @@ class NotificationFragment : Fragment() {
         if (fromTeacherSelection) {
             teacherSelectionMode = true
             teacherTab = TeacherTab.CHATS
+        } else if (forceTeacherPool) {
+            // Havuz bildiriminden gelindi: kaydedilmiş sekme yok sayılıyor, bildirimin
+            // söylediği ekran açılmalı.
+            teacherTab = TeacherTab.POOL
         } else if (savedInstanceState != null) {
             savedInstanceState.getString(KEY_TEACHER_TAB)?.let { name ->
                 kotlin.runCatching { teacherTab = TeacherTab.valueOf(name) }

@@ -58,6 +58,7 @@ service cloud.firestore {
           'teacherApproved',             // öğretmen onayı → yalnız admin
           // yalnız doğrulanmış Play aboneliği
           'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
+          'planTrialEndsAt',             // deneme bitişi → yalnız syncSubscriptionForToken
           'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
           'longestStreak',               // en uzun seri → yalnız submitStreakDay
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
@@ -78,6 +79,7 @@ service cloud.firestore {
         && !request.resource.data.keys().hasAny([
              'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved',
              'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
+             'planTrialEndsAt',
              'followersCount', 'followingCount', 'longestStreak',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',

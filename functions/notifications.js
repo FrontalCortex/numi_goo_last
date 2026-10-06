@@ -84,6 +84,22 @@ const NOTIFICATION_TYPES = {
    * (bkz. streakReminder.reminderHourUtc deseni) buraya gelen çağrı zaten uygun saatte.
    */
   account: { pref: null, capped: false, mutable: false, quiet: 'send', channel: 'account' },
+
+  /**
+   * Öğretmene: havuza yeni soru düştü.
+   *
+   * Öğretmen tarafı bu bildirime kadar tamamen sessizdi — soruyu SAHİPLENDİKTEN sonraki
+   * mesajları duyuyor, havuza düşen soruyu duymuyordu. Bu boşluk doğrudan paraya dokunuyor:
+   * 48 saat içinde cevaplanmayan soru öğrencinin kredisini iade ediyor
+   * (`QUESTION_REFUND_AFTER_MS`), yani her kaçan soru hem gelir hem güven kaybı.
+   *
+   * `pref: null` — öğretmenin işi, uygulama içindeki öğrenciye yönelik tercih listesinde yeri
+   * yok; gerekirse Android'in `pool` kanalından susturulabiliyor.
+   * `capped: false` — iş bildirimi, pazarlama değil.
+   * `quiet: 'silence'` — gece gelen soru görünsün ama öğretmeni uyandırmasın. Düşürmek
+   * olmazdı: 48 saatlik pencerede geçen her saat önemli.
+   */
+  pool: { pref: null, capped: false, mutable: false, quiet: 'silence', channel: 'pool' },
 };
 
 /** Uygulama içinden kapatılabilen tercihler — istemcideki anahtarların kaynağı. */

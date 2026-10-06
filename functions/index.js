@@ -21,6 +21,8 @@ const {
   notificationPrefsFor,
   ledgerPatch,
   openPatch,
+  localHourOf,
+  normalizeOffset,
 } = require('./notifications');
 exports.finalizeSeasonLeaderboardMedals =
   seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
@@ -1764,6 +1766,34 @@ function subscriptionEntitlement(subscription, nowMs) {
   return { stillValid, expiryRaw, expiryMs };
 }
 
+/**
+ * Bu abonelik dönemi ÜCRETSİZ DENEME mi?
+ *
+ * NEDEN BU KADAR DOLAYLI
+ *   Play Developer API v2 (`purchases.subscriptionsv2.get`) denemeyi söyleyen bir alan
+ *   döndürmüyor — v1'deki `paymentState: 2` karşılığı yok. Elde olan tek sinyal
+ *   `lineItems[].offerDetails`: bir TEKLİF uygulanmışsa `offerId` dolu geliyor.
+ *
+ * VARSAYIM — kırılganlığı burada yazılı olmak zorunda
+ *   Play Console'da Pro aboneliğinde ücretsiz deneme DIŞINDA teklif olmadığı için
+ *   "teklif uygulanmış = deneme" kabul ediliyor (kullanıcı kararı, 06.10.2026).
+ *   İleride indirimli ilk ay / tanıtım fiyatı gibi bir teklif eklenirse bu fonksiyon
+ *   onları da deneme sayar ve o kullanıcılara yanlış bildirim gider. O gün yapılacak şey:
+ *   deneme teklifine Console'da bir etiket vermek ve burada `offerTags`'e bakmak.
+ *
+ * Saf fonksiyon.
+ */
+function isTrialPeriod(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items.some(
+    (item) =>
+      item &&
+      item.offerDetails &&
+      typeof item.offerDetails.offerId === 'string' &&
+      item.offerDetails.offerId.trim().length > 0
+  );
+}
+
 /** Play'in döndürdüğü abonelikteki ürün kimlikleri (satır öğesi sırasıyla). */
 function subscriptionProductIds(subscription) {
   const items = (subscription && subscription.lineItems) || [];
@@ -2159,6 +2189,302 @@ exports.reconcileUnansweredQuestions = functions
     await runUnansweredQuestionRefund();
     return null;
   });
+
+// ─── DENEME SÜRESİ BİTİŞ BİLDİRİMİ ─────────────────────────────────────────
+//
+// NEDEN
+//   Bu bir büyüme fikri değil, KAPATILMASI GEREKEN BİR AÇIK. Reklam atlama panelinde
+//   kullanıcıya açıkça "Deneme süren sona ermeden önce bildirim alacaksın" deniyor
+//   (AdSkipFragment, deneme hakkı olan sürüm). Söz veriliyor ama hiçbir bildirim
+//   gönderilmiyordu: `playSubscriptionNotification` planı güncelliyor, kullanıcıya hiçbir
+//   şey söylemiyor.
+//
+//   Kitle çocuk, ödeyen ebeveyn. Haber verilmeden başlayan ilk ödeme, iade talebi ve mağaza
+//   yorumu üretir; verilmiş bir sözü tutmamak ayrıca Play politikası tarafında da risktir.
+//
+// KİME GİTMİYOR
+//   • Denemede OLMAYAN abonelere (kullanıcı kararı, 06.10.2026): Play yenileme e-postasını
+//     zaten atıyor ve aylık abonede dönem başına iki bildirim değerli bir şey söylemiyor.
+//     Ayrım `planTrialEndsAt` alanının dolu olmasıyla yapılıyor (bkz. isTrialPeriod).
+//   • Aynı deneme için ikinci kez: gönderilen eşik, o denemenin bitiş zamanıyla birlikte
+//     deftere yazılıyor. Zaman karşılaştırması yeterli — kullanıcı aboneliği iptal edip
+//     yeni bir deneme alırsa (farklı bitiş zamanı) bildirim yeniden gidiyor.
+//
+// NEDEN SAATTE BİR, GÜNDE BİR DEĞİL
+//   Bildirim kullanıcının yerel saatine göre gönderiliyor: gece yarısı "denemen bitiyor"
+//   demek, bildirimin kendisini zararlı yapar. Saatlik tarama "şu anda yerel saati uygun
+//   olanlar" sorusunu sorabiliyor; günlük tarama sorasaydı tek bir UTC anında herkese
+//   gönderirdi.
+
+/** Deneme bitişine kaç gün kalanlara bildirim gider. Büyükten küçüğe. */
+const TRIAL_NOTICE_DAYS = [3, 1];
+
+/** Bildirimin gönderilebileceği yerel saat aralığı (dahil–dışında). */
+const TRIAL_NOTICE_LOCAL_HOURS = { from: 10, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const TRIAL_NOTICE_SCAN_LIMIT = 500;
+
+/**
+ * Deneme bitişine [days] gün kalan kullanıcıya gönderilecek metin.
+ *
+ * TON
+ *   Dürüst ve sakin. Ödeyen taraf ebeveyn ve asıl mesele güven: ne olacağını ("ücretli
+ *   devam eder") ve çıkış yolunu ("istediğin zaman iptal") aynı bildirimde söylemek,
+ *   kullanıcıyı şaşırtmamanın tek yolu. Aciliyet dili ("SON ŞANS!") burada satış değil
+ *   şikâyet üretir.
+ */
+function trialNoticeText(days) {
+  const title = days === 1 ? 'Deneme süren yarın bitiyor' : `Deneme süren ${days} gün sonra bitiyor`;
+  return {
+    title,
+    body: 'Sonrasında aboneliğin ücretli olarak devam eder. İstediğin zaman iptal edebilirsin.',
+  };
+}
+
+/**
+ * Bu kullanıcıya hangi eşik için bildirim gönderilmeli; gönderilmeyecekse null.
+ *
+ * Saf: eşik seçimi, yerel saat penceresi ve tekrar engelleme emülatör olmadan test
+ * edilebilsin diye (bkz. scripts/test-notifications.js).
+ *
+ * @param trialEndsAt  `planTrialEndsAt` (ms). Yoksa/geçmişse bildirim yok.
+ * @param sentFor      Defterdeki `trialNotice`: eşik → o denemenin bitiş zamanı.
+ * @param utcOffsetMinutes Kullanıcının saat dilimi farkı; bilinmiyorsa null.
+ */
+function trialNoticeDecision({ trialEndsAt, sentFor, utcOffsetMinutes }, nowMs) {
+  const endsAt = Number(trialEndsAt) || 0;
+  if (!endsAt || endsAt <= nowMs) return null;
+
+  // Saat dilimi bilinmiyorsa gönderilmiyor: bu bildirimin günün rastgele bir saatinde
+  // düşmesi, bir gün gecikmesinden kötü. Alan kullanıcı uygulamayı bir kez açtığında
+  // doluyor (token kaydıyla birlikte).
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < TRIAL_NOTICE_LOCAL_HOURS.from || localHour >= TRIAL_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  const msLeft = endsAt - nowMs;
+  const sent = sentFor && typeof sentFor === 'object' ? sentFor : {};
+
+  // Büyük eşikten küçüğe: 3 günlük pencere kaçırıldıysa 1 günlük yine yakalıyor.
+  for (const days of TRIAL_NOTICE_DAYS) {
+    // Pencere eşiğin kendisi kadar geniş değil, bir GÜN: "3 gün kaldı" bildirimi
+    // 3–2 gün arasında bir kez gidiyor. Saatlik tarama bu pencereyi kaçırmıyor.
+    const upper = days * 86400000;
+    const lower = (days - 1) * 86400000;
+    if (msLeft > upper || msLeft <= lower) continue;
+    // Bu eşik BU deneme için gönderilmiş mi? Bitiş zamanı karşılaştırılıyor, bayrak değil:
+    // kullanıcı yeni bir deneme alırsa (farklı bitiş) bildirim yeniden gitmeli.
+    if (Number(sent[String(days)]) === endsAt) return null;
+    return { days, endsAt, text: trialNoticeText(days) };
+  }
+  return null;
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runTrialEndingNotices(nowMs) {
+  // Yalnızca denemesi SÜREN kullanıcılar: alan deneme bitince kendiliğinden null oluyor
+  // (syncSubscriptionForToken). Tek alan indeksi yeterli, bileşik indeks gerekmiyor.
+  const snap = await db
+    .collection('users')
+    .where('planTrialEndsAt', '>', nowMs)
+    .limit(TRIAL_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+
+  for (const doc of snap.docs) {
+    try {
+      const ledgerSnap = await notifyLedgerRef(doc.id).get();
+      const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+      const decision = trialNoticeDecision(
+        {
+          trialEndsAt: doc.get('planTrialEndsAt'),
+          sentFor: ledger.trialNotice,
+          utcOffsetMinutes: doc.get('utcOffsetMinutes'),
+        },
+        nowMs
+      );
+      if (!decision) {
+        counts.skipped++;
+        continue;
+      }
+
+      const result = await sendUserNotification(doc.id, {
+        type: 'account',
+        topic: 'trial_ending',
+        title: decision.text.title,
+        body: decision.text.body,
+        userData: doc.data(),
+      });
+      if (!result.sent) {
+        counts.skipped++;
+        continue;
+      }
+      // Gönderim başarılıysa işaretle: başarısızsa bir sonraki saatte yeniden denenir.
+      await notifyLedgerRef(doc.id).set(
+        { trialNotice: { [String(decision.days)]: decision.endsAt } },
+        { merge: true }
+      );
+      counts.sent++;
+    } catch (e) {
+      counts.failed++;
+      console.error('runTrialEndingNotices: hata', { uid: doc.id, error: e.message });
+    }
+  }
+
+  console.log('runTrialEndingNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendTrialEndingNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runTrialEndingNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._trialNoticeText = trialNoticeText;
+exports._trialNoticeDecision = trialNoticeDecision;
+exports._isTrialPeriod = isTrialPeriod;
+exports._runTrialEndingNotices = runTrialEndingNotices;
+
+// ─── ÖĞRETMEN HAVUZU BİLDİRİMİ ─────────────────────────────────────────────
+//
+// NEDEN
+//   Öğretmen tarafı bu taramaya kadar tamamen sessizdi: soruyu SAHİPLENDİKTEN sonraki
+//   mesajları duyuyor (onMessageCreated), havuza düşen soruyu duymuyordu. Öğretmenin havuzu
+//   görmesinin tek yolu uygulamayı açıp Havuz sekmesine bakmaktı.
+//
+//   Bu boşluk doğrudan paraya dokunuyor: 48 saat içinde cevaplanmayan soru öğrencinin
+//   kredisini iade ediyor (runUnansweredQuestionRefund). Yani kaçan her soru hem gelir hem
+//   güven kaybı, ve hiçbir hata üretmediği için şikâyet gelene kadar görünmüyor.
+//
+// NEDEN TETİKLEYİCİ DEĞİL, TARAMA
+//   Soru başına bir bildirim göndermek (askTeacherQuestion içinden) daha basit olurdu ama
+//   bir sınıfın aynı akşam soru sorması öğretmene üst üste bildirim yığardı. Tarama
+//   toplulaştırıyor: aradaki bütün yeni sorular tek bildirimde.
+//
+// İLK ÇALIŞTIRMA
+//   İmleç yoksa hiç bildirim gönderilmiyor, yalnızca imleç kuruluyor. Aksi halde ilk tarama
+//   havuzda birikmiş bütün eski soruları "yeni" sayıp bildirim gönderirdi.
+
+/** Havuz taramasının nereye kadar baktığını tutan doküman (istemciye kapalı, bkz. firestore.rules). */
+const POOL_NOTIFY_CURSOR = 'system/teacherPoolNotify';
+
+/** Tek taramada en fazla kaç yeni soru sayılır; metinde "N+" demek için yeter. */
+const POOL_NOTIFY_SCAN_LIMIT = 50;
+
+/**
+ * Havuz bildiriminin metni.
+ *
+ * Saf: tekil/çoğul ve "yeni" ile "bekleyen" ayrımı test edilebilsin diye (bkz.
+ * scripts/test-notifications.js).
+ *
+ * @param newCount     Son taramadan bu yana düşen soru sayısı (>0 olmalı).
+ * @param totalPending Havuzda şu an cevap bekleyen toplam soru.
+ */
+function teacherPoolText(newCount, totalPending) {
+  const title = newCount === 1 ? 'Havuzda yeni bir soru var' : `Havuzda ${newCount} yeni soru var`;
+  // Toplam yeniye eşitse tekrar etmiyor: "1 yeni soru geldi, havuzda 1 soru bekliyor"
+  // aynı şeyi iki kez söylemek olurdu.
+  const body =
+    totalPending > newCount
+      ? `Havuzda toplam ${totalPending} soru cevap bekliyor.`
+      : 'Cevaplanmayan soru 48 saat sonra öğrenciye iade ediliyor.';
+  return { title, body };
+}
+
+/**
+ * Havuza yeni soru düştüyse onaylı öğretmenlere haber verir.
+ *
+ * Zamanlayıcıyı beklemeden test/elle çalıştırılabilsin diye gövde ayrı.
+ */
+async function runTeacherPoolNotify(nowMs) {
+  const cursorRef = db.doc(POOL_NOTIFY_CURSOR);
+  const cursorSnap = await cursorRef.get();
+  const lastScanMs = cursorSnap.exists ? Number(cursorSnap.get('lastScanMs')) || 0 : 0;
+
+  if (!lastScanMs) {
+    await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+    console.log('runTeacherPoolNotify: imleç kuruldu, ilk taramada bildirim gönderilmiyor');
+    return { sent: 0, newCount: 0, reason: 'cursor_init' };
+  }
+
+  // (status, createdAtMs) indeksi zaten var — iade taraması da onu kullanıyor.
+  const newSnap = await db
+    .collection('questions')
+    .where('status', '==', 'pending')
+    .where('createdAtMs', '>', lastScanMs)
+    .limit(POOL_NOTIFY_SCAN_LIMIT)
+    .get();
+
+  const newCount = newSnap.size;
+  if (!newCount) {
+    await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+    return { sent: 0, newCount: 0, reason: 'no_new' };
+  }
+
+  // Havuzda bekleyen toplam: öğretmen için en faydalı sayı "şu an kaç soru var".
+  let totalPending = newCount;
+  try {
+    const agg = await db.collection('questions').where('status', '==', 'pending').count().get();
+    totalPending = agg.data().count;
+  } catch (e) {
+    // Sayım başarısız olursa bildirim yine gidiyor, yalnızca metin "yeni" sayısına düşüyor.
+    console.warn('runTeacherPoolNotify: toplam sayım başarısız', e.message);
+  }
+
+  // İki eşitlik filtresi yerine tek sorgu + kod filtresi: öğretmen sayısı küçük ve bu yol
+  // yeni bir bileşik indeks gerektirmiyor.
+  const teachersSnap = await db.collection('users').where('role', '==', 'TEACHER').get();
+  const teachers = teachersSnap.docs.filter((d) => d.get('teacherApproved') === true);
+
+  const text = teacherPoolText(newCount, totalPending);
+  const counts = { sent: 0, skipped: 0, newCount, totalPending, teachers: teachers.length };
+
+  for (const doc of teachers) {
+    try {
+      const result = await sendUserNotification(doc.id, {
+        type: 'pool',
+        topic: 'teacher_pool',
+        title: text.title,
+        body: text.body,
+        userData: doc.data(),
+      });
+      if (result.sent) counts.sent++;
+      else counts.skipped++;
+    } catch (e) {
+      counts.skipped++;
+      console.error('runTeacherPoolNotify: gönderilemedi', { uid: doc.id, error: e.message });
+    }
+  }
+
+  // İmleç gönderimden SONRA ilerliyor: tarama yarıda düşerse aynı sorular bir sonraki turda
+  // yine sayılır. Tekrar bildirim, hiç bildirim gelmemesinden iyi.
+  await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+  console.log('runTeacherPoolNotify tamamlandı', counts);
+  return counts;
+}
+
+exports.notifyTeacherPool = functions
+  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .pubsub.schedule('every 10 minutes')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runTeacherPoolNotify(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._teacherPoolText = teacherPoolText;
+exports._runTeacherPoolNotify = runTeacherPoolNotify;
 
 /** Kapanan (çözülen ya da cevapsız kalıp iade edilen) bir soru bu süre sonunda silinir. */
 const CLOSED_QUESTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -2589,6 +2915,10 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
         planUpdate.plan = newPlan;
         planUpdate.planExpiresAt = stillValid ? expiryMs : null;
         planUpdate.planProductId = stillValid ? productId : null;
+        // Deneme bitiş zamanı: deneme bitiş bildirimi (sendTrialEndingNotices) buna bakıyor.
+        // Deneme bitip ilk ödeme alındığında Play artık teklif döndürmüyor, yani bu alan
+        // kendiliğinden null'a dönüyor — temizlemeyi ayrıca hatırlamak gerekmiyor.
+        planUpdate.planTrialEndsAt = stillValid && isTrialPeriod(subscription) ? expiryMs : null;
         // Planı HANGİ aboneliğin verdiği kaydediliyor; sahiplik kararı buna dayanıyor
         // (bkz. ownsStoredPlan). Ham token değil, özeti.
         planUpdate.planPurchaseTokenHash = stillValid

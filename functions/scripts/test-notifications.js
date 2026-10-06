@@ -17,12 +17,70 @@ const {
   dayKey,
   isQuietHour,
   localHourOf,
+  normalizeOffset,
   notificationPrefsFor,
   recentCounts,
   notificationDecision,
   ledgerPatch,
   openPatch,
 } = require('../notifications');
+
+// index.js'teki saf fonksiyonlar KAYNAKTAN çekiliyor, kopyaları test edilmiyor: index.js'i
+// require etmek admin.initializeApp() çağırır ve emülatör ister. Aynı desen
+// test-streak-freeze.js'te.
+const fs = require('fs');
+const path = require('path');
+const indexSrc = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf8');
+
+function grabFunction(name) {
+  const marker = `function ${name}(`;
+  const i = indexSrc.indexOf(marker);
+  if (i < 0) throw new Error(`kaynakta bulunamadı: ${name}`);
+
+  // DİKKAT: parametre listesi önce dengeli parantezle atlanıyor. Destructuring parametresi
+  // (`function f({ a, b }, c)`) gövdenin ilk süslü parantezi sanılırsa fonksiyon parametre
+  // listesinin ortasında kesiliyor ve eval "Unexpected token" veriyor. (Aynı yardımcının
+  // test-streak-freeze.js'teki kopyasında bu düzeltme yok; orada destructuring'li bir
+  // fonksiyon çekilirse aynı tuzağa düşer.)
+  let p = i + marker.length - 1;
+  let paren = 0;
+  for (; p < indexSrc.length; p++) {
+    if (indexSrc[p] === '(') paren++;
+    else if (indexSrc[p] === ')') {
+      paren--;
+      if (paren === 0) { p++; break; }
+    }
+  }
+
+  let depth = 0;
+  let started = false;
+  for (let j = p; j < indexSrc.length; j++) {
+    if (indexSrc[j] === '{') { depth++; started = true; }
+    else if (indexSrc[j] === '}') { depth--; if (started && depth === 0) return indexSrc.slice(i, j + 1); }
+  }
+  throw new Error(`kapanmadı: ${name}`);
+}
+
+function grabConst(name) {
+  const m = indexSrc.match(new RegExp(`^const ${name} = .*;$`, 'm'));
+  if (!m) throw new Error(`kaynakta bulunamadı: const ${name}`);
+  return m[0];
+}
+
+/**
+ * Kaynaktan bir fonksiyon (ve ihtiyaç duyduğu yardımcılar/sabitler) çekip çalıştırılabilir
+ * hale getirir. notifications.js'ten gelen yardımcılar parametre olarak enjekte ediliyor —
+ * index.js onları require ile alıyor, burada aynısını elle veriyoruz.
+ */
+function evalFromIndex(name, extraFns = [], consts = []) {
+  const body = [
+    ...consts.map(grabConst),
+    ...extraFns.map(grabFunction),
+    grabFunction(name),
+    `return ${name};`,
+  ].join('\n\n');
+  return new Function('normalizeOffset', 'localHourOf', body)(normalizeOffset, localHourOf);
+}
 
 let pass = 0;
 let fail = 0;
@@ -289,6 +347,126 @@ check(
   'sıfırlanan konu yeniden gönderilebilir',
   decide('reward', { ...allOn, unopened: afterOpen.unopened }, NOON, 'chest_waiting').send,
   true
+);
+
+console.log('\n=== ÖĞRETMEN HAVUZU METNİ ===');
+const teacherPoolText = evalFromIndex('teacherPoolText');
+
+check('tek yeni soru tekil yazılıyor', teacherPoolText(1, 1).title, 'Havuzda yeni bir soru var');
+check('birden fazla yeni soru', teacherPoolText(3, 3).title, 'Havuzda 3 yeni soru var');
+// Toplam yeniye eşitken "1 yeni soru geldi, havuzda 1 soru bekliyor" demek aynı şeyi iki kez
+// söylemek olurdu; onun yerine iade penceresi hatırlatılıyor.
+check(
+  'toplam yeniye eşitse tekrar etmiyor',
+  teacherPoolText(2, 2).body,
+  'Cevaplanmayan soru 48 saat sonra öğrenciye iade ediliyor.'
+);
+check(
+  'havuzda birikmiş soru varsa toplam söyleniyor',
+  teacherPoolText(2, 7).body,
+  'Havuzda toplam 7 soru cevap bekliyor.'
+);
+
+console.log('\n=== DENEME BİTİŞİ: TESPİT ===');
+const isTrialPeriod = evalFromIndex('isTrialPeriod');
+check('teklif yok → deneme değil', isTrialPeriod({ lineItems: [{ productId: 'p' }] }), false);
+check(
+  'teklif uygulanmış → deneme',
+  isTrialPeriod({ lineItems: [{ offerDetails: { offerId: 'trial-7day' } }] }),
+  true
+);
+check('boş offerId deneme sayılmıyor', isTrialPeriod({ lineItems: [{ offerDetails: { offerId: '  ' } }] }), false);
+check('lineItems hiç yok', isTrialPeriod({}), false);
+check('yanıt boş', isTrialPeriod(null), false);
+
+console.log('\n=== DENEME BİTİŞİ: KARAR ===');
+const trialNoticeDecision = evalFromIndex(
+  'trialNoticeDecision',
+  ['trialNoticeText'],
+  ['TRIAL_NOTICE_DAYS', 'TRIAL_NOTICE_LOCAL_HOURS']
+);
+const DAY = 86400000;
+// Yerel saat 12:00 olacak şekilde: NOON zaten 12:00 UTC, offset 0.
+const inWindow = { utcOffsetMinutes: 0 };
+
+check(
+  'deneme yok → bildirim yok',
+  trialNoticeDecision({ trialEndsAt: 0, ...inWindow }, NOON),
+  null
+);
+check(
+  'deneme geçmişte → bildirim yok',
+  trialNoticeDecision({ trialEndsAt: NOON - DAY, ...inWindow }, NOON),
+  null
+);
+check(
+  '3 gün kaldı → 3 eşiği',
+  trialNoticeDecision({ trialEndsAt: NOON + 3 * DAY - 1000, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '2.5 gün kaldı → hâlâ 3 eşiği (pencere bir gün geniş)',
+  trialNoticeDecision({ trialEndsAt: NOON + 2.5 * DAY, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '1.5 gün kaldı → hiçbir eşik (3 geçti, 1 gelmedi)',
+  trialNoticeDecision({ trialEndsAt: NOON + 1.5 * DAY, ...inWindow }, NOON),
+  null
+);
+check(
+  '12 saat kaldı → 1 eşiği',
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).days,
+  1
+);
+check(
+  '5 gün kaldı → henüz bildirim yok',
+  trialNoticeDecision({ trialEndsAt: NOON + 5 * DAY, ...inWindow }, NOON),
+  null
+);
+check('1 gün metni "yarın" diyor', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).text.title, 'Deneme süren yarın bitiyor');
+
+// Tekrar engelleme: aynı deneme için ikinci kez gitmiyor, ama YENİ bir deneme için gidiyor.
+const ends = NOON + 2.5 * DAY;
+check(
+  'aynı deneme için ikinci kez gitmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, sentFor: { '3': ends }, ...inWindow }, NOON),
+  null
+);
+check(
+  'başka bir denemenin kaydı engellemiyor',
+  trialNoticeDecision({ trialEndsAt: ends, sentFor: { '3': ends - 999 }, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '3 gönderilmiş olsa bile 1 eşiği ayrı',
+  trialNoticeDecision(
+    { trialEndsAt: NOON + 0.5 * DAY, sentFor: { '3': NOON + 0.5 * DAY }, ...inWindow },
+    NOON
+  ).days,
+  1
+);
+
+// Yerel saat penceresi: gece gelen "denemen bitiyor" bildirimin kendisini zararlı yapar.
+check(
+  'yerel saat 03:00 → gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: -540 }, NOON), // 12-9 = 03:00
+  null
+);
+check(
+  'yerel saat 22:00 → gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: 600 }, NOON), // 12+10 = 22:00
+  null
+);
+check(
+  'yerel saat 10:00 → sınır dahil',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: -120 }, NOON).days,
+  3
+);
+check(
+  'saat dilimi bilinmiyorsa gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: null }, NOON),
+  null
 );
 
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);

@@ -270,6 +270,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(MainActivity.EXTRA_NOTIFICATION_TOPIC, topic)
+            // Havuz bildirimi doğrudan Havuz sekmesini açıyor; öteki türlerde uygulamanın
+            // normal açılışı doğru yer.
+            if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
         }
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -378,6 +381,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         const val CHANNEL_ID_STREAK = "streak_reminder"
         const val CHANNEL_ID_REWARDS = "rewards"
         const val CHANNEL_ID_ACCOUNT = "account"
+        const val CHANNEL_ID_POOL = "pool"
+        const val CHANNEL_ID_POOL_QUIET = "pool_quiet"
 
         /**
          * Kanal kataloğu. Sunucunun gönderdiği `channel` alanı buradaki anahtarlarla
@@ -412,6 +417,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 R.string.notification_channel_account_desc,
                 NotificationManager.IMPORTANCE_DEFAULT,
             ),
+            // Öğretmenin işi: havuza düşen soru. Yüksek önem, çünkü cevaplanmayan soru
+            // 48 saat sonra öğrenciye iade ediliyor.
+            CHANNEL_ID_POOL to ChannelSpec(
+                R.string.notification_channel_pool_name,
+                R.string.notification_channel_pool_desc,
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+            CHANNEL_ID_POOL_QUIET to ChannelSpec(
+                R.string.notification_channel_pool_quiet_name,
+                R.string.notification_channel_pool_quiet_desc,
+                NotificationManager.IMPORTANCE_LOW,
+            ),
         )
 
         /** Sunucudaki tür adı → o türün varsayılan kanalı (`channel` alanı gelmezse). */
@@ -419,11 +436,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             NotificationPrefs.CHAT -> CHANNEL_ID_MESSAGES
             NotificationPrefs.STREAK -> CHANNEL_ID_STREAK
             NotificationPrefs.REWARD -> CHANNEL_ID_REWARDS
+            TYPE_POOL -> CHANNEL_ID_POOL
             else -> CHANNEL_ID_ACCOUNT
         }
 
         /** Eski sürümlerin ayrıştırma anahtarı (functions/index.js: sendStreakReminders). */
         private const val TYPE_STREAK_REMINDER = "streak_reminder"
+
+        /** Öğretmen havuzu bildirimi (functions/index.js: notifyTeacherPool). */
+        private const val TYPE_POOL = "pool"
 
         /**
          * Tür başına sabit bildirim kimliği: aynı türden ikinci bildirim birikmek yerine
@@ -432,6 +453,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private fun notificationIdFor(type: String): Int = when (type) {
             NotificationPrefs.STREAK -> 90_001
             NotificationPrefs.REWARD -> 90_002
+            TYPE_POOL -> 90_004
             else -> 90_003
         }
 

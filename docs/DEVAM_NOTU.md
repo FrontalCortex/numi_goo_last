@@ -1816,6 +1816,84 @@ bildirim almaz. **Cihazda denenmedi** — üçüncü bir cihaz gerekiyor.
 **Sonraki adım (kullanıcıyla kararlaştırılan sıra):** deneme bitişi + öğretmen havuzu → soru
 durumu → seri dondurma + kırılma öncesi ikinci şans → ödüller (sandık, sezon, enerji).
 
+## Öğretmen havuzu bildirimi (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Öğretmen tarafı bu bildirime kadar tamamen sessizdi: soruyu SAHİPLENDİKTEN sonraki mesajları
+duyuyordu (`onMessageCreated`), havuza düşen soruyu duymuyordu — havuzu görmenin tek yolu
+uygulamayı açıp Havuz sekmesine bakmaktı. Boşluk doğrudan paraya dokunuyor: 48 saat içinde
+cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS`).
+
+- `functions/index.js` → `notifyTeacherPool`, 10 dakikada bir. İmleç `system/teacherPoolNotify`
+  (`lastScanMs`). Soru başına tetikleyici DEĞİL, tarama: bir sınıfın aynı akşam soru sorması
+  öğretmene üst üste bildirim yığardı; aradaki bütün yeni sorular tek bildirimde.
+- İlk çalıştırmada bildirim GÖNDERİLMİYOR, yalnızca imleç kuruluyor — yoksa ilk tarama
+  havuzdaki birikmiş bütün eski soruları "yeni" sayardı.
+- Yeni tür `pool` (functions/notifications.js): `pref: null` (öğretmenin işi, öğrenciye
+  yönelik tercih listesinde yeri yok), tavansız, gece sessiz kanala düşüyor — düşürmek
+  olmazdı, 48 saatlik pencerede her saat önemli.
+- Sorgu `(status, createdAtMs)` indeksini kullanıyor; **yeni indeks gerekmedi**, iade taraması
+  (`runUnansweredQuestionRefund`) aynısını kullanıyor.
+- Öğretmenler `role == 'TEACHER'` ile çekilip `teacherApproved` kodda filtreleniyor: iki
+  eşitlik filtresi yeni bir bileşik indeks isteyebilirdi, öğretmen sayısı küçük.
+- Metin `teacherPoolText` (saf, testli): toplam yeniye eşitse tekrar etmiyor, onun yerine
+  iade penceresini hatırlatıyor.
+
+- Bildirime dokunmak doğrudan **Havuz sekmesini** açıyor
+  (`NotificationFragment.newForTeacherPool`, `EXTRA_OPEN_TEACHER_POOL`). `teacherTab`
+  varsayılanı zaten POOL ama yetmiyordu: öğretmen son olarak Sohbetler sekmesinde kaldıysa
+  kaydedilmiş durum onu geri getiriyordu.
+
+**DENENMEYEN:** Cihazda hiç görülmedi. Denemek için bir öğrenci hesabından soru sor, 10 dakika
+içinde öğretmen cihazına bildirim düşmeli. **İlk deploy'dan sonraki İLK tarama imleci kurar ve
+bildirim göndermez** — ikinci turu beklemek gerekiyor.
+
+## Deneme süresi bitiş bildirimi (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Bir büyüme fikri değil, kapatılan bir AÇIK: reklam atlama panelinde kullanıcıya "Deneme süren
+sona ermeden önce bildirim alacaksın" deniyor (`AdSkipFragment`, deneme hakkı olan sürüm) ama
+hiçbir bildirim gönderilmiyordu. `playSubscriptionNotification` planı güncelliyor, kullanıcıya
+hiçbir şey söylemiyordu. Ödeyen taraf ebeveyn; haber verilmeden başlayan ilk ödeme iade talebi
+ve mağaza yorumu üretir.
+
+- `functions/index.js` → `sendTrialEndingNotices`, saatte bir. Eşikler **3 gün ve 1 gün**
+  (`TRIAL_NOTICE_DAYS`), yalnızca kullanıcının yerel saati 10:00–21:00 arasındayken
+  (`TRIAL_NOTICE_LOCAL_HOURS`). Saatlik olmasının sebebi bu: günlük tarama tek bir UTC anında
+  herkese gönderir ve bazı kullanıcıda gece yarısına denk gelirdi.
+- Tür `account`: kapatılamıyor, tavansız.
+- Tekrar engelleme defterde: `notifyLedger.trialNotice = { "3": <bitiş ms>, "1": ... }`.
+  Bayrak değil BİTİŞ ZAMANI kaydediliyor — kullanıcı yeni bir deneme alırsa (farklı bitiş)
+  bildirim yeniden gidiyor.
+
+**DENEME TESPİTİ — kırılgan yer, bilinmesi gereken**
+Play Developer API v2 (`purchases.subscriptionsv2.get`) denemeyi söyleyen bir alan
+döndürmüyor; v1'deki `paymentState: 2` karşılığı yok (web'den doğrulandı). Elde olan tek
+sinyal `lineItems[].offerDetails.offerId`: bir teklif uygulanmışsa dolu.
+**Kullanıcı kararı (06.10.2026):** Play Console'da Pro aboneliğinde ücretsiz deneme dışında
+teklif olmadığı için `isTrialPeriod` "teklif uygulanmış = deneme" kabul ediyor.
+İleride indirimli ilk ay / tanıtım fiyatı gibi bir teklif eklenirse bu fonksiyon onları da
+deneme sayar ve o kullanıcılara yanlış bildirim gider. O gün yapılacak: deneme teklifine
+Console'da bir etiket vermek ve `offerTags`'e bakmak.
+
+`planTrialEndsAt` alanı `syncSubscriptionForToken` içinde yazılıyor — plan yazımının TEK yolu
+orası, yani hem satın alma doğrulaması hem Play RTDN kapsanıyor. Deneme bitip ilk ödeme
+alındığında Play artık teklif döndürmediği için alan kendiliğinden null'a dönüyor. Alan
+`firestore.rules` → `serverOnlyFields()` listesinde: istemci yazamaz.
+
+**Yenileme bildirimi bilerek YOK** (kullanıcı kararı): denemede olmayan abonelere "aboneliğin
+yenilenecek" gönderilmiyor. Play yenileme e-postasını zaten atıyor ve aylık abonede dönem
+başına iki bildirim değerli bir şey söylemiyor.
+
+**DENENMEYEN.** Gerçek bir deneme aboneliği gerekiyor; `isTrialPeriod`'un sahadaki Play
+yanıtında doğru çalıştığı GÖRÜLMEDİ — yalnızca uydurma yanıtlarla test edildi. İlk gerçek
+denemede `syncSubscriptionForToken` logundan `planTrialEndsAt`'in dolduğu doğrulanmalı.
+
+**Test:** `npm run test:notifications` 88 kontrole çıktı (deneme tespiti, eşik seçimi, yerel
+saat penceresi, tekrar engelleme, havuz metni). Testleri yazarken `grabFunction`
+yardımcısında bir tuzak çıktı: destructuring parametresi (`function f({ a }, b)`) gövdenin ilk
+süslü parantezi sanılıyor ve fonksiyon parametre listesinin ortasında kesiliyor. Buradaki
+kopya düzeltildi; **`test-streak-freeze.js`'teki kopyada düzeltme YOK** — orada
+destructuring'li bir fonksiyon çekilirse aynı tuzağa düşer.
+
 **Sezon bitişi bildirimi — kullanıcının verdiği tasarım, henüz yazılmadı:**
 madalya alanlara "Sezon bitti, madalyan hazır"; bitişe 4 saat kala herkese "Sezon 4 saat sonra
 bitecek, sıranı gözden geçir". Susturma şartı zaten altyapıda (`UNOPENED_MUTE_AFTER = 5`).

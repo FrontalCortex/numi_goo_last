@@ -203,6 +203,9 @@ class MainActivity : AppCompatActivity() {
          */
         const val EXTRA_NOTIFICATION_TOPIC = "notification_topic"
 
+        /** Havuz bildiriminden gelindi: öğretmene doğrudan Havuz sekmesi açılır. */
+        const val EXTRA_OPEN_TEACHER_POOL = "open_teacher_pool"
+
         @Volatile
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
@@ -3759,6 +3762,18 @@ class MainActivity : AppCompatActivity() {
     /** Opens QuestionChatFragment when launched from FCM notification (EXTRA_OPEN_QUESTION_ID). */
     private fun handleOpenQuestionIdFromIntent() {
         recordNotificationOpenIfAny()
+
+        // Havuz bildirimi: öğretmeni doğrudan Havuz sekmesine götür. Bildirim "havuzda yeni
+        // soru var" diyorsa açılan ekranın havuz olması gerekiyor; yalnızca uygulamayı açmak
+        // öğretmeni iki dokunuş uzakta bırakıyordu.
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_TEACHER_POOL) == true) {
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_POOL)
+            if (auth.currentUser != null) {
+                changeFragment(NotificationFragment.newForTeacherPool())
+            }
+            return
+        }
+
         val extras = intent?.extras
         Log.d("MainActivity", "handleOpenQuestionIdFromIntent extras = $extras")
         val questionId = extras?.getString(EXTRA_OPEN_QUESTION_ID)

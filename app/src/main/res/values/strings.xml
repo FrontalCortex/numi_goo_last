@@ -57,6 +57,10 @@
     <string name="notification_channel_rewards_desc">Bekleyen sandık, sezon sonu ve benzeri oyun bildirimleri</string>
     <string name="notification_channel_account_name">Hesap ve ödeme</string>
     <string name="notification_channel_account_desc">Deneme süresi, kredi iadesi ve sorunun durumu gibi önemli bilgiler</string>
+    <string name="notification_channel_pool_name">Havuzdaki sorular</string>
+    <string name="notification_channel_pool_desc">Öğretmenler için: havuza yeni soru düştüğünde haber verir</string>
+    <string name="notification_channel_pool_quiet_name">Havuzdaki sorular (sessiz)</string>
+    <string name="notification_channel_pool_quiet_desc">Gece havuza düşen sorular — sessiz gösterilir</string>
 
     <!-- Ses ve Bildirimler ekranındaki tür bazlı bildirim ayarları -->
     <string name="settings_notify_chat">Öğretmen mesajları</string>
