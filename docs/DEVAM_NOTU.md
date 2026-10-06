@@ -34,13 +34,15 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 **Yalnızca yeni hesapları etkiler.** `LessonProgressMerge` `isCompleted`'ı `local || remote`
 birleştiriyor; mevcut hesaplardaki açık dersler açık kalır. Denemek için yeni hesap gerekir.
 
-**Açık kalan — 4. ve 5. bölüm sandıkları** (onay bekliyor, ders sonu akışına dokunuyor):
-`ChestFragment.updateMapProgress` sonraki item'ı `cupPoint1 != null` ise +2 atlayarak buluyor.
-4. ve 5. bölüm sandıklarında `cupPoint1` yok, yani açılan item başlık oluyor, sonraki ders
-değil. `withDerivedUnlocks` bunu bölüm yeniden yüklenince kapatıyor ama hemen değil: gerçek
-zamanlı dinleyici `sameProgressState` eşit çıktığı için erken dönüyor. Önerilen düzeltme
-`cupPoint1` yerine "sonraki item başlık mı" kontrolü; 1–3 ve 6'da davranış aynı kalır
-(şablon tarandı: her sandıktan sonra başlık geliyor, hiçbir dersten sonra gelmiyor).
+**4. ve 5. bölüm sandıkları** (kullanıcı onayıyla düzeltildi, cihazda DENENMEDİ):
+`ChestFragment.updateMapProgress` sonraki item'ı `cupPoint1 != null` ise +2 atlayarak
+buluyordu. 4. ve 5. bölüm sandıklarında `cupPoint1` yok, yani kilidi başlık alıyordu, sonraki
+ders değil. `withDerivedUnlocks` bunu ancak bölüm yeniden yüklenince kapatıyordu: gerçek
+zamanlı dinleyici `sameProgressState` eşit çıktığı için erken dönüyor. Artık "sonraki item
+başlık mı" kontrol ediliyor. 1–3 ve 6'da davranış aynı (şablon tarandı: her sandıktan sonra
+başlık geliyor, hiçbir dersten sonra gelmiyor); 7–9'da bütün item'ler `raceBusyLevel` taşıdığı
+için bu satıra hiç gelinmiyor; bölüm kilitleri (`PartSelectionFragment`) bu satıra bağlı değil.
+Cihazda bakılacak: 4. bölümün ilk sandığı bitince sıradaki ders haritaya dönüşte hemen açık mı.
 
 ## Sıradaki iş 1 — güvenlik ağı sandık ekrandayken kilidi açıyor (teşhis tamam, düzeltme yapılmadı)
 

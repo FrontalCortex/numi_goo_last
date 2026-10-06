@@ -562,8 +562,12 @@ class ChestFragment : Fragment() {
             lessonItem,
             "BEFORE",
         )
+        // Açılacak item bir sonraki; başlıksa atlanır (sandıktan sonra hep başlık geliyor).
+        // Eskiden "sandık mı" sorusu cupPoint1 ile soruluyordu; 4. ve 5. bölüm sandıklarında
+        // cupPoint1 olmadığı için kilidi sonraki ders yerine başlık alıyordu ve ders ancak
+        // harita yeniden yüklenince (withDerivedUnlocks) açılıyordu.
         var index: Int = mapFragmentStepIndex + 1
-        if(lessonItem?.cupPoint1 != null){
+        if (LessonManager.getLessonItem(index)?.type == LessonItem.TYPE_HEADER) {
             index += 1
         }
         val lessonItem2 = LessonManager.getLessonItem(index)
