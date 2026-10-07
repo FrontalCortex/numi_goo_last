@@ -449,9 +449,34 @@ class ChestFragment : Fragment() {
                 }
             } catch (e: IllegalStateException) {
                 Log.e("ChestFragment", "Ödül fragment işlemi başarısız", e)
+                LessonProgressDiag.log(
+                    "ChestFragment.claim",
+                    "HATA ${e.javaClass.simpleName}: ${e.message} | ${Log.getStackTraceString(e).take(1500)}",
+                )
                 claimRewardInProgress = false
-                if (isAdded && _binding != null) {
-                    binding.claimRewardButton.isEnabled = true
+                // Eskiden yalnızca düğme tekrar açılıyordu. Ama düğme hiç görünmüyor ve
+                // ChestFragment'in kendi ekranı chest_closed'da görünmez yapılmış oluyor:
+                // kabı haritanın üstünde tıklanabilir kalıyor, kuyruk da "üstte ChestFragment
+                // var" diye Kupa Yolu'nu açmıyordu. Kullanıcı tıklanamayan bir haritada
+                // kalmasın diye haritaya dönüş yine de yapılıyor.
+                if (isAdded) {
+                    val main = activity as? MainActivity
+                    try {
+                        parentFragmentManager.beginTransaction()
+                            .remove(this@ChestFragment)
+                            .commitNowAllowingStateLoss()
+                    } catch (removeError: IllegalStateException) {
+                        Log.e("ChestFragment", "Hata sonrası kaldırma da başarısız", removeError)
+                        parentFragmentManager.beginTransaction()
+                            .remove(this@ChestFragment)
+                            .commitAllowingStateLoss()
+                    }
+                    main?.prepareMapReturnAfterLessonClaim()
+                    main?.finalizeMapReturnAfterLessonClaim(
+                        caller = "ChestFragment.claimFailed",
+                        badgePayloads = emptyList(),
+                        isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
+                    )
                 }
             }
         }
@@ -677,6 +702,10 @@ class ChestFragment : Fragment() {
                                 toFilledSegments = afterFilled,
                             )
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
+                        LessonProgressDiag.log(
+                            "ChestFragment.updateMapProgress",
+                            "PENDING_PROGRESS key=$key $beforeFilled->$afterFilled",
+                        )
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                     LessonProgressDiag.logItem(
@@ -723,6 +752,10 @@ class ChestFragment : Fragment() {
                                 toFilledSegments = afterFilled,
                             )
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
+                        LessonProgressDiag.log(
+                            "ChestFragment.updateMapProgress",
+                            "PENDING_PROGRESS key=$key $beforeFilled->$afterFilled",
+                        )
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                     LessonProgressDiag.logItem(

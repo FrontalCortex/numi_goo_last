@@ -991,24 +991,6 @@ class MainActivity : AppCompatActivity() {
         // Alev: seri ekranını aç. Üst bardaki diğer göstergeler mağazaya gidiyor, bu
         // gitmiyor — seri bir bakiye değil, kendi ekranı var.
         binding.streakContainer.setOnClickListener { openStreakFragment() }
-
-        // Debug kısayolu: aleve uzun basınca bugüne bir dakika eklenir. Enerji metnindeki
-        // kısayolla aynı gerekçe — blok derleme zamanında elendiği için release APK'sinde
-        // hiç yer almaz. Seriyi test etmek aksi halde her tur için gerçek dakikalar bekletiyor.
-        if (BuildConfig.DEBUG) {
-            binding.streakContainer.setOnLongClickListener {
-                StudyTimeTracker.addSecondsForDebug(this, 60)
-                refreshStreakUi()
-                val seconds = StudyTimeTracker.secondsToday(this)
-                val goal = StreakRepository.goalMinutes(this)
-                Toast.makeText(
-                    this,
-                    "Bugün ${seconds / 60} dk ${seconds % 60} sn / $goal dk",
-                    Toast.LENGTH_SHORT,
-                ).show()
-                true
-            }
-        }
     }
 
     /**
@@ -2639,24 +2621,40 @@ class MainActivity : AppCompatActivity() {
         fragmentBlocksSeasonLeaderboardGate(f)
 
     /**
-     * Harita kartındaki progress halkası animasyonu yalnızca kullanıcı haritayı gerçekten görürken tüketilmeli.
-     * Overlay (Chest, görev paneli vb.) açıkken [MapFragment.onResume] erken tüketim yapmasın.
+     * Harita kartındaki ilerleme animasyonu şu an oynatılamıyorsa sebebi; null = harita
+     * kullanıcının gözü önünde.
+     *
+     * ## Neden yalnızca ders katmanlarına bakmak yetmiyordu
+     * Eskiden yalnızca abacus/result kapları kontrol ediliyordu. Ders bitip bu kaplar
+     * kaldırıldığı an animasyon tüketiliyordu, ama harita o anda hâlâ görünmüyordu:
+     *   • ders sonrası zemini ([postLessonBackdrop]) rozet/reklam/yeni seri beklenirken
+     *     haritayı opak bir perdeyle kapatıyor,
+     *   • rozet ekranı, yeni seri sorusu, rating, tanıtım haritanın üstüne açılıyor,
+     *   • reklam ayrı bir activity — dönüşte [MapFragment.onResume] çalışıyor ve zemin
+     *     hâlâ yukarıdayken tüketiyordu.
+     * Animasyon ~2 sn sürdüğü için perde kalktığında bitmiş oluyordu; kullanıcı yalnızca
+     * son hâli görüyordu.
+     *
+     * Rehber paneli BİLEREK listede yok: haritanın içinde, kartları kapatmıyor.
      */
-    fun shouldConsumeLessonProgressAnimationsOnMap(): Boolean {
-        if (!::binding.isInitialized) return false
-        val fm = supportFragmentManager
-        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
-        val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        if (abacusHostVisible) {
-            val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
-            if (isBlockingLessonOverlayFragment(abacus)) return false
+    fun lessonProgressAnimationBlockReason(): String? {
+        if (!::binding.isInitialized) return "binding_not_initialized"
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            return "not_resumed"
         }
-        val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
-        if (resultHostVisible) {
-            val result = liveOverlayIn(R.id.resultFragmentContainer)
-            if (isBlockingLessonOverlayFragment(result)) return false
-        }
-        return true
+        // Ders katmanları, rozet, yeni seri, abonelik akışı, rozet Firestore beklemesi,
+        // reklam kontrolü ve sezon kapısı orada zaten listeli.
+        marathonGuideMapBlockReason()?.let { return it }
+        // Kuyruk ekranları arasında haritayı kapatan perde. Sönerken de (200 ms) bekliyoruz;
+        // söndüğü an [hidePostLessonBackdrop] haritayı kendisi dürtüyor.
+        if (binding.postLessonBackdrop.visibility == View.VISIBLE) return "post_lesson_backdrop"
+        if (supportFragmentManager.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
+        // Tanıtım zemin tutmuyor ([hasPostLessonBackdropWork]), yani harita açıkken gelebilir.
+        // Gelecekse beklenmezse animasyon onun altında kalıyor.
+        if (pendingLessonTypeReturnForPromo || askQuestionPromoPendingLock) return "promo_pending"
+        return null
     }
 
     internal fun isForcingAbacusOverlayDismiss(): Boolean =
@@ -4386,6 +4384,9 @@ class MainActivity : AppCompatActivity() {
             .withEndAction {
                 view.visibility = View.GONE
                 view.alpha = 1f
+                // Perde kalktı: bekleyen ilerleme animasyonu artık görülebilir.
+                (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                    ?.tryConsumePendingLessonProgress("backdropHidden")
             }
             .start()
     }

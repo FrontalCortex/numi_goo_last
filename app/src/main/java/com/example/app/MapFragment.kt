@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnNextLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.GlobalLessonData.globalPartId
@@ -38,7 +39,10 @@ class MapFragment : Fragment() {
 
     companion object {
         const val ARG_SHOW_GUIDE = "show_guide"
-        
+
+        /** Harita kapalıyken bekleyen ilerleme animasyonu için yoklama aralığı. */
+        private const val LESSON_PROGRESS_RETRY_MS = 250L
+
         fun newInstance(showGuide: Boolean = false): MapFragment {
             val fragment = MapFragment()
             val args = Bundle().apply {
@@ -107,7 +111,12 @@ class MapFragment : Fragment() {
                 1010 -> MathOperationGenerator.generateRelatedNumbersList(6, 3, 3)
 
                 1013 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
                 )
                 7 -> listOf(
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
@@ -185,16 +194,6 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(4, 5),
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(5, 4),
-                    )
-                18 -> listOf(
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
                     )
                 19 -> listOf(
                     generateRandomMathOperation1(),
@@ -1011,7 +1010,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
                 80 -> listOf(
-                    MathOperationGenerator.generalCollectionTwoDigits(4), //3 adet 7 olarak güncellenecek
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
@@ -1178,11 +1177,6 @@ class MapFragment : Fragment() {
     }
     
     private fun setupGuidePanel() {
-        binding.guidePanel.setOnBackClickListener {
-            // İlk adımdaysa ve back'e basılırsa paneli kapat
-            binding.guidePanel.hide()
-        }
-        
         // Panel kapandığında MainActivity view'larını tekrar aktif et
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
@@ -1295,9 +1289,14 @@ class MapFragment : Fragment() {
         // MainActivity'deki view'lar zaten disableMainActivityViews() ile devre dışı bırakıldı
         // (gecikme süresinde tıklamalar engellenmesi için onViewCreated'da çağrılıyor)
 
-        // Panel'i göster
-        binding.guidePanel.show()
-        
+        // Düzen yukarıdan aşağı: maraton kartı → ders paneli → rehber balonu. Rehber önce ekran
+        // dışında hazırlanıyor (karartma açık), kart ekranın üstüne kaydırılıyor, ders paneli
+        // kartın altına açılıyor, balon panelin altına yerleştirilip ancak o zaman içeri kayıyor.
+        // Eskiden balon sabit yerdeydi (üstten 150dp) ve kart ona göre kaydırılıyordu; ilk
+        // maraton listenin başına yakın olduğu için kart balonun altına inemiyor, ders paneli
+        // (aktivite koordinatöründe, rehberin üstünde çiziliyor) balonu örtüyordu.
+        binding.guidePanel.prepareShow()
+
         // Panel gizlendiğinde overlay'i ve kilitleri kaldır
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
@@ -1307,15 +1306,66 @@ class MapFragment : Fragment() {
             // tetikleyicisinden biriydi ve diğer ekranların üstüne binebiliyordu.
             (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.guidePanelHidden")
         }
-        
-        // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
-        view?.postDelayed({
-            val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
-            val lessonItem = GlobalLessonData.getLessonItem(chestIndex)
-            if (lessonItem != null && ::lessonsAdapter.isInitialized) {
-                lessonsAdapter.showLessonBottomSheet(lessonItem, chestIndex)
+
+        val recycler = binding.lessonsRecyclerView
+        val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
+        recycler.stopScroll()
+        // Ofset üst dolgudan sonrası için: 0 → kart, liste en üstteyken ilk kartın durduğu yerde.
+        (recycler.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(chestIndex, 0)
+        recycler.doOnNextLayout {
+            recycler.post {
+                if (!isAdded || view == null) return@post
+                val lessonItem = GlobalLessonData.getLessonItem(chestIndex)
+                if (lessonItem != null && ::lessonsAdapter.isInitialized) {
+                    lessonsAdapter.showLessonBottomSheet(lessonItem, chestIndex)
+                }
+                // Ders paneli kendi post'unda yerleşiyor; bu post ondan sonra çalışır.
+                val lessonPanel = requireActivity()
+                    .findViewById<ViewGroup>(R.id.coordinator_layout)
+                    ?.findViewWithTag<View>(LessonPanel.TAG)
+                if (lessonPanel == null) {
+                    // Panel açılmadı (çevrimdışı vb.): rehber varsayılan yerinde gelsin.
+                    binding.guidePanel.slideIn()
+                    return@post
+                }
+                lessonPanel.post {
+                    if (!isAdded || view == null) return@post
+                    placeGuideBalloonBelow(lessonPanel, chestIndex)
+                    binding.guidePanel.slideIn()
+                }
             }
-        }, 600) // Panel animasyonu tamamlandıktan sonra
+        }
+    }
+
+    /**
+     * Rehber balonunu ders panelinin (ya da kart panelin altındaysa kartın) altına koyar.
+     * Sığmazsa ekranın altına dayanır; çok kısa ekranda panelle biraz çakışabilir.
+     */
+    private fun placeGuideBalloonBelow(lessonPanel: View, chestIndex: Int) {
+        val guide = binding.guidePanel
+        val parent = guide.parent as? View ?: return
+        val density = resources.displayMetrics.density
+        val gap = 12f * density
+        val edge = 12f * density
+        val parentY = IntArray(2).also { parent.getLocationInWindow(it) }[1]
+        val panelRootY = IntArray(2).also { lessonPanel.getLocationInWindow(it) }[1]
+        val panelCard = lessonPanel.findViewById<View>(R.id.lessonPanelCard)
+        // Konum ölçeklemeden (açılış animasyonu 0.92'den büyütüyor) etkilenmesin diye y + yükseklik.
+        var bottom = if (panelCard != null && panelCard.height > 0) {
+            panelRootY + panelCard.y + panelCard.height
+        } else {
+            0f
+        }
+        binding.lessonsRecyclerView.layoutManager?.findViewByPosition(chestIndex)?.let { item ->
+            val card = item.findViewById<View>(R.id.lessonCard) ?: item
+            val cardY = IntArray(2).also { card.getLocationInWindow(it) }[1]
+            bottom = maxOf(bottom, (cardY + card.height).toFloat())
+        }
+        if (bottom <= 0f) return
+        val balloonH = guide.balloonHeight()
+        val maxTop = parent.height - edge - balloonH
+        val top = (bottom - parentY + gap).coerceAtMost(maxTop)
+        guide.placeBalloonTop(top)
     }
 
     // Konum parametresi kaldırıldı: tahta anahtarı artık [item]'ın kalıcı kimliği.
@@ -1655,6 +1705,7 @@ class MapFragment : Fragment() {
         }
         askQuestionBounceAnimators?.forEach { it.cancel() }
         askQuestionBounceAnimators = null
+        view?.removeCallbacks(lessonProgressConsumeRetry)
         super.onDestroyView()
         // Verileri kaydet
         GlobalLessonData.saveToPreferences(requireContext())
@@ -1845,7 +1896,9 @@ class MapFragment : Fragment() {
             "NOTIFY_VISIBLE_ENTER",
         )
         (activity as? MainActivity)?.restoreMapUiAfterLessonOverlayDismiss()
-        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        // Eskiden burada koşulsuz true yapılıyordu: zemin/rozet haritayı kapatırken
+        // animasyon onların altında oynayıp bitiyordu. Karar artık tek yerde.
+        tryConsumePendingLessonProgress("notifyVisibleAfterOverlayDismiss")
         enableMapTouchRouting()
         (activity as? MainActivity)?.logMapTouchDiag(
             "MapFragment.notifyVisibleAfterOverlayDismiss",
@@ -1861,6 +1914,59 @@ class MapFragment : Fragment() {
         // önüne geçerdi. Kuyruk sırayı biliyor.
         (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.notifyVisibleAfterOverlayDismiss")
         scheduleMarathonGuideRetriesAfterMapVisible()
+    }
+
+    /** Son loglanan engel; aynı satır 250 ms'de bir tekrarlanmasın diye. */
+    private var lastLessonProgressBlockReason: String? = null
+
+    private val lessonProgressConsumeRetry = Runnable {
+        tryConsumePendingLessonProgress("retry")
+    }
+
+    /**
+     * Bekleyen kart ilerleme animasyonlarını, harita kullanıcının gözü önündeyse oynatır.
+     *
+     * Değilse (zemin, rozet, yeni seri, rating, tanıtım…) kartlar ESKİ değerde bekler ve
+     * 250 ms'de bir yeniden denenir. Hangi ekranın ne zaman kapandığını tek tek dinlemek
+     * yerine yoklama seçildi: kuyruğa yarın eklenecek bir ekran kapanışta haber vermeyi
+     * unutsa bile animasyon kaybolmuyor. Yoklama yalnızca bekleyen animasyon VARKEN ve
+     * activity önde iken dönüyor; reklam gibi activity'nin arkaya düştüğü durumlarda
+     * duruyor, [onResume] yeniden başlatıyor.
+     */
+    fun tryConsumePendingLessonProgress(caller: String) {
+        val v = view ?: return
+        if (!isAdded) return
+        v.removeCallbacks(lessonProgressConsumeRetry)
+        if (GlobalValues.pendingLessonProgressAnimations.isEmpty()) {
+            lastLessonProgressBlockReason = null
+            return
+        }
+        val act = activity as? MainActivity ?: return
+        val block = act.lessonProgressAnimationBlockReason()
+        if (block != null) {
+            GlobalValues.canConsumePendingLessonProgressAnimations = false
+            if (block != lastLessonProgressBlockReason) {
+                lastLessonProgressBlockReason = block
+                LessonProgressDiag.log(
+                    "MapFragment.tryConsumeProgress",
+                    "BEKLIYOR caller=$caller block=$block pending=${GlobalValues.pendingLessonProgressAnimations.keys}",
+                )
+            }
+            if (block != "not_resumed") {
+                v.postDelayed(lessonProgressConsumeRetry, LESSON_PROGRESS_RETRY_MS)
+            }
+            return
+        }
+        LessonProgressDiag.log(
+            "MapFragment.tryConsumeProgress",
+            "OYNAT caller=$caller oncekiEngel=$lastLessonProgressBlockReason " +
+                "pending=${GlobalValues.pendingLessonProgressAnimations.keys}",
+        )
+        lastLessonProgressBlockReason = null
+        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        if (::lessonsAdapter.isInitialized) {
+            lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        }
     }
 
     /** Sezon kapısı / overlay gecikmesinden sonra bekleyen maraton rehberini tekrar dene. */
@@ -1894,15 +2000,15 @@ class MapFragment : Fragment() {
         if (MainActivityChromeBlocker.currentLockDepth() == 0) {
             mainActivityViewsLocked = false
         }
-        val mayConsumeProgress = (activity as? MainActivity)?.shouldConsumeLessonProgressAnimationsOnMap() == true
-        if (mayConsumeProgress) {
-            GlobalValues.canConsumePendingLessonProgressAnimations = true
-        }
+        // İlerleme animasyonu burada TÜKETİLMİYOR: Fragment.onResume sırasında activity
+        // henüz RESUMED değil, reklamdan dönüşte de zemin hâlâ haritanın üstünde olabiliyor.
+        // Karar aşağıdaki post'ta veriliyor; o ana kadar kartlar eski değerde bekliyor.
         if (::lessonsAdapter.isInitialized) {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
         view?.post {
             if (!isAdded) return@post
+            tryConsumePendingLessonProgress("onResume")
             val act = activity as? MainActivity ?: return@post
             act.logChromeBlockerDiagnostic("MapFragment.onResume")
             val shouldReconcile = act.shouldReconcileAbacusOverlayOnMapResume()

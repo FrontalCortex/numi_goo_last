@@ -71,7 +71,6 @@
             android:id="@+id/streakContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackgroundBorderless"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingEnd="6dp">

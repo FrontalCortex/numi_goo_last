@@ -4138,19 +4138,21 @@ function rollChestReward(rarity) {
   const rand = rollInt(1, 100);
   switch (rarity) {
     case 'COMMON':
-      return { type: 'GOLD', amount: rollInt(50, 100) };
+      return { type: 'GOLD', amount: rollInt(150, 300) };
     case 'RARE':
-      return { type: 'GOLD', amount: rollInt(150, 200) };
+      return rand <= 20
+        ? { type: 'KEY', amount: 1 }
+        : { type: 'GOLD', amount: rollInt(450, 600) };
     case 'EPIC':
       return rand <= 50
-        ? { type: 'GOLD', amount: rollInt(500, 700) }
+        ? { type: 'GOLD', amount: rollInt(1500, 2100) }
         : { type: 'KEY', amount: 3 };
     case 'LEGENDARY':
       return rand <= 50
-        ? { type: 'GOLD', amount: rollInt(2000, 3000) }
+        ? { type: 'GOLD', amount: rollInt(6000, 9000) }
         : { type: 'KEY', amount: 5 };
     default:
-      return { type: 'GOLD', amount: rollInt(50, 100) };
+      return { type: 'GOLD', amount: rollInt(150, 300) };
   }
 }
 

@@ -17,8 +17,9 @@ import android.util.Log
  * Bu yüzden kırılma yazıldığı anda değil, OKUNDUĞU anda hesaplanıyor.
  *
  * ## Neden şimdilik yerel
- * Seri, kayıt olmadan önce — ilk ders sırasında — başlıyor; o anda kullanıcının uid'i yok.
- * Bu yüzden kaynak burası, Firestore senkronu bunun üstüne gelecek.
+ * Çalışma süresi kayıt olmadan önce — ilk ders sırasında — birikmeye başlıyor; o anda
+ * kullanıcının uid'i yok. Bu yüzden kaynak burası, Firestore senkronu bunun üstüne geliyor.
+ * Gün ise ancak hesap bağlandıktan sonra, seçilen hedefle sayılıyor (bkz. [refresh]).
  */
 object StreakRepository {
 
@@ -909,7 +910,18 @@ object StreakRepository {
                 "challengeDays=$challenge kuyruk=${pendingSyncDays(context)}",
         )
 
-        if (seconds >= goal * 60 && lastDay != today && !lastDayInFuture) {
+        // ── Hesap yokken gün SAYILMIYOR, yalnızca süre birikiyor ──
+        //
+        // Kayıttan önce hedef henüz seçilmemiş: kayıt cevapları ayrı dosyada bekliyor
+        // ([applyPendingSignup]) ve burada okunan değer varsayılan 5 dakika. İlk derste
+        // 5 dakikayı geçen çocuğun günü o anda sayılıyor, sonra kayıtta 10 dakika seçse bile
+        // gün geri alınmıyordu: seri ekranı "6 / 10 dakika" yazarken seri 1 görünüyordu.
+        //
+        // Süre kaybolmuyor: sahipsiz veri kayıtta yeni hesaba devrediliyor ([bindToUser]),
+        // yani hesap açılır açılmaz ilk tazeleme günü DOĞRU hedefle değerlendiriyor.
+        val accountBound = p?.getString(KEY_OWNER_UID, "").orEmpty().isNotEmpty()
+
+        if (seconds >= goal * 60 && lastDay != today && !lastDayInFuture && accountBound) {
             // Dün de tutturulmuşsa seri devam eder, yoksa bugünden yeniden başlar.
             current = if (lastDay == yesterday) current + 1 else 1
             longest = maxOf(longest, current)
@@ -936,6 +948,7 @@ object StreakRepository {
                     when {
                         seconds < goal * 60 -> "sure_yetersiz (${seconds}/${goal * 60}sn)"
                         lastDay == today -> "bugun_zaten_sayilmis"
+                        !accountBound -> "hesap_yok (hedef henuz secilmedi)"
                         else -> "lastDay_ileride ($lastDay > $today)"
                     }
                     ),

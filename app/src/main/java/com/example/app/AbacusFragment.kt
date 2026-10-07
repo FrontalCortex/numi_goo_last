@@ -94,6 +94,8 @@ class AbacusFragment : Fragment() {
     private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private lateinit var correctPanel: View
     private lateinit var lottieView: LottieAnimationView
 
@@ -281,6 +283,7 @@ class AbacusFragment : Fragment() {
         correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
+        navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
         firstNumberText = binding.firstNumberText
         operatorText = binding.operator
         secondNumberText = binding.secondNumberText
@@ -316,6 +319,8 @@ class AbacusFragment : Fragment() {
         val backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+                // İlk açılış akışında (hesap yok) haritaya dönülemez; bkz. [setupQuitButton].
+                if (isFirstRunLesson()) return
 
                 val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment")
                 if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
@@ -1824,7 +1829,12 @@ class AbacusFragment : Fragment() {
         binding.quitButton.setOnClickListener {
             closeFragment()
         }
+        // Hesapsız kullanıcı yalnızca ilk açılıştaki zorunlu akışta derse girebiliyor; orada
+        // yanlışlıkla çıkıp akışı yarıda bırakmasın diye çıkış butonu gizli.
+        if (isFirstRunLesson()) binding.quitButton.visibility = View.INVISIBLE
     }
+
+    private fun isFirstRunLesson(): Boolean = FirebaseAuth.getInstance().currentUser == null
 
     private fun closeFragment() {
         if (!isAdded || isAbacusClosing) return
@@ -2884,7 +2894,13 @@ class AbacusFragment : Fragment() {
         abacusController.refreshAll()
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     override fun onDestroyView() {
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
         if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
             LessonSuccessRateRepository.recordAbandonWithoutAnswer(
                 GlobalLessonData.globalPartId,
@@ -2933,7 +2949,7 @@ class AbacusFragment : Fragment() {
                 lottieView.visibility=View.VISIBLE
                 lottieView.playAnimation() // Animasyonu başlat
             }
-            correctPanel.translationY = correctPanel.height.toFloat()
+            correctPanel.translationY = resultPanelHiddenY(correctPanel)
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
@@ -2998,7 +3014,7 @@ class AbacusFragment : Fragment() {
                             }, 200)
                             
                             correctPanel.animate()
-                                .translationY(correctPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(correctPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -3032,7 +3048,7 @@ class AbacusFragment : Fragment() {
             // Yanlış cevap durumu
             playSound(R.raw.incorrect_answer_sound)
 
-            incorrectPanel.translationY = incorrectPanel.height.toFloat()
+            incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
@@ -3094,7 +3110,7 @@ class AbacusFragment : Fragment() {
                             }, 700)
                             
                             incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(incorrectPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -3167,7 +3183,7 @@ class AbacusFragment : Fragment() {
         lessonResultFalse.arguments = argsFalse
 
         // Yeni fragment'ı abacus container'a ekle
-        if(successRate < 10) {
+        if (successRate < 75f) {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     R.anim.queue_screen_in,

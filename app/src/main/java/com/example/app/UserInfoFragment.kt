@@ -890,7 +890,7 @@ class UserInfoFragment : Fragment() {
             listOf(
                 LearningPathView.Milestone(R.drawable.abacus_svg_ic, "Abaküsü tanı", labels[0]),
                 // Süre başlıkta zaten yazıyor; burada tekrar etmiyor.
-                LearningPathView.Milestone(R.drawable.streak_flame_ic, "Serini büyüt", labels[1]),
+                LearningPathView.Milestone(R.drawable.streak_flame_ic, "Büyük sayılar ile işlem yap", labels[1]),
                 LearningPathView.Milestone(R.drawable.brain, "Kafadan hesap ustası ol", labels[2]),
             ),
         )

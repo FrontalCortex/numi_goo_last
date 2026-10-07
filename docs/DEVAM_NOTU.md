@@ -23,13 +23,140 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Mağazada anahtarla can alımına günlük 5 sınırı (07.10.2026 — fonksiyon DEPLOY EDİLMEDİ)
+## Mağazada anahtarla can alımına günlük 5 sınırı (07.10.2026 — f289beb ile push edildi, fonksiyonlar otomatik deploy)
 
 `buyEnergyWithKeys` artık `rewardGuard.energyKeyBuys` sayacını aynı transaction'da artırıyor;
 UTC günü başına 5'i aşınca `resource-exhausted` ("Günlük sınıra ulaşıldı.") dönüyor ve ne
 anahtar düşüyor ne can ekleniyor. Sabit: `ENERGY_KEY_BUY_DAILY_LIMIT`. `ShopFragment.buyLifeWithKeys`
 bu kodu yakalayıp "Günlük sınıra ulaşıldı. Yarın tekrar deneyin." uyarısı gösteriyor.
 `rewardGuard` istemciye zaten kapalı (firestore.rules), kural değişikliği gerekmedi.
+
+## Kupa Yolu yönlendirmesinde ders panelin arkasında açılıyordu (07.10.2026 — derlendi, cihaza KURULAMADI: adb koptu)
+
+**Belirti:** Haritadan Tasks'a yönlendirmeyle açılan `panel_cup_path`'te karta basıp
+başlatınca `BlindingLessonFragment` panelin arkasında kaldı.
+
+**Kök neden:** Bu yol paneli `TasksFragment.displayCupPathDialogWithReveal` ile açıyor ve o
+fonksiyon `GlobalValues.cupPathDialogRef`'i hiç set etmiyordu. Zorluk panelindeki "Başla"
+paneli `cupPathDialogRef?.get()?.hide()` ile gizliyor → referans boş → panel (ayrı pencere,
+BottomSheetDialog) ekranda kaldı, ders fragment'ı altında açıldı. Normal yol
+(`displayCupPathDialog`) referansı set ediyor, orada sorun yok.
+
+**Yapılan:** Reveal paneline de aynı referans + dismiss dinleyicisi (referansı temizle,
+`releaseLaunchTouchBlocker`) eklendi. Yan etki olarak ders sonrası kupa tazelemesi
+(`loadAndShowCupPathDialogAfterCupUpdate`) bu yolda da gizli paneli bulup geri getiriyor.
+
+**Açık kalan:** Reveal panelinde yalnızca kart 1, 2 ve 5 ders başlatıyor; 3, 4, 6'da yalnızca
+kilit uyarısı var (normal panelde hepsi açılıyor). Bilinçli mi, belli değil.
+
+## Sandık sonrası 2 dk yükleme perdesi + tıklanamayan harita (07.10.2026 — kök sebep BULUNAMADI, güvenlik ağı kuruldu)
+
+**Belirti:** Bölüm 3 `p3_i19_unite_maratonu` (bölümün son sandığı → Kupa Yolu/Tasks beklenir)
+bitince ChestResult → sandık → ders sonrası perdesi (spinner) ~120 sn asılı kaldı; sonra
+harita geldi ama hiçbir yere dokunulamadı, Tasks'a gidilmedi.
+
+**Kanıt:** `updateMapProgress` çalışmış (bekleyen ilerleme `2_p3_i19_unite_maratonu` var),
+`map_chest` geri yığından düşmüş, ama `ChestFragment` hâlâ `abacusFragmentContainer`'da ekli
+ve VISIBLE (kökü görünmez, kabı tıklanabilir → bütün dokunuşları yutuyor). Kuyruk her turda
+`SKIP_BLOCKING_OVERLAY active=ChestFragment` deyip Kupa Yolu'nu açmadı; bekçi 120 sn sonra
+`bekci BIRAKTI` ile perdeyi indirdi. Yani claim bloğu `updateMapProgress` ile fragment
+geçişi arasında bir `IllegalStateException` ile kesildi ve `catch` yalnızca düğmeyi açıyordu.
+Hangi satır fırlattı bilinmiyor: telefonun main log arabelleği 256 KB idi, `gralloc4` spam'i
+18:42:36 öncesini sildi.
+
+**Yapılan:** `ChestFragment.claim` `catch`'i artık hatayı yığın iziyle
+`LessonProgressDiag`'a (`HATA ...`) yazıyor, `ChestFragment`'i kaldırıp
+`prepare/finalizeMapReturnAfterLessonClaim(caller="ChestFragment.claimFailed")` ile haritaya
+dönüyor. Telefonda `adb logcat -G 16M` yapıldı (yeniden başlatınca sıfırlanabilir).
+
+**Sıradaki:** Tekrar olursa `LessonProgressDiag` içinde `ChestFragment.claim | HATA` satırına
+bak, asıl fırlatan yeri düzelt.
+
+## Haritaya dönüşte kart ilerleme animasyonu görünmüyordu (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Ders bitince karttaki ilerleme çubuğu artışı (`LessonAdapter.applyStepSegmentsWithIncreaseAnimation`,
+~2 sn) `GlobalValues.canConsumePendingLessonProgressAnimations` true olduğu an tüketiliyor. Bu bayrak
+`MapFragment.notifyVisibleAfterOverlayDismiss`'te koşulsuz, `onResume`'da ise yalnızca abacus/result
+kaplarına bakılarak true yapılıyordu. O anda harita çoğu zaman hâlâ görünmüyordu: ders sonrası opak
+zemini (`postLessonBackdrop`, rozet Firestore'u / reklam kontrolü beklenirken), rozet ekranı, yeni
+seri, rating, tanıtım. Reklamdan dönüşte `onResume` zemin yukarıdayken tüketiyordu. "Sebepsiz"
+görünen durumlar: rozet çıkmasa da Firestore kontrolü sürerken zemin kalkık kalıyor.
+
+Düzeltme: karar tek yerde — `MainActivity.lessonProgressAnimationBlockReason()` (eski
+`shouldConsumeLessonProgressAnimationsOnMap` yerine). `MapFragment.tryConsumePendingLessonProgress`
+engel varsa bayrağı false tutup 250 ms'de bir yokluyor (yalnızca bekleyen animasyon varken ve
+activity önde iken), engel kalkınca bayrağı açıp listeyi yeniliyor. Zemin sönünce
+`hidePostLessonBackdrop` ayrıca dürtüyor. Kuyruğun sırasına/kilidine dokunulmadı. Rehber paneli
+bilerek engel sayılmıyor (kartları kapatmıyor).
+
+Teşhis: `adb logcat -s LessonProgressDiag` → `tryConsumeProgress BEKLIYOR ... block=...` ve
+`OYNAT ... oncekiEngel=...` satırları.
+
+**İkinci tur (aynı gün, kuruldu, kullanıcı deniyor):** NewChestFragment'ten doğrudan haritaya
+dönüşte de animasyon görünmüyordu. İkinci sebep: animasyon yalnızca ViewHolder'daki animator'da
+yaşıyordu. `notifyDataSetChanged` (stabil id yok) bütün holder'ları geri dönüşüme atıyor →
+`onViewRecycled` → `cancelProgressIncreaseAnimation(applyFinalState = true)` çubuğu anında son
+hâline atlatıyor; `notifyItemChanged` ise kartı yeni bir holder'a bağlıyor. Dönüşte liste 2 sn
+içinde birkaç kez yenileniyor. Artık başlangıç anı adapter düzeyinde
+(`LessonAdapter.runningProgressIncreases`) tutuluyor ve kart yeniden bağlanınca animasyon
+`currentPlayTime` ile kaldığı yerden sürüyor. Loglar: `LessonAdapter.progress` →
+`BIND / BASLAT / IPTAL / SURDUR / BITTI / SURE_DOLDU`; animasyon sürerken listeyi yenileyen
+yer `updateItems`/`updateLessonItem` satırlarında çağrı iziyle yazılıyor. ChestFragment'te
+`PENDING_PROGRESS` satırı bekleyen animasyonun kaydedildiğini gösteriyor.
+
+## Maraton rehberi ders panelinin arkasında kalmıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Harita aşağı kaydırılmışsa ilk maraton kartı ekranın üstünde kalıyor, kartın altına açılan ders
+paneli (aktivitenin `coordinator_layout`'unda; rehber MapFragment'te, farklı ebeveyn olduğu için
+`elevation` işe yaramıyor) rehber balonunun üstüne biniyordu. İlk deneme (kartı sabit balonun
+altına kaydırmak) yetmedi: ilk maraton listenin başına yakın, kart balonun altına inemiyor.
+Şimdiki düzen yukarıdan aşağı **kart → ders paneli → balon**: `showGuidePanel` rehberi
+`GuidePanelView.prepareShow()` ile ekran dışında hazırlıyor (karartma açık), kartı
+`scrollToPositionWithOffset(chestIndex, 0)` ile üste getiriyor, ders panelini açıyor, panel
+yerleşince `placeGuideBalloonBelow` balonu panelin 12dp altına koyuyor (`translationY`; balonun
+düğmeleri ona bağlı olduğu için bütün görünüm kaydırılıyor) ve ancak o zaman `slideIn()`.
+Panel açılmazsa (çevrimdışı) rehber varsayılan yerinde geliyor. Sığmazsa balon ekranın altına
+dayanıyor; çok kısa ekranda panelle biraz çakışabilir.
+
+Aynı rehberde sol alttaki geri oku ilk adımda paneli kapatıyordu (`setOnBackClickListener` →
+`hide()`). Artık `GuidePanelView` geri okunda yalnızca `showPreviousContent()` çağırıyor; ilk
+adımda işlevsiz. Tek kullanıcısı MapFragment olan `setOnBackClickListener` kaldırıldı.
+
+Karartmalar koyulaştırıldı: ders paneli (`scrimView`, `addChromeDims`, sistem şeritleri)
+`LESSON_PANEL_DIM_ALPHA` = 0.7 (eskiden 0.5). Yarış panellerinin 0.5 karartması
+değiştirilmedi. Rehber eskiden yalnızca harita kökünün zemin rengini değiştiriyordu; kartlar
+zeminin önünde çizildiği için hiç karartma görünmüyordu. `GuidePanelView.dimCoordinatorLayout`
+artık rehberin hemen arkasına (elevation 50dp, rehber 100dp) %70 siyah bir katman ekleyip
+kapanınca kaldırıyor. Ders paneli aktivite koordinatöründe olduğu için üstte kalıyor; maraton
+kartının görüntüsü (`lessonPanelCardSnapshot`) artık rehber açıkken de karartmanın üstüne konuyor.
+Üst para paneli ve alt menü rehberde kararmıyor.
+
+## "Eğitimi tekrarla" da 1 enerji harcıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Ders panelindeki "Eğitimi tekrarla" enerji kontrolünü atlıyordu; anlatım bitince doğrudan
+testine (Abacus/Blinding) geçtiği için ders bedavaya oynanabiliyordu. `LessonAdapter`'daki
+enerji bloğu `spendLessonEnergyThen` yardımcısına çıkarıldı; Başla/Devam et/Gözden geçir ve
+Eğitimi tekrarla aynı yolu kullanıyor (enerji yoksa mağaza açılıyor, sonsuz enerjide harcama yok).
+
+## Tutorial sonuç panelleri ekranın en altından geliyor (07.10.2026 — derlendi, cihaza kuruldu, BAKILMADI)
+
+Kök görünüm (`activity_main` `main`) `fitsSystemWindows` ile gezinme çubuğunun üstünde bittiği
+için doğru/yanlış paneli çubuğun üst sınırından çıkıyordu. `NavBarPanelExtension` çubuğun
+arkasına (`android.R.id.content`) panel zemininde bir şerit koyuyor ve her karede (OnPreDraw)
+panelin ötelemesine göre kaydırıyor; panel + şerit tek sayfa gibi alttan çıkıyor. Panelin gizli
+ötelemesi artık `resultPanelHiddenY` (= yükseklik + çubuk). İlk sürüm Android 13'te hiç
+görünmedi: opak `navigationBarColor` sistemce içeriğin üstüne çiziliyor; şerit görünürken çubuk
+şeffaf yapılıyor, panel kapanınca eski renk geri konuyor. Bağlı ekranlar: `TutorialFragment`, `AbacusFragment`, `BlindingLessonFragment`,
+`AbacusPracticeFragment`.
+
+## Seri: hesap yokken gün sayılmıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Hata: kayıttan önceki ilk tutorial'da 5 dk geçilince gün varsayılan 5 dk hedefle sayılıyordu
+(kayıtta seçilen hedef `streak_signup_pending`'de bekliyor, giriş yapılınca uygulanıyor).
+Kayıtta 10 dk seçilse de gün geri alınmıyordu → seri 1, ekranda "6 / 10 dakika".
+Düzeltme: `StreakRepository.refresh` günü yalnızca `owner_uid` doluyken ilerletiyor; süre
+birikmeye devam ediyor ve hesap bağlanınca ilk tazelemede doğru hedefle değerlendiriliyor.
+Yan etki: "serin başladı" kutlaması tutorial içinde değil kayıttan sonra çıkıyor.
 
 ## Liderlik tablosunda uygulama avatarı (06.10.2026 — derlendi, cihazda DENENMEDİ)
 

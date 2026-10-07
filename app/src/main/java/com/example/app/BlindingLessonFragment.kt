@@ -103,6 +103,8 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private lateinit var correctPanel: View
     private lateinit var lottieView: LottieAnimationView
 
@@ -602,6 +604,7 @@ class BlindingLessonFragment : Fragment() {
         correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
+        navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
         numberText = binding.firstNumberText
         controlButton = binding.kontrolButton
         totalQuestions = operations.size
@@ -1578,7 +1581,7 @@ class BlindingLessonFragment : Fragment() {
                 lottieView.visibility = View.VISIBLE
                 lottieView.playAnimation()
             }
-            correctPanel.translationY = correctPanel.height.toFloat()
+            correctPanel.translationY = resultPanelHiddenY(correctPanel)
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
@@ -1626,7 +1629,7 @@ class BlindingLessonFragment : Fragment() {
                                     .start()
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 correctPanel.animate()
-                                    .translationY(correctPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(correctPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
@@ -1663,7 +1666,7 @@ class BlindingLessonFragment : Fragment() {
                             }, 200)
 
                             correctPanel.animate()
-                                .translationY(correctPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(correctPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -1698,7 +1701,7 @@ class BlindingLessonFragment : Fragment() {
         } else {
             // Yanlış cevap durumu
             playSound(R.raw.incorrect_answer_sound)
-            incorrectPanel.translationY = incorrectPanel.height.toFloat()
+            incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
@@ -1743,7 +1746,7 @@ class BlindingLessonFragment : Fragment() {
                                     .start()
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
@@ -1766,7 +1769,7 @@ class BlindingLessonFragment : Fragment() {
                                     .start()
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
@@ -1785,7 +1788,7 @@ class BlindingLessonFragment : Fragment() {
                                     .start()
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
@@ -1817,7 +1820,7 @@ class BlindingLessonFragment : Fragment() {
                             }, 700)
 
                             incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(incorrectPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -2147,8 +2150,8 @@ class BlindingLessonFragment : Fragment() {
                 // Başarı oranını hesapla
                 val successRate = if (totalQuestions > 0) (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100 else 0f
 
-                // Eğer başarı %50'den düşükse başarısız ekranına, değilse sandığa gönder
-                if (successRate < 50f) {
+                // Eğer başarı %75'ten düşükse başarısız ekranına, değilse sandığa gönder
+                if (successRate < 75f) {
                     showLessonResultFalse()
                 } else {
                     showLessonResult()
@@ -2438,7 +2441,13 @@ class BlindingLessonFragment : Fragment() {
         handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod ?: 1000L)
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     override fun onDestroyView() {
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
         if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
             LessonSuccessRateRepository.recordAbandonWithoutAnswer(
                 globalPartId,

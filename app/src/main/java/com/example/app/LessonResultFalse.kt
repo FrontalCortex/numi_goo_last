@@ -186,7 +186,7 @@ class LessonResultFalse : Fragment() {
         if (isChestFailure) {
             binding.resultTitleComment.text = "Puan 500'den düşük!"
         } else {
-            binding.resultTitleComment.text = "Başarı oranı %80'den düşük!"
+            binding.resultTitleComment.text = "Başarı oranı %75'ten düşük!"
         }
     }
 

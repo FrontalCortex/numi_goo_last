@@ -1491,22 +1491,22 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                                                 setupCupPathCard(bottomSheet, R.id.card6View, R.id.card6Title, R.id.card6CupIcon, R.id.card6CupValue, R.id.card6DinoAnim, active6)
                                                 
                                                 bottomSheet.findViewById<View>(R.id.card1View)?.let { card ->
-                                                    card.isClickable = active1; card.isEnabled = active1
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
                                                 bottomSheet.findViewById<View>(R.id.card2View)?.let { card ->
-                                                    card.isClickable = active2; card.isEnabled = active2
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
                                                 bottomSheet.findViewById<View>(R.id.card3View)?.let { card ->
-                                                    card.isClickable = active3; card.isEnabled = active3
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
                                                 bottomSheet.findViewById<View>(R.id.card4View)?.let { card ->
-                                                    card.isClickable = active4; card.isEnabled = active4
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
                                                 bottomSheet.findViewById<View>(R.id.card5View)?.let { card ->
-                                                    card.isClickable = active5; card.isEnabled = active5
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
                                                 bottomSheet.findViewById<View>(R.id.card6View)?.let { card ->
-                                                    card.isClickable = active6; card.isEnabled = active6
+                                                    card.isClickable = true; card.isEnabled = true
                                                 }
 
                                                 // Kartlar açıldı: çubuk ve sandık da aynı
@@ -1591,6 +1591,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         val card1View = contentView.findViewById<View>(R.id.card1View)
         var lastCardClickTime = 0L
         card1View?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 0)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1605,6 +1606,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // card2View: extraction kupa modu (çıkarmalı toplama)
         contentView.findViewById<View>(R.id.card2View)?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 1)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1620,6 +1622,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // card4View: blinding kupa modu (numberInput ile cevap)
         contentView.findViewById<View>(R.id.card4View)?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 3)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1634,6 +1637,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // card3View: çarpma kupa modu (abaküs ile çarpma)
         contentView.findViewById<View>(R.id.card3View)?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 2)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1649,6 +1653,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // card5View: blinding extraction kupa modu (körleme + çıkarmalı)
         contentView.findViewById<View>(R.id.card5View)?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 4)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1664,6 +1669,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // card6View: blinding multiplication kupa modu (körleme çarpma)
         contentView.findViewById<View>(R.id.card6View)?.setOnClickListener {
+            if (showCupCardLockedToastIfLocked(it, 5)) return@setOnClickListener
             val now = System.currentTimeMillis()
             if (now - lastCardClickTime < 500) return@setOnClickListener
             lastCardClickTime = now
@@ -1678,12 +1684,11 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         }
 
         // Aktifliğe göre veya yüklenme durumuna göre tıklanabilirliği kapa
-        if (!active1 || isLoading) { card1View?.isClickable = false; card1View?.isEnabled = false }
-        if (!active2 || isLoading) { contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = false; isEnabled = false } }
-        if (!active3 || isLoading) { contentView.findViewById<View>(R.id.card3View)?.apply { isClickable = false; isEnabled = false } }
-        if (!active4 || isLoading) { contentView.findViewById<View>(R.id.card4View)?.apply { isClickable = false; isEnabled = false } }
-        if (!active5 || isLoading) { contentView.findViewById<View>(R.id.card5View)?.apply { isClickable = false; isEnabled = false } }
-        if (!active6 || isLoading) { contentView.findViewById<View>(R.id.card6View)?.apply { isClickable = false; isEnabled = false } }
+        // Yüklenirken hepsi kapalı. Kilitli kartlar ise tıklanabilir kalıyor: tıklayınca
+        // uyarı çıkıyor (bkz. [showCupCardLockedToastIfLocked]).
+        if (isLoading) {
+            cupCardViewIds.forEach { id -> contentView.findViewById<View>(id)?.apply { isClickable = false; isEnabled = false } }
+        }
 
         // Dialog referansını sakla (kupa güncellemesi için)
         GlobalValues.cupPathDialogRef = java.lang.ref.WeakReference(dialog as android.app.Dialog)
@@ -2437,12 +2442,12 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                                             delta = delta ?: 0,
                                         )
 
-                                        contentView.findViewById<View>(R.id.card1View)?.apply { isClickable = active1; isEnabled = active1 }
-                                        contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = active2; isEnabled = active2 }
-                                        contentView.findViewById<View>(R.id.card3View)?.apply { isClickable = active3; isEnabled = active3 }
-                                        contentView.findViewById<View>(R.id.card4View)?.apply { isClickable = active4; isEnabled = active4 }
-                                        contentView.findViewById<View>(R.id.card5View)?.apply { isClickable = active5; isEnabled = active5 }
-                                        contentView.findViewById<View>(R.id.card6View)?.apply { isClickable = active6; isEnabled = active6 }
+                                        contentView.findViewById<View>(R.id.card1View)?.apply { isClickable = true; isEnabled = true }
+                                        contentView.findViewById<View>(R.id.card2View)?.apply { isClickable = true; isEnabled = true }
+                                        contentView.findViewById<View>(R.id.card3View)?.apply { isClickable = true; isEnabled = true }
+                                        contentView.findViewById<View>(R.id.card4View)?.apply { isClickable = true; isEnabled = true }
+                                        contentView.findViewById<View>(R.id.card5View)?.apply { isClickable = true; isEnabled = true }
+                                        contentView.findViewById<View>(R.id.card6View)?.apply { isClickable = true; isEnabled = true }
                                     }
                                 }
                             }
@@ -2715,10 +2720,19 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
         bindCupPathRewards(contentView, dialog)
 
+        // Referans [displayCupPathDialog]'daki gibi burada da saklanmalı. Zorluk panelindeki
+        // "Başla" bu paneli referans üzerinden gizliyor; haritadan gelen bu yolda referans
+        // boş kaldığı için panel ekranda duruyor, açılan ders (fragment) ise ayrı pencere
+        // olan bu panelin ARKASINDA kalıyordu. Ders sonrası kupa tazelemesi de referansa bakıyor.
+        GlobalValues.cupPathDialogRef = java.lang.ref.WeakReference(dialog as android.app.Dialog)
         dialog.setOnDismissListener {
             listOf(R.id.card1DinoAnim, R.id.card2DinoAnim, R.id.card3DinoAnim, R.id.card4DinoAnim, R.id.card5DinoAnim, R.id.card6DinoAnim).forEach { id ->
                 contentView.findViewById<LottieAnimationView>(id)?.cancelAnimation()
             }
+            if (GlobalValues.cupPathDialogRef?.get() === (dialog as? android.app.Dialog)) {
+                GlobalValues.cupPathDialogRef = null
+            }
+            releaseLaunchTouchBlocker()
         }
 
         dialog.show()
@@ -2750,11 +2764,13 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
             
             val card1View = contentView.findViewById<View>(R.id.card1View)
             card1View?.setOnClickListener {
+                if (showCupCardLockedToastIfLocked(it, 0)) return@setOnClickListener
                 showCupDifficultyPanel()
             }
             
             // card2View: extraction kupa modu (çıkarmalı toplama)
             contentView.findViewById<View>(R.id.card2View)?.setOnClickListener {
+                if (showCupCardLockedToastIfLocked(it, 1)) return@setOnClickListener
                 showCupDifficultyPanel(
                     animFileName = "crocodile_anim.json",
                     isBlindingMode = false,
@@ -2767,6 +2783,7 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
             // card5View: blinding extraction kupa modu (körleme + çıkarmalı)
             contentView.findViewById<View>(R.id.card5View)?.setOnClickListener {
+                if (showCupCardLockedToastIfLocked(it, 4)) return@setOnClickListener
                 showCupDifficultyPanel(
                     animFileName = "fly_anim.json",
                     isBlindingMode = true,
@@ -2777,6 +2794,13 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
                 )
             }
             
+            // 3, 4 ve 6'nın bu panelde açma davranışı yok; kilitliyse en azından uyarı versin.
+            listOf(2, 3, 5).forEach { index ->
+                contentView.findViewById<View>(cupCardViewIds[index])?.setOnClickListener {
+                    showCupCardLockedToastIfLocked(it, index)
+                }
+            }
+
             // Pop (baloncuk) animasyonu: 1f → 1.18f → 1f
             revealCardView?.let { card ->
                 card.animate()
@@ -3151,6 +3175,36 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         GlobalValues.cupPathDialogRef?.get()?.dismiss()
     }
 
+    /** panel_cup_path'teki kartlar, sırasıyla. */
+    private val cupCardViewIds = listOf(
+        R.id.card1View, R.id.card2View, R.id.card3View,
+        R.id.card4View, R.id.card5View, R.id.card6View,
+    )
+
+    /** Kilitli kartın açılması için bitirilmesi gereken bölüm, [cupCardViewIds] sırasıyla. */
+    private val cupCardUnlockRequirements = listOf(
+        "Abaküsün Temeli ve Toplama",
+        "Abaküste Çıkarma",
+        "Abaküste Çarpma",
+        "Körleme Toplama",
+        "Körleme Çıkarma",
+        "Körleme Çarpma",
+    )
+
+    /**
+     * Kart kilitliyse ([setupCupPathCard] işaretliyor) uyarıyı gösterip true döner;
+     * çağıran o zaman paneli açmamalı.
+     */
+    private fun showCupCardLockedToastIfLocked(card: View, index: Int): Boolean {
+        if (card.getTag(R.id.cupCardLockedTag) != true) return false
+        Toast.makeText(
+            card.context,
+            "Burayı açmak için ${cupCardUnlockRequirements[index]}'yı bitir.",
+            Toast.LENGTH_SHORT,
+        ).show()
+        return true
+    }
+
     private fun setupCupPathCard(
         root: View,
         cardViewId: Int,
@@ -3167,6 +3221,7 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         val lottieView = root.findViewById<LottieAnimationView>(lottieId)
 
         val context = root.context
+        cardView?.setTag(R.id.cupCardLockedTag, !isActive)
 
         if (isActive) {
             // Active visual state

@@ -958,8 +958,8 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     abacusGuideNumber = 6,
-                    finishStepNumber = 1013, //1005 yapılacak
-                    startStepNumber = 1013,
+                    finishStepNumber = 1005, //1005 yapılacak
+                    startStepNumber = 1005,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupPoint1 = 1600,
@@ -1036,8 +1036,8 @@ object GlobalLessonData {
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
-                    finishStepNumber = 1013, //7 yapılacak
-                    startStepNumber = 1013,
+                    finishStepNumber = 7, //7 yapılacak
+                    startStepNumber = 7,
                     tutorialIsFinish = true,
                     lessonHint = "Hatasız, en kısa sürede bitir.",
                     cupPoint1 = 1300,
@@ -1107,8 +1107,8 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    startStepNumber = 1013, //19 yapılacak
-                    finishStepNumber = 1013,
+                    startStepNumber = 19, //19 yapılacak
+                    finishStepNumber = 19,
                     cupPoint1 = 1400,
                     cupPoint2 = 1200,
                     worstCupTime = 180,
@@ -1163,7 +1163,7 @@ object GlobalLessonData {
                     stepCount = 3,
                     currentStep = 1,
                     startStepNumber = 28,
-                    finishStepNumber = 31,
+                    finishStepNumber = 30,
                     tutorialIsFinish = true,
                     lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
                 ),LessonItem(
@@ -1341,8 +1341,8 @@ object GlobalLessonData {
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
-                    startStepNumber = 1013, //65 ile değiştirilecek
-                    finishStepNumber = 1013,
+                    startStepNumber = 65, //65 ile değiştirilecek
+                    finishStepNumber = 65,
                     cupPoint1 = 1350,
                     cupPoint2 = 1000,
                     worstCupTime = 180,

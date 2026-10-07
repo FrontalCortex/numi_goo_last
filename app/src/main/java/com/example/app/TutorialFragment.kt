@@ -28,6 +28,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.DimenRes
 import androidx.activity.OnBackPressedCallback
+import com.google.firebase.auth.FirebaseAuth
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -61,11 +62,21 @@ class TutorialFragment : Fragment() {
             ?: DEFAULT_TUTORIAL_NUMBER
     private lateinit var currentTutorialSteps: List<TutorialStep>
     private var lessonItem: LessonItem? = null
+
+    /**
+     * Hesap yokken açılan ilk eğitim (uygulamaya ilk girişteki zorunlu akış). Hesapsız
+     * kullanıcı yalnızca bu akışta ders açabildiği için hesap yokluğu yeterli bir işaret;
+     * bu akışta "eğitimi atla" gizlenir ve geri tuşu haritaya döndürmez.
+     */
+    private val isFirstRunTutorial: Boolean
+        get() = lessonItem?.tutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null
     /** Soru adımlarının index → ölçüm kimliği eşlemesi; [buildStepAnalyticsInfo] doldurur. */
     private var stepAnalyticsInfo: Map<Int, StepAnalyticsInfo> = emptyMap()
     private lateinit var controlButton: View
     private lateinit var correctPanel:View
     private lateinit var incorrectPanel:View
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private lateinit var questionText:View
     private var controlNumber=0
     private var answerNumber: Int?= null
@@ -368,6 +379,7 @@ class TutorialFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+                if (isFirstRunTutorial) return
                 closeFragment()
             }
         })
@@ -376,6 +388,7 @@ class TutorialFragment : Fragment() {
         controlButton = binding.kontrolButton
         correctPanel = binding.correctPanel
         incorrectPanel = binding.incorrectPanel
+        navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
         questionText = binding.questionText
 
         // Seçenek paneli kurulumu
@@ -1673,11 +1686,11 @@ class TutorialFragment : Fragment() {
         {"text":"8 böyle,","sound":"tutorial1_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1}]},
         {"text":"9 böyle gösterilir.","sound":"tutorial1_107","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1}]},
         {"text":"Beraber örnek yaparak pekiştirelim.","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"abacusReset":true},
-        {"text":"Aşağıdaki sayıyı abaküse yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial1_109","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1","answerNumber":1,"requestText":"En sağdaki birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"text":"Şimdi de bu sayıyı yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial1_110","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"2","answerNumber":2,"requestText":"En sağdaki birlik boncuklardan 2 adet kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"text":"Şimdi de bu sayıyı yazalım.","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"5","answerNumber":5,"requestText":"En sağ üstteki beşlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"text":"Bu sayıyı yazalım.","sound":"tutorial1_112","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"6","answerNumber":6,"requestText":"1 adet beşlik ve 1 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"text":"Son olarak bu sayıyı yazalım.","sound":"tutorial1_113","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"8","answerNumber":8,"requestText":"1 adet beşlik ve 3 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Aşağıdaki sayıyı abaküse yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial1_109","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1","answerNumber":1,"requestText":"En sağdaki birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Şimdi de bu sayıyı yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial1_110","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"2","answerNumber":2,"requestText":"En sağdaki birlik boncuklardan 2 adet kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Bu sayıyı yaz.","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"5","answerNumber":5,"requestText":"En sağ üstteki beşlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Bu sayıyı yaz.","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"6","answerNumber":6,"requestText":"1 adet beşlik ve 1 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
+        {"text":"Son olarak bu sayıyı yaz.","sound":"tutorial1_113","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"8","answerNumber":8,"requestText":"1 adet beşlik ve 3 adet birlik boncuğu kullan.","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
         {"text":"Şimdi tahtaya yazacağım sayıları, abaküste göstermeye çalış.","sound":"tutorial1_21","typewriterSpeed":40}
       ]
     }
@@ -1761,7 +1774,11 @@ class TutorialFragment : Fragment() {
                         }
                         "show" -> {
                             val target = resolveView(actionJson.getString("target"))
-                            ({ WidgetOperation.ChangeVisibility(target, View.VISIBLE) })
+                            // İlk açılış akışında "eğitimi atla" hiç gösterilmez.
+                            ({
+                                val hidden = target === binding.skipTutorialButton && isFirstRunTutorial
+                                WidgetOperation.ChangeVisibility(target, if (hidden) View.INVISIBLE else View.VISIBLE)
+                            })
                         }
                         "showFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) })
                         "hideFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.GONE) })
@@ -2002,14 +2019,14 @@ class TutorialFragment : Fragment() {
         {"text":"Önce 20'yi onlar basamağına yazıyorum.","sound":"tutorial3_116","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1}],"question":{"questionText":"24"}},
         {"text":"Sonrada birler basamağındaki 4'ü yazıyorum ve işlem bitiyor.","sound":"tutorial3_117","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"question":{"questionText":"24"}},
         {"text":"Bu sayıyı beraber yazalım.","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"abacusReset":true,"question":{"questionText":"32"}},
-        {"text":"Önce onlar basamağındaki 30'u yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_119","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 3 adet birlik boncuk ekle.","question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":30}},
-        {"text":"Sonrasında birler basamağındaki 2'yi yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_120","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 2 adet birlik boncuk ekle.","backAnswerNumber":30,"question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":32,"nextStepAbacusReset":true}},
+        {"text":"Önce onlar basamağındaki 30'u yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial3_119","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 3 adet birlik boncuk ekle.","question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":30}},
+        {"text":"Sonrasında birler basamağındaki 2'yi yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial3_120","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 2 adet birlik boncuk ekle.","backAnswerNumber":30,"question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":32,"nextStepAbacusReset":true}},
         {"text":"78'i yazarken aynı şekilde önce büyük basamaktan başlanır.","sound":"tutorial3_121","typewriterSpeed":40,"question":{"questionText":"78"}},
         {"text":"Önce 70'i yazıyorum.","sound":"tutorial3_122","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_top","type":3}],"question":{"questionText":"78"}},
         {"text":"Sonrada 8'i yazıyorum.","sound":"tutorial3_123","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_top","type":3},{"beadId":"rod4_bead_bottom3","type":1}],"question":{"questionText":"78"}},
         {"text":"Son olarak bu sayıyı beraber yazıp test'e geçelim.","sound":"tutorial3_124","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_top","type":4}],"abacusReset":true,"question":{"questionText":"94"}},
-        {"text":"Önce onlar basamağındaki sayıyı yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_125","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik, 4 adet birlik boncuk ekle.","question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":90}},
-        {"text":"Sonra da birler basamağındaki 4'ü yazıp 'Kontrol Et' butonuna basalım.","sound":"tutorial3_126","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 4 adet birlik boncuk ekle.","backAnswerNumber":90,"question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94,"nextStepAbacusReset":true}},
+        {"text":"Önce onlar basamağındaki sayıyı yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial3_125","typewriterSpeed":40,"abacusReset":true,"requestText":"Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik, 4 adet birlik boncuk ekle.","question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":90}},
+        {"text":"Sonra da birler basamağındaki 4'ü yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial3_126","typewriterSpeed":40,"requestText":"En sağ sütundaki boncukları kullan. 4 adet birlik boncuk ekle.","backAnswerNumber":90,"question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94,"nextStepAbacusReset":true}},
         {"text":"Çok hızlı öğrendin. Şimdi test zamanı.","sound":"tutorial3_127","typewriterSpeed":40}
       ]
     }
@@ -2157,7 +2174,7 @@ class TutorialFragment : Fragment() {
         {"text":"Önce ilk sayıyı yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial102_3","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağından 2 adet birlik, birler basamağından 3 adet birlik boncuk kullan.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":23}},
         {"text":"Sonrasında, 71'i eklemek için önce 70'i onlar basamağına ekle.","sound":"tutorial102_4","typewriterSpeed":40,"backAnswerNumber":23,"requestText":"Onlar basamağına 1 adet beşlik, 2 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":93}},
         {"text":"Sonra da 1'i birler basamağına ekle.","sound":"tutorial102_5","typewriterSpeed":40,"backAnswerNumber":93,"requestText":"Birler basamağına 1 adet birlik boncuk ekle.","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94}},
-        {"text":"Harika! Şimdi teste geç.","sound":"tutorial102_6","typewriterSpeed":40}
+        {"text":"Teste geç.","sound":"tutorial15_27","typewriterSpeed":40}
       ]
     }
     """.trimIndent()
@@ -2212,7 +2229,7 @@ class TutorialFragment : Fragment() {
         {"text":"60","sound":"tutorial103_21","typewriterSpeed":40,"backAnswerNumber":923,"requestText":"Onlar basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":983}},
         {"text":"6","sound":"tutorial103_11","typewriterSpeed":40,"backAnswerNumber":983,"requestText":"Birler basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":989}},
         {"text":"Cevap 989.","sound":"tutorial103_22","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":989,"requestText":"Birler basamağına 1 adet birlik boncuk ekle.","question":{"questionText":"723 + 266"}},
-        {"text":"Harika! Şimdi teste geç.","sound":"tutorial102_6","typewriterSpeed":40}
+        {"text":"Teste geç.","sound":"tutorial15_27","typewriterSpeed":40}
       ]
     }
     """.trimIndent()
@@ -2449,14 +2466,14 @@ class TutorialFragment : Fragment() {
         {"text":"Ve cevap 11.","sound":"tutorial5_38","typewriterSpeed":40,"question":{"questionText":"6 + 5"}},
         {"text":"10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?","sound":"tutorial5_46","typewriterSpeed":40,"requestText":"Kuralsız ve 5'lik toplama kuralını uygulayamadığımız zaman 10'luk kuralı uygularız.","choiceQuestion":{"options":["Kuralsız toplama","5'lik kural","10'luk kural"],"correctOptionIndex":[0,1],"multipleChoice":true,"optionText":"10'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?"}},
         {"text":"Bu örneği beraber yapalım.","sound":"tutorial5_39","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"18 + 4"}},
-        {"text":"İlk sayıyı abaküse yazalım.","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":18}},
-        {"text":"Şimdi ise, 4'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğimize karar verelim.","sound":"tutorial5_41","typewriterSpeed":40,"backAnswerNumber":18,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4"}},
-        {"text":"Ve ekleyelim.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":18,"nextStepAbacusReset":true,"requestText":"10 gelir 4'ün büyük kardeşi 6 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":22}},
+        {"text":"İlk sayıyı abaküse yazıp 'Kontrol Et' butonuna tıkla.","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":18}},
+        {"text":"Şimdi ise, 4'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğine karar ver.","sound":"tutorial5_41","typewriterSpeed":40,"backAnswerNumber":18,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4"}},
+        {"text":"Ve sayıyı ekle.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":18,"nextStepAbacusReset":true,"requestText":"10 gelir 4'ün büyük kardeşi 6 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":22}},
         {"text":"5'lik kuraldan tek farkı. 5 gelir, kardeş gider değil. 10 gelir, kardeş gider diyoruz.","sound":"tutorial5_43","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"18 + 4"}},
         {"text":"Son olarak bu soruyu yapalım.","sound":"tutorial3000_6","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"17 + 3"}},
-        {"text":"İlk sayıyı abaküse yazalım.","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 2 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":17}},
-        {"text":"Şimdi ise, 3'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğimize karar verelim.","sound":"tutorial5000_3","typewriterSpeed":40,"backAnswerNumber":17,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3"}},
-        {"text":"Ve ekleyelim.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":17,"requestText":"10 gelir 3'ün büyük kardeşi 7 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":20}},
+        {"text":"İlk sayıyı abaküse yaz.","sound":"tutorial9_1000","typewriterSpeed":40,"abacusReset":true,"requestText":"Onlar basamağına 1 adet birlik, birler basamağına 2 adet birlik, 1 adet beşlik boncuk ekle.","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":17}},
+        {"text":"Şimdi ise, 3'ü doğrudan mı, 5'lik kuralla mı, yoksa 10'luk kuralla mı ekleyeceğine karar ver.","sound":"tutorial5000_3","typewriterSpeed":40,"backAnswerNumber":17,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3"}},
+        {"text":"Ve sayıyı ekle.","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":17,"requestText":"10 gelir 3'ün büyük kardeşi 7 gider.","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":20}},
         {"text":"10'luk kuralı nasıl uygularız?","sound":"tutorial5_45","typewriterSpeed":40,"requestText":"10 gelir. Ekleyeceğimiz sayının kardeşi gider.","choiceQuestion":{"options":["10 gelir. Ekleyeceğimiz sayının kardeşi gider.","10 gelir. Abaküste yazan sayının kardeşi gider.","10 gider. Ekleyeceğimiz sayının kardeşi gelir."],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"10'luk kuralı nasıl uygularız?"}},
         {"text":"Şimdi kendini ispatlama zamanı.","sound":"tutorial5_44","typewriterSpeed":40}
       ]
@@ -3854,20 +3871,20 @@ class TutorialFragment : Fragment() {
                 typewriterSpeed = 40L,
                 abacusReset = true
             ),TutorialStep(
-                "İlk sayıyı abaküse yazalım.",
+                "İlk sayıyı abaküse yaz.",
                 questionText = "48 + 2",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 answerNumber = 48,
                 abacusClickable = true,
-                soundResource = R.raw.tutorial5_40,
+                soundResource = R.raw.tutorial9_1000,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 abacusReset = true,
                 requestText = "Onlar basamağına 4 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle."
 
             ),TutorialStep(
-                "2'yi 10'luk kuralla ekleyeceğiz. Önce '10 gelir' adımını yapıp 'Kontrol et' butonuna tıklayalım.",
+                "2'yi 10'luk kural ile ekleyeceğiz. Önce '10 gelir' adımını yapıp 'Kontrol et' butonuna tıkla.",
                 questionText = "48 + 2",
                 questionTextVisibility = View.VISIBLE,
                 soundResource = R.raw.tutorial5_1000,
@@ -3880,7 +3897,7 @@ class TutorialFragment : Fragment() {
                 requestText = "Onlar basamağına 1 ekle. 5 gelir. 1'in kardeşi 4 gider."
 
             ),TutorialStep(
-                "Ve 2'nin büyük kardeşini çıkarıp işlemi sonlandıralım.",
+                "Ve 2'nin büyük kardeşini çıkarıp işlemi sonlandır.",
                 questionText = "48 + 2",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
@@ -4125,20 +4142,20 @@ class TutorialFragment : Fragment() {
                 typewriterSpeed = 40L,
                 abacusReset = true
             ),TutorialStep(
-                "İlk sayıyı abaküse yazalım.",
+                "İlk sayıyı abaküse yaz.",
                 questionText = "96 + 5",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
                 answerNumber = 96,
                 abacusClickable = true,
-                soundResource = R.raw.tutorial5_40,
+                soundResource = R.raw.tutorial9_1000,
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
                 abacusReset = true,
                 requestText = "Onlar basamağına 4 adet birlik, 1 adet beşlik, Birler basamağına 1 adet birlik, 1 adet beşlik boncuk ekle."
 
             ),TutorialStep(
-                "5'i 10'luk kuralla ekleyeceğiz. Önce '10 gelir' adımını yapıp 'Kontrol et' butonuna tıklayalım.",
+                "5'i 10'luk kural ile ekleyeceğiz. Önce '10 gelir' adımını yapıp 'Kontrol et' butonuna tıkla.",
                 questionText = "96 + 5",
                 questionTextVisibility = View.VISIBLE,
                 soundResource = R.raw.tutorial5_1002,
@@ -4151,7 +4168,7 @@ class TutorialFragment : Fragment() {
                 requestText = "Onlar basamağına 1 ekle. 10 gelir. 1'in kardeşi 9 gider."
 
             ),TutorialStep(
-                "Ve 5'in büyük kardeşini çıkarıp işlemi sonlandıralım.",
+                "Ve 5'in büyük kardeşini çıkarıp işlemi sonlandır.",
                 questionText = "96 + 5",
                 questionTextVisibility = View.VISIBLE,
                 nextStepAvailable = false,
@@ -15579,7 +15596,7 @@ class TutorialFragment : Fragment() {
 
             playCorretSound(R.raw.correct_answer_sound, volume = 0.3f)
 
-            correctPanel.translationY = correctPanel.height.toFloat()
+            correctPanel.translationY = resultPanelHiddenY(correctPanel)
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
@@ -15674,7 +15691,7 @@ class TutorialFragment : Fragment() {
                             }
                             
                             correctPanel.animate()
-                                .translationY(correctPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(correctPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -15691,7 +15708,7 @@ class TutorialFragment : Fragment() {
             // Yanlış cevap durumu
             playCorretSound(R.raw.incorrect_answer_sound)
 
-            incorrectPanel.translationY = incorrectPanel.height.toFloat()
+            incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             incorrectPanel.findViewById<TextView>(R.id.correctAnswerText).visibility = View.GONE
@@ -15749,6 +15766,10 @@ class TutorialFragment : Fragment() {
         }
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     private fun startInfoRequestBreathAnimation() {
         stopInfoRequestBreathAnimation()
         val icon = binding.infoRequest
@@ -15801,7 +15822,7 @@ class TutorialFragment : Fragment() {
 
         incorrectButtonClick()
         incorrectPanel.animate()
-            .translationY(incorrectPanel.height.toFloat())
+            .translationY(resultPanelHiddenY(incorrectPanel))
             .setDuration(200)
             .setInterpolator(AccelerateInterpolator())
             .withEndAction {
@@ -17138,6 +17159,8 @@ class TutorialFragment : Fragment() {
             dismissRequestPanelsImmediate()
         }
         stopLearningSessionTracking()
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
