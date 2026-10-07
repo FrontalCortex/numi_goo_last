@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.functions.FirebaseFunctionsException
 
 class ShopFragment : Fragment() {
 
@@ -253,11 +254,19 @@ class ShopFragment : Fragment() {
                 playHeartFlyAnimation(buyButton)
                 updateEnergyUi()
             },
-            onFailure = {
+            onFailure = { e ->
                 buyLifeInProgress = false
                 if (!isAdded) return@buyWithKeys
                 refreshCurrencyUi()
-                Toast.makeText(ctx, "İşlem tamamlanamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                // Sunucu bir hesaba günde en fazla 5 can satıyor (ENERGY_KEY_BUY_DAILY_LIMIT).
+                val dailyLimitReached = (e as? FirebaseFunctionsException)?.code ==
+                    FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED
+                val message = if (dailyLimitReached) {
+                    "Günlük sınıra ulaşıldı. Yarın tekrar deneyin."
+                } else {
+                    "İşlem tamamlanamadı. Tekrar deneyin."
+                }
+                Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
             },
         )
     }

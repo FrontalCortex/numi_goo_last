@@ -6300,14 +6300,29 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
   }
   const uid = context.auth.uid;
+  const dayKey = utcDayKey(Date.now());
 
   const result = await applyEnergyDelta(uid, +1, null, (userData) => {
     assertNotUnapprovedTeacher(userData);
+
+    // Günlük tavan: sayaç diğer günlük sayaçlarla aynı `rewardGuard` içinde, gün
+    // değişince grantWalletDelta gibi sıfırlanıyor.
+    const guard = userData.rewardGuard || {};
+    const sameDay = guard.dayKey === dayKey;
+    const used = (sameDay ? Number(guard.energyKeyBuys) || 0 : 0) + 1;
+    if (used > ENERGY_KEY_BUY_DAILY_LIMIT) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Günlük sınıra ulaşıldı.');
+    }
+
     const currentKeys = Number.parseInt(userData.keys, 10) || 0;
     if (currentKeys < ENERGY_KEY_COST) {
       throw new functions.https.HttpsError('failed-precondition', 'Yetersiz anahtar bakiyesi.');
     }
-    return { keys: currentKeys - ENERGY_KEY_COST };
+
+    const nextGuard = sameDay ? Object.assign({}, guard) : {};
+    nextGuard.dayKey = dayKey;
+    nextGuard.energyKeyBuys = used;
+    return { keys: currentKeys - ENERGY_KEY_COST, rewardGuard: nextGuard };
   });
 
   const snapshot = await db.collection('users').doc(uid).get();
@@ -6316,3 +6331,6 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
 
 // ShopFragment.LIFE_KEY_COST ile aynı olmalı.
 const ENERGY_KEY_COST = 1;
+// Bir hesabın bir günde (UTC) anahtarla alabileceği can sayısı. Aşılınca
+// 'resource-exhausted' dönüyor; ShopFragment bunu "günlük sınır" uyarısı olarak gösteriyor.
+const ENERGY_KEY_BUY_DAILY_LIMIT = 5;

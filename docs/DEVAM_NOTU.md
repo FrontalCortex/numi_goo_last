@@ -23,6 +23,14 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Mağazada anahtarla can alımına günlük 5 sınırı (07.10.2026 — fonksiyon DEPLOY EDİLMEDİ)
+
+`buyEnergyWithKeys` artık `rewardGuard.energyKeyBuys` sayacını aynı transaction'da artırıyor;
+UTC günü başına 5'i aşınca `resource-exhausted` ("Günlük sınıra ulaşıldı.") dönüyor ve ne
+anahtar düşüyor ne can ekleniyor. Sabit: `ENERGY_KEY_BUY_DAILY_LIMIT`. `ShopFragment.buyLifeWithKeys`
+bu kodu yakalayıp "Günlük sınıra ulaşıldı. Yarın tekrar deneyin." uyarısı gösteriyor.
+`rewardGuard` istemciye zaten kapalı (firestore.rules), kural değişikliği gerekmedi.
+
 ## Liderlik tablosunda uygulama avatarı (06.10.2026 — derlendi, cihazda DENENMEDİ)
 
 Kayıt ekranı (`RecordFragment` + `RecordLeaderboardAdapter`) Google hesabının fotoğrafını
