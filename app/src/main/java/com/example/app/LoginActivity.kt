@@ -15,6 +15,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     private lateinit var binding: ActivityLoginBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null

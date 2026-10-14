@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -9,6 +10,10 @@ import com.example.app.databinding.ActivityEmailVerificationBinding
 import com.google.firebase.auth.FirebaseAuth
 
 class EmailVerificationActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     private lateinit var binding: ActivityEmailVerificationBinding
     private lateinit var authManager: AuthManager
     private lateinit var auth: FirebaseAuth

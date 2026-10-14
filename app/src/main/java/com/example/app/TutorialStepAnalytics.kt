@@ -39,6 +39,9 @@ object TutorialStepAnalytics {
     /** "İlk kez görüldü" işareti — [markReachedOnce] için. */
     private const val PREFIX_REACHED = "r:"
 
+    /** "Öğretici bu cihazda ilk kez başladı" işareti — [markStartedOnce] için. */
+    private const val PREFIX_STARTED = "s:"
+
     /** Adım anahtarındaki okunabilir kısmın üst sınırı. Anahtarın tamamı 100 karakteri aşmamalı. */
     private const val SLUG_MAX = 40
 
@@ -102,6 +105,24 @@ object TutorialStepAnalytics {
             true
         } catch (e: Throwable) {
             Log.w(TAG, "markReachedOnce başarısız", e)
+            false
+        }
+    }
+
+    /**
+     * Öğretici bu cihazda ilk kez başlıyorsa `true` döner ve işaretler; sonraki her çağrıda
+     * `false`. [markReachedOnce]'tan farkı: olay her başlangıçta gönderilir, bu yalnızca
+     * "ilk kez mi, tekrar mı" ayrımını verir.
+     */
+    fun markStartedOnce(context: Context, tutorialNumber: Int): Boolean {
+        val p = prefs(context) ?: return false
+        val key = "${PREFIX_STARTED}t$tutorialNumber"
+        return try {
+            if (p.getBoolean(key, false)) return false
+            p.edit().putBoolean(key, true).apply()
+            true
+        } catch (e: Throwable) {
+            Log.w(TAG, "markStartedOnce başarısız", e)
             false
         }
     }

@@ -28,6 +28,10 @@ import android.util.Log
 
 class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null

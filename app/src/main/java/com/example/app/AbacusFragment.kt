@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusSideButtonFit
 import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.abacus.AbacusBeadRenderer
 import kotlin.math.log
@@ -61,6 +62,8 @@ class AbacusFragment : Fragment() {
     private var isAbacusSettingsPanelOpen = false
     private var savedAbacusScaleX = 1.0f
     private var savedAbacusScaleY = 1.0f
+    // Abaküs sağdaki düğme sütununa sığmazsa küçültür; görünen ölçek = kullanıcı ölçeği × sığdırma payı.
+    private var abacusSideFit: AbacusSideButtonFit? = null
     private var savedAbacusMarginBottomDp = 0f
     private var savedBeadScaleX = 1.0f
     private var savedBeadScaleY = 1.0f
@@ -1427,7 +1430,7 @@ class AbacusFragment : Fragment() {
         if(lessonItem.mapFragmentIndex!! > 10 && globalPartId == 2){
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
         }
-        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 2){
+        if(lessonItem.mapFragmentIndex!! > 15 && globalPartId == 2){
             rulesFragment?.updateBeadRuleExtractionTableLayout(View.VISIBLE)
         }
         if(globalPartId == 3){
@@ -2910,6 +2913,8 @@ class AbacusFragment : Fragment() {
         }
         stopLearningSessionTracking()
         stopGuideTypewriter()
+        abacusSideFit?.detach()
+        abacusSideFit = null
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
@@ -3519,8 +3524,15 @@ class AbacusFragment : Fragment() {
 
         val density = resources.displayMetrics.density
 
-        binding.abacusContainer.scaleX = savedAbacusScaleX
-        binding.abacusContainer.scaleY = savedAbacusScaleY
+        abacusSideFit?.detach()
+        abacusSideFit = AbacusSideButtonFit(
+            abacus = binding.abacusContainer,
+            sideButtons = listOf(binding.fabHint, binding.askQuestionButton, binding.rulesPanelButton, binding.abacusModeButton),
+            gapPx = 6f * density,
+        ).also {
+            it.attach()
+            it.setUserScale(savedAbacusScaleX, savedAbacusScaleY)
+        }
         val initParams = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
         if (savedAbacusMarginBottomDp > 0f) {
             initParams?.bottomMargin = (savedAbacusMarginBottomDp * density).toInt()
@@ -3551,7 +3563,7 @@ class AbacusFragment : Fragment() {
         binding.seekBarScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleX = scale
+                abacusSideFit?.setUserScaleX(scale)
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
@@ -3560,7 +3572,7 @@ class AbacusFragment : Fragment() {
         binding.seekBarScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleY = scale
+                abacusSideFit?.setUserScaleY(scale)
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
@@ -3646,8 +3658,7 @@ class AbacusFragment : Fragment() {
             binding.seekBarBeadMarginTop.progress = 0
             binding.seekBarBeadMarginBottom.progress = 0
             
-            binding.abacusContainer.scaleX = 1.0f
-            binding.abacusContainer.scaleY = 1.0f
+            abacusSideFit?.setUserScale(1.0f, 1.0f)
             
             val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
             params?.bottomMargin = defaultMarginPx
@@ -3668,8 +3679,9 @@ class AbacusFragment : Fragment() {
 
         binding.abacusSettingsSaveButton.setOnClickListener {
             // Mevcut degerleri kaydet
-            savedAbacusScaleX = binding.abacusContainer.scaleX
-            savedAbacusScaleY = binding.abacusContainer.scaleY
+            // Görünen ölçek değil kullanıcının seçtiği ölçek kaydedilir (sığdırma payı ekrana göre değişir).
+            savedAbacusScaleX = abacusSideFit?.userScaleX ?: binding.abacusContainer.scaleX
+            savedAbacusScaleY = abacusSideFit?.userScaleY ?: binding.abacusContainer.scaleY
             val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
             savedAbacusMarginBottomDp = ((params?.bottomMargin ?: 0) / density)
             

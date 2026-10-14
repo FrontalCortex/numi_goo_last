@@ -32,7 +32,7 @@ object AskQuestionButtonStyle {
     /** Dalganın renkleri (açık sarı, mavi, kırmızı); önden arkaya. */
     private val WAVE_COLORS = intArrayOf(0xFFFFE27A.toInt(), 0xFF7EC8FF.toInt(), 0xFFFF8A8A.toInt())
 
-    private const val WAVE_INTERVAL_MS = 11_000L
+    private const val WAVE_INTERVAL_MS = 5_000L
     private const val WAVE_DURATION_MS = 1_200L
 
     /**

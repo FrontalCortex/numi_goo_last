@@ -260,6 +260,8 @@ class NumiGooApplication : Application() {
         } catch (e: Throwable) {
             Log.w(TAG, "Ekran takibi kurulamadı", e)
         }
+        // İlk olaylardan önce yazılsın ki geliştiricinin denemeleri baştan işaretli olsun.
+        AnalyticsLogger.setBuildType(BuildConfig.DEBUG)
 
         // Sezon saatinin kalıcı sapmasını yükle. Ağ çağrısı yok, yalnızca disk okuması;
         // sunucuyla eşitleme oturum açıldıktan sonra MainActivity'de yapılıyor.

@@ -133,6 +133,10 @@
     <dimen name="tutorial_skip_button_text_size">14sp</dimen>
     <dimen name="tutorial_skip_button_text_margin_h">10dp</dimen>
     <dimen name="tutorial_ask_button_size">56dp</dimen>
+    <!-- AbacusFragment / BlindingLessonFragment sağ kenar düğme sütunu. 56dp iken ortalı abaküsle (~273dp)
+         birlikte ~385dp genişlik istiyor, 360dp telefonlarda düğmeler abaküsün üstüne biniyordu.
+         Kalan açığı AbacusSideButtonFit abaküsü küçülterek kapatıyor. -->
+    <dimen name="abacus_side_button_size">48dp</dimen>
     <dimen name="tutorial_ask_button_padding">8dp</dimen>
     <dimen name="tutorial_rules_panel_button_padding">12dp</dimen>
     <dimen name="tutorial_control_button_text_size">17sp</dimen>

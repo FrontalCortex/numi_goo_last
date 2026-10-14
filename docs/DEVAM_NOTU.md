@@ -23,6 +23,120 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Öğretici ölçümü: `tutorial_started` olayı (11–14.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+**Karar (kullanıcı, 14.10.2026):** Öğretici A/B testi YAPILMAYACAK. Önce yazılan Remote Config
+varyant altyapısı (`TutorialVariant`, `tutorial_exp_exposure`, `tutorial_variant` parametresi)
+kaldırıldı. Öğreticinin yeterliliğine öğretici içi + test başarısının diğer öğreticilerle
+kıyasına bakılarak karar verilecek; iyileştirme sonrası kıyas `app_version` ile önce/sonra.
+
+- Kalan: `tutorial_started` (tutorial_no, first_time, lesson_id) — `TutorialFragment.onCreate`'te,
+  `savedInstanceState == null` iken. İlk soru adımından önceki bırakmaları görmenin tek yolu.
+- `first_time` → `TutorialStepAnalytics.markStartedOnce` (cihazda `s:t<no>` işareti).
+- GA4'te `first_time` olay kapsamlı özel boyut olarak kaydedilmeli.
+- Asıl "anlaşıldı mı" ölçütü: dersin testinde `lesson_step_pass` + `fail_streak = 0` oranı.
+  Eğitimden hemen sonraki test = Ders `p2_i16_boncuk_cikarma_kurallar` + Adım `1` (16 için).
+- **Sayısal boyutlar "(not set)" çıkıyordu** (14.10.2026, Explore'da doğrulandı): GA4'te boyut
+  olarak kayıtlı ama sayı gönderilen 9 parametre (part_id, position, step, fail_streak,
+  tutorial_no, question_no, choice, chest_stars, at_tap) artık metin gönderiliyor. Eski olaylarda
+  boş kalır; düzelme yalnızca bu sürüm yayına çıktıktan sonraki olaylarda görünür.
+- `build_type` kullanıcı özelliği (debug/release), `NumiGooApplication.onCreate`'te yazılıyor:
+  geliştiricinin kendi denemelerini Explore'da `Build type does not exactly match debug` ile
+  ayıklamak için. GA4'te **kullanıcı kapsamlı** özel boyut olarak kaydedilmeli.
+- `tester` kullanıcı özelliği (true/false): `users/{uid}.isTester` alanından,
+  `MainActivity.checkSubscriptionAndUpdateEnergy`'de yazılıyor. Alan konsoldan ELLE konur,
+  uygulama yazmaz (Closed testing'deki kişiler işaretlenmesin). Play'den kurulan release
+  sürümüyle yapılan geliştirici denemelerini ayıklar. Kurallar `hasOnly` kullanmadığı için
+  alan güncellemeleri bozmaz; `PUBLIC_PROFILE_FIELDS`'de olmadığı için aynalanmaz.
+- Explore "Öğretici adım analizi" sekmeleri: 1) Kaçıncı denemede (arşivli boyut kaldırılmalı),
+  2) Yanlışken ne yazıyorlar, 3) Adımı geçebildiler mi (tamam). Eğitim sonrası test için
+  "Hangi ders çok zor?" sekmesine Adım eklenecek.
+
+## Sistem yazı boyutu büyükken tutorial metinleri tabloların üstüne biniyordu (10.10.2026 — derlendi, cihaza KURULAMADI: telefondaki sürümün imzası farklı)
+
+**Belirti:** Telefonun yazı boyutu büyütülünce `TutorialFragment`'te `tutorialText`, kural
+tabloları ve `rulesStepText` iç içe girdi. `values-h780dp`/`sw…` ayarları `dp`'ye baktığı için
+yazı ölçeğinden etkilenmiyor, koruma sağlamıyordu.
+
+**Kök neden:** `tutorialText` `wrap_content` + `verticalBias=1` idi; ConstraintLayout
+`wrap_content` görünümü bağlarıyla sınırlamaz, metin büyüyünce üst bağını aşıp yukarı taştı.
+
+**Yapılan:**
+- `FontScaleLimiter` (yeni): sistem `fontScale`'ini en fazla 1.15'e kırpar; 8 aktivitenin
+  hepsinde `attachBaseContext` içinden çağrılıyor. Yeni aktivite eklenirse ona da eklenmeli.
+- `tutorialText`: yükseklik `0dp` + `gravity=bottom` + `autoSize` (tutorial_text_size → 12sp).
+  Yükseklik 0dp olduğu için üst bağ hiç boş kalmamalı → `ensureTutorialTextTopConstraint`
+  (çapa yoksa parent top). Daktilo efekti artık tam metni yazıp gösterilmeyen kısmı saydam
+  boyuyor (`setTypewriterProgress`), böylece autoSize yazarken yazıyı büyütüp küçültmüyor.
+
+**Test:** Ayarlar → Yazı boyutu en büyük; tablolu tutorial adımları (5'lik/10'luk kural) ve
+"Testte tahtaya sıra sıra sayılar gelecek" adımı (bottom → blinding_tutorial1) kontrol edilmeli.
+Kullanıcı cihazda denedi, yapı çalışıyor.
+
+**Ek (aynı gün, derlendi; cihaz bağlı değildi, KURULMADI):** `tenRuleExtractionTableLayout`
+10 satır olduğu için görünürken tutorialText çok küçülüyordu. Önce 1-5 / 6-9 iki blok denendi;
+cihazda başlık hücreleri eşit boyda değildi, sütunlar dengesizdi ve 5-5 satırı sarkıyordu.
+Kullanıcının seçimiyle son hali: tek başlık ("Çıkarılacak sayı → Kardeşi") + 3x3 çift kartı
+("1 → 9"), kardeş sayı ve başlıktaki "Kardeşi" sarı. Tablo 4 satır. Ardından aynı tasarım
+`fiveRuleTable`, `extractionFiveRuleTable`, `tenRuleTableLinearLayout` (2x2) ve `tenRuleTable`
+(2x2 + ortalanmış 5→5 kartı, `weightSum=2`) tablolarına uygulandı (cihaza kuruldu). Bu tablolarda
+satırlar ağırlıklı `LinearLayout`; dış kutuda `minWidth=rules_fragment_table_width`, başlık daha
+genişse tablo onunla genişliyor. `tenRuleTable`'daki tek kartlık satırda `measureWithLargestChild`
+şart (yoksa ilk ölçümde kart yarı genişliğe sıkışıp satırı uzatıyor, açıklama kutusu aşağı
+kayıyordu). `BeadRuleTable` / `BeadRuleExtractionTable` ayrı tasarım aldı: başlık aynı stilde
+("… → İşlem"), her satır tek kart, işlem üç etikete bölünmüş (`rule_step_chip`; gelir yeşil
+`lesson_header_green`, gider kırmızı `lesson_header_red`). Satır sayısı değişmedi (başlık + 4).
+**Tabloların quitButton'a taşması:** yazı boyutu sınırı "Ekran boyutu/Yakınlaştırma" ayarını ve
+dar telefonları kapsamıyor. `applyTutorialViewScaling` artık tablo ölçeğini bir kez post{}'ta
+değil, her yerleşimde `fitRulesTable` ile veriyor: sağ-üst köşe sabit, tablo quitButton'un
+sağına sığmıyorsa taban ölçeğin (0.94 / kısa ekranda 0.58) de altına küçülüyor (alt sınır 0.3).
+Eski kodda tablolar post{} anında GONE olduğundan pivotX=0 kalıyor, sol-üstten küçülüyordu;
+bu da düzeldi (tablolar artık sağ kenara tam yaslı).
+**fragment_rules (kural kitabı paneli):** 7 kural tablosu (çarpım tabloları hariç) aynı kart
+tasarımına geçti: 5'lik / 10'luk 6-9 / 5'lik çıkarma 2x2, 10'luk 1-5 2x2 + ortalı 5→5,
+10'luk çıkarma 3x3, iki boncuk tablosu etiketli satırlar. Bölüm başlıkları ("5'lik Kural" vb.)
+ve açıklamalar yerinde. `RulesFragment.applyRulesTableHeaderTexts`'in kullandığı id'ler
+(`fiveText`, `tenText`, `tenTextSecond`, `beadText`, `extractionFiveText`; ayrıca
+`beadExtractionText`) başlığın ilk metninde korundu. Boncuk dış kutuları `match_parent` +
+16dp iç boşluktan `wrap_content`'e çevrildi (eskiden işlem sütunu sıkışıp "10 gelir" alt satıra
+kırılıyordu).
+**Ders içi kural paneli (`fragment_abacus.xml` / `fragment_blinding_lesson.xml`, 120dp yüksek
+`rulesPanelScrollView`):** buradaki 6 tablo da aynı kart tasarımına geçti (5'lik çıkarma tablosu
+yok; 5'lik tablo `applyRulesPanelFiveText` ile `fiveText` / `fiveRuleDescriptionText` metni
+değiştirilerek çıkarmada da kullanılıyor, id'ler korundu). Metinler eski tablodan okunarak
+üretildi; blinding'deki "Çıkarılacak Sayı" (büyük S) gibi farklar korundu. Artık uygulamada eski
+2 sütunlu kural tablosu kalmadı (çarpım tabloları hariç).
+**Dikkat (kart tablolarında genişlik):** dış dikey `LinearLayout` `wrap_content` iken bütün
+doğrudan çocukları `match_parent` olmalı. Tek bir `wrap_content` çocuk (fragment_rules'taki
+"Boncuk Kuralı" gibi bölüm başlığı) varsa LinearLayout `match_parent` satırları genişlik
+hesabına katmıyor; kutu başlık/minWidth (200dp) genişliğinde kalıyor, satırlar sıkışıp yüksekliği
+tek satırda kilitlendiği için "10 gelir"in "gelir"i kesiliyordu. fragment_rules'taki 7 bölüm
+başlığı `match_parent` yapıldı; tutorial'daki 3x3 tablonun `TableLayout`'u da aynı sebeple
+`match_parent` + dış kutuya `minWidth`.
+**fragment_ask_question_open:** `infoText` 20dp'lik `infoIcon`'a dikey ortalıydı; 4 satıra
+çıkınca beyaz kutunun üstünden taşıyordu (annenin telefonunda görüldü). Artık metin kutunun
+üstüne bağlı (32dp), ikon metnin ortasında; metin yalnızca aşağı uzuyor (cihaza kuruldu).
+**fragment_pro_diffirent:** alttaki beyaz bölüm üstü serbest `wrap_content` idi; satırlar
+(metin sütunu ekran genişliği − ~246dp kadar dar) 2-3 satıra kırılınca başlığın ve ekranın
+üstüne taşıyordu. Artık `bottomWhiteScroll` (ScrollView, beyaz zemin burada) içinde:
+`constrainedHeight` + `bias=1` ile en fazla başlığın altına kadar uzuyor, sığmazsa kayıyor.
+`bottomWhiteContainer` id'si içteki kutuda kaldı (`SystemBarColors` alt çubuk dolgusunu ona
+ekliyor). Derlendi; sonraki kurulumla (14:04) cihaza gitti.
+**Abaküs ekranlarındaki sağ düğme sütunu (AbacusFragment + BlindingLessonFragment):** ortalı
+abaküs (~273dp) + iki yanda 56dp düğme ~385dp istiyordu; 360dp telefonlarda düğmeler abaküsün
+üstüne biniyordu (font sınırı etkilemez, hepsi dp). Yapılan: düğmeler 48dp
+(`abacus_side_button_size`; ipucu, soru sor, sihirli değnek, ayarlar, blinding'de ayrıca sıfırla
+ve adım atla) + yeni `abacus/AbacusSideButtonFit`: her yerleşimde sütunun sol kenarına bakıp
+abaküsü (sütun + 6dp boşluk iki yanda kalacak şekilde) küçültüyor, alt sınır 0.6. Görünen ölçek =
+ayarlar panelindeki kullanıcı ölçeği × sığdırma payı; kaydedilen her zaman kullanıcı ölçeği.
+Pivot artık alt-orta (eskiden kullanıcı ölçeği merkezden büyütüyordu; büyütünce kontrol düğmesine
+binmesin diye bilerek değişti). Abaküsle aynı yükseklikte olmayan düğmeler hesaba katılmıyor.
+Kaydırılabilir alan bilerek seçilmedi: çocuk gizli satırı fark etmez ve ScrollView
+dokunuşu yutup root'taki "dokun → ilerle"yi bozar. Aynı 10 satırlık tablo `fragment_abacus.xml`,
+`fragment_blinding_lesson.xml` ve `fragment_rules.xml`'de hâlâ eski haliyle duruyor.
+**Açık kalan:** Kısa ekranlarda (<700dp) tablolar `scaleX/Y=0.58` ile yalnızca görsel küçülüyor,
+yerleşim boyu küçülmüyor; tablonun altında tutorialText'in kullanamadığı boşluk kalıyor.
+
 ## Mağazada anahtarla can alımına günlük 5 sınırı (07.10.2026 — f289beb ile push edildi, fonksiyonlar otomatik deploy)
 
 `buyEnergyWithKeys` artık `rewardGuard.energyKeyBuys` sayacını aynı transaction'da artırıyor;

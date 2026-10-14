@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.SpannableString
+import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.util.TypedValue
@@ -310,6 +311,15 @@ class TutorialFragment : Fragment() {
             )
         }
 
+        // Süreç ölümünden sonra geri yüklenen ekran yeni bir başlangıç değil. onCreate fragment
+        // örneği başına bir kez çalıştığı için geri yığınından dönüşte de tekrar gönderilmez.
+        if (savedInstanceState == null) {
+            AnalyticsLogger.logTutorialStarted(
+                tutorialNumber = tutorialNumber,
+                lessonId = lessonItem?.stableId,
+                firstTime = TutorialStepAnalytics.markStartedOnce(requireContext(), tutorialNumber),
+            )
+        }
     }
 
     override fun onCreateView(
@@ -360,16 +370,42 @@ class TutorialFragment : Fragment() {
             R.id.tenRuleExtractionTableLayout,
             R.id.BeadRuleExtractionTable
         ).forEach { id ->
-            binding.root.findViewById<View>(id)?.apply {
-                post {
-                    // Sağ-üst köşe sabit kalsın; scale merkezden değil top-right'tan uygulansın.
-                    pivotX = width.toFloat()
-                    pivotY = 0f
-                    scaleX = rulesTableScale
-                    scaleY = rulesTableScale
+            binding.root.findViewById<View>(id)?.let { table ->
+                // Eskiden ölçek bir kez post{} içinde veriliyordu; ama tablolar o an GONE (genişlik 0)
+                // olduğu için pivotX=0 kalıyor, tablo sağ-üst yerine sol-üstten küçülüyordu. Artık her
+                // yerleşimde (görünür olunca, içerik/yazı boyutu değişince) yeniden hesaplanıyor.
+                table.scaleX = rulesTableScale
+                table.scaleY = rulesTableScale
+                table.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                    fitRulesTable(v, rulesTableScale)
                 }
             }
         }
+    }
+
+    /**
+     * Kural tablosunu sağ-üst köşesi sabit kalacak şekilde ölçekler; tablo quitButton'un sağındaki
+     * alana sığmıyorsa [baseScale]'in de altına küçültür. Yazı boyutu sınırı (FontScaleLimiter)
+     * "Ekran boyutu / Yakınlaştırma" ayarını ve dar telefonları kapsamadığı için tablolar hâlâ
+     * genişleyip quitButton'un üstüne binebiliyordu. Ölçek yerleşimi değiştirmez, yalnızca çizimi
+     * küçültür; böylece hücre metinleri alt satıra kırılmaz.
+     */
+    private fun fitRulesTable(table: View, baseScale: Float) {
+        val tableWidth = table.width
+        if (tableWidth <= 0) return
+        val parentWidth = (table.parent as? View)?.width ?: return
+        val gapPx = 4f * resources.displayMetrics.density
+        val safeLeft = binding.quitButton.right + gapPx
+        // Taşan tablolarda (genişlik > ekran) sağ kenar ekranın dışında kalabiliyor; görünen sağ
+        // kenarı ekranla sınırla ve pivotu ona göre kaydır.
+        val visibleRight = minOf(table.right, parentWidth).toFloat()
+        val pivot = visibleRight - table.left
+        val fitScale = (visibleRight - safeLeft) / pivot
+        val scale = minOf(baseScale, fitScale).coerceAtLeast(0.3f)
+        table.pivotX = pivot
+        table.pivotY = 0f
+        table.scaleX = scale
+        table.scaleY = scale
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -11454,7 +11490,175 @@ class TutorialFragment : Fragment() {
                 typewriterSpeed = 40L,
                 soundResource = R.raw.tutorial14_455,
             ),
+
+
+
             TutorialStep(
+                "Boncuk çıkarma tablosunu bu iki kuralın birleşimi olarak düşünebilirsin.",
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1000,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)),
+                widgetVisibilityMap = mapOf(
+                    R.id.BeadRuleExtractionTable to View.GONE,
+                )
+            ),TutorialStep(
+                "Kural tablosu şu şekildedir.",
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1003,
+                widgetVisibilityMap = mapOf(
+                    R.id.BeadRuleExtractionTable to View.VISIBLE,
+                ),
+            ),TutorialStep(
+                "Örneğin bu işlemde...",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial14_21,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)),
+            ),TutorialStep(
+                "6’yı çıkarırken 1 gider 5 gelir 10 gider adımlarını yapacağız.",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1001,
+            ),TutorialStep(
+                "1 gider.",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_11,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2)),
+            ),TutorialStep(
+                "5 gelir.",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial3_13,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)),
+            ),TutorialStep(
+                "10 gider.",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial12_17,
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)),
+            ),TutorialStep(
+                "Cevap 7.",
+                questionText = "13 - 6",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1005,
+            ),TutorialStep(
+                "Bu örneği beraber yapalım.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                abacusReset = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial5_39,
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    ),
+            ),TutorialStep(
+                "Önce ilk sayıyı abaküse yaz.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                answerNumber = 33,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial9_1000,
+                abacusReset = true,
+                requestText = "Onlar basamağına 3 adet, birler basamağına 3 adet birlik boncuk ekle.",
+            ),
+            TutorialStep(
+                "8'i, boncuk kuralı tablosuna göre çıkar.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1002,
+                backAnswerNumber = 33
+            ),
+            TutorialStep(
+                "3 gider.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1006,
+                answerNumber = 30,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 33,
+                requestText = "Birler basamağından 3 adet birlik boncuk çıkar.",
+            ),
+            TutorialStep(
+                "5 gelir.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial3_13,
+                answerNumber = 35,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 30,
+                requestText = "Birler basamağına 1 adet beşlik boncuk ekle.",
+            ),
+            TutorialStep(
+                "10 gider.",
+                questionText = "33 - 8",
+                questionTextVisibility = View.VISIBLE,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial12_17,
+                answerNumber = 25,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                backAnswerNumber = 35,
+                requestText = "Onlar basamağından 1 adet birlik boncuk çıkar.",
+            ),TutorialStep(
+                "Cevap 25.",
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                soundResource = R.raw.tutorial16_1004
+
+            )
+
+
+
+
+
+
+
+
+
+
+
+            ,TutorialStep(
                 "Teste geç.",
                 useTypewriterEffect = true,
                 typewriterSpeed = 40L,
@@ -14918,7 +15122,22 @@ class TutorialFragment : Fragment() {
             visibleTableId != null -> visibleTableId
             else -> ConstraintLayout.LayoutParams.UNSET
         }
+        ensureTutorialTextTopConstraint(tutorialTextParams)
         binding.tutorialText.layoutParams = tutorialTextParams
+    }
+
+    /**
+     * tutorialText'in yüksekliği 0dp (match constraint) olduğu için üst bağı hiç boş kalmamalı;
+     * aksi halde boyu belirsizleşir. Görünür kural içeriği yoksa (ya da bir adımın
+     * ChangeConstraints'i üst bağı sildiyse) ekranın üstüne bağlanır - gravity=bottom sayesinde
+     * metin yine alttan hizalı görünür.
+     */
+    private fun ensureTutorialTextTopConstraint(params: ConstraintLayout.LayoutParams) {
+        if (params.topToTop == ConstraintLayout.LayoutParams.UNSET &&
+            params.topToBottom == ConstraintLayout.LayoutParams.UNSET
+        ) {
+            params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+        }
     }
 
     private fun applyWidgetOperations(operations: List<WidgetOperation>) {
@@ -14957,6 +15176,9 @@ class TutorialFragment : Fragment() {
                     if (operation.bottomToBottom != null && operation.topToTop == null) {
                         params.topToTop = ConstraintLayout.LayoutParams.UNSET
                         params.topToBottom = ConstraintLayout.LayoutParams.UNSET
+                    }
+                    if (operation.view === binding.tutorialText) {
+                        ensureTutorialTextTopConstraint(params)
                     }
 
                     operation.view.layoutParams = params
@@ -17254,20 +17476,14 @@ class TutorialFragment : Fragment() {
         typewriterPausedByLifecycle = false
 
         textView.visibility = View.INVISIBLE
-        textView.text = text
+        setTypewriterProgress(textView, text, 0)
         typewriterSetupRunnable = Runnable {
             typewriterSetupRunnable = null
-            textView.text = ""
             typewriterRunnable = object : Runnable {
                 override fun run() {
                     if (typewriterCurrentIndex < (typewriterText?.length ?: 0)) {
                         textView.visibility = View.VISIBLE
-                        val currentText = if (typewriterCurrentIndex == 0) {
-                            typewriterText!![0].toString()
-                        } else {
-                            textView.text.toString() + typewriterText!![typewriterCurrentIndex]
-                        }
-                        textView.text = currentText
+                        setTypewriterProgress(textView, typewriterText!!, typewriterCurrentIndex + 1)
                         typewriterCurrentIndex++
                         textView.postDelayed(this, typewriterSpeed)
                     } else {
@@ -17289,12 +17505,11 @@ class TutorialFragment : Fragment() {
             return
         }
         tv.visibility = View.VISIBLE
-        tv.text = text.substring(0, typewriterCurrentIndex)
+        setTypewriterProgress(tv, text, typewriterCurrentIndex)
         typewriterRunnable = object : Runnable {
             override fun run() {
                 if (typewriterCurrentIndex < (typewriterText?.length ?: 0)) {
-                    val currentText = tv.text.toString() + typewriterText!![typewriterCurrentIndex]
-                    tv.text = currentText
+                    setTypewriterProgress(tv, typewriterText!!, typewriterCurrentIndex + 1)
                     typewriterCurrentIndex++
                     tv.postDelayed(this, typewriterSpeed)
                 } else {
@@ -17304,6 +17519,25 @@ class TutorialFragment : Fragment() {
         }
         tv.post(typewriterRunnable!!)
         typewriterPausedByLifecycle = false
+    }
+
+    /**
+     * Daktilo efektinde metin harf harf eklenmez; TAM metin baştan yazılır ve henüz gösterilmeyen
+     * kısım saydam boyanır. Böylece tutorialText'in autoSize'ı yazı boyutunu ilk karede tam metne
+     * göre bir kez belirler (harf eklendikçe yazı büyüyüp küçülmez) ve satır kırılımları da
+     * yazma sırasında kaymaz.
+     */
+    private fun setTypewriterProgress(textView: TextView, fullText: String, visibleCount: Int) {
+        val spannable = SpannableString(fullText)
+        if (visibleCount < fullText.length) {
+            spannable.setSpan(
+                ForegroundColorSpan(Color.TRANSPARENT),
+                visibleCount.coerceAtLeast(0),
+                fullText.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        textView.text = spannable
     }
     
     // Fragment destroy olduğunda MediaPlayer'ı temizle

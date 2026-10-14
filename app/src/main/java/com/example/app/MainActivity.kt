@@ -52,6 +52,10 @@ import java.io.FileOutputStream
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     fun checkAndShowInterstitialAdIfAllowed(logContext: String, onDone: () -> Unit = {}) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             Log.d("AdDiag", "Skipping Ad on $logContext: User is not logged in")
@@ -2521,6 +2525,8 @@ class MainActivity : AppCompatActivity() {
                             else -> AnalyticsLogger.USER_ROLE_TEACHER_PENDING
                         },
                     )
+                    // Geliştiricinin test hesabı; alan konsoldan elle yazılır (bkz. setTester).
+                    AnalyticsLogger.setTester(doc.getBoolean("isTester") == true)
                     // Onaylı öğretmenin dersleri ilk seferde açılır; bayrak aynı dokümanda,
                     // ayrı okuma yok.
                     if (role == AuthManager.ROLE_TEACHER && teacherApproved &&

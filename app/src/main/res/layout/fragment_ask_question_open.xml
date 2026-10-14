@@ -76,16 +76,19 @@
         android:paddingBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Metin kutunun üstüne bağlı, ikon metnin dikey ortasında. Eskiden tersiydi (metin 20dp'lik
+             ikona ortalı); büyük yazı / dar ekranda metin 4 satıra çıkınca hem aşağı hem yukarı
+             büyüyüp beyaz kutunun üst kenarından taşıyordu. Artık yalnızca aşağı uzuyor. -->
         <ImageView
             android:id="@+id/infoIcon"
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_marginStart="24dp"
-            android:layout_marginTop="32dp"
             android:src="@drawable/question_video_ic"
             app:tint="#4A4A4A"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@id/infoText"
+            app:layout_constraintBottom_toBottomOf="@id/infoText" />
 
         <TextView
             android:id="@+id/infoText"
@@ -93,14 +96,14 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="24dp"
+            android:layout_marginTop="32dp"
             android:text="Takıldığın yerin görselini veya videosunu öğretmenine kolayca gönder, öğretmenin sana video ile cevap versin!"
             android:textColor="#4A4A4A"
             android:textSize="14sp"
             android:gravity="center_horizontal"
-            app:layout_constraintBottom_toBottomOf="@id/infoIcon"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/infoIcon"
-            app:layout_constraintTop_toTopOf="@id/infoIcon" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Try for 1 week free Button -->
         <FrameLayout

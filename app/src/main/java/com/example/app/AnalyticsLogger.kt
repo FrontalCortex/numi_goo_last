@@ -57,6 +57,7 @@ object AnalyticsLogger {
     private const val EV_APP_EXIT_SCREEN = "app_exit_screen"
     private const val EV_TUTORIAL_STEP_REACHED = "tutorial_step_reached"
     private const val EV_TUTORIAL_STEP_ANSWER = "tutorial_step_answer"
+    private const val EV_TUTORIAL_STARTED = "tutorial_started"
     private const val EV_ENERGY_BLOCKED = "energy_blocked"
     private const val EV_ENERGY_SPENT = "energy_spent"
     private const val EV_ENERGY_REFILL = "energy_refill"
@@ -112,6 +113,15 @@ object AnalyticsLogger {
     private const val EV_DEVICE_CLOCK_SKEW = "device_clock_skew"
 
     // ── Parametre isimleri ──────────────────────────────────────────────────
+    //
+    // GA4'te ÖZEL BOYUT olarak kayıtlı parametreler METİN gönderilir, sayı değeri taşısalar bile
+    // (part_id, position, step, fail_streak, tutorial_no, question_no, choice, chest_stars, at_tap).
+    // Bu mülkte sayı gönderilen parametrelerin boyutu Explore'da hep "(not set)" çıktı (Ekim 2026):
+    // Ders (metin) doluydu, aynı olaydaki Part ve Deneme sayısı (sayı) boştu; Öğretici no da
+    // binlerce olaya rağmen boştu. Metne çevirmeden önceki olaylar boyutta boş kalmaya devam eder.
+    //
+    // Süre ve miktar gibi toplanacak değerler (elapsed_ms, duration_ms, reward_amount…) boyut değil
+    // metriktir; onlar sayı kalmalı.
     private const val P_PART_ID = "part_id"
     private const val P_POSITION = "position"
     private const val P_STEP = "step"
@@ -150,6 +160,7 @@ object AnalyticsLogger {
     private const val P_ATTEMPT_BUCKET = "attempt_bucket"
     private const val P_IS_CORRECT = "is_correct"
     private const val P_WRONG_ANSWER = "wrong_answer"
+    private const val P_FIRST_TIME = "first_time"
     private const val P_BLOCK_SOURCE = "block_source"
     private const val P_SPEND_SOURCE = "spend_source"
     private const val P_REFILL_SOURCE = "refill_source"
@@ -436,6 +447,12 @@ object AnalyticsLogger {
      */
     private const val USER_PROPERTY_ENERGY_WALL_HIT = "energy_wall_hit"
 
+    /** Bkz. [setBuildType]. */
+    private const val USER_PROPERTY_BUILD_TYPE = "build_type"
+
+    /** Bkz. [setTester]. */
+    private const val USER_PROPERTY_TESTER = "tester"
+
     /** Firebase kullanıcı özelliği: değer en fazla 36 karakter olabilir. */
     private const val USER_PROPERTY_MAX = 36
 
@@ -514,11 +531,11 @@ object AnalyticsLogger {
         elapsedMs: Long?,
     ) = safe { fa ->
         fa.logEvent(EV_LESSON_STEP_PASS) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
-            param(P_STEP, step.toLong())
-            param(P_FAIL_STREAK, failStreak)
+            param(P_STEP, step.toString())
+            param(P_FAIL_STREAK, failStreak.toString())
             if (elapsedMs != null) param(P_ELAPSED_MS, elapsedMs)
         }
     }
@@ -539,11 +556,11 @@ object AnalyticsLogger {
         answerSuccessRatePercent: Float?,
     ) = safe { fa ->
         fa.logEvent(EV_LESSON_STEP_FAIL) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
-            param(P_STEP, step.toLong())
-            param(P_FAIL_STREAK, failStreak)
+            param(P_STEP, step.toString())
+            param(P_FAIL_STREAK, failStreak.toString())
             if (answerSuccessRatePercent != null) {
                 param(P_ANSWER_SUCCESS_RATE, answerSuccessRatePercent.toDouble())
             }
@@ -556,10 +573,10 @@ object AnalyticsLogger {
      */
     fun logLessonQuestionEntry(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
         fa.logEvent(EV_LESSON_QUESTION_ENTRY) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
-            param(P_STEP, step.toLong())
+            param(P_STEP, step.toString())
         }
     }
 
@@ -570,10 +587,10 @@ object AnalyticsLogger {
      */
     fun logLessonAbandonWithoutAnswer(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
         fa.logEvent(EV_LESSON_ABANDON_NO_ANSWER) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
-            param(P_STEP, step.toLong())
+            param(P_STEP, step.toString())
         }
     }
 
@@ -583,18 +600,18 @@ object AnalyticsLogger {
      */
     fun logLessonItemFinish(partId: Int, position: Int, lessonId: String?, chestStars: Int?) = safe { fa ->
         fa.logEvent(EV_LESSON_ITEM_FINISH) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
-            if (chestStars != null) param(P_CHEST_STARS, chestStars.toLong())
+            if (chestStars != null) param(P_CHEST_STARS, chestStars.toString())
         }
     }
 
     /** Daha önce bitirilmiş bir item tekrar çözüldü. */
     fun logLessonItemReplay(partId: Int, position: Int, lessonId: String?) = safe { fa ->
         fa.logEvent(EV_LESSON_ITEM_REPLAY) {
-            param(P_PART_ID, partId.toLong())
-            param(P_POSITION, position.toLong())
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
         }
     }
@@ -639,6 +656,44 @@ object AnalyticsLogger {
         fa.setUserProperty("user_role", role)
     }
 
+    /**
+     * Derleme türü: `debug` veya `release`. Geliştiricinin kendi denemelerini ayıklamak için.
+     *
+     * Geliştirici uygulamayı her yeniden kurduğunda ya da emülatörde açtığında GA4 onu yeni bir
+     * kullanıcı sayıyor; [TutorialStepAnalytics] defteri de cihazda tutulduğu için sıfırlanıyor.
+     * Yayından önce öğretici sekmelerindeki "kullanıcıların" çoğu bu yüzden tek bir kişiydi ve
+     * tarih aralığıyla ayıklamak yayından sonra işe yaramıyor (test sürmeye devam ediyor).
+     * Explore'da `Build type does not exactly match debug` süzgeci bunu tek adımda çözüyor;
+     * özelliği hiç almamış eski kullanıcılar `(not set)` olarak süzgeçten geçer.
+     *
+     * GA4'te `build_type` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     *
+     * Sınır: Play'den kurulan release sürümüyle yapılan denemeler `release` görünür; onları
+     * ayırmaz.
+     */
+    fun setBuildType(isDebug: Boolean) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_BUILD_TYPE, if (isDebug) "debug" else "release")
+    }
+
+    /**
+     * Hesap test hesabı mı: `true` / `false`. Geliştiricinin Play'den kurulan sürümle yaptığı
+     * denemeleri ayıklamak için — orada derleme `release` olduğu için [setBuildType] ayırmıyor.
+     *
+     * Kaynak, kullanıcı dokümanındaki `isTester` alanı. Firebase konsolundan **elle** yazılır;
+     * uygulama bu alanı hiç yazmaz, böylece Closed testing'e davet edilen kişiler kendiliğinden
+     * işaretlenmez ve verileri analizde kalır.
+     *
+     * Her okumada `false` da açıkça yazılıyor: kullanıcı özelliği cihazda kalıcı, test hesabından
+     * çıkıp başka bir hesapla girildiğinde eski `true` değeri o hesaba yapışmasın.
+     *
+     * GA4'te `tester` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı. Explore'da
+     * `Tester does not exactly match true` ile süzülür; giriş yapmamış ve eski kullanıcılar
+     * `(not set)` olarak süzgeçten geçer.
+     */
+    fun setTester(isTester: Boolean) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_TESTER, if (isTester) "true" else "false")
+    }
+
     // ── Ders sonu anketi ────────────────────────────────────────────────────
     // Eskiden `questionPanel` / `questionPanelTutorial` altındaki choice{N} sayaçlarıydı.
     // Kullanıcının yazdığı SERBEST METİN buraya gelmez, Firestore'da kalır.
@@ -663,10 +718,10 @@ object AnalyticsLogger {
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_CHOICE) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
-            param(P_PART_ID, partId.toLong())
+            param(P_PART_ID, partId.toString())
             param(P_LESSON_ID, sanitize(lessonId))
-            param(P_QUESTION_NO, questionNo.toLong())
-            param(P_CHOICE, choice.toLong())
+            param(P_QUESTION_NO, questionNo.toString())
+            param(P_CHOICE, choice.toString())
             if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
         }
     }
@@ -685,9 +740,9 @@ object AnalyticsLogger {
     ) = safe { fa ->
         fa.logEvent(EV_SURVEY_TEXT) {
             param(P_SURVEY_TYPE, sanitize(surveyType))
-            param(P_PART_ID, partId.toLong())
+            param(P_PART_ID, partId.toString())
             param(P_LESSON_ID, sanitize(lessonId))
-            param(P_QUESTION_NO, questionNo.toLong())
+            param(P_QUESTION_NO, questionNo.toString())
             if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
         }
     }
@@ -750,7 +805,7 @@ object AnalyticsLogger {
         chestSource: String,
     ) = safe { fa ->
         fa.logEvent(EV_CHEST_ABANDONED) {
-            param(P_AT_TAP, atTap.toLong())
+            param(P_AT_TAP, atTap.toString())
             param(P_DURATION_MS, durationMs)
             if (serverWaitMs != null) param(P_SERVER_WAIT_MS, serverWaitMs)
             param(P_CHEST_SOURCE, sanitize(chestSource))
@@ -782,6 +837,33 @@ object AnalyticsLogger {
     // ── Öğretici soru adımları ──────────────────────────────────────────────
 
     /**
+     * Öğretici açıldı — ilk adım gösterilmeden önce.
+     *
+     * Öğretici hunisinin girişi budur. [logTutorialStepReached] yalnızca soru adımlarında
+     * gönderiliyor ve örneğin 16'nın ilk soru adımı otuz küsur anlatım adımından sonra geliyor;
+     * aradaki bırakmalar başka hiçbir olayda görünmüyordu.
+     *
+     * Öğretici içeriği değiştirilince önceki/sonraki karşılaştırması GA4'ün kendiliğinden
+     * eklediği `app_version` ile yapılır: öğreticiler kodda tanımlı, her değişiklik yeni sürümle
+     * çıkıyor. (Remote Config'ten gelen 1-5 bunun dışında; onlar sürüm değişmeden değişebilir.)
+     *
+     * @param firstTime Bu öğretici bu cihazda ilk kez mi açılıyor
+     *   ([TutorialStepAnalytics.markStartedOnce]). Tekrar oynamalar ayrılmazsa "yarıda bıraktı"
+     *   oranı dersi baştan geçen çocuklarla bozulur.
+     */
+    fun logTutorialStarted(
+        tutorialNumber: Int,
+        lessonId: String?,
+        firstTime: Boolean,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STARTED) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_FIRST_TIME, if (firstTime) "true" else "false")
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
      * Kullanıcı bir öğretici soru adımına **ilk kez** ulaştı.
      *
      * [logTutorialStepAnswer]'ın paydası budur: adıma ulaşıp hiç doğru cevaplayamadan bırakan
@@ -800,7 +882,7 @@ object AnalyticsLogger {
         lessonId: String?,
     ) = safe { fa ->
         fa.logEvent(EV_TUTORIAL_STEP_REACHED) {
-            param(P_TUTORIAL_NO, tutorialNumber.toLong())
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
             param(P_STEP_KEY, sanitize(stepKey))
             param(P_STEP_TITLE, sanitize(stepTitle))
             param(P_STEP_KIND, sanitize(stepKind))
@@ -847,7 +929,7 @@ object AnalyticsLogger {
         wrongAnswer: String?,
     ) = safe { fa ->
         fa.logEvent(EV_TUTORIAL_STEP_ANSWER) {
-            param(P_TUTORIAL_NO, tutorialNumber.toLong())
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
             param(P_STEP_KEY, sanitize(stepKey))
             param(P_STEP_TITLE, sanitize(stepTitle))
             param(P_STEP_KIND, sanitize(stepKind))
@@ -891,7 +973,7 @@ object AnalyticsLogger {
             param(P_BLOCK_SOURCE, sanitize(blockSource))
             param(P_WAIT_SECONDS, waitSeconds.coerceAtLeast(0L))
             param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
-            if (partId != null) param(P_PART_ID, partId.toLong())
+            if (partId != null) param(P_PART_ID, partId.toString())
             if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
         }
         fa.setUserProperty(USER_PROPERTY_ENERGY_WALL_HIT, "true")
@@ -921,7 +1003,7 @@ object AnalyticsLogger {
             param(P_SPEND_SOURCE, sanitize(spendSource))
             param(P_ENERGY_LEFT, energyLeft.toLong())
             param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
-            if (partId != null) param(P_PART_ID, partId.toLong())
+            if (partId != null) param(P_PART_ID, partId.toString())
             if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
         }
     }
@@ -1250,7 +1332,7 @@ object AnalyticsLogger {
      */
     fun logDailyQuestionStart(questionNo: Int) = safe { fa ->
         fa.logEvent(EV_DAILY_QUESTION_START) {
-            param(P_QUESTION_NO, questionNo.toLong())
+            param(P_QUESTION_NO, questionNo.toString())
         }
     }
 
@@ -1262,7 +1344,7 @@ object AnalyticsLogger {
      */
     fun logDailyQuestionResult(questionNo: Int, isCorrect: Boolean) = safe { fa ->
         fa.logEvent(EV_DAILY_QUESTION_RESULT) {
-            param(P_QUESTION_NO, questionNo.toLong())
+            param(P_QUESTION_NO, questionNo.toString())
             param(P_IS_CORRECT, if (isCorrect) "true" else "false")
         }
     }

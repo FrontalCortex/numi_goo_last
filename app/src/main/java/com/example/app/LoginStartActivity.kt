@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
@@ -9,6 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.app.databinding.ActivityLoginStartBinding
 
 class LoginStartActivity : AppCompatActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
 
     private lateinit var binding: ActivityLoginStartBinding
 

@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -11,6 +12,10 @@ import com.example.app.databinding.ActivityTeacherLoginBinding
 class TeacherLoginActivity : AppCompatActivity(),
     OnTeacherOtpVerifiedForResetListener,
     OnOtpVerifyProgressListener {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
 
     private lateinit var binding: ActivityTeacherLoginBinding
     private lateinit var authManager: AuthManager

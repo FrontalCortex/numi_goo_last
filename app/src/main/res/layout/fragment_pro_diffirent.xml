@@ -60,21 +60,37 @@
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
+        app:layout_constraintBottom_toTopOf="@id/bottomWhiteScroll"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintWidth_percent="0.75" />
 
-    <!-- Bottom White Section -->
+    <!-- Bottom White Section
+         Beyaz bölüm içeriği kadar yüksek ve ekranın altına yaslı; ama en fazla başlığın altına kadar
+         uzayabilir (constrainedHeight). Eskiden üstü serbestti: küçük ekran / büyük yazı / ekran
+         yakınlaştırmasında satırlar 2-3 satıra kırılınca kutu başlığın ve ekranın üstüne taşıyordu.
+         Sığmadığında artık içerik kayıyor; sığdığında görünüm aynı. Beyaz zemin kayan alanda,
+         id (bottomWhiteContainer) içteki kutuda kaldı: SystemBarColors alt çubuk dolgusunu ona
+         ekliyor. -->
+    <ScrollView
+        android:id="@+id/bottomWhiteScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_bottom_sheet_white"
+        android:overScrollMode="ifContentScrolls"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_bias="1"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottomWhiteContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_bottom_sheet_white"
         android:paddingTop="32dp"
-        android:paddingBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:paddingBottom="24dp">
 
         <!-- SUPER Column Background -->
         <View
@@ -359,5 +375,7 @@
         </FrameLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
