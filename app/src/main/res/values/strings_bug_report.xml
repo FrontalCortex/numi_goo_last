@@ -3,7 +3,7 @@
 <resources>
     <!-- Görevler kartı -->
     <string name="bug_report_card_title">Hata Avcısı</string>
-    <string name="bug_report_card_subtitle_default">Uygulamada bir hata görürsen ekran görüntüsüyle bildir. Onaylanırsa ödül senin!</string>
+    <string name="bug_report_card_subtitle_default">Uygulamada bir hata görürsen bize bildir. Onaylanırsa ödül senin!</string>
     <string name="bug_report_card_subtitle_pending">Bildirimin inceleniyor. Sonuçlanınca haber vereceğiz.</string>
     <string name="bug_report_card_subtitle_pending_many">%1$d bildirimin inceleniyor. Sonuçlanınca haber vereceğiz.</string>
     <string name="bug_report_card_subtitle_claimable">Bildirimin onaylandı! Ödülünü topla.</string>

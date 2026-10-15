@@ -830,7 +830,10 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 if (_binding != null) submitBulletinList()
             }
         }
-        BugReports.checkAdmin { admin ->
+        // Token zorla yenileniyor: admin yetkisi Console'dan verildiğinde claim ancak yeni
+        // token'a giriyor; önbellektekine bakılsa kart çıkış/giriş yapılana (ya da token
+        // kendiliğinden yenilenene, en geç bir saat) kadar görünmüyordu.
+        BugReports.checkAdmin(forceRefresh = true) { admin ->
             if (admin != isBugReportAdmin) {
                 isBugReportAdmin = admin
                 if (_binding != null) submitBulletinList()
