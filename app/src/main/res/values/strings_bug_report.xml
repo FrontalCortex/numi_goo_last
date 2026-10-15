@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hata bildirimi: Görevler kartı, bildirim ekranı ve admin paneli (bkz. BugReports.kt). -->
+<resources>
+    <!-- Görevler kartı -->
+    <string name="bug_report_card_title">Hata Avcısı</string>
+    <string name="bug_report_card_subtitle_default">Uygulamada bir hata görürsen ekran görüntüsüyle bildir. Onaylanırsa ödül senin!</string>
+    <string name="bug_report_card_subtitle_pending">Bildirimin inceleniyor. Sonuçlanınca haber vereceğiz.</string>
+    <string name="bug_report_card_subtitle_pending_many">%1$d bildirimin inceleniyor. Sonuçlanınca haber vereceğiz.</string>
+    <string name="bug_report_card_subtitle_claimable">Bildirimin onaylandı! Ödülünü topla.</string>
+    <string name="bug_report_card_claim">Ödülünü topla</string>
+
+    <!-- Ödül metinleri -->
+    <string name="bug_report_reward_credits">%1$d öğretmene danış</string>
+    <string name="bug_report_reward_keys">%1$d anahtar</string>
+
+    <!-- Bildirim ekranı -->
+    <string name="bug_report_title">Hata Bildir</string>
+    <string name="bug_report_intro">Uygulamada bozuk görünen, yanlış çalışan ya da takılan bir şey mi gördün? Ekran görüntüsünü al, buraya ekle ve ne olduğunu anlat. İncelediğimizde gerçekten bir hata varsa şu ödülü kazanırsın:</string>
+    <string name="bug_report_pick_image">Ekran görüntüsü seç</string>
+    <string name="bug_report_change_image">Başka görsel seç</string>
+    <string name="bug_report_annotate">Hatanın yerini işaretle</string>
+    <string name="bug_report_text_label">Ne oldu? Neredeydin, neye bastın?</string>
+    <string name="bug_report_text_hint">Örn. Dersin sonunda Devam düğmesine basınca ekran donuyor.</string>
+    <string name="bug_report_send">Gönder</string>
+    <string name="bug_report_close">Kapat</string>
+    <string name="bug_report_need_image">Lütfen bir ekran görüntüsü ekle.</string>
+    <string name="bug_report_need_text">Lütfen sorunu biraz daha ayrıntılı anlat.</string>
+    <string name="bug_report_image_failed">Görsel açılamadı. Başka bir görsel dene.</string>
+    <string name="bug_report_upload_failed">Ekran görüntüsü yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.</string>
+    <string name="bug_report_generic_error">Bir sorun oluştu. Biraz sonra tekrar dene.</string>
+    <string name="bug_report_sent">Teşekkürler! Bildirimini inceleyip sana haber vereceğiz.</string>
+    <string name="bug_report_rules">İnceleme birkaç gün sürebilir. Aynı hatayı ilk bildiren tam ödülü kazanır. Çökme dışındaki sorunlar için de bildirimde bulunabilirsin.</string>
+    <string name="bug_report_mine_title">Bildirimlerim</string>
+    <string name="bug_report_status_pending">İnceleniyor</string>
+    <string name="bug_report_status_approved">Onaylandı</string>
+    <string name="bug_report_status_claimed">Ödül alındı</string>
+    <string name="bug_report_status_rejected">Reddedildi</string>
+    <string name="bug_report_reject_reason_line">Gerekçe: %1$s</string>
+    <string name="bug_report_reject_not_a_bug">Bu bir hata değil, uygulamanın normal davranışı.</string>
+    <string name="bug_report_reject_duplicate">Bu hata daha önce bildirildi.</string>
+    <string name="bug_report_reject_unclear">Görselden ve açıklamadan hatayı anlayamadık.</string>
+    <string name="bug_report_reject_other">Bildirim uygun bulunmadı.</string>
+
+    <!-- Admin paneli -->
+    <string name="bug_report_admin_card_title">Hata Bildirimleri (Admin)</string>
+    <string name="bug_report_admin_card_subtitle">Bekleyen bildirimleri incele, onayla ya da reddet.</string>
+    <string name="bug_report_admin_title">Hata Bildirimleri</string>
+    <string name="bug_report_admin_empty">Bekleyen bildirim yok.</string>
+    <string name="bug_report_admin_pending_count">%1$d bekleyen bildirim</string>
+    <string name="bug_report_admin_no_access">Bildirimler okunamadı. Admin yetkisi yeni verildiyse çıkış yapıp yeniden gir.</string>
+    <string name="bug_report_admin_approve_big">Onayla: Büyük ödül</string>
+    <string name="bug_report_admin_approve_small">Onayla: Küçük ödül</string>
+    <string name="bug_report_admin_reject">Reddet</string>
+    <string name="bug_report_admin_note_hint">Kullanıcıya not (isteğe bağlı)</string>
+    <string name="bug_report_admin_reject_title">Ret gerekçesi</string>
+    <string name="bug_report_admin_confirm_approve">%1$s verilsin mi?</string>
+    <string name="bug_report_admin_confirm">Evet</string>
+    <string name="bug_report_admin_cancel">Vazgeç</string>
+    <string name="bug_report_admin_done">Karar kaydedildi.</string>
+    <string name="bug_report_admin_user_line">Kullanıcı: %1$s</string>
+    <string name="bug_report_image_desc">Hata ekran görüntüsü</string>
+</resources>

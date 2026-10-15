@@ -56,4 +56,11 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <!-- Admin hata bildirimi inceleme ekranı: tam ekran diyalog, MaterialButton için uygulama teması üstünde. -->
+    <style name="Theme.App.BugReportReview" parent="Theme.NumiGoo">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowBackground">@color/background_color</item>
+        <item name="android:windowSoftInputMode">adjustResize</item>
+    </style>
 </resources>

@@ -23,6 +23,35 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Hata bildirimi ("Hata Avcısı") + admin paneli (15.10.2026 — derlendi, cihaza KURULDU; sunucu DEPLOY EDİLMEDİ, commit edilmedi)
+
+Kapalı test için: kullanıcı uygulamada gördüğü hatayı ekran görüntüsüyle bildiriyor, admin
+onaylarsa ödülü Görevler'deki karttan topluyor. Kullanıcı kararları: ödül kartta "Ödülünü
+topla" ile toplanır (onayda otomatik verilmez); admin onaylarken kademe seçer (büyük: 3
+danışma + 10.000 altın + 200 anahtar, küçük: 1.000 altın + 20 anahtar); aynı hatayı ilk
+bildiren tam ödülü alır (sonrakini admin reddeder ya da küçük ödül verir); panel uygulama içinde.
+
+- **Admin yetkisi = Auth custom claim `admin: true`**, Firestore alanı DEĞİL (istemci yazamaz,
+  Storage kuralları da okuyabiliyor). Verme: `cd functions; node scripts/set-admin-claim.js <uid|e-posta>`
+  (geri alma `$env:REVOKE="1"`). Etkin olması için uygulamada çıkış/giriş.
+- `syncTeacherClaim` ve `backfill-teacher-claims.js` artık mevcut claim'leri KORUYOR; eskiden
+  `setCustomUserClaims(uid, { teacherApproved })` tüm claim'leri eziyordu, admin'i silerdi.
+- Sunucu: `functions/bugReports.js` (saf karar, `npm run test:bug-reports` 25 test) +
+  index.js'te `submitBugReport` / `reviewBugReport` (yalnız admin claim) / `claimBugReportReward`.
+  Sınırlar: aynı anda 3 bekleyen, günde 3 gönderim, metin 10–1000. Ödül toplamada tek
+  transaction (`rewardClaimed`), iki kez verilemez. Karar bildirimi `account` türünde.
+  Hesap silinince bildirimler + görseller temizleniyor (`cleanupUserOnDelete`).
+- Kurallar: `bugReports` yazma tamamen kapalı, okuma sahibi + admin; `bugReportGuards` catch-all
+  ile kapalı (kural testleri 38/38). Storage `bug_reports/{uid}_{zaman}.jpg`: oluşturma/silme
+  sahibi, okuma sahibi + admin, 10 MB, yalnız görsel, üzerine yazma yok.
+- İstemci: `BugReports.kt` (repo), `BugReportFragment` (Photo Picker + mevcut
+  ImageAnnotateDialogFragment ile işaretleme + "Bildirimlerim"), Görevler'de
+  `BulletinRow.BugReport` kartı, admin claim'li hesapta "Hata Bildirimleri (Admin)" kartı →
+  `BugReportAdminFragment` → `BugReportReviewDialogFragment` (`ZoomImageView`: iki parmak/çift dokunuş).
+  Metinler `res/values/strings_bug_report.xml`.
+- **Sıradaki:** push = functions + kurallar deploy (önce sor) → kendi hesabına claim ver →
+  uçtan uca dene: gönder → panelde onayla → kartta topla → bakiye/kredi arttı mı.
+
 ## JSON → Kotlin + dil yapısı Aşama 2: arayüz metinleri (15.10.2026 — derlendi, doğrulandı, cihaza KURULDU, kullanıcı bakacak; commit edilmedi)
 
 - 1–5 ve 100–103. öğreticiler JSON'dan Kotlin `TutorialStep`'e çevrildi (348 adım, alan alan

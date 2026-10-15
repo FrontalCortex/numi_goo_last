@@ -1098,7 +1098,11 @@ exports.syncTeacherClaim = functions.firestore
     const after = change.after.data().teacherApproved === true;
     if (before === after) return null;
 
-    await admin.auth().setCustomUserClaims(uid, { teacherApproved: after });
+    // setCustomUserClaims claim'lerin TAMAMINI değiştiriyor; mevcut olanlar (ör. `admin`,
+    // bkz. scripts/set-admin-claim.js) korunmazsa öğretmen onayı değişince silinirdi.
+    const record = await admin.auth().getUser(uid);
+    const claims = Object.assign({}, record.customClaims || {}, { teacherApproved: after });
+    await admin.auth().setCustomUserClaims(uid, claims);
     return null;
   });
 
@@ -1267,6 +1271,14 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
     console.log('Silinen kullanıcının danışma soruları temizlendi', { uid, ...counts });
   } catch (error) {
     console.error(`Error removing questions for ${uid}:`, error);
+  }
+
+  // Hata bildirimleri de üst seviyede (`bugReports`), ekran görüntüleri Storage'da.
+  try {
+    const counts = await deleteUserBugReports(uid);
+    console.log('Silinen kullanıcının hata bildirimleri temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing bug reports for ${uid}:`, error);
   }
 });
 
@@ -6336,3 +6348,189 @@ const ENERGY_KEY_COST = 1;
 // Bir hesabın bir günde (UTC) anahtarla alabileceği can sayısı. Aşılınca
 // 'resource-exhausted' dönüyor; ShopFragment bunu "günlük sınır" uyarısı olarak gösteriyor.
 const ENERGY_KEY_BUY_DAILY_LIMIT = 5;
+
+// ─── Hata bildirimi ─────────────────────────────────────────────────────────
+//
+// Kullanıcı uygulamada gördüğü bir hatayı ekran görüntüsüyle bildiriyor; admin onaylarsa
+// ödülü Görevler'deki karttan topluyor. Karar mantığı bugReports.js'te (saf, test edilebilir);
+// burada yalnızca Firestore/Storage işi. Akışın tamamı için oradaki başlık yorumuna bakın.
+
+const {
+  normalizeSubmission: normalizeBugReportSubmission,
+  submitDecision: bugReportSubmitDecision,
+  reviewDecision: bugReportReviewDecision,
+  claimDecision: bugReportClaimDecision,
+  decisionNoticeText: bugReportNoticeText,
+} = require('./bugReports');
+
+function requireAuth(context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  return context.auth.uid;
+}
+
+/** Saf modülün `{ ok: false, code, message }` sonucunu HttpsError'a çevirir. */
+function throwIfFailed(result) {
+  if (!result.ok) throw new functions.https.HttpsError(result.code, result.message);
+  return result;
+}
+
+/**
+ * Yeni hata bildirimi. Görsel önceden yüklenmiş olmalı (`bug_reports/{uid}_{zaman}.jpg`).
+ *
+ * Doküman istemciden değil buradan yazılıyor: gönderim sınırları (aynı anda bekleyen ve
+ * günlük) kurallarla sayılamıyor, ve `status`/ödül alanlarını istemcinin hiç yazamaması
+ * en basit güvence.
+ */
+exports.submitBugReport = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const input = throwIfFailed(normalizeBugReportSubmission(data, uid));
+
+  // Yol uid'e bağlı olduğu için başkasının dosyası gösterilemez; yine de gerçekten yüklenmiş
+  // mi bakıyoruz — yoksa panelde görselsiz, incelenemeyen bir bildirim olurdu.
+  const [exists] = await admin.storage().bucket().file(input.imagePath).exists();
+  if (!exists) {
+    throw new functions.https.HttpsError('failed-precondition', 'Ekran görüntüsü yüklenemedi.');
+  }
+
+  const guardRef = db.collection('bugReportGuards').doc(uid);
+  const reportRef = db.collection('bugReports').doc();
+  const pendingQuery = db
+    .collection('bugReports')
+    .where('uid', '==', uid)
+    .where('status', '==', 'pending');
+
+  await db.runTransaction(async (transaction) => {
+    const [guardSnap, pendingSnap] = await Promise.all([
+      transaction.get(guardRef),
+      transaction.get(pendingQuery),
+    ]);
+    const decision = throwIfFailed(
+      bugReportSubmitDecision(guardSnap.exists ? guardSnap.data() : {}, pendingSnap.size, utcDayKey(Date.now()))
+    );
+    transaction.set(guardRef, decision.nextGuard);
+    transaction.set(reportRef, {
+      uid,
+      text: input.text,
+      imagePath: input.imagePath,
+      device: input.device,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return { success: true, reportId: reportRef.id };
+});
+
+/**
+ * Admin kararı: onay (ödül kademesiyle) ya da ret (gerekçeyle).
+ *
+ * Yetki ID token'daki `admin` custom claim'inden geliyor (bkz. scripts/set-admin-claim.js);
+ * Firestore'daki bir alana bakılmıyor, çünkü istemcinin değiştirebileceği bir yere bağlı
+ * olmamalı. Ödül burada YAZILMIYOR — kullanıcı karttan topluyor (claimBugReportReward).
+ */
+exports.reviewBugReport = functions.https.onCall(async (data, context) => {
+  const adminUid = requireAuth(context);
+  if (context.auth.token.admin !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu işlem için yetkin yok.');
+  }
+  const reportId = typeof (data && data.reportId) === 'string' ? data.reportId.trim() : '';
+  if (!reportId || reportId.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz bildirim.');
+  }
+  const ref = db.collection('bugReports').doc(reportId);
+
+  const outcome = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const report = snap.exists ? snap.data() : null;
+    const decision = throwIfFailed(bugReportReviewDecision(report, data));
+    transaction.update(
+      ref,
+      Object.assign({}, decision.patch, {
+        reviewedAt: admin.firestore.FieldValue.serverTimestamp(),
+        reviewedBy: adminUid,
+      })
+    );
+    return { uid: report.uid, status: decision.patch.status };
+  });
+
+  // Bildirim kararın parçası değil: gidemese de karar geçerli, kullanıcı kartta görüyor.
+  try {
+    const text = bugReportNoticeText(outcome.status);
+    await sendUserNotification(outcome.uid, {
+      type: 'account',
+      topic: 'bug_report',
+      title: text.title,
+      body: text.body,
+      data: { bugReportId: reportId },
+    });
+  } catch (e) {
+    console.error('reviewBugReport: bildirim gönderilemedi', { reportId, error: e.message });
+  }
+
+  return { success: true, status: outcome.status };
+});
+
+/**
+ * Onaylanan bildirimin ödülünü bakiyeye yazar. Bildirimdeki `rewardClaimed` işaretiyle aynı
+ * transaction'da: iki kez basılsa da ödül bir kez verilir.
+ */
+exports.claimBugReportReward = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const reportId = typeof (data && data.reportId) === 'string' ? data.reportId.trim() : '';
+  if (!reportId || reportId.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz bildirim.');
+  }
+  const reportRef = db.collection('bugReports').doc(reportId);
+  const userRef = db.collection('users').doc(uid);
+
+  return db.runTransaction(async (transaction) => {
+    const [reportSnap, userSnap] = await Promise.all([
+      transaction.get(reportRef),
+      transaction.get(userRef),
+    ]);
+    const { reward } = throwIfFailed(
+      bugReportClaimDecision(reportSnap.exists ? reportSnap.data() : null, uid)
+    );
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const user = userSnap.data();
+    const keys = (Number.parseInt(user.keys, 10) || 0) + reward.keys;
+    const currency = (Number.parseInt(user.currency, 10) || 0) + reward.gold;
+    const questionCredits = (Number.parseInt(user.questionCredits, 10) || 0) + reward.credits;
+
+    transaction.update(userRef, { keys, currency, questionCredits });
+    transaction.update(reportRef, {
+      rewardClaimed: true,
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return {
+      success: true,
+      rewardGold: reward.gold,
+      rewardKeys: reward.keys,
+      rewardCredits: reward.credits,
+      keys,
+      currency,
+      questionCredits,
+    };
+  });
+});
+
+/** Silinen kullanıcının hata bildirimleri ve ekran görüntüleri (cleanupUserOnDelete). */
+async function deleteUserBugReports(uid) {
+  const snap = await db.collection('bugReports').where('uid', '==', uid).get();
+  const bucket = admin.storage().bucket();
+  await Promise.all(
+    snap.docs.map(async (doc) => {
+      const imagePath = doc.get('imagePath');
+      if (typeof imagePath === 'string' && imagePath) {
+        await bucket.file(imagePath).delete({ ignoreNotFound: true });
+      }
+      await doc.ref.delete();
+    })
+  );
+  await db.collection('bugReportGuards').doc(uid).delete();
+  return { reports: snap.size };
+}

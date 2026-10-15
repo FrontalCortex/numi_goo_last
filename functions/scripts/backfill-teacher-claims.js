@@ -45,7 +45,12 @@ async function main() {
       console.log(`  ${uid} -> teacherApproved claim verilecek`);
       continue;
     }
-    await admin.auth().setCustomUserClaims(uid, { teacherApproved: true });
+    // Mevcut claim'ler (ör. admin) korunuyor; setCustomUserClaims hepsini değiştirir.
+    const record = await admin.auth().getUser(uid);
+    await admin.auth().setCustomUserClaims(
+      uid,
+      Object.assign({}, record.customClaims || {}, { teacherApproved: true })
+    );
     updated++;
     console.log(`  ${uid} -> claim verildi`);
   }

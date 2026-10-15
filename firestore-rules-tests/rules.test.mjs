@@ -18,7 +18,10 @@ import { readFileSync } from 'node:fs';
 import {
   initializeTestEnvironment, assertFails, assertSucceeds,
 } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, updateDoc, increment, deleteField } from 'firebase/firestore';
+import {
+  doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, increment, deleteField,
+  collection, query, where,
+} from 'firebase/firestore';
 
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-numigoo',
@@ -135,6 +138,35 @@ await check('istemci tahta uyduramiyor', assertFails(
 await check('istemci tahta kaydi yazamiyor', assertFails(
   setDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7/entries/ali'),
     { recordScore: 2000 })));
+
+console.log('\n-- HATA BILDIRIMLERI: yazma sunucuda, okuma sahibi + admin --');
+const yonetici = testEnv.authenticatedContext('yonetici', { admin: true }).firestore();
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'bugReports/r1'), {
+    uid: 'ali', text: 'buton kayboluyor', imagePath: 'bug_reports/ali_1760000000000.jpg',
+    status: 'pending',
+  });
+});
+await check('sahibi kendi bildirimini okuyor', assertSucceeds(
+  getDoc(doc(ali, 'bugReports/r1'))));
+await check('sahibi kendi bildirimlerini sorguluyor', assertSucceeds(
+  getDocs(query(collection(ali, 'bugReports'), where('uid', '==', 'ali')))));
+await check('baskasi bildirimi okuyamiyor', assertFails(
+  getDoc(doc(veli, 'bugReports/r1'))));
+await check('baskasi tum bildirimleri sorgulayamiyor', assertFails(
+  getDocs(query(collection(veli, 'bugReports'), where('status', '==', 'pending')))));
+await check('admin bekleyenleri sorguluyor', assertSucceeds(
+  getDocs(query(collection(yonetici, 'bugReports'), where('status', '==', 'pending')))));
+await check('istemci bildirim olusturamiyor', assertFails(
+  setDoc(doc(ali, 'bugReports/r2'), { uid: 'ali', text: 'x', status: 'pending' })));
+await check('sahibi kendini onaylayamiyor', assertFails(
+  updateDoc(doc(ali, 'bugReports/r1'), { status: 'approved' })));
+await check('admin de istemciden yazamiyor (karar CF ile)', assertFails(
+  updateDoc(doc(yonetici, 'bugReports/r1'), { status: 'approved' })));
+await check('sahibi bildirimi silemiyor', assertFails(
+  deleteDoc(doc(ali, 'bugReports/r1'))));
+await check('gonderim sayaci istemciye kapali', assertFails(
+  setDoc(doc(ali, 'bugReportGuards/ali'), { dayKey: '2026-10-15', count: 0 })));
 
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(

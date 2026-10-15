@@ -30,6 +30,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.databinding.FragmentTasksBinding
+import com.example.app.databinding.ItemBulletinBugReportCardBinding
+import com.google.firebase.firestore.ListenerRegistration
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -111,6 +113,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         private const val VIEW_TYPE_STANDARD = 0
         private const val VIEW_TYPE_DAILY_QUESTION = 1
         private const val VIEW_TYPE_MISSIONS = 2
+        private const val VIEW_TYPE_BUG_REPORT = 3
 
         /**
          * Hangi alt bar sekmesi. İki sekme de bu fragment: Görevler (günlük soru, görev
@@ -219,6 +222,17 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         data class Missions(val revision: Int) : BulletinRow() {
             override val id: String = "missions"
         }
+
+        /**
+         * "Hata Avcısı" kartı. [claimableReportId] onaylanmış ama ödülü toplanmamış bildirim
+         * (varsa düğme görünür); [pendingCount] incelemede bekleyenler. Bkz. [BugReports].
+         */
+        data class BugReport(
+            val pendingCount: Int,
+            val claimableReportId: String?,
+        ) : BulletinRow() {
+            override val id: String = "bug_report"
+        }
     }
 
     private class BulletinAdapter(
@@ -229,6 +243,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         private val onDailyQuestionPeriodRolledOver: () -> Unit,
         private val onBrokenHeartHealFinished: () -> Unit,
         private val onBindMissions: (View) -> Unit,
+        private val onBugReportClaim: (String) -> Unit,
     ) : ListAdapter<BulletinRow, RecyclerView.ViewHolder>(
         object : DiffUtil.ItemCallback<BulletinRow>() {
             override fun areItemsTheSame(oldItem: BulletinRow, newItem: BulletinRow): Boolean =
@@ -242,6 +257,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             is BulletinRow.DailyQuestion -> VIEW_TYPE_DAILY_QUESTION
             is BulletinRow.Standard -> VIEW_TYPE_STANDARD
             is BulletinRow.Missions -> VIEW_TYPE_MISSIONS
+            is BulletinRow.BugReport -> VIEW_TYPE_BUG_REPORT
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -250,6 +266,11 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 VIEW_TYPE_MISSIONS -> object : RecyclerView.ViewHolder(
                     inflater.inflate(R.layout.item_missions_sections, parent, false),
                 ) {}
+                VIEW_TYPE_BUG_REPORT -> BugReportVH(
+                    ItemBulletinBugReportCardBinding.inflate(inflater, parent, false),
+                    onClick = { pos -> onClick(getItem(pos)) },
+                    onClaim = onBugReportClaim,
+                )
                 VIEW_TYPE_DAILY_QUESTION -> {
                     val view = inflater.inflate(R.layout.item_bulletin_daily_question_card, parent, false)
                     DailyQuestionVH(
@@ -273,12 +294,45 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 is BulletinRow.Standard -> (holder as StandardVH).bind(item)
                 is BulletinRow.DailyQuestion -> (holder as DailyQuestionVH).bind(item.state)
                 is BulletinRow.Missions -> onBindMissions(holder.itemView)
+                is BulletinRow.BugReport -> (holder as BugReportVH).bind(item)
             }
         }
 
         override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
             if (holder is DailyQuestionVH) holder.cancelAnim()
             super.onViewRecycled(holder)
+        }
+
+        private class BugReportVH(
+            private val b: ItemBulletinBugReportCardBinding,
+            onClick: (Int) -> Unit,
+            private val onClaim: (String) -> Unit,
+        ) : RecyclerView.ViewHolder(b.root) {
+            init {
+                BugReportRewardViews.bind(b.bugCardRewards)
+                b.root.setOnClickListener {
+                    val pos = bindingAdapterPosition
+                    if (pos != RecyclerView.NO_POSITION) onClick(pos)
+                }
+            }
+
+            fun bind(item: BulletinRow.BugReport) {
+                val claimable = item.claimableReportId
+                b.bugCardSubtitle.text = when {
+                    claimable != null -> appString(R.string.bug_report_card_subtitle_claimable)
+                    item.pendingCount == 1 -> appString(R.string.bug_report_card_subtitle_pending)
+                    item.pendingCount > 1 -> appString(R.string.bug_report_card_subtitle_pending_many, item.pendingCount)
+                    else -> appString(R.string.bug_report_card_subtitle_default)
+                }
+                b.bugCardClaimButton.visibility = if (claimable != null) View.VISIBLE else View.GONE
+                b.bugCardClaimButton.isEnabled = true
+                b.bugCardClaimButton.setOnClickListener {
+                    if (claimable == null) return@setOnClickListener
+                    // Çift dokunuşta ikinci istek gitmesin; sunucu zaten bir kez verir.
+                    it.isEnabled = false
+                    onClaim(claimable)
+                }
+            }
         }
 
         private class StandardVH(
@@ -711,6 +765,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                         when (row.id) {
                             // Kart yalnızca onaylı öğretmende listede (bkz. submitBulletinList).
                             "mascot_animation" -> openAbacusContainerFragment(MascotPlaygroundFragment())
+                            // Kart yalnızca admin claim'li hesapta listede; yetkiyi sunucu ayrıca denetler.
+                            "bug_report_admin" -> openAbacusContainerFragment(BugReportAdminFragment())
                             // Onaysız öğretmen ders yapamıyor; kupa testi ve abaküs pratiği de
                             // birer ders. Kapı olmasa kupa testi can 0 diye mağazaya yolluyordu.
                             "cup_path" -> if (!TeacherApprovalGate.blockIfUnapproved(activity)) showCupPathPanel()
@@ -719,6 +775,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                             }
                         }
                     }
+                    is BulletinRow.BugReport -> openAbacusContainerFragment(BugReportFragment())
                     else -> Unit
                 }
             },
@@ -737,12 +794,59 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             onDailyQuestionPeriodRolledOver = { onDailyQuestionPeriodRolledOver() },
             onBrokenHeartHealFinished = { onDailyQuestionBrokenHeartHealFinished() },
             onBindMissions = { row -> missionsSection.bind(row) },
+            onBugReportClaim = { reportId -> claimBugReportReward(reportId) },
         )
 
         binding.tasksRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.tasksRecycler.adapter = bulletinAdapter
         submitBulletinList()
-        if (isMissionsMode) refreshDailyQuestionCard()
+        if (isMissionsMode) {
+            refreshDailyQuestionCard()
+            startBugReportWatch()
+        }
+    }
+
+    // ── Hata bildirimi kartı ───────────────────────────────────────────────
+
+    private var bugReportCard = BulletinRow.BugReport(pendingCount = 0, claimableReportId = null)
+    private var bugReportListener: ListenerRegistration? = null
+    private var isBugReportAdmin = false
+
+    /**
+     * Kartın durumu kullanıcının bildirimlerinden canlı geliyor: admin onaylayınca
+     * "Ödülünü topla" düğmesi uygulama açıkken de beliriyor. Admin kartı ID token'daki
+     * claim'e göre (bkz. [BugReports.checkAdmin]).
+     */
+    private fun startBugReportWatch() {
+        bugReportListener?.remove()
+        bugReportListener = BugReports.listenMine { reports ->
+            val next = BulletinRow.BugReport(
+                pendingCount = reports.count { it.isPending },
+                // Liste yeniden eskiye; en eski onaylı olan önce toplansın.
+                claimableReportId = reports.lastOrNull { it.isClaimable }?.id,
+            )
+            if (next != bugReportCard) {
+                bugReportCard = next
+                if (_binding != null) submitBulletinList()
+            }
+        }
+        BugReports.checkAdmin { admin ->
+            if (admin != isBugReportAdmin) {
+                isBugReportAdmin = admin
+                if (_binding != null) submitBulletinList()
+            }
+        }
+    }
+
+    private fun claimBugReportReward(reportId: String) {
+        BugReports.claimReward(reportId) { _, message ->
+            val ctx = context ?: return@claimReward
+            Toast.makeText(ctx, message, Toast.LENGTH_LONG).show()
+            // Başarısızsa düğme yeniden etkinleşsin; başarıda kartı dinleyici güncelliyor.
+            if (_binding == null) return@claimReward
+            val index = bulletinAdapter.currentList.indexOfFirst { it is BulletinRow.BugReport }
+            if (index >= 0) bulletinAdapter.notifyItemChanged(index)
+        }
     }
 
     /** Görevler sekmesi mi; değilse Kupa Yolu sekmesi. Bkz. [MODE_MISSIONS]. */
@@ -839,6 +943,17 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                         iconRes = R.drawable.abacus_svg_ic,
                     )
                 )
+                add(bugReportCard)
+                if (isBugReportAdmin) {
+                    add(
+                        BulletinRow.Standard(
+                            id = "bug_report_admin",
+                            title = appString(R.string.bug_report_admin_card_title),
+                            subtitle = appString(R.string.bug_report_admin_card_subtitle),
+                            colorRes = R.color.lesson_header_red,
+                        )
+                    )
+                }
                 // Şimdilik yalnızca onaylı öğretmende: maskot hâllerini deneme ekranı, çocuğa
                 // gösterilecek bir içerik değil. Onay sunucudan sonra öğrenilirse kart bir
                 // sonraki liste tazelemesinde gelir (onay yerelde saklandığı için yalnızca
@@ -3307,6 +3422,8 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         dailyReturnDeferred = false
         dailyReturnSettle = null
         (activity as? MainActivity)?.setTasksReturnTouchBlock(false)
+        bugReportListener?.remove()
+        bugReportListener = null
         // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
         _binding = null
     }

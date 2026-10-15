@@ -549,6 +549,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ── Hata bildirimleri ──────────────────────────────────────────────────
+    //
+    // Yazma tamamen kapalı: gönderim, admin kararı ve ödül toplama Cloud Functions'tan
+    // (submitBugReport / reviewBugReport / claimBugReportReward). Böylece `status` ve ödül
+    // alanlarına istemcinin dokunması imkânsız, gönderim sınırları da sunucuda sayılıyor.
+    // Kullanıcı yalnızca kendi bildirimlerini okur (sorgu `uid == kendi uid'i` olmalı);
+    // admin (Auth custom claim, bkz. functions/scripts/set-admin-claim.js) hepsini okur.
+    // `bugReportGuards` (gönderim sayacı) yalnızca sunucuda; aşağıdaki catch-all kapatıyor.
+    match /bugReports/{reportId} {
+      allow read: if isSignedIn()
+        && (request.auth.token.admin == true || resource.data.uid == request.auth.uid);
+      allow write: if false;
+    }
+
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir.
     match /{document=**} {
       allow read, write: if false;

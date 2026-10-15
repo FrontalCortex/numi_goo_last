@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hata bildirme ekranı (Görevler → "Hata Avcısı" kartı, bkz. BugReportFragment).
+  Üstte gönderim formu, altta kullanıcının önceki bildirimleri ve durumları.
+  Kök tıklanabilir: altındaki ekrana dokunuş geçmesin.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:clickable="true"
+    android:focusable="true"
+    android:fitsSystemWindows="true">
+
+    <TextView
+        android:id="@+id/btnClose"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackground"
+        android:fontFamily="@font/font_regular"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:text="@string/bug_report_close"
+        android:textColor="@color/dark_primary"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/font_regular"
+        android:text="@string/bug_report_title"
+        android:textColor="@color/dark_text"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@id/btnClose"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btnClose" />
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnClose">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/bug_report_intro"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="14sp" />
+
+            <include
+                android:id="@+id/rewardsRow"
+                layout="@layout/view_bug_report_rewards"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/hint_background"
+                android:padding="12dp" />
+
+            <!-- Görsel: seçilmeden önce büyük bir seç düğmesi, sonra önizleme -->
+            <FrameLayout
+                android:id="@+id/imageArea"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/hint_background"
+                android:minHeight="140dp">
+
+                <TextView
+                    android:id="@+id/pickImageButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="@font/font_regular"
+                    android:gravity="center"
+                    android:text="@string/bug_report_pick_image"
+                    android:textColor="@color/dark_primary"
+                    android:textSize="16sp" />
+
+                <ImageView
+                    android:id="@+id/imagePreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/bug_report_image_desc"
+                    android:maxHeight="420dp"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/imageActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/changeImageButton"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="@font/font_regular"
+                    android:gravity="center"
+                    android:text="@string/bug_report_change_image"
+                    android:textColor="@color/dark_primary"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/annotateButton"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:fontFamily="@font/font_regular"
+                    android:gravity="center"
+                    android:text="@string/bug_report_annotate"
+                    android:textColor="@color/dark_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/bug_report_text_label"
+                android:textColor="@color/dark_text"
+                android:textSize="15sp" />
+
+            <EditText
+                android:id="@+id/descriptionInput"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:background="@drawable/hint_background"
+                android:fontFamily="@font/font_regular"
+                android:gravity="top|start"
+                android:hint="@string/bug_report_text_hint"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine|textCapSentences"
+                android:padding="14dp"
+                android:textColor="@color/dark_text"
+                android:textColorHint="#80FFFFFF"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/bug_report_rules"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sendButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/bug_report_send"
+                android:textAllCaps="false"
+                android:textColor="@color/button_text_enabled"
+                android:textSize="16sp"
+                app:backgroundTint="@color/lesson_completed"
+                app:cornerRadius="14dp" />
+
+            <TextView
+                android:id="@+id/myReportsTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/bug_report_mine_title"
+                android:textColor="@color/dark_text"
+                android:textSize="17sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/myReportsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Gönderim / ödül toplama sırasında ekranı kilitler -->
+    <FrameLayout
+        android:id="@+id/blockingOverlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#CC000000"
+        android:clickable="true"
+        android:elevation="16dp"
+        android:focusable="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@android:color/white" />
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

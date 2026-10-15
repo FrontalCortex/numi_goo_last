@@ -76,6 +76,20 @@ service firebase.storage {
             || request.resource.contentType.matches('audio/.*'));
     }
 
+    // Hata bildirimi ekran görüntüleri — BugReportFragment `{uid}_{zaman}.jpg` olarak yükler,
+    // ardından submitBugReport dokümanı oluşturur. Okuma yalnız sahibine ve admin'e
+    // (Auth custom claim, bkz. functions/scripts/set-admin-claim.js). Üzerine yazma yok:
+    // incelemede gösterilen görsel, kullanıcının gönderdiği görsel olarak kalmalı.
+    match /bug_reports/{fileName} {
+      allow read: if isOwnFile(fileName)
+        || (isSignedIn() && request.auth.token.admin == true);
+      allow create: if isOwnFile(fileName)
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      // Gönderim başarısız olursa istemci yüklediği dosyayı geri siler.
+      allow delete: if isOwnFile(fileName);
+    }
+
     // Tutorial sesleri (Remote Config'ten "soundUrl" ile referans verilir): statik eğitim
     // içeriği, hassas veri değil. Misafir kullanıcılar (ilk açılışta) kimliksiz olduğu için
     // okuma herkese açık olmalı. Yazma sadece Firebase Console/Admin SDK üzerinden yapılır.

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bildirim ekranındaki "Bildirimlerim" listesinin bir satırı (bkz. BugReportFragment). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/hint_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/mineDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="@font/font_regular"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            tools:text="15.10.2026 21:30" />
+
+        <TextView
+            android:id="@+id/mineStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/font_regular"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            tools:text="İnceleniyor"
+            tools:textColor="@color/lesson_header_yellow" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/mineText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/font_regular"
+        android:maxLines="3"
+        android:textColor="@color/dark_text"
+        android:textSize="14sp"
+        tools:text="Dersin sonunda Devam düğmesine basınca ekran donuyor." />
+
+    <TextView
+        android:id="@+id/mineDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="@font/font_regular"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="Gerekçe: Bu hata daha önce bildirildi."
+        tools:visibility="visible" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/mineClaimButton"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="10dp"
+        android:fontFamily="@font/font_regular"
+        android:text="@string/bug_report_card_claim"
+        android:textAllCaps="false"
+        android:textColor="@color/button_text_enabled"
+        android:textSize="15sp"
+        android:visibility="gone"
+        app:backgroundTint="@color/lesson_header_yellow"
+        app:cornerRadius="14dp"
+        tools:visibility="visible" />
+
+</LinearLayout>
