@@ -22,6 +22,23 @@ object GlobalLessonData {
         val item: LessonItem,
     )
 
+    /**
+     * Ders adları ve ipuçları `strings_lessons.xml`'de; [createLessonItems] onları buradan okur.
+     *
+     * Şablon birçok yerden context'siz çağrılıyor ([LessonSuccessRateRepository], analytics),
+     * bu yüzden uygulama context'i [NumiGooApplication.onCreate]'te bir kez veriliyor. Dil
+     * değişince bellekteki [lessonItems] eski dilde kalır; dil seçimi uygulamayı yeniden
+     * başlatmalı.
+     */
+    @Volatile private var appContext: Context? = null
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    private fun str(id: Int): String =
+        checkNotNull(appContext) { "GlobalLessonData.init çağrılmadan ders şablonu istendi" }.getString(id)
+
     var globalPartId = 1 // geçici: test için Part 4'ten başlat
     private var _lessonItems: MutableList<LessonItem> = mutableListOf()
     val lessonItems: List<LessonItem> get() = _lessonItems
@@ -902,7 +919,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i00_sayilari_abakuste_tanima",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Sayıları Abaküste Tanıma",
+                    title = str(R.string.lesson_p1_i00_sayilari_abakuste_tanima_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -912,7 +929,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i01_sayilari_abakuste_tanima",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Sayıları Abaküste Tanıma",
+                    title = str(R.string.lesson_p1_i01_sayilari_abakuste_tanima_title),
                     offset = -30,
                     isCompleted = true,
                     stepCount = 2,
@@ -920,12 +937,12 @@ object GlobalLessonData {
                     finishStepNumber = 2,
                     tutorialNumber = 1,
                     startStepNumber = 1,
-                    lessonHint = "En sağdaki sütunu kullan. Aşağıda boncuklar birlik, yukarıdaki beşlik değere sahip."
+                    lessonHint = str(R.string.lesson_p1_i01_sayilari_abakuste_tanima_hint)
                 ),
                 LessonItem(
                     stableId = "p1_i02_2_basamakli_sayilar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2 Basamaklı Sayılar",
+                    title = str(R.string.lesson_p1_i02_2_basamakli_sayilar_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 2,
@@ -933,12 +950,12 @@ object GlobalLessonData {
                     finishStepNumber = 1001,
                     tutorialNumber = 100,
                     startStepNumber = 1000,
-                    lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
+                    lessonHint = str(R.string.lesson_p1_i02_2_basamakli_sayilar_hint)
                 ),
                 LessonItem(
                     stableId = "p1_i03_3_4_5_basamakli_sayilar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3-4-5 Basamaklı Sayılar",
+                    title = str(R.string.lesson_p1_i03_3_4_5_basamakli_sayilar_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 2,
@@ -946,13 +963,13 @@ object GlobalLessonData {
                     finishStepNumber = 1004,
                     tutorialNumber = 101,
                     startStepNumber = 1003,
-                    lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
+                    lessonHint = str(R.string.lesson_p1_i03_3_4_5_basamakli_sayilar_hint)
                 ),
                 LessonItem(
                     stableId = "p1_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "Sayıları Abaküste Tanıma",
+                    title = str(R.string.lesson_p1_i04_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i04_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -961,7 +978,7 @@ object GlobalLessonData {
                     finishStepNumber = 1005, //1005 yapılacak
                     startStepNumber = 1005,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p1_i04_unite_maratonu_hint),
                     cupPoint1 = 1600,
                     cupPoint2 = 1300,
                     worstCupTime = 150 //1 yıldız alması için min kaç saniyede bitirmeli.
@@ -969,7 +986,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i05_kuralsiz_toplama",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Kuralsız toplama",
+                    title = str(R.string.lesson_p1_i05_kuralsiz_toplama_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -980,7 +997,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i06_kuralsiz_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 1 Basamaklı",
+                    title = str(R.string.lesson_p1_i06_kuralsiz_toplama_1_basamakli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 2,
@@ -988,12 +1005,12 @@ object GlobalLessonData {
                     tutorialNumber = 2,
                     startStepNumber = 4,
                     finishStepNumber = 5,
-                    lessonHint = "İlk sayıyı yaz. Toplanacak sayı değerinde boncuk ekle.",
+                    lessonHint = str(R.string.lesson_p1_i06_kuralsiz_toplama_1_basamakli_hint),
                     abacusGuideNumber = 1
                 ),LessonItem(
                     stableId = "p1_i07_kuralsiz_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 2 Basamaklı",
+                    title = str(R.string.lesson_p1_i07_kuralsiz_toplama_2_basamakli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 1,
@@ -1001,11 +1018,11 @@ object GlobalLessonData {
                     tutorialNumber = 102,
                     startStepNumber = 1007,
                     finishStepNumber = 1007,
-                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
+                    lessonHint = str(R.string.lesson_p1_i07_kuralsiz_toplama_2_basamakli_hint),
                 ),LessonItem(
                     stableId = "p1_i08_kuralsiz_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 3 Basamaklı",
+                    title = str(R.string.lesson_p1_i08_kuralsiz_toplama_3_basamakli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 2,
@@ -1013,11 +1030,11 @@ object GlobalLessonData {
                     tutorialNumber = 103,
                     startStepNumber = 1010,
                     finishStepNumber = 1011,
-                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
+                    lessonHint = str(R.string.lesson_p1_i08_kuralsiz_toplama_3_basamakli_hint),
                 ),LessonItem(
                     stableId = "p1_i09_kuralsiz_toplama_4_5_basamak",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 4, 5 Basamaklı",
+                    title = str(R.string.lesson_p1_i09_kuralsiz_toplama_4_5_basamak_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 2,
@@ -1025,13 +1042,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 1013,
                     finishStepNumber = 1014,
-                    lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
+                    lessonHint = str(R.string.lesson_p1_i09_kuralsiz_toplama_4_5_basamak_hint),
                 ),
                 LessonItem(
                     stableId = "p1_i10_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "Kuralsız Toplama",
+                    title = str(R.string.lesson_p1_i10_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i10_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1039,7 +1056,7 @@ object GlobalLessonData {
                     finishStepNumber = 7, //7 yapılacak
                     startStepNumber = 7,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p1_i10_unite_maratonu_hint),
                     cupPoint1 = 1300,
                     cupPoint2 = 1000,
                     worstCupTime = 150
@@ -1048,7 +1065,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i11_5_lik_toplama",
                     type = LessonItem.TYPE_HEADER,
-                    title = "5'lik Toplama",
+                    title = str(R.string.lesson_p1_i11_5_lik_toplama_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1059,7 +1076,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i12_5_lik_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - Kurallar",
+                    title = str(R.string.lesson_p1_i12_5_lik_toplama_kurallar_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1067,13 +1084,13 @@ object GlobalLessonData {
                     tutorialNumber = 3,
                     startStepNumber = 8,
                     finishStepNumber = 10,
-                    lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
+                    lessonHint = str(R.string.lesson_p1_i12_5_lik_toplama_kurallar_hint),
                     abacusGuideNumber = 2
                 ),
                 LessonItem(
                     stableId = "p1_i13_5_lik_toplama_kuralsiz_topla",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - Kuralsız Toplama Farkı",
+                    title = str(R.string.lesson_p1_i13_5_lik_toplama_kuralsiz_topla_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1081,13 +1098,13 @@ object GlobalLessonData {
                     startStepNumber = 12,
                     finishStepNumber = 14,
                     tutorialNumber = 4,
-                    lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
+                    lessonHint = str(R.string.lesson_p1_i13_5_lik_toplama_kuralsiz_topla_hint),
 
                     ),
                 LessonItem(
                     stableId = "p1_i14_5_lik_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - 3, 4 Basamaklı",
+                    title = str(R.string.lesson_p1_i14_5_lik_toplama_3_4_basamakli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1095,13 +1112,13 @@ object GlobalLessonData {
                     startStepNumber = 16,
                     finishStepNumber = 18,
                     tutorialIsFinish = true,
-                    lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
+                    lessonHint = str(R.string.lesson_p1_i14_5_lik_toplama_3_4_basamakli_hint),
                 ),
                 LessonItem(
                     stableId = "p1_i15_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "5'lik Toplama",
+                    title = str(R.string.lesson_p1_i15_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i15_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1112,12 +1129,12 @@ object GlobalLessonData {
                     cupPoint1 = 1400,
                     cupPoint2 = 1200,
                     worstCupTime = 180,
-                    lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
+                    lessonHint = str(R.string.lesson_p1_i15_unite_maratonu_hint),
                     ),
                 LessonItem(
                     stableId = "p1_i16_10_luk_toplama_1_2_3_4_5",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Toplama 1-2-3-4-5",
+                    title = str(R.string.lesson_p1_i16_10_luk_toplama_1_2_3_4_5_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1128,7 +1145,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i17_10_luk_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - Kurallar",
+                    title = str(R.string.lesson_p1_i17_10_luk_toplama_kurallar_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1136,14 +1153,14 @@ object GlobalLessonData {
                     startStepNumber = 20,
                     finishStepNumber = 22,
                     tutorialNumber = 5,
-                    lessonHint = "10 gelir. Büyük kardeş gider.",
+                    lessonHint = str(R.string.lesson_p1_i17_10_luk_toplama_kurallar_hint),
                     abacusGuideNumber = 3
 
                 ),
                 LessonItem(
                     stableId = "p1_i18_10_luk_toplama_elde_mantigi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk toplama - Elde Mantığı",
+                    title = str(R.string.lesson_p1_i18_10_luk_toplama_elde_mantigi_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1151,13 +1168,13 @@ object GlobalLessonData {
                     startStepNumber = 24,
                     finishStepNumber = 26,
                     tutorialNumber = 6,
-                    lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
+                    lessonHint = str(R.string.lesson_p1_i18_10_luk_toplama_elde_mantigi_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i19_10_luk_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 3 Basamaklı",
+                    title = str(R.string.lesson_p1_i19_10_luk_toplama_3_basamakli_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1165,11 +1182,11 @@ object GlobalLessonData {
                     startStepNumber = 28,
                     finishStepNumber = 30,
                     tutorialIsFinish = true,
-                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
+                    lessonHint = str(R.string.lesson_p1_i19_10_luk_toplama_3_basamakli_hint)
                 ),LessonItem(
                     stableId = "p1_i20_10_luk_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 3, 4 Basamaklı",
+                    title = str(R.string.lesson_p1_i20_10_luk_toplama_3_4_basamakli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1177,13 +1194,13 @@ object GlobalLessonData {
                     startStepNumber = 32,
                     finishStepNumber = 34,
                     tutorialIsFinish = true,
-                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
+                    lessonHint = str(R.string.lesson_p1_i20_10_luk_toplama_3_4_basamakli_hint)
 
                 ),LessonItem(
                     stableId = "p1_i21_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "10'luk Toplama 1-2-3-4-5",
+                    title = str(R.string.lesson_p1_i21_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i21_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1191,7 +1208,7 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 36,
                     finishStepNumber = 36,
-                    lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan.",
+                    lessonHint = str(R.string.lesson_p1_i21_unite_maratonu_hint),
                     cupPoint1 = 1350,
                     cupPoint2 = 1150,
                     worstCupTime = 180,
@@ -1200,7 +1217,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i22_10_luk_toplama_6_7_8_9",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Toplama 6-7-8-9",
+                    title = str(R.string.lesson_p1_i22_10_luk_toplama_6_7_8_9_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1211,7 +1228,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i23_10_luk_toplama_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - Kurallar",
+                    title = str(R.string.lesson_p1_i23_10_luk_toplama_kurallar_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1219,13 +1236,13 @@ object GlobalLessonData {
                     startStepNumber = 37,
                     finishStepNumber = 38,
                     tutorialNumber = 7,
-                    lessonHint = "10 gelir. Kardeş gider."
+                    lessonHint = str(R.string.lesson_p1_i23_10_luk_toplama_kurallar_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i24_10_luk_toplama_elde_mantigi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - Elde Mantığı",
+                    title = str(R.string.lesson_p1_i24_10_luk_toplama_elde_mantigi_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1233,12 +1250,12 @@ object GlobalLessonData {
                     startStepNumber = 41,
                     finishStepNumber = 43,
                     tutorialNumber = 105,
-                    lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
+                    lessonHint = str(R.string.lesson_p1_i24_10_luk_toplama_elde_mantigi_hint)
                 ),
                 LessonItem(
                     stableId = "p1_i25_10_luk_toplama_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 3 Basamaklı",
+                    title = str(R.string.lesson_p1_i25_10_luk_toplama_3_basamakli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1246,13 +1263,13 @@ object GlobalLessonData {
                     startStepNumber = 44,
                     finishStepNumber = 46,
                     tutorialIsFinish = true,
-                    lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
+                    lessonHint = str(R.string.lesson_p1_i25_10_luk_toplama_3_basamakli_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i26_10_luk_toplama_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 3, 4 Basamaklı",
+                    title = str(R.string.lesson_p1_i26_10_luk_toplama_3_4_basamakli_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1260,13 +1277,13 @@ object GlobalLessonData {
                     startStepNumber = 48,
                     finishStepNumber = 50,
                     tutorialIsFinish = true,
-                    lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
+                    lessonHint = str(R.string.lesson_p1_i26_10_luk_toplama_3_4_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p1_i27_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "10'luk Toplama 6-7-8-9",
+                    title = str(R.string.lesson_p1_i27_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i27_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1282,7 +1299,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i28_boncuk_kurali",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Boncuk kuralı",
+                    title = str(R.string.lesson_p1_i28_boncuk_kurali_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1292,7 +1309,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p1_i29_boncuk_kurali_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Kuralı - Kurallar",
+                    title = str(R.string.lesson_p1_i29_boncuk_kurali_kurallar_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 4,
@@ -1300,13 +1317,13 @@ object GlobalLessonData {
                     startStepNumber = 53,
                     finishStepNumber = 56,
                     tutorialNumber = 8,
-                    lessonHint = "Kuralsız ve 10'luk kural ile ekleyemediğinde boncuk kuralını kullan"
+                    lessonHint = str(R.string.lesson_p1_i29_boncuk_kurali_kurallar_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i30_boncuk_kurali_onluk_kural_fa",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Kuralı - Onluk Kural Farkı",
+                    title = str(R.string.lesson_p1_i30_boncuk_kurali_onluk_kural_fa_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1314,13 +1331,13 @@ object GlobalLessonData {
                     startStepNumber = 57,
                     finishStepNumber = 59,
                     tutorialNumber = 9,
-                    lessonHint = "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir."
+                    lessonHint = str(R.string.lesson_p1_i30_boncuk_kurali_onluk_kural_fa_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i31_boncuk_kurali_3_4_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Kuralı - 3, 4 Basamaklı",
+                    title = str(R.string.lesson_p1_i31_boncuk_kurali_3_4_basamakli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1328,14 +1345,14 @@ object GlobalLessonData {
                     startStepNumber = 61,
                     finishStepNumber = 63,
                     tutorialIsFinish = true,
-                    lessonHint = "10 gelir adımını uygularken 5\\'lik kuralı kullanman gerekebilir."
+                    lessonHint = str(R.string.lesson_p1_i31_boncuk_kurali_3_4_basamakli_hint)
 
                 ),
                 LessonItem(
                     stableId = "p1_i32_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "Boncuk Kuralı",
+                    title = str(R.string.lesson_p1_i32_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p1_i32_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1353,7 +1370,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i00_kuralsiz_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Kuralsız Çıkarma",
+                    title = str(R.string.lesson_p2_i00_kuralsiz_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1364,7 +1381,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i01_kuralsiz_cikarma_temeli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Çıkarma - Temeli",
+                    title = str(R.string.lesson_p2_i01_kuralsiz_cikarma_temeli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1372,13 +1389,13 @@ object GlobalLessonData {
                     startStepNumber = 66,
                     finishStepNumber = 68,
                     tutorialNumber = 10,
-                    lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
+                    lessonHint = str(R.string.lesson_p2_i01_kuralsiz_cikarma_temeli_hint)
 
                 ),
                 LessonItem(
                     stableId = "p2_i02_kuralsiz_cikarma_3_4_5_basam",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Çıkarma - 3,4,5 basamaklı",
+                    title = str(R.string.lesson_p2_i02_kuralsiz_cikarma_3_4_5_basam_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 4,
@@ -1386,13 +1403,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 70,
                     finishStepNumber = 73,
-                    lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
+                    lessonHint = str(R.string.lesson_p2_i02_kuralsiz_cikarma_3_4_5_basam_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i03_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "Kuralsız Çıkarma",
+                    title = str(R.string.lesson_p2_i03_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p2_i03_unite_maratonu_unit),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 1,
@@ -1400,7 +1417,7 @@ object GlobalLessonData {
                     finishStepNumber = 74,
                     startStepNumber = 74,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p2_i03_unite_maratonu_hint),
                     cupPoint1 = 1400,
                     cupPoint2 = 1200,
                     worstCupTime = 180
@@ -1409,7 +1426,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i04_5_lik_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "5'lik Çıkarma",
+                    title = str(R.string.lesson_p2_i04_5_lik_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1419,7 +1436,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i05_5_lik_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - Kurallar",
+                    title = str(R.string.lesson_p2_i05_5_lik_cikarma_kurallar_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1427,12 +1444,12 @@ object GlobalLessonData {
                     tutorialNumber = 11,
                     startStepNumber = 75,
                     finishStepNumber = 77,
-                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
+                    lessonHint = str(R.string.lesson_p2_i05_5_lik_cikarma_kurallar_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i06_5_lik_cikarma_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - 3 Basamaklı",
+                    title = str(R.string.lesson_p2_i06_5_lik_cikarma_3_basamakli_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1440,12 +1457,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 79,
                     finishStepNumber = 81,
-                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
+                    lessonHint = str(R.string.lesson_p2_i06_5_lik_cikarma_3_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i07_5_lik_cikarma_kuralli_kurals",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - Kurallı,Kuralsız Çıkarma",
+                    title = str(R.string.lesson_p2_i07_5_lik_cikarma_kuralli_kurals_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1453,13 +1470,13 @@ object GlobalLessonData {
                     startStepNumber = 83,
                     tutorialNumber = 1100,
                     finishStepNumber = 85,
-                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
+                    lessonHint = str(R.string.lesson_p2_i07_5_lik_cikarma_kuralli_kurals_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i08_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "5'lik Çıkarma",
+                    title = str(R.string.lesson_p2_i08_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p2_i08_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1467,7 +1484,7 @@ object GlobalLessonData {
                     finishStepNumber = 87,
                     startStepNumber = 87,
                     tutorialIsFinish = true,
-                    lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir.",
+                    lessonHint = str(R.string.lesson_p2_i08_unite_maratonu_hint),
                     cupPoint1 = 1350,
                     cupPoint2 = 1050,
                     worstCupTime = 180
@@ -1475,7 +1492,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i09_10_luk_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Çıkarma",
+                    title = str(R.string.lesson_p2_i09_10_luk_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1485,7 +1502,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i10_10_luk_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - Kurallar",
+                    title = str(R.string.lesson_p2_i10_10_luk_cikarma_kurallar_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1493,12 +1510,12 @@ object GlobalLessonData {
                     tutorialNumber = 12,
                     startStepNumber = 88,
                     finishStepNumber = 90,
-                    lessonHint = "10 gider. Kardeş gelir."
+                    lessonHint = str(R.string.lesson_p2_i10_10_luk_cikarma_kurallar_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i11_10_luk_cikarma_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - 2 basamaklı",
+                    title = str(R.string.lesson_p2_i11_10_luk_cikarma_2_basamakli_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1506,12 +1523,12 @@ object GlobalLessonData {
                     tutorialNumber = 13,
                     startStepNumber = 92,
                     finishStepNumber = 94,
-                    lessonHint = "10 gider. Kardeş gelir."
+                    lessonHint = str(R.string.lesson_p2_i11_10_luk_cikarma_2_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i12_10_luk_cikarma_komsu_mantigi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - Komşu Mantığı",
+                    title = str(R.string.lesson_p2_i12_10_luk_cikarma_komsu_mantigi_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1519,12 +1536,12 @@ object GlobalLessonData {
                     tutorialNumber = 14,
                     startStepNumber = 96,
                     finishStepNumber = 98,
-                    lessonHint = "10 gider adımını yaparken 5'lik olmazsa 10'luk çıkarma kuralı kullan."
+                    lessonHint = str(R.string.lesson_p2_i12_10_luk_cikarma_komsu_mantigi_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i13_10_luk_cikarma_ileri_seviye",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - İleri Seviye",
+                    title = str(R.string.lesson_p2_i13_10_luk_cikarma_ileri_seviye_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1532,13 +1549,13 @@ object GlobalLessonData {
                     tutorialNumber = 15,
                     startStepNumber = 100,
                     finishStepNumber = 102,
-                    lessonHint = "İlk kuralsız çıkarmayı dene. Olmuyorsa 5'lik çıkarma. Olmuyorsa 10'luk çıkarma."
+                    lessonHint = str(R.string.lesson_p2_i13_10_luk_cikarma_ileri_seviye_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "10'luk Çıkarma",
+                    title = str(R.string.lesson_p2_i14_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p2_i14_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1546,7 +1563,7 @@ object GlobalLessonData {
                     finishStepNumber = 104,
                     startStepNumber = 104,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p2_i14_unite_maratonu_hint),
                     cupPoint1 = 1500,
                     cupPoint2 = 1300,
                     worstCupTime = 180
@@ -1554,7 +1571,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i15_boncuk_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Boncuk Çıkarma",
+                    title = str(R.string.lesson_p2_i15_boncuk_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1564,7 +1581,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p2_i16_boncuk_cikarma_kurallar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - Kurallar",
+                    title = str(R.string.lesson_p2_i16_boncuk_cikarma_kurallar_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1572,12 +1589,12 @@ object GlobalLessonData {
                     tutorialNumber = 16,
                     startStepNumber = 105,
                     finishStepNumber = 107,
-                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                    lessonHint = str(R.string.lesson_p2_i16_boncuk_cikarma_kurallar_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i17_boncuk_cikarma_3_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - 3 Basamaklı",
+                    title = str(R.string.lesson_p2_i17_boncuk_cikarma_3_basamakli_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1585,12 +1602,12 @@ object GlobalLessonData {
                     tutorialNumber = 17,
                     startStepNumber = 109,
                     finishStepNumber = 111,
-                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                    lessonHint = str(R.string.lesson_p2_i17_boncuk_cikarma_3_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i18_boncuk_cikarma_ileri_seviye",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - İleri Seviye",
+                    title = str(R.string.lesson_p2_i18_boncuk_cikarma_ileri_seviye_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1598,13 +1615,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 113,
                     finishStepNumber = 115,
-                    lessonHint = "Kardeş gelirken 5'lik kural uygula."
+                    lessonHint = str(R.string.lesson_p2_i18_boncuk_cikarma_ileri_seviye_hint)
                 ),
                 LessonItem(
                     stableId = "p2_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "Boncuk Çıkarma",
+                    title = str(R.string.lesson_p2_i19_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p2_i19_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1612,7 +1629,7 @@ object GlobalLessonData {
                     finishStepNumber = 117, //117 ile değişecek
                     startStepNumber = 117,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p2_i19_unite_maratonu_hint),
                     cupPoint1 = 1300,
                     cupPoint2 = 1000,
                     worstCupTime = 180
@@ -1623,7 +1640,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i00_2_ye_1_carpma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p3_i00_2_ye_1_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1634,7 +1651,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i01_2_ye_1_carpma_kuralsiz",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma - Kuralsız",
+                    title = str(R.string.lesson_p3_i01_2_ye_1_carpma_kuralsiz_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1643,12 +1660,12 @@ object GlobalLessonData {
                     finishStepNumber = 120,
                     tutorialNumber = 18,
                     abacusGuideNumber = 4,
-                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i01_2_ye_1_carpma_kuralsiz_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i02_2_ye_1_carpma_kuralli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma - Kurallı",
+                    title = str(R.string.lesson_p3_i02_2_ye_1_carpma_kuralli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1656,13 +1673,13 @@ object GlobalLessonData {
                     startStepNumber = 122,
                     finishStepNumber = 124,
                     tutorialNumber = 19,
-                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i02_2_ye_1_carpma_kuralli_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i03_2_ye_1_carpma_genel",
                     //Bu 2 adım ve 8 soru olsun. Genel çarpmayı kullanalım.
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma - Genel",
+                    title = str(R.string.lesson_p3_i03_2_ye_1_carpma_genel_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 2,
@@ -1670,13 +1687,13 @@ object GlobalLessonData {
                     startStepNumber = 126,
                     finishStepNumber = 127,
                     tutorialIsFinish = true,
-                    lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i03_2_ye_1_carpma_genel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p3_i04_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p3_i04_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1684,7 +1701,7 @@ object GlobalLessonData {
                     finishStepNumber = 130,
                     startStepNumber = 130,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p3_i04_unite_maratonu_hint),
                     cupPoint1 = 1300,
                     cupPoint2 = 1000,
                     worstCupTime = 90
@@ -1692,7 +1709,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i05_2_ye_2_carpma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p3_i05_2_ye_2_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1702,7 +1719,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i06_2_ye_2_carpma_temel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 çarpma - Temel",
+                    title = str(R.string.lesson_p3_i06_2_ye_2_carpma_temel_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1710,12 +1727,12 @@ object GlobalLessonData {
                     startStepNumber = 131,
                     finishStepNumber = 133,
                     tutorialNumber = 20,
-                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i06_2_ye_2_carpma_temel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i07_2_ye_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 çarpma - Genel",
+                    title = str(R.string.lesson_p3_i07_2_ye_2_carpma_genel_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1723,12 +1740,12 @@ object GlobalLessonData {
                     startStepNumber = 135,
                     finishStepNumber = 137,
                     tutorialIsFinish = true,
-                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i07_2_ye_2_carpma_genel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i08_2_ye_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 çarpma - Genel",
+                    title = str(R.string.lesson_p3_i08_2_ye_2_carpma_genel_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1736,13 +1753,13 @@ object GlobalLessonData {
                     startStepNumber = 135,
                     finishStepNumber = 137,
                     tutorialIsFinish = true,
-                    lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i08_2_ye_2_carpma_genel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p3_i09_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p3_i09_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1750,7 +1767,7 @@ object GlobalLessonData {
                     finishStepNumber = 139,
                     startStepNumber = 139,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p3_i09_unite_maratonu_hint),
                     cupPoint1 = 1250,
                     cupPoint2 = 800,
                     worstCupTime = 160
@@ -1758,7 +1775,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i10_3_e_1_carpma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "3'e 1 Çarpma",
+                    title = str(R.string.lesson_p3_i10_3_e_1_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1768,7 +1785,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i11_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 1 Çarpma",
+                    title = str(R.string.lesson_p3_i11_3_e_1_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1776,12 +1793,12 @@ object GlobalLessonData {
                     startStepNumber = 140,
                     finishStepNumber = 142,
                     tutorialNumber = 21,
-                    lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i11_3_e_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i12_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 1 Çarpma",
+                    title = str(R.string.lesson_p3_i12_3_e_1_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 2,
@@ -1789,12 +1806,12 @@ object GlobalLessonData {
                     startStepNumber = 140,
                     finishStepNumber = 141,
                     tutorialIsFinish = true,
-                    lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i12_3_e_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i13_3_e_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 1 Çarpma",
+                    title = str(R.string.lesson_p3_i13_3_e_1_carpma_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 2,
@@ -1802,13 +1819,13 @@ object GlobalLessonData {
                     startStepNumber = 140,
                     finishStepNumber = 141,
                     tutorialIsFinish = true,
-                    lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i13_3_e_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "3'e 1 Çarpma",
+                    title = str(R.string.lesson_p3_i14_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p3_i14_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1816,7 +1833,7 @@ object GlobalLessonData {
                     finishStepNumber = 144,
                     startStepNumber = 144,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p3_i14_unite_maratonu_hint),
                     cupPoint1 = 1500,
                     cupPoint2 = 1000,
                     worstCupTime = 160
@@ -1824,7 +1841,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i15_3_e_2_carpma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "3'e 2 Çarpma",
+                    title = str(R.string.lesson_p3_i15_3_e_2_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1834,7 +1851,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p3_i16_3_e_2_carpma_temel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 2 Çarpma - Temel",
+                    title = str(R.string.lesson_p3_i16_3_e_2_carpma_temel_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1842,12 +1859,12 @@ object GlobalLessonData {
                     startStepNumber = 145,
                     finishStepNumber = 147,
                     tutorialNumber = 22,
-                    lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i16_3_e_2_carpma_temel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i17_3_e_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 2 Çarpma - Genel",
+                    title = str(R.string.lesson_p3_i17_3_e_2_carpma_genel_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 2,
@@ -1855,12 +1872,12 @@ object GlobalLessonData {
                     startStepNumber = 149,
                     finishStepNumber = 150,
                     tutorialNumber = 23,
-                    lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i17_3_e_2_carpma_genel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i18_3_e_2_carpma_genel",
                     type = LessonItem.TYPE_LESSON,
-                    title = "3'e 2 Çarpma - Genel",
+                    title = str(R.string.lesson_p3_i18_3_e_2_carpma_genel_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 2,
@@ -1868,13 +1885,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     startStepNumber = 149,
                     finishStepNumber = 150,
-                    lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
+                    lessonHint = str(R.string.lesson_p3_i18_3_e_2_carpma_genel_hint)
                 ),
                 LessonItem(
                     stableId = "p3_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
-                    titleUnit = "3'e 2 Çarpma",
+                    title = str(R.string.lesson_p3_i19_unite_maratonu_title),
+                    titleUnit = str(R.string.lesson_p3_i19_unite_maratonu_unit),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1882,7 +1899,7 @@ object GlobalLessonData {
                     finishStepNumber = 153,
                     startStepNumber = 153,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p3_i19_unite_maratonu_hint),
                     cupPoint1 = 1250,
                     cupPoint2 = 700,
                     worstCupTime = 300
@@ -1893,7 +1910,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i00_kuralsiz_toplama",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Kuralsız Toplama",
+                    title = str(R.string.lesson_p4_i00_kuralsiz_toplama_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1904,7 +1921,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i01_kuralsiz_toplama_3_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i01_kuralsiz_toplama_3_saniye_ar_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1914,12 +1931,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialNumber = 24,
                     timePeriod = 3000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p4_i01_kuralsiz_toplama_3_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i02_kuralsiz_toplama_2_5_saniye",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i02_kuralsiz_toplama_2_5_saniye_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -1929,12 +1946,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p4_i02_kuralsiz_toplama_2_5_saniye_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i03_kuralsiz_toplama_2_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Toplama - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i03_kuralsiz_toplama_2_saniye_ar_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1944,12 +1961,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p4_i03_kuralsiz_toplama_2_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p4_i04_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1959,12 +1976,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     timePeriod = 2000,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p4_i04_unite_maratonu_hint),
                 ),
                 LessonItem(
                     stableId = "p4_i05_5_lik_toplama",
                     type = LessonItem.TYPE_HEADER,
-                    title = "5'lik Toplama",
+                    title = str(R.string.lesson_p4_i05_5_lik_toplama_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -1974,7 +1991,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i06_5_lik_toplama_3_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i06_5_lik_toplama_3_saniye_arayl_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -1984,12 +2001,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5 gelir. Kardeş gider."
+                    lessonHint = str(R.string.lesson_p4_i06_5_lik_toplama_3_saniye_arayl_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i07_5_lik_toplama_2_5_saniye_ara",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i07_5_lik_toplama_2_5_saniye_ara_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -1999,12 +2016,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "5 gelir. Kardeş gider."
+                    lessonHint = str(R.string.lesson_p4_i07_5_lik_toplama_2_5_saniye_ara_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i08_5_lik_toplama_2_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Toplama - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i08_5_lik_toplama_2_saniye_arayl_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2014,12 +2031,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5 gelir. Kardeş gider."
+                    lessonHint = str(R.string.lesson_p4_i08_5_lik_toplama_2_saniye_arayl_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p4_i09_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2028,13 +2045,13 @@ object GlobalLessonData {
                     startStepNumber = 14,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p4_i09_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p4_i10_10_luk_toplama_1_2_3_4_5",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Toplama 1-2-3-4-5",
+                    title = str(R.string.lesson_p4_i10_10_luk_toplama_1_2_3_4_5_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2044,7 +2061,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i11_10_luk_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 1 Basamaklı",
+                    title = str(R.string.lesson_p4_i11_10_luk_toplama_1_basamakli_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 4,
@@ -2054,12 +2071,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i11_10_luk_toplama_1_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i12_10_luk_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 2 Basamaklı",
+                    title = str(R.string.lesson_p4_i12_10_luk_toplama_2_basamakli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -2069,12 +2086,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i12_10_luk_toplama_2_basamakli_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i13_10_luk_toplama_2_basamakli_h",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 2 Basamaklı Hızlı",
+                    title = str(R.string.lesson_p4_i13_10_luk_toplama_2_basamakli_h_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2084,12 +2101,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i13_10_luk_toplama_2_basamakli_h_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p4_i14_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2098,13 +2115,13 @@ object GlobalLessonData {
                     startStepNumber = 23,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i14_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p4_i15_10_luk_toplama_6_7_8_9",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Toplama 6,7,8,9",
+                    title = str(R.string.lesson_p4_i15_10_luk_toplama_6_7_8_9_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 1,
@@ -2114,7 +2131,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i16_10_luk_toplama_1_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 1 Basamaklı",
+                    title = str(R.string.lesson_p4_i16_10_luk_toplama_1_basamakli_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 4,
@@ -2124,12 +2141,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i16_10_luk_toplama_1_basamakli_hint),
                 ),
                 LessonItem(
                     stableId = "p4_i17_10_luk_toplama_2_basamakli",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 2 Basamaklı",
+                    title = str(R.string.lesson_p4_i17_10_luk_toplama_2_basamakli_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2139,12 +2156,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i17_10_luk_toplama_2_basamakli_hint),
                 ),
                 LessonItem(
                     stableId = "p4_i18_10_luk_toplama_2_basamakli_h",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Toplama - 2 Basamaklı Hızlı",
+                    title = str(R.string.lesson_p4_i18_10_luk_toplama_2_basamakli_h_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2154,12 +2171,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i18_10_luk_toplama_2_basamakli_h_hint),
                 ),
                 LessonItem(
                     stableId = "p4_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p4_i19_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2168,13 +2185,13 @@ object GlobalLessonData {
                     startStepNumber = 28,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "5'lik kuralı uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i19_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p4_i20_boncuk_kurali",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Boncuk Kuralı",
+                    title = str(R.string.lesson_p4_i20_boncuk_kurali_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2184,7 +2201,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p4_i21_boncuk_toplama_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Toplama - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i21_boncuk_toplama_3_saniye_aray_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2194,12 +2211,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i21_boncuk_toplama_3_saniye_aray_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i22_boncuk_toplama_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Toplama - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i22_boncuk_toplama_2_5_saniye_ar_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2209,12 +2226,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "5'lik uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i22_boncuk_toplama_2_5_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i23_boncuk_toplama_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Toplama - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p4_i23_boncuk_toplama_2_saniye_aray_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2224,12 +2241,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5'lik uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p4_i23_boncuk_toplama_2_saniye_aray_hint)
                 ),
                 LessonItem(
                     stableId = "p4_i24_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p4_i24_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2238,7 +2255,7 @@ object GlobalLessonData {
                     startStepNumber = 29,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "5'lik uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p4_i24_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
 
@@ -2248,7 +2265,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p5_i00_kuralsiz_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Kuralsız Çıkarma",
+                    title = str(R.string.lesson_p5_i00_kuralsiz_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2259,7 +2276,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p5_i01_kuralsiz_cikarma_3_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Çıkarma - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i01_kuralsiz_cikarma_3_saniye_ar_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -2269,12 +2286,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialNumber = 25,
                     timePeriod = 3000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i01_kuralsiz_cikarma_3_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i02_kuralsiz_cikarma_2_5_saniye",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Çıkarma - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i02_kuralsiz_cikarma_2_5_saniye_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2284,12 +2301,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i02_kuralsiz_cikarma_2_5_saniye_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i03_kuralsiz_cikarma_2_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kuralsız Çıkarma - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i03_kuralsiz_cikarma_2_saniye_ar_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2299,12 +2316,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i03_kuralsiz_cikarma_2_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p5_i04_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2313,13 +2330,13 @@ object GlobalLessonData {
                     startStepNumber = 34,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p5_i04_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p5_i05_5_lik_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "5'lik Çıkarma",
+                    title = str(R.string.lesson_p5_i05_5_lik_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2329,7 +2346,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p5_i06_5_lik_cikarma_3_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i06_5_lik_cikarma_3_saniye_arayl_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2339,12 +2356,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i06_5_lik_cikarma_3_saniye_arayl_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i07_5_lik_cikarma_2_5_saniye_ara",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i07_5_lik_cikarma_2_5_saniye_ara_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2354,12 +2371,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i07_5_lik_cikarma_2_5_saniye_ara_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i08_5_lik_cikarma_2_saniye_arayl",
                     type = LessonItem.TYPE_LESSON,
-                    title = "5'lik Çıkarma - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i08_5_lik_cikarma_2_saniye_arayl_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2369,12 +2386,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
+                    lessonHint = str(R.string.lesson_p5_i08_5_lik_cikarma_2_saniye_arayl_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p5_i09_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2383,13 +2400,13 @@ object GlobalLessonData {
                     startStepNumber = 39,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p5_i09_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p5_i10_10_luk_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "10'luk Çıkarma",
+                    title = str(R.string.lesson_p5_i10_10_luk_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2399,7 +2416,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p5_i11_10_luk_cikarma_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i11_10_luk_cikarma_3_saniye_aray_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -2409,12 +2426,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p5_i11_10_luk_cikarma_3_saniye_aray_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i12_10_luk_cikarma_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i12_10_luk_cikarma_2_5_saniye_ar_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2424,12 +2441,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p5_i12_10_luk_cikarma_2_5_saniye_ar_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i13_10_luk_cikarma_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "10'luk Çıkarma - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i13_10_luk_cikarma_2_saniye_aray_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2439,12 +2456,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir."
+                    lessonHint = str(R.string.lesson_p5_i13_10_luk_cikarma_2_saniye_aray_hint)
                 ),
                 LessonItem(
                     stableId = "p5_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p5_i14_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2453,13 +2470,13 @@ object GlobalLessonData {
                     startStepNumber = 44,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p5_i14_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
                 LessonItem(
                     stableId = "p5_i15_boncuk_cikarma",
                     type = LessonItem.TYPE_HEADER,
-                    title = "Boncuk Çıkarma",
+                    title = str(R.string.lesson_p5_i15_boncuk_cikarma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2469,7 +2486,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p5_i16_boncuk_cikarma_3_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - 3 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i16_boncuk_cikarma_3_saniye_aray_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2479,12 +2496,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 3000,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p5_i16_boncuk_cikarma_3_saniye_aray_hint),
                 ),
                 LessonItem(
                     stableId = "p5_i17_boncuk_cikarma_2_5_saniye_ar",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - 2,5 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i17_boncuk_cikarma_2_5_saniye_ar_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2494,12 +2511,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2500,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p5_i17_boncuk_cikarma_2_5_saniye_ar_hint),
                 ),
                 LessonItem(
                     stableId = "p5_i18_boncuk_cikarma_2_saniye_aray",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Boncuk Çıkarma - 2 Saniye Arayla",
+                    title = str(R.string.lesson_p5_i18_boncuk_cikarma_2_saniye_aray_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2509,12 +2526,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     timePeriod = 2000,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p5_i18_boncuk_cikarma_2_saniye_aray_hint),
                 ),
                 LessonItem(
                     stableId = "p5_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p5_i19_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2523,7 +2540,7 @@ object GlobalLessonData {
                     startStepNumber = 49,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
+                    lessonHint = str(R.string.lesson_p5_i19_unite_maratonu_hint),
                     timePeriod = 2000,
                 ),
 
@@ -2532,7 +2549,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i00_2_ye_1_carpma_kolay",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 1 Çarpma - Kolay",
+                    title = str(R.string.lesson_p6_i00_2_ye_1_carpma_kolay_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2543,7 +2560,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i01_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p6_i01_2_ye_1_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2553,12 +2570,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialNumber = 26,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i01_2_ye_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i02_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p6_i02_2_ye_1_carpma_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2568,12 +2585,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i02_2_ye_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i03_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p6_i03_2_ye_1_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2583,12 +2600,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i03_2_ye_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i04_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p6_i04_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2598,7 +2615,7 @@ object GlobalLessonData {
                     blindingMultiplication = true,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hatasız, en kısa sürede bitir.",
+                    lessonHint = str(R.string.lesson_p6_i04_unite_maratonu_hint),
                     cupPoint1 = 1400,
                     cupPoint2 = 1000,
                     worstCupTime = 60
@@ -2606,7 +2623,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i05_2_ye_1_carpma_zor",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 1 Çarpma - Zor",
+                    title = str(R.string.lesson_p6_i05_2_ye_1_carpma_zor_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2616,7 +2633,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i06_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p6_i06_2_ye_1_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -2626,12 +2643,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i06_2_ye_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i07_2_ye_1_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma",
+                    title = str(R.string.lesson_p6_i07_2_ye_1_carpma_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2641,12 +2658,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i07_2_ye_1_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i08_2_ye_1_carpma_imkansiz",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 1 Çarpma - İmkansız",
+                    title = str(R.string.lesson_p6_i08_2_ye_1_carpma_imkansiz_title),
                     offset = -60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2656,12 +2673,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i08_2_ye_1_carpma_imkansiz_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i09_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p6_i09_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2671,7 +2688,7 @@ object GlobalLessonData {
                     blindingMultiplication = true,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene.",
+                    lessonHint = str(R.string.lesson_p6_i09_unite_maratonu_hint),
                     cupPoint1 = 1600,
                     cupPoint2 = 1300,
                     worstCupTime = 90
@@ -2679,7 +2696,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i10_2_ye_2_carpma_kolay",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 2 Çarpma - Kolay",
+                    title = str(R.string.lesson_p6_i10_2_ye_2_carpma_kolay_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2689,7 +2706,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i11_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i11_2_ye_2_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2699,12 +2716,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i11_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i12_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i12_2_ye_2_carpma_title),
                     offset = 60,
                     isCompleted = false,
                     stepCount = 3,
@@ -2714,12 +2731,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i12_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i13_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i13_2_ye_2_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2729,12 +2746,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i13_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i14_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p6_i14_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2744,7 +2761,7 @@ object GlobalLessonData {
                     blindingMultiplication = true,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene.",
+                    lessonHint = str(R.string.lesson_p6_i14_unite_maratonu_hint),
                     cupPoint1 = 1500,
                     cupPoint2 = 1100,
                     worstCupTime = 120
@@ -2752,7 +2769,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i15_2_ye_2_carpma_zor",
                     type = LessonItem.TYPE_HEADER,
-                    title = "2'ye 2 Çarpma - Zor",
+                    title = str(R.string.lesson_p6_i15_2_ye_2_carpma_zor_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2762,7 +2779,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p6_i16_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i16_2_ye_2_carpma_title),
                     offset = -30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2772,12 +2789,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i16_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i17_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i17_2_ye_2_carpma_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 3,
@@ -2787,12 +2804,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i17_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i18_2_ye_2_carpma",
                     type = LessonItem.TYPE_LESSON,
-                    title = "2'ye 2 Çarpma",
+                    title = str(R.string.lesson_p6_i18_2_ye_2_carpma_title),
                     offset = 30,
                     isCompleted = false,
                     stepCount = 3,
@@ -2802,12 +2819,12 @@ object GlobalLessonData {
                     isBlinding = true,
                     tutorialIsFinish = true,
                     blindingMultiplication = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
+                    lessonHint = str(R.string.lesson_p6_i18_2_ye_2_carpma_hint)
                 ),
                 LessonItem(
                     stableId = "p6_i19_unite_maratonu",
                     type = LessonItem.TYPE_CHEST,
-                    title = "Ünite Maratonu",
+                    title = str(R.string.lesson_p6_i19_unite_maratonu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2817,7 +2834,7 @@ object GlobalLessonData {
                     blindingMultiplication = true,
                     isBlinding = true,
                     tutorialIsFinish = true,
-                    lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene.",
+                    lessonHint = str(R.string.lesson_p6_i19_unite_maratonu_hint),
                     cupPoint1 = 1400,
                     cupPoint2 = 800,
                     worstCupTime = 150
@@ -2827,7 +2844,7 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p7_i00_acemi_cirak",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Acemi Çırak",
+                    title = str(R.string.lesson_p7_i00_acemi_cirak_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2837,12 +2854,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i00_acemi_cirak_race)
                 ),
                 LessonItem(
                     stableId = "p7_i01_baslangic_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Başlangıç Ustası",
+                    title = str(R.string.lesson_p7_i01_baslangic_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2852,12 +2869,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 2,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i01_baslangic_ustasi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i02_bilgi_avcisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilgi Avcısı",
+                    title = str(R.string.lesson_p7_i02_bilgi_avcisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2867,12 +2884,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 2,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i02_bilgi_avcisi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i03_ogrenme_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Öğrenme Ustası",
+                    title = str(R.string.lesson_p7_i03_ogrenme_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2882,12 +2899,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 2,
-                    raceTitle = "1 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i03_ogrenme_ustasi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i04_zihin_kasifi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zihin Kaşifi",
+                    title = str(R.string.lesson_p7_i04_zihin_kasifi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2897,12 +2914,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 2,
-                    raceTitle = "2 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i04_zihin_kasifi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i05_bilgelik_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilgelik Ustası",
+                    title = str(R.string.lesson_p7_i05_bilgelik_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2912,12 +2929,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 2,
-                    raceTitle = "2 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i05_bilgelik_ustasi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i06_zeka_kasifi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zeka Kaşifi",
+                    title = str(R.string.lesson_p7_i06_zeka_kasifi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2927,12 +2944,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 2,
-                    raceTitle = "2 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i06_zeka_kasifi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i07_beyin_muhendisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Beyin Mühendisi",
+                    title = str(R.string.lesson_p7_i07_beyin_muhendisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2942,12 +2959,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 4000,
                     raceBusyLevel = 2,
-                    raceTitle = "3 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i07_beyin_muhendisi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i08_mantik_ustadi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Mantık Üstadı",
+                    title = str(R.string.lesson_p7_i08_mantik_ustadi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2957,12 +2974,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 2,
-                    raceTitle = "3 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i08_mantik_ustadi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i09_deha",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Deha",
+                    title = str(R.string.lesson_p7_i09_deha_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2972,12 +2989,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 2,
-                    raceTitle = "3 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i09_deha_race)
                 ),
                 LessonItem(
                     stableId = "p7_i10_ust_zihin",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Üst Zihin",
+                    title = str(R.string.lesson_p7_i10_ust_zihin_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -2987,12 +3004,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 2,
-                    raceTitle = "1 basamaklı 15 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i10_ust_zihin_race)
                 ),
                 LessonItem(
                     stableId = "p7_i11_bilge_sampiyon",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilge Şampiyon",
+                    title = str(R.string.lesson_p7_i11_bilge_sampiyon_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3002,12 +3019,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 2,
-                    raceTitle = "2 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i11_bilge_sampiyon_race)
                 ),
                 LessonItem(
                     stableId = "p7_i12_zeka_mimari",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zeka Mimarı",
+                    title = str(R.string.lesson_p7_i12_zeka_mimari_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3017,12 +3034,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2500,
                     raceBusyLevel = 2,
-                    raceTitle = "3 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i12_zeka_mimari_race)
                 ),
                 LessonItem(
                     stableId = "p7_i13_ustalik_efendisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Ustalık Efendisi",
+                    title = str(R.string.lesson_p7_i13_ustalik_efendisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3032,12 +3049,12 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 750,
                     raceBusyLevel = 2,
-                    raceTitle = "1 basamaklı 20 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i13_ustalik_efendisi_race)
                 ),
                 LessonItem(
                     stableId = "p7_i14_efsanevi_bilge",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Efsanevi Bilge",
+                    title = str(R.string.lesson_p7_i14_efsanevi_bilge_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3047,14 +3064,14 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 2,
-                    raceTitle = "4 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p7_i14_efsanevi_bilge_race)
                 )
             )
             8 -> listOf(
                 LessonItem(
                     stableId = "p8_i00_acemi_cirak",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Acemi Çırak",
+                    title = str(R.string.lesson_p8_i00_acemi_cirak_title),
                     offset = 0,
                     isCompleted = true,
                     stepCount = 1,
@@ -3064,13 +3081,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i00_acemi_cirak_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i01_baslangic_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Başlangıç Ustası",
+                    title = str(R.string.lesson_p8_i01_baslangic_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3080,13 +3097,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i01_baslangic_ustasi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i02_bilgi_avcisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilgi Avcısı",
+                    title = str(R.string.lesson_p8_i02_bilgi_avcisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3096,13 +3113,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i02_bilgi_avcisi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i03_ogrenme_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Öğrenme Ustası",
+                    title = str(R.string.lesson_p8_i03_ogrenme_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3112,13 +3129,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i03_ogrenme_ustasi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i04_zihin_kasifi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zihin Kaşifi",
+                    title = str(R.string.lesson_p8_i04_zihin_kasifi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3128,13 +3145,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
-                    raceTitle = "2 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i04_zihin_kasifi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i05_bilgelik_ustasi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilgelik Ustası",
+                    title = str(R.string.lesson_p8_i05_bilgelik_ustasi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3144,13 +3161,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 1,
-                    raceTitle = "2 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i05_bilgelik_ustasi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i06_zeka_kasifi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zeka Kaşifi",
+                    title = str(R.string.lesson_p8_i06_zeka_kasifi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3160,13 +3177,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 1,
-                    raceTitle = "2 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i06_zeka_kasifi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i07_beyin_muhendisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Beyin Mühendisi",
+                    title = str(R.string.lesson_p8_i07_beyin_muhendisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3176,13 +3193,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 4000,
                     raceBusyLevel = 1,
-                    raceTitle = "3 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i07_beyin_muhendisi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i08_mantik_ustadi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Mantık Üstadı",
+                    title = str(R.string.lesson_p8_i08_mantik_ustadi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3192,14 +3209,14 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
-                    raceTitle = "3 basamaklı 4 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i08_mantik_ustadi_race)
 
 
                 ),
                 LessonItem(
                     stableId = "p8_i09_deha",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Deha",
+                    title = str(R.string.lesson_p8_i09_deha_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3209,14 +3226,14 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 3000,
                     raceBusyLevel = 1,
-                    raceTitle = "3 basamaklı 6 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i09_deha_race)
 
 
                 ),
                 LessonItem(
                     stableId = "p8_i10_ust_zihin",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Üst Zihin",
+                    title = str(R.string.lesson_p8_i10_ust_zihin_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3226,14 +3243,14 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 1000,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 15 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i10_ust_zihin_race)
 
                     //1 15 2 10 3 10 1 20 4 10
                     ),
                 LessonItem(
                     stableId = "p8_i11_bilge_sampiyon",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Bilge Şampiyon",
+                    title = str(R.string.lesson_p8_i11_bilge_sampiyon_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3243,13 +3260,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2000,
                     raceBusyLevel = 1,
-                    raceTitle = "2 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i11_bilge_sampiyon_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i12_zeka_mimari",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Zeka Mimarı",
+                    title = str(R.string.lesson_p8_i12_zeka_mimari_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3259,13 +3276,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2500,
                     raceBusyLevel = 1,
-                    raceTitle = "3 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i12_zeka_mimari_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i13_ustalik_efendisi",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Ustalık Efendisi",
+                    title = str(R.string.lesson_p8_i13_ustalik_efendisi_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3275,13 +3292,13 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 800,
                     raceBusyLevel = 1,
-                    raceTitle = "1 basamaklı 20 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i13_ustalik_efendisi_race)
 
                     ),
                 LessonItem(
                     stableId = "p8_i14_efsanevi_bilge",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Efsanevi Bilge",
+                    title = str(R.string.lesson_p8_i14_efsanevi_bilge_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
@@ -3291,7 +3308,7 @@ object GlobalLessonData {
                     tutorialIsFinish = true,
                     timePeriod = 2500,
                     raceBusyLevel = 1,
-                    raceTitle = "4 basamaklı 10 adet sayı"
+                    raceTitle = str(R.string.lesson_p8_i14_efsanevi_bilge_race)
 
                     )
             )
@@ -3306,14 +3323,14 @@ object GlobalLessonData {
                 LessonItem(
                     stableId = "p9_i00_kupa_modu",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kupa Modu",
+                    title = str(R.string.lesson_p9_i00_kupa_modu_title),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     raceBusyLevel = 1,
-                    raceTitle = "Kupa Zorluğu",
+                    raceTitle = str(R.string.lesson_p9_i00_kupa_modu_race),
                 )
             )
 
@@ -3516,7 +3533,23 @@ object GlobalLessonData {
             gson.fromJson<List<LessonItem>>(migratedJson, type).toMutableList()
         }
         list.forEach { it.partId = partId }
-        return list
+        return withTemplateTexts(partId, list)
+    }
+
+    /**
+     * Yerel önbellekteki derslerin ad ve ipuçlarını şablondan yeniler.
+     *
+     * Önbellek item'ı bütün alanlarıyla tutuyor; okunan ad, yazıldığı günün metni ve dilidir.
+     * Yenilenmezse koddaki bir ad düzeltmesi ya da dil değişikliği önbelleği olan cihaza hiç
+     * ulaşmaz. Firestore yolu zaten şablonun üstüne yalnızca ilerleme alanlarını uyguluyor.
+     */
+    private fun withTemplateTexts(partId: Int, items: MutableList<LessonItem>): MutableList<LessonItem> {
+        val template = createLessonItems(partId).associateBy { it.stableId }
+        return items.map { item ->
+            // Çok eski önbellekte stableId yok (Gson null bırakır); onlara dokunulmaz.
+            val t = (item.stableId as String?)?.let { template[it] } ?: return@map item
+            item.copy(title = t.title, lessonHint = t.lessonHint, titleUnit = t.titleUnit, raceTitle = t.raceTitle)
+        }.toMutableList()
     }
 
 

@@ -1,0 +1,1076 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Öğretici metinleri. TutorialFragment bunları getString(R.string.<anahtar>) ve JSON'da
+  "@string/<anahtar>" ile okur.
+
+  Anahtar = sesli cümlelerde o cümlenin ses dosyasının adı (res/raw/<anahtar>.mp3), böylece
+  çeviride metin ve ses aynı adla eşleşir. Sesi olmayanlar tutorial_<tür>_<no>.
+  Aynı cümle tek anahtarı paylaşır; bir anahtarı değiştirmek onu kullanan HER adımı değiştirir.
+
+  Kural metinlerinde [köşeli parantez] içi mavi gösterilir; çeviride parantezler korunmalı.
+-->
+<resources>
+
+    <!-- Öğretici 1 -->
+    <string name="tutorial1_1">Sorobit\'e hoş geldin. Ekrana tıklayarak eğitim adımları arasında ilerleyebilirsin.</string>
+    <string name="tutorial1_2">Sol alttaki geri butonuna tıklayarak önceki adımlara gidebilirsin.</string>
+    <string name="tutorial1_4">Şimdi başlayalım.</string>
+    <string name="tutorial1_5">Abaküs, sayıları temsil etmek için boncuklar kullanan bir hesap aracıdır.</string>
+    <string name="tutorial1_6">Her sütun bir basamağı temsil eder. Basamaklar sağdan sola doğru artarak ilerler.</string>
+    <string name="tutorial1_7">Birler</string>
+    <string name="tutorial1_8">Onlar</string>
+    <string name="tutorial1_9">Yüzler</string>
+    <string name="tutorial1_10">Binler</string>
+    <string name="tutorial1_11">Ve on binler.</string>
+    <string name="tutorial1_12">Her sütunda 5 boncuk vardır.</string>
+    <string name="tutorial1_13">Üstteki boncuklar beşlik değere sahipken,</string>
+    <string name="tutorial1_14">Alttaki boncuklar birlik değere sahiptir.</string>
+    <string name="tutorial1_15">Örneğin 1 sayısı abaküste bu şekilde gösterilir.</string>
+    <string name="tutorial1_100">2 yazmak için birler basamağındaki birlik boncuklardan 2 tane kullanılır.</string>
+    <string name="tutorial1_101">3 için 3 tane,</string>
+    <string name="tutorial1_102">4 için 4 tane birlik boncuk kullanılır.</string>
+    <string name="tutorial1_103">Üstteki boncuklar beşlik değere sahiptir. Yani kullanıldığında sayımıza 5 ekler.</string>
+    <string name="tutorial1_104">5 sayısı böyle gösterilir.</string>
+    <string name="tutorial1_17">6 sayısı için üstteki boncuk ve bir alttaki boncuk kullanılır.</string>
+    <string name="tutorial1_105">7 böyle gösterilir.</string>
+    <string name="tutorial1_106">8 böyle,</string>
+    <string name="tutorial1_107">9 böyle gösterilir.</string>
+    <string name="tutorial1_108">Beraber örnek yaparak pekiştirelim.</string>
+    <string name="tutorial1_109">Aşağıdaki sayıyı abaküse yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_001">En sağdaki birlik boncuğu kullan.</string>
+    <string name="tutorial1_110">Şimdi de bu sayıyı yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_002">En sağdaki birlik boncuklardan 2 adet kullan.</string>
+    <string name="tutorial1_111">Bu sayıyı yaz.</string>
+    <string name="tutorial_ipucu_003">En sağ üstteki beşlik boncuğu kullan.</string>
+    <string name="tutorial_ipucu_004">1 adet beşlik ve 1 adet birlik boncuğu kullan.</string>
+    <string name="tutorial1_113">Son olarak bu sayıyı yaz.</string>
+    <string name="tutorial_ipucu_005">1 adet beşlik ve 3 adet birlik boncuğu kullan.</string>
+    <string name="tutorial1_21">Şimdi tahtaya yazacağım sayıları, abaküste göstermeye çalış.</string>
+
+    <!-- Öğretici 100 -->
+    <string name="tutorial3_100">Bu derste iki basamaklı sayıları göreceğiz.</string>
+    <string name="tutorial1_3">Eğer konuyu biliyorsan. Sağ alttaki eğitimi atla butonuna tıklayarak direkt teste geçebilirsin.</string>
+    <string name="tutorial3_101">Abaküste basamaklar normal sayılardaki gibi sola doğru artarak ilerler.</string>
+    <string name="tutorial3_102">10 yazmak için onlar basamağındaki boncuklardan 1 adet birlik boncuk kullanılır.</string>
+    <string name="tutorial3_103">20 yazmak için 2 adet birlik boncuk kullanılır.</string>
+    <string name="tutorial3_104">30 böyle gösterilir.</string>
+    <string name="tutorial3_105">40 böyle,</string>
+    <string name="tutorial3_106">50 yazmak istediğimizde ise yukarıdaki beşlik boncuk kullanılır.</string>
+    <string name="tutorial3_107">60 böyle gösterilir.</string>
+    <string name="tutorial3_108">70 böyle,</string>
+    <string name="tutorial3_109">80 böyle,</string>
+    <string name="tutorial3_110">90 ise böyle gösterilir.</string>
+    <string name="tutorial_ipucu_006">Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_111">Bu sayıyı yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial3_112">Birden fazla basamaklı sayılar yazılırken her zaman en büyük basamaktan başlanır.</string>
+    <string name="tutorial3_113">Yani 12 sayısını yazarken önce onlar basamağındaki 10 sayısı yazılır.</string>
+    <string name="tutorial3_114">Sonra ise 2 sayısı yazılır ve 12 böyle gösterilir.</string>
+    <string name="tutorial3_115">24 sayısını yazalım.</string>
+    <string name="tutorial3_116">Önce 20\'yi onlar basamağına yazıyorum.</string>
+    <string name="tutorial3_117">Sonrada birler basamağındaki 4\'ü yazıyorum ve işlem bitiyor.</string>
+    <string name="tutorial3_118">Bu sayıyı beraber yazalım.</string>
+    <string name="tutorial3_119">Önce onlar basamağındaki 30\'u yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_007">Sağdan 2. sütundaki boncukları kullan. 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_120">Sonrasında birler basamağındaki 2\'yi yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_008">En sağ sütundaki boncukları kullan. 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_121">78\'i yazarken aynı şekilde önce büyük basamaktan başlanır.</string>
+    <string name="tutorial3_122">Önce 70\'i yazıyorum.</string>
+    <string name="tutorial3_123">Sonrada 8\'i yazıyorum.</string>
+    <string name="tutorial3_124">Son olarak bu sayıyı beraber yazıp test\'e geçelim.</string>
+    <string name="tutorial3_125">Önce onlar basamağındaki sayıyı yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_009">Sağdan 2. sütundaki boncukları kullan. 1 adet beşlik, 4 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_126">Sonra da birler basamağındaki 4\'ü yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_010">En sağ sütundaki boncukları kullan. 4 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_127">Çok hızlı öğrendin. Şimdi test zamanı.</string>
+
+    <!-- Öğretici 101 -->
+    <string name="tutorial4_100">Bu derste 3-4-5 basamaklı sayıları göreceğiz.</string>
+    <string name="tutorial4_101">3 basamaklı sayıları yazarken, iki basamaklı sayılarda olduğu gibi en büyük basamaktan başlıyoruz.</string>
+    <string name="tutorial4_102">Örneğin bu sayıyı yazarken.</string>
+    <string name="tutorial4_103">İlk olarak yüzler basamağını abaküsteki yüzler basamağına yazıyorum.</string>
+    <string name="tutorial4_104">Sonrasında onlar basamağını,</string>
+    <string name="tutorial4_105">Ve son olarakta birler basamağını yazıyorum.</string>
+    <string name="tutorial4_107">Yüzler basamağını sağdan 3. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_011">1 adet birlik ve 1 adet beşlik boncuk kullan.</string>
+    <string name="tutorial4_108">Sonrasında onlar basamağını 2. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_012">3 adet birlik ve 1 adet beşlik boncuk kullan.</string>
+    <string name="tutorial4_109">Ve son olarak birler basamağını en sağdaki sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_013">2 adet birlik ve 1 adet beşlik boncuk kullan.</string>
+    <string name="tutorial4_3000">Bu sayıyı yazarken ise...</string>
+    <string name="tutorial4_3001">İlk olarak binler basamağını abaküsteki binler basamağına yazıyorum.</string>
+    <string name="tutorial4_3002">Sonrasında yüzler basamağını,</string>
+    <string name="tutorial4_2008">Onlar basamağını,</string>
+    <string name="tutorial4_3003">Binler basamağını sağdan 4. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_014">4 adet birlik boncuk kullan.</string>
+    <string name="tutorial4_3004">Sonrasında yüzler basamağını sağdan 3. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_015">1 adet birlik boncuk kullan.</string>
+    <string name="tutorial_ipucu_016">3 adet birlik boncuk kullan.</string>
+    <string name="tutorial101_0">Abaküse sayıları hangi basamaktan başlayarak yazarız?</string>
+    <string name="tutorial_ipucu_017">İleride kuralları doğru uygulayabilmemiz için en büyük basamaktan başlayarak yazarız.</string>
+    <string name="tutorial_sik_001">En küçük basamaktan.</string>
+    <string name="tutorial_sik_002">Basamağın önemi yok. İstediğimizden başlayabiliriz.</string>
+    <string name="tutorial_sik_003">En büyük basamaktan.</string>
+    <string name="tutorial4_3005">İlk olarak on binler basamağını abaküsteki on binler basamağına yazıyorum.</string>
+    <string name="tutorial4_2006">Sonrasında binler basamağını,</string>
+    <string name="tutorial4_2007">Yüzler basamağını,</string>
+    <string name="tutorial4_2009">On binler basamağını sağdan 5. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial4_2010">Onlar basamağını 2. sütuna yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_018">4 adet birlik ve 1 adet beşlik boncuk kullan.</string>
+    <string name="tutorial_ipucu_019">2 adet birlik boncuk kullan.</string>
+    <string name="tutorial4_110">İşte bu kadar basit.</string>
+    <string name="tutorial15_27">Teste geç.</string>
+
+    <!-- Öğretici 2 -->
+    <string name="tutorial2_1">Bu ünitede, çok büyük sayıları bile ne kadar kolay toplayabileceğini öğreneceksin.</string>
+    <string name="tutorial2_3">Bu işlemle başlayalım.</string>
+    <string name="tutorial2_4">İlk önce abaküse 3 yazıyoruz.</string>
+    <string name="tutorial2_5">Sonrasında toplamak için 5\'i ekleriz.</string>
+    <string name="tutorial2_6">Cevap 8.</string>
+    <string name="tutorial12_9">Bu işlemde ise...</string>
+    <string name="tutorial2_101">Önce abaküse ilk sayıyı yazıyorum.</string>
+    <string name="tutorial2_102">Sonrasında ekleyeceğim sayı değerinde boncuk ekliyorum.</string>
+    <string name="tutorial2_7">Şimdi bu örneği beraber yapalım.</string>
+    <string name="tutorial2_8">İlk önce abaküse 2 yazıp Kontrol Et\'e tıkla.</string>
+    <string name="tutorial_ipucu_020">En sağdaki sütundan 2 adet birlik boncuk kullan.</string>
+    <string name="tutorial2_9">Şimdi de 6\'yı ekleyip Kontrol Et\'e tıkla.</string>
+    <string name="tutorial_ipucu_021">En sağdaki sütuna 1 tane beşlik, 1 tane birlik boncuk ekle.</string>
+    <string name="tutorial2_103">Son olarak bu örneği beraber yapalım.</string>
+    <string name="tutorial2_104">İlk önce abaküse 1 yazıp Kontrol Et\'e tıkla.</string>
+    <string name="tutorial_ipucu_022">En sağdaki sütundan 1 adet birlik boncuk kullan.</string>
+    <string name="tutorial2_105">Şimdi de 8\'i ekleyip Kontrol Et\'e tıkla.</string>
+    <string name="tutorial_ipucu_023">En sağdaki sütundan 1 adet beşlik 3 adet birlik boncuk kullan.</string>
+
+    <!-- Öğretici 102 -->
+    <string name="tutorial2_11">İki basamaklı sayılar toplanırken, sayılar en büyük basamaktan başlanarak toplanır.</string>
+    <string name="tutorial2_12">Mesela bu işleme bakalım.</string>
+    <string name="tutorial2_13">İlk önce 21 yazıyoruz.</string>
+    <string name="tutorial2_14">Sonrasında, 13\'ü eklemek için önce 10\'unu onlar basamağına, sonra da 3\'ünü birler basamağına ekliyoruz.</string>
+    <string name="tutorial2_15">Cevap 34.</string>
+    <string name="tutorial2_17">Bu işlemi ele alalım.</string>
+    <string name="tutorial2_18">İlk önce 16 yazıp Kontrol Et\'e tıkla.</string>
+    <string name="tutorial_ipucu_024">Onlar basamağından 1 adet birlik, birler basamağından 1 adet beşlik ve 1 adet birlik boncuk kullan.</string>
+    <string name="tutorial2_19">Sonrasında, 21\'i eklemek için önce 20\'yi onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_025">Onlar basamağına 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial2_20">Son olarak 1\'i birler basamağına ekle.</string>
+    <string name="tutorial_ipucu_026">Birler basamağına 1 adet birlik boncuk ekle.</string>
+    <string name="tutorial10_6">Bu işleme bakalım.</string>
+    <string name="tutorial102_0">İlk önce 36 yazıyorum.</string>
+    <string name="tutorial102_1">Sonrasında, 63\'ü eklemek için önce 60\'ı onlar basamağına, sonra da 3\'ü birler basamağına ekliyorum.</string>
+    <string name="tutorial102_2">Cevap 99.</string>
+    <string name="tutorial102_3">Önce ilk sayıyı yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_027">Onlar basamağından 2 adet birlik, birler basamağından 3 adet birlik boncuk kullan.</string>
+    <string name="tutorial102_4">Sonrasında, 71\'i eklemek için önce 70\'i onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_028">Onlar basamağına 1 adet beşlik, 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial102_5">Sonra da 1\'i birler basamağına ekle.</string>
+
+    <!-- Öğretici 103 -->
+    <string name="tutorial103_0">Üç basamaklı sayılar toplanırkende toplamaya en büyük basamaktan başlayacağız.</string>
+    <string name="tutorial103_1">Bu bütün toplama işlemlerinde böyle her zaman en büyük basamaktan başlayarak toplanır.</string>
+    <string name="tutorial103_2">İlk önce 241 yazıyoruz.</string>
+    <string name="tutorial103_3">Sonrasında 153\'ü en büyük basamağından başlayarak ekliyoruz.</string>
+    <string name="tutorial103_4">100</string>
+    <string name="tutorial103_5">50</string>
+    <string name="tutorial103_6">3</string>
+    <string name="tutorial103_7">Cevap 394.</string>
+    <string name="tutorial103_8">İlk önce 222 yazıp kontrol ete tıkla.</string>
+    <string name="tutorial_ipucu_029">Yüzler, onlar ve birler basamaklarına 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial103_9">Sonrasında, 126\'yı en büyük basamağından başlayarak ekle.</string>
+    <string name="tutorial_ipucu_030">Yüzler basamağına 1 adet birlik boncuk ekle.</string>
+    <string name="tutorial103_10">20</string>
+    <string name="tutorial103_11">6</string>
+    <string name="tutorial_ipucu_031">Birler basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial103_348">Cevap 348.</string>
+    <string name="tutorial103_12">İlk önce 582 yazıyoruz.</string>
+    <string name="tutorial103_13">Sonrasında 316\'yı en büyük basamağından başlayarak ekliyoruz.</string>
+    <string name="tutorial103_14">300</string>
+    <string name="tutorial103_15">10</string>
+    <string name="tutorial103_17">Cevap 898.</string>
+    <string name="tutorial103_18">İlk önce 723 yazıp kontrol ete tıkla.</string>
+    <string name="tutorial_ipucu_032">Yüzler basamağına 1 adet beşlik ve 2 adet birlik, onlar basamağına 2 adet birlik ve birler basamağına 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial103_19">Sonrasında, 266\'yı en büyük basamağından başlayarak ekle.</string>
+    <string name="tutorial103_20">200</string>
+    <string name="tutorial_ipucu_033">Yüzler basamağına 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial103_21">60</string>
+    <string name="tutorial_ipucu_034">Onlar basamağına 1 adet birlik ve 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial103_22">Cevap 989.</string>
+
+    <!-- Öğretici 3 -->
+    <string name="tutorial3_1">Bu derste kurallı toplamanın ilk dersi olan 5\'lik toplamayı öğreneceksin.</string>
+    <string name="tutorial3000_1">5\'lik toplamayı, sayıları doğrudan ekleyemediğimiz zaman kullanırız.</string>
+    <string name="tutorial3000_2">Örneğin bu işlemde 4\'ü abaküse yazıyorum.</string>
+    <string name="tutorial3000_3">1\'i eklemek istediğimde doğrudan ekleyemiyorum. Aşağıda eklenecek boncuk yok.</string>
+    <string name="tutorial3000_4">İşte böyle zamanlarda 5\'lik toplama kuralını uygulayacağız.</string>
+    <string name="tutorial3_2">5\'lik toplama kuralında ekleyeceğimiz sayıların 5\'e tamamlayan kardeşleri vardır.</string>
+    <string name="tutorial3_3">1\'in kardeşi 4\'tür.</string>
+    <string name="tutorial3_4">2\'nin kardeşi 3</string>
+    <string name="tutorial3_5">3\'ün kardeşi 2</string>
+    <string name="tutorial3_6">4\'ün kardeşi 1\'dir.</string>
+    <string name="tutorial3000_5">"Bu kuralı, sayıyı ekleyemediğimiz zaman  ‘5 gelir, kardeşi gider’ şeklinde uygulayacağız."</string>
+    <string name="tutorial3_7">Örneğin bu işlemi yapmaya çalışalım.</string>
+    <string name="tutorial3_8">İlk olarak abaküse ilk sayıyı yazıyoruz.</string>
+    <string name="tutorial3_9">Sonrasında ekleyeceğimiz ikinci sayıyı yazacağız.</string>
+    <string name="tutorial3_10">Ama 1\'i doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial3_11">O yüzden burada 5\'lik toplama kuralını uygulayacağız.</string>
+    <string name="tutorial3_13">5 gelir.</string>
+    <string name="tutorial3_14">Kardeşi 4 gider.</string>
+    <string name="tutorial3_15">Cevap 5.</string>
+    <string name="tutorial3_17">Önce abaküse 4 yazıyoruz.</string>
+    <string name="tutorial3_18">Sonrasında 2\'yi ekleyeceğiz. Ama 2\'yi doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial3_19">Bu yüzden 5\'lik kuralı uygulayacağız.</string>
+    <string name="tutorial3_20">2\'nin kardeşi 3\'tür.</string>
+    <string name="tutorial3_22">Kardeşi 3 gider.</string>
+    <string name="tutorial3_23">Cevap 6.</string>
+    <string name="tutorial3_25">"Önce abaküse  3\'ü yazıyoruz."</string>
+    <string name="tutorial3_26">Sonrasında 3\'ü ekleyeceğiz. Ama 3\'ü doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial3_28">3\'ün kardeşi 2\'dir.</string>
+    <string name="tutorial3_30">Kardeşi 2 gider.</string>
+    <string name="tutorial_ipucu_035">5 gelir. Kardeş gider.</string>
+    <string name="tutorial_soru_001">5\'lik kuralın uygulanma adımları nedir?</string>
+    <string name="tutorial_sik_004">5 gider. Kardeş gelir.</string>
+    <string name="tutorial_sik_005">5 gelir. Kardeş gelir.</string>
+    <string name="tutorial3_32">Son olarak bu işlemi ele alalım.</string>
+    <string name="tutorial3_33">Önce abaküse 2\'yi yazıyoruz.</string>
+    <string name="tutorial3_34">Sonrasında 4\'ü ekleyeceğiz. Ama 4\'ü doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial3_37">Kardeşi 1 gider.</string>
+    <string name="tutorial_ipucu_036">Abaküsteki sayıya doğrudan ekleyemediğimiz 2. sayının kardeşine bakarız.</string>
+    <string name="tutorial_soru_002">5\'lik kuralı uygularken hangi sayının kardeşine bakarız?</string>
+    <string name="tutorial_sik_006">Abaküse yazdığımız ilk sayının kardeşine.</string>
+    <string name="tutorial_sik_007">Doğrudan ekleyemediğimiz sayının kardeşine.</string>
+    <string name="tutorial_sik_008">Sayının önemi yok. Rastgele belirleriz.</string>
+    <string name="tutorial3_39">Bu kural her basamak için aynıdır.</string>
+    <string name="tutorial3_40">Bu işlemde de aynı kuralı uygularız.</string>
+    <string name="tutorial3_41">30\'u abaküse yazıyoruz.</string>
+    <string name="tutorial3_42">40\'ı doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial3_44">Cevap 70.</string>
+    <string name="tutorial3_46">Önce abaküse ilk sayıyı yaz.</string>
+    <string name="tutorial_ipucu_037">Birler basamağına 4 adet birlik boncuk ekle.</string>
+    <string name="tutorial3_47">Sonrasında 4\'ü ekleyeceğiz.</string>
+    <string name="tutorial3_48">Doğrudan ekleyemediğimiz için 5\'lik kural uygulayacağız.</string>
+    <string name="tutorial_ipucu_038">Birler basamağındaki beşlik boncuğu ekle.</string>
+    <string name="tutorial_ipucu_039">Birler basamağından 1 adet birlik boncuk çıkar.</string>
+    <string name="tutorial3_49">Ve cevap 8.</string>
+    <string name="tutorial3000_6">Son olarak bu soruyu yapalım.</string>
+    <string name="tutorial_ipucu_040">Birler basamağına 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial3000_7">Sonrasında 2\'yi ekleyeceğiz.</string>
+    <string name="tutorial_ipucu_041">Birler basamağından 3 adet birlik boncuk çıkar.</string>
+    <string name="tutorial3_50">Şimdi öğrendiklerini uygulama zamanı.</string>
+
+    <!-- Öğretici 4 -->
+    <string name="tutorial4_1000">Üç basamaklı sayılarda 5\'lik toplama.</string>
+    <string name="tutorial4_2">Bu örneğe bakalım.</string>
+    <string name="tutorial4_3">İlk sayıyı abaküse yazıyoruz.</string>
+    <string name="tutorial4_1001">Sonrasında 346 sayısını en büyük basamağından başlayarak ekliyoruz.</string>
+    <string name="tutorial4_1010">300\'ü doğrudan ekleyemiyoruz. Bu yüzden 5\'lik kuralı uygulayacağız.</string>
+    <string name="tutorial4_1002">3\'ün kardeşi 2 gider.</string>
+    <string name="tutorial4_1003">Şimdi sıra onlar basamağında.</string>
+    <string name="tutorial4_2000">40\'ı doğrudan ekleyemiyoruz. Bu yüzden 5\'lik kuralı uygulayacağız.</string>
+    <string name="tutorial4_2001">Son olarak birler basamağına 6 ekliyor ve işlemi bitiriyoruz.</string>
+    <string name="tutorial4_2002">Cevap 589.</string>
+    <string name="tutorial_ipucu_042">Sayıyı kuralsız, doğrudan ekleyebiliyorsak önceliğimiz kuralsız eklemedir. Eğer kuralsız toplama yapamıyorsak 5\'lik kurala başvururuz.</string>
+    <string name="tutorial_soru_003">5\'lik toplama kuralını ne zaman uygularız?</string>
+    <string name="tutorial_sik_009">Kuralsız toplama yapamadığımız zaman.</string>
+    <string name="tutorial_sik_010">Kuralsız toplama yapabildiğimiz zaman.</string>
+    <string name="tutorial_ipucu_043">Yüzler basamağına 4 adet birlik, onlar basamağına 2 adet birlik, birler basamağına 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial4_1005">Toplamaya yüzler basamağından başlıyoruz.</string>
+    <string name="tutorial4_1006">300\'ü ekleyip \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_044">Yüzler basamağına 1 adet beşlik boncuk ekle. 2 adet birlik boncuk çıkar.</string>
+    <string name="tutorial4_2003">20\'yi ekleyip \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial4_2004">2\'yi ekleyip \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_045">Birler basamağına 1 adet beşlik boncuk ekle. 3 adet birlik boncuk çıkar.</string>
+    <string name="tutorial4_2005">Cevap 745.</string>
+
+    <!-- Öğretici 5 -->
+    <string name="tutorial5_1">Bu derste 10\'luk toplamayı öğreneceğiz.</string>
+    <string name="tutorial5_2">10\'luk toplamayı, 5\'lik kuraldaki 5 gelir adımını uygulayamadığımız zaman kullanacağız.</string>
+    <string name="tutorial5_3">Örneğin bu işlemde.</string>
+    <string name="tutorial5_4">9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.</string>
+    <string name="tutorial5_5">Hem de 5\'lik kuralı uygulamak için ekleyeceğim 5\'lik boncuk yok.</string>
+    <string name="tutorial5_6">Yani 5\'lik kuralı uygulamaya çalışsaydık, \'5 gelir, 1\'in kardeşi 4 gider\' adımlarını uygulamamız gerekirdi.</string>
+    <string name="tutorial5_7">Ama yukarıda zaten 5\'lik boncuk olduğu için 5\'lik kuraldaki 5 gelir adımını yapamam.</string>
+    <string name="tutorial5000_2">Bu durumda 10\'luk kuralı uygulamamız gerekiyor.</string>
+    <string name="tutorial5_8">10\'luk kuralda sayıların büyük kardeşleri vardır.</string>
+    <string name="tutorial5_9">10 gelir, büyük kardeş gider.</string>
+    <string name="tutorial5_10">1\'in büyük kardeşi 9\'dur.</string>
+    <string name="tutorial5_11">2\'nin büyük kardeşi 8\'dir.</string>
+    <string name="tutorial5_12">3\'ün büyük kardeşi 7\'dir.</string>
+    <string name="tutorial5_13">4\'ün büyük kardeşi 6\'dır.</string>
+    <string name="tutorial5_14">5\'in büyük kardeşi 5\'tir.</string>
+    <string name="tutorial5_15">Bu işleme tekrar bakalım.</string>
+    <string name="tutorial5_16">Şimdi 1 eklemek istiyorum.</string>
+    <string name="tutorial5_17">Önce, doğrudan ekleyebilir miyim diye bakıyorum, ama aşağıda ekstra boncuk yok.</string>
+    <string name="tutorial5_18">5\'lik kuralı uygulamak için yukarı bakıyorum ama yukarıda da ekleyebileceğim boncuk yok.</string>
+    <string name="tutorial5_19">O zaman son seçenek olan 10\'luk kurala geçiyorum.</string>
+    <string name="tutorial5_20">10 gelir.</string>
+    <string name="tutorial5_21">1\'in büyük kardeşi olan 9 gider.</string>
+    <string name="tutorial5_22">Cevap 10.</string>
+    <string name="tutorial5000_1">Yani sayıyı eklerken önce doğrudan eklemeyi, bu mümkün olmazsa 5\'lik kuralı, o da mümkün olmazsa 10\'luk kuralı uygulamayı deniyoruz.</string>
+    <string name="tutorial5_23">Aynısını bu işlem için yapacak olsaydık...</string>
+    <string name="tutorial5_24">8 abaküse yazılır.</string>
+    <string name="tutorial5_25">2\'yi doğrudan veya 5\'lik kural ile ekleyebilir miyim? Diye kontrol edilir.</string>
+    <string name="tutorial5_26">İkisi de yapılamadığı için 10\'luk kural uygulanır.</string>
+    <string name="tutorial5_27">2\'nin büyük kardeşi 8 gider.</string>
+    <string name="tutorial5_28">Bu işlem için...</string>
+    <string name="tutorial5_29">9 abaküse yazılır.</string>
+    <string name="tutorial5_30">3\'ün büyük kardeşi 7 gider.</string>
+    <string name="tutorial5_31">Cevap 12.</string>
+    <string name="tutorial5_33">7 abaküse yazılır.</string>
+    <string name="tutorial5_34">4\'ün büyük kardeşi 6 gider.</string>
+    <string name="tutorial5_35">Cevap 11.</string>
+    <string name="tutorial5_36">6 abaküse yazılır.</string>
+    <string name="tutorial5_37">5\'in büyük kardeşi 5 gider.</string>
+    <string name="tutorial5_38">Ve cevap 11.</string>
+    <string name="tutorial5_46">10\'luk kuralı hangi kural veya kuralları uygulayamadığımız zaman kullanırız?</string>
+    <string name="tutorial_ipucu_046">Kuralsız ve 5\'lik toplama kuralını uygulayamadığımız zaman 10\'luk kuralı uygularız.</string>
+    <string name="tutorial_sik_011">Kuralsız toplama</string>
+    <string name="tutorial_sik_012">5\'lik kural</string>
+    <string name="tutorial_sik_013">10\'luk kural</string>
+    <string name="tutorial5_39">Bu örneği beraber yapalım.</string>
+    <string name="tutorial5_40">İlk sayıyı abaküse yazıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_047">Onlar basamağına 1 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial5_41">Şimdi ise, 4\'ü doğrudan mı, 5\'lik kuralla mı, yoksa 10\'luk kuralla mı ekleyeceğine karar ver.</string>
+    <string name="tutorial5_42">Ve sayıyı ekle.</string>
+    <string name="tutorial_ipucu_048">10 gelir 4\'ün büyük kardeşi 6 gider.</string>
+    <string name="tutorial5_43">5\'lik kuraldan tek farkı. 5 gelir, kardeş gider değil. 10 gelir, kardeş gider diyoruz.</string>
+    <string name="tutorial_txt_001">İlk sayıyı abaküse yaz.</string>
+    <string name="tutorial_ipucu_049">Onlar basamağına 1 adet birlik, birler basamağına 2 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial5000_3">Şimdi ise, 3\'ü doğrudan mı, 5\'lik kuralla mı, yoksa 10\'luk kuralla mı ekleyeceğine karar ver.</string>
+    <string name="tutorial_ipucu_050">10 gelir 3\'ün büyük kardeşi 7 gider.</string>
+    <string name="tutorial5_45">10\'luk kuralı nasıl uygularız?</string>
+    <string name="tutorial_ipucu_051">10 gelir. Ekleyeceğimiz sayının kardeşi gider.</string>
+    <string name="tutorial_sik_014">10 gelir. Abaküste yazan sayının kardeşi gider.</string>
+    <string name="tutorial_sik_015">10 gider. Ekleyeceğimiz sayının kardeşi gelir.</string>
+    <string name="tutorial5_44">Şimdi kendini ispatlama zamanı.</string>
+
+    <!-- Öğretici 6 -->
+    <string name="tutorial6_1">10’luk toplamada “10 gelir” işlemini yaparken 5’lik veya 10’luk kuralı kullanmamız gerekebilir.</string>
+    <string name="tutorial6_2">Örnek olarak bu işlemde.</string>
+    <string name="tutorial6000_0">Önce 4\'ü hangi kural ile ekleyebileceğime bakıyorum.</string>
+    <string name="tutorial6000_1">Doğrudan ekleyemiyorum. Aşağıda ekleyebileceğim ekstra boncuk yok.</string>
+    <string name="tutorial6000_2">5\'lik kuralla da ekleyemiyorum. Yukarıdaki 5\'lik boncuğum zaten kullanılmış.</string>
+    <string name="tutorial6000_3">O zaman 10\'luk kuralı uygulayacağım.</string>
+    <string name="tutorial6000_4">Yapacağım işlem adımları 10 gelir, 6 gider.</string>
+    <string name="tutorial_kural_001">10 gelir -&gt; 6 gider</string>
+    <string name="tutorial6000_5">10 gelir adımını yapabilmek için onlar basamağına 1 eklemem gerekiyor.</string>
+    <string name="tutorial_kural_002">[10 gelir] -&gt; 6 gider</string>
+    <string name="tutorial6000_6">Ama 1\'i doğrudan ekleyemiyorum.</string>
+    <string name="tutorial6000_7">5\'lik kural ile ekleyebilir miyim diye kontrol ediyorum.</string>
+    <string name="tutorial6000_8">Yukarıda kullanabileceğim 5\'lik boncuğum olduğu için 5\'lik kuralı uyguluyorum.</string>
+    <string name="tutorial6_9">5 gelir. 1\'in kardeşi 4 gider.</string>
+    <string name="tutorial6000_9">10 gelir adımını tamamladım. Son olarak 6 gider adımını yapıp işlemi sonlandırıyorum.</string>
+    <string name="tutorial_kural_003">10 gelir -&gt; [6 gider]</string>
+    <string name="tutorial6000_10">Ve cevap 53.</string>
+    <string name="tutorial6_13">Yaptığımız işlemleri tekrar edelim.</string>
+    <string name="tutorial6_14">49’u abaküse yazıyorum.</string>
+    <string name="tutorial6000_11">4\'ü doğrudan ekleyemiyorum. Bu yüzden 10’luk kuralı uygulayacağım.</string>
+    <string name="tutorial6000_12">10 gelir, 4\'ün büyük kardeşi 6 gider.</string>
+    <string name="tutorial6000_13">Ve büyük kardeş 6 gider.</string>
+    <string name="tutorial6000_14">Cevap 53.</string>
+    <string name="tutorial_ipucu_052">Onlar basamağına 4 adet birlik, birler basamağına 3 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial6000_16">2\'yi 10\'luk kural ile ekleyeceğiz. Önce \'10 gelir\' adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_053">Onlar basamağına 1 ekle. 5 gelir. 1\'in kardeşi 4 gider.</string>
+    <string name="tutorial_kural_004">[10 gelir] -&gt; 8 gider</string>
+    <string name="tutorial6000_17">Ve 2\'nin büyük kardeşi 8 gider adımını yapıp işlemi sonlandır.</string>
+    <string name="tutorial_ipucu_054">Birler basamağından 8 çıkar.</string>
+    <string name="tutorial_kural_005">10 gelir -&gt; [8 gider]</string>
+    <string name="tutorial6_20">Bir de bu örneğe bakalım.</string>
+    <string name="tutorial6000_18">Önce 3\'ü hangi kural ile ekleyebileceğime bakıyorum.</string>
+    <string name="tutorial_txt_002">5\'lik kurallada ekleyemiyorum. Yukarıdaki 5\'lik boncuğum zaten kullanılmış.</string>
+    <string name="tutorial6000_19">Yapacağım işlem adımları 10 gelir, 7 gider.</string>
+    <string name="tutorial_kural_006">10 gelir -&gt; 7 gider</string>
+    <string name="tutorial_kural_007">[10 gelir] -&gt; 7 gider</string>
+    <string name="tutorial6000_20">Yukarıda kullanabileceğim 5\'lik boncuğum olmadığı için 10\'luk kuralı uygulayacağım.</string>
+    <string name="tutorial6000_21">10 gelir. 1\'in kardeşi 9 gider.</string>
+    <string name="tutorial6000_22">Kardeşi 9 gider.</string>
+    <string name="tutorial6000_23">10 gelir adımını tamamladım. Son olarak 7 gider adımını yapıp işlemi sonlandırıyorum.</string>
+    <string name="tutorial_kural_008">10 gelir -&gt; [7 gider]</string>
+    <string name="tutorial6000_24">Ve cevap 101.</string>
+    <string name="tutorial6_31">98’i abaküse yazıyorum.</string>
+    <string name="tutorial6000_25">3 sayısını 10’luk kuralla ekleyeceğim.</string>
+    <string name="tutorial6000_26">10 gelir. 3’ün büyük kardeşi 7 gider.</string>
+    <string name="tutorial6000_27">3’ün büyük kardeşi 7 gider.</string>
+    <string name="tutorial6000_28">Cevap 101.</string>
+    <string name="tutorial_ipucu_055">Onlar basamağına 4 adet birlik, 1 adet beşlik, Birler basamağına 1 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial6000_29">5\'i 10\'luk kuralla ekleyeceğiz. Önce \'10 gelir\' adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_056">Onlar basamağına 1 ekle. 10 gelir. 1\'in kardeşi 9 gider.</string>
+    <string name="tutorial_kural_009">[10 gelir] -&gt; 5 gider</string>
+    <string name="tutorial6000_30">Ve 5\'in büyük kardeşi 5 gider adımını yapıp işlemi sonlandıralım.</string>
+    <string name="tutorial_ipucu_057">Birler basamağından 5 çıkar.</string>
+    <string name="tutorial_kural_010">10 gelir -&gt; [5 gider]</string>
+
+    <!-- Öğretici 104 -->
+    <string name="tutorial_txt_003">Bu işleme bakalım</string>
+    <string name="tutorial_txt_004">Sonrasında en büyük basamaktan başlayarak toplama işlemlerini yapıyorum.</string>
+    <string name="tutorial6_4">5 sayısını doğrudan ekleyemiyorum. O zaman 10\'luk kural uygulayacağım.</string>
+    <string name="tutorial6_5">Yapacağım işlem: “10 gelir, 5’in büyük kardeşi 5 gider.”</string>
+    <string name="tutorial6_6">Fakat onlar basamağına 10’u eklerken doğrudan ekleyemiyorum.</string>
+    <string name="tutorial6_7">Böyle olduğunda 5’lik veya 10’luk kurallardan yardım alacağız.</string>
+    <string name="tutorial6_8">Burada 10 sayısını eklemek için 5’lik kuralı uygulayabilirim. Çünkü yukarıdaki 5’lik boncuğum boşta.</string>
+    <string name="tutorial6_10">Bu şekilde 10’luk kuralındaki 10 gelir adımını gerçekleştirmiş oldum.</string>
+    <string name="tutorial6_11">Şimdi 5 gider adımını yapıp işlemi sonlandıracağız.</string>
+    <string name="tutorial6_12">Ve cevap 54.</string>
+    <string name="tutorial6_15">5’i doğrudan ekleyemiyorum. Bu yüzden 10’luk kuralı uygulayacağım.</string>
+    <string name="tutorial6_16">10 gelir 5’in büyük kardeşi 5 gider.</string>
+    <string name="tutorial6_18">Ve büyük kardeş 5 gider.</string>
+    <string name="tutorial6_19">Cevap 54.</string>
+    <string name="tutorial5_1001">Ve 2\'nin büyük kardeşini çıkarıp işlemi sonlandır.</string>
+    <string name="tutorial6_21">İlk sayıyı abaküse yazıyorum.</string>
+    <string name="tutorial6_22">Şimdi 4 sayısını 10’luk kuralla ekleyeceğim.</string>
+    <string name="tutorial6_23">10 gelir. 4’ün büyük kardeşi 6 gider.</string>
+    <string name="tutorial6_24">Onlar basamağına 10 gelebilmesi için bu sefer 10’luk kuralı uygulamamız gerekir.</string>
+    <string name="tutorial6_25">10 gelir. 1’in büyük kardeşi 9 gider.</string>
+    <string name="tutorial6_27">1’in büyük kardeşi 9 gider.</string>
+    <string name="tutorial6_28">Şimdi de 4’ün büyük kardeşi 6’yı götüreceğiz.</string>
+    <string name="tutorial6_29">Ve cevap 102.</string>
+    <string name="tutorial6_32">4 sayısını 10’luk kuralla ekleyeceğim.</string>
+    <string name="tutorial6_35">4’ün büyük kardeşi 6 gider.</string>
+    <string name="tutorial6_36">Cevap 102.</string>
+    <string name="tutorial5_1002">5\'i 10\'luk kural ile ekleyeceğiz. Önce \'10 gelir\' adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial5_1003">Ve 5\'in büyük kardeşini çıkarıp işlemi sonlandır.</string>
+
+    <!-- Öğretici 7 -->
+    <string name="tutorial7_1">Bu derste 10’luk kuralın devamını göreceğiz.</string>
+    <string name="tutorial7_2">Aslında bir önceki derste gördüğümüz kardeşlerin tersini kullanacağız.</string>
+    <string name="tutorial7_3">6\'nın kardeşi 4\'tür.</string>
+    <string name="tutorial7_4">7\'nin kardeşi 3</string>
+    <string name="tutorial7_5">8\'in kardeşi 2</string>
+    <string name="tutorial7_6">9\'un kardeşi 1\'dir.</string>
+    <string name="tutorial7_7">Bu kuralı abaküse 6,7,8 veya 9 sayılarından herhangi birini doğrudan ekleyemediğimiz zaman uygulayacağız.</string>
+    <string name="tutorial7_8">Yani bu işlemi yaparken değil; çünkü burada 7’yi kardeşine ihtiyaç duymadan ekleyebiliyoruz.</string>
+    <string name="tutorial7_9">Ama bu işleme bakacak olursak. Birler basamağında 7 tane boncuğumuz olmadığı için 10\'luk kuralı uygulayacağız.</string>
+    <string name="tutorial7_11">7’nin kardeşi 3 gider.</string>
+    <string name="tutorial7_13">Bu işleme bakacak olursak.</string>
+    <string name="tutorial7_14">6\'yı doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial7_15">Bu yüzden 10\'luk kuralı uygulayacağız.</string>
+    <string name="tutorial7_17">6\'nın kardeşi 4 gider.</string>
+    <string name="tutorial7_20">8\'i doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial7_30">6-7-8-9 sayılarını eklerken kullandığımız 10\'luk kuralını ne zaman uygularız?</string>
+    <string name="tutorial_ipucu_058">6-7-8-9 sayılarını doğrudan ekleyemediğimizde 10\'luk kuralı uygularız.</string>
+    <string name="tutorial_sik_016">5\'lik Kural ile ekleyemediğimiz zaman.</string>
+    <string name="tutorial_sik_017">10\'luk Kural ile ekleyemediğimiz zaman.</string>
+    <string name="tutorial_sik_018">Doğrudan ekleyemediğimiz zaman.</string>
+    <string name="tutorial7_24">Bu işlemi beraber yapalım.</string>
+    <string name="tutorial7_26">Şimdi 9\'u ekleyeceğiz. 9\'u doğrudan mı, yoksa 10\'luk kuralla mı ekleyeceğimize karar ver.</string>
+    <string name="tutorial7_27">10\'luk kuralla ekleyeceğiz.</string>
+    <string name="tutorial_ipucu_059">Onlar basamağına 1 adet birlik boncuk ekle.</string>
+    <string name="tutorial7_29">9\'un kardeşi 1 gider.</string>
+
+    <!-- Öğretici 105 -->
+    <string name="tutorial_txt_005">Örnek olarak bu işlemde</string>
+    <string name="tutorial105_0">48 sayısına 7 eklemek istiyorum.</string>
+    <string name="tutorial105_1">7\'yi doğrudan ekleyemiyorum. Bu yüzden 10\'luk kuralı uygulayacağım.</string>
+    <string name="tutorial105_2">Yapacağım işlem: “10 gelir, 7’nin kardeşi 3 gider.”</string>
+    <string name="tutorial_kural_011">[10 gelir] -&gt; 3 gider</string>
+    <string name="tutorial105_3">Şimdi 3 gider adımını yapıp işlemi sonlandıracağız.</string>
+    <string name="tutorial_kural_012">10 gelir -&gt; [3 gider]</string>
+    <string name="tutorial105_7">Cevap 55.</string>
+    <string name="tutorial105_50">48’i abaküse yazıyorum.</string>
+    <string name="tutorial_txt_006">7\'yi doğrudan ekleyemiyorum. Bu yüzden 10’luk kuralı uygulayacağım.</string>
+    <string name="tutorial105_5">10 gelir 7’nin kardeşi 3 gider.</string>
+    <string name="tutorial105_6">Ve kardeş 3 gider.</string>
+    <string name="tutorial_ipucu_060">Onlar basamağına 4 adet birlik, birler basamağına 4 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial1050_0">6\'yı 10\'luk kural ile ekleyeceğiz. Önce \'10 gelir\' adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_kural_013">[10 gelir] -&gt; 4 gider</string>
+    <string name="tutorial1050_1">Ve 6\'nın kardeşi 4 gider adımını yapıp işlemi sonlandır.</string>
+    <string name="tutorial_ipucu_061">Birler basamağından 4 çıkar.</string>
+    <string name="tutorial_kural_014">10 gelir -&gt; [4 gider]</string>
+    <string name="tutorial1050_2">Önce 9\'u hangi kural ile ekleyebileceğime bakıyorum.</string>
+    <string name="tutorial1050_11">Doğrudan ekleyemiyorum. Ekleyebileceğim ekstra boncuk yok.</string>
+    <string name="tutorial1050_3">Yapacağım işlem adımları 10 gelir, 1 gider.</string>
+    <string name="tutorial_kural_015">10 gelir -&gt; 1 gider</string>
+    <string name="tutorial_kural_016">[10 gelir] -&gt; 1 gider</string>
+    <string name="tutorial1050_4">10 gelir adımını tamamladım. Son olarak 1 gider adımını yapıp işlemi sonlandırıyorum.</string>
+    <string name="tutorial_kural_017">10 gelir -&gt; [1 gider]</string>
+    <string name="tutorial1050_5">Ve cevap 108.</string>
+    <string name="tutorial1050_6">99’u abaküse yazıyorum.</string>
+    <string name="tutorial1050_7">9 sayısını 10’luk kuralla ekleyeceğim.</string>
+    <string name="tutorial_ipucu_062">Onlar basamağına 4 adet birlik, 1 adet beşlik, Birler basamağına 2 adet birlik, 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial1050_8">8\'i 10\'luk kuralla ekleyeceğiz. Önce \'10 gelir\' adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_kural_018">[10 gelir] -&gt; 2 gider</string>
+    <string name="tutorial1050_9">Ve \'8\'in kardeşi 2 gider\' adımını yapıp işlemi sonlandır.</string>
+    <string name="tutorial_ipucu_063">Birler basamağından 2 çıkar.</string>
+    <string name="tutorial_kural_019">10 gelir -&gt; [2 gider]</string>
+
+    <!-- Öğretici 8 -->
+    <string name="tutorial8_1">Bu derste abaküste toplamanın son kuralı olan boncuk kuralını göreceğiz.</string>
+    <string name="tutorial8_2">Bu kural 6, 7, 8 veya 9 sayılarıyla toplama yaparken kullanılır.</string>
+    <string name="tutorial8_3">Normalde 6 sayısı ile toplama yaparken öğrendiğimiz 2 tane yöntem vardı.</string>
+    <string name="tutorial8_4">1. yöntem, doğrudan ekleme.</string>
+    <string name="tutorial8_5">Örneğin bu işlemi yaparken doğrudan ekleme yaparız. Yani hiçbir kural uygulamadan doğrudan ekleriz.</string>
+    <string name="tutorial8_6">2. yöntem, 10’luk kural ile ekleme.</string>
+    <string name="tutorial8_7">Bu işlemde 6’yı doğrudan ekleyemediğimiz için 10’luk kuralı uyguluyorduk. 10 gelir. Kardeşi 4 gider.</string>
+    <string name="tutorial8_11">Bu kuralları uygulayamadığımız zamanlarda boncuk kuralını uygularız.</string>
+    <string name="tutorial_ipucu_064">Kuralsız ve 10\'luk toplama yapamadığımızda boncuk kuralını uygularız.</string>
+    <string name="tutorial_soru_004">Boncuk kuralını, hangi kuralları uygulayamadığımız zaman kullanırız?</string>
+    <string name="tutorial8_12">Örneğin bu işlemde 6’yı doğrudan ekleyemiyoruz.</string>
+    <string name="tutorial8_13">10’luk kuralı uygulamak istesek 10 gelir ama kardeşi 4 gidemez.</string>
+    <string name="tutorial8_14">Yani 6, 7, 8, 9 sayılarından herhangi birini eklerken eğer sayının kardeşini götüremiyorsak. O zaman boncuk kuralını uygulayacağız.</string>
+    <string name="tutorial8_16">Örneğin bu işlemde 10’luk kuralı uygulayabilirim; çünkü 6’nın kardeşi 4 gider diyebilirim.</string>
+    <string name="tutorial8_17">Bu işlemde 10’luk kuralı uygulayamam; çünkü 6’nın kardeşi 4 gider diyemem.</string>
+    <string name="tutorial8_1000">Ama kardeşi 4 gidemez.</string>
+    <string name="tutorial8_18">Bu işlemde 10’luk kuralı uygulayabilirim; çünkü 7’nin kardeşi 3 gider diyebilirim.</string>
+    <string name="tutorial8_19">Bu işlemde 10’luk kuralı uygulayamam; çünkü 7’nin kardeşi 3 gider diyemem.</string>
+    <string name="tutorial8_1001">Ama kardeşi 3 gidemez.</string>
+    <string name="tutorial8_1010">Bu işlemde neden boncuk kuralını kullanmamız gerekiyordu ?</string>
+    <string name="tutorial_ipucu_065">Sadece kuralsız ve 10\'luk toplama yapamadığımızda boncuk kuralını uygularız.</string>
+    <string name="tutorial_sik_019">7\'yi kuralsız ve 10\'luk kural ile ekleyemediğimiz için</string>
+    <string name="tutorial_sik_020">Boncuk kuralı daha kolay olduğu için</string>
+    <string name="tutorial_sik_021">5\'lik kuralı kullanamadığımız için</string>
+    <string name="tutorial8_100">Bu işlemde 10’luk kuralı uygulayabilirim; çünkü 8’in kardeşi 2 gider diyebilirim.</string>
+    <string name="tutorial8_20">Bu işlemde 10’luk kuralı uygulayamam; çünkü 8’in kardeşi 2 gider diyemem.</string>
+    <string name="tutorial8_1002">Ama kardeşi 2 gidemez.</string>
+    <string name="tutorial8_21">Bu işlemde 10’luk kuralı uygulayabilirim; çünkü 9’un kardeşi 1 gider diyebilirim.</string>
+    <string name="tutorial8_22">Bu işlemde 10’luk kuralı uygulayamam; çünkü 9’un kardeşi 1 gider diyemem.</string>
+    <string name="tutorial8_1003">Ama kardeşi 1 gidemez.</string>
+    <string name="tutorial8_23">İşte boncuk kuralını bunu diyemediğimiz zamanlar uygulayacağız.</string>
+    <string name="tutorial8_24">Kural şu şekildedir.</string>
+    <string name="tutorial8_25">6 için: 1 boncuk gelir, 5 gider, 10 gelir.</string>
+    <string name="tutorial8_26">7 için: 2 boncuk gelir, 5 gider, 10 gelir.</string>
+    <string name="tutorial8_27">8 için: 3 boncuk gelir, 5 gider, 10 gelir.</string>
+    <string name="tutorial8_28">9 için: 4 boncuk gelir, 5 gider, 10 gelir.</string>
+    <string name="tutorial8_29">Bu kurala göre bu işlemi yapacak olursak.</string>
+    <string name="tutorial8_30">1 boncuk gelir.</string>
+    <string name="tutorial8_31">5 gider.</string>
+    <string name="tutorial8_35">2 boncuk gelir.</string>
+    <string name="tutorial8_40">3 boncuk gelir.</string>
+    <string name="tutorial8_43">Cevap 14.</string>
+    <string name="tutorial8_45">4 boncuk gelir.</string>
+    <string name="tutorial8_48">Şimdi öğrendiklerimizi uygulayalım.</string>
+
+    <!-- Öğretici 9 -->
+    <string name="tutorial9_1">Boncuk kuralını, bir örnekle iki basamaklı sayılarda nasıl kullanacağımızı görelim.</string>
+    <string name="tutorial9_2">Örneğin bu soruda...</string>
+    <string name="tutorial9_3">Önce 68 sayısını abaküse yazıyoruz.</string>
+    <string name="tutorial9_4">Sonrasında, ekleyeceğimiz sayının en büyük basamağından başlayıp topluyoruz.</string>
+    <string name="tutorial9_5">Onlar basamağında 6’ya 7’yi hangi kural ile ekleyebileceğime bakıyorum.</string>
+    <string name="tutorial9_6">Doğrudan ekleyemem. Ekleyebileceğim 7 adet boncuk yok.</string>
+    <string name="tutorial9_7">10’luk kuralla da ekleyemem; çünkü “10 gelir, 7’nin kardeşi 3 gider” derken 3’ü çıkaramam.</string>
+    <string name="tutorial9_8">O zaman boncuk kuralını uygulayacağım.</string>
+    <string name="tutorial9_9">2 gelir.</string>
+    <string name="tutorial9_12">Onlar basamağını ekledim. Şimdi birler basamağını ekleyeceğim.</string>
+    <string name="tutorial9_13">Birler basamağında 8’e 6’yı hangi kural ile ekleyeceğime bakıyorum.</string>
+    <string name="tutorial9_14">Doğrudan ekleyemem. Ekleyebileceğim 6 adet boncuk yok.</string>
+    <string name="tutorial9_15">10’luk kuralla ekleyemem; çünkü “10 gelir, 6’nın kardeşi 4 gider” derken 4’ü çıkaramam.</string>
+    <string name="tutorial9_17">1 gelir.</string>
+    <string name="tutorial9_20">Cevap 144.</string>
+    <string name="tutorial9_21">Beraber bir örnek yapalım.</string>
+    <string name="tutorial9_1000">Önce ilk sayıyı abaküse yaz.</string>
+    <string name="tutorial_ipucu_066">Onlar basamağına 1 adet 5\'lik, birler basamağına 1 adet 5\'lik ve 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial9_1001">Şimdi de 2. sayının onlar basamağını abaküsümüzdeki sayıya hangi kural ile ekleyeceğine karar ver.</string>
+    <string name="tutorial9_1020">Hangi kural ile ekleyeceksin ?</string>
+    <string name="tutorial_ipucu_067">Kuralsız ve onluk toplama yapamadığımız için boncuk kuralını uygulayacağız.</string>
+    <string name="tutorial_soru_005">8\'i onlar basamağına hangi kural ile ekleyeceksin ?</string>
+    <string name="tutorial_sik_022">Onluk toplama</string>
+    <string name="tutorial_sik_023">Boncuk kuralı</string>
+    <string name="tutorial9_1003">8\'i boncuk kuralına göre onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_068">Onlar basamağında 4 gelir, 5 gider, 10 gelir işlemlerini uygula.</string>
+    <string name="tutorial9_27">Şimdi sıra birler basamağında.</string>
+    <string name="tutorial9_1004">8’e 9\'u hangi kuralla ekleyeceğine karar ver.</string>
+    <string name="tutorial_ipucu_069">Onluk toplama kuralını uygulayabildiğimiz için onluk kuralı yapıyoruz.</string>
+    <string name="tutorial_soru_006">9\'u birler basamağına hangi kural ile ekleyeceksin ?</string>
+    <string name="tutorial9_1005">9’u onluk kurala göre birler basamağına ekle.</string>
+    <string name="tutorial_ipucu_070">Onlar basamağına 1 adet 1\'lik boncuk ekle. Birler basamağından 1 adet birlik boncuk çıkar.</string>
+
+    <!-- Öğretici 10 -->
+    <string name="tutorial10_1">Kuralsız çıkarma, herhangi bir kural uygulamadan abaküs üzerinde yapılan basit çıkarma işlemlerini ifade eder.</string>
+    <string name="tutorial10_3">Önce 8 sayısını abaküse yazarız.</string>
+    <string name="tutorial10_4">Sonra 6 değere sahip boncukları çıkarırız.</string>
+    <string name="tutorial10_5">Cevap 2.</string>
+    <string name="tutorial10_7">78 sayısını abaküse yazıyoruz.</string>
+    <string name="tutorial10_8">Sonrasında, çıkaracağımız sayının en büyük basamağından başlayarak işlemleri yapıyoruz.</string>
+    <string name="tutorial10_9">Önce 60\'ı çıkarıyoruz.</string>
+    <string name="tutorial10_10">Sonra 3\'ü çıkarıp işlemi sonlandırıyoruz.</string>
+    <string name="tutorial10_11">Cevap 15.</string>
+    <string name="tutorial10_13">Önce 94\'ü abaküse yaz.</string>
+    <string name="tutorial_ipucu_071">Onlar basamağına 1 adet 5\'lik ve 4 adet birlik, birler basamağına ise 4 adet birlik boncuk ekle.</string>
+    <string name="tutorial10_14">Şimdi ise 2. sayının en büyük basamağından başlayarak çıkarma işlemini yap.</string>
+    <string name="tutorial10_15">İlk, 50 sayısını çıkar.</string>
+    <string name="tutorial_ipucu_072">Onlar basamağındaki 5\'lik boncuğu çıkar.</string>
+    <string name="tutorial10_16">Şimdi ise 2 sayısını çıkarıp işlemi bitir.</string>
+    <string name="tutorial_ipucu_073">Birler basamağından 2 adet birlik boncuk çıkar.</string>
+    <string name="tutorial10_17">Ve cevap 42.</string>
+
+    <!-- Öğretici 11 -->
+    <string name="tutorial11_1">5’lik çıkarmaya, 5’lik toplamanın tersi diyebiliriz.</string>
+    <string name="tutorial11_2">Sayılarımız ve kardeşleri aynıdır.</string>
+    <string name="tutorial11_3">Tek farkı, 5’lik toplamada “5 gelir, kardeş gider” diyorduk.</string>
+    <string name="tutorial11_4">5’lik çıkarmada “5 gider, kardeş gelir” kuralını uyguluyoruz.</string>
+    <string name="tutorial11_5">Bu kuralı, kuralsız çıkarma yapamadığımız zaman kullanacağız.</string>
+    <string name="tutorial11_6">Örneğin bu işlemi yapalım.</string>
+    <string name="tutorial11_7">Öncelikle ilk sayıyı abaküse yazıyoruz.</string>
+    <string name="tutorial11_8">1\'i doğrudan çıkaramıyoruz, bu yüzden 5\'lik çıkarma kuralını uygulayacağız.</string>
+    <string name="tutorial11_9">1’in kardeşi 4.</string>
+    <string name="tutorial11_11">Kardeşi 4 gelir.</string>
+    <string name="tutorial11_12">Cevap 4.</string>
+    <string name="tutorial11_15">3\'ü doğrudan çıkaramıyoruz.</string>
+    <string name="tutorial11_16">Bu yüzden 5\'lik çıkarma kuralını uygulayacağız.</string>
+    <string name="tutorial11_18">Kardeşi 2 gelir.</string>
+    <string name="tutorial11_19">Cevap 3.</string>
+    <string name="tutorial11_22">4\'ü doğrudan çıkaramıyorum. Bu yüzden 5\'lik kuralı uygulayacağım.</string>
+    <string name="tutorial11_24">Kardeşi 1 gelir.</string>
+    <string name="tutorial1100_0">Önce 6\'yı abaküse yaz.</string>
+    <string name="tutorial1100_1">Şimdi de 2 sayısını 5\'lik kural ile çıkaracaksın.</string>
+    <string name="tutorial_ipucu_074">Birler basamağından 1 adet 5\'lik boncuk çıkar.</string>
+    <string name="tutorial1100_2">2\'nin kardeşi 3 gelir.</string>
+    <string name="tutorial_ipucu_075">Birler basamağına 3 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial1100_4">5\'lik kuralı ne zaman uygularız?</string>
+    <string name="tutorial_ipucu_076">1,2,3,4 sayılarını kuralsız çıkaramadığımız zaman uygularız.</string>
+    <string name="tutorial_sik_024">1,2,3,4 sayılarını kuralsız çıkaramadığımız zaman.</string>
+    <string name="tutorial_sik_025">İstediğimiz zaman uygulayabiliriz.</string>
+
+    <!-- Öğretici 1100 -->
+    <string name="tutorial11000_0">5\'lik kural ve kuralsız çıkarmayı bir örnekle beraber görelim.</string>
+    <string name="tutorial11000_1">Önce 875 sayısını abaküse yazıyoruz.</string>
+    <string name="tutorial11000_2">Sonrasında, çıkaracağımız sayının en büyük basamağından başlayarak çıkarıyoruz.</string>
+    <string name="tutorial11000_3">Yüzler basamağından 4\'ü doğrudan çıkaramıyorum. O zaman 5\'lik kuralı uygulayacağım.</string>
+    <string name="tutorial11000_7">4\'ün kardeşi 1 gelir.</string>
+    <string name="tutorial11000_4">Şimdi onlar basamağına geçiyorum.</string>
+    <string name="tutorial1100_5">Onlar basamağından 2\'yi doğrudan çıkarabiliyorum.</string>
+    <string name="tutorial1100_6">Ve son olarak birler basamağına geliyorum.</string>
+    <string name="tutorial1100_7">Birler basamağından 2\'yi doğrudan çıkaramadığım için 5\'lik kural ile çıkarıyorum.</string>
+    <string name="tutorial1100_8">Cevap 453.</string>
+    <string name="tutorial1100_9">Şimdi de 2. sayının yüzler basamağını hangi kural ile çıkaracağına karar ver.</string>
+    <string name="tutorial1100_10">Hangi kural ile çıkaracaksın?</string>
+    <string name="tutorial_ipucu_077">Doğrudan çıkaramadığımız için 5\'lik kural ile çıkarmalıyız.</string>
+    <string name="tutorial_soru_007">3\'ü 7\'den hangi kural ile çıkaracaksın?</string>
+    <string name="tutorial_sik_026">Kuralsız çıkarma</string>
+    <string name="tutorial_sik_027">5\'lik çıkarma</string>
+    <string name="tutorial_sik_028">10\'luk çıkarma</string>
+    <string name="tutorial1100_11">3\'ü, 5\'lik çıkarma kuralına göre yüzler basamağından çıkar.</string>
+    <string name="tutorial_ipucu_078">Yüzler basamağından 5\'lik boncuğu çıkar. 2 adet birlik boncuk ekle.</string>
+    <string name="tutorial1100_12">2. sayının onlar basamağını hangi kural ile çıkaracağına karar ver.</string>
+    <string name="tutorial_soru_008">2\'yi 6\'dan hangi kural ile çıkaracaksın?</string>
+    <string name="tutorial1100_13">2\'yi 5\'lik kurala göre onlar basamağından çıkar.</string>
+    <string name="tutorial_ipucu_079">Onlar basamağından 5\'lik boncuğu çıkar. 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial1100_14">2. sayının birler basamağını hangi kural ile çıkaracağına karar ver.</string>
+    <string name="tutorial_ipucu_080">Doğrudan çıkarabildiğimiz için kuralsız çıkarma yaparız.</string>
+    <string name="tutorial_soru_009">3\'ü 8\'den hangi kural ile çıkaracaksın?</string>
+    <string name="tutorial1100_15">3\'ü birler basamağından çıkar.</string>
+    <string name="tutorial1100_16">Cevap 445.</string>
+
+    <!-- Öğretici 12 -->
+    <string name="tutorial12_1">10’luk çıkarmaya, 10’luk toplamanın tersi diyebiliriz.</string>
+    <string name="tutorial12_2">Sayılar ve kardeşleri 10\'luk toplamadaki ile aynıdır.</string>
+    <string name="tutorial12_3">Tek farkı, 10’luk toplamada “10 gelir, kardeş gider” diyorduk.</string>
+    <string name="tutorial12_4">10’luk çıkarmada “10 gider, kardeş gelir” kuralını uygulayacağız.</string>
+    <string name="tutorial12_5">Bu kuralı, kuralsız veya 5\'lik çıkarma yapamadığımız zaman uygulayacağız.</string>
+    <string name="tutorial12_6">Örneğin, bu işlemde bu kuralı uygulamaya gerek yok.</string>
+    <string name="tutorial12_7">Çünkü 6’yı kuralsız olarak çıkarabiliyoruz.</string>
+    <string name="tutorial12_10">5’lik kuralı uygulayabiliyoruz. Çünkü gidebilecek 5’lik boncuk var.</string>
+    <string name="tutorial12_12">3’ün kardeşi 2 gelir.</string>
+    <string name="tutorial12_14">Fakat bu işlemde...</string>
+    <string name="tutorial12_15">Gidebilecek 5’lik boncuk olmadığı için 10’luk kuralı uygulayacağız.</string>
+    <string name="tutorial12_16">1’in kardeşi 9.</string>
+    <string name="tutorial12_17">10 gider.</string>
+    <string name="tutorial12_18">Kardeşi 9 gelir.</string>
+    <string name="tutorial12_30">Cevap 9.</string>
+    <string name="tutorial12_21">Kardeşi 8 gelir.</string>
+    <string name="tutorial1200_0">4’ün kardeşi 1 gelir.</string>
+    <string name="tutorial1200_1">10\'luk çıkarma kuralını hangi kural veya kuralları yapamadığımız zaman uygularız?</string>
+    <string name="tutorial_ipucu_081">5\'lik ve kuralsız çıkarma yapamadığımız zaman kullanacağız.</string>
+    <string name="tutorial12_24">Kardeşi 7 gelir.</string>
+    <string name="tutorial12_31">Kardeşi 3 gelir.</string>
+
+    <!-- Öğretici 13 -->
+    <string name="tutorial13_1">İki basamaklı sayılarda 10\'luk çıkarmaya örnek verelim.</string>
+    <string name="tutorial13_2">Örneğin bu işlemde...</string>
+    <string name="tutorial13_3">Önce 128 sayısını abaküse yazıyoruz.</string>
+    <string name="tutorial13_4">Sonrasında çıkarılacak sayının en büyük basamağından başlayarak kuralları uyguluyoruz.</string>
+    <string name="tutorial13_5">Onlar basamağından 3 çıkarmak istiyorum.</string>
+    <string name="tutorial13_6">3’ü doğrudan çıkaramıyoruz. Kurallara başvurmak zorundayız.</string>
+    <string name="tutorial13_7">5’lik kuralı uygulamak için 5’lik boncuğa ihtiyacımız var.</string>
+    <string name="tutorial13_8">Ama kullanabileceğim 5’lik boncuk yok.</string>
+    <string name="tutorial13_9">Bu yüzden 10’luk kuralı uygulayacağız.</string>
+    <string name="tutorial13_11">3’ün kardeşi 7 gelir.</string>
+    <string name="tutorial13_12">Onlar basamağını çıkardık. Şimdi sıra birler basamağında.</string>
+    <string name="tutorial13_13">9\'u doğrudan çıkaramıyorum. Bu yüzden 10\'luk kuralla çıkaracağım.</string>
+    <string name="tutorial13_14">9\'un kardeşi 1 gelir.</string>
+    <string name="tutorial13_15">Cevap 89.</string>
+    <string name="tutorial_ipucu_082">Yüzler basamağında 1 adet 1\'lik, onlar basamağına 1 adet 1\'lik ve 1 adet 5\'lik, birler basamağına 1 adet 5\'lik boncuk ekle.</string>
+    <string name="tutorial13_18">Sonrasında, 2. sayının en büyük basamağından başlayarak çıkarma işlemini yap.</string>
+    <string name="tutorial13_19">Önce onlar basamağından 9\'u çıkar.</string>
+    <string name="tutorial_ipucu_083">Yüzler basamağındaki 1\'lik boncuğu çıkar. Onlar basamağına 1 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial13_20">Şimdi de birler basamağından 6\'yı çıkar.</string>
+    <string name="tutorial_ipucu_084">Onlar basamağındaki 1 adet birlik boncuğu çıkar. Onlar basamağına 4 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial13_21">Ve cevap 69.</string>
+    <string name="tutorial13_22">Şimdi test zamanı.</string>
+
+    <!-- Öğretici 14 -->
+    <string name="tutorial14_1">10’luk çıkarma yaparken 5’lik çıkarmayı kullanmamız gerekebilir.</string>
+    <string name="tutorial14_3">Şimdi 5’i, 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial14_4">10 gider. Kardeşi 5 gelir.</string>
+    <string name="tutorial_kural_020">[10 gider] -&gt; 5 gelir</string>
+    <string name="tutorial14_5">10 gider adımını uygularken, onlar basamağından 1’i doğrudan çıkaramıyorum.</string>
+    <string name="tutorial14_6">Böyle durumlarda 5’lik veya 10’luk çıkarmadan yardım alacağız.</string>
+    <string name="tutorial14_7">Bu işlemde 5’lik çıkarmadan yardım alacağız. Çünkü yukarıda 5’lik boncuğum mevcut.</string>
+    <string name="tutorial14_8">1’in kardeşi 4’tür.</string>
+    <string name="tutorial14_11">Bu şekilde 10’luk kuraldaki 10 gider adımını gerçekleştirmiş oldum.</string>
+    <string name="tutorial14_12">Şimdi 5 gelir adımını yapıp işlemi sonlandıracağım.</string>
+    <string name="tutorial_kural_021">10 gider -&gt; [5 gelir]</string>
+    <string name="tutorial14_13">Cevap 45.</string>
+    <string name="tutorial14_15">50’yi abaküse yazıyorum.</string>
+    <string name="tutorial14_16">5’i doğrudan çıkaramıyorum. Bu yüzden 10’luk kuralla çıkaracağım.</string>
+    <string name="tutorial14_17">10 gider. 5’in kardeşi 5 gelir.</string>
+    <string name="tutorial14_19">Ve kardeş 5 gelir.</string>
+    <string name="tutorial14_20">10 gider adımını uygularken 10’luk çıkarma da uygulamamız gerekebilir.</string>
+    <string name="tutorial14_23">Şimdi 3’ü, 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial14_24">10 gider. Kardeşi 7 gelir.</string>
+    <string name="tutorial_kural_022">[10 gider] -&gt; 7 gelir</string>
+    <string name="tutorial14_26">Yukarıda 5’lik kural için kullanabileceğim ekstra 5’lik boncukta yok.</string>
+    <string name="tutorial14_27">O yüzden 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial14_29">10 gider 9 gelir.</string>
+    <string name="tutorial14_31">9 gelir.</string>
+    <string name="tutorial14_32">3’ü çıkarırken yaptığım 10 gider adımını tamamlamış oldum.</string>
+    <string name="tutorial14_33">Son olarak 3’ün kardeşi 7 gelir ve işlem biter.</string>
+    <string name="tutorial_kural_023">10 gider -&gt; [7 gelir]</string>
+    <string name="tutorial14_34">Cevap 97.</string>
+    <string name="tutorial14_35">Yaptığımız işlemleri tekrarlayalım.</string>
+    <string name="tutorial14_36">100’ü abaküse yazıyorum.</string>
+    <string name="tutorial14_37">3’ü doğrudan veya 5’lik kural ile çıkaramıyorum. 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial14_38">10 gider. 3’ün kardeşi 7 gelir.</string>
+    <string name="tutorial_ipucu_085">Yüzler basamağına 1 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial1400_0">9\'u 10\'luk kural ile çıkaracağız. Önce \'10 gider\' adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_086">10 gider adımını yaparken 10\'luk çıkarma kuralı kullanacağız. Yüzler basamağındaki 1\'lik boncuğu çıkar. Onlar basamağına 9 sayısını ekle.</string>
+    <string name="tutorial_kural_024">[10 gider] -&gt; 1 gelir</string>
+    <string name="tutorial1400_1">Ve 9\'un kardeşi 1 gelir adımını yapıp işlemi sonlandır.</string>
+    <string name="tutorial_ipucu_087">Birler basamağına 1 ekle.</string>
+    <string name="tutorial_kural_025">10 gider -&gt; [1 gelir]</string>
+    <string name="tutorial14_45">Cevap 91.</string>
+    <string name="tutorial14_46">Bir de bu işleme bakalım.</string>
+    <string name="tutorial_ipucu_088">Yüzler basamağına 5\'lik, onlar basamağına 3 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial1400_2">40\'ı 10\'luk kural ile çıkaracağız. Önce \'10 gider\' adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_089">10 gider adımını yaparken 5\'lik çıkarma kuralı kullanacağız. Yüzler basamağındaki 5\'lik boncuğu çıkar, 4 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial_kural_026">[10 gider] -&gt; 6 gelir</string>
+    <string name="tutorial1400_3">Ve 4\'ün kardeşi 6 gelir adımını yapıp \'Kontrol et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_090">Onlar basamağına 6 ekle.</string>
+    <string name="tutorial_kural_027">10 gider -&gt; [6 gelir]</string>
+    <string name="tutorial1400_4">Onlar basamağını çıkardık. Sıra birler basamağında.</string>
+    <string name="tutorial1400_5">1\'i 10\'luk kural ile çıkaracağız. Önce birler basamağında \'10 gider\' adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_091">Onlar basamağından 1 adet 1\'lik boncuk çıkar.</string>
+    <string name="tutorial_kural_028">[10 gider] -&gt; 9 gelir</string>
+    <string name="tutorial1400_6">Ve 1\'in kardeşi 9 gelir adımını yapıp işlemi sonlandır.</string>
+    <string name="tutorial_ipucu_092">Birler basamağına 9 ekle.</string>
+    <string name="tutorial_kural_029">10 gider -&gt; [9 gelir]</string>
+    <string name="tutorial14_53">Cevap 489.</string>
+    <string name="tutorial1400_7">10\'luk çıkarmada \'10 gider\' adımını yaparken 10\'u doğrudan çıkaramıyorsak sırasıyla hangi kuralları yapmaya çalışırız?</string>
+    <string name="tutorial_ipucu_093">İlk 5\'lik çıkarma yapmayı deneriz. Eğer kullanabileceğimiz 5\'lik boncuk yoksa 10\'luk çıkarmayı yaparız.</string>
+    <string name="tutorial_sik_029">Kuralsız çıkarma. Olmazsa 5\'lik çıkarma</string>
+    <string name="tutorial_sik_030">5\'lik çıkarma. Olmazsa 10\'luk çıkarma</string>
+    <string name="tutorial_sik_031">10\'luk çıkarma. Olmazsa kuralsız çıkarma</string>
+
+    <!-- Öğretici 15 -->
+    <string name="tutorial15_2">4’ü doğrudan ya da 5’lik kural ile çıkaramıyorum. O zaman 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial15_3">10 gider. Kardeşi 6 gelir.</string>
+    <string name="tutorial15_4">10 gider adımını yapacağım.</string>
+    <string name="tutorial15_5">Onlar basamağından 1 çıkaracağım.</string>
+    <string name="tutorial15_6">Ama 1’i doğrudan ya da 5’lik kural ile çıkaramıyorum.</string>
+    <string name="tutorial15_7">O zaman 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial15_8">10 gider. Kardeşi 9 gelir.</string>
+    <string name="tutorial15_9">Yüzler basamağından 1 çıkaracağım.</string>
+    <string name="tutorial15_10">Doğrudan çıkaramıyorum. Yukarıda 5’lik boncuğum var. 5’lik kural uygulayacağım.</string>
+    <string name="tutorial15_11">5 gider. Kardeşi 4 gelir.</string>
+    <string name="tutorial15_14">Şimdi bir önceki adımdaki 9 gelir.</string>
+    <string name="tutorial15_15">Böylelikle 10 gider adımını tamamladık. 4’ün kardeşi 6 gelir adımını yapıp işlemi sonlandırıyorum.</string>
+    <string name="tutorial15_16">Cevap 496.</string>
+    <string name="tutorial15_18">4’ü 10’luk kural ile çıkarıyorum.</string>
+    <string name="tutorial15_19">10 gider. 4’ün kardeşi 6 gelir.</string>
+    <string name="tutorial15_20">10 gider adımını 10’luk kural ile çıkaracağım.</string>
+    <string name="tutorial15_25">10 gider adımını tamamladık. Son olarak kardeşi 6 gelir ve işlem biter.</string>
+
+    <!-- Öğretici 16 -->
+    <string name="tutorial16_1">Boncuk çıkarmanın 10’luk çıkarmadan tek farkı 5’lik toplamayı kullanıyor olmamız.</string>
+    <string name="tutorial16_2">5’lik toplamayı hatırlamıyorsan geri dönüp gözden geçirebilirsin.</string>
+    <string name="tutorial16_7">6\'yı 10\'luk kural ile çıkaracağız.</string>
+    <string name="tutorial16_8">Kardeşi 4 kuralsız gelemez.</string>
+    <string name="tutorial16_9">Burada 5’lik toplama kuralını uyguluyoruz.</string>
+    <string name="tutorial16_10">Birler basamağına 4 eklemek için 4’ün kardeşi 5 gelir. 1 gider.</string>
+    <string name="tutorial_txt_007">5 gelir</string>
+    <string name="tutorial16_11">1 gider.</string>
+    <string name="tutorial16_13">10\'luk kural ile çıkaracağım.</string>
+    <string name="tutorial16_14">7’nin kardeşi 3 gelir.</string>
+    <string name="tutorial16_15">3’ü eklemek için 5’lik kuralı uyguluyoruz.</string>
+    <string name="tutorial_txt_008">Bu işlem için,</string>
+    <string name="tutorial16_16">8’in kardeşi 2 gelir.</string>
+    <string name="tutorial16_17">9’un kardeşi 1 gelir.</string>
+    <string name="tutorial15_29">Boncuk çıkarmanın 10\'luk çıkarmadan farkı nedir?</string>
+    <string name="tutorial_ipucu_094">Kardeş gelir adımında kardeşi 5\'lik kural ile ekleriz.</string>
+    <string name="tutorial_sik_032">10 gider adımını kuralsız olarak yapamayız.</string>
+    <string name="tutorial_sik_033">Boncuk çıkarmanın 10\'luk çıkarmadan farkı yoktur.</string>
+    <string name="tutorial_ipucu_095">Onlar basamağına 2 adet, birler basamağına 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial1400_10">6\'yı boncuk kuralı ile çıkaracağız.</string>
+    <string name="tutorial1400_11">Yapacağımız adımlar. \'10 gider. 6\'nın kardeşi 4 gelir.\'</string>
+    <string name="tutorial_kural_030">10 gider -&gt; 4 gelir</string>
+    <string name="tutorial1400_12">Önce \'10 gider\' adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_096">Onlar basamağından 1 adet birlik boncuk çıkar.</string>
+    <string name="tutorial_kural_031">[10 gider] -&gt; 4 gelir</string>
+    <string name="tutorial1400_13">Kardeşi 4 gelir adımını kuralsız ekleyemiyoruz. O yüzden 5\'lik toplama kuralını uygulayacağız.</string>
+    <string name="tutorial_kural_032">10 gider -&gt; [4 gelir]</string>
+    <string name="tutorial1400_14">5 gelir. 4\'ün kardeşi 1 gider.</string>
+    <string name="tutorial_ipucu_097">Birler basamağına 1 adet 5\'lik boncuk ekle, 1 adet birlik boncuk çıkar.</string>
+    <string name="tutorial14_455">Cevap 17.</string>
+    <string name="tutorial16_1000">Boncuk çıkarma tablosunu bu iki kuralın birleşimi olarak düşünebilirsin.</string>
+    <string name="tutorial16_1003">Kural tablosu şu şekildedir.</string>
+    <string name="tutorial16_1001">6’yı çıkarırken 1 gider 5 gelir 10 gider adımlarını yapacağız.</string>
+    <string name="tutorial16_1005">Cevap 7.</string>
+    <string name="tutorial_ipucu_098">Onlar basamağına 3 adet, birler basamağına 3 adet birlik boncuk ekle.</string>
+    <string name="tutorial16_1002">8\'i, boncuk kuralı tablosuna göre çıkar.</string>
+    <string name="tutorial16_1006">3 gider.</string>
+    <string name="tutorial_ipucu_099">Birler basamağına 1 adet beşlik boncuk ekle.</string>
+    <string name="tutorial16_1004">Cevap 25.</string>
+
+    <!-- Öğretici 17 -->
+    <string name="tutorial17_1">Ve çıkarılacak sayının en büyük basamağından başlayarak işlemlere başlıyorum.</string>
+    <string name="tutorial17_2">Onlar basamağından 8’i boncuk kuralı ile çıkaracağım.</string>
+    <string name="tutorial17_3">Şimdi birler basamağını aynı şekil boncuk kuralı ile çıkaracağım.</string>
+    <string name="tutorial17_5">Bu işlemi adım adım beraber yapalım.</string>
+    <string name="tutorial_ipucu_100">Yüzler basamağına 1 adet 5\'lik, onlar ve birler basamağına 4 adet 1\'lik boncuk ekle.</string>
+    <string name="tutorial17_6">Şimdi, adım adım onlar basamağından 8’i çıkaralım.</string>
+    <string name="tutorial17_7">Önce 10 gider adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_101">Yüzler basamağından 1 çıkaracağız. 5 gider, 4 gelir.</string>
+    <string name="tutorial_kural_033">[10 gider] -&gt; 2 gelir</string>
+    <string name="tutorial17_8">Şimdi 8’in kardeşi 2 gelir adımını yapıp \'Kontrol Et\' butonuna tıkla.</string>
+    <string name="tutorial_ipucu_102">Onlar basamağına 2 ekleyeceğiz. 5 gelir, 2\'nin kardeşi 3 gider.</string>
+    <string name="tutorial_kural_034">10 gider -&gt; [2 gelir]</string>
+    <string name="tutorial17_10">Şimdi de adım adım birler basamağından 7’yi çıkaralım.</string>
+    <string name="tutorial17_11">Önce 10 gider adımını yap.</string>
+    <string name="tutorial_ipucu_103">Onlar basamağından 1 adet birlik boncuk çıkaracağız.</string>
+    <string name="tutorial_kural_035">[10 gider] -&gt; 3 gelir</string>
+    <string name="tutorial17_12">Şimdi de 7\'nin kardeşi 3 gelir adımını uygula.</string>
+    <string name="tutorial_ipucu_104">Birler basamağına 3 ekleyeceğiz. 5 gelir, kardeşi 2 gider.</string>
+    <string name="tutorial_kural_036">10 gider -&gt; [3 gelir]</string>
+    <string name="tutorial17_13">Cevap 457.</string>
+
+    <!-- Öğretici 18 -->
+    <string name="tutorial18_1">Çarpmayı abaküste rahatça yapabilmek için çarpım tablosunu ezbere bilmen gerekir.</string>
+    <string name="tutorial18_3">Test çözerken, sağ üstteki “Kurallar Kitabına” tıklayarak çarpım tablosunu görüntüleyebilirsin.</string>
+    <string name="tutorial18_4">Şimdi derse başlayalım.</string>
+    <string name="tutorial18_5">Abaküste çarpma işlemi, normal çarpma gibi basamak basamak yapılıp toplanır.</string>
+    <string name="tutorial18_6">Yapacağımız şey, 6’yı en küçük basamaktan başlayarak sıra sıra çarpıp toplamak.</string>
+    <string name="tutorial18_7">6 ile 4’ü çarpıp sonucu birler basamağına yazıyoruz.</string>
+    <string name="tutorial_kural_037">6 x 4 = 24</string>
+    <string name="tutorial18_8">Sonrasında 6 ile 2’yi çarpacağız.</string>
+    <string name="tutorial_kural_038">6 x 2 = 12</string>
+    <string name="tutorial18_9">6 birler basamağında bulunuyor. 2 ise, onlar basamağında bulunuyor.</string>
+    <string name="tutorial18_10">Birler basamağı ile onlar basamağı çarpılırsa, sonucu abaküsün onlar basamağına ekleriz.</string>
+    <string name="tutorial18_11">3 ile 2’yi çarpıp birler basamağına yazıyoruz.</string>
+    <string name="tutorial_kural_039">3 x 2 = 6</string>
+    <string name="tutorial18_12">Sonrasında 1 ile 3’ü çarpacağız.</string>
+    <string name="tutorial_kural_040">1 x 3 = 3</string>
+    <string name="tutorial18_13">1 onlar basamağında 3 ise birler basamağında bulunuyor.</string>
+    <string name="tutorial18_14">Onlar basamağı ile birler basamağı çarpılırsa, sonuç onlar basamağına eklenir.</string>
+    <string name="tutorial18_15">Cevap 36.</string>
+    <string name="tutorial18_16">Son olarak bu örneğe bakalım.</string>
+    <string name="tutorial18_17">8 ile 3’ü çarpıp sonucu birler basamağına yazıyoruz.</string>
+    <string name="tutorial_kural_041">8 x 3 = 24</string>
+    <string name="tutorial18_18">Şimdi de 5 ile 3’ü çarpıp onlar basamağına yazıyoruz.</string>
+    <string name="tutorial_kural_042">5 x 3 = 15</string>
+    <string name="tutorial18_19">Cevap 174.</string>
+    <string name="tutorial18_20">3 ile 6\'yı çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_105">Abaküse 18 yaz.</string>
+    <string name="tutorial_kural_043">3 x 6 = 18</string>
+    <string name="tutorial18_21">Şimdi 3 ile onlar basamağındaki 4\'ü çarpıp sonucu abaküse yazacağız.</string>
+    <string name="tutorial18_22">Birler basamağı ile onlar basamağı çarpılırsa cevap abaküste nereye yazılır?</string>
+    <string name="tutorial_ipucu_106">10 ile 1\'i çarpıyormuşsun gibi düşün. 10 x 1 = 10. Yani onlar basamağına yazılır.</string>
+    <string name="tutorial_sik_034">Birler basamağına.</string>
+    <string name="tutorial_sik_035">Onlar basamağına</string>
+    <string name="tutorial_sik_036">Yüzler basamağına.</string>
+    <string name="tutorial18_23">Onlar basamağındaki 4 ile 3\'ü çarpıp sonucu abaküsteki onlar basamağına yaz.</string>
+    <string name="tutorial_ipucu_107">12\'yi onlar basamağına ekle. Yani abaküse 120 ekle.</string>
+    <string name="tutorial_kural_044">4 x 3 = 12</string>
+    <string name="tutorial18_24">Cevap 138.</string>
+
+    <!-- Öğretici 19 -->
+    <string name="tutorial19_1">Çarpma işlemini yaparken, toplama kurallarından yararlanmamız gerekebilir.</string>
+    <string name="tutorial19_2">İlk olarak 6’yı 7 ile çarpıyorum ve sonucu birler basamağına yazıyorum.</string>
+    <string name="tutorial_kural_045">6 x 7 = 42</string>
+    <string name="tutorial19_3">Sonrasında 6 ile 9’u çarpıp sonucu onlar basamağına yazacağım.</string>
+    <string name="tutorial_kural_046">6 x 9 = 54</string>
+    <string name="tutorial19_4">54’ü onlar basamağına yazarken, 50’yi doğrudan ekleyebiliyorum.</string>
+    <string name="tutorial19_5">Ama 4’ü doğrudan ekleyemiyorum.</string>
+    <string name="tutorial19_6">Bu yüzden kurallara başvuracağım.</string>
+    <string name="tutorial19_7">5’lik kuralla ekliyorum.</string>
+    <string name="tutorial19_8">Cevap 582.</string>
+    <string name="tutorial19_9">6 ile 4’ü çarpıp sonucu birler basamağına yazıyorum.</string>
+    <string name="tutorial19_10">Sonrasında 6 ile 8’i çarpıp sonucu onlar basamağına yazacağım.</string>
+    <string name="tutorial_kural_047">6 x 8 = 48</string>
+    <string name="tutorial19_11">48’i onlar basamağına yazarken 40’ı doğrudan ekleyebiliyorum.</string>
+    <string name="tutorial19_12">Ama 8’i doğrudan ekleyemiyorum.</string>
+    <string name="tutorial19_13">10’luk kural ile ekleyeceğim.</string>
+    <string name="tutorial19_14">10 gelir. Kardeşi 2 gider.</string>
+    <string name="tutorial19_15">Cevap 504.</string>
+    <string name="tutorial19_22">Toplama işleminin nasıl yapıldığını unuttuysan geri dönüp toplama kısmına bakmalısın.</string>
+    <string name="tutorial19_16">9 ile 8’i çarpıp birler basamağına yaz.</string>
+    <string name="tutorial_ipucu_108">72 sayısını abaküse yaz.</string>
+    <string name="tutorial19_17">Şimdi 9 ile 4’ü çarpıp onlar basamağına ekleyeceğiz.</string>
+    <string name="tutorial19_18">9 x 4 = 36. Önce 30’u ekle.</string>
+    <string name="tutorial_ipucu_109">30\'u onlar basamağına ekle. Yani abaküse 300 ekle.</string>
+    <string name="tutorial19_19">Şimdi 6’yı hangi kural ile ekleyeceğine karar ver.</string>
+    <string name="tutorial19_23">Hangi toplama kuralı ile ekleyeceksin?</string>
+    <string name="tutorial_ipucu_110">10\'luk kuraldaki \'10 gelir. 6\'nın kardeşi 4 gider.\' adımındaki 4 gideri yapamadığımız için Boncuk Kuralı ile ekleyeceğiz.</string>
+    <string name="tutorial9_1002">6\'yı boncuk kuralı ile onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_111">Onlar basamağında 1 gelir. 5 gider. 10 gelir. Adımlarını uygula. Yani abaküse 10 ekle. 50 çıkar. 100 ekle.</string>
+    <string name="tutorial_kural_048">1 gelir. 5 gider. 10 gelir.</string>
+    <string name="tutorial19_21">Ve cevap 432.</string>
+
+    <!-- Öğretici 20 -->
+    <string name="tutorial20_1">Bu derste, 2 basamaklı sayılarla 2 basamaklı sayıların çarpımını göreceğiz.</string>
+    <string name="tutorial20_2">Dikkat edilmesi gereken kısım:</string>
+    <string name="tutorial20_3">Birler basamağı ile birler basamağı çarpılıyorsa, sonuç abaküsteki birler basamağına yazılır.</string>
+    <string name="tutorial20_4">5 ile 3’ün çarpımı 15\'e eşittir.</string>
+    <string name="tutorial20_5">Sonucun birler basamağı, abaküsteki birler basamağına gelecek şekilde yazıyoruz.</string>
+    <string name="tutorial20_6">Birler basamağı ile onlar basamağı çarpılıyorsa sonuç onlar basamağına yazılır.</string>
+    <string name="tutorial20_8">4 ile 3\'ü çarpıp sonucun birler basamağı, abaküsteki onlar basamağına gelecek şekilde yazıyoruz.</string>
+    <string name="tutorial20_9">Onlar basamağı ile onlar basamağı çarpılıyorsa, sonuç yüzler basamağına yazılır.</string>
+    <string name="tutorial20_10">3 ile 6’nın çarpımı 18\'e eşittir.</string>
+    <string name="tutorial20_11">Sonucun birler basamağı, yüzler basamağına gelecek şekilde yazıyoruz.</string>
+    <string name="tutorial20_12">2. sayının birler basamağından çarpma işlemine başlıyoruz.</string>
+    <string name="tutorial20_13">Önce 1 ile 3’ü çarpıp birler basamağına ekliyoruz.</string>
+    <string name="tutorial20_14">Şimdi 1 ile 4’ü çarpıp onlar basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_049">1 x 4 = 4</string>
+    <string name="tutorial20_15">2. sayının onlar basamağını da aynı şekilde ekliyoruz.</string>
+    <string name="tutorial20_16">2 ile 3’ü çarpıp onlar basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_050">2 x 3 = 6</string>
+    <string name="tutorial20_17">2 ile 4’ü çarpıp yüzler basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_051">2 x 4 = 8</string>
+    <string name="tutorial20_18">Cevap 903.</string>
+    <string name="tutorial20_20">Önce 3 ile 8’i çarpıp birler basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_052">3 x 8 = 24</string>
+    <string name="tutorial20_21">Şimdi 3 ile 7’yi çarpıp onlar basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_053">3 x 7 = 21</string>
+    <string name="tutorial20_22">4 ile 8’i çarpıp onlar basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_054">4 x 8 = 32</string>
+    <string name="tutorial20_23">4 ile 7’yi çarpıp yüzler basamağına ekliyoruz.</string>
+    <string name="tutorial_kural_055">4 x 7 = 28</string>
+    <string name="tutorial20_100">Cevap 3354.</string>
+    <string name="tutorial20_24">2. sayının birler basamağından işlemlere başlayacağız.</string>
+    <string name="tutorial20_30">4 ile 9\'u çarpıp sonucu abaküsteki hangi basamağa ekleyeceğine karar ver.</string>
+    <string name="tutorial20_31">Hangi basamağa ekleyeceksin?</string>
+    <string name="tutorial_ipucu_112">1 ile 1\'i çarpıyormuşsun gibi düşün. 1 x 1 = 1. Yani birler basamağına yazılır.</string>
+    <string name="tutorial20_25">4 ile 9\'u çarpıp sonucu abaküsteki birler basamağına ekle.</string>
+    <string name="tutorial_ipucu_113">4 x 9 = 36. Abaküse 36 sayısını yaz.</string>
+    <string name="tutorial20_32">4 ile 6\'yı çarpıp sonucu abaküsteki hangi basamağa ekleyeceğine karar ver.</string>
+    <string name="tutorial_ipucu_114">10 ile 1\'i çarpıyormuşsun gibi düşün. 10 x 1 = 1. Yani onlar basamağına yazılır.</string>
+    <string name="tutorial20_33">4 ile 6\'yı çarpıp sonucu abaküsteki onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_115">4 x 6 = 24. 24\'ü onlar basamağına ekle. Yani abaküse 240 ekle.</string>
+    <string name="tutorial20_34">5 ile 9\'u çarpıp sonucu abaküsteki hangi basamağa ekleyeceğine karar ver.</string>
+    <string name="tutorial20_35">5 ile 9\'u çarpıp sonucu abaküsteki onlar basamağına ekle.</string>
+    <string name="tutorial_ipucu_116">5 x 9 = 45. 45\'i onlar basamağına ekle. Yani abaküse 450 ekle.</string>
+    <string name="tutorial20_36">5 ile 6\'yı çarpıp sonucu abaküsteki hangi basamağa ekleyeceğine karar ver.</string>
+    <string name="tutorial_ipucu_117">10 ile 10\'u çarpıyormuşsun gibi düşün. 10 x 10 = 100. Yani yüzler basamağına yazılır.</string>
+    <string name="tutorial20_37">5 ile 6\'yı çarpıp sonucu abaküsteki yüzler basamağına ekle.</string>
+    <string name="tutorial_ipucu_118">5 x 6 = 30. 30\'u yüzler basamağına ekle. Yani abaküse 3000 ekle.</string>
+    <string name="tutorial20_29">Cevap 3726.</string>
+
+    <!-- Öğretici 21 -->
+    <string name="tutorial21_1">Bu derste, 3 basamaklı sayılar ile 1 basamaklı sayıların çarpımını göreceğiz.</string>
+    <string name="tutorial21_2">Önceki öğrendiklerimize ek olarak,</string>
+    <string name="tutorial21_3">Yüzler basamağı ile birler basamağı çarpılıyorsa sonuç yüzler basamağına yazılır.</string>
+    <string name="tutorial21_5">Sonucun birler basamağını, abaküsün yüzler basamağına gelecek şekilde yazıyoruz.</string>
+    <string name="tutorial21_6">Eğer hangi basamağa yazacağını bilmiyorsan basamaklar yerine 1 ve 0 koyarak bulabilirsin.</string>
+    <string name="tutorial21_7">Örneğin 100 x 1 = 100. Yani yüzler ile birler çarpılırsa sonuç yüzler basamağına yazılır.</string>
+    <string name="tutorial21_8">10 x 10 = 100. Onlar ile onlar çarpılırsa sonuç yüzlere yazılır.</string>
+    <string name="tutorial21_9">Bir örnek çözelim.</string>
+    <string name="tutorial21_10">En küçük basamaktan başlayarak sıra sıra çarpıyorum.</string>
+    <string name="tutorial21_11">4x4 = 16. Birler basamağına yazıyorum.</string>
+    <string name="tutorial21_12">4x8 = 32. Onlar basamağına yazıyorum.</string>
+    <string name="tutorial21_13">2x4 = 8. Yüzler basamağına ekliyorum.</string>
+    <string name="tutorial21_14">Cevap 1136.</string>
+    <string name="tutorial21_15">6 ile 3\'ü çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_119">6x3=18. Abaküse 18 yaz.</string>
+    <string name="tutorial21_16">6 ile onlar basamağında bulunan 2\'yi çarpıp sonucu abaküse ekle.</string>
+    <string name="tutorial_ipucu_120">6x2=12. Onlar ile birleri çarptığımız için 12\'yi abaküsteki onlar basamağına ekle. Yani abaküse 120 ekle.</string>
+    <string name="tutorial21_17">6 ile yüzler basamağında bulunan 7\'yi çarpıp sonucu abaküse ekle.</string>
+    <string name="tutorial_ipucu_121">6x7=42. Yüzler ile birleri çarptığımız için 42\'yi abaküsteki yüzler basamağına ekle. Yani abaküse 4200 ekle.</string>
+    <string name="tutorial21_18">Cevap 4338.</string>
+
+    <!-- Öğretici 22 -->
+    <string name="tutorial22_1">Bu derste, 3 basamaklı sayılarla 2 basamaklı sayıların çarpımını göreceğiz.</string>
+    <string name="tutorial22_2">Önceki öğrendiklerimize ek olarak:</string>
+    <string name="tutorial22_3">Yüzler basamağı ile onlar basamağı çarpılırsa, sonuç binler basamağına yazılır.</string>
+    <string name="tutorial22_4">6x2 işleminin sonucu 12\'dir.</string>
+    <string name="tutorial22_5">Sonucun birler basamağı abaküste binler basamağına gelecek şekilde yazılır.</string>
+    <string name="tutorial22_25">Cevap 12000.</string>
+    <string name="tutorial22_6">Bu örneği çözelim.</string>
+    <string name="tutorial22_7">2. sayının en küçük basamağından başlayarak sıra sıra çarpacağım.</string>
+    <string name="tutorial22_8">3x1 = 3. Birler basamağına yazıyorum.</string>
+    <string name="tutorial22_100">3x2 = 6. Onlar basamağına yazıyorum.</string>
+    <string name="tutorial22_10">3x3 = 9. Yüzler basamağına yazıyorum.</string>
+    <string name="tutorial22_11">Diğer basamağa geçiyorum.</string>
+    <string name="tutorial22_12">2x1 = 2. Onlar basamağına yazıyorum.</string>
+    <string name="tutorial22_13">2x2 = 4. Yüzler basamağına yazıyorum.</string>
+    <string name="tutorial22_14">2x3 = 6. Binler basamağına yazıyorum.</string>
+    <string name="tutorial22_15">Ve cevap 7383.</string>
+    <string name="tutorial22_16">2. sayının en küçük basamağından başlayarak çarpıp, sonuçları sıra sıra abaküse ekleyeceğiz.</string>
+    <string name="tutorial22_17">2 ile 2\'yi çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_122">2x2=4. Birler ile birler çarpılıyor. 4\'ü abaküsteki birler basamağına yaz.</string>
+    <string name="tutorial22_18">2 ile 1\'i çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_123">2x1=2. Birler ile onlar çarpılıyor. 2\'yi abaküsteki onlar basamağına yaz. Yani abaküse 20 ekle.</string>
+    <string name="tutorial22_19">2 ile 3\'ü çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_124">2x3=6. Birler ile yüzler çarpılıyor. 6\'yı abaküsteki yüzler basamağına yaz. Yani abaküse 600 ekle.</string>
+    <string name="tutorial22_20">Diğer basamağa geçiyoruz.</string>
+    <string name="tutorial22_21">4 ile 2\'yi çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_125">4x2=8. Birler ile onlar çarpılıyor. 8\'i abaküsteki onlar basamağına yaz. Yani abaküse 80 ekle.</string>
+    <string name="tutorial22_22">4 ile 1\'i çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_126">4x1=4. Onlar ile onlar çarpılıyor. 4\'ü abaküsteki yüzler basamağına yaz. Yani abaküse 400 ekle.</string>
+    <string name="tutorial22_23">4 ile 3\'ü çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_127">4x3=12. Yüzler ile onlar çarpılıyor. 12\'yi abaküsteki binler basamağına yaz. Yani abaküse 12000 ekle.</string>
+    <string name="tutorial22_24">Cevap 13104.</string>
+    <string name="tutorial22_26">Aşağıdaki seçeneklerden hangisi yanlıştır?</string>
+    <string name="tutorial_ipucu_128">10 ile 1\'i çarpıyormuşsun gibi düşün. 10 x 1 = 10. Yani onlar basamağı ile birler basamağı çarpılırsa cevap onlar basamağına yazılır.</string>
+    <string name="tutorial_sik_037">Onlar basamağı ile onlar basamağı çarpılırsa sonuç yüzlere yazılır.</string>
+    <string name="tutorial_sik_038">Yüzler basamağı ile onlar basamağı çarpılırsa sonuç binlere yazılır.</string>
+    <string name="tutorial_sik_039">Onlar basamağı ile birler basamağı çarpılırsa sonuç birlere yazılır.</string>
+
+    <!-- Öğretici 23 -->
+    <string name="tutorial23_1">7x6 = 42. Birler basamağına yazıyorum.</string>
+    <string name="tutorial23_2">7x8 = 56. Onlar basamağına yazıyorum.</string>
+    <string name="tutorial23_3">7x5 = 35. Yüzler basamağına yazıyorum.</string>
+    <string name="tutorial23_4">9x6 = 54. Onlar basamağına yazıyorum.</string>
+    <string name="tutorial23_5">9x8 = 72. Yüzler basamağına yazıyorum.</string>
+    <string name="tutorial23_6">9x5 = 45. Binler basamağına yazıyorum.</string>
+    <string name="tutorial23_7">Ve cevap 56842.</string>
+    <string name="tutorial23_8">2. sayının en küçük basamağından başlayarak çarpıp, sıra sıra abaküse ekleyeceğiz.</string>
+    <string name="tutorial23_9">4 ile 5\'i çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_129">4x5=20. Birler ile birler çarpılıyor. 20\'yi abaküsteki birler basamağına yaz. Yani abaküse 20 ekle.</string>
+    <string name="tutorial23_10">4 ile 6\'yı çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_130">4x6=24. Birler ile onlar çarpılıyor. 24\'ü abaküsteki onlar basamağına yaz. Yani abaküse 240 ekle.</string>
+    <string name="tutorial23_12">4 ile 7\'yi çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_131">4x7=28. Birler ile yüzler çarpılıyor. 28\'i abaküsteki yüzler basamağına yaz. Yani abaküse 2800 ekle.</string>
+    <string name="tutorial23_13">8 ile 5\'i çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_132">8x5=40. Birler ile onlar çarpılıyor. 40\'ı abaküsteki onlar basamağına yaz. Yani abaküse 400 ekle.</string>
+    <string name="tutorial23_14">8 ile 6\'yı çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_133">8x6=48. Onlar ile onlar çarpılıyor. 48\'i abaküsteki yüzler basamağına yaz. Yani abaküse 4800 ekle.</string>
+    <string name="tutorial23_15">8 ile 7\'yi çarpıp sonucu abaküse yaz.</string>
+    <string name="tutorial_ipucu_134">8x7=56. Onlar ile yüzler çarpılıyor. 8\'i abaküsteki binler basamağına yaz. Yani abaküse 56000 ekle.</string>
+    <string name="tutorial23_16">Cevap 64260.</string>
+
+    <!-- Öğretici 24 -->
+    <string name="tutorial24_1">Bu derste abaküs kullanmadan işlemleri yapacağız.</string>
+    <string name="tutorial24_2">Aklından abaküsteki boncukları hayal edip işlemleri öyle yapmalısın.</string>
+    <string name="tutorial24_3">Abaküsü karşında hayal edip boncukları parmaklarınla hareket ettirmeyi deneyebilirsin.</string>
+    <string name="tutorial24_4">Ama sadece abaküs üzerinden işlemleri yapmalısın.</string>
+    <string name="tutorial24_5">Yani 3+1 işlemini yaparken hayalindeki abaküse önce 3’ü yazıp onun üzerine 1 boncuk eklemelisin. Ezbere 4 dememelisin.</string>
+    <string name="tutorial24_6">Şimdi teste geçeceğiz.</string>
+    <string name="tutorial24_7">Testte tahtaya sıra sıra sayılar gelecek.</string>
+    <string name="tutorial24_8">Bu sayıları aklından toplayıp sonucu aşağıdaki kutucuğa yazacaksın.</string>
+    <string name="tutorial24_9">Örneğin sıra sıra şu sayılar gelebilir.</string>
+    <string name="tutorial23_99">11</string>
+    <string name="tutorial24_12">1</string>
+    <string name="tutorial24_13">5</string>
+    <string name="tutorial24_14">Diye 3 saniye arayla sayılar gelecek. Sayıların gelmesi durduğunda sonucu kutucuğa yazacaksın.</string>
+    <string name="tutorial24_15">Eğer kaçırdığın bir sayı olursa, tekrarla butonuna tıklayarak soruyu en baştan görebilirsin.</string>
+    <string name="tutorial24_16">Başarılar.</string>
+
+    <!-- Öğretici 25 -->
+    <string name="tutorial25_1">Bu derste, abaküsü hayal ederek aklımızdan kuralsız çıkarma yapacağız.</string>
+    <string name="tutorial25_2">İlk sayı hariç diğer sayıları çıkaracağız.</string>
+    <string name="tutorial25_3">Örneğin sayılar şu şekilde gelebilir.</string>
+    <string name="tutorial25_4">88</string>
+    <string name="tutorial25_5">-12</string>
+    <string name="tutorial25_6">-11</string>
+    <string name="tutorial25_7">-50</string>
+
+    <!-- Öğretici 26 -->
+    <string name="tutorial26_3">Bu derste abaküsü hayal ederek aklından çarpma yapacaksın.</string>
+    <string name="tutorial26_2">Çarpılacak sayılar ekrana gelecek.</string>
+    <string name="tutorial26_1">Ve abaküsü hayal ederek çarpma işlemini yapacaksın.</string>
+</resources>

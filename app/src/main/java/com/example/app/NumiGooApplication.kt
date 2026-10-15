@@ -245,6 +245,8 @@ class NumiGooApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Ders şablonu metinlerini strings_lessons.xml'den okuyor; her şeyden önce verilmeli.
+        GlobalLessonData.init(this)
         // App Check kurulumu uygulamanın açılmasının önüne geçmemeli: burada atılan bir
         // istisna süreci daha ilk karede öldürür. Zorlama kapalıyken kurulumun başarısız
         // olması zaten hiçbir çağrıyı bloklamaz.

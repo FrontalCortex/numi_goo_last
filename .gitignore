@@ -32,3 +32,7 @@ firestore-debug.log
 # Kural testi bağımlılıkları (yalnızca yerel)
 tools/rules-test/node_modules/
 tools/rules-test/package-lock.json
+
+# Çeviri aracının ürettiği tablolar (tools/ceviri/ceviri.js)
+/ceviri_*.csv
+/ses_listesi_*.csv

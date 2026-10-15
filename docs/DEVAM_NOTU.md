@@ -23,6 +23,34 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Dil yapısı Aşama 1: öğretici ve ders metinleri strings'e taşındı (15.10.2026 — derlendi ve doğrulandı, cihazda DENENMEDİ, commit edilmedi)
+
+Plan: Aşama 1 öğretici/ders metinleri → Aşama 2 arayüz metinleri (layout'larda ~1159, kodda
+~150 sabit metin) → Aşama 3 dil seçimi + eksik çeviri/ses kontrolü + Play dil bölmesi
+doğrulaması → Aşama 4 İngilizce (çeviri bir kişiye yaptırılacak, sesler yapay zekâ).
+
+- `res/values/strings_tutorial.xml` (997 anahtar): öğretici adım metni, requestText, şıklar,
+  optionText, kural metni. Anahtar = sesli cümlede SES DOSYASININ ADI (tutorial12_17 →
+  raw/tutorial12_17.mp3), sessizlerde `tutorial_<txt|ipucu|sik|soru|kural>_NNN`. Aynı cümle
+  tek anahtar. Kotlin: `getString(R.string.x)`, JSON: `"@string/x"` (`resolveText`).
+- Kural metni renklendirmesi harf numarası yerine metin içi `[köşeli parantez]`
+  (`markedRuleText`); `rulesStepTextColorPositions` alanı KALDIRILDI. Soru metni
+  renklendirmesi (`questionTextColorPositions`) sayılarda olduğu için dile bağlı değil, duruyor.
+- `res/values/strings_lessons.xml` (323): ders title/hint/unit/race, anahtar
+  `lesson_<stableId>_<alan>`. `GlobalLessonData.str()` uygulama context'iyle okur
+  (`GlobalLessonData.init`, `NumiGooApplication.onCreate`'in ilk satırı).
+- Düzeltme: eski yerel önbellekten (`loadFromPreferences`) okunan derslerin ad/ipucu artık
+  şablondan yenileniyor (`withTemplateTexts`); önceden koddaki ad değişiklikleri o cihazlara
+  hiç ulaşmıyordu.
+- Doğrulama: 1270 öğretici adımının bütün metin alanları dönüşüm öncesiyle aynı; derlenmiş
+  APK'deki 1320 metin (aapt2 dump) amaçlananla birebir aynı.
+- **Çeviri aracı:** `node tools/ceviri/ceviri.js disa-aktar en` → `ceviri_en.csv` (1136 satır,
+  aynı Türkçe tek satır); `ice-aktar en <csv>` → `values-en/`; `ses-listesi en` → seslendirme
+  listesi (852 ses, `raw-en/<ad>.mp3`); `kontrol en` → eksikler. CSV'ler .gitignore'da.
+- Aşama 3 için not: dil değişince `GlobalLessonData.lessonItems` bellekte eski dilde kalır →
+  dil seçimi uygulamayı yeniden başlatmalı. Android 13 altında uygulama içi dil seçimi
+  Application context'ine yansımaz; `str()` için yerelleştirilmiş context gerekecek.
+
 ## Öğretici adım kimlikleri + Remote Config bırakıldı (15.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
 
 - `TutorialStep.id`: 160 soru adımının hepsine elle kimlik verildi (`t16_23m6_5_gelir_4un`
