@@ -2908,7 +2908,7 @@ class MainActivity : AppCompatActivity() {
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
             is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment,
-            is CupPathRoadFragment -> overlay
+            is CupPathRoadFragment, is BugReportFragment, is BugReportAdminFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {
@@ -3003,8 +3003,14 @@ class MainActivity : AppCompatActivity() {
         fm.executePendingTransactions()
         val active = liveOverlayIn(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        if (active is AbacusPracticeFragment && hostVisible) {
-            Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active AbacusPractice")
+        // Bu kontrol Görevler'in onResume'unda da çalışıyor, yani ekran bir dış etkinlikten
+        // (galeri/Photo Picker) ya da arka plandan dönünce. Kullanıcının açık tuttuğu gerçek
+        // ekranlar hayalet sayılmamalı: hata bildirimi ekranı görsel seçilip dönülünce
+        // kapanıyordu.
+        if (hostVisible && (active is AbacusPracticeFragment || active is BugReportFragment ||
+                active is BugReportAdminFragment)
+        ) {
+            Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active ${active.javaClass.simpleName}")
             return
         }
         purgeAbacusOverlayHosts(caller)

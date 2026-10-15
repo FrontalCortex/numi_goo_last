@@ -6397,7 +6397,8 @@ function throwIfFailed(result) {
 }
 
 /**
- * Yeni hata bildirimi. Görsel önceden yüklenmiş olmalı (`bug_reports/{uid}_{zaman}.jpg`).
+ * Yeni hata bildirimi. Görsel isteğe bağlı; verildiyse önceden yüklenmiş olmalı
+ * (`bug_reports/{uid}_{zaman}.jpg`).
  *
  * Doküman istemciden değil buradan yazılıyor: gönderim sınırları (aynı anda bekleyen ve
  * günlük) kurallarla sayılamıyor, ve `status`/ödül alanlarını istemcinin hiç yazamaması
@@ -6409,9 +6410,11 @@ exports.submitBugReport = functions.https.onCall(async (data, context) => {
 
   // Yol uid'e bağlı olduğu için başkasının dosyası gösterilemez; yine de gerçekten yüklenmiş
   // mi bakıyoruz — yoksa panelde görselsiz, incelenemeyen bir bildirim olurdu.
-  const [exists] = await admin.storage().bucket().file(input.imagePath).exists();
-  if (!exists) {
-    throw new functions.https.HttpsError('failed-precondition', 'Ekran görüntüsü yüklenemedi.');
+  if (input.imagePath) {
+    const [exists] = await admin.storage().bucket().file(input.imagePath).exists();
+    if (!exists) {
+      throw new functions.https.HttpsError('failed-precondition', 'Ekran görüntüsü yüklenemedi.');
+    }
   }
 
   const guardRef = db.collection('bugReportGuards').doc(uid);

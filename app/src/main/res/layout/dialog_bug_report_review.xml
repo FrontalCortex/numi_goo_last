@@ -42,6 +42,17 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:indeterminateTint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/reviewNoImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:fontFamily="@font/font_regular"
+            android:text="@string/bug_report_admin_no_image"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
     </FrameLayout>
 
     <!-- Uzun bir açıklama görseli ezmesin: alanı ağırlıkla sınırlı, içinde kayıyor. -->

@@ -51,6 +51,10 @@ bildiren tam ödülü alır (sonrakini admin reddeder ya da küçük ödül veri
   `BulletinRow.BugReport` kartı, admin claim'li hesapta "Hata Bildirimleri (Admin)" kartı →
   `BugReportAdminFragment` → `BugReportReviewDialogFragment` (`ZoomImageView`: iki parmak/çift dokunuş).
   Metinler `res/values/strings_bug_report.xml`.
+- Düzeltme: galeriden görsel seçip dönünce ekran kapanıyordu — Görevler'in `onResume`'u
+  `reconcileAbacusOverlayWhenTasksIsBase` ile açık overlay'i hayalet sayıp temizliyordu.
+  BugReport/BugReportAdmin fragment'leri AbacusPractice gibi muaf tutuldu (arka plandan dönüşte
+  de aynı sorun olurdu). Ekran görüntüsü artık İSTEĞE BAĞLI (kullanıcı kararı); boş `imagePath`.
 - **Sıradaki:** push = functions + kurallar deploy (önce sor) → kendi hesabına claim ver →
   uçtan uca dene: gönder → panelde onayla → kartta topla → bakiye/kredi arttı mı.
 

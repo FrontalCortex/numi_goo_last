@@ -92,7 +92,7 @@ class BugReportAdminFragment : Fragment() {
             override fun areContentsTheSame(a: BugReports.Report, b: BugReports.Report) = a == b
         },
     ) {
-        private val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR"))
+        private val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.forLanguageTag("tr-TR"))
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
             VH(ItemBugReportAdminBinding.inflate(LayoutInflater.from(parent.context), parent, false))
@@ -107,6 +107,9 @@ class BugReportAdminFragment : Fragment() {
 
             b.adminThumb.setImageDrawable(null)
             b.adminThumb.tag = report.imagePath
+            // Görsel isteğe bağlı; yoksa küçük resim yeri boş kalmasın.
+            b.adminThumb.visibility = if (report.imagePath.isBlank()) View.GONE else View.VISIBLE
+            if (report.imagePath.isBlank()) return
             BugReports.imageUrl(report.imagePath) { uri ->
                 // Satır bu arada başka bir bildirime geçmiş olabilir.
                 if (uri == null || b.adminThumb.tag != report.imagePath) return@imageUrl

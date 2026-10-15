@@ -15,15 +15,14 @@
 
     <!-- Bildirim ekranı -->
     <string name="bug_report_title">Hata Bildir</string>
-    <string name="bug_report_intro">Uygulamada bozuk görünen, yanlış çalışan ya da takılan bir şey mi gördün? Ekran görüntüsünü al, buraya ekle ve ne olduğunu anlat. İncelediğimizde gerçekten bir hata varsa şu ödülü kazanırsın:</string>
-    <string name="bug_report_pick_image">Ekran görüntüsü seç</string>
+    <string name="bug_report_intro">Uygulamada bozuk görünen, yanlış çalışan ya da takılan bir şey mi gördün? Ne olduğunu anlat; istersen ekran görüntüsü de ekle. İncelediğimizde gerçekten bir hata varsa şu ödülü kazanırsın:</string>
+    <string name="bug_report_pick_image">Ekran görüntüsü ekle (isteğe bağlı)</string>
     <string name="bug_report_change_image">Başka görsel seç</string>
     <string name="bug_report_annotate">Hatanın yerini işaretle</string>
     <string name="bug_report_text_label">Ne oldu? Neredeydin, neye bastın?</string>
     <string name="bug_report_text_hint">Örn. Dersin sonunda Devam düğmesine basınca ekran donuyor.</string>
     <string name="bug_report_send">Gönder</string>
     <string name="bug_report_close">Kapat</string>
-    <string name="bug_report_need_image">Lütfen bir ekran görüntüsü ekle.</string>
     <string name="bug_report_need_text">Lütfen sorunu biraz daha ayrıntılı anlat.</string>
     <string name="bug_report_image_failed">Görsel açılamadı. Başka bir görsel dene.</string>
     <string name="bug_report_upload_failed">Ekran görüntüsü yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.</string>
@@ -59,4 +58,5 @@
     <string name="bug_report_admin_done">Karar kaydedildi.</string>
     <string name="bug_report_admin_user_line">Kullanıcı: %1$s</string>
     <string name="bug_report_image_desc">Hata ekran görüntüsü</string>
+    <string name="bug_report_admin_no_image">Ekran görüntüsü eklenmemiş.</string>
 </resources>

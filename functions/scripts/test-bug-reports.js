@@ -51,7 +51,18 @@ test('geçerli gönderim', () => {
 test('kısa metin red', () => assert.strictEqual(normalizeSubmission({ text: 'kısa', imagePath: IMG }, UID).ok, false));
 test('uzun metin red', () =>
   assert.strictEqual(normalizeSubmission({ text: 'a'.repeat(BUG_REPORT_TEXT_MAX + 1), imagePath: IMG }, UID).ok, false));
-test('görselsiz red', () => assert.strictEqual(normalizeSubmission({ text: TEXT }, UID).ok, false));
+test('görselsiz kabul (görsel isteğe bağlı)', () => {
+  const r = normalizeSubmission({ text: TEXT }, UID);
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.imagePath, '');
+});
+test('boş görsel yolu görselsiz sayılır', () =>
+  assert.strictEqual(normalizeSubmission({ text: TEXT, imagePath: '  ' }, UID).imagePath, ''));
+test('başkasının görseli red', () =>
+  assert.strictEqual(
+    normalizeSubmission({ text: TEXT, imagePath: 'bug_reports/other_1760000000000.jpg' }, UID).ok,
+    false
+  ));
 test('cihaz bilgisi süzülür', () => {
   const d = sanitizeDevice({ model: 'Pixel 8', sdk: 35, evil: 'x', locale: 'tr-TR'.repeat(10) });
   assert.deepStrictEqual(Object.keys(d).sort(), ['locale', 'model', 'sdk']);

@@ -31,8 +31,8 @@ import java.util.Locale
 /**
  * Hata bildirme ekranı (Görevler → "Hata Avcısı" kartı).
  *
- * Kullanıcı galeriden ekran görüntüsünü seçer (Photo Picker — depolama izni istemez),
- * isterse hatanın yerini üzerine çizerek işaretler ve ne olduğunu yazar. Altta önceki
+ * Kullanıcı ne olduğunu yazar; isterse galeriden ekran görüntüsü ekler (Photo Picker —
+ * depolama izni istemez) ve hatanın yerini üzerine çizerek işaretler. Altta önceki
  * bildirimleri ve durumları görünür; onaylananın ödülü buradan da toplanabilir.
  * Akışın sunucu tarafı için bkz. [BugReports] ve functions/bugReports.js.
  */
@@ -118,11 +118,8 @@ class BugReportFragment : Fragment() {
     }
 
     private fun send() {
-        val file = imageFile
-        if (file == null || !file.exists()) {
-            toast(R.string.bug_report_need_image)
-            return
-        }
+        // Görsel isteğe bağlı; seçilen dosya bu arada silindiyse görselsiz gönderilir.
+        val file = imageFile?.takeIf { it.exists() }
         val text = binding.descriptionInput.text.toString().trim()
         if (text.length < BugReports.TEXT_MIN) {
             toast(R.string.bug_report_need_text)
@@ -156,7 +153,7 @@ class BugReportFragment : Fragment() {
         val container = b.myReportsContainer
         container.removeAllViews()
         b.myReportsTitle.visibility = if (reports.isEmpty()) View.GONE else View.VISIBLE
-        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR"))
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.forLanguageTag("tr-TR"))
         val ctx = requireContext()
 
         for (report in reports) {

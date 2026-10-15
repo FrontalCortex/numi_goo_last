@@ -51,7 +51,7 @@ class BugReportReviewDialogFragment : DialogFragment() {
 
         val createdAt = args.getLong(ARG_CREATED_AT)
         val date = if (createdAt > 0) {
-            SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR")).format(Date(createdAt))
+            SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.forLanguageTag("tr-TR")).format(Date(createdAt))
         } else {
             ""
         }
@@ -74,6 +74,12 @@ class BugReportReviewDialogFragment : DialogFragment() {
     }
 
     private fun loadImage(imagePath: String) {
+        if (imagePath.isBlank()) {
+            // Görsel isteğe bağlı; kullanıcı yalnızca metinle bildirmiş.
+            binding.reviewImageProgress.visibility = View.GONE
+            binding.reviewNoImage.visibility = View.VISIBLE
+            return
+        }
         BugReports.imageUrl(imagePath) { uri ->
             val b = _binding ?: return@imageUrl
             if (uri == null) {

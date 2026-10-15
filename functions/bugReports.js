@@ -5,8 +5,9 @@
  * bildirmesi, admin'in onaylayıp/reddetmesi ve onaylananın ödülünü kullanıcının toplaması.
  *
  * AKIŞ
- *   1. İstemci görseli `bug_reports/{uid}_{zaman}.jpg` yoluna yükler, sonra
+ *   1. İstemci (varsa) görseli `bug_reports/{uid}_{zaman}.jpg` yoluna yükler, sonra
  *      `submitBugReport` ile metni ve yolu gönderir → `bugReports/{id}` (status: pending).
+ *      Görsel isteğe bağlı; yoksa `imagePath` boş.
  *   2. Admin (Auth custom claim `admin: true`, bkz. scripts/set-admin-claim.js) uygulama
  *      içindeki panelden `reviewBugReport` çağırır: onaylarken ödül kademesini seçer,
  *      reddederken gerekçeyi. Kullanıcıya bildirim gider.
@@ -99,8 +100,11 @@ function normalizeSubmission(data, uid) {
   if (text.length > BUG_REPORT_TEXT_MAX) {
     return fail('invalid-argument', 'Açıklama çok uzun.');
   }
-  const imagePath = data && data.imagePath;
-  if (!isOwnImagePath(imagePath, uid)) {
+  // Ekran görüntüsü isteğe bağlı (kullanıcı kararı): bazı hatalar metinle anlatılabiliyor.
+  // Verildiyse çağıranın kendi dosyası olmalı; boş yol "görsel yok" demek.
+  const rawPath = data && data.imagePath;
+  const imagePath = typeof rawPath === 'string' ? rawPath.trim() : '';
+  if (imagePath && !isOwnImagePath(imagePath, uid)) {
     return fail('invalid-argument', 'Ekran görüntüsü bulunamadı.');
   }
   return { ok: true, text, imagePath, device: sanitizeDevice(data && data.device) };

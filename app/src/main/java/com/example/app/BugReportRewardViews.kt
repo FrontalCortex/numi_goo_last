@@ -8,7 +8,7 @@ import java.util.Locale
 object BugReportRewardViews {
     fun bind(row: ViewBugReportRewardsBinding) {
         val tier = BugReports.Tier.BIG
-        val format = NumberFormat.getIntegerInstance(Locale("tr", "TR"))
+        val format = NumberFormat.getIntegerInstance(Locale.forLanguageTag("tr-TR"))
         row.rewardCreditsText.text = format.format(tier.credits)
         row.rewardGoldText.text = format.format(tier.gold)
         row.rewardKeysText.text = format.format(tier.keys)

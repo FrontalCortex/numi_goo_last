@@ -113,7 +113,7 @@ object BugReports {
     ).joinToString(" + ")
 
     private fun formatAmount(value: Int): String =
-        java.text.NumberFormat.getIntegerInstance(java.util.Locale("tr", "TR")).format(value)
+        java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("tr-TR")).format(value)
 
     private fun parse(doc: com.google.firebase.firestore.DocumentSnapshot): Report? {
         val uid = doc.getString("uid") ?: return null
@@ -232,29 +232,38 @@ object BugReports {
 
     // ── Yazma (Cloud Functions) ──────────────────────────────────────────────
 
-    /** Görseli yükler ve bildirimi gönderir. Gönderim başarısız olursa yüklenen görsel silinir. */
-    fun submit(context: Context, image: File, text: String, onResult: (success: Boolean, message: String?) -> Unit) {
+    /**
+     * Bildirimi gönderir; [image] varsa önce onu yükler (görsel isteğe bağlı). Gönderim
+     * başarısız olursa yüklenen görsel silinir.
+     */
+    fun submit(context: Context, image: File?, text: String, onResult: (success: Boolean, message: String?) -> Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
             ?: return onResult(false, appString(R.string.ui_oturum_acik_degil))
+
+        fun callSubmit(path: String, onFailedCleanup: () -> Unit) {
+            FirebaseFunctions.getInstance()
+                .getHttpsCallable("submitBugReport")
+                .call(mapOf("text" to text, "imagePath" to path, "device" to deviceInfo(context)))
+                .addOnSuccessListener {
+                    image?.delete()
+                    onResult(true, null)
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "submitBugReport başarısız", e)
+                    onFailedCleanup()
+                    onResult(false, errorMessage(e))
+                }
+        }
+
+        if (image == null) {
+            callSubmit("") {}
+            return
+        }
         val path = "bug_reports/${uid}_${System.currentTimeMillis()}.jpg"
         val ref = FirebaseStorage.getInstance().reference.child(path)
         val metadata = StorageMetadata.Builder().setContentType("image/jpeg").build()
-
         ref.putFile(Uri.fromFile(image), metadata)
-            .addOnSuccessListener {
-                FirebaseFunctions.getInstance()
-                    .getHttpsCallable("submitBugReport")
-                    .call(mapOf("text" to text, "imagePath" to path, "device" to deviceInfo(context)))
-                    .addOnSuccessListener {
-                        image.delete()
-                        onResult(true, null)
-                    }
-                    .addOnFailureListener { e ->
-                        Log.w(TAG, "submitBugReport başarısız", e)
-                        ref.delete()
-                        onResult(false, errorMessage(e))
-                    }
-            }
+            .addOnSuccessListener { callSubmit(path) { ref.delete() } }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Görsel yüklenemedi", e)
                 onResult(false, appString(R.string.bug_report_upload_failed))
