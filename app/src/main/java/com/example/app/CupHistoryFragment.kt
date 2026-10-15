@@ -89,7 +89,7 @@ class CupHistoryFragment : Fragment() {
     private fun setupTabs() {
         // "Günlük" sekmesi kaldırıldı: başlık, o gün içindeki saatlerin listeleneceği izlenimi
         // veriyordu — oysa yalnızca günün son değerini tutuyoruz. En küçük birim artık "Haftalık".
-        val labels = listOf("Haftalık", "Aylık", "Yıllık", "Tüm Zamanlar")
+        val labels = listOf(appString(R.string.ui_haftalik), appString(R.string.ui_aylik), appString(R.string.ui_yillik), appString(R.string.ui_tum_zamanlar))
         labels.forEach { label ->
             binding.tabLayoutCupHistory.addTab(binding.tabLayoutCupHistory.newTab().setText(label))
         }

@@ -70,7 +70,7 @@ class CreateQuestionFragment : Fragment() {
         if (!videoPath.isNullOrEmpty()) {
             val file = File(videoPath)
             if (!file.exists()) {
-                Toast.makeText(requireContext(), "Video bulunamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_video_bulunamadi), Toast.LENGTH_SHORT).show()
                 parentFragmentManager.popBackStack()
                 return
             }
@@ -106,13 +106,13 @@ class CreateQuestionFragment : Fragment() {
         }
 
         if (screenshotPath.isNullOrEmpty()) {
-            Toast.makeText(requireContext(), "Ekran görüntüsü alınamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_ekran_goruntusu_alinamadi), Toast.LENGTH_SHORT).show()
             parentFragmentManager.popBackStack()
             return
         }
         val file = File(screenshotPath)
         if (!file.exists()) {
-            Toast.makeText(requireContext(), "Ekran görüntüsü bulunamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_ekran_goruntusu_bulunamadi), Toast.LENGTH_SHORT).show()
             parentFragmentManager.popBackStack()
             return
         }
@@ -173,16 +173,16 @@ class CreateQuestionFragment : Fragment() {
         val isTeacher = arguments?.getBoolean(ARG_IS_TEACHER, false) == true
         if (!isTeacher) {
             if (header.isEmpty()) {
-                Toast.makeText(requireContext(), "Lütfen başlık yazın.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_lutfen_baslik_yazin), Toast.LENGTH_SHORT).show()
                 return
             }
             if (description.isEmpty()) {
-                Toast.makeText(requireContext(), "Lütfen açıklama yazın.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_lutfen_aciklama_yazin), Toast.LENGTH_SHORT).show()
                 return
             }
         }
         val uid = auth.currentUser?.uid ?: run {
-            Toast.makeText(requireContext(), "Oturum açık değil.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_oturum_acik_degil), Toast.LENGTH_SHORT).show()
             return
         }
         if (isTeacher) {
@@ -217,7 +217,7 @@ class CreateQuestionFragment : Fragment() {
                         description = description,
                         onResult = { _, _ ->
                             AnalyticsLogger.logQuestionAsked(AnalyticsLogger.QUESTION_MEDIA_IMAGE)
-                            runStudentGolfBadgeThenClose("Soru gönderildi.")
+                            runStudentGolfBadgeThenClose(appString(R.string.ui_soru_gonderildi))
                         },
                         onFailure = { e ->
                             setSendingUi(false)
@@ -229,7 +229,7 @@ class CreateQuestionFragment : Fragment() {
             }
             .addOnFailureListener { e ->
                 setSendingUi(false)
-                Toast.makeText(requireContext(), "Yükleme hatası: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_yukleme_hatasi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -238,11 +238,11 @@ class CreateQuestionFragment : Fragment() {
         val description = binding.descriptionInput.text.toString().trim()
         val isTeacher = arguments?.getBoolean(ARG_IS_TEACHER, false) == true
         if (!isTeacher && header.isEmpty()) {
-            Toast.makeText(requireContext(), "Lütfen başlık yazın.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_lutfen_baslik_yazin), Toast.LENGTH_SHORT).show()
             return
         }
         val uid = auth.currentUser?.uid ?: run {
-            Toast.makeText(requireContext(), "Oturum açık değil.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_oturum_acik_degil), Toast.LENGTH_SHORT).show()
             return
         }
         if (isTeacher) {
@@ -278,7 +278,7 @@ class CreateQuestionFragment : Fragment() {
                             AnalyticsLogger.logQuestionAsked(AnalyticsLogger.QUESTION_MEDIA_VIDEO)
                             // Offline yok: gönderim başarılıysa yerel cache videosunu temizle.
                             runCatching { File(videoPath).delete() }
-                            runStudentGolfBadgeThenClose("Soru gönderildi.")
+                            runStudentGolfBadgeThenClose(appString(R.string.ui_soru_gonderildi))
                         },
                         onFailure = { e ->
                             setSendingUi(false)
@@ -293,14 +293,14 @@ class CreateQuestionFragment : Fragment() {
                     setSendingUi(false)
                     // Download URL alınamadıysa da videoyu temizle (offline yok).
                     runCatching { File(videoPath).delete() }
-                    Toast.makeText(requireContext(), "Video yükleme hatası.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_video_yukleme_hatasi), Toast.LENGTH_SHORT).show()
                 }
             }
             .addOnFailureListener { e ->
                 setSendingUi(false)
                 // Upload başarısızsa videoyu cache'te tutmayalım (offline yok).
                 runCatching { File(videoPath).delete() }
-                Toast.makeText(requireContext(), "Video yükleme hatası: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_video_yukleme_hatasi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -320,9 +320,9 @@ class CreateQuestionFragment : Fragment() {
     private fun showSendFailure(e: Exception) {
         if (!isAdded) return
         val text = if (ServerQuestions.isInsufficientCredits(e)) {
-            "Danışma kredin kalmadı. Mağazadan kredi alabilirsin."
+            appString(R.string.ui_danisma_kredin_kalmadi_magazadan_kredi_alabi)
         } else {
-            "Gönderilemedi: ${e.message}"
+            appString(R.string.ui_gonderilemedi_x, e.message)
         }
         Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
     }

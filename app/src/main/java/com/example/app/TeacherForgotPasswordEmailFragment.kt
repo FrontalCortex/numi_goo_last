@@ -35,28 +35,28 @@ class TeacherForgotPasswordEmailFragment : Fragment() {
         binding.btnContinue.setOnClickListener {
             val email = binding.etEmail.text?.toString()?.trim().orEmpty()
             if (email.isEmpty()) {
-                Toast.makeText(requireContext(), "E-posta adresi girin", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_e_posta_adresi_girin), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(requireContext(), "Geçerli bir e-posta adresi girin", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_gecerli_bir_e_posta_adresi_girin), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             binding.btnContinue.isEnabled = false
-            binding.btnContinue.text = "Gönderiliyor..."
+            binding.btnContinue.text = appString(R.string.ui_gonderiliyor)
 
             // Öğretmen şifre sıfırlama akışında e-posta gönderimi sırasında sol üst geri butonunu kilitle
             (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
 
             authManager.sendTeacherPasswordResetCode(email) { success, error ->
                 binding.btnContinue.isEnabled = true
-                binding.btnContinue.text = "Devam Et"
+                binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
                 if (success) {
                     onCodeSent?.invoke(email.trim().lowercase())
                 } else {
-                    Toast.makeText(requireContext(), error ?: "Kod gönderilemedi", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
                 }
             }
         }

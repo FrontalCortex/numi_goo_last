@@ -26,7 +26,7 @@
                 android:id="@+id/accountSettingsHeaderTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ayarlar"
+                android:text="@string/fragment_account_settings_account_settings_header_title"
                 android:textAlignment="center"
                 android:textColor="#BDBDBD"
                 android:textSize="20sp"
@@ -75,7 +75,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="10dp"
-                android:text="Hesap"
+                android:text="@string/fragment_account_settings_text"
                 android:textColor="#E6EEF2"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -112,7 +112,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Profil"
+                        android:text="@string/fragment_account_settings_text_2"
                         android:textColor="#E6EEF2"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -144,7 +144,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Ses ve Bildirimler"
+                        android:text="@string/fragment_account_settings_text_3"
                         android:textColor="#E6EEF2"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -162,7 +162,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Veliler için"
+            android:text="@string/fragment_account_settings_text_4"
             android:textColor="#E6EEF2"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -199,7 +199,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Veli Paneli"
+                        android:text="@string/fragment_account_settings_text_5"
                         android:textColor="#E6EEF2"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -218,7 +218,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Ödemeler ve abonelikler"
+            android:text="@string/fragment_account_settings_tv_payments_header"
             android:textColor="#E6EEF2"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -255,7 +255,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Abonelik İptali"
+                        android:text="@string/fragment_account_settings_text_6"
                         android:textColor="#E6EEF2"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -273,7 +273,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Destek"
+            android:text="@string/fragment_account_settings_text_7"
             android:textColor="#E6EEF2"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -312,7 +312,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Geri bildirim"
+                        android:text="@string/fragment_account_settings_text_8"
                         android:textColor="#E6EEF2"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -330,7 +330,7 @@
             android:id="@+id/btnAccountSettingsLogout"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="OTURUMU KAPAT"
+            android:text="@string/fragment_account_settings_btn_account_settings_logout"
             android:textAllCaps="false"
             android:textColor="#47B0F2"
             android:textSize="20sp"

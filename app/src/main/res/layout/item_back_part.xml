@@ -43,7 +43,7 @@
                 android:id="@+id/sectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. Kısım"
+                android:text="@string/item_back_part_section_title"
                 android:textColor="#B0B0B0"
                 android:textStyle="bold"
                 android:textSize="@dimen/map_part_section_title_size"/>
@@ -54,7 +54,7 @@
             android:id="@+id/fastForwardButton"
             android:layout_width="match_parent"
             android:layout_height="@dimen/map_part_button_height"
-            android:text="GERİ GİT!"
+            android:text="@string/item_back_part_fast_forward_button"
             android:textSize="@dimen/map_part_button_text_size"
             android:textAllCaps="true"
             android:textStyle="bold"

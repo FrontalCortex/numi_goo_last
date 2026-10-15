@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Öğretici ve ders metinlerinin çeviri aracı.
+// Uygulama metinlerinin çeviri aracı: öğretici, ders, layout ve kod metinleri (strings_*.xml).
 //
 // Kullanım (proje kökünden):
 //   node tools/ceviri/ceviri.js disa-aktar en
@@ -27,7 +27,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const RES = path.join(ROOT, 'app', 'src', 'main', 'res');
-const FILES = ['strings_tutorial.xml', 'strings_lessons.xml'];
+// strings_ui: layout metinleri, strings_code: koddan gelen arayüz metinleri (çoğullar dahil).
+const FILES = ['strings_tutorial.xml', 'strings_lessons.xml', 'strings_ui.xml', 'strings_code.xml'];
 const TUTORIAL_KT = path.join(ROOT, 'app', 'src', 'main', 'java', 'com', 'example', 'app', 'TutorialFragment.kt');
 
 // ───────────── strings.xml okuma / yazma (aapt kaçış kurallarıyla) ─────────────
@@ -52,15 +53,30 @@ function encodeValue(t) {
   if (/^\s|\s$|\s\s/.test(t)) v = '"' + v + '"';
   return v;
 }
+// Çoğul metinler (<plurals>) her biçim için ayrı satır olur: anahtar "ad#one", "ad#other".
+// İngilizcede one/other yeter; başka dillerde (ör. Arapça) Android'in istediği diğer biçimler
+// çeviride eklenebilir.
 function readStrings(file) {
   if (!fs.existsSync(file)) return [];
   const xml = fs.readFileSync(file, 'utf8');
-  return [...xml.matchAll(/<string name="([^"]+)"[^>]*>([\s\S]*?)<\/string>/g)].map(m => ({ key: m[1], text: decodeValue(m[2]) }));
+  const out = [...xml.matchAll(/<string name="([^"]+)"([^>]*)>([\s\S]*?)<\/string>/g)]
+    .map(m => ({ key: m[1], text: decodeValue(m[3]), noFormat: /formatted="false"/.test(m[2]) }));
+  for (const m of xml.matchAll(/<plurals name="([^"]+)">([\s\S]*?)<\/plurals>/g))
+    for (const it of m[2].matchAll(/<item quantity="(\w+)">([\s\S]*?)<\/item>/g))
+      out.push({ key: `${m[1]}#${it[1]}`, text: decodeValue(it[2]) });
+  return out;
 }
-function writeStrings(file, entries, header) {
+function writeStrings(file, entries, header, noFormatKeys = new Set()) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   let xml = '<?xml version="1.0" encoding="utf-8"?>\n<!-- ' + header + ' -->\n<resources>\n';
-  for (const e of entries) xml += `    <string name="${e.key}">${encodeValue(e.text)}</string>\n`;
+  const plurals = new Map();
+  for (const e of entries) {
+    const [name, qty] = e.key.split('#');
+    if (qty) { if (!plurals.has(name)) plurals.set(name, []); plurals.get(name).push([qty, e.text]); continue; }
+    xml += `    <string name="${e.key}"${noFormatKeys.has(e.key) ? ' formatted="false"' : ''}>${encodeValue(e.text)}</string>\n`;
+  }
+  for (const [name, items] of plurals)
+    xml += `    <plurals name="${name}">\n${items.map(([q, t]) => `        <item quantity="${q}">${encodeValue(t)}</item>\n`).join('')}    </plurals>\n`;
   fs.writeFileSync(file, xml + '</resources>\n', 'utf8');
 }
 
@@ -127,6 +143,30 @@ function translations(lang) {
   return t;
 }
 const markers = t => (t.match(/[\[\]]/g) || []).join('');
+// %1$s, %2$s… yer tutucuları: çeviride hepsi bulunmalı (sırası değişebilir). Eksik ya da fazla
+// yer tutucu uygulamayı çökertebilir.
+const placeholders = t => (t.match(/%\d+\$s/g) || []).sort().join(' ');
+// Arayüz metninin hangi ekrandan geldiği: XML'deki <!-- ... --> bölüm başlıklarından
+function sectionsOf(file) {
+  const map = new Map();
+  if (!fs.existsSync(file)) return map;
+  let current = '';
+  for (const m of fs.readFileSync(file, 'utf8').matchAll(/<!--\s*([^\n]*?)\s*-->|<(?:string|plurals) name="([^"]+)"/g)) {
+    if (m[1] !== undefined) current = m[1].replace(/^layout\//, '').replace(/\.(xml|kt)$/, '');
+    else map.set(m[2], current);
+  }
+  return map;
+}
+// Kodun özel biçimde kullandığı metinler için çevirmene not
+const SPECIAL_NOTES = {
+  ui_hesap_olusturarak_kullanim_sartlarini_ve_giz: 'Bu cümlenin içindeki "Kullanım Şartlarını" ve "Gizlilik Politikasını" çevirileri, o iki satırdaki çevirilerle BİREBİR aynı yazılmalı (tıklanabilir bağlantı olarak aranıyorlar).',
+  ui_kullanim_sartlarini: '"Hesap oluşturarak…" cümlesindeki çeviriyle birebir aynı olmalı.',
+  ui_gizlilik_politikasini: '"Hesap oluşturarak…" cümlesindeki çeviriyle birebir aynı olmalı.',
+  ui_her_gun: 'Cümlenin başı; ortasına hedef süre ("10 dakika" gibi), sonuna "buraya varacaksın!" gelir.',
+  ui_buraya_varacaksin: 'Cümlenin sonu; başında "Her gün" ve hedef süre var.',
+  ui_week_initials_monday_first: 'Pazartesiden başlayarak haftanın 7 gününün baş harfi, aralarında birer boşluk.',
+};
+const QTY = { one: 'TEKİL biçim (sayı 1 iken)', other: 'ÇOĞUL biçim (diğer sayılar)', zero: 'sayı 0 iken', two: 'sayı 2 iken', few: 'az biçimi', many: 'çok biçimi' };
 
 // ───────────── Komutlar ─────────────
 const [cmd, lang, csvPath] = process.argv.slice(2);
@@ -135,21 +175,33 @@ if (!cmd || !lang) { console.log(fs.readFileSync(__filename, 'utf8').split('\n')
 if (cmd === 'disa-aktar') {
   const { where } = tutorialUsage();
   const tr = translations(lang);
-  const groups = new Map(); // Türkçe -> {keys, where}
+  const sec = new Map(FILES.flatMap(f => [...sectionsOf(path.join(RES, 'values', f))]));
+  const groups = new Map(); // Türkçe (+ çoğul biçimi) -> {keys, where, lessons, screens}
   for (const e of trEntries()) {
-    const g = groups.get(e.text) || { keys: [], where: new Set(), lessons: new Set() };
+    const qty = e.key.split('#')[1] || '';
+    const gk = qty + '\u0000' + e.text;
+    const g = groups.get(gk) || { text: e.text, qty, keys: [], where: new Set(), lessons: new Set(), screens: new Set() };
     g.keys.push(e.key);
     if (e.file === 'strings_tutorial.xml') for (const n of where.get(e.key) || []) g.where.add(n);
-    else g.lessons.add(e.key.replace(/^lesson_/, '').replace(/_(title|hint|unit|race)$/, ' ($1)'));
-    groups.set(e.text, g);
+    else if (e.file === 'strings_lessons.xml') g.lessons.add(e.key.replace(/^lesson_/, '').replace(/_(title|hint|unit|race)$/, ' ($1)'));
+    else g.screens.add(sec.get(e.key.split('#')[0]) || '?');
+    groups.set(gk, g);
   }
+  const list = (set, n = 3) => [...set].slice(0, n).join('; ') + (set.size > n ? ` (+${set.size - n})` : '');
   const rows = [['Anahtarlar', 'Nerede', 'Not', 'Türkçe', lang]];
-  for (const [text, g] of groups) {
+  for (const g of groups.values()) {
+    const text = g.text;
     const nerede = [
       g.where.size ? 'Öğretici ' + [...g.where].sort((a, b) => a - b).join(', ') : '',
-      g.lessons.size ? 'Ders: ' + [...g.lessons].slice(0, 3).join('; ') + (g.lessons.size > 3 ? ` (+${g.lessons.size - 3})` : '') : '',
+      g.lessons.size ? 'Ders: ' + list(g.lessons) : '',
+      g.screens.size ? 'Ekran: ' + list(g.screens) : '',
     ].filter(Boolean).join(' | ');
-    const not = text.includes('[') ? 'Köşeli parantez içi mavi gösterilir; parantezleri çeviride de aynı kısma koy.' : '';
+    const not = [
+      text.includes('[') ? 'Köşeli parantez içi mavi gösterilir; parantezleri çeviride de aynı kısma koy.' : '',
+      /%\d+\$s/.test(text) ? '%1$s gibi yer tutucuları aynen koru (yerleri değişebilir).' : '',
+      g.qty ? `Çoğul metin: ${QTY[g.qty] || g.qty}.` : '',
+      ...g.keys.map(k => SPECIAL_NOTES[k]).filter(Boolean),
+    ].filter(Boolean).join(' ');
     const existing = [...new Set(g.keys.map(k => tr.get(k)).filter(Boolean))];
     rows.push([g.keys.join(' '), nerede, not, text, existing.length === 1 ? existing[0] : '']);
   }
@@ -169,6 +221,7 @@ if (cmd === 'disa-aktar') {
     const src = r[ti] || '';
     if (!t) continue;
     if (markers(src) !== markers(t)) problems.push(`[ ] işaretleri uyuşmuyor: "${src}" → "${t}"`);
+    if (placeholders(src) !== placeholders(t)) problems.push(`%1$s yer tutucuları uyuşmuyor: "${src}" → "${t}"`);
     for (const k of (r[ki] || '').split(/\s+/).filter(Boolean)) byKey.set(k, t);
   }
   const missing = [];
@@ -176,7 +229,8 @@ if (cmd === 'disa-aktar') {
     const src = readStrings(path.join(RES, 'values', f));
     const out = [];
     for (const e of src) { if (byKey.has(e.key)) out.push({ key: e.key, text: byKey.get(e.key) }); else missing.push(e); }
-    writeStrings(path.join(RES, 'values-' + lang, f), out, `${f} — ${lang} çevirisi. Elle düzenleme; tools/ceviri/ceviri.js ice-aktar ile üretilir.`);
+    const noFormat = new Set(src.filter(e => e.noFormat).map(e => e.key));
+    writeStrings(path.join(RES, 'values-' + lang, f), out, `${f} — ${lang} çevirisi. Elle düzenleme; tools/ceviri/ceviri.js ice-aktar ile üretilir.`, noFormat);
   }
   console.log(`yazıldı: values-${lang}/ (${byKey.size} anahtar)`);
   if (problems.length) console.log('\nİŞARET SORUNLARI:\n' + problems.join('\n'));

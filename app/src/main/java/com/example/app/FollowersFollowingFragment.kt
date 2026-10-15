@@ -97,8 +97,8 @@ class FollowersFollowingFragment : Fragment() {
     }
 
     private fun setupTabs() {
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("TAKİP EDİLEN"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("TAKİPÇİ"))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(appString(R.string.ui_takip_edilen)))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(appString(R.string.ui_takipci)))
 
         binding.tabLayout.selectTab(binding.tabLayout.getTabAt(currentTab))
 
@@ -156,9 +156,9 @@ class FollowersFollowingFragment : Fragment() {
                     binding.progressBar.visibility = View.GONE
                     binding.layoutEmpty.visibility = View.VISIBLE
                     binding.tvEmpty.text = if (tab == TAB_FOLLOWING)
-                        "Henüz kimseyi takip etmiyorsun"
+                        appString(R.string.ui_henuz_kimseyi_takip_etmiyorsun)
                     else
-                        "Henüz takipçin yok"
+                        appString(R.string.ui_henuz_takipcin_yok)
                     return@addOnSuccessListener
                 }
 
@@ -200,9 +200,9 @@ class FollowersFollowingFragment : Fragment() {
                         if (users.isEmpty()) {
                             binding.layoutEmpty.visibility = View.VISIBLE
                             binding.tvEmpty.text = if (tab == TAB_FOLLOWING)
-                                "Henüz kimseyi takip etmiyorsun"
+                                appString(R.string.ui_henuz_kimseyi_takip_etmiyorsun)
                             else
-                                "Henüz takipçin yok"
+                                appString(R.string.ui_henuz_takipcin_yok)
                         } else {
                             binding.rvFollowList.visibility = View.VISIBLE
                             adapter.submitList(users)
@@ -211,13 +211,13 @@ class FollowersFollowingFragment : Fragment() {
                     .addOnFailureListener { e ->
                         if (!isAdded) return@addOnFailureListener
                         binding.progressBar.visibility = View.GONE
-                        Toast.makeText(requireContext(), "Avatar yüklenemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_avatar_yuklenemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.progressBar.visibility = View.GONE
-                Toast.makeText(requireContext(), "Yüklenemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_yuklenemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -260,13 +260,13 @@ class FollowersFollowingFragment : Fragment() {
                 AnalyticsLogger.logFriendAddedFromList()
                 if (!isAdded) return@addOnSuccessListener
                 myFollowingUids.add(targetUid)
-                Toast.makeText(requireContext(), "${user.name} takip edildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_x_takip_edildi_2, user.name), Toast.LENGTH_SHORT).show()
                 // Refresh list to hide the "+" button for this user
                 loadTab(currentTab)
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -280,12 +280,12 @@ class FollowersFollowingFragment : Fragment() {
      */
     private fun confirmUnfollow(user: FollowUser) {
         AlertDialog.Builder(requireContext())
-            .setMessage("${user.name} adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?")
-            .setNegativeButton("Takibi bırak") { dialog, _ ->
+            .setMessage(appString(R.string.ui_x_adli_kullaniciyi_takip_etmeyi_birakmak, user.name))
+            .setNegativeButton(appString(R.string.ui_takibi_birak)) { dialog, _ ->
                 dialog.dismiss()
                 unfollowUser(user)
             }
-            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
@@ -315,13 +315,13 @@ class FollowersFollowingFragment : Fragment() {
                 AnalyticsLogger.logFriendRemoved()
                 if (!isAdded) return@addOnSuccessListener
                 myFollowingUids.remove(targetUid)
-                Toast.makeText(requireContext(), "${user.name} takipten çıkarıldı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_x_takipten_cikarildi, user.name), Toast.LENGTH_SHORT).show()
                 // Listeyi tazele: satır "Takip Edilen"den düşsün, "Takipçi"de "+" geri gelsin.
                 loadTab(currentTab)
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 

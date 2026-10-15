@@ -61,7 +61,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5'lik Kural"
+                android:text="@string/fragment_rules_text"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -79,7 +79,7 @@
                     android:id="@+id/fiveText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Eklenecek sayı"
+                    android:text="@string/fragment_rules_five_text"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -93,7 +93,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kardeşi"
+                    android:text="@string/fragment_rules_text_2"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -225,7 +225,7 @@
                 android:id="@+id/fiveRuleDescriptionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5 gelir. Kardeş gider"
+                android:text="@string/fragment_rules_five_rule_description_text"
                 android:textColor="#fff"
                 android:textAlignment="center"
                 android:background="@drawable/table_cell_border"
@@ -254,7 +254,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10'luk Kural 1-2-3-4-5"
+                android:text="@string/fragment_rules_text_3"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -272,7 +272,7 @@
                     android:id="@+id/tenText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Eklenecek sayı"
+                    android:text="@string/fragment_rules_ten_text"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -286,7 +286,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Büyük Kardeşi"
+                    android:text="@string/fragment_rules_text_4"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -456,7 +456,7 @@
                 android:id="@+id/tenRuleFiveDescriptionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10 gelir. Kardeş gider."
+                android:text="@string/fragment_rules_ten_rule_five_description_text"
                 android:textColor="#fff"
                 android:textAlignment="center"
                 android:textSize="@dimen/rules_fragment_description_text_size"
@@ -486,7 +486,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10'luk Kural 6-7-8-9"
+                android:text="@string/fragment_rules_text_5"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -504,7 +504,7 @@
                     android:id="@+id/tenTextSecond"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Eklenecek sayı"
+                    android:text="@string/fragment_rules_ten_text_second"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -518,7 +518,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kardeşi"
+                    android:text="@string/fragment_rules_text_6"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -649,7 +649,7 @@
                 android:id="@+id/tenRuleDescriptionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10 gelir. Kardeş gider."
+                android:text="@string/fragment_rules_ten_rule_description_text"
                 android:textColor="#fff"
                 android:textAlignment="center"
                 android:textSize="@dimen/rules_fragment_description_text_size"
@@ -679,7 +679,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Boncuk Kuralı"
+                android:text="@string/fragment_rules_text_7"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -697,7 +697,7 @@
                     android:id="@+id/beadText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Eklenecek sayı"
+                    android:text="@string/fragment_rules_bead_text"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -711,7 +711,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="İşlem"
+                    android:text="@string/fragment_rules_text_8"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -744,7 +744,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="1 gelir"
+                    android:text="@string/fragment_rules_text_9"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -755,7 +755,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gider"
+                    android:text="@string/fragment_rules_text_10"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -766,7 +766,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gelir"
+                    android:text="@string/fragment_rules_text_11"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -799,7 +799,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="2 gelir"
+                    android:text="@string/fragment_rules_text_12"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -810,7 +810,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gider"
+                    android:text="@string/fragment_rules_text_13"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -821,7 +821,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gelir"
+                    android:text="@string/fragment_rules_text_14"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -854,7 +854,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="3 gelir"
+                    android:text="@string/fragment_rules_text_15"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -865,7 +865,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gider"
+                    android:text="@string/fragment_rules_text_16"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -876,7 +876,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gelir"
+                    android:text="@string/fragment_rules_text_17"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -909,7 +909,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="4 gelir"
+                    android:text="@string/fragment_rules_text_18"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -920,7 +920,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gider"
+                    android:text="@string/fragment_rules_text_19"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -931,7 +931,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gelir"
+                    android:text="@string/fragment_rules_text_20"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1092,7 +1092,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5'lik Kural"
+                android:text="@string/fragment_rules_text_21"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -1110,7 +1110,7 @@
                     android:id="@+id/extractionFiveText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Çıkarılacak sayı"
+                    android:text="@string/fragment_rules_extraction_five_text"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1124,7 +1124,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kardeşi"
+                    android:text="@string/fragment_rules_text_22"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1256,7 +1256,7 @@
                 android:id="@+id/extractionFiveRuleDescriptionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="5 gider. Kardeş gelir"
+                android:text="@string/fragment_rules_extraction_five_rule_description_text"
                 android:textColor="#fff"
                 android:textAlignment="center"
                 android:background="@drawable/table_cell_border"
@@ -1288,7 +1288,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10'luk Kural"
+                android:text="@string/fragment_rules_text_23"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -1306,7 +1306,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Çıkarılacak sayı"
+                    android:text="@string/fragment_rules_text_24"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1320,7 +1320,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kardeşi"
+                    android:text="@string/fragment_rules_text_25"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1597,7 +1597,7 @@
                 android:id="@+id/extractionTenRuleDescriptionText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="10 gider. Kardeş gelir"
+                android:text="@string/fragment_rules_extraction_ten_rule_description_text"
                 android:textColor="#fff"
                 android:textAlignment="center"
                 android:background="@drawable/table_cell_border"
@@ -1631,7 +1631,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Boncuk Çıkarma"
+                android:text="@string/fragment_rules_text_26"
                 android:layout_gravity="center"
                 android:textColor="@color/lesson_header_green"
                 android:textAlignment="center"
@@ -1649,7 +1649,7 @@
                     android:id="@+id/beadExtractionText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Çıkarılacak sayı"
+                    android:text="@string/fragment_rules_bead_extraction_text"
                     android:textStyle="bold"
                     android:textColor="#fff"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1663,7 +1663,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="İşlem"
+                    android:text="@string/fragment_rules_text_27"
                     android:textStyle="bold"
                     android:textColor="@color/yellow"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1696,7 +1696,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="1 gider"
+                    android:text="@string/fragment_rules_text_28"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1707,7 +1707,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gelir"
+                    android:text="@string/fragment_rules_text_29"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1718,7 +1718,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gider"
+                    android:text="@string/fragment_rules_text_30"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1751,7 +1751,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="2 gider"
+                    android:text="@string/fragment_rules_text_31"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1762,7 +1762,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gelir"
+                    android:text="@string/fragment_rules_text_32"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1773,7 +1773,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gider"
+                    android:text="@string/fragment_rules_text_33"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1806,7 +1806,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="3 gider"
+                    android:text="@string/fragment_rules_text_34"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1817,7 +1817,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gelir"
+                    android:text="@string/fragment_rules_text_35"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1828,7 +1828,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gider"
+                    android:text="@string/fragment_rules_text_36"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1861,7 +1861,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="4 gider"
+                    android:text="@string/fragment_rules_text_37"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1872,7 +1872,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="5 gelir"
+                    android:text="@string/fragment_rules_text_38"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_green"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />
@@ -1883,7 +1883,7 @@
                     android:paddingHorizontal="5dp"
                     android:paddingVertical="1dp"
                     android:background="@drawable/rule_step_chip"
-                    android:text="10 gider"
+                    android:text="@string/fragment_rules_text_39"
                     android:textStyle="bold"
                     android:textColor="@color/lesson_header_red"
                     android:textSize="@dimen/rules_fragment_cell_text_size" />

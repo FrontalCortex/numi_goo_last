@@ -1275,11 +1275,11 @@ class MapFragment : Fragment() {
         val guideData = listOf(
             GuidePanelData(
                 emote = BunnyMascotView.Emote.TEACH_TALK,
-                text = "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."
+                text = appString(R.string.ui_unite_maratonunda_hatasiz_en_hizli_cozumler)
             ),
             GuidePanelData(
                 emote = BunnyMascotView.Emote.TEACH_POINT,
-                text = "Ünite maratonu panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
+                text = appString(R.string.ui_unite_maratonu_panelindeki_rekor_a_tiklayara)
             )
             // Daha fazla resim/text eklenebilir
         )

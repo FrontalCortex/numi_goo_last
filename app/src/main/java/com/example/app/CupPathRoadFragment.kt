@@ -171,14 +171,14 @@ class CupPathRoadFragment : Fragment() {
             CupPathRewardRepository.MilestoneStatus.CLAIMED -> {
                 android.widget.Toast.makeText(
                     requireContext(),
-                    "Bu sandığı zaten aldın",
+                    appString(R.string.ui_bu_sandigi_zaten_aldin),
                     android.widget.Toast.LENGTH_SHORT,
                 ).show()
             }
             CupPathRewardRepository.MilestoneStatus.LOCKED -> {
                 android.widget.Toast.makeText(
                     requireContext(),
-                    "${milestone.cupValue} kupaya ulaşınca açılır",
+                    appString(R.string.ui_x_kupaya_ulasinca_acilir, milestone.cupValue),
                     android.widget.Toast.LENGTH_SHORT,
                 ).show()
             }

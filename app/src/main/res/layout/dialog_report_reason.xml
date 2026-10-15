@@ -26,7 +26,7 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_flag_outline"
                 app:tint="@color/dark_primary"
-                android:contentDescription="Bildir" />
+                android:contentDescription="@string/dialog_report_reason_text_desc" />
         </FrameLayout>
 
         <LinearLayout
@@ -39,7 +39,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mesajı bildir"
+                android:text="@string/dialog_report_reason_text"
                 android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/dark_text" />
@@ -47,7 +47,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bu mesajı neden bildiriyorsun?"
+                android:text="@string/dialog_report_reason_text_2"
                 android:textSize="12sp"
                 android:textColor="@color/dark_text_secondary"
                 android:layout_marginTop="1dp" />
@@ -61,7 +61,7 @@
             android:background="@drawable/bg_report_action_row"
             android:src="@drawable/ic_close_black"
             app:tint="@color/dark_text_secondary"
-            android:contentDescription="Kapat" />
+            android:contentDescription="@string/dialog_report_reason_report_reason_close_desc" />
     </LinearLayout>
 
     <View
@@ -87,14 +87,14 @@
             android:layout_height="20dp"
             android:src="@drawable/forbidden_ic"
             app:tint="@color/dark_error"
-            android:contentDescription="Taciz veya zorbalık" />
+            android:contentDescription="@string/dialog_report_reason_text_desc_2" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Taciz veya zorbalık"
+            android:text="@string/dialog_report_reason_text_3"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -113,14 +113,14 @@
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/spam_ic"
-            android:contentDescription="Spam" />
+            android:contentDescription="@string/dialog_report_reason_text_desc_3" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Spam"
+            android:text="@string/dialog_report_reason_text_4"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -140,14 +140,14 @@
             android:layout_height="20dp"
             android:src="@drawable/info_ic"
             app:tint="@color/dark_primary"
-            android:contentDescription="Uygunsuz içerik" />
+            android:contentDescription="@string/dialog_report_reason_text_desc_4" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Uygunsuz içerik"
+            android:text="@string/dialog_report_reason_text_5"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -167,14 +167,14 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_flag_outline"
             app:tint="@color/dark_text_secondary"
-            android:contentDescription="Diğer" />
+            android:contentDescription="@string/dialog_report_reason_text_desc_5" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Diğer"
+            android:text="@string/dialog_report_reason_text_6"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -185,7 +185,7 @@
         android:layout_height="44dp"
         android:layout_marginTop="8dp"
         android:gravity="center"
-        android:text="İptal"
+        android:text="@string/dialog_report_reason_report_reason_cancel"
         android:textSize="14sp"
         android:textColor="@color/dark_text_secondary"
         android:background="?attr/selectableItemBackground" />

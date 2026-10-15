@@ -51,5 +51,5 @@
         android:src="@drawable/ic_back_arrow"
         android:rotation="180"
         app:tint="@color/dark_text_secondary"
-        android:contentDescription="Detayları gör" />
+        android:contentDescription="@string/item_restricted_user_text_desc" />
 </LinearLayout>

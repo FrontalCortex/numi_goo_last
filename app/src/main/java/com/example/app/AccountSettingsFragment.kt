@@ -110,7 +110,7 @@ class AccountSettingsFragment : Fragment() {
                 val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/account/subscriptions"))
                 startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Play Store açılamadı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_play_store_acilamadi), Toast.LENGTH_SHORT).show()
             }
         }
         

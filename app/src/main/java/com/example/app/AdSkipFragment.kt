@@ -153,17 +153,17 @@ class AdSkipFragment : DialogFragment() {
      */
     private fun bindOffer(trialDays: Int?) {
         if (trialDays != null) {
-            binding.titleText1.text = "$trialDays günlük ücretsiz PRO"
-            binding.titleText2.text = "denemesiyle reklamları atla!"
-            binding.reminderText.text = "Deneme süren sona ermeden önce bildirim alacaksın."
+            binding.titleText1.text = appString(R.string.ui_x_gunluk_ucretsiz_pro, trialDays)
+            binding.titleText2.text = appString(R.string.ui_denemesiyle_reklamlari_atla)
+            binding.reminderText.text = appString(R.string.ui_deneme_suren_sona_ermeden_once_bildirim)
             return
         }
-        binding.titleText1.text = "PRO ile reklamsız,"
-        binding.titleText2.text = "kesintisiz öğren!"
+        binding.titleText1.text = appString(R.string.ui_pro_ile_reklamsiz)
+        binding.titleText2.text = appString(R.string.ui_kesintisiz_ogren)
         binding.bellIcon.setImageResource(R.drawable.correct_ic)
         // Zil gri boyanıyor (layout'ta tint); yeşil onay işareti boyansa gri kareye dönerdi.
         binding.bellIcon.imageTintList = null
-        binding.reminderText.text = "Aboneliğini istediğin zaman iptal edebilirsin."
+        binding.reminderText.text = appString(R.string.ui_aboneligini_istedigin_zaman_iptal_edebilirsi)
     }
 
     /**

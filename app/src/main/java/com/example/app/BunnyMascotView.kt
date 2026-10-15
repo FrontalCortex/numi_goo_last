@@ -2483,7 +2483,7 @@ class BunnyMascotView @JvmOverloads constructor(
         paint.color = WHITE
         paint.alpha = (255 * alpha).roundToInt()
         canvas.drawRoundRect(rect, 4f, 4f, paint)
-        drawText(canvas, "Atla", -6f, 4f, 11f, WHITE, alpha)
+        drawText(canvas, appString(R.string.ui_atla), -6f, 4f, 11f, WHITE, alpha)
         // ⏭ simgesi: iki üçgen + çizgi
         paint.style = Paint.Style.FILL
         paint.color = WHITE
@@ -2767,7 +2767,7 @@ class BunnyMascotView @JvmOverloads constructor(
                     canvas.restore()
                 }
             }
-            drawText(canvas, if (n > 0) "$n gün" else "? gün", 395f, 255f, 11f, EYE, 1f)
+            drawText(canvas, if (n > 0) appPlural(R.plurals.ui_x_gun, n, n) else appString(R.string.ui_gun), 395f, 255f, 11f, EYE, 1f)
             if (playing) {
                 val f = popScale(e - calendarDoneS(n)) * keep
                 if (f > 0f) drawFlame(canvas, 437f, 212f, 18f * f, e, 1f)
@@ -4469,7 +4469,7 @@ class BunnyMascotView @JvmOverloads constructor(
         }
         val ts = e - KR_CHOP_S + 0.1f
         if (ts > 0f && ts < 0.9f) {
-            drawText(canvas, "HİYAA!", 300f, 72f, 22f * popScale(ts), CROWN_GOLD, 1f - seg(ts, 0.6f, 0.9f))
+            drawText(canvas, appString(R.string.ui_hiyaa), 300f, 72f, 22f * popScale(ts), CROWN_GOLD, 1f - seg(ts, 0.6f, 0.9f))
         }
         if (e >= KR_BLOW_S && e < KR_CALM_S) {
             // Patiye üfleme: ağızdan sağa üç küçük kavis.

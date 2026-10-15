@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Pro"
+            android:text="@string/fragment_plan_tv_bireysel_title"
             android:textColor="#333333"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Aylık ₺99"
+            android:text="@string/fragment_plan_tv_bireysel_price_right"
             android:textColor="#333333"
             android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="@id/tvBireyselTitle"
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-black"
-            android:text="₺1.188/yıl"
+            android:text="@string/fragment_plan_tv_bireysel_price_sub"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -78,7 +78,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Sınırsız enerji"
+                    android:text="@string/fragment_plan_text"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -99,7 +99,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Reklamsız öğrenim"
+                    android:text="@string/fragment_plan_text_2"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -119,7 +119,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Ustalık Yolu"
+                    android:text="@string/fragment_plan_text_3"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -139,7 +139,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Danışma kredilerinde %20 bonus"
+                    android:text="@string/fragment_plan_text_4"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -160,7 +160,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Hoş geldin: 1 danışma kredisi"
+                    android:text="@string/fragment_plan_text_5"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -212,7 +212,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Lite (reklamlı)"
+            android:text="@string/fragment_plan_tv_lite_title"
             android:textColor="#333333"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -223,7 +223,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="Aylık ₺49"
+            android:text="@string/fragment_plan_tv_lite_price_right"
             android:textColor="#333333"
             android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="@id/tvLiteTitle"
@@ -236,7 +236,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-black"
-            android:text="₺588/yıl"
+            android:text="@string/fragment_plan_tv_lite_price_sub"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintStart_toStartOf="parent"
@@ -267,7 +267,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Can sınırını ikiye katla"
+                    android:text="@string/fragment_plan_text_6"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -286,7 +286,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Canın 7 dakikada yenilensin"
+                    android:text="@string/fragment_plan_text_7"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>
@@ -329,7 +329,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Aboneliğin otomatik olarak yenilenir,\n istediğin zaman iptal edebilirsin."
+        android:text="@string/fragment_plan_tv_footer_text2"
         android:textColor="#666666"
         android:textSize="14sp"
         app:layout_constraintBottom_toTopOf="@id/btnTryFree"
@@ -351,7 +351,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:fontFamily="sans-serif-black"
-            android:text="₺0,00 ÖDEYEREK DENE"
+            android:text="@string/fragment_plan_btn_try_free_text"
             android:textColor="#FFFFFF"
             android:textSize="16sp" />
     </FrameLayout>

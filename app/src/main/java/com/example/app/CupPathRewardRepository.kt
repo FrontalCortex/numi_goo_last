@@ -175,8 +175,8 @@ object CupPathRewardRepository {
          */
         val label: String
             get() = when {
-                finished -> "Tamamlandı"
-                claimable -> "Sandık hazır!"
+                finished -> appString(R.string.ui_tamamlandi_2)
+                claimable -> appString(R.string.ui_sandik_hazir)
                 else -> "$cupScore / $nextMilestone"
             }
 
@@ -228,11 +228,11 @@ object CupPathRewardRepository {
      */
     fun titleOf(cupField: String): String = when (cupField) {
         FIELD_ADDITION -> "Toplama Kupa Yolu"
-        FIELD_EXTRACTION -> "Çıkarma Kupa Yolu"
-        FIELD_IMPACT -> "Çarpma Kupa Yolu"
-        FIELD_BLINDING_ADDITION -> "Toplama Kupa Yolu - Körleme"
-        FIELD_BLINDING_EXTRACTION -> "Çıkarma Kupa Yolu - Körleme"
-        FIELD_BLINDING_IMPACT -> "Çarpma Kupa Yolu - Körleme"
+        FIELD_EXTRACTION -> appString(R.string.ui_cikarma_kupa_yolu)
+        FIELD_IMPACT -> appString(R.string.ui_carpma_kupa_yolu)
+        FIELD_BLINDING_ADDITION -> appString(R.string.ui_toplama_kupa_yolu_korleme)
+        FIELD_BLINDING_EXTRACTION -> appString(R.string.ui_cikarma_kupa_yolu_korleme)
+        FIELD_BLINDING_IMPACT -> appString(R.string.ui_carpma_kupa_yolu_korleme)
         else -> "Kupa Yolu"
     }
 

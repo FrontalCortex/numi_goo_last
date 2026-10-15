@@ -67,7 +67,7 @@ class ProDiffirentFragment : DialogFragment() {
         }
 
         // Title text formatting
-        val titleHtml = "Pro ile daha hızlı öğren, daha fazla pratik yap!"
+        val titleHtml = appString(R.string.ui_pro_ile_daha_hizli_ogren_daha)
         binding.tvTitle.text = Html.fromHtml(titleHtml, Html.FROM_HTML_MODE_LEGACY)
 
         // Maskot taçla "premium" hissi veriyor; ekran açık kaldıkça döngüde.

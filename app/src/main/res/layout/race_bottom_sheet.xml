@@ -27,7 +27,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Ustalık Yolu"
+            android:text="@string/race_bottom_sheet_race_title"
             android:textSize="@dimen/race_sheet_title_size"
             android:textStyle="bold"
             android:textColor="@color/white"

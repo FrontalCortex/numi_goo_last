@@ -184,9 +184,9 @@ class LessonResultFalse : Fragment() {
         binding.totalScore.text = lessonScore.toString()
         
         if (isChestFailure) {
-            binding.resultTitleComment.text = "Puan 500'den düşük!"
+            binding.resultTitleComment.text = appString(R.string.ui_puan_500_den_dusuk)
         } else {
-            binding.resultTitleComment.text = "Başarı oranı %75'ten düşük!"
+            binding.resultTitleComment.text = appString(R.string.ui_basari_orani_75_ten_dusuk)
         }
     }
 

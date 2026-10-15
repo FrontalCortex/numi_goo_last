@@ -54,7 +54,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Profil ikonunu değiştir"
+            android:text="@string/panel_profile_abacus_text"
             android:textColor="#93A5B3"
             android:textSize="14sp"
             android:textStyle="bold" />

@@ -37,13 +37,13 @@ object SupportContactHelper {
             try {
                 context.startActivity(Intent.createChooser(browserIntent, null))
             } catch (_: ActivityNotFoundException) {
-                Toast.makeText(context, "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_e_posta_veya_tarayici_acilamadi), Toast.LENGTH_SHORT).show()
             }
         } catch (_: SecurityException) {
             try {
                 context.startActivity(Intent.createChooser(browserIntent, null))
             } catch (_: Exception) {
-                Toast.makeText(context, "E-posta veya tarayıcı açılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_e_posta_veya_tarayici_acilamadi), Toast.LENGTH_SHORT).show()
             }
         }
     }

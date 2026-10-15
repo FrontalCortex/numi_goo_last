@@ -52,7 +52,7 @@ class QuestionDownloadForegroundService : Service() {
                 )
                 queue.add(item)
                 if (isProcessing.compareAndSet(false, true)) {
-                    startForeground(NOTIFICATION_ID, buildBaseNotification("İndiriliyor"))
+                    startForeground(NOTIFICATION_ID, buildBaseNotification(appString(R.string.ui_indiriliyor)))
                     Thread { processQueue() }.start()
                 }
             }
@@ -113,7 +113,7 @@ class QuestionDownloadForegroundService : Service() {
         while (true) {
             val item = queue.poll() ?: break
             if (canceledMessageIds.remove(item.messageId)) continue
-            startForeground(NOTIFICATION_ID, buildBaseNotification("İndiriliyor"))
+            startForeground(NOTIFICATION_ID, buildBaseNotification(appString(R.string.ui_indiriliyor)))
             sendBroadcast(Intent(ACTION_DOWNLOAD_STARTED).apply {
                 putExtra(EXTRA_MESSAGE_ID, item.messageId)
                 putExtra(EXTRA_QUESTION_ID, item.questionId)

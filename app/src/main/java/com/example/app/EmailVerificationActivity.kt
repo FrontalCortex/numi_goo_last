@@ -58,18 +58,18 @@ class EmailVerificationActivity : AppCompatActivity() {
     private fun resendVerificationCode(email: String) {
         // Butonu devre dışı bırak
         binding.btnResendEmail.isEnabled = false
-        binding.btnResendEmail.text = "Gönderiliyor..."
+        binding.btnResendEmail.text = appString(R.string.ui_gonderiliyor)
         
         // Eğer pending registration varsa, registerStudent'ı tekrar çağır
         // Yoksa resendStudentVerificationCode'u kullan
         authManager.resendStudentVerificationCode(email) { success, error ->
             binding.btnResendEmail.isEnabled = true
-            binding.btnResendEmail.text = "E-postayı Tekrar Gönder"
+            binding.btnResendEmail.text = appString(R.string.ui_e_postayi_tekrar_gonder)
             
             if (success) {
-                Toast.makeText(this, "Doğrulama kodu tekrar gönderildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, appString(R.string.ui_dogrulama_kodu_tekrar_gonderildi), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, error ?: "Kod gönderilemedi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, error ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -78,29 +78,29 @@ class EmailVerificationActivity : AppCompatActivity() {
         val code = binding.etVerificationCode.text.toString().trim()
         
         if (code.isEmpty()) {
-            Toast.makeText(this, "Lütfen doğrulama kodunu girin", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_lutfen_dogrulama_kodunu_girin), Toast.LENGTH_SHORT).show()
             binding.etVerificationCode.requestFocus()
             return
         }
         
         if (code.length != 6) {
-            Toast.makeText(this, "Kod 6 haneli olmalıdır", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_kod_6_haneli_olmalidir), Toast.LENGTH_SHORT).show()
             binding.etVerificationCode.requestFocus()
             return
         }
         
         // Butonu devre dışı bırak
         binding.btnCheckVerification.isEnabled = false
-        binding.btnCheckVerification.text = "Doğrulanıyor..."
+        binding.btnCheckVerification.text = appString(R.string.ui_dogrulaniyor)
         
         authManager.verifyStudentCode(email, code) { success, error ->
             // Butonu tekrar aktif et
             binding.btnCheckVerification.isEnabled = true
-            binding.btnCheckVerification.text = "Kodu Doğrula"
+            binding.btnCheckVerification.text = appString(R.string.ui_kodu_dogrula)
             
             if (success) {
                 // Başarılı - kayıt tamamlandı
-                Toast.makeText(this, "Kayıt başarılı! Giriş yapabilirsiniz.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, appString(R.string.ui_kayit_basarili_giris_yapabilirsiniz), Toast.LENGTH_LONG).show()
                 // Kısa bir gecikme sonrası login ekranına yönlendir
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     startActivity(Intent(this, LoginActivity::class.java))
@@ -108,7 +108,7 @@ class EmailVerificationActivity : AppCompatActivity() {
                 }, 1500)
             } else {
                 // Hata - kod yanlış veya süresi dolmuş
-                Toast.makeText(this, error ?: "Kod doğrulanamadı. Lütfen tekrar deneyin.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, error ?: appString(R.string.ui_kod_dogrulanamadi_lutfen_tekrar_deneyin), Toast.LENGTH_LONG).show()
                 binding.etVerificationCode.setText("")
                 binding.etVerificationCode.requestFocus()
             }

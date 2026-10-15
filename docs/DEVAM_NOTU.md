@@ -23,6 +23,31 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## JSON → Kotlin + dil yapısı Aşama 2: arayüz metinleri (15.10.2026 — derlendi, doğrulandı, cihaza KURULDU, kullanıcı bakacak; commit edilmedi)
+
+- 1–5 ve 100–103. öğreticiler JSON'dan Kotlin `TutorialStep`'e çevrildi (348 adım, alan alan
+  doğrulandı), `parseTutorialStepsFromJson` silindi. Artık ses/metin adı hatası derlemede çıkar.
+- Layout'lardaki 826 sabit metin → `res/values/strings_ui.xml` (anahtar
+  `<layout>_<view id>[_hint|_desc]`). Derlenmiş APK'de 1527 özniteliğin hepsi öncekiyle aynı.
+- Koddaki 850 arayüz metni → `res/values/strings_code.xml` (617 string + 11 plurals).
+  `appString(R.string.x, …)` / `appPlural(R.plurals.x, sayı, …)` (`AppStrings.kt`, uygulama
+  context'i; Toast/geri çağırımlarda ekran kapanmışken getString() çökerdi). Değişkenli metin
+  `%1$s`; aynı metin tek anahtar (AuthManager mesajları LoginActivity'de karşılaştırılıyor).
+  Doğrulama: çağrılar metne geri çevrilince 69 dosya HEAD ile birebir, kalan 7'de yalnızca
+  bilinçli farklar.
+- Bilinçli DOKUNULMAYANLAR: sunucu mesajıyla yapılan karşılaştırmalar (`LoginActivity`
+  "Kullanıcı bulunamadı", `OtpVerificationFragment` "15 dakika"/"Çok fazla yanlış"),
+  GoogleSignInDiagnostics, kayıt değerleri (UserInfoFragment kaynak çiftlerinin İLK elemanı),
+  log/tanılama metinleri, maskot deneme etiketleri, `callback("Free")`.
+- Rozet metinlerinde yer tutucu "x" → "%1$s" (`BadgeFragment`); gün baş harfleri tek string.
+- Çeviri aracı 4 dosyayı da kapsıyor: 2226 satır / 2785 anahtar; çoğullar ayrı satır
+  (`ad#one`/`ad#other`), yer tutucu ve [ ] kontrolü, özel notlar (`SPECIAL_NOTES`).
+- **Aşama 3 için açık konular:** (1) Cloud Functions hata mesajları ve bildirim metinleri
+  Türkçe — sunucu tarafı çevirisi gerekecek; (2) LoginActivity sunucu mesajını METİNLE
+  karşılaştırıyor → hata koduna (`NOT_FOUND`) geçilmeli; (3) Türkçe karakter içermeyen ve
+  arayüz çağrısında olmayan metinler kaçmış olabilir → İngilizce denemede gözle taranmalı;
+  (4) RegisterActivity şartlar cümlesi alt metin araması çeviriye bağlı (notu var).
+
 ## Dil yapısı Aşama 1: öğretici ve ders metinleri strings'e taşındı (15.10.2026 — derlendi ve doğrulandı, cihazda DENENMEDİ, commit edilmedi)
 
 Plan: Aşama 1 öğretici/ders metinleri → Aşama 2 arayüz metinleri (layout'larda ~1159, kodda

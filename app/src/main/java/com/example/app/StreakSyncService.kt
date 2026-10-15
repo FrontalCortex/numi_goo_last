@@ -274,7 +274,7 @@ object StreakSyncService {
         onResult: (success: Boolean, message: String, currency: Int) -> Unit,
     ) {
         if (uid() == null) {
-            onResult(false, "Seri dondurma almak için giriş yapman gerekiyor.", 0)
+            onResult(false, appString(R.string.ui_seri_dondurma_almak_icin_giris_yapman), 0)
             return
         }
         FirebaseFunctions.getInstance()
@@ -287,7 +287,7 @@ object StreakSyncService {
                 val freezes = (data?.get("freezes") as? Number)?.toInt()
                 if (currency == null || freezes == null) {
                     Log.w(TAG, "buyStreakFreeze geçersiz yanıt döndü: $data")
-                    onResult(false, "Satın alınamadı. Birazdan tekrar dene.", 0)
+                    onResult(false, appString(R.string.ui_satin_alinamadi_birazdan_tekrar_dene), 0)
                     return@addOnSuccessListener
                 }
                 StreakRepository.markFreezePurchased(
@@ -304,7 +304,7 @@ object StreakSyncService {
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "buyStreakFreeze başarısız", e)
-                onResult(false, callErrorMessage(e, "Satın alınamadı."), 0)
+                onResult(false, callErrorMessage(e, appString(R.string.ui_satin_alinamadi)), 0)
             }
     }
 
@@ -353,7 +353,7 @@ object StreakSyncService {
      * Taşıma katmanına ait kodlar ayrı tutuluyor: onlarda sunucunun mesajı ya yok ya da
      * İngilizce bir yığın izi oluyor, çocuğa gösterilecek bir şey değil.
      */
-    private fun claimErrorMessage(e: Exception): String = callErrorMessage(e, "Ödül alınamadı.")
+    private fun claimErrorMessage(e: Exception): String = callErrorMessage(e, appString(R.string.ui_odul_alinamadi))
 
     /**
      * [claimErrorMessage]'ın genel hâli; ödül toplama ve satın alma aynı ayrımı kullanıyor.
@@ -362,14 +362,14 @@ object StreakSyncService {
      */
     private fun callErrorMessage(e: Exception, failed: String): String {
         val code = (e as? FirebaseFunctionsException)?.code
-            ?: return "$failed İnternetini kontrol edip tekrar dene."
+            ?: return appString(R.string.ui_x_internetini_kontrol_edip_tekrar_dene, failed)
         return when (code) {
             FirebaseFunctionsException.Code.UNAVAILABLE,
             FirebaseFunctionsException.Code.DEADLINE_EXCEEDED,
-            -> "Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene."
+            -> appString(R.string.ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar)
             FirebaseFunctionsException.Code.INTERNAL,
             FirebaseFunctionsException.Code.UNKNOWN,
-            -> "$failed İnternetini kontrol edip tekrar dene."
+            -> appString(R.string.ui_x_internetini_kontrol_edip_tekrar_dene, failed)
             // Fonksiyon sunucuda yok (henüz deploy edilmemiş): mesajı İngilizce "NOT_FOUND".
             FirebaseFunctionsException.Code.NOT_FOUND,
             FirebaseFunctionsException.Code.UNIMPLEMENTED,
@@ -391,7 +391,7 @@ object StreakSyncService {
         markClaimed: (data: Map<*, *>?) -> Unit,
     ) {
         if (uid() == null) {
-            onResult(false, "Ödülü almak için giriş yapman gerekiyor.", 0, 0)
+            onResult(false, appString(R.string.ui_odulu_almak_icin_giris_yapman_gerekiyor), 0, 0)
             return
         }
         FirebaseFunctions.getInstance()
@@ -406,9 +406,9 @@ object StreakSyncService {
                 markClaimed(data)
                 val what = listOfNotNull(
                     if (rewardKeys > 0) "$rewardKeys anahtar" else null,
-                    if (rewardGold > 0) "$rewardGold altın" else null,
+                    if (rewardGold > 0) appString(R.string.ui_x_altin, rewardGold) else null,
                 ).joinToString(" + ")
-                onResult(true, "$what kazandın!", keys, currency)
+                onResult(true, appString(R.string.ui_x_kazandin, what), keys, currency)
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "claimStreakReward başarısız", e)

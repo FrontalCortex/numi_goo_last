@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Koddan arayüze giden metinler; appString(R.string.x, …) / appPlural(R.plurals.x, sayı, …) ile okunur.
+  %1$s, %2$s… yer tutucuları korunmalı (sıraları cümleye göre değişebilir). Aynı metin tek anahtar:
+  bazı metinler kodda karşılaştırılıyor (ör. AuthManager mesajları), ayrı çevrilmemeli.
+-->
+<resources>
+
+    <!-- AbacusPreferences.kt -->
+    <string name="ui_dis_cerceve">Dış çerçeve</string>
+    <string name="ui_ic_zemin">İç zemin</string>
+    <string name="ui_sag_yansima">Sağ yansıma</string>
+    <string name="ui_kulak_dis">Kulak (dış)</string>
+    <string name="ui_kulak_ic">Kulak (iç)</string>
+    <string name="ui_govde">Gövde</string>
+    <string name="ui_beyaz_alanlar">Beyaz alanlar</string>
+    <string name="ui_burun">Burun</string>
+    <string name="ui_agiz">Ağız</string>
+    <string name="ui_gozler">Gözler</string>
+    <string name="ui_kafa">Kafa</string>
+    <string name="ui_goz_cevresi">Göz çevresi</string>
+    <string name="ui_kulak_dudak">Kulak/Dudak</string>
+    <string name="ui_goz_agiz">Göz/Ağız</string>
+    <string name="ui_yuz">Yüz</string>
+    <string name="ui_goz_burun">Göz/Burun</string>
+    <string name="ui_ic_kulak">İç Kulak</string>
+    <string name="ui_agiz_cevresi">Ağız Çevresi</string>
+    <string name="ui_cizgiler">Çizgiler</string>
+    <string name="ui_govde_kafa">Gövde/Kafa</string>
+    <string name="ui_gozler_burun">Gözler/Burun</string>
+    <string name="ui_yuz_agiz">Yüz/Ağız</string>
+    <string name="ui_kulak_ici_detay">Kulak İçi/Detay</string>
+    <string name="ui_goz">Göz</string>
+    <string name="ui_kulak_ici">Kulak içi</string>
+    <string name="ui_kulak_disi">Kulak dışı</string>
+    <string name="ui_dis">Diş</string>
+    <string name="ui_kulak_agiz">Kulak/Ağız</string>
+    <string name="ui_kulak">Kulak</string>
+    <string name="ui_biyik">Bıyık</string>
+    <string name="ui_cene">Çene</string>
+    <string name="ui_ana_renk">Ana Renk</string>
+    <string name="ui_golgeler">Gölgeler</string>
+    <string name="ui_parlaklik">Parlaklık</string>
+    <string name="ui_delik_ici">Delik İçi</string>
+    <string name="ui_isik">Işık</string>
+    <string name="ui_golge">Gölge</string>
+
+    <!-- AbacusCustomizationFragment.kt -->
+    <string name="ui_yetersiz_anahtar">Yetersiz anahtar</string>
+    <string name="ui_yetersiz_altin">Yetersiz altın</string>
+    <string name="ui_kayit_hatasi_tekrar_deneyin">Kayıt hatası. Tekrar deneyin.</string>
+    <string name="ui_islem_basarisiz_tekrar_deneyin">İşlem başarısız. Tekrar deneyin.</string>
+    <string name="ui_hata_olustu">Hata oluştu</string>
+    <string name="ui_stokta_kalmadi">Stokta kalmadı</string>
+    <string name="ui_kayit_hatasi">Kayıt hatası</string>
+    <string name="ui_islem_basarisiz">İşlem başarısız</string>
+    <string name="ui_bu_boncuktan_kalmadi">Bu boncuktan kalmadı!</string>
+    <string name="ui_renk">Renk</string>
+    <string name="ui_odeme_hatasi">Ödeme hatası</string>
+    <string name="ui_ahsap_rengi">Ahşap rengi</string>
+    <string name="ui_yildiz_rengi">Yıldız rengi</string>
+
+    <!-- AbacusFragment.kt -->
+    <string name="ui_cikarilacak_sayi">Çıkarılacak Sayı</string>
+    <string name="ui_5_gider_kardes_gelir">5 gider. Kardeş gelir.</string>
+    <string name="ui_eklenecek_sayi">Eklenecek sayı</string>
+    <string name="ui_5_gelir_kardes_gider">5 gelir. Kardeş gider.</string>
+    <string name="ui_internet_baglantiniz_yok">İnternet bağlantınız yok.</string>
+    <string name="ui_senin_cevabin_x">Senin cevabın %1$s</string>
+    <string name="ui_dogru_cevap_x">Doğru cevap %1$s</string>
+
+    <!-- AbacusPracticeFragment.kt -->
+    <string name="ui_dogru_cevap_x_2">Doğru cevap: %1$s</string>
+    <string name="ui_senin_cevabin_x_2">Senin cevabın: %1$s</string>
+
+    <!-- AccountSettingsFragment.kt -->
+    <string name="ui_play_store_acilamadi">Play Store açılamadı</string>
+
+    <!-- AddFriendFragment.kt -->
+    <string name="ui_yukleniyor">YÜKLENİYOR...</string>
+    <string name="ui_daha_fazla_yukle">DAHA FAZLA YÜKLE</string>
+    <plurals name="ui_x_sonuc_gosteriliyor">
+        <item quantity="one">%1$s sonuç gösteriliyor</item>
+        <item quantity="other">%1$s sonuç gösteriliyor</item>
+    </plurals>
+    <string name="ui_oturum_bilgisi_alinamadi">Oturum bilgisi alınamadı.</string>
+    <string name="ui_zaten_takip_ediyorsunuz">Zaten takip ediyorsunuz.</string>
+    <string name="ui_x_takip_edildi">%1$s takip edildi.</string>
+    <string name="ui_takip_edilemedi_x">Takip edilemedi: %1$s</string>
+    <string name="ui_hata_x">Hata: %1$s</string>
+
+    <!-- AdManager.kt -->
+    <string name="ui_odul_icin_giris_yapmalisiniz">Odul icin giris yapmalisiniz.</string>
+    <string name="ui_reklam_henuz_yuklenmedi_lutfen_bekleyin">Reklam henüz yüklenmedi, lütfen bekleyin.</string>
+
+    <!-- AdSkipFragment.kt -->
+    <string name="ui_x_gunluk_ucretsiz_pro">%1$s günlük ücretsiz PRO</string>
+    <string name="ui_denemesiyle_reklamlari_atla">denemesiyle reklamları atla!</string>
+    <string name="ui_deneme_suren_sona_ermeden_once_bildirim">Deneme süren sona ermeden önce bildirim alacaksın.</string>
+    <string name="ui_pro_ile_reklamsiz">PRO ile reklamsız,</string>
+    <string name="ui_kesintisiz_ogren">kesintisiz öğren!</string>
+    <string name="ui_aboneligini_istedigin_zaman_iptal_edebilirsi">Aboneliğini istediğin zaman iptal edebilirsin.</string>
+
+    <!-- AppRatingManager.kt -->
+    <string name="ui_uzgunuz">Üzgünüz 😔</string>
+    <string name="ui_deneyimini_gelistirmek_icin_geri_bildirimine">Deneyimini geliştirmek için geri bildirimine ihtiyacımız var.</string>
+    <string name="ui_geri_bildiriminiz_icin_tesekkurler">Geri bildiriminiz için teşekkürler!</string>
+    <string name="ui_lutfen_bir_seyler_yazin">Lütfen bir şeyler yazın.</string>
+
+    <!-- AskQuestionButtonBinder.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar">Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine">Hesabınız kural ihlali nedeniyle %1$s tarihine kadar kısıtlanmıştır.</string>
+    <string name="ui_itiraz_et">İtiraz Et</string>
+    <string name="ui_hesap_kisitlamasi_itirazi">Hesap kısıtlaması itirazı</string>
+    <string name="ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme">"Merhaba,\n\nHesabımın kısıtlanmasına itiraz etmek istiyorum.\n\nKullanıcı ID: %1$s\n\n"</string>
+
+    <!-- AuthManager.kt -->
+    <string name="ui_e_posta_adresi_girin">E-posta adresi girin</string>
+    <string name="ui_e_posta_gonderilemedi">E-posta gönderilemedi</string>
+    <string name="ui_kod_dogrulanamadi">Kod doğrulanamadı</string>
+    <string name="ui_sifre_guncellenemedi">Şifre güncellenemedi</string>
+    <string name="ui_gecersiz_bilgiler">Geçersiz bilgiler</string>
+    <string name="ui_token_alinamadi">Token alınamadı</string>
+    <string name="ui_oturum_acilamadi">Oturum açılamadı</string>
+    <string name="ui_bu_hesap_ogretmen_hesabi_ogrenci_giris">Bu hesap öğretmen hesabı. Öğrenci giriş ekranından giriş yapılamaz.</string>
+    <string name="ui_google_hesap_bilgisi_alinamadi_lutfen_tekrar">Google hesap bilgisi alınamadı. Lütfen tekrar deneyin.</string>
+    <string name="ui_ag_baglanti_hatasi_internet_baglantinizi_kon">Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin.</string>
+    <string name="ui_gecersiz_kimlik_bilgisi_web_client_id">Geçersiz kimlik bilgisi. Web Client ID doğru mu kontrol edin.</string>
+    <string name="ui_yapilandirma_hatasi_1_web_client_id">"Yapılandırma hatası:\n\n1. Web Client ID doğru mu? (strings.xml)\n2. SHA-1 fingerprint Firebase Console\'a eklendi mi?\n3. Google Sign-In Firebase Console\'da etkin mi?\n\nHata: %1$s"</string>
+    <string name="ui_giris_basarisiz_code_x_x_logcat">"Giriş başarısız (Code: %1$s)\n\n%2$s\n\nLogcat\'te detaylı bilgi için \'AuthManager\' tag\'ini kontrol edin."</string>
+    <string name="ui_kullanici_bulunamadi">Kullanıcı bulunamadı</string>
+    <string name="ui_giris_bilgileri_dogrulanamadi">Giriş bilgileri doğrulanamadı.</string>
+    <string name="ui_google_hesabi_secilemedi">Google hesabı seçilemedi</string>
+    <string name="ui_kullanici_girisi_iptal_edildi">Kullanıcı girişi iptal edildi</string>
+    <string name="ui_yapilandirma_hatasi_web_client_id_eksik">Yapılandırma hatası: Web Client ID eksik veya yanlış. Firebase Console\'dan Web Client ID\'yi alıp strings.xml\'e ekleyin.</string>
+    <string name="ui_istek_limiti_asildi_lutfen_daha_sonra">İstek limiti aşıldı. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="ui_google_girisi_basarisiz_hata_x_x">Google girişi başarısız (Hata: %1$s): %2$s</string>
+    <string name="ui_bu_hesap_ogrenci_degil">Bu hesap öğrenci değil</string>
+    <string name="ui_e_posta_dogrulamasi_gerekli_lutfen_e">E-posta doğrulaması gerekli. Lütfen e-postanızı doğrulayın.</string>
+    <string name="ui_kullanici_bilgileri_alinamadi">Kullanıcı bilgileri alınamadı</string>
+    <string name="ui_sifre_veya_e_posta_hatali">Şifre veya e-posta hatalı</string>
+    <string name="ui_bu_hesap_ogretmen_degil">Bu hesap öğretmen değil</string>
+    <string name="ui_bu_e_posta_adresi_zaten_kayitli">Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.</string>
+    <string name="ui_sifre_cok_zayif_daha_guclu_bir">Şifre çok zayıf. Daha güçlü bir şifre seçin.</string>
+    <string name="ui_gecersiz_e_posta_adresi">Geçersiz e-posta adresi.</string>
+    <string name="ui_kayit_basarisiz_lutfen_tekrar_deneyin">Kayıt başarısız. Lütfen tekrar deneyin.</string>
+    <string name="ui_kullanici_olusturulamadi">Kullanıcı oluşturulamadı</string>
+    <string name="ui_kayit_basarisiz_x">Kayıt başarısız: %1$s</string>
+    <string name="ui_gecersiz_veya_suresi_dolmus_kod">Geçersiz veya süresi dolmuş kod</string>
+    <string name="ui_kod_gonderilemedi">Kod gönderilemedi</string>
+
+    <!-- AvatarArt.kt -->
+    <string name="ui_sac">Saç</string>
+    <string name="ui_sac_rengi">Saç rengi</string>
+    <string name="ui_kiyafet">Kıyafet</string>
+
+    <!-- AvatarCustomFragment.kt -->
+    <string name="ui_avatarin_kaydedildi">Avatarın kaydedildi</string>
+
+    <!-- BadgeFragment.kt -->
+    <string name="ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak">%1$s dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.</string>
+    <string name="ui_x_dersi_1_gunde_tamamlayarak_sinir">%1$s dersi 1 günde tamamlayarak Sınır Tanımaz rozetini kazandın.</string>
+    <string name="ui_x_gunluk_gorev_tamamlayarak_strike_ustasi">%1$s günlük görev tamamlayarak Strike Ustası rozetini kazandın.</string>
+    <string name="ui_x_kere_egitmene_danisarak_nokta_atisi">%1$s kere eğitmene danışarak Nokta Atışı rozetini kazandın.</string>
+    <string name="ui_x_gun_ust_uste_gunluk_soru">%1$s gün üst üste Günlük Soru mücadelesini tamamlayarak Derin Avcı rozetini kazandın.</string>
+    <string name="ui_toplama_kupa_yolunda_x_kupa_kazanarak">Toplama Kupa Yolunda %1$s kupa kazanarak Dino rozetini kazandın.</string>
+    <string name="ui_x_toplama_ustalik_yolu_adimini_tamamlayarak">%1$s Toplama Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.</string>
+    <string name="ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak">%1$s Çıkarma Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.</string>
+    <string name="ui_cikarma_kupa_yolunda_x_kupa_kazanarak">Çıkarma Kupa Yolunda %1$s kupa kazanarak Timo rozetini kazandın.</string>
+    <string name="ui_carpma_kupa_yolunda_x_kupa_kazanarak">Çarpma Kupa Yolunda %1$s kupa kazanarak Keço rozetini kazandın.</string>
+    <string name="ui_toplama_kupa_yolu_korleme_de_x">Toplama Kupa Yolu - Körleme\'de %1$s kupa kazanarak Karti rozetini kazandın.</string>
+    <string name="ui_cikarma_kupa_yolu_korleme_de_x">Çıkarma Kupa Yolu - Körleme\'de %1$s kupa kazanarak Sino rozetini kazandın.</string>
+    <string name="ui_carpma_kupa_yolu_korleme_de_x">Çarpma Kupa Yolu - Körleme\'de %1$s kupa kazanarak Kapi rozetini kazandın.</string>
+    <string name="ui_unite_maratonunda_x_olarak_elit_seviye">Ünite Maratonunda %1$s. olarak Elit Seviye kupasını kazandın.</string>
+    <string name="ui_x_unite_maratonunu_3_yildiz_ile">%1$s Ünite Maratonunu 3 yıldız ile tamamlayarak Siyah Kuşak rozetini kazandın.</string>
+    <string name="ui_unite_maratonunda_1_olarak_altin_madalya">Ünite maratonunda 1. olarak Altın Madalya kazandın.</string>
+    <string name="ui_unite_maratonunda_2_olarak_gumus_madalya">Ünite maratonunda 2. olarak Gümüş Madalya kazandın.</string>
+    <string name="ui_unite_maratonunda_3_olarak_bronz_madalya">Ünite maratonunda 3. olarak Bronz Madalya kazandın.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi">Bu rozeti kazanmak için 3 dersi hatasız tamamlayarak başarı elde et.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi_2">Bu rozeti kazanmak için 3 dersi 1 günde tamamlayarak başarı elde et.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_5_gunluk">Bu rozeti kazanmak için 5 günlük görevi tamamlayarak başarı elde et.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_kere">Bu rozeti kazanmak için 3 kere öğretmene danış.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_gun">Bu rozeti kazanmak için 3 gün üst üste Günlük Soru mücadelesini çözerek başarı elde et.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa">Bu rozeti kazanmak için Toplama Kupa Yolunda 500 kupaya ulaş.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_ustalik">Bu rozeti kazanmak için Toplama Ustalık Yolunda 1 adımı tamamla.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_ustalik">Bu rozeti kazanmak için Çıkarma Ustalık Yolunda 1 adımı tamamla.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa">Bu rozeti kazanmak için Çıkarma Kupa Yolunda 500 kupa kazan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa">Bu rozeti kazanmak için Çarpma Kupa Yolunda 500 kupa kazan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa_2">Bu rozeti kazanmak için Toplama Kupa Yolu - Körleme\'de 500 kupa kazan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2">Bu rozeti kazanmak için Çıkarma Kupa Yolu - Körleme\'de 500 kupa kazan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa_2">Bu rozeti kazanmak için Çarpma Kupa Yolu - Körleme\'de 500 kupa kazan.</string>
+    <string name="ui_bu_kupayi_kazanmak_icin_unite_maratonunda">Bu kupayı kazanmak için ünite maratonunda ilk 100\'e girerek başarı elde et.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_unite_maratonunu">Bu rozeti kazanmak için ünite maratonunu 3 yıldız ile tamamlayarak başarı elde et.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite">Bu madalyayı kazanmak için bir ünite maratonu liderliğinde birinci ol.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_2">Bu madalyayı kazanmak için bir ünite maratonu liderliğinde ikinci ol.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_3">Bu madalyayı kazanmak için bir ünite maratonu liderliğinde üçüncü ol.</string>
+    <string name="ui_tamamlandi">Tamamlandı !</string>
+
+    <!-- BadgeProgressEngine.kt -->
+    <string name="ui_elit_seviye_kupasi">Elit Seviye Kupası</string>
+    <string name="ui_sampiyonluk_madalyasi">Şampiyonluk Madalyası</string>
+    <string name="ui_gumus_madalya">Gümüş Madalya</string>
+    <string name="ui_siyah_kusak">Siyah Kuşak</string>
+    <string name="ui_strike_ustasi">Strike Ustası</string>
+    <string name="ui_derin_avci">Derin Avcı</string>
+    <string name="ui_nokta_atisi">Nokta Atışı</string>
+    <string name="ui_sinir_tanimaz">Sınır Tanımaz</string>
+    <string name="ui_kasirga">Kasırga</string>
+    <string name="ui_yanardag">Yanardağ</string>
+    <string name="ui_keci">Keçi</string>
+    <string name="ui_saho">Şaho</string>
+
+    <!-- BillingManager.kt -->
+    <string name="ui_urun_su_anda_alinamiyor_daha_sonra">Ürün şu anda alınamıyor. Daha sonra tekrar deneyin.</string>
+    <string name="ui_abonelik_teklifi_bulunamadi">Abonelik teklifi bulunamadı.</string>
+    <string name="ui_satin_alma_baslatilamadi">Satın alma başlatılamadı.</string>
+    <string name="ui_satin_alma_tamamlanamadi">Satın alma tamamlanamadı.</string>
+    <string name="ui_bu_abonelik_bu_cihazdaki_google_play">"Bu abonelik bu cihazdaki Google Play hesabının başka bir Sorobit "</string>
+    <string name="ui_hesabina_tanimli_aboneligi_o_hesapla_kullana">hesabına tanımlı. Aboneliği o hesapla kullanabilirsiniz.</string>
+    <string name="ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a">Satın alma doğrulanamadı. Uygulamayı tekrar açtığınızda denenecek.</string>
+
+    <!-- BlindingLessonFragment.kt -->
+    <string name="ui_gunluk_soru">Günlük Soru</string>
+    <string name="ui_kupa_modu">Kupa Modu</string>
+    <string name="ui_kupa_zorlugu">Kupa Zorluğu</string>
+
+    <!-- BunnyMascotView.kt -->
+    <string name="ui_atla">Atla</string>
+    <plurals name="ui_x_gun">
+        <item quantity="one">%1$s gün</item>
+        <item quantity="other">%1$s gün</item>
+    </plurals>
+    <string name="ui_gun">\? gün</string>
+    <string name="ui_hiyaa">HİYAA!</string>
+
+    <!-- ChestCrystalPolicy.kt -->
+    <string name="ui_x_altin">%1$s altın</string>
+
+    <!-- CreateQuestionFragment.kt -->
+    <string name="ui_video_bulunamadi">Video bulunamadı.</string>
+    <string name="ui_ekran_goruntusu_alinamadi">Ekran görüntüsü alınamadı.</string>
+    <string name="ui_ekran_goruntusu_bulunamadi">Ekran görüntüsü bulunamadı.</string>
+    <string name="ui_lutfen_baslik_yazin">Lütfen başlık yazın.</string>
+    <string name="ui_lutfen_aciklama_yazin">Lütfen açıklama yazın.</string>
+    <string name="ui_oturum_acik_degil">Oturum açık değil.</string>
+    <string name="ui_soru_gonderildi">Soru gönderildi.</string>
+    <string name="ui_yukleme_hatasi_x">Yükleme hatası: %1$s</string>
+    <string name="ui_video_yukleme_hatasi">Video yükleme hatası.</string>
+    <string name="ui_video_yukleme_hatasi_x">Video yükleme hatası: %1$s</string>
+    <string name="ui_danisma_kredin_kalmadi_magazadan_kredi_alabi">Danışma kredin kalmadı. Mağazadan kredi alabilirsin.</string>
+    <string name="ui_gonderilemedi_x">Gönderilemedi: %1$s</string>
+
+    <!-- CupFragment.kt -->
+    <string name="ui_bilgelik_kupasi">Bilgelik Kupası</string>
+    <string name="ui_tum_sorular_senin_zekanla_boy_olcustu">Tüm sorular senin zekânla boy ölçüştü, ama kazanan sensin</string>
+    <string name="ui_zirve_senin_bu_basari_tesaduf_degil">Zirve senin, bu başarı tesadüf değil!</string>
+    <string name="ui_mukemmel_bir_is_cikardin">Mükemmel bir iş çıkardın!</string>
+    <string name="ui_bu_seviye_sadece_cok_calisanlarin_ulasabildi">Bu seviye, sadece çok çalışanların ulaşabildiği yer.</string>
+    <string name="ui_sen_artik_bu_konunun_ustasisin_neyi">Sen artık bu konunun ustasısın – neyi başaramazsın ki?</string>
+    <string name="ui_usta_kupasi">Usta Kupası</string>
+    <string name="ui_gercek_ustalik_bilgi_sabir_ve_kararlilikla">Gerçek ustalık; bilgi, sabır ve kararlılıkla gelir. Tebrikler!</string>
+    <string name="ui_gayet_iyi">Gayet iyi!</string>
+    <string name="ui_biraz_daha_pratikle_zirveye_ulasman_an">Biraz daha pratikle zirveye ulaşman an meselesi.</string>
+    <string name="ui_azmin_gucuyle_her_adim_seni_daha">Azmin gücüyle her adım seni daha da ileri taşıyor!</string>
+    <string name="ui_cok_iyi_gidiyorsun_birkac_adim_sonra">Çok iyi gidiyorsun! Birkaç adım sonra zirvedesin.</string>
+    <string name="ui_gelisimin_fark_ediliyor_pes_etme_devam">Gelişimin fark ediliyor. Pes etme, devam et!</string>
+    <string name="ui_deneyim_kupasi">Deneyim Kupası</string>
+    <string name="ui_her_usta_bir_zamanlar_amatordu_sen">Her usta bir zamanlar amatördü. Sen de yoldasın!</string>
+    <string name="ui_cesaret_ettin_basladin_bu_en_onemli">Cesaret ettin, başladın. Bu en önemli adımdı.</string>
+    <string name="ui_unutma_basari_tekrar_tekrar_denemekten_gecer">Unutma, başarı tekrar tekrar denemekten geçer!</string>
+    <string name="ui_bugun_attigin_adim_yarinin_basarisini_baslat">Bugün attığın adım, yarının başarısını başlatır.</string>
+    <string name="ui_ayip_olmasin_diye_bu_kupayi_verdik">Ayıp olmasın diye bu kupayı verdik.</string>
+    <string name="ui_biraz_fazla_mi_yavas_oldu_ne">Biraz fazla mı yavaş oldu ne ?</string>
+    <string name="ui_yanii_hic_yapmamis_olmaktan_iyi">Yanii.. Hiç yapmamış olmaktan iyi.</string>
+    <string name="ui_en_azindan_ekrani_actin_bu_da">En azından ekranı açtın, bu da bir şey.</string>
+    <string name="ui_kupayi_biz_de_pek_vermek_istemedik">Kupayı biz de pek vermek istemedik ama...</string>
+    <string name="ui_kupa_geldi_ama_vicdanimiz_biraz_sizladi">Kupa geldi ama vicdanımız biraz sızladı.</string>
+
+    <!-- CupHistoryFragment.kt -->
+    <string name="ui_haftalik">Haftalık</string>
+    <string name="ui_aylik">Aylık</string>
+    <string name="ui_yillik">Yıllık</string>
+    <string name="ui_tum_zamanlar">Tüm Zamanlar</string>
+
+    <!-- CupPathRewardRepository.kt -->
+    <string name="ui_tamamlandi_2">Tamamlandı</string>
+    <string name="ui_sandik_hazir">Sandık hazır!</string>
+    <string name="ui_cikarma_kupa_yolu">Çıkarma Kupa Yolu</string>
+    <string name="ui_carpma_kupa_yolu">Çarpma Kupa Yolu</string>
+    <string name="ui_toplama_kupa_yolu_korleme">Toplama Kupa Yolu - Körleme</string>
+    <string name="ui_cikarma_kupa_yolu_korleme">Çıkarma Kupa Yolu - Körleme</string>
+    <string name="ui_carpma_kupa_yolu_korleme">Çarpma Kupa Yolu - Körleme</string>
+
+    <!-- CupPathRoadFragment.kt -->
+    <string name="ui_bu_sandigi_zaten_aldin">Bu sandığı zaten aldın</string>
+    <string name="ui_x_kupaya_ulasinca_acilir">%1$s kupaya ulaşınca açılır</string>
+
+    <!-- EditProfileFragment.kt -->
+    <string name="ui_ad_bos_birakilamaz">Ad boş bırakılamaz.</string>
+    <string name="ui_kaydediliyor">KAYDEDİLİYOR...</string>
+    <string name="ui_firestore_guncellenemedi">Firestore güncellenemedi.</string>
+    <string name="ui_auth_profil_guncellenemedi">Auth profil güncellenemedi.</string>
+    <string name="ui_parola_en_az_6_karakter_olmalidir">Parola en az 6 karakter olmalıdır.</string>
+    <string name="ui_parola_basariyla_guncellendi">Parola başarıyla güncellendi.</string>
+    <string name="ui_guvenlik_nedeniyle_parolayi_degistirmek_icin">Güvenlik nedeniyle parolayı değiştirmek için lütfen tekrar giriş yapın.</string>
+    <string name="ui_parola_guncellenemedi_x">Parola güncellenemedi: %1$s</string>
+    <string name="ui_degisiklikler_kaydedildi">Değişiklikler kaydedildi.</string>
+    <string name="ui_degisiklikleri_kaydet">DEĞİŞİKLİKLERİ KAYDET</string>
+    <string name="ui_hesabi_sil">Hesabı Sil</string>
+    <string name="ui_hesabinizi_kalici_olarak_silmek_istediginize">Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</string>
+    <string name="ui_sil">SİL</string>
+    <string name="ui_iptal">İPTAL</string>
+    <string name="ui_hesabiniz_ve_iliskili_verileriniz_siliniyor">Hesabınız ve ilişkili verileriniz siliniyor...</string>
+    <string name="ui_hesabiniz_basariyla_silindi">Hesabınız başarıyla silindi.</string>
+    <string name="ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen">Güvenlik nedeniyle hesabı silmek için lütfen tekrar giriş yapıp hemen silmeyi deneyin.</string>
+
+    <!-- EmailVerificationActivity.kt -->
+    <string name="ui_gonderiliyor">Gönderiliyor...</string>
+    <string name="ui_e_postayi_tekrar_gonder">E-postayı Tekrar Gönder</string>
+    <string name="ui_dogrulama_kodu_tekrar_gonderildi">Doğrulama kodu tekrar gönderildi</string>
+    <string name="ui_lutfen_dogrulama_kodunu_girin">Lütfen doğrulama kodunu girin</string>
+    <string name="ui_kod_6_haneli_olmalidir">Kod 6 haneli olmalıdır</string>
+    <string name="ui_dogrulaniyor">Doğrulanıyor...</string>
+    <string name="ui_kodu_dogrula">Kodu Doğrula</string>
+    <string name="ui_kayit_basarili_giris_yapabilirsiniz">Kayıt başarılı! Giriş yapabilirsiniz.</string>
+    <string name="ui_kod_dogrulanamadi_lutfen_tekrar_deneyin">Kod doğrulanamadı. Lütfen tekrar deneyin.</string>
+
+    <!-- FeedbackFragment.kt -->
+    <string name="ui_son_1_saat_icinde_cok_fazla">Son 1 saat içinde çok fazla bildirim gönderdiniz. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="ui_gorusleriniz_basariyla_iletildi_tesekkurler">Görüşleriniz başarıyla iletildi. Teşekkürler!</string>
+
+    <!-- FollowersFollowingFragment.kt -->
+    <string name="ui_takip_edilen">TAKİP EDİLEN</string>
+    <string name="ui_takipci">TAKİPÇİ</string>
+    <string name="ui_henuz_kimseyi_takip_etmiyorsun">Henüz kimseyi takip etmiyorsun</string>
+    <string name="ui_henuz_takipcin_yok">Henüz takipçin yok</string>
+    <string name="ui_avatar_yuklenemedi_x">Avatar yüklenemedi: %1$s</string>
+    <string name="ui_yuklenemedi_x">Yüklenemedi: %1$s</string>
+    <string name="ui_x_takip_edildi_2">%1$s takip edildi</string>
+    <string name="ui_x_adli_kullaniciyi_takip_etmeyi_birakmak">%1$s adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?</string>
+    <string name="ui_takibi_birak">Takibi bırak</string>
+    <string name="ui_iptal_2">İptal</string>
+    <string name="ui_x_takipten_cikarildi">%1$s takipten çıkarıldı</string>
+
+    <!-- GalleryBottomSheetFragment.kt -->
+    <string name="ui_galeriye_erisim_izni_gerekli">Galeriye erişim izni gerekli.</string>
+
+    <!-- GuideHelper.kt -->
+    <string name="ui_bu_testte_toplama_islemini_abakuste_yapacaks">Bu testte toplama işlemini abaküste yapacaksın.</string>
+    <string name="ui_once_abakuse_ilk_sayiyi_yazip">Önce abaküse ilk sayıyı yazıp...</string>
+    <string name="ui_sonrasinda_ikinci_sayiyi_ekle">Sonrasında ikinci sayıyı ekle.</string>
+    <string name="ui_ve_islem_bitince_kontrol_et_butonuna">ve işlem bitince kontrol et butonuna tıkla.</string>
+    <string name="ui_sakin_aklindan_toplayip_o_sayiyi_abakuse">Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin.</string>
+    <string name="ui_kurallari_unutursan_sagdaki_sihirli_degneye">Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.</string>
+    <string name="ui_burada_derste_ogrendigin_sayilar_ve_kardesle">Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.</string>
+    <string name="ui_kurallari_unutursan_sag_ustteki_kitaba_tikla">Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.</string>
+    <string name="ui_burada_ogrendigin_kurallar_yer_alir">Burada öğrendiğin kurallar yer alır.</string>
+    <string name="ui_kurallar_kitabina_tikladiginda_ekrana_gelen">Kurallar kitabına tıkladığında ekrana gelen kurallardan herhangi birisine tıklayarak tabloyu abaküsün üstüne alabilirsin.</string>
+    <string name="ui_kurallar_kitabina_tikla">Kurallar kitabına tıkla.</string>
+    <string name="ui_ekrana_gelen_kurallardan_herhangi_birisini_s">Ekrana gelen kurallardan herhangi birisini seç.</string>
+    <string name="ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek">Eğer tahtada gösterilen sayıyı hemen geçmek istersen, sağ altta bulunan ok butonuna tıklayabilirsin.</string>
+    <string name="ui_bu_butona_tahtada_bir_sayi_varken">Bu butona tahtada bir sayı varken basarsan, doğrudan sıradaki sayıya geçersin.</string>
+    <string name="ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto">Abaküsün boyutunu sağ alttaki ölçekleme butonunu kullanarak özelleştirebilirsin.</string>
+
+    <!-- ImageAnnotateDialogFragment.kt -->
+    <string name="ui_resim_bulunamadi">Resim bulunamadı.</string>
+    <string name="ui_kaydedilemedi">Kaydedilemedi.</string>
+
+    <!-- LearningPathPlan.kt -->
+    <string name="ui_bugun">BUGÜN</string>
+
+    <!-- LessonAdapter.kt -->
+    <string name="ui_unite_maratonu">ÜNİTE MARATONU</string>
+    <string name="ui_ders">DERS</string>
+    <string name="ui_rekor_x">Rekor: %1$s</string>
+    <string name="ui_tekrar_dene">Tekrar dene</string>
+    <string name="ui_gozden_gecir">Gözden geçir</string>
+    <string name="ui_devam_et">Devam et</string>
+    <string name="ui_basla">Başla</string>
+    <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Kilidi açmak için önceki dersleri tamamla.</string>
+    <string name="ui_kilitli">Kilitli</string>
+    <string name="ui_sayi_gosterilme_periyodu_x_saniye">Sayı gösterilme periyodu %1$s saniye</string>
+    <string name="ui_baslat">BAŞLAT</string>
+
+    <!-- LessonResultFalse.kt -->
+    <string name="ui_puan_500_den_dusuk">Puan 500\'den düşük!</string>
+    <string name="ui_basari_orani_75_ten_dusuk" formatted="false">Başarı oranı %75\'ten düşük!</string>
+
+    <!-- LoginActivity.kt -->
+    <string name="ui_lutfen_e_posta_girin">Lütfen e-posta girin</string>
+    <string name="ui_gecerli_bir_e_posta_adresi_girin">Geçerli bir e-posta adresi girin</string>
+    <string name="ui_devam_et_2">Devam Et</string>
+    <string name="ui_google_girisi_baslatilamadi">Google girişi başlatılamadı</string>
+    <string name="ui_google_girisi_baslatilamadi_x">Google girişi başlatılamadı: %1$s</string>
+    <string name="ui_google_girisi_basarisiz_x">Google girişi başarısız: %1$s</string>
+    <string name="ui_google_girisi_basarisiz">Google girişi başarısız</string>
+
+    <!-- MainActivity.kt -->
+    <string name="ui_ses_kaydi_icin_izin_gerekli">Ses kaydı için izin gerekli.</string>
+    <string name="ui_ekran_kaydi_baslatilamadi">Ekran kaydı başlatılamadı.</string>
+    <string name="ui_cikmak_icin_tekrar_bas">Çıkmak için tekrar bas</string>
+    <string name="ui_goruntu_alinamadi">Görüntü alınamadı.</string>
+    <string name="ui_lutfen_bir_soru_secin">Lütfen bir soru seçin.</string>
+    <string name="ui_sohbete_gonderildi">Sohbete gönderildi.</string>
+    <string name="ui_durdur">Durdur</string>
+    <string name="ui_kayit_basarisiz">Kayıt başarısız.</string>
+    <string name="ui_ekran_kaydi_bu_cihazda_baslatilamadi">Ekran kaydı bu cihazda başlatılamadı.</string>
+    <string name="ui_dun_calisamadin_ama_seri_dondurman_serini">Dün çalışamadın ama seri dondurman serini korudu!</string>
+    <string name="ui_seri_dondurman_bir_gunu_kapatti_ama">Seri dondurman bir günü kapattı ama iki gün üst üste kaçtığı için serin kırıldı.</string>
+    <string name="ui_bugunku_hedefini_tamamladin">Bugünkü hedefini tamamladın!</string>
+    <string name="ui_serin_basladi">Serin başladı</string>
+    <string name="ui_x_gunluk_seri">%1$s günlük seri</string>
+
+    <!-- MapFragment.kt -->
+    <string name="ui_unite_maratonunda_hatasiz_en_hizli_cozumler">Ünite maratonunda hatasız en hızlı çözümler kaydedilir.</string>
+    <string name="ui_unite_maratonu_panelindeki_rekor_a_tiklayara">Ünite maratonu panelindeki Rekor\'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin.</string>
+
+    <!-- MissionRewardRevealDialogFragment.kt -->
+    <string name="ui_0_altin">0 altın</string>
+    <string name="ui_odul_alinamadi_tekrar_deneyin">Ödül alınamadı. Tekrar deneyin.</string>
+
+    <!-- MessageReport.kt -->
+    <string name="ui_taciz_veya_zorbalik">Taciz veya zorbalık</string>
+    <string name="ui_uygunsuz_icerik">Uygunsuz içerik</string>
+    <string name="ui_diger">Diğer</string>
+
+    <!-- RulesFragment.kt -->
+    <string name="ui_eklenecek_sayi_2">Eklenecek Sayı</string>
+
+    <!-- NewChestFragment.kt -->
+    <string name="ui_efsanevi">EFSANEVİ</string>
+    <string name="ui_sandik_acilamadi_tekrar_deneyin">Sandık açılamadı. Tekrar deneyin.</string>
+    <string name="ui_sandigi_acmak_icin_dokun">Sandığı açmak için dokun!</string>
+
+    <!-- NewStreakFragment.kt -->
+    <string name="ui_simdi_bir_ogrenme_aliskanligi_kazanmana_yard">Şimdi bir öğrenme alışkanlığı kazanmana yardım edelim.</string>
+    <string name="ui_kac_gun_ust_uste_ogreneceksin">Kaç gün üst üste öğreneceksin?</string>
+    <string name="ui_gunde_x_dakika_bu_secim_seri">Günde %1$s dakika. Bu seçim seri boyunca değişmiyor.</string>
+    <string name="ui_x_altin_2">+%1$s altın</string>
+
+    <!-- NotificationFragment.kt -->
+    <string name="ui_sorularim">Sorularım</string>
+    <string name="ui_giris_yapin">Giriş yapın.</string>
+    <string name="ui_henuz_soru_yok">Henüz soru yok</string>
+    <string name="ui_henuz_sohbet_yok">Henüz sohbet yok.</string>
+    <string name="ui_bekleyen_rapor_yok">Bekleyen rapor yok.</string>
+    <string name="ui_ses_kaydini_dinlemek_icin_oynat">Ses kaydını dinlemek için oynat</string>
+    <string name="ui_ses_oynatilamadi">Ses oynatılamadı.</string>
+    <string name="ui_rapor_reddedildi">Rapor reddedildi.</string>
+    <string name="ui_islem_basarisiz_2">İşlem başarısız.</string>
+    <string name="ui_kullanici_kisitlandi">Kullanıcı kısıtlandı.</string>
+    <string name="ui_islem_basarisiz_x">İşlem başarısız: %1$s</string>
+    <string name="ui_kisitli_kullanici_yok">Kısıtlı kullanıcı yok.</string>
+    <string name="ui_kisitlamayi_kaldir">Kısıtlamayı kaldır</string>
+    <string name="ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi">%1$s kullanıcısının kısıtlaması kaldırılsın mı?</string>
+    <string name="ui_kaldir">Kaldır</string>
+    <string name="ui_kisitlama_kaldirildi">Kısıtlama kaldırıldı.</string>
+    <string name="ui_kalici_ban">Kalıcı ban</string>
+    <string name="ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok">Bu kısıtlamanın kaynağı hakkında bilgi yok.</string>
+    <string name="ui_x_tarihinde_kisitlandi">%1$s tarihinde kısıtlandı</string>
+    <string name="ui_x_tarihinde_x_tarafindan_kisitlandi">%1$s tarihinde %2$s tarafından kısıtlandı</string>
+    <string name="ui_kisitli">Kısıtlı</string>
+    <string name="ui_suresi_doldu">Süresi doldu</string>
+    <plurals name="ui_x_gun_kaldi">
+        <item quantity="one">%1$s gün kaldı</item>
+        <item quantity="other">%1$s gün kaldı</item>
+    </plurals>
+    <plurals name="ui_x_saat_kaldi">
+        <item quantity="one">%1$s saat kaldı</item>
+        <item quantity="other">%1$s saat kaldı</item>
+    </plurals>
+    <string name="ui_1_saatten_az_kaldi">1 saatten az kaldı</string>
+    <string name="ui_bekleyen_soru_yok">Bekleyen soru yok.</string>
+    <string name="ui_cozulen_soru_yok">Çözülen soru yok.</string>
+    <string name="ui_cozuldu_olarak_isaretlenen_sorulari_silebili">Çözüldü olarak işaretlenen soruları silebilirsin.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin">Soruyu silmek istediğine emin misin</string>
+    <string name="ui_bu_islem_geri_alinamaz">Bu işlem geri alınamaz.</string>
+    <string name="ui_listeden_kaldirildi">Listeden kaldırıldı.</string>
+    <string name="ui_kaldirilamadi">Kaldırılamadı.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin_2">Soruyu silmek istediğine emin misin?</string>
+    <string name="ui_bu_islem_geri_alinamaz_soruyu_sildiginde">Bu işlem geri alınamaz. Soruyu sildiğinde ona bir daha erişemezsin.</string>
+    <string name="ui_sil_2">Sil</string>
+    <string name="ui_soru_silindi">Soru silindi.</string>
+    <string name="ui_silinemedi">Silinemedi.</string>
+    <string name="ui_soru_cevaplanmadi">Soru cevaplanmadı</string>
+    <string name="ui_bu_soru_48_saat_icinde_cevaplanmadi">Bu soru 48 saat içinde cevaplanmadı ve kredin iade edildi. Tekrar sormak 1 kredi harcar.</string>
+    <string name="ui_vazgec">Vazgeç</string>
+    <string name="ui_tekrar_sor">Tekrar sor</string>
+    <string name="ui_soru_tekrar_gonderildi">Soru tekrar gönderildi.</string>
+    <string name="ui_cozulen_sorulara_mesaj_gonderemezsin">Çözülen sorulara mesaj gönderemezsin.</string>
+
+    <!-- OfflineFragment.kt -->
+    <string name="ui_hala_cevrimdisisiniz_lutfen_baglantinizi_kon">Hâlâ çevrimdışısınız. Lütfen bağlantınızı kontrol edin.</string>
+
+    <!-- OtpVerificationFragment.kt -->
+    <string name="ui_sifre_sifirlama">Şifre sıfırlama</string>
+    <string name="ui_hesap_olustur">Hesap oluştur</string>
+    <string name="ui_e_postani_dogrula">E-postanı doğrula</string>
+    <string name="ui_dogrula">Doğrula</string>
+    <string name="ui_kod_tekrar_gonderildi">Kod tekrar gönderildi</string>
+
+    <!-- ParentPanelFragment.kt -->
+    <string name="ui_ilerleme_bilgisi_alinamadi_internet_baglanti">İlerleme bilgisi alınamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.</string>
+    <string name="ui_ilerleme_bilgisi_alinamadi">İlerleme bilgisi alınamadı.</string>
+    <string name="ui_henuz_baslanmis_bir_ders_yok_cocugunuz">Henüz başlanmış bir ders yok. Çocuğunuz ilk dersi açtığında ilerlemesi burada görünecek.</string>
+
+    <!-- ParentReportAdapter.kt -->
+    <string name="ui_mufredattaki_x_dersten_x_tanesi_tamamlandi">Müfredattaki %1$s dersten %2$s tanesi tamamlandı.</string>
+    <string name="ui_toplam_calisma_suresi_x">" Toplam çalışma süresi %1$s."</string>
+    <string name="ui_en_cok_denemeyi_gerektiren_ders_x">" En çok denemeyi gerektiren ders: %1$s (%2$s deneme)."</string>
+    <string name="ui_bolum_x">Bölüm %1$s</string>
+    <string name="ui_bolum_x_x">Bölüm %1$s - %2$s</string>
+    <string name="ui_x_x_ders_bitti">%1$s/%2$s ders bitti</string>
+    <string name="ui_x_x_ders">%1$s/%2$s ders</string>
+    <plurals name="ui_x_adim">
+        <item quantity="one">%1$s adım</item>
+        <item quantity="other">%1$s adım</item>
+    </plurals>
+    <string name="ui_devam_ediyor_x_x_adim_gecildi">Devam ediyor · %1$s/%2$s adım geçildi</string>
+    <string name="ui_adim_x">Adım %1$s</string>
+    <string name="ui_ilk_denemede_gecti">İlk denemede geçti</string>
+    <string name="ui_x_denemede_gecti">%1$s. denemede geçti</string>
+    <string name="ui_baslandi">Başlandı</string>
+    <plurals name="ui_deniyor_x_basarisiz_deneme">
+        <item quantity="one">Deniyor · %1$s başarısız deneme</item>
+        <item quantity="other">Deniyor · %1$s başarısız deneme</item>
+    </plurals>
+    <string name="ui_sirasi_gelmedi">Sırası gelmedi</string>
+
+    <!-- ParentReportRepository.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama">Abaküsün Temeli ve Toplama</string>
+    <string name="ui_abakuste_cikarma">Abaküste Çıkarma</string>
+    <string name="ui_abakuste_carpma">Abaküste Çarpma</string>
+    <string name="ui_korleme_toplama">Körleme Toplama</string>
+    <string name="ui_korleme_cikarma">Körleme Çıkarma</string>
+    <string name="ui_korleme_carpma">Körleme Çarpma</string>
+    <string name="ui_paz">Paz</string>
+    <string name="ui_pzt">Pzt</string>
+    <string name="ui_sal">Sal</string>
+    <string name="ui_car">Çar</string>
+    <string name="ui_per">Per</string>
+    <string name="ui_cum">Cum</string>
+    <string name="ui_cmt">Cmt</string>
+
+    <!-- PartCardAdapter.kt -->
+    <string name="ui_ustalik_yolu_toplama">Ustalık Yolu - Toplama</string>
+    <string name="ui_ustalik_yolu_cikarma">Ustalık Yolu - Çıkarma</string>
+
+    <!-- PartSelectionFragment.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Abaküsün Temeli ve Toplama kısmını bitir.</string>
+    <string name="ui_abakuste_cikarma_kismini_bitir">Abaküste Çıkarma kısmını bitir.</string>
+    <string name="ui_abakuste_carpma_kismini_bitir">Abaküste Çarpma kısmını bitir.</string>
+    <string name="ui_bu_kismi_acmak_icin_plani_pro">Bu kısmı açmak için planı Pro\'ya yükselt.</string>
+    <string name="ui_abakuste_toplama_kismini_bitir">Abaküste Toplama kısmını bitir.</string>
+    <string name="ui_toplama_ustaligi">Toplama Ustalığı</string>
+    <string name="ui_cikarma_ustaligi">Çıkarma Ustalığı</string>
+
+    <!-- ProDiffirentFragment.kt -->
+    <string name="ui_pro_ile_daha_hizli_ogren_daha">Pro ile daha hızlı öğren, daha fazla pratik yap!</string>
+
+    <!-- ProfileFragment.kt -->
+    <string name="ui_google_ile_kimlik_dogrulama_basarisiz_x">Google ile kimlik doğrulama başarısız: %1$s</string>
+    <string name="ui_kullanici">Kullanıcı</string>
+    <string name="ui_x_x_yilinda_katildi">\@%1$s • %2$s YILINDA KATILDI</string>
+    <string name="ui_x_yilinda_katildi">%1$s YILINDA KATILDI</string>
+    <string name="ui_hesaplaniyor">Hesaplanıyor...</string>
+    <string name="ui_x_tamamlandi">%%%1$s tamamlandı</string>
+    <plurals name="ui_en_uzun_seri_x_gun">
+        <item quantity="one">En uzun seri: %1$s gün</item>
+        <item quantity="other">En uzun seri: %1$s gün</item>
+    </plurals>
+    <string name="ui_en_uzun_seri_0_gun">En uzun seri: 0 gün</string>
+    <string name="ui_takip_ediliyor">TAKİP EDİLİYOR</string>
+    <string name="ui_takip_et">TAKİP ET</string>
+    <string name="ui_takip_birakildi">Takip bırakıldı.</string>
+    <string name="ui_takip_edildi">Takip edildi!</string>
+    <string name="ui_sadece_1_adet_boncugun_var">Sadece 1 adet boncuğun var</string>
+    <string name="ui_x_gun_x_saat_x_dakika">%1$s Gün %2$s saat %3$s dakika</string>
+    <string name="ui_x_saat_x_dakika">%1$s saat %2$s dakika</string>
+    <plurals name="ui_x_dakika">
+        <item quantity="one">%1$s dakika</item>
+        <item quantity="other">%1$s dakika</item>
+    </plurals>
+    <string name="ui_dogrulama_e_postasi_gonderildi_e_postanizi">Doğrulama e-postası gönderildi. E-postanızı doğruladıktan sonra bu ekrana geri dönün.</string>
+    <string name="ui_e_posta_gonderilemedi_x">E-posta gönderilemedi: %1$s</string>
+    <string name="ui_e_posta_basariyla_dogrulandi">E-posta başarıyla doğrulandı!</string>
+    <string name="ui_kullanici_adi">Kullanıcı Adı</string>
+    <string name="ui_profili_duzenle">Profili Düzenle</string>
+    <string name="ui_kaydet">Kaydet</string>
+    <string name="ui_kullanici_adi_bos_olamaz">Kullanıcı adı boş olamaz</string>
+    <string name="ui_kullanici_adi_guncellendi">Kullanıcı adı güncellendi</string>
+    <string name="ui_kullanici_adi_guncellenemedi_x">Kullanıcı adı güncellenemedi: %1$s</string>
+    <string name="ui_yeni_sifre">Yeni Şifre</string>
+    <string name="ui_sifre_degistir">Şifre Değiştir</string>
+    <string name="ui_yeni_sifrenizi_girin_en_az_6">Yeni şifrenizi girin (en az 6 karakter)</string>
+    <string name="ui_degistir">Değiştir</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali">Şifre en az 6 karakter olmalı</string>
+    <string name="ui_google_hesabi_ile_giris_yaptiniz_sifre">Google hesabı ile giriş yaptınız. Şifre değiştirilemez.</string>
+    <string name="ui_sifre_basariyla_degistirildi">Şifre başarıyla değiştirildi</string>
+    <string name="ui_sifre_degistirilemedi_x">Şifre değiştirilemedi: %1$s</string>
+    <string name="ui_cikis_yap">Çıkış Yap</string>
+    <string name="ui_cikis_yapmak_istediginize_emin_misiniz">Çıkış yapmak istediğinize emin misiniz?</string>
+    <string name="ui_evet">Evet</string>
+    <string name="ui_hayir">Hayır</string>
+    <string name="ui_hesabinizi_silmek_istediginize_emin_misiniz">Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!</string>
+    <string name="ui_evet_sil">Evet, Sil</string>
+    <string name="ui_sifrenizi_girin">Şifrenizi girin</string>
+    <string name="ui_hesabinizi_silmek_icin_sifrenizi_girin">Hesabınızı silmek için şifrenizi girin</string>
+    <string name="ui_onayla">Onayla</string>
+    <string name="ui_sifre_bos_olamaz">Şifre boş olamaz</string>
+    <string name="ui_kimlik_dogrulama_basarisiz_x">Kimlik doğrulama başarısız: %1$s</string>
+    <string name="ui_hesap_basariyla_silindi">Hesap başarıyla silindi</string>
+    <string name="ui_toplama">Toplama</string>
+    <string name="ui_cikarma">Çıkarma</string>
+    <string name="ui_carpma">Çarpma</string>
+
+    <!-- QuestionChatFragment.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar_2">Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır. Mesaj gönderemezsiniz.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine_2">Hesabınız kural ihlali nedeniyle %1$s tarihine kadar kısıtlanmıştır. Mesaj gönderemezsiniz.</string>
+    <string name="ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin">Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.</string>
+    <string name="ui_tekrar_gonderilemedi">Tekrar gönderilemedi.</string>
+    <string name="ui_gonderim_iptal_edildi">Gönderim iptal edildi.</string>
+    <string name="ui_mesaj_herkesten_silindi">Mesaj herkesten silindi.</string>
+    <string name="ui_silinemedi_x">Silinemedi: %1$s</string>
+    <string name="ui_mesaj_sizden_silindi">Mesaj sizden silindi.</string>
+    <string name="ui_fotograf">Fotoğraf</string>
+    <string name="ui_bildiriminiz_alindi">Bildiriminiz alındı.</string>
+    <string name="ui_bu_mesaji_zaten_bildirdiniz">Bu mesajı zaten bildirdiniz.</string>
+    <string name="ui_bildirim_gonderilemedi_x">Bildirim gönderilemedi: %1$s</string>
+    <string name="ui_video_adresi_bulunamadi">Video adresi bulunamadı.</string>
+    <string name="ui_video_oynatilamadi">Video oynatılamadı.</string>
+    <string name="ui_ses_kopyalanamadi">Ses kopyalanamadı.</string>
+    <string name="ui_video_acilamadi">Video açılamadı.</string>
+    <string name="ui_resim_acilamadi">Resim açılamadı.</string>
+    <string name="ui_bu_soruyu_cozuldu_olarak_isaretlemek_istiyor">Bu soruyu çözüldü olarak işaretlemek istiyor musun? Eğer işaretlersen öğrenci mesaj gönderemeyecek.</string>
+    <string name="ui_isaretle">İşaretle</string>
+    <string name="ui_bu_soru_cozuldu_olarak_isaretli_tekrar">Bu soru çözüldü olarak işaretli. Tekrar aktifleştirmek istiyor musunuz?</string>
+    <string name="ui_aktiflestir">Aktifleştir</string>
+    <string name="ui_soru_cozuldu_olarak_isaretlendi">Soru çözüldü olarak işaretlendi.</string>
+    <string name="ui_soru_tekrar_aktiflestirildi">Soru tekrar aktifleştirildi.</string>
+    <string name="ui_bu_soru_baska_bir_ogretmen_tarafindan">Bu soru başka bir öğretmen tarafından sahiplenildi.</string>
+    <string name="ui_soruyu_sahiplendiniz">Soruyu sahiplendiniz.</string>
+
+    <!-- QuestionDownloadForegroundService.kt -->
+    <string name="ui_indiriliyor">İndiriliyor</string>
+
+    <!-- QuestionListAdapter.kt -->
+    <string name="ui_cevaplanmadi">Cevaplanmadı</string>
+    <string name="ui_cevaplaniyor">Cevaplanıyor</string>
+    <string name="ui_cozuldu">Çözüldü</string>
+    <string name="ui_az_once">Az önce</string>
+    <plurals name="ui_x_dakika_once">
+        <item quantity="one">%1$s dakika önce</item>
+        <item quantity="other">%1$s dakika önce</item>
+    </plurals>
+    <plurals name="ui_x_saat_once">
+        <item quantity="one">%1$s saat önce</item>
+        <item quantity="other">%1$s saat önce</item>
+    </plurals>
+    <plurals name="ui_x_gun_once">
+        <item quantity="one">%1$s gün önce</item>
+        <item quantity="other">%1$s gün önce</item>
+    </plurals>
+
+    <!-- RaceAdapter.kt -->
+    <string name="ui_kilitli_2">KİLİTLİ</string>
+    <string name="ui_basla_2">BAŞLA</string>
+
+    <!-- RegisterActivity.kt -->
+    <string name="ui_gecerli_bir_e_posta_adresi_giriniz">Geçerli bir e-posta adresi giriniz.</string>
+    <string name="ui_hesap_olusturarak_kullanim_sartlarini_ve_giz">Hesap oluşturarak Kullanım Şartlarını ve Gizlilik Politikasını kabul etmiş olursunuz.</string>
+    <string name="ui_kullanim_sartlarini">Kullanım Şartlarını</string>
+    <string name="ui_gizlilik_politikasini">Gizlilik Politikasını</string>
+    <string name="ui_bu_e_posta_ile_ogrenci_hesabi">Bu e-posta ile öğrenci hesabı açılamaz.</string>
+    <string name="ui_google_kaydi_baslatilamadi">Google kaydı başlatılamadı</string>
+    <string name="ui_google_kaydi_baslatilamadi_x">Google kaydı başlatılamadı: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz_x">Google kaydı başarısız: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz">Google kaydı başarısız</string>
+    <string name="ui_lutfen_tum_alanlari_doldurun">Lütfen tüm alanları doldurun</string>
+    <string name="ui_sifreler_eslesmiyor">Şifreler eşleşmiyor</string>
+    <string name="ui_bu_e_posta_zaten_bir_ogretmen">Bu e-posta zaten bir öğretmen hesabı ile kayıtlı. Lütfen öğretmen giriş ekranını kullanın.</string>
+    <string name="ui_bu_e_posta_baska_bir_hesapta">Bu e-posta başka bir hesapta kullanılıyor.</string>
+
+    <!-- ScreenRecordingService.kt -->
+    <string name="ui_ekran_kaydi_yapiliyor">Ekran kaydı yapılıyor...</string>
+
+    <!-- SessionDeviceManager.kt -->
+    <string name="ui_bir_kac_dakika_sonra_tekrar_dene">Bir kaç dakika sonra tekrar dene.</string>
+
+    <!-- ShopFragment.kt -->
+    <string name="ui_can_alinamadi_tekrar_deneyin">Can alınamadı. Tekrar deneyin.</string>
+    <string name="ui_aylik_x">aylık %1$s</string>
+    <string name="ui_yetersiz_anahtar_2">Yetersiz anahtar!</string>
+    <string name="ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin">Günlük sınıra ulaşıldı. Yarın tekrar deneyin.</string>
+    <string name="ui_islem_tamamlanamadi_tekrar_deneyin">İşlem tamamlanamadı. Tekrar deneyin.</string>
+    <string name="ui_serin_korunuyor_kullaninca_yenisini_alabilir">Serin korunuyor. Kullanınca yenisini alabilirsin.</string>
+    <string name="ui_hazir">"✓  HAZIR"</string>
+    <string name="ui_serini_1_gun_boyunca_korur_serin">Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!</string>
+    <string name="ui_yetersiz_altin_2">Yetersiz altın!</string>
+    <string name="ui_seri_dondurma">Seri Dondurma</string>
+    <string name="ui_bir_gun_calisamazsan_serin_bozulmaz_x">Bir gün çalışamazsan serin bozulmaz. %1$s altın harcanacak.</string>
+    <string name="ui_satin_al">Satın al</string>
+    <string name="ui_bonus_dahil">bonus dahil</string>
+    <string name="ui_pro_da_x">Pro\'da +%1$s</string>
+
+    <!-- SoundSettingsFragment.kt -->
+    <string name="ui_ses_x">Ses %1$s</string>
+
+    <!-- StreakFragment.kt -->
+    <string name="ui_bildirim_saatini_degistir">"Bildirim saatini değiştir · "</string>
+    <string name="ui_gun_ust_uste">gün üst üste</string>
+    <string name="ui_serin_su_anda_kirik">Serin şu anda kırık</string>
+    <string name="ui_bugunku_hedefini_tamamladin_yarin_da_bekleri">Bugünkü hedefini tamamladın. Yarın da bekleriz!</string>
+    <string name="ui_bugun_x_dakika_daha_calis_serin">Bugün %1$s dakika daha çalış, serin devam etsin.</string>
+    <string name="ui_bugun_x_dakika_calis_yeni_serini">Bugün %1$s dakika çalış, yeni serini başlat.</string>
+    <string name="ui_hedef_tamamlandi">Hedef tamamlandı ✓</string>
+    <string name="ui_x_x_dakika">%1$s / %2$s dakika</string>
+    <string name="ui_hazir_2">Hazır</string>
+    <string name="ui_yok">Yok</string>
+    <string name="ui_x_gunluk_meydan_okuma">%1$s Günlük Meydan Okuma</string>
+    <string name="ui_tamamlandi_odulunu_topla">TAMAMLANDI — ödülünü topla</string>
+    <string name="ui_tamamlandi_odulun_hazirlaniyor">TAMAMLANDI — ödülün hazırlanıyor</string>
+    <string name="ui_bugun_basliyor">BUGÜN BAŞLIYOR</string>
+    <string name="ui_x_gunun_x_gunu">%1$s GÜNÜN %2$s. GÜNÜ</string>
+    <string name="ui_gunluk_hedefin">Günlük hedefin</string>
+    <string name="ui_her_gun_ne_kadar_ogrenmek_istersin">Her gün ne kadar öğrenmek istersin?</string>
+    <string name="ui_rahat">Rahat</string>
+    <string name="ui_duzenli">Düzenli</string>
+    <string name="ui_ciddi">Ciddi</string>
+    <string name="ui_bildirim_saatin">Bildirim saatin</string>
+    <string name="ui_sobi_sana_her_gun_ne_zaman">Sobi sana her gün ne zaman hatırlatsın?</string>
+
+    <!-- StreakSyncService.kt -->
+    <string name="ui_seri_dondurma_almak_icin_giris_yapman">Seri dondurma almak için giriş yapman gerekiyor.</string>
+    <string name="ui_satin_alinamadi_birazdan_tekrar_dene">Satın alınamadı. Birazdan tekrar dene.</string>
+    <string name="ui_satin_alinamadi">Satın alınamadı.</string>
+    <string name="ui_odul_alinamadi">Ödül alınamadı.</string>
+    <string name="ui_x_internetini_kontrol_edip_tekrar_dene">%1$s İnternetini kontrol edip tekrar dene.</string>
+    <string name="ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar">Sunucuya şu an ulaşılamıyor. Birazdan tekrar dene.</string>
+    <string name="ui_odulu_almak_icin_giris_yapman_gerekiyor">Ödülü almak için giriş yapman gerekiyor.</string>
+    <string name="ui_x_kazandin">%1$s kazandın!</string>
+
+    <!-- StreakViews.kt -->
+    <string name="ui_week_initials_monday_first">P S Ç P C C P</string>
+    <string name="ui_aksamustu">Akşamüstü</string>
+    <string name="ui_aksam">Akşam</string>
+    <string name="ui_baska_bir_saat">Başka bir saat</string>
+    <string name="ui_sec">Seç ›</string>
+    <string name="ui_saat_sec">Saat seç</string>
+    <string name="ui_sobi_sana_her_gun_bu_saatte">Sobi sana her gün bu saatte hatırlatsın</string>
+    <string name="ui_topla">Topla</string>
+    <string name="ui_seri_dondurma_kullanildi">Seri dondurma kullanıldı</string>
+
+    <!-- StudentEmailVerificationFragment.kt -->
+    <string name="ui_kod_tekrar_gonderildi_2">Kod tekrar gonderildi</string>
+    <string name="ui_kod_gonderilemedi_2">Kod gonderilemedi</string>
+    <string name="ui_kod_6_haneli_olmalidir_2">Kod 6 haneli olmalidir</string>
+    <string name="ui_lutfen_ad_soyad_girin">Lutfen ad soyad girin</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali_2">Sifre en az 6 karakter olmali</string>
+    <string name="ui_dogrulaniyor_2">Dogrulaniyor...</string>
+    <string name="ui_dogrula_ve_giris_yap">Dogrula ve Giris Yap</string>
+    <string name="ui_kod_dogrulanamadi_2">Kod dogrulanamadi</string>
+    <string name="ui_giris_basarisiz">Giris basarisiz</string>
+
+    <!-- SupportContactHelper.kt -->
+    <string name="ui_e_posta_veya_tarayici_acilamadi">E-posta veya tarayıcı açılamadı.</string>
+
+    <!-- TasksFragment.kt -->
+    <string name="ui_basari_x">" - Başarı: %%%1$s"</string>
+    <string name="ui_abakus">Abaküs</string>
+    <string name="ui_abakuste_pratik_yaparak_kendini_gelistir">Abaküste pratik yaparak kendini geliştir.</string>
+    <string name="ui_karakter_animasyonu">Karakter Animasyonu</string>
+    <string name="ui_maskotun_butun_hareketlerini_dene">Maskotun bütün hareketlerini dene.</string>
+    <string name="ui_kupa_yolu">Kupa Yolu</string>
+    <string name="ui_basarilarini_kupalarla_olc_seviyeni_yukselt">Başarılarını kupalarla ölç, seviyeni yükselt ve yeni zorluklara ilerle.</string>
+    <string name="ui_burayi_acmak_icin_x_yi_bitir">Burayı açmak için %1$s\'yı bitir.</string>
+
+    <!-- TeacherApprovalGate.kt -->
+    <string name="ui_merhaba_kullanici_id_x">"Merhaba,\n\n\n\nKullanıcı ID: %1$s\n"</string>
+
+    <!-- TeacherNewPasswordFragment.kt -->
+    <string name="ui_sifre_en_az_x_karakter_olmalidir">Şifre en az %1$s karakter olmalıdır</string>
+    <string name="ui_guncelleniyor">Güncelleniyor...</string>
+    <string name="ui_sifreyi_guncelle">Şifreyi güncelle</string>
+    <string name="ui_sifre_guncellendi_giris_yapabilirsiniz">Şifre güncellendi. Giriş yapabilirsiniz.</string>
+
+    <!-- UserInfoFragment.kt -->
+    <string name="ui_google_aramasi">Google Araması</string>
+    <string name="ui_arkadas_aile">Arkadaş/Aile</string>
+    <string name="ui_okul_ogretmen">Okul/Öğretmen</string>
+    <string name="ui_uygulama_magazasi">Uygulama Mağazası</string>
+    <string name="ui_bu_e_posta_adresi_kayitli_degil">Bu e-posta adresi kayıtlı değil. Kayıt sayfasına yönlendirildin.</string>
+    <string name="ui_lutfen_gecerli_bir_yas_girin">Lütfen geçerli bir yaş girin</string>
+    <string name="ui_evet_hatirlat">Evet, hatırlat</string>
+    <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">Sobi sana her gün hatırlatsın mı?</string>
+    <string name="ui_saati_istedigin_zaman_degistirebilirsin">Saati istediğin zaman değiştirebilirsin</string>
+    <string name="ui_kac_yasindasin">Kaç yaşındasın?</string>
+    <string name="ui_her_gun">"Her gün "</string>
+    <string name="ui_buraya_varacaksin">" buraya varacaksın!"</string>
+    <string name="ui_ilk_dersinden_once_seni_tanimak_icin">"İlk dersinden önce seni tanımak için sadece "</string>
+    <string name="ui_x_kisa_sorum">%1$s kısa sorum</string>
+    <string name="ui_var">" var!"</string>
+    <string name="ui_x_dakikayla">%1$s dakikayla</string>
+    <string name="ui_abakusu_tani">Abaküsü tanı</string>
+    <string name="ui_buyuk_sayilar_ile_islem_yap">Büyük sayılar ile işlem yap</string>
+    <string name="ui_kafadan_hesap_ustasi_ol">Kafadan hesap ustası ol</string>
+    <string name="ui_bu_hedefi_istedigin_zaman_degistirebilirsin">Bu hedefi istediğin zaman değiştirebilirsin</string>
+    <string name="ui_gunde_x_dakika_bu_secim_sonradan">Günde %1$s dakika. Bu seçim sonradan değişmiyor, iyi düşün.</string>
+</resources>

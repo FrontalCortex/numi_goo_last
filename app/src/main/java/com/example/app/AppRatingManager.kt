@@ -150,8 +150,8 @@ class RatingDialogFragment : DialogFragment() {
                         dismiss()
                     } else {
                         // Ask for feedback
-                        tvTitle.text = "Üzgünüz \uD83D\uDE14"
-                        tvSubtitle.text = "Deneyimini geliştirmek için geri bildirimine ihtiyacımız var."
+                        tvTitle.text = appString(R.string.ui_uzgunuz)
+                        tvSubtitle.text = appString(R.string.ui_deneyimini_gelistirmek_icin_geri_bildirimine)
                         llFeedback.visibility = View.VISIBLE
                     }
                 }, 300)
@@ -162,11 +162,11 @@ class RatingDialogFragment : DialogFragment() {
             val feedbackText = etFeedback.text.toString().trim()
             if (feedbackText.isNotEmpty()) {
                 submitFeedbackToFirestore(feedbackText, selectedRating)
-                Toast.makeText(context, "Geri bildiriminiz için teşekkürler!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_geri_bildiriminiz_icin_tesekkurler), Toast.LENGTH_SHORT).show()
                 AppRatingManager.markAsRated(requireContext())
                 dismiss()
             } else {
-                Toast.makeText(context, "Lütfen bir şeyler yazın.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_lutfen_bir_seyler_yazin), Toast.LENGTH_SHORT).show()
             }
         }
     }

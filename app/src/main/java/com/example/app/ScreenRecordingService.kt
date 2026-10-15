@@ -432,7 +432,7 @@ class ScreenRecordingService : Service() {
         )
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Ekran kaydı yapılıyor...")
+            .setContentText(appString(R.string.ui_ekran_kaydi_yapiliyor))
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(pending)
             .setOngoing(true)

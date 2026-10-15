@@ -81,7 +81,7 @@
         android:layout_height="56dp"
         android:layout_marginHorizontal="10dp"
         android:layout_marginBottom="24dp"
-        android:text="Devam et"
+        android:text="@string/fragment_new_streak_new_streak_continue"
         android:textAllCaps="false"
         android:textSize="18sp"
         android:textStyle="bold"

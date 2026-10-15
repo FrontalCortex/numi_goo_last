@@ -121,12 +121,12 @@ class UserInfoFragment : Fragment() {
         "Facebook" to "Facebook",
         "Instagram" to "Instagram",
         "Youtube" to "YouTube",
-        "Google Araması" to "Google Araması",
-        "Arkadaş/Aile" to "Arkadaş/Aile",
-        "Okul/Öğretmen" to "Okul/Öğretmen",
+        "Google Araması" to appString(R.string.ui_google_aramasi),
+        "Arkadaş/Aile" to appString(R.string.ui_arkadas_aile),
+        "Okul/Öğretmen" to appString(R.string.ui_okul_ogretmen),
         "TikTok" to "TikTok",
-        "Uygulama Mağazası" to "Uygulama Mağazası",
-        "Diğer" to "Diğer",
+        "Uygulama Mağazası" to appString(R.string.ui_uygulama_magazasi),
+        "Diğer" to appString(R.string.ui_diger),
     )
 
     companion object {
@@ -263,7 +263,7 @@ class UserInfoFragment : Fragment() {
         if (!prefillEmail.isNullOrEmpty()) {
             Snackbar.make(
                 binding.root,
-                "Bu e-posta adresi kayıtlı değil. Kayıt sayfasına yönlendirildin.",
+                appString(R.string.ui_bu_e_posta_adresi_kayitli_degil),
                 Snackbar.LENGTH_LONG
             ).show()
         }
@@ -301,7 +301,7 @@ class UserInfoFragment : Fragment() {
                 val age = ageText.toIntOrNull()
 
                 if (age == null || age !in 1..120) {
-                    Toast.makeText(requireContext(), "Lütfen geçerli bir yaş girin", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_lutfen_gecerli_bir_yas_girin), Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
@@ -695,8 +695,8 @@ class UserInfoFragment : Fragment() {
         binding.btnContinue.text =
             when (step) {
                 Step.CHALLENGE -> "Hedefimi onayla"
-                Step.REMINDER -> "Evet, hatırlat"
-                else -> "Devam Et"
+                Step.REMINDER -> appString(R.string.ui_evet_hatirlat)
+                else -> appString(R.string.ui_devam_et_2)
             }
 
         // Ölçüm adım GEÇİŞİNE bağlı, çizime değil.
@@ -783,8 +783,8 @@ class UserInfoFragment : Fragment() {
      * 19:00 hazır seçili geliyor, yani düğme baştan açık.
      */
     private fun renderReminderStep() {
-        binding.streakStepTitle.text = "Sobi sana her gün hatırlatsın mı?"
-        binding.streakStepSubtitle.text = "Saati istediğin zaman değiştirebilirsin"
+        binding.streakStepTitle.text = appString(R.string.ui_sobi_sana_her_gun_hatirlatsin_mi)
+        binding.streakStepSubtitle.text = appString(R.string.ui_saati_istedigin_zaman_degistirebilirsin)
         StreakViews.buildReminderRows(
             binding.streakOptions,
             selected = reminderHour,
@@ -812,10 +812,10 @@ class UserInfoFragment : Fragment() {
      */
     private fun bindQuestionHeader(step: Step) {
         val question: CharSequence? = when (step) {
-            Step.AGE -> "Kaç yaşındasın?"
+            Step.AGE -> appString(R.string.ui_kac_yasindasin)
             Step.SOURCE -> "Bizi nereden duydun?"
-            Step.GOAL -> "Her gün ne kadar öğrenmek istersin?"
-            Step.ROADMAP -> withGoal("Her gün ", " buraya varacaksın!")
+            Step.GOAL -> appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
+            Step.ROADMAP -> withGoal(appString(R.string.ui_her_gun), appString(R.string.ui_buraya_varacaksin))
             Step.MEET, Step.BRIEF, Step.CHALLENGE_INTRO, Step.CHALLENGE, Step.REMINDER -> null
         }
         binding.questionHeader.visibility = when {
@@ -847,14 +847,14 @@ class UserInfoFragment : Fragment() {
      */
     private fun briefText(): CharSequence {
         val count = flowSteps.count { it.asks }
-        return android.text.SpannableStringBuilder("İlk dersinden önce seni tanımak için sadece ").apply {
+        return android.text.SpannableStringBuilder(appString(R.string.ui_ilk_dersinden_once_seni_tanimak_icin)).apply {
             val start = length
-            append("$count kısa sorum")
+            append(appString(R.string.ui_x_kisa_sorum, count))
             setSpan(
                 android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
                 start, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
             )
-            append(" var!")
+            append(appString(R.string.ui_var))
         }
     }
 
@@ -865,7 +865,7 @@ class UserInfoFragment : Fragment() {
     private fun withGoal(before: String, after: String): CharSequence =
         android.text.SpannableStringBuilder(before).apply {
             val start = length
-            append("$goalMinutes dakikayla")
+            append(appString(R.string.ui_x_dakikayla, goalMinutes))
             setSpan(
                 android.text.style.ForegroundColorSpan(
                     ContextCompat.getColor(requireContext(), R.color.lesson_ring_gold),
@@ -888,10 +888,10 @@ class UserInfoFragment : Fragment() {
         val labels = LearningPathPlan.timeLabels(goalMinutes)
         binding.learningPath.setMilestones(
             listOf(
-                LearningPathView.Milestone(R.drawable.abacus_svg_ic, "Abaküsü tanı", labels[0]),
+                LearningPathView.Milestone(R.drawable.abacus_svg_ic, appString(R.string.ui_abakusu_tani), labels[0]),
                 // Süre başlıkta zaten yazıyor; burada tekrar etmiyor.
-                LearningPathView.Milestone(R.drawable.streak_flame_ic, "Büyük sayılar ile işlem yap", labels[1]),
-                LearningPathView.Milestone(R.drawable.brain, "Kafadan hesap ustası ol", labels[2]),
+                LearningPathView.Milestone(R.drawable.streak_flame_ic, appString(R.string.ui_buyuk_sayilar_ile_islem_yap), labels[1]),
+                LearningPathView.Milestone(R.drawable.brain, appString(R.string.ui_kafadan_hesap_ustasi_ol), labels[2]),
             ),
         )
         binding.learningPath.playIntro(startDelayMs = STEP_ANIM_MS + 80L) {
@@ -943,13 +943,13 @@ class UserInfoFragment : Fragment() {
     }
 
     private fun renderGoalStep() {
-        binding.streakStepTitle.text = "Her gün ne kadar öğrenmek istersin?"
-        binding.streakStepSubtitle.text = "Bu hedefi istediğin zaman değiştirebilirsin"
+        binding.streakStepTitle.text = appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
+        binding.streakStepSubtitle.text = appString(R.string.ui_bu_hedefi_istedigin_zaman_degistirebilirsin)
         StreakViews.buildOptionRows(
             container = binding.streakOptions,
             values = StreakRepository.GOAL_OPTIONS,
-            labels = listOf("Rahat", "Düzenli", "Ciddi"),
-            trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
+            labels = listOf(appString(R.string.ui_rahat), appString(R.string.ui_duzenli), appString(R.string.ui_ciddi)),
+            trailing = StreakRepository.GOAL_OPTIONS.map { appPlural(R.plurals.ui_x_dakika, it, it) },
             selected = goalMinutes,
         ) { value ->
             goalMinutes = value
@@ -959,17 +959,17 @@ class UserInfoFragment : Fragment() {
     }
 
     private fun renderChallengeStep() {
-        binding.streakStepTitle.text = "Kaç gün üst üste öğreneceksin?"
+        binding.streakStepTitle.text = appString(R.string.ui_kac_gun_ust_uste_ogreneceksin)
         binding.streakStepSubtitle.text =
-            "Günde $goalMinutes dakika. Bu seçim sonradan değişmiyor, iyi düşün."
+            appString(R.string.ui_gunde_x_dakika_bu_secim_sonradan, goalMinutes)
         StreakViews.buildOptionRows(
             container = binding.streakOptions,
             values = StreakRepository.CHALLENGE_OPTIONS,
-            labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
+            labels = StreakRepository.CHALLENGE_OPTIONS.map { appPlural(R.plurals.ui_x_gun, it, it) },
             // Ödül burada yazıyor çünkü seçim burada yapılıyor ve bir daha
             // değiştirilemiyor: neyin karşılığında söz verdiğini seçerken görmeli.
             trailing = StreakRepository.CHALLENGE_OPTIONS.map {
-                "+${StreakMilestones.challengeReward(it)} altın"
+                appString(R.string.ui_x_altin_2, StreakMilestones.challengeReward(it))
             },
             selected = challengeDays,
             trailingColor = StreakViews.COLOR_GOLD,

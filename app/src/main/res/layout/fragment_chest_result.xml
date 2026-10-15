@@ -35,7 +35,7 @@
         android:id="@+id/resultTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ders Bitti!"
+        android:text="@string/fragment_chest_result_result_title"
         android:textColor="#FFF200"
         android:layout_marginBottom="50dp"
         android:textSize="28sp"
@@ -65,7 +65,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Süre"
+                android:text="@string/fragment_chest_result_text"
                 android:textColor="#FFD600"
                 android:textStyle="bold"
                 android:textSize="16sp"/>
@@ -91,7 +91,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BAŞARI"
+                android:text="@string/fragment_chest_result_text_2"
                 android:textColor="#7ED321"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -197,7 +197,7 @@
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
-            android:text="Devam et"
+            android:text="@string/fragment_chest_result_claim_button"
             android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"
@@ -224,7 +224,7 @@
             android:id="@+id/multiplierText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="x0.00"
+            android:text="@string/fragment_chest_result_multiplier_text"
             android:textColor="#FFD600"
             android:textSize="16sp"
             android:textStyle="bold" />

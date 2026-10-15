@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Çarpım Tablosu 1x"
+        android:text="@string/multiplication_table_1_text"
         android:layout_gravity="center"
         android:textColor="@color/lesson_header_green"
         android:textAlignment="center"
@@ -21,7 +21,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 1 = 1"
+                        android:text="@string/multiplication_table_1_text_2"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -32,7 +32,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 2 = 2"
+                        android:text="@string/multiplication_table_1_text_3"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -42,7 +42,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 3 = 3"
+                        android:text="@string/multiplication_table_1_text_4"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -52,7 +52,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 4 = 4"
+                        android:text="@string/multiplication_table_1_text_5"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -62,7 +62,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 5 = 5"
+                        android:text="@string/multiplication_table_1_text_6"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -72,7 +72,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 6 = 6"
+                        android:text="@string/multiplication_table_1_text_7"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -82,7 +82,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 7 = 7"
+                        android:text="@string/multiplication_table_1_text_8"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -92,7 +92,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 8 = 8"
+                        android:text="@string/multiplication_table_1_text_9"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"
@@ -102,7 +102,7 @@
 
                 <TableRow>
                     <TextView
-                        android:text="1 x 9 = 9"
+                        android:text="@string/multiplication_table_1_text_10"
                         android:textColor="#fff"
                         android:textSize="@dimen/rules_fragment_cell_text_size"
                         android:padding="@dimen/rules_fragment_cell_padding"

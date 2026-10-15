@@ -67,7 +67,7 @@ class NewChestFragment : Fragment() {
         EPIC(R.drawable.new_chest_close_ic3, R.drawable.new_chest_open_ic3, "DESTANSI",  0xFFFFFFFF.toInt(),
             RarityTheme(0xFFAB47BC.toInt(), 0xFF8E24AA.toInt(), 0xFFE1BEE7.toInt(), 0xFFE1BEE7.toInt(), 0xFF8E24AA.toInt())
         ),
-        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, "EFSANEVİ", 0xFFFFFFFF.toInt(),
+        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, appString(R.string.ui_efsanevi), 0xFFFFFFFF.toInt(),
             RarityTheme(0xFFFF9800.toInt(), 0xFFF57C00.toInt(), 0xFFFFE0B2.toInt(), 0xFFFFE0B2.toInt(), 0xFFF57C00.toInt())
         ),
     }
@@ -298,7 +298,7 @@ class NewChestFragment : Fragment() {
                 cupField = cupField,
                 milestone = arguments?.getInt(ARG_CUP_MILESTONE) ?: 0,
                 onResult = { outcome -> handleOutcome(outcome) },
-                onFailure = { handleFailure("Sandık açılamadı. Tekrar deneyin.") },
+                onFailure = { handleFailure(appString(R.string.ui_sandik_acilamadi_tekrar_deneyin)) },
             )
             return
         }
@@ -307,7 +307,7 @@ class NewChestFragment : Fragment() {
             startRarity = currentRarity.name,
             adNonce = arguments?.getString(ARG_AD_NONCE),
             onResult = { outcome -> handleOutcome(outcome) },
-            onFailure = { handleFailure("Sandık açılamadı. Tekrar deneyin.") },
+            onFailure = { handleFailure(appString(R.string.ui_sandik_acilamadi_tekrar_deneyin)) },
         )
     }
 
@@ -331,7 +331,7 @@ class NewChestFragment : Fragment() {
                 }
                 // 3. adımdan sonra ipucu güncelle
                 if (tapCount == 3) {
-                    binding.chestHintText.text = "Sandığı açmak için dokun!"
+                    binding.chestHintText.text = appString(R.string.ui_sandigi_acmak_icin_dokun)
                 }
             }
             3 -> {

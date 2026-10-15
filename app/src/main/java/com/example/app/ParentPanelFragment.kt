@@ -51,11 +51,11 @@ class ParentPanelFragment : Fragment() {
             if (_binding == null || !isAdded) return@load
             when {
                 report == null -> showMessage(
-                    if (error != null) "İlerleme bilgisi alınamadı. İnternet bağlantınızı kontrol edip tekrar deneyin."
-                    else "İlerleme bilgisi alınamadı.",
+                    if (error != null) appString(R.string.ui_ilerleme_bilgisi_alinamadi_internet_baglanti)
+                    else appString(R.string.ui_ilerleme_bilgisi_alinamadi),
                 )
                 report.isEmpty -> showMessage(
-                    "Henüz başlanmış bir ders yok. Çocuğunuz ilk dersi açtığında ilerlemesi burada görünecek."
+                    appString(R.string.ui_henuz_baslanmis_bir_ders_yok_cocugunuz)
                 )
                 else -> showReport(report)
             }

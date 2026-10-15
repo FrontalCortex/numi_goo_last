@@ -34,7 +34,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:scaleType="centerInside"
-                android:contentDescription="Resim ile sor"
+                android:contentDescription="@string/dialog_question_media_picker_btn_camera_desc"
                 android:src="@drawable/question_camera_ic"
                 app:tint="#46525A" />
 
@@ -56,7 +56,7 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:scaleType="centerInside"
-                android:contentDescription="Video ile sor"
+                android:contentDescription="@string/dialog_question_media_picker_btn_video_desc"
                 android:src="@drawable/question_video_ic"
                 app:tint="#46525A" />
         </LinearLayout>

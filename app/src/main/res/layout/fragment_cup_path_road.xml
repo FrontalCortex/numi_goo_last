@@ -29,7 +29,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_cup_path_road_btn_cup_path_road_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -41,7 +41,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:maxLines="2"
-            android:text="Kupa Yolu"
+            android:text="@string/fragment_cup_path_road_tv_cup_path_road_title"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold"

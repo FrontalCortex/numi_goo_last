@@ -79,7 +79,7 @@
                 android:id="@+id/streakIcon"
                 android:layout_width="@dimen/main_energy_icon_size"
                 android:layout_height="@dimen/main_energy_icon_size"
-                android:contentDescription="Günlük seri"
+                android:contentDescription="@string/activity_main_streak_icon_desc"
                 android:src="@drawable/streak_flame_ic" />
 
             <TextView
@@ -103,7 +103,7 @@
             android:id="@+id/diamondID"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/main_diamond_height"
-            android:contentDescription="Coin"
+            android:contentDescription="@string/activity_main_diamond_id_desc"
             android:src="@drawable/gold_ic" />
 
         <TextView
@@ -150,7 +150,7 @@
                 android:layout_height="match_parent"
                 android:id="@+id/energyIcon"
                 android:src="@drawable/heart_ic"
-                android:contentDescription="Energy" />
+                android:contentDescription="@string/activity_main_energy_icon_desc" />
 
             <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
             <TextView
@@ -183,7 +183,7 @@
             android:src="@drawable/key"
             android:layout_width="@dimen/main_energy_icon_size"
             android:layout_height="@dimen/main_energy_icon_size"
-            android:contentDescription="Energy" />
+            android:contentDescription="@string/activity_main_key_icon_desc" />
 
         <TextView
             android:id="@+id/keyText"
@@ -205,7 +205,7 @@
             android:src="@drawable/chat_credit_ic3"
             android:layout_width="@dimen/main_energy_icon_size"
             android:layout_height="@dimen/main_energy_icon_size"
-            android:contentDescription="Danışma kredisi" />
+            android:contentDescription="@string/activity_main_credit_icon_desc" />
 
         <TextView
             android:id="@+id/creditText"

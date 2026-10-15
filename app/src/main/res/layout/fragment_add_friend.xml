@@ -20,7 +20,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_add_friend_btn_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Arkadaş ara"
+            android:text="@string/fragment_add_friend_text"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -58,7 +58,7 @@
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:contentDescription="Ara"
+            android:contentDescription="@string/fragment_add_friend_text_desc"
             android:src="@android:drawable/ic_menu_search"
             app:tint="#93A5B3" />
 
@@ -69,7 +69,7 @@
             android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:background="@null"
-            android:hint="İsim ara..."
+            android:hint="@string/fragment_add_friend_et_search_hint"
             android:textColorHint="#5C7A8A"
             android:imeOptions="actionSearch"
             android:inputType="textPersonName"
@@ -83,7 +83,7 @@
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Temizle"
+            android:contentDescription="@string/fragment_add_friend_btn_clear_search_desc"
             android:padding="8dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:visibility="gone"
@@ -121,7 +121,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:text="DAHA FAZLA YÜKLE"
+        android:text="@string/fragment_add_friend_btn_load_more"
         android:textColor="@android:color/white"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -145,7 +145,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kullanıcı bulunamadı"
+            android:text="@string/fragment_add_friend_text_2"
             android:textColor="#93A5B3"
             android:textSize="16sp" />
 

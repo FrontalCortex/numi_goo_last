@@ -236,7 +236,7 @@ class NotificationFragment : Fragment() {
                 }
         } else {
             binding.notificationTitle.visibility = View.VISIBLE
-            binding.notificationTitle.text = "Sorularım"
+            binding.notificationTitle.text = appString(R.string.ui_sorularim)
             binding.teacherTabContainer.visibility = View.GONE
             binding.studentTabContainer.visibility = View.VISIBLE
             updateStudentTabUi()
@@ -453,10 +453,10 @@ class NotificationFragment : Fragment() {
     private fun subscribeToPool() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Henüz soru yok"
+        binding.emptyText.text = appString(R.string.ui_henuz_soru_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("status", StudentQuestion.STATUS_PENDING)
             // Soru havuzu: yalnızca oluşturulma zamanına göre sırala.
@@ -494,10 +494,10 @@ class NotificationFragment : Fragment() {
     private fun subscribeToChats() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Henüz sohbet yok."
+        binding.emptyText.text = appString(R.string.ui_henuz_sohbet_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("claimedByTeacherUid", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -527,7 +527,7 @@ class NotificationFragment : Fragment() {
     }
 
     private fun subscribeToReports() {
-        binding.emptyText.text = "Bekleyen rapor yok."
+        binding.emptyText.text = appString(R.string.ui_bekleyen_rapor_yok)
         val query = firestore.collection("messageReports")
             .whereEqualTo("status", MessageReport.STATUS_PENDING)
             .orderBy("reportedAt", Query.Direction.DESCENDING)
@@ -683,10 +683,10 @@ class NotificationFragment : Fragment() {
             }
             setOnCompletionListener {
                 playPauseView.setImageResource(android.R.drawable.ic_media_play)
-                timeView.text = "Ses kaydını dinlemek için oynat"
+                timeView.text = appString(R.string.ui_ses_kaydini_dinlemek_icin_oynat)
             }
             setOnErrorListener { _, _, _ ->
-                Toast.makeText(requireContext(), "Ses oynatılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_ses_oynatilamadi), Toast.LENGTH_SHORT).show()
                 true
             }
             prepareAsync()
@@ -723,8 +723,8 @@ class NotificationFragment : Fragment() {
                     "handledAt" to Timestamp.now()
                 )
             )
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Rapor reddedildi.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { Toast.makeText(requireContext(), "İşlem başarısız.", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_rapor_reddedildi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_2), Toast.LENGTH_SHORT).show() }
     }
 
     private fun restrictReportedUser(report: MessageReport, days: Int?) {
@@ -758,12 +758,12 @@ class NotificationFragment : Fragment() {
             batch.update(userRef, restrictionContext + mapOf("restrictedUntil" to until, "banned" to false))
         }
         batch.commit()
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Kullanıcı kısıtlandı.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "İşlem başarısız: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_kullanici_kisitlandi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun subscribeToRestrictedUsers() {
-        binding.emptyText.text = "Kısıtlı kullanıcı yok."
+        binding.emptyText.text = appString(R.string.ui_kisitli_kullanici_yok)
         bannedListener = firestore.collection("users")
             .whereEqualTo("banned", true)
             .addSnapshotListener { snap, e ->
@@ -814,10 +814,10 @@ class NotificationFragment : Fragment() {
 
     private fun showUnbanConfirmDialog(user: RestrictedUser) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Kısıtlamayı kaldır")
-            .setMessage("${user.name} kullanıcısının kısıtlaması kaldırılsın mı?")
-            .setPositiveButton("Kaldır") { _, _ -> removeRestriction(user.uid) }
-            .setNegativeButton("İptal", null)
+            .setTitle(appString(R.string.ui_kisitlamayi_kaldir))
+            .setMessage(appString(R.string.ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi, user.name))
+            .setPositiveButton(appString(R.string.ui_kaldir)) { _, _ -> removeRestriction(user.uid) }
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
 
@@ -836,8 +836,8 @@ class NotificationFragment : Fragment() {
                     "restrictedByUid" to FieldValue.delete()
                 )
             )
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Kısıtlama kaldırıldı.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "İşlem başarısız: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_kisitlama_kaldirildi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun showRestrictionDetailDialog(user: RestrictedUser) {
@@ -849,7 +849,7 @@ class NotificationFragment : Fragment() {
         view.findViewById<TextView>(R.id.restrictionDialogUserName).text = user.name
         val statusView = view.findViewById<TextView>(R.id.restrictionDialogStatus)
         if (user.banned) {
-            statusView.text = "Kalıcı ban"
+            statusView.text = appString(R.string.ui_kalici_ban)
             statusView.setBackgroundResource(R.drawable.bg_status_chip_error)
             statusView.setTextColor(requireContext().getColor(R.color.dark_error))
         } else {
@@ -868,7 +868,7 @@ class NotificationFragment : Fragment() {
         }
 
         view.findViewById<TextView>(R.id.restrictionDialogMessagePreview).text =
-            user.restrictionMessagePreview?.ifBlank { null } ?: "Bu kısıtlamanın kaynağı hakkında bilgi yok."
+            user.restrictionMessagePreview?.ifBlank { null } ?: appString(R.string.ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok)
         bindMediaPreview(view, user.restrictionMessageType, user.restrictionMediaUrl, user.restrictionThumbnailUrl)
 
         val metaView = view.findViewById<TextView>(R.id.restrictionDialogMeta)
@@ -878,19 +878,19 @@ class NotificationFragment : Fragment() {
         } else {
             metaView.visibility = View.VISIBLE
             val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedAt.toDate())
-            metaView.text = "$dateText tarihinde kısıtlandı"
+            metaView.text = appString(R.string.ui_x_tarihinde_kisitlandi, dateText)
             val byUid = user.restrictedByUid
             if (!byUid.isNullOrBlank()) {
                 val cached = reportNameCache[byUid]
                 if (cached != null) {
-                    metaView.text = "$dateText tarihinde $cached tarafından kısıtlandı"
+                    metaView.text = appString(R.string.ui_x_tarihinde_x_tarafindan_kisitlandi, dateText, cached)
                 } else {
                     firestore.collection("users").document(byUid).get()
                         .addOnSuccessListener { doc ->
                             val teacherName = doc.getString("name")?.takeIf { it.isNotBlank() } ?: byUid.take(6)
                             reportNameCache[byUid] = teacherName
                             if (_binding != null && isAdded) {
-                                metaView.text = "$dateText tarihinde $teacherName tarafından kısıtlandı"
+                                metaView.text = appString(R.string.ui_x_tarihinde_x_tarafindan_kisitlandi, dateText, teacherName)
                             }
                         }
                 }
@@ -907,25 +907,25 @@ class NotificationFragment : Fragment() {
     }
 
     private fun formatRestrictionUntil(until: Timestamp?): String {
-        if (until == null) return "Kısıtlı"
+        if (until == null) return appString(R.string.ui_kisitli)
         val diff = until.toDate().time - System.currentTimeMillis()
-        if (diff <= 0) return "Süresi doldu"
+        if (diff <= 0) return appString(R.string.ui_suresi_doldu)
         val days = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diff)
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(diff) % 24
         return when {
-            days >= 1 -> "$days gün kaldı"
-            hours >= 1 -> "$hours saat kaldı"
-            else -> "1 saatten az kaldı"
+            days >= 1 -> appPlural(R.plurals.ui_x_gun_kaldi, days, days)
+            hours >= 1 -> appPlural(R.plurals.ui_x_saat_kaldi, hours, hours)
+            else -> appString(R.string.ui_1_saatten_az_kaldi)
         }
     }
 
     private fun subscribeToStudentPending() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Bekleyen soru yok."
+        binding.emptyText.text = appString(R.string.ui_bekleyen_soru_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("studentUid", uid)
             // Süresi dolanlar da listede kalır: kullanıcı sorusunu ve yüklediği medyayı
@@ -969,10 +969,10 @@ class NotificationFragment : Fragment() {
     private fun subscribeToStudentResolved() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Çözülen soru yok."
+        binding.emptyText.text = appString(R.string.ui_cozulen_soru_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("studentUid", uid)
             .whereEqualTo("status", StudentQuestion.STATUS_RESOLVED)
@@ -1036,41 +1036,41 @@ class NotificationFragment : Fragment() {
         val uid = auth.currentUser?.uid ?: return
         if (isTeacher) {
             if (question.status != StudentQuestion.STATUS_RESOLVED) {
-                Toast.makeText(requireContext(), "Çözüldü olarak işaretlenen soruları silebilirsin.", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_cozuldu_olarak_isaretlenen_sorulari_silebili), Toast.LENGTH_LONG).show()
                 return
             }
             AlertDialog.Builder(requireContext())
-                .setTitle("Soruyu silmek istediğine emin misin")
-                .setMessage("Bu işlem geri alınamaz.")
-                .setPositiveButton("Kaldır") { dialog, _ ->
+                .setTitle(appString(R.string.ui_soruyu_silmek_istedigine_emin_misin))
+                .setMessage(appString(R.string.ui_bu_islem_geri_alinamaz))
+                .setPositiveButton(appString(R.string.ui_kaldir)) { dialog, _ ->
                     dialog.dismiss()
                     firestore.collection("questions").document(question.id)
                         .update("deletedForUids", FieldValue.arrayUnion(uid))
                         .addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Listeden kaldırıldı.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_listeden_kaldirildi), Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
-                            Toast.makeText(requireContext(), "Kaldırılamadı.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_kaldirilamadi), Toast.LENGTH_SHORT).show()
                         }
                 }
-                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
                 .show()
         } else {
             AlertDialog.Builder(requireContext())
-                .setTitle("Soruyu silmek istediğine emin misin?")
-                .setMessage("Bu işlem geri alınamaz. Soruyu sildiğinde ona bir daha erişemezsin.")
-                .setPositiveButton("Sil") { dialog, _ ->
+                .setTitle(appString(R.string.ui_soruyu_silmek_istedigine_emin_misin_2))
+                .setMessage(appString(R.string.ui_bu_islem_geri_alinamaz_soruyu_sildiginde))
+                .setPositiveButton(appString(R.string.ui_sil_2)) { dialog, _ ->
                     dialog.dismiss()
                     firestore.collection("questions").document(question.id)
                         .delete()
                         .addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Soru silindi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_soru_silindi), Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
-                            Toast.makeText(requireContext(), "Silinemedi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_silinemedi), Toast.LENGTH_SHORT).show()
                         }
                 }
-                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
                 .show()
         }
     }
@@ -1084,10 +1084,10 @@ class NotificationFragment : Fragment() {
     private fun showResendQuestionDialog(question: StudentQuestion) {
         val ctx = context ?: return
         androidx.appcompat.app.AlertDialog.Builder(ctx)
-            .setTitle("Soru cevaplanmadı")
-            .setMessage("Bu soru 48 saat içinde cevaplanmadı ve kredin iade edildi. Tekrar sormak 1 kredi harcar.")
-            .setNegativeButton("Vazgeç", null)
-            .setPositiveButton("Tekrar sor") { _, _ -> resendQuestion(question) }
+            .setTitle(appString(R.string.ui_soru_cevaplanmadi))
+            .setMessage(appString(R.string.ui_bu_soru_48_saat_icinde_cevaplanmadi))
+            .setNegativeButton(appString(R.string.ui_vazgec), null)
+            .setPositiveButton(appString(R.string.ui_tekrar_sor)) { _, _ -> resendQuestion(question) }
             .show()
     }
 
@@ -1097,16 +1097,16 @@ class NotificationFragment : Fragment() {
             .call(hashMapOf("questionId" to question.id))
             .addOnSuccessListener {
                 if (!isAdded) return@addOnSuccessListener
-                Toast.makeText(requireContext(), "Soru tekrar gönderildi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_soru_tekrar_gonderildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 val insufficient = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.code ==
                     com.google.firebase.functions.FirebaseFunctionsException.Code.FAILED_PRECONDITION
                 val text = if (insufficient) {
-                    "Danışma kredin kalmadı. Mağazadan kredi alabilirsin."
+                    appString(R.string.ui_danisma_kredin_kalmadi_magazadan_kredi_alabi)
                 } else {
-                    "Gönderilemedi: ${e.message}"
+                    appString(R.string.ui_gonderilemedi_x, e.message)
                 }
                 Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
             }
@@ -1122,7 +1122,7 @@ class NotificationFragment : Fragment() {
             if (isTeacher) {
                 if (teacherSelectionMode && teacherTab == TeacherTab.CHATS) {
                     if (question.status == StudentQuestion.STATUS_RESOLVED) {
-                        Toast.makeText(requireContext(), "Çözülen sorulara mesaj gönderemezsin.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_cozulen_sorulara_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
                         return@requireOnlineAndLoggedInOrLogin
                     }
                     val title = if (question.previewText.isNotEmpty()) question.previewText else question.message

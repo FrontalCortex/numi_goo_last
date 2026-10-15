@@ -110,7 +110,7 @@ class TeacherLoginActivity : AppCompatActivity(),
         val password = binding.etPassword.text.toString()
         
         if (email.isEmpty() || password.isEmpty()) {
-            showError("Lütfen tüm alanları doldurun")
+            showError(appString(R.string.ui_lutfen_tum_alanlari_doldurun))
             return
         }
         binding.btnBack.isEnabled = false
@@ -126,7 +126,7 @@ class TeacherLoginActivity : AppCompatActivity(),
                 startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                 finish()
             } else {
-                showError(error ?: "Şifre veya e-posta hatalı")
+                showError(error ?: appString(R.string.ui_sifre_veya_e_posta_hatali))
             }
         }
     }

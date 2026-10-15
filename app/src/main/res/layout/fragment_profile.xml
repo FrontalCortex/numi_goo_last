@@ -30,7 +30,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_profile_btn_other_user_profile_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -81,7 +81,7 @@
             android:layout_marginEnd="64dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Kullanıcı Adı"
+            android:text="@string/fragment_profile_tv_top_left_name"
             android:textColor="@android:color/white"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -93,7 +93,7 @@
             android:layout_gravity="center_vertical|end"
             android:layout_marginEnd="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Ayarlar"
+            android:contentDescription="@string/fragment_profile_btn_account_settings_desc"
             android:padding="10dp"
             android:src="@drawable/setting_ic"
             android:tint="@color/white" />
@@ -146,7 +146,7 @@
                 android:layout_marginTop="8dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/non_user"
-                android:contentDescription="Profil Fotoğrafı" />
+                android:contentDescription="@string/fragment_profile_img_profile_photo_desc" />
         </FrameLayout>
 
         <!-- 1. Üst Alan - Kullanıcı Bilgileri -->
@@ -174,7 +174,7 @@
                     android:id="@+id/tvUsernameAndDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="\@BAAR461745 • 2022 YILINDA KATILDI"
+                    android:text="@string/fragment_profile_tv_username_and_date"
                     android:textColor="#93A5B3"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -207,7 +207,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Takip edilen"
+                            android:text="@string/fragment_profile_text"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -234,7 +234,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Takipçi"
+                            android:text="@string/fragment_profile_text_2"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -249,7 +249,7 @@
                     android:layout_marginBottom="8dp"
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
-                    android:text="ARKADAŞ EKLE"
+                    android:text="@string/fragment_profile_btn_add_friend"
                     android:textColor="@android:color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
@@ -302,7 +302,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="14dp"
-                            android:text="Kullanıcı İlerlemesi"
+                            android:text="@string/fragment_profile_tv_user_progress_title"
                             android:textColor="#93A5B3"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -356,7 +356,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="14dp"
-                            android:text="Kullanıcı Abaküsü"
+                            android:text="@string/fragment_profile_text_3"
                             android:textColor="#93A5B3"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -389,7 +389,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="12dp"
-                    android:text="Kupa yolu"
+                    android:text="@string/fragment_profile_text_4"
                     android:textColor="#93A5B3"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -461,7 +461,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Rozetler"
+                        android:text="@string/fragment_profile_tv_profile_badges_title"
                         android:textColor="#93A5B3"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -471,7 +471,7 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:background="@null"
-                        android:contentDescription="Rozetler"
+                        android:contentDescription="@string/fragment_profile_btn_profile_badges_arrow_desc"
                         android:padding="5dp"
                         android:src="@drawable/dualingo_arrow_ic"
                         app:tint="#93A5B3" />

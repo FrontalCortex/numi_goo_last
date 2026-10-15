@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingBottom="12dp"
-        android:text="Operatör Seç"
+        android:text="@string/bottom_sheet_operator_picker_title"
         android:textSize="16sp"
         android:textStyle="bold" />
 
@@ -30,7 +30,7 @@
             android:id="@+id/cancelButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="İptal"
+            android:text="@string/bottom_sheet_operator_picker_cancel_button"
             android:textAllCaps="false" />
 
         <Button
@@ -38,7 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="Tamam"
+            android:text="@string/bottom_sheet_operator_picker_ok_button"
             android:textAllCaps="false" />
 
     </LinearLayout>

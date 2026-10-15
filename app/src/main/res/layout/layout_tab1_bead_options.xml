@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Boncuk Tipi Seç"
+            android:text="@string/layout_tab1_bead_options_text"
             android:textColor="#AAFFFFFF"
             android:textSize="12sp"
             android:layout_marginBottom="12dp" />
@@ -66,7 +66,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Soroban"
+                android:text="@string/layout_tab1_bead_options_text_2"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -102,7 +102,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Gökkuşağı"
+                android:text="@string/layout_tab1_bead_options_text_3"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -139,7 +139,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Bulut"
+                android:text="@string/layout_tab1_bead_options_text_4"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -179,7 +179,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Bowling"
+                android:text="@string/layout_tab1_bead_options_text_5"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -229,7 +229,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Tenis"
+                android:text="@string/layout_tab1_bead_options_text_6"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -269,7 +269,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Bilardo"
+                android:text="@string/layout_tab1_bead_options_text_7"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -309,7 +309,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Basketbol"
+                android:text="@string/layout_tab1_bead_options_text_8"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -349,7 +349,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Futbol"
+                android:text="@string/layout_tab1_bead_options_text_9"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -399,7 +399,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Birto"
+                android:text="@string/layout_tab1_bead_options_text_10"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -439,7 +439,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Golf"
+                android:text="@string/layout_tab1_bead_options_text_11"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -479,7 +479,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Futbol"
+                android:text="@string/layout_tab1_bead_options_text_12"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -519,7 +519,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Plaj Topu"
+                android:text="@string/layout_tab1_bead_options_text_13"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -565,7 +565,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Bowling"
+                android:text="@string/layout_tab1_bead_options_text_14"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -601,7 +601,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Basketbol"
+                android:text="@string/layout_tab1_bead_options_text_15"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -638,7 +638,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Tenis"
+                android:text="@string/layout_tab1_bead_options_text_16"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -675,7 +675,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Beyzbol"
+                android:text="@string/layout_tab1_bead_options_text_17"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -722,7 +722,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Buz Hokeyi"
+                android:text="@string/layout_tab1_bead_options_text_18"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -762,7 +762,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Köpek"
+                android:text="@string/layout_tab1_bead_options_text_19"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -802,7 +802,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Maymun"
+                android:text="@string/layout_tab1_bead_options_text_20"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -842,7 +842,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Ördek"
+                            android:text="@string/layout_tab1_bead_options_text_21"
                             android:textColor="@android:color/white"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -892,7 +892,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Tilki"
+                android:text="@string/layout_tab1_bead_options_text_22"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -932,7 +932,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Fil"
+                android:text="@string/layout_tab1_bead_options_text_23"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -972,7 +972,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Panda"
+                android:text="@string/layout_tab1_bead_options_text_24"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -1012,7 +1012,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Kedi"
+                android:text="@string/layout_tab1_bead_options_text_25"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -1062,7 +1062,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Mors"
+                android:text="@string/layout_tab1_bead_options_text_26"
                 android:textColor="@android:color/white"
                 android:textSize="11sp" />
                 </LinearLayout>
@@ -1101,7 +1101,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Kaplan"
+                            android:text="@string/layout_tab1_bead_options_text_27"
                             android:textColor="@android:color/white"
                             android:textSize="11sp" />
                     </LinearLayout>

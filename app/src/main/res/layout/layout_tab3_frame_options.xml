@@ -15,7 +15,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Çerçeve Tipi Seç"
+            android:text="@string/layout_tab3_frame_options_text"
             android:textColor="#AAFFFFFF"
             android:textSize="12sp"
             android:layout_marginBottom="12dp" />
@@ -55,7 +55,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Ahşap"
+                        android:text="@string/layout_tab3_frame_options_text_2"
                         android:textColor="@android:color/white"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -91,7 +91,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Kalpli"
+                            android:text="@string/layout_tab3_frame_options_text_3"
                             android:textColor="@android:color/white"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -160,7 +160,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Yıldızlı"
+                            android:text="@string/layout_tab3_frame_options_text_4"
                             android:textColor="@android:color/white"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -222,7 +222,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Gradyanlı"
+                            android:text="@string/layout_tab3_frame_options_text_5"
                             android:textColor="@android:color/white"
                             android:textSize="11sp" />
                     </LinearLayout>

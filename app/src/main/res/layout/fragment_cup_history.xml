@@ -21,7 +21,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_cup_history_btn_cup_history_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Kupa Geçmişi"
+            android:text="@string/fragment_cup_history_tv_cup_history_title"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -79,7 +79,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Güncel Kupa"
+                android:text="@string/fragment_cup_history_text"
                 android:textColor="#93A5B3"
                 android:textSize="13sp" />
 
@@ -113,7 +113,7 @@
         android:gravity="center"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:text="Tek veri noktası var — karşılaştırma için birkaç gün sonra tekrar bak"
+        android:text="@string/fragment_cup_history_tv_cup_history_single_hint"
         android:textColor="#93A5B3"
         android:textSize="12sp"
         android:visibility="gone" />
@@ -141,7 +141,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Henüz geçmiş veri yok"
+            android:text="@string/fragment_cup_history_tv_cup_history_empty"
             android:textColor="#93A5B3"
             android:textSize="14sp"
             android:visibility="gone" />

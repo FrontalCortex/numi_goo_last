@@ -36,7 +36,7 @@
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:src="@drawable/key"
-            android:contentDescription="Anahtar" />
+            android:contentDescription="@string/fragment_abacus_customization_text_desc" />
 
         <TextView
             android:id="@+id/shopKeyText"
@@ -66,7 +66,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/gold_ic"
-            android:contentDescription="Coin" />
+            android:contentDescription="@string/fragment_abacus_customization_diamond_id_desc" />
 
         <TextView
             android:id="@+id/currencyText"

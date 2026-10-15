@@ -342,7 +342,7 @@ class MainActivity : AppCompatActivity() {
         if (granted) launchMediaProjectionForQuestion() else {
             isQuestionRecordingInProgress = false
             setAskQuestionButtonEnabled(true)
-            Toast.makeText(this, "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_ses_kaydi_icin_izin_gerekli), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -352,7 +352,7 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode != RESULT_OK || result.data == null) {
             isQuestionRecordingInProgress = false
             setAskQuestionButtonEnabled(true)
-            Toast.makeText(this, "Ekran kaydı başlatılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_ekran_kaydi_baslatilamadi), Toast.LENGTH_SHORT).show()
             return@registerForActivityResult
         }
         maxRecordingSecForSession = if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) 180 else 60
@@ -740,7 +740,7 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 } else {
                     lastBackPressTime = now
-                    Toast.makeText(this@MainActivity, "Çıkmak için tekrar bas", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, appString(R.string.ui_cikmak_icin_tekrar_bas), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -1143,7 +1143,7 @@ class MainActivity : AppCompatActivity() {
                     if (view != null) {
                         view.post { captureViewAndOpenCreateQuestion(view, containerId) }
                     } else {
-                        Toast.makeText(this, "Görüntü alınamadı.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, appString(R.string.ui_goruntu_alinamadi), Toast.LENGTH_SHORT).show()
                     }
                 }
                 QuestionMediaPickerDialogFragment.PICK_VIDEO -> requestQuestionScreenRecording(containerId)
@@ -1298,12 +1298,12 @@ class MainActivity : AppCompatActivity() {
         val mediaPath = teacherPendingMediaPath
         val description = teacherPendingDescription
         if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty()) {
-            Toast.makeText(this, "Lütfen bir soru seçin.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_lutfen_bir_soru_secin), Toast.LENGTH_SHORT).show()
             return
         }
         val uid = auth.currentUser?.uid
         if (uid.isNullOrEmpty()) {
-            Toast.makeText(this, "Oturum açık değil.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_oturum_acik_degil), Toast.LENGTH_SHORT).show()
             return
         }
         val role = authManager.getCurrentUserType()
@@ -1377,7 +1377,7 @@ class MainActivity : AppCompatActivity() {
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
 
-        Toast.makeText(this, "Sohbete gönderildi.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, appString(R.string.ui_sohbete_gonderildi), Toast.LENGTH_SHORT).show()
 
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(questionId))
@@ -1457,7 +1457,7 @@ class MainActivity : AppCompatActivity() {
             val btnPauseResume =
                 recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
-            btnPauseResume.contentDescription = "Durdur"
+            btnPauseResume.contentDescription = appString(R.string.ui_durdur)
             btnPauseResume.setOnClickListener {
                 if (isRecordingPaused) {
                     startService(
@@ -1612,7 +1612,7 @@ class MainActivity : AppCompatActivity() {
             val btnPauseResume =
                 recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
-            btnPauseResume.contentDescription = "Durdur"
+            btnPauseResume.contentDescription = appString(R.string.ui_durdur)
             isRecordingPaused = false
 
             // Her yeni kayıtta kalem pasif ve arka plan şeffaf yuvarlak başlasın
@@ -1687,7 +1687,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     ScreenRecordingService.ACTION_RECORDING_FAILED -> {
                         hideRecordingOverlay()
-                        Toast.makeText(this@MainActivity, "Kayıt başarısız.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, appString(R.string.ui_kayit_basarisiz), Toast.LENGTH_SHORT).show()
                     }
                     ScreenRecordingService.ACTION_RECORDING_PAUSED -> {
                         isRecordingPaused = true
@@ -1696,7 +1696,7 @@ class MainActivity : AppCompatActivity() {
                         recordingTimerRunnable = null
                         recordingOverlayView?.findViewById<ImageButton>(R.id.recordingBtnPauseResume)?.apply {
                             setImageResource(R.drawable.play_video_ic)
-                            contentDescription = "Devam et"
+                            contentDescription = appString(R.string.ui_devam_et)
                         }
                     }
                     ScreenRecordingService.ACTION_RECORDING_RESUMED -> {
@@ -1704,7 +1704,7 @@ class MainActivity : AppCompatActivity() {
                         isRecordingPaused = false
                         recordingOverlayView?.findViewById<ImageButton>(R.id.recordingBtnPauseResume)?.apply {
                             setImageResource(R.drawable.pause_video_ic)
-                            contentDescription = "Durdur"
+                            contentDescription = appString(R.string.ui_durdur)
                         }
                         recordingTimerRunnable = object : Runnable {
                             override fun run() {
@@ -1746,7 +1746,7 @@ class MainActivity : AppCompatActivity() {
                     .setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD)
             )
             hideRecordingOverlay()
-            Toast.makeText(this, "Ekran kaydı bu cihazda başlatılamadı.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, appString(R.string.ui_ekran_kaydi_bu_cihazda_baslatilamadi), Toast.LENGTH_LONG).show()
         }
         recordingStartTimeoutRunnable = runnable
         recordingHandler.postDelayed(runnable, RECORDING_START_TIMEOUT_MS)
@@ -2338,12 +2338,12 @@ class MainActivity : AppCompatActivity() {
         when (StreakRepository.takeFreezeNotice(this)) {
             StreakRepository.FreezeNotice.SAVED -> Toast.makeText(
                 this,
-                "Dün çalışamadın ama seri dondurman serini korudu!",
+                appString(R.string.ui_dun_calisamadin_ama_seri_dondurman_serini),
                 Toast.LENGTH_LONG,
             ).show()
             StreakRepository.FreezeNotice.LOST -> Toast.makeText(
                 this,
-                "Seri dondurman bir günü kapattı ama iki gün üst üste kaçtığı için serin kırıldı.",
+                appString(R.string.ui_seri_dondurman_bir_gunu_kapatti_ama),
                 Toast.LENGTH_LONG,
             ).show()
             null -> Unit
@@ -5100,9 +5100,9 @@ class MainActivity : AppCompatActivity() {
     private fun showStreakCelebration(streak: Int) {
         val view = binding.streakCelebration
         streakCelebrationShowing = true
-        binding.streakCelebrationTitle.text = "Bugünkü hedefini tamamladın!"
+        binding.streakCelebrationTitle.text = appString(R.string.ui_bugunku_hedefini_tamamladin)
         binding.streakCelebrationSub.text =
-            if (streak <= 1) "Serin başladı" else "$streak günlük seri"
+            if (streak <= 1) appString(R.string.ui_serin_basladi) else appString(R.string.ui_x_gunluk_seri, streak)
         binding.streakCelebrationLottie.playAnimation()
 
         view.setOnClickListener {

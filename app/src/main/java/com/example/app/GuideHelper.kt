@@ -40,12 +40,12 @@ object SharedGuideHelper {
             1 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_TALK,
-                    text = "Bu testte toplama işlemini abaküste yapacaksın.",
+                    text = appString(R.string.ui_bu_testte_toplama_islemini_abakuste_yapacaks),
                     onContentShown = { },
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Önce abaküse ilk sayıyı yazıp...",
+                    text = appString(R.string.ui_once_abakuse_ilk_sayiyi_yazip),
                     onContentShown = { },
                     bubbleAnimationTarget = firstNumberText,
                     bubbleAnimationColor = Color.YELLOW,
@@ -54,7 +54,7 @@ object SharedGuideHelper {
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Sonrasında ikinci sayıyı ekle.",
+                    text = appString(R.string.ui_sonrasinda_ikinci_sayiyi_ekle),
                     onContentShown = { },
                     bubbleAnimationTarget = secondNumberText,
                     bubbleAnimationColor = Color.YELLOW,
@@ -62,13 +62,13 @@ object SharedGuideHelper {
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "ve işlem bitince kontrol et butonuna tıkla.",
+                    text = appString(R.string.ui_ve_islem_bitince_kontrol_et_butonuna),
                     bubbleAnimationTarget = kontrolButton,
                     bubbleAnimationMaxScale = 1.1F,
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_WARN,
-                    text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin.",
+                    text = appString(R.string.ui_sakin_aklindan_toplayip_o_sayiyi_abakuse),
                     finishBeadIds = listOf("rod4BottomBead1","rod4TopBead"),
                 )
             )
@@ -76,11 +76,11 @@ object SharedGuideHelper {
             2 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_TALK,
-                    text = "Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.",
+                    text = appString(R.string.ui_kurallari_unutursan_sagdaki_sihirli_degneye),
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.",
+                    text = appString(R.string.ui_burada_derste_ogrendigin_sayilar_ve_kardesle),
                     bubbleAnimationTarget = rulesPanelButton,
                     bubbleAnimationMaxScale = 1.1F,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
@@ -92,11 +92,11 @@ object SharedGuideHelper {
             3 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_TALK,
-                    text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
+                    text = appString(R.string.ui_kurallari_unutursan_sag_ustteki_kitaba_tikla),
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Burada öğrendiğin kurallar yer alır.",
+                    text = appString(R.string.ui_burada_ogrendigin_kurallar_yer_alir),
                     bubbleAnimationTarget = rulesBookButton,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
                     bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
@@ -108,11 +108,11 @@ object SharedGuideHelper {
             4 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_TALK,
-                    text = "Kurallar kitabına tıkladığında ekrana gelen kurallardan herhangi birisine tıklayarak tabloyu abaküsün üstüne alabilirsin.",
+                    text = appString(R.string.ui_kurallar_kitabina_tikladiginda_ekrana_gelen),
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Kurallar kitabına tıkla.",
+                    text = appString(R.string.ui_kurallar_kitabina_tikla),
                     bubbleAnimationTarget = rulesBookButton,
                     bubbleAnimationMaxScale = 1.1F,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
@@ -122,7 +122,7 @@ object SharedGuideHelper {
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Ekrana gelen kurallardan herhangi birisini seç.",
+                    text = appString(R.string.ui_ekrana_gelen_kurallardan_herhangi_birisini_s),
                     waitForRulesTableSelection = true,
                 )
             )
@@ -130,7 +130,7 @@ object SharedGuideHelper {
             5 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Eğer tahtada gösterilen sayıyı hemen geçmek istersen, sağ altta bulunan ok butonuna tıklayabilirsin.",
+                    text = appString(R.string.ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek),
                     bubbleAnimationTarget = skipStepButton,
                     bubbleAnimationColor = Color.parseColor("#263C31"),
                     bubbleAnimationTintLight = Color.parseColor("#00FF8C"),
@@ -138,7 +138,7 @@ object SharedGuideHelper {
                 ),
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_TALK,
-                    text = "Bu butona tahtada bir sayı varken basarsan, doğrudan sıradaki sayıya geçersin.",
+                    text = appString(R.string.ui_bu_butona_tahtada_bir_sayi_varken),
                     onContentShown = { },
                 )
             )
@@ -146,7 +146,7 @@ object SharedGuideHelper {
             6 -> listOf(
                 GuideContent(
                     emote = BunnyMascotView.Emote.TEACH_POINT,
-                    text = "Abaküsün boyutunu sağ alttaki ölçekleme butonunu kullanarak özelleştirebilirsin.",
+                    text = appString(R.string.ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto),
                     bubbleAnimationTarget = abacusModeButton,
                     bubbleAnimationColor = Color.parseColor("#263C31"),
                     bubbleAnimationTintLight = Color.parseColor("#00FF8C"),

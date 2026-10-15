@@ -153,7 +153,7 @@ class ProfileFragment : Fragment() {
                 reauthenticateWithGoogleAccount(account)
             }
         } catch (e: ApiException) {
-            Toast.makeText(context, "Google ile kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_google_ile_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -336,7 +336,7 @@ class ProfileFragment : Fragment() {
                     } else if (!isOtherUser && !auth.currentUser?.displayName.isNullOrBlank()) {
                         auth.currentUser?.displayName
                     } else {
-                        "Kullanıcı"
+                        appString(R.string.ui_kullanici)
                     }
                     binding.tvTopLeftName.text = displayName
                     if (isOtherUser) binding.tvOtherUserProfileName.text = displayName
@@ -352,15 +352,15 @@ class ProfileFragment : Fragment() {
                     }
                     val userId = doc.getString("userId") ?: ""
                     if (userId.isNotEmpty()) {
-                        binding.tvUsernameAndDate.text = "@$userId • $year YILINDA KATILDI"
+                        binding.tvUsernameAndDate.text = appString(R.string.ui_x_x_yilinda_katildi, userId, year)
                     } else {
-                        binding.tvUsernameAndDate.text = "$year YILINDA KATILDI"
+                        binding.tvUsernameAndDate.text = appString(R.string.ui_x_yilinda_katildi, year)
                     }
 
                     // Tamamlanan ders yüzdesi
-                    binding.tvCompletedLessons.text = "Hesaplanıyor..."
+                    binding.tvCompletedLessons.text = appString(R.string.ui_hesaplaniyor)
                     GlobalLessonData.calculateGlobalCompletionPercentage(uid) { percentage ->
-                        if (isAdded) binding.tvCompletedLessons.text = "%$percentage tamamlandı"
+                        if (isAdded) binding.tvCompletedLessons.text = appString(R.string.ui_x_tamamlandi, percentage)
                     }
 
                     // Toplam geçirilen süre
@@ -383,7 +383,7 @@ class ProfileFragment : Fragment() {
                     // aynası. Tek bir okuma yolu olması için kendi profilimizde de aynı
                     // alan okunuyor — zaten toplam süre ve ders yüzdesi de oradan geliyor.
                     val longestStreak = doc.getLong("longestStreak") ?: 0L
-                    binding.tvLongestStreak.text = "En uzun seri: $longestStreak gün"
+                    binding.tvLongestStreak.text = appPlural(R.plurals.ui_en_uzun_seri_x_gun, longestStreak, longestStreak)
 
                     // Takipçi / Takip edilen sayaçları
                     val followersCount = doc.getLong("followersCount") ?: 0L
@@ -403,7 +403,7 @@ class ProfileFragment : Fragment() {
                     BadgeProgressRepository.update(UserBadgeProgress())
                     bindRandomProfileBadges()
                     showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
-                    binding.tvLongestStreak.text = "En uzun seri: 0 gün"
+                    binding.tvLongestStreak.text = appString(R.string.ui_en_uzun_seri_0_gun)
                     hideLoadingState()
                     isDataLoaded = true
                     isUserDataLoading = false
@@ -448,10 +448,10 @@ class ProfileFragment : Fragment() {
         binding.btnAddFriend.isEnabled = true
         binding.btnAddFriend.alpha = 1f
         if (following) {
-            binding.btnAddFriend.text = "TAKİP EDİLİYOR"
+            binding.btnAddFriend.text = appString(R.string.ui_takip_ediliyor)
             binding.btnAddFriend.setOnClickListener { confirmUnfollow(targetUid) }
         } else {
-            binding.btnAddFriend.text = "TAKİP ET"
+            binding.btnAddFriend.text = appString(R.string.ui_takip_et)
             binding.btnAddFriend.setOnClickListener { followTargetUser(targetUid) }
         }
     }
@@ -466,12 +466,12 @@ class ProfileFragment : Fragment() {
     private fun confirmUnfollow(targetUid: String) {
         val targetName = binding.tvTopLeftName.text.toString()
         AlertDialog.Builder(requireContext())
-            .setMessage("$targetName adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?")
-            .setNegativeButton("Takibi bırak") { dialog, _ ->
+            .setMessage(appString(R.string.ui_x_adli_kullaniciyi_takip_etmeyi_birakmak, targetName))
+            .setNegativeButton(appString(R.string.ui_takibi_birak)) { dialog, _ ->
                 dialog.dismiss()
                 unfollowTargetUser(targetUid)
             }
-            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
@@ -503,12 +503,12 @@ class ProfileFragment : Fragment() {
                 if (!isAdded) return@addOnSuccessListener
                 applyFollowButtonState(targetUid, following = false)
                 nudgeFollowersCount(-1)
-                Toast.makeText(requireContext(), "Takip bırakıldı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_takip_birakildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.btnAddFriend.isEnabled = true
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -562,12 +562,12 @@ class ProfileFragment : Fragment() {
                 if (!isAdded) return@addOnSuccessListener
                 applyFollowButtonState(targetUid, following = true)
                 nudgeFollowersCount(+1)
-                Toast.makeText(requireContext(), "Takip edildi!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_takip_edildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.btnAddFriend.isEnabled = true
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -702,14 +702,14 @@ class ProfileFragment : Fragment() {
 
             fun goPrev() {
                 if (ownedTypes.size == 1) {
-                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, appString(R.string.ui_sadece_1_adet_boncugun_var), Toast.LENGTH_SHORT).show()
                     return
                 }
                 select((index - 1 + ownedTypes.size) % ownedTypes.size)
             }
             fun goNext() {
                 if (ownedTypes.size == 1) {
-                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, appString(R.string.ui_sadece_1_adet_boncugun_var), Toast.LENGTH_SHORT).show()
                     return
                 }
                 select((index + 1) % ownedTypes.size)
@@ -837,9 +837,9 @@ class ProfileFragment : Fragment() {
         val minutes = (totalSeconds % 3600) / 60
         
         val timeText = when {
-            days > 0 -> "$days Gün $hours saat $minutes dakika"
-            hours > 0 -> "$hours saat $minutes dakika"
-            else -> "$minutes dakika"
+            days > 0 -> appString(R.string.ui_x_gun_x_saat_x_dakika, days, hours, minutes)
+            hours > 0 -> appString(R.string.ui_x_saat_x_dakika, hours, minutes)
+            else -> appPlural(R.plurals.ui_x_dakika, minutes, minutes)
         }
         binding.tvTotalTime.text = timeText
     }
@@ -1366,21 +1366,21 @@ class ProfileFragment : Fragment() {
     private fun verifyEmail() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
         // E-posta doğrulama linki gönder
         currentUser.sendEmailVerification()
             .addOnSuccessListener {
-                Toast.makeText(context, "Doğrulama e-postası gönderildi. E-postanızı doğruladıktan sonra bu ekrana geri dönün.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, appString(R.string.ui_dogrulama_e_postasi_gonderildi_e_postanizi), Toast.LENGTH_LONG).show()
                 
                 // E-posta gönderildikten sonra, kullanıcı bilgilerini periyodik olarak kontrol et
                 // (Kullanıcı e-postayı doğruladıktan sonra uygulamaya geri döndüğünde otomatik güncellenir)
                 startEmailVerificationCheck()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "E-posta gönderilemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_e_posta_gonderilemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
     
@@ -1408,7 +1408,7 @@ class ProfileFragment : Fragment() {
                                 firestore.collection("users").document(currentUser.uid)
                                     .update("verified", true)
                                     .addOnSuccessListener {
-                                        Toast.makeText(context, "E-posta başarıyla doğrulandı!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, appString(R.string.ui_e_posta_basariyla_dogrulandi), Toast.LENGTH_SHORT).show()
                                         loadUserData() // UI'ı yenile
                                     }
                                 // Kontrolü durdur
@@ -1436,20 +1436,20 @@ class ProfileFragment : Fragment() {
         
         val input = android.widget.EditText(requireContext())
         input.setText(currentName)
-        input.hint = "Kullanıcı Adı"
+        input.hint = appString(R.string.ui_kullanici_adi)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Profili Düzenle")
+            .setTitle(appString(R.string.ui_profili_duzenle))
             .setView(input)
-            .setPositiveButton("Kaydet") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_kaydet)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     updateUserName(newName)
                 } else {
-                    Toast.makeText(context, "Kullanıcı adı boş olamaz", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_kullanici_adi_bos_olamaz), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
@@ -1469,39 +1469,39 @@ class ProfileFragment : Fragment() {
                 firestore.collection("users").document(currentUser.uid)
                     .update("name", newName)
                     .addOnSuccessListener {
-                        Toast.makeText(context, "Kullanıcı adı güncellendi", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, appString(R.string.ui_kullanici_adi_guncellendi), Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kullanıcı adı güncellenemedi: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kullanici_adi_guncellenemedi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun showChangePasswordDialog() {
         val input = android.widget.EditText(requireContext())
         input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Yeni Şifre"
+        input.hint = appString(R.string.ui_yeni_sifre)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Şifre Değiştir")
-            .setMessage("Yeni şifrenizi girin (en az 6 karakter)")
+            .setTitle(appString(R.string.ui_sifre_degistir))
+            .setMessage(appString(R.string.ui_yeni_sifrenizi_girin_en_az_6))
             .setView(input)
-            .setPositiveButton("Değiştir") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_degistir)) { _, _ ->
                 val newPassword = input.text.toString().trim()
                 if (newPassword.length >= 6) {
                     changePassword(newPassword)
                 } else {
-                    Toast.makeText(context, "Şifre en az 6 karakter olmalı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_sifre_en_az_6_karakter_olmali), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun changePassword(newPassword: String) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1510,27 +1510,27 @@ class ProfileFragment : Fragment() {
         val isGoogleUser = providers.any { it.providerId == "google.com" }
         
         if (isGoogleUser) {
-            Toast.makeText(context, "Google hesabı ile giriş yaptınız. Şifre değiştirilemez.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, appString(R.string.ui_google_hesabi_ile_giris_yaptiniz_sifre), Toast.LENGTH_LONG).show()
             return
         }
         
         currentUser.updatePassword(newPassword)
             .addOnSuccessListener {
-                Toast.makeText(context, "Şifre başarıyla değiştirildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_sifre_basariyla_degistirildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Şifre değiştirilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_sifre_degistirilemedi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun showLogoutConfirmation() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Çıkış Yap")
-            .setMessage("Çıkış yapmak istediğinize emin misiniz?")
-            .setPositiveButton("Evet") { _, _ ->
+            .setTitle(appString(R.string.ui_cikis_yap))
+            .setMessage(appString(R.string.ui_cikis_yapmak_istediginize_emin_misiniz))
+            .setPositiveButton(appString(R.string.ui_evet)) { _, _ ->
                 logout()
             }
-            .setNegativeButton("Hayır", null)
+            .setNegativeButton(appString(R.string.ui_hayir), null)
             .show()
     }
     
@@ -1548,19 +1548,19 @@ class ProfileFragment : Fragment() {
     
     private fun showDeleteAccountConfirmation() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Hesabı Sil")
-            .setMessage("Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")
-            .setPositiveButton("Evet, Sil") { _, _ ->
+            .setTitle(appString(R.string.ui_hesabi_sil))
+            .setMessage(appString(R.string.ui_hesabinizi_silmek_istediginize_emin_misiniz))
+            .setPositiveButton(appString(R.string.ui_evet_sil)) { _, _ ->
                 deleteAccount()
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun deleteAccount() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1598,28 +1598,28 @@ class ProfileFragment : Fragment() {
     private fun showPasswordReauthDialog() {
         val input = EditText(requireContext())
         input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Şifrenizi girin"
+        input.hint = appString(R.string.ui_sifrenizi_girin)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Hesabı Sil")
-            .setMessage("Hesabınızı silmek için şifrenizi girin")
+            .setTitle(appString(R.string.ui_hesabi_sil))
+            .setMessage(appString(R.string.ui_hesabinizi_silmek_icin_sifrenizi_girin))
             .setView(input)
-            .setPositiveButton("Onayla") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_onayla)) { _, _ ->
                 val password = input.text.toString().trim()
                 if (password.isNotEmpty()) {
                     reauthenticateWithPassword(password)
                 } else {
-                    Toast.makeText(context, "Şifre boş olamaz", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_sifre_bos_olamaz), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun reauthenticateWithPassword(password: String) {
         val currentUser = auth.currentUser
         if (currentUser == null || currentUser.email == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1632,14 +1632,14 @@ class ProfileFragment : Fragment() {
                 performAccountDeletion()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun reauthenticateWithGoogleAccount(account: GoogleSignInAccount) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1651,13 +1651,13 @@ class ProfileFragment : Fragment() {
                 performAccountDeletion()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun performAccountDeletion() {
         val progressDialog = android.app.ProgressDialog(requireContext()).apply {
-            setMessage("Hesabınız ve ilişkili verileriniz siliniyor...")
+            setMessage(appString(R.string.ui_hesabiniz_ve_iliskili_verileriniz_siliniyor))
             setCancelable(false)
             show()
         }
@@ -1668,7 +1668,7 @@ class ProfileFragment : Fragment() {
                 firestore = firestore,
                 onSuccess = {
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Hesap başarıyla silindi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_hesap_basariyla_silindi), Toast.LENGTH_SHORT).show()
                     val intent = Intent(requireContext(), LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
@@ -1676,7 +1676,7 @@ class ProfileFragment : Fragment() {
                 },
                 onRequiresRecentLogin = {
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Güvenlik nedeniyle hesabı silmek için lütfen tekrar giriş yapıp hemen silmeyi deneyin.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, appString(R.string.ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen), Toast.LENGTH_LONG).show()
                     val intent = Intent(requireContext(), LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
@@ -1684,7 +1684,7 @@ class ProfileFragment : Fragment() {
                 },
                 onFailure = { e ->
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, appString(R.string.ui_hata_x, e.message), Toast.LENGTH_LONG).show()
                 }
             )
         }
@@ -1692,12 +1692,12 @@ class ProfileFragment : Fragment() {
 
     private fun loadCupPathScores() {
         val uid = auth.currentUser?.uid ?: return
-        setupCupCard(R.id.cupCard1, "Toplama", "dinosaur_anim.json", false, uid, "addition_abacus_cup", AbacusCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard2, "Çıkarma", "crocodile_anim.json", false, uid, "extraction_abacus_cup", ExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard3, "Çarpma", "goat_anim.json", false, uid, "impact_abacus_cup", ImpactCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, uid, "blinding_addition_abacus_cup", BlindingAdditionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, uid, "blinding_extraction_abacus_cup", BlindingExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, uid, "blinding_impact_abacus_cup", BlindingImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard1, appString(R.string.ui_toplama), "dinosaur_anim.json", false, uid, "addition_abacus_cup", AbacusCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard2, appString(R.string.ui_cikarma), "crocodile_anim.json", false, uid, "extraction_abacus_cup", ExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard3, appString(R.string.ui_carpma), "goat_anim.json", false, uid, "impact_abacus_cup", ImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard4, appString(R.string.ui_toplama), "eagle_anim.json", true, uid, "blinding_addition_abacus_cup", BlindingAdditionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard5, appString(R.string.ui_cikarma), "fly_anim.json", true, uid, "blinding_extraction_abacus_cup", BlindingExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard6, appString(R.string.ui_carpma), "turtle_anim.json", true, uid, "blinding_impact_abacus_cup", BlindingImpactCupRepository::fetchCupScore)
     }
 
     /**
@@ -1713,7 +1713,7 @@ class ProfileFragment : Fragment() {
             Triple(R.id.cupCard5, "blinding_extraction_abacus_cup", true),
             Triple(R.id.cupCard6, "blinding_impact_abacus_cup", true),
         )
-        val titles = listOf("Toplama", "Çıkarma", "Çarpma", "Toplama", "Çıkarma", "Çarpma")
+        val titles = listOf(appString(R.string.ui_toplama), appString(R.string.ui_cikarma), appString(R.string.ui_carpma), appString(R.string.ui_toplama), appString(R.string.ui_cikarma), appString(R.string.ui_carpma))
         val anims = listOf("dinosaur_anim.json", "crocodile_anim.json", "goat_anim.json", "eagle_anim.json", "fly_anim.json", "turtle_anim.json")
 
         firestore.collection("users").document(uid)

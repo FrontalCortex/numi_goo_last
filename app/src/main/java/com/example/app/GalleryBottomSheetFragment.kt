@@ -167,7 +167,7 @@ class GalleryBottomSheetFragment : BottomSheetDialogFragment() {
             }
             list.sortByDescending { it.dateAdded }
         } catch (e: SecurityException) {
-            Toast.makeText(requireContext(), "Galeriye erişim izni gerekli.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_galeriye_erisim_izni_gerekli), Toast.LENGTH_SHORT).show()
         }
         return list
     }

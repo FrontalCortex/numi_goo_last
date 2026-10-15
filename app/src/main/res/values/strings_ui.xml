@@ -1,0 +1,1045 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Layout'lardaki arayüz metinleri. Anahtar: <layout adı>_<görünüm id'si>[_hint|_desc|_title];
+  id'si olmayan görünümlerde <layout adı>_text_N.
+-->
+<resources>
+
+    <!-- layout/activity_email_verification.xml -->
+    <string name="activity_email_verification_text">E-posta Doğrulama</string>
+    <string name="activity_email_verification_text_2">E-posta adresinize doğrulama kodu gönderildi</string>
+    <string name="activity_email_verification_tv_email">test@student.com</string>
+    <string name="activity_email_verification_text_3">E-posta adresinize gönderilen 6 haneli doğrulama kodunu girin</string>
+    <string name="activity_email_verification_et_verification_code_hint">Doğrulama Kodu</string>
+    <string name="activity_email_verification_btn_check_verification">Kodu Doğrula</string>
+    <string name="activity_email_verification_btn_resend_email">E-postayı Tekrar Gönder</string>
+    <string name="activity_email_verification_btn_back_to_login">Giriş Sayfasına Dön</string>
+    <string name="activity_email_verification_text_4">E-posta gelmedi mi? Spam klasörünü kontrol edin</string>
+
+    <!-- layout/activity_login.xml -->
+    <string name="activity_login_btn_back_desc">Geri</string>
+    <string name="activity_login_text">E-posta ile devam et</string>
+    <string name="activity_login_et_email_hint">E-posta</string>
+    <string name="activity_login_btn_continue">Devam Et</string>
+    <string name="activity_login_btn_google_sign_in">Google ile Giriş Yap</string>
+
+    <!-- layout/activity_main.xml -->
+    <string name="activity_main_streak_icon_desc">Günlük seri</string>
+    <string name="activity_main_diamond_id_desc">Coin</string>
+    <string name="activity_main_energy_icon_desc">Energy</string>
+    <string name="activity_main_key_icon_desc">Energy</string>
+    <string name="activity_main_credit_icon_desc">Danışma kredisi</string>
+
+    <!-- layout/activity_register.xml -->
+    <string name="activity_register_btn_back_desc">Geri</string>
+    <string name="activity_register_tv_title">Hesap Oluştur</string>
+    <string name="activity_register_tv_subtitle">Eğitim yolculuğuna başla</string>
+    <string name="activity_register_et_email_hint">E-posta</string>
+    <string name="activity_register_btn_continue">Devam Et</string>
+    <string name="activity_register_et_name_hint">Kullanıcı adı</string>
+    <string name="activity_register_et_teacher_email_hint">E-posta</string>
+    <string name="activity_register_et_password_hint">Şifre</string>
+    <string name="activity_register_et_approval_code_hint">Şifreyi tekrar girin</string>
+    <string name="activity_register_btn_register">Devam Et</string>
+    <string name="activity_register_btn_google_sign_in">Google ile Kayıt Ol</string>
+
+    <!-- layout/activity_splash.xml -->
+    <string name="activity_splash_text">Sorobit</string>
+    <string name="activity_splash_text_2">Öğrenmeye hazır mısın?</string>
+
+    <!-- layout/activity_teacher_login.xml -->
+    <string name="activity_teacher_login_btn_back_desc">Geri</string>
+    <string name="activity_teacher_login_text">Eğitim Uygulaması</string>
+    <string name="activity_teacher_login_text_2">Öğretmen Girişi</string>
+    <string name="activity_teacher_login_et_email_hint">E-posta</string>
+    <string name="activity_teacher_login_et_password_hint">Şifre</string>
+    <string name="activity_teacher_login_tv_forgot_password">Şifremi unuttum</string>
+    <string name="activity_teacher_login_btn_login">Giriş Yap</string>
+    <string name="activity_teacher_login_btn_student_login">Öğrenci Girişi</string>
+    <string name="activity_teacher_login_btn_register">Hesabın yok mu? Kayıt Ol</string>
+
+    <!-- layout/bottom_sheet_gallery.xml -->
+    <string name="bottom_sheet_gallery_gallery_sheet_close_desc">Kapat</string>
+    <string name="bottom_sheet_gallery_text">Son kullanılanlar</string>
+
+    <!-- layout/bottom_sheet_operator_picker.xml -->
+    <string name="bottom_sheet_operator_picker_title">Operatör Seç</string>
+    <string name="bottom_sheet_operator_picker_cancel_button">İptal</string>
+    <string name="bottom_sheet_operator_picker_ok_button">Tamam</string>
+
+    <!-- layout/dialog_abacus_sound_picker.xml -->
+    <string name="dialog_abacus_sound_picker_abacus_sound_picker_title">Abaküs Sesi Seç</string>
+    <string name="dialog_abacus_sound_picker_text">Ses 1</string>
+    <string name="dialog_abacus_sound_picker_text_2">Ses 2</string>
+    <string name="dialog_abacus_sound_picker_text_3">Ses 3</string>
+    <string name="dialog_abacus_sound_picker_text_4">Ses 4</string>
+    <string name="dialog_abacus_sound_picker_text_5">Ses 5</string>
+
+    <!-- layout/dialog_avatar_customization.xml -->
+    <string name="dialog_avatar_customization_text">Avatar Önizleme</string>
+    <string name="dialog_avatar_customization_text_2">Saç Stili</string>
+    <string name="dialog_avatar_customization_text_3">Göz Stili</string>
+    <string name="dialog_avatar_customization_text_4">Cilt Rengi</string>
+    <string name="dialog_avatar_customization_text_5">Kıyafet Rengi</string>
+    <string name="dialog_avatar_customization_btn_cancel">İPTAL</string>
+    <string name="dialog_avatar_customization_btn_save">KAYDET</string>
+
+    <!-- layout/dialog_delete_message.xml -->
+    <string name="dialog_delete_message_text_desc">Sil</string>
+    <string name="dialog_delete_message_text">Mesaj silinsin mi?</string>
+    <string name="dialog_delete_message_text_2">Bu işlem geri alınamaz</string>
+    <string name="dialog_delete_message_delete_message_close_desc">Kapat</string>
+    <string name="dialog_delete_message_text_desc_2">Herkesten sil</string>
+    <string name="dialog_delete_message_text_3">Herkesten sil</string>
+    <string name="dialog_delete_message_text_desc_3">Benden sil</string>
+    <string name="dialog_delete_message_text_4">Benden sil</string>
+    <string name="dialog_delete_message_text_desc_4">Bildir</string>
+    <string name="dialog_delete_message_text_5">Bildir</string>
+    <string name="dialog_delete_message_delete_cancel">İptal</string>
+
+    <!-- layout/dialog_image.xml -->
+    <string name="dialog_image_dialog_image_close_desc">Kapat</string>
+
+    <!-- layout/dialog_image_annotate.xml -->
+    <string name="dialog_image_annotate_annotate_image_desc">Resim</string>
+    <string name="dialog_image_annotate_annotate_done_button_desc">Kaydet ve kapat</string>
+
+    <!-- layout/dialog_question_media_picker.xml -->
+    <string name="dialog_question_media_picker_btn_camera_desc">Resim ile sor</string>
+    <string name="dialog_question_media_picker_btn_video_desc">Video ile sor</string>
+
+    <!-- layout/dialog_rating.xml -->
+    <string name="dialog_rating_tv_title">Numi\'yi Beğendin mi?</string>
+    <string name="dialog_rating_tv_subtitle">Deneyimini değerlendirerek bize destek olabilirsin.</string>
+    <string name="dialog_rating_et_feedback_hint">Sana nasıl daha iyi bir deneyim sunabiliriz?</string>
+    <string name="dialog_rating_btn_submit_feedback">Gönder</string>
+    <string name="dialog_rating_tv_close">Daha Sonra</string>
+    <string name="dialog_rating_tv_no_thanks">Hayır, teşekkürler</string>
+
+    <!-- layout/dialog_report_action.xml -->
+    <string name="dialog_report_action_text_desc">Rapor</string>
+    <string name="dialog_report_action_text">Rapor İncele</string>
+    <string name="dialog_report_action_text_2">Bu kullanıcı için bir işlem seç</string>
+    <string name="dialog_report_action_report_dialog_close_desc">Kapat</string>
+    <string name="dialog_report_action_report_dialog_media_thumb_desc">Bildirilen medya</string>
+    <string name="dialog_report_action_report_dialog_play_overlay_desc">Videoyu oynat</string>
+    <string name="dialog_report_action_report_dialog_audio_play_pause_desc">Sesi oynat</string>
+    <string name="dialog_report_action_report_dialog_audio_time">Ses kaydını dinlemek için oynat</string>
+    <string name="dialog_report_action_text_desc_2">Süre</string>
+    <string name="dialog_report_action_text_3">KISITLAMA SÜRESİ</string>
+    <string name="dialog_report_action_report_restrict1_day">1 gün</string>
+    <string name="dialog_report_action_report_restrict3_days">3 gün</string>
+    <string name="dialog_report_action_report_restrict7_days">7 gün</string>
+    <string name="dialog_report_action_text_desc_3">Banla</string>
+    <string name="dialog_report_action_text_4">Kalıcı olarak banla</string>
+    <string name="dialog_report_action_text_desc_4">Yoksay</string>
+    <string name="dialog_report_action_text_5">Yoksay (reddet)</string>
+    <string name="dialog_report_action_report_cancel">İptal</string>
+
+    <!-- layout/dialog_report_reason.xml -->
+    <string name="dialog_report_reason_text_desc">Bildir</string>
+    <string name="dialog_report_reason_text">Mesajı bildir</string>
+    <string name="dialog_report_reason_text_2">Bu mesajı neden bildiriyorsun?</string>
+    <string name="dialog_report_reason_report_reason_close_desc">Kapat</string>
+    <string name="dialog_report_reason_text_desc_2">Taciz veya zorbalık</string>
+    <string name="dialog_report_reason_text_3">Taciz veya zorbalık</string>
+    <string name="dialog_report_reason_text_desc_3">Spam</string>
+    <string name="dialog_report_reason_text_4">Spam</string>
+    <string name="dialog_report_reason_text_desc_4">Uygunsuz içerik</string>
+    <string name="dialog_report_reason_text_5">Uygunsuz içerik</string>
+    <string name="dialog_report_reason_text_desc_5">Diğer</string>
+    <string name="dialog_report_reason_text_6">Diğer</string>
+    <string name="dialog_report_reason_report_reason_cancel">İptal</string>
+
+    <!-- layout/dialog_restriction_detail.xml -->
+    <string name="dialog_restriction_detail_text_desc">Kısıtlama</string>
+    <string name="dialog_restriction_detail_text">Kısıtlama Detayı</string>
+    <string name="dialog_restriction_detail_text_2">Kısıtlama nedeni ve içeriği</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_desc">Kapat</string>
+    <string name="dialog_restriction_detail_report_dialog_media_thumb_desc">Bildirilen medya</string>
+    <string name="dialog_restriction_detail_report_dialog_play_overlay_desc">Videoyu oynat</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_play_pause_desc">Sesi oynat</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_time">Ses kaydını dinlemek için oynat</string>
+    <string name="dialog_restriction_detail_text_desc_2">Kaldır</string>
+    <string name="dialog_restriction_detail_text_3">Kısıtlamayı Kaldır</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_text">Kapat</string>
+
+    <!-- layout/dialog_video_fullscreen.xml -->
+    <string name="dialog_video_fullscreen_fullscreen_close_button_desc">Kapat</string>
+
+    <!-- layout/dialog_video_player.xml -->
+    <string name="dialog_video_player_dialog_video_close_desc">Kapat</string>
+
+    <!-- layout/fragment_abacus.xml -->
+    <string name="fragment_abacus_tv_guide_text">Test Text</string>
+    <string name="fragment_abacus_btn_back_desc">Geri</string>
+    <string name="fragment_abacus_btn_forward_desc">ileri</string>
+    <string name="fragment_abacus_five_text">Eklenecek sayı</string>
+    <string name="fragment_abacus_text">Kardeşi</string>
+    <string name="fragment_abacus_five_rule_description_text">5 gelir. Kardeş gider</string>
+    <string name="fragment_abacus_ten_text">Eklenecek sayı</string>
+    <string name="fragment_abacus_text_2">Büyük Kardeşi</string>
+    <string name="fragment_abacus_ten_rule_five_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_abacus_text_3">Eklenecek sayı</string>
+    <string name="fragment_abacus_text_4">Kardeşi</string>
+    <string name="fragment_abacus_ten_rule_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_abacus_text_5">Eklenecek sayı</string>
+    <string name="fragment_abacus_text_6">İşlem</string>
+    <string name="fragment_abacus_text_7">1 gelir</string>
+    <string name="fragment_abacus_text_8">5 gider</string>
+    <string name="fragment_abacus_text_9">10 gelir</string>
+    <string name="fragment_abacus_text_10">2 gelir</string>
+    <string name="fragment_abacus_text_11">5 gider</string>
+    <string name="fragment_abacus_text_12">10 gelir</string>
+    <string name="fragment_abacus_text_13">3 gelir</string>
+    <string name="fragment_abacus_text_14">5 gider</string>
+    <string name="fragment_abacus_text_15">10 gelir</string>
+    <string name="fragment_abacus_text_16">4 gelir</string>
+    <string name="fragment_abacus_text_17">5 gider</string>
+    <string name="fragment_abacus_text_18">10 gelir</string>
+    <string name="fragment_abacus_text_19">Çıkarılacak sayı</string>
+    <string name="fragment_abacus_text_20">İşlem</string>
+    <string name="fragment_abacus_text_21">1 gider</string>
+    <string name="fragment_abacus_text_22">5 gelir</string>
+    <string name="fragment_abacus_text_23">10 gider</string>
+    <string name="fragment_abacus_text_24">2 gider</string>
+    <string name="fragment_abacus_text_25">5 gelir</string>
+    <string name="fragment_abacus_text_26">10 gider</string>
+    <string name="fragment_abacus_text_27">3 gider</string>
+    <string name="fragment_abacus_text_28">5 gelir</string>
+    <string name="fragment_abacus_text_29">10 gider</string>
+    <string name="fragment_abacus_text_30">4 gider</string>
+    <string name="fragment_abacus_text_31">5 gelir</string>
+    <string name="fragment_abacus_text_32">10 gider</string>
+    <string name="fragment_abacus_text_33">Çıkarılacak sayı</string>
+    <string name="fragment_abacus_text_34">Kardeşi</string>
+    <string name="fragment_abacus_extraction_ten_rule_description_text">10 gider. Kardeş gelir</string>
+    <string name="fragment_abacus_start_button">Başla</string>
+    <string name="fragment_abacus_kontrol_button">Kontrol Et</string>
+    <string name="fragment_abacus_incorrect_text">Yanlış</string>
+    <string name="fragment_abacus_correct_answer_label">Talimata uygun işlemi yap</string>
+    <string name="fragment_abacus_okay_button">Tekrar Dene</string>
+    <string name="fragment_abacus_correct_text">Aferin!</string>
+    <string name="fragment_abacus_continue_button">Devam et</string>
+
+    <!-- layout/fragment_abacus_customization.xml -->
+    <string name="fragment_abacus_customization_text_desc">Anahtar</string>
+    <string name="fragment_abacus_customization_diamond_id_desc">Coin</string>
+
+    <!-- layout/fragment_abacus_practice.xml -->
+    <string name="fragment_abacus_practice_kontrol_button">Kontrol Et</string>
+    <string name="fragment_abacus_practice_incorrect_text">Yanlış</string>
+    <string name="fragment_abacus_practice_correct_answer_label">Talimata uygun işlemi yap</string>
+    <string name="fragment_abacus_practice_okay_button">Tekrar Dene</string>
+    <string name="fragment_abacus_practice_correct_text">Aferin!</string>
+    <string name="fragment_abacus_practice_continue_button">Devam et</string>
+
+    <!-- layout/fragment_account_settings.xml -->
+    <string name="fragment_account_settings_account_settings_header_title">Ayarlar</string>
+    <string name="fragment_account_settings_text">Hesap</string>
+    <string name="fragment_account_settings_text_2">Profil</string>
+    <string name="fragment_account_settings_text_3">Ses ve Bildirimler</string>
+    <string name="fragment_account_settings_text_4">Veliler için</string>
+    <string name="fragment_account_settings_text_5">Veli Paneli</string>
+    <string name="fragment_account_settings_tv_payments_header">Ödemeler ve abonelikler</string>
+    <string name="fragment_account_settings_text_6">Abonelik İptali</string>
+    <string name="fragment_account_settings_text_7">Destek</string>
+    <string name="fragment_account_settings_text_8">Geri bildirim</string>
+    <string name="fragment_account_settings_btn_account_settings_logout">OTURUMU KAPAT</string>
+
+    <!-- layout/fragment_ad_skip.xml -->
+    <string name="fragment_ad_skip_super_badge">PRO</string>
+    <string name="fragment_ad_skip_title_text1">7 günlük ücretsiz PRO</string>
+    <string name="fragment_ad_skip_title_text2">denemesiyle reklamları atla!</string>
+    <string name="fragment_ad_skip_reminder_text">Deneme süren sona ermeden önce bildirim alacaksın.</string>
+    <string name="fragment_ad_skip_btn_try_free_text">₺0,00 ÖDEYEREK DENE</string>
+    <string name="fragment_ad_skip_btn_no_thanks">HAYIR TEŞEKKÜRLER</string>
+
+    <!-- layout/fragment_add_friend.xml -->
+    <string name="fragment_add_friend_btn_back_desc">Geri</string>
+    <string name="fragment_add_friend_text">Arkadaş ara</string>
+    <string name="fragment_add_friend_text_desc">Ara</string>
+    <string name="fragment_add_friend_et_search_hint">İsim ara...</string>
+    <string name="fragment_add_friend_btn_clear_search_desc">Temizle</string>
+    <string name="fragment_add_friend_btn_load_more">DAHA FAZLA YÜKLE</string>
+    <string name="fragment_add_friend_text_2">Kullanıcı bulunamadı</string>
+
+    <!-- layout/fragment_ask_question_open.xml -->
+    <string name="fragment_ask_question_open_super_badge">PRO</string>
+    <string name="fragment_ask_question_open_title_text1">Anlamadığın yerde</string>
+    <string name="fragment_ask_question_open_title_text2">öğretmeninden destek al!</string>
+    <string name="fragment_ask_question_open_info_text">Takıldığın yerin görselini veya videosunu öğretmenine kolayca gönder, öğretmenin sana video ile cevap versin!</string>
+    <string name="fragment_ask_question_open_btn_buy_credits">BUNUN YERİNE KREDİ AL</string>
+    <string name="fragment_ask_question_open_btn_no_thanks">HAYIR TEŞEKKÜRLER</string>
+
+    <!-- layout/fragment_avatar_custom.xml -->
+    <string name="fragment_avatar_custom_btn_close">Kapat</string>
+    <string name="fragment_avatar_custom_tv_title">Avatarını Oluştur</string>
+    <string name="fragment_avatar_custom_btn_save">Kaydet</string>
+    <string name="fragment_avatar_custom_btn_random">Rastgele</string>
+
+    <!-- layout/fragment_badge.xml -->
+    <string name="fragment_badge_badge_reward_detail_text">Daily detay metni</string>
+    <string name="fragment_badge_tv_badge_piece_header_unit_medal">Ünite</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_medal">Sezon</string>
+    <string name="fragment_badge_tv_badge_piece_header_unit_cup">Ünite</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_cup">Sezon</string>
+
+    <!-- layout/fragment_badge_detail.xml -->
+    <string name="fragment_badge_detail_btn_badge_detail_back_desc">Geri</string>
+    <string name="fragment_badge_detail_tv_badge_detail_title">Başarılar</string>
+    <string name="fragment_badge_detail_tv_personal_records_title">Kişisel Rekorlar</string>
+    <string name="fragment_badge_detail_tv_awards_title">Rozetler</string>
+
+    <!-- layout/fragment_blinding_lesson.xml -->
+    <string name="fragment_blinding_lesson_five_text">Eklenecek sayı</string>
+    <string name="fragment_blinding_lesson_text">Kardeşi</string>
+    <string name="fragment_blinding_lesson_five_rule_description_text">5 gelir. Kardeş gider</string>
+    <string name="fragment_blinding_lesson_ten_text">Eklenecek sayı</string>
+    <string name="fragment_blinding_lesson_text_2">Büyük Kardeşi</string>
+    <string name="fragment_blinding_lesson_ten_rule_five_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_blinding_lesson_text_3">Eklenecek sayı</string>
+    <string name="fragment_blinding_lesson_text_4">Kardeşi</string>
+    <string name="fragment_blinding_lesson_ten_rule_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_blinding_lesson_text_5">Eklenecek sayı</string>
+    <string name="fragment_blinding_lesson_text_6">İşlem</string>
+    <string name="fragment_blinding_lesson_text_7">1 gelir</string>
+    <string name="fragment_blinding_lesson_text_8">5 gider</string>
+    <string name="fragment_blinding_lesson_text_9">10 gelir</string>
+    <string name="fragment_blinding_lesson_text_10">2 gelir</string>
+    <string name="fragment_blinding_lesson_text_11">5 gider</string>
+    <string name="fragment_blinding_lesson_text_12">10 gelir</string>
+    <string name="fragment_blinding_lesson_text_13">3 gelir</string>
+    <string name="fragment_blinding_lesson_text_14">5 gider</string>
+    <string name="fragment_blinding_lesson_text_15">10 gelir</string>
+    <string name="fragment_blinding_lesson_text_16">4 gelir</string>
+    <string name="fragment_blinding_lesson_text_17">5 gider</string>
+    <string name="fragment_blinding_lesson_text_18">10 gelir</string>
+    <string name="fragment_blinding_lesson_text_19">Çıkarılacak sayı</string>
+    <string name="fragment_blinding_lesson_text_20">İşlem</string>
+    <string name="fragment_blinding_lesson_text_21">1 gider</string>
+    <string name="fragment_blinding_lesson_text_22">5 gelir</string>
+    <string name="fragment_blinding_lesson_text_23">10 gider</string>
+    <string name="fragment_blinding_lesson_text_24">2 gider</string>
+    <string name="fragment_blinding_lesson_text_25">5 gelir</string>
+    <string name="fragment_blinding_lesson_text_26">10 gider</string>
+    <string name="fragment_blinding_lesson_text_27">3 gider</string>
+    <string name="fragment_blinding_lesson_text_28">5 gelir</string>
+    <string name="fragment_blinding_lesson_text_29">10 gider</string>
+    <string name="fragment_blinding_lesson_text_30">4 gider</string>
+    <string name="fragment_blinding_lesson_text_31">5 gelir</string>
+    <string name="fragment_blinding_lesson_text_32">10 gider</string>
+    <string name="fragment_blinding_lesson_text_33">Çıkarılacak Sayı</string>
+    <string name="fragment_blinding_lesson_text_34">Kardeşi</string>
+    <string name="fragment_blinding_lesson_extraction_ten_rule_description_text">10 gider. Kardeş gelir</string>
+    <string name="fragment_blinding_lesson_kontrol_button">Kontrol Et</string>
+    <string name="fragment_blinding_lesson_incorrect_text">Yanlış</string>
+    <string name="fragment_blinding_lesson_okay_button">Devam Et</string>
+    <string name="fragment_blinding_lesson_correct_text">Aferin!</string>
+    <string name="fragment_blinding_lesson_continue_button">Devam et</string>
+    <string name="fragment_blinding_lesson_start_button">Başla</string>
+
+    <!-- layout/fragment_chest.xml -->
+    <string name="fragment_chest_chest_image_desc">chest</string>
+    <string name="fragment_chest_gold_text">150 altın</string>
+    <string name="fragment_chest_claim_reward_button">Ödülü Al</string>
+
+    <!-- layout/fragment_chest_result.xml -->
+    <string name="fragment_chest_result_result_title">Ders Bitti!</string>
+    <string name="fragment_chest_result_text">Süre</string>
+    <string name="fragment_chest_result_text_2">BAŞARI</string>
+    <string name="fragment_chest_result_claim_button">Devam et</string>
+    <string name="fragment_chest_result_multiplier_text">x0.00</string>
+
+    <!-- layout/fragment_create_question.xml -->
+    <string name="fragment_create_question_title_text">Sorunu gönder</string>
+    <string name="fragment_create_question_screenshot_image_desc">Ekran görüntüsü</string>
+    <string name="fragment_create_question_video_fullscreen_button_desc">Tam ekran</string>
+    <string name="fragment_create_question_screenshot_annotate_button_desc">Çizim yap</string>
+    <string name="fragment_create_question_header_label">Sorunuza başlık giriniz</string>
+    <string name="fragment_create_question_header_input_hint">5\'lik kural mantığı</string>
+    <string name="fragment_create_question_description_label">Sorunuzu kısaca açıklayın</string>
+    <string name="fragment_create_question_description_input_hint">Örnek: Bu sayfadaki şu soruyu anlamadım...</string>
+    <string name="fragment_create_question_send_button">Gönder</string>
+
+    <!-- layout/fragment_cup.xml -->
+    <string name="fragment_cup_cup_name_text_view">Harika Kupa</string>
+    <string name="fragment_cup_cup_image_view_desc">Kupa</string>
+    <string name="fragment_cup_motivation_text_view">Harika bir iş çıkardın! Seninle gurur duyuyoruz!</string>
+    <string name="fragment_cup_claim_button">Desvam et</string>
+
+    <!-- layout/fragment_cup_history.xml -->
+    <string name="fragment_cup_history_btn_cup_history_back_desc">Geri</string>
+    <string name="fragment_cup_history_tv_cup_history_title">Kupa Geçmişi</string>
+    <string name="fragment_cup_history_text">Güncel Kupa</string>
+    <string name="fragment_cup_history_tv_cup_history_single_hint">Tek veri noktası var — karşılaştırma için birkaç gün sonra tekrar bak</string>
+    <string name="fragment_cup_history_tv_cup_history_empty">Henüz geçmiş veri yok</string>
+
+    <!-- layout/fragment_cup_path_road.xml -->
+    <string name="fragment_cup_path_road_btn_cup_path_road_back_desc">Geri</string>
+    <string name="fragment_cup_path_road_tv_cup_path_road_title">Kupa Yolu</string>
+
+    <!-- layout/fragment_edit_profile.xml -->
+    <string name="fragment_edit_profile_text">Profili Düzenle</string>
+    <string name="fragment_edit_profile_text_2">Ad</string>
+    <string name="fragment_edit_profile_et_name_hint">Ad</string>
+    <string name="fragment_edit_profile_tv_name_error">Ad boş bırakılamaz.</string>
+    <string name="fragment_edit_profile_text_3">Kullanıcı ID</string>
+    <string name="fragment_edit_profile_et_username_hint">Kullanıcı ID</string>
+    <string name="fragment_edit_profile_text_4">E-posta Adresi</string>
+    <string name="fragment_edit_profile_et_email_hint">email@example.com</string>
+    <string name="fragment_edit_profile_text_5">Yeni Parola</string>
+    <string name="fragment_edit_profile_et_password_hint">Yeni parola girin</string>
+    <string name="fragment_edit_profile_text_6">Parolayı değiştirmek için sadece bu alanı doldurun. Değiştirmek istemiyorsanız boş bırakın.</string>
+    <string name="fragment_edit_profile_btn_save">DEĞİŞİKLİKLERİ KAYDET</string>
+    <string name="fragment_edit_profile_btn_delete_account">HESABI KALICI OLARAK SİL</string>
+
+    <!-- layout/fragment_feedback.xml -->
+    <string name="fragment_feedback_text">Bize Ulaşın</string>
+    <string name="fragment_feedback_text_2">Bir sorun mu yaşadınız veya harika bir öneriniz mi var? Uygulamayı daha iyi hale getirmemize yardımcı olun.</string>
+    <string name="fragment_feedback_text_3">Mesajınız</string>
+    <string name="fragment_feedback_feedback_input_hint">Buraya yazabilirsiniz...</string>
+    <string name="fragment_feedback_text_4">Size mail adresinizden ulaşacağız.</string>
+    <string name="fragment_feedback_close_button">İptal</string>
+    <string name="fragment_feedback_send_feedback_button">Gönder</string>
+
+    <!-- layout/fragment_followers_following.xml -->
+    <string name="fragment_followers_following_btn_back_desc">Geri</string>
+    <string name="fragment_followers_following_text">Arkadaşlar</string>
+    <string name="fragment_followers_following_tv_empty">Henüz kimse yok</string>
+
+    <!-- layout/fragment_lesson_result.xml -->
+    <string name="fragment_lesson_result_result_title">Ders Bitti!</string>
+    <string name="fragment_lesson_result_text">TOPLAM PUAN</string>
+    <string name="fragment_lesson_result_text_2">BAŞARI</string>
+    <string name="fragment_lesson_result_claim_button">Devam et</string>
+
+    <!-- layout/fragment_lesson_result_false.xml -->
+    <string name="fragment_lesson_result_false_result_title">Ders Geçilemedi!</string>
+    <string name="fragment_lesson_result_false_result_title_comment">Başarı oranı %75\'ten düşük!</string>
+    <string name="fragment_lesson_result_false_text">TOPLAM PUAN</string>
+    <string name="fragment_lesson_result_false_text_2">BAŞARI</string>
+    <string name="fragment_lesson_result_false_claim_button">Çıkış</string>
+
+    <!-- layout/fragment_mascot_playground.xml -->
+    <string name="fragment_mascot_playground_btn_close">Kapat</string>
+    <string name="fragment_mascot_playground_tv_title">Karakter Animasyonu</string>
+    <string name="fragment_mascot_playground_tv_current">Bekleme</string>
+
+    <!-- layout/fragment_new_chest.xml -->
+    <string name="fragment_new_chest_chest_rarity_label">SIRADAN</string>
+    <string name="fragment_new_chest_chest_hint_text">Daha iyisini alma şansı için dokun!</string>
+
+    <!-- layout/fragment_new_streak.xml -->
+    <string name="fragment_new_streak_new_streak_continue">Devam et</string>
+
+    <!-- layout/fragment_notification.xml -->
+    <string name="fragment_notification_notification_title">Sorular</string>
+    <string name="fragment_notification_tab_pool">Soru havuzu</string>
+    <string name="fragment_notification_tab_chats">Sohbetler</string>
+    <string name="fragment_notification_tab_reports">Raporlar</string>
+    <string name="fragment_notification_sub_tab_reports_list">Bildirilen Mesajlar</string>
+    <string name="fragment_notification_sub_tab_restricted_users">Kısıtlı Kullanıcılar</string>
+    <string name="fragment_notification_tab_bekleyen">Bekleyen</string>
+    <string name="fragment_notification_tab_cozulen">Çözülen</string>
+    <string name="fragment_notification_empty_text">Henüz soru yok</string>
+    <string name="fragment_notification_teacher_approval_pending_message">Mesajlaşma özelliğini kullanabilmek için öğretmen hesabınızın onaylanması gerekmektedir.</string>
+    <string name="fragment_notification_teacher_approval_support_button">Destek ile İletişime Geç</string>
+
+    <!-- layout/fragment_otp_verification.xml -->
+    <string name="fragment_otp_verification_tv_title">E-postanı doğrula</string>
+    <string name="fragment_otp_verification_text">E-postanıza gelen 6 haneli kodu girin.</string>
+    <string name="fragment_otp_verification_et_code_hint">6 haneli kod</string>
+    <string name="fragment_otp_verification_btn_verify">Doğrula</string>
+    <string name="fragment_otp_verification_btn_resend">Kodu tekrar gönder</string>
+
+    <!-- layout/fragment_parent_panel.xml -->
+    <string name="fragment_parent_panel_parent_panel_header_title">Veli Paneli</string>
+    <string name="fragment_parent_panel_btn_back_desc">Geri</string>
+
+    <!-- layout/fragment_part_selection.xml -->
+    <string name="fragment_part_selection_category_title_addition">Toplama</string>
+    <string name="fragment_part_selection_category_title_subtraction">Çıkarma</string>
+    <string name="fragment_part_selection_category_title_multiplication">Çarpma</string>
+
+    <!-- layout/fragment_plan.xml -->
+    <string name="fragment_plan_tv_bireysel_title">Pro</string>
+    <string name="fragment_plan_tv_bireysel_price_right">Aylık ₺99</string>
+    <string name="fragment_plan_tv_bireysel_price_sub">₺1.188/yıl</string>
+    <string name="fragment_plan_text">Sınırsız enerji</string>
+    <string name="fragment_plan_text_2">Reklamsız öğrenim</string>
+    <string name="fragment_plan_text_3">Ustalık Yolu</string>
+    <string name="fragment_plan_text_4">Danışma kredilerinde %20 bonus</string>
+    <string name="fragment_plan_text_5">Hoş geldin: 1 danışma kredisi</string>
+    <string name="fragment_plan_tv_lite_title">Lite (reklamlı)</string>
+    <string name="fragment_plan_tv_lite_price_right">Aylık ₺49</string>
+    <string name="fragment_plan_tv_lite_price_sub">₺588/yıl</string>
+    <string name="fragment_plan_text_6">Can sınırını ikiye katla</string>
+    <string name="fragment_plan_text_7">Canın 7 dakikada yenilensin</string>
+    <string name="fragment_plan_tv_footer_text2">"Aboneliğin otomatik olarak yenilenir,\n istediğin zaman iptal edebilirsin."</string>
+    <string name="fragment_plan_btn_try_free_text">₺0,00 ÖDEYEREK DENE</string>
+
+    <!-- layout/fragment_pro_diffirent.xml -->
+    <string name="fragment_pro_diffirent_super_badge">PRO</string>
+    <string name="fragment_pro_diffirent_tv_header_free">ÜCRETSİZ</string>
+    <string name="fragment_pro_diffirent_tv_header_super">PRO</string>
+    <string name="fragment_pro_diffirent_row1_text">Ders içerikleri</string>
+    <string name="fragment_pro_diffirent_row2_text">Sınırsız can</string>
+    <string name="fragment_pro_diffirent_row3_text">Reklamsız öğrenim</string>
+    <string name="fragment_pro_diffirent_row4_text">Ustalık Yolu</string>
+    <string name="fragment_pro_diffirent_row5_text">Danışma kredilerinde %20 bonus</string>
+    <string name="fragment_pro_diffirent_row6_text">Hoş geldin: 1 danışma kredisi</string>
+    <string name="fragment_pro_diffirent_btn_try_free_text">₺0,00 ÖDEYEREK DENE</string>
+
+    <!-- layout/fragment_profile.xml -->
+    <string name="fragment_profile_btn_other_user_profile_back_desc">Geri</string>
+    <string name="fragment_profile_tv_top_left_name">Kullanıcı Adı</string>
+    <string name="fragment_profile_btn_account_settings_desc">Ayarlar</string>
+    <string name="fragment_profile_img_profile_photo_desc">Profil Fotoğrafı</string>
+    <string name="fragment_profile_tv_username_and_date">\@BAAR461745 • 2022 YILINDA KATILDI</string>
+    <string name="fragment_profile_text">Takip edilen</string>
+    <string name="fragment_profile_text_2">Takipçi</string>
+    <string name="fragment_profile_btn_add_friend">ARKADAŞ EKLE</string>
+    <string name="fragment_profile_tv_user_progress_title">Kullanıcı İlerlemesi</string>
+    <string name="fragment_profile_text_3">Kullanıcı Abaküsü</string>
+    <string name="fragment_profile_text_4">Kupa yolu</string>
+    <string name="fragment_profile_tv_profile_badges_title">Rozetler</string>
+    <string name="fragment_profile_btn_profile_badges_arrow_desc">Rozetler</string>
+
+    <!-- layout/fragment_question_chat.xml -->
+    <string name="fragment_question_chat_back_button_desc">Geri</string>
+    <string name="fragment_question_chat_restriction_message_text">Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.</string>
+    <string name="fragment_question_chat_restriction_appeal_button">İtiraz Et</string>
+    <string name="fragment_question_chat_teacher_claim_button">Soruyu Sahiplen</string>
+    <string name="fragment_question_chat_text_input_hint">Bir mesaj yazın</string>
+    <string name="fragment_question_chat_gallery_button_desc">Galeri</string>
+    <string name="fragment_question_chat_record_audio_button_desc">Ses kaydet</string>
+    <string name="fragment_question_chat_send_text_button_desc">Gönder</string>
+    <string name="fragment_question_chat_audio_bar_play_pause_desc">Oynat / Duraklat</string>
+    <string name="fragment_question_chat_audio_bar_stop_desc">Durdur</string>
+    <string name="fragment_question_chat_audio_bar_close_desc">Kapat</string>
+    <string name="fragment_question_chat_audio_bar_send_desc">Gönder</string>
+    <string name="fragment_question_chat_caption_bar_thumb_desc">Seçili medya</string>
+    <string name="fragment_question_chat_caption_bar_thumb_close_desc">Seçimi kaldır</string>
+    <string name="fragment_question_chat_caption_input_hint">Mesaj yazın...</string>
+    <string name="fragment_question_chat_caption_send_button_desc">Gönder</string>
+
+    <!-- layout/fragment_question_panel.xml -->
+    <string name="fragment_question_panel_question_panel_title">Geri bildirim</string>
+    <string name="fragment_question_panel_question_panel_subtitle">Görüşleriniz derslerin geliştirilmesine katkı sağlar.</string>
+    <string name="fragment_question_panel_question1_title">1) Test sorularının öğretici olduğunu düşünüyor musun?</string>
+    <string name="fragment_question_panel_q1_option1_text">Kesinlikle yetersiz</string>
+    <string name="fragment_question_panel_q1_option2_text">Yetersiz</string>
+    <string name="fragment_question_panel_q1_option3_text">Ne yeterli ne yetersiz</string>
+    <string name="fragment_question_panel_q1_option4_text">Yeterli</string>
+    <string name="fragment_question_panel_q1_option5_text">Tamamen yeterli</string>
+    <string name="fragment_question_panel_q1_text_input_hint">Eklemek istediğiniz başka bir şey var mı?</string>
+    <string name="fragment_question_panel_question2_title">2) Test sorularının zorluğu nasıldı?</string>
+    <string name="fragment_question_panel_q2_option1_text">Çok kolay</string>
+    <string name="fragment_question_panel_q2_option2_text">Kolay</string>
+    <string name="fragment_question_panel_q2_option3_text">Orta</string>
+    <string name="fragment_question_panel_q2_option4_text">Zor</string>
+    <string name="fragment_question_panel_q2_option5_text">Çok zor</string>
+    <string name="fragment_question_panel_q2_text_input_hint">Açıklamak istediğiniz bir şey var mı?</string>
+    <string name="fragment_question_panel_question3_title">3) Takıldığınız, düzeltilmesini önerdiğiniz yer varsa lütfen yazınız.</string>
+    <string name="fragment_question_panel_q3_text_input_hint">Buraya yazabilirsiniz…</string>
+    <string name="fragment_question_panel_skip_button">Atla</string>
+    <string name="fragment_question_panel_send_button">Gönder</string>
+
+    <!-- layout/fragment_rules.xml -->
+    <string name="fragment_rules_text">5\'lik Kural</string>
+    <string name="fragment_rules_five_text">Eklenecek sayı</string>
+    <string name="fragment_rules_text_2">Kardeşi</string>
+    <string name="fragment_rules_five_rule_description_text">5 gelir. Kardeş gider</string>
+    <string name="fragment_rules_text_3">10\'luk Kural 1-2-3-4-5</string>
+    <string name="fragment_rules_ten_text">Eklenecek sayı</string>
+    <string name="fragment_rules_text_4">Büyük Kardeşi</string>
+    <string name="fragment_rules_ten_rule_five_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_rules_text_5">10\'luk Kural 6-7-8-9</string>
+    <string name="fragment_rules_ten_text_second">Eklenecek sayı</string>
+    <string name="fragment_rules_text_6">Kardeşi</string>
+    <string name="fragment_rules_ten_rule_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_rules_text_7">Boncuk Kuralı</string>
+    <string name="fragment_rules_bead_text">Eklenecek sayı</string>
+    <string name="fragment_rules_text_8">İşlem</string>
+    <string name="fragment_rules_text_9">1 gelir</string>
+    <string name="fragment_rules_text_10">5 gider</string>
+    <string name="fragment_rules_text_11">10 gelir</string>
+    <string name="fragment_rules_text_12">2 gelir</string>
+    <string name="fragment_rules_text_13">5 gider</string>
+    <string name="fragment_rules_text_14">10 gelir</string>
+    <string name="fragment_rules_text_15">3 gelir</string>
+    <string name="fragment_rules_text_16">5 gider</string>
+    <string name="fragment_rules_text_17">10 gelir</string>
+    <string name="fragment_rules_text_18">4 gelir</string>
+    <string name="fragment_rules_text_19">5 gider</string>
+    <string name="fragment_rules_text_20">10 gelir</string>
+    <string name="fragment_rules_text_21">5\'lik Kural</string>
+    <string name="fragment_rules_extraction_five_text">Çıkarılacak sayı</string>
+    <string name="fragment_rules_text_22">Kardeşi</string>
+    <string name="fragment_rules_extraction_five_rule_description_text">5 gider. Kardeş gelir</string>
+    <string name="fragment_rules_text_23">10\'luk Kural</string>
+    <string name="fragment_rules_text_24">Çıkarılacak sayı</string>
+    <string name="fragment_rules_text_25">Kardeşi</string>
+    <string name="fragment_rules_extraction_ten_rule_description_text">10 gider. Kardeş gelir</string>
+    <string name="fragment_rules_text_26">Boncuk Çıkarma</string>
+    <string name="fragment_rules_bead_extraction_text">Çıkarılacak sayı</string>
+    <string name="fragment_rules_text_27">İşlem</string>
+    <string name="fragment_rules_text_28">1 gider</string>
+    <string name="fragment_rules_text_29">5 gelir</string>
+    <string name="fragment_rules_text_30">10 gider</string>
+    <string name="fragment_rules_text_31">2 gider</string>
+    <string name="fragment_rules_text_32">5 gelir</string>
+    <string name="fragment_rules_text_33">10 gider</string>
+    <string name="fragment_rules_text_34">3 gider</string>
+    <string name="fragment_rules_text_35">5 gelir</string>
+    <string name="fragment_rules_text_36">10 gider</string>
+    <string name="fragment_rules_text_37">4 gider</string>
+    <string name="fragment_rules_text_38">5 gelir</string>
+    <string name="fragment_rules_text_39">10 gider</string>
+
+    <!-- layout/fragment_shop.xml -->
+    <string name="fragment_shop_shop_energy_icon_desc">Can</string>
+    <string name="fragment_shop_text_desc">Altın</string>
+    <string name="fragment_shop_text_desc_2">Anahtar</string>
+    <string name="fragment_shop_text_desc_3">Danışma kredisi</string>
+    <string name="fragment_shop_super_badge">PRO</string>
+    <string name="fragment_shop_super_title">"Öğrenmeyi\n hızlandıran \n özellikler"</string>
+    <string name="fragment_shop_super_subtitle">"Sınırsız enerji ve reklamsız\n deneyimin"</string>
+    <string name="fragment_shop_super_button">1 HAFTA ÜCRETSİZ DENE</string>
+    <string name="fragment_shop_text">Özel Teklifler</string>
+    <string name="fragment_shop_text_desc_4">Kristal</string>
+    <string name="fragment_shop_text_2">Ücretsiz Sandık</string>
+    <string name="fragment_shop_text_3">Bir reklam izleyerek sandık kazan.</string>
+    <string name="fragment_shop_text_4">SANDIK KAZAN</string>
+    <string name="fragment_shop_text_5">Ücretsiz Can</string>
+    <string name="fragment_shop_text_6">Bir reklam izleyerek can kazan.</string>
+    <string name="fragment_shop_text_7">CAN KAZAN</string>
+    <string name="fragment_shop_text_desc_5">Seri dondurma</string>
+    <string name="fragment_shop_text_8">Seri Dondurma</string>
+    <string name="fragment_shop_shop_streak_freeze_desc">Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!</string>
+    <string name="fragment_shop_text_9">Can</string>
+    <string name="fragment_shop_text_desc_6">Sınırsız can</string>
+    <string name="fragment_shop_text_10">Sınırsız</string>
+    <string name="fragment_shop_text_11">Pro ile canın hiç tükenmesin</string>
+    <string name="fragment_shop_shop_pro_price_text">aylık ₺99,00</string>
+    <string name="fragment_shop_text_12">Ekstra Can</string>
+    <string name="fragment_shop_text_13">Daha fazla dersin üstesinden gelmek için 1 can al.</string>
+    <string name="fragment_shop_shop_life_timer_text">DOLU</string>
+    <string name="fragment_shop_text_14">Öğretmene Sor</string>
+    <string name="fragment_shop_shop_credit_balance_text">Her kredi, bir sorunu öğretmene sorma hakkı verir.</string>
+    <string name="fragment_shop_text_desc_7">Danışma kredisi</string>
+    <string name="fragment_shop_text_desc_8">Danışma kredisi</string>
+    <string name="fragment_shop_text_desc_9">Danışma kredisi</string>
+    <string name="fragment_shop_text_15">Altın</string>
+    <string name="fragment_shop_text_desc_10">Altın</string>
+    <string name="fragment_shop_text_desc_11">Altın</string>
+    <string name="fragment_shop_text_desc_12">Altın</string>
+    <string name="fragment_shop_text_16">Anahtar</string>
+    <string name="fragment_shop_text_desc_13">Anahtar</string>
+    <string name="fragment_shop_text_desc_14">Anahtar</string>
+    <string name="fragment_shop_text_desc_15">Anahtar</string>
+
+    <!-- layout/fragment_sound_settings.xml -->
+    <string name="fragment_sound_settings_text">Ses ve Bildirimler</string>
+    <string name="fragment_sound_settings_btn_close_desc">Geri</string>
+    <string name="fragment_sound_settings_text_2">Ses efektleri</string>
+    <string name="fragment_sound_settings_text_3">Abaküs ses seçenekleri</string>
+    <string name="fragment_sound_settings_text_abacus_sound_current">Ses 1</string>
+    <string name="fragment_sound_settings_text_4">Eğitim seslendirme</string>
+    <string name="fragment_sound_settings_text_5">Titreşim</string>
+    <string name="fragment_sound_settings_text_6">Bildirimler</string>
+
+    <!-- layout/fragment_streak.xml -->
+    <string name="fragment_streak_btn_streak_back_desc">Geri</string>
+    <string name="fragment_streak_text">Günlük Seri</string>
+    <string name="fragment_streak_text_2">Bugün</string>
+    <string name="fragment_streak_streak_challenge_claim">Ödülü topla</string>
+    <string name="fragment_streak_streak_rewards_title">Seri Ödülleri</string>
+    <string name="fragment_streak_text_3">En uzun serin</string>
+    <string name="fragment_streak_text_4">Seri dondurma</string>
+    <string name="fragment_streak_streak_change_goal">Günlük hedefi değiştir</string>
+    <string name="fragment_streak_streak_change_reminder">Bildirim saatini değiştir</string>
+
+    <!-- layout/fragment_student_email_verification.xml -->
+    <string name="fragment_student_email_verification_tv_title">E-postani dogrula</string>
+    <string name="fragment_student_email_verification_et_code_hint">6 haneli kod</string>
+    <string name="fragment_student_email_verification_et_name_hint">Ad Soyad</string>
+    <string name="fragment_student_email_verification_et_password_hint">Sifre (en az 6 karakter)</string>
+    <string name="fragment_student_email_verification_btn_verify">Dogrula ve Giris Yap</string>
+    <string name="fragment_student_email_verification_btn_resend">Kodu tekrar gonder</string>
+
+    <!-- layout/fragment_teacher_forgot_password_email.xml -->
+    <string name="fragment_teacher_forgot_password_email_tv_title">Şifremi unuttum</string>
+    <string name="fragment_teacher_forgot_password_email_text">E-posta adresinizi girin. Size doğrulama kodu göndereceğiz.</string>
+    <string name="fragment_teacher_forgot_password_email_et_email_hint">E-posta</string>
+    <string name="fragment_teacher_forgot_password_email_btn_continue">Devam Et</string>
+
+    <!-- layout/fragment_teacher_new_password.xml -->
+    <string name="fragment_teacher_new_password_tv_title">Yeni şifre</string>
+    <string name="fragment_teacher_new_password_text">Yeni şifrenizi girin.</string>
+    <string name="fragment_teacher_new_password_et_new_password_hint">Yeni şifre</string>
+    <string name="fragment_teacher_new_password_et_new_password_confirm_hint">Şifre tekrar</string>
+    <string name="fragment_teacher_new_password_btn_update_password">Şifreyi güncelle</string>
+
+    <!-- layout/fragment_tutorial.xml -->
+    <string name="fragment_tutorial_five_text">Eklenecek sayı</string>
+    <string name="fragment_tutorial_text">Kardeşi</string>
+    <string name="fragment_tutorial_five_rule_description_text">5 gelir. Kardeş gider</string>
+    <string name="fragment_tutorial_extraction_five_text">Çıkarılacak sayı</string>
+    <string name="fragment_tutorial_text_2">Kardeşi</string>
+    <string name="fragment_tutorial_extraction_five_rule_description_text">5 gider. Kardeş gelir</string>
+    <string name="fragment_tutorial_ten_text">Eklenecek sayı</string>
+    <string name="fragment_tutorial_text_3">Büyük Kardeşi</string>
+    <string name="fragment_tutorial_ten_rule_five_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_tutorial_rules_step_text">10 gelir -&gt; 6 gider</string>
+    <string name="fragment_tutorial_ten_text_second">Eklenecek sayı</string>
+    <string name="fragment_tutorial_text_4">Kardeşi</string>
+    <string name="fragment_tutorial_ten_rule_description_text">10 gelir. Kardeş gider.</string>
+    <string name="fragment_tutorial_text_5">Eklenecek sayı</string>
+    <string name="fragment_tutorial_text_6">İşlem</string>
+    <string name="fragment_tutorial_text_7">1 gelir</string>
+    <string name="fragment_tutorial_text_8">5 gider</string>
+    <string name="fragment_tutorial_text_9">10 gelir</string>
+    <string name="fragment_tutorial_text_10">2 gelir</string>
+    <string name="fragment_tutorial_text_11">5 gider</string>
+    <string name="fragment_tutorial_text_12">10 gelir</string>
+    <string name="fragment_tutorial_text_13">3 gelir</string>
+    <string name="fragment_tutorial_text_14">5 gider</string>
+    <string name="fragment_tutorial_text_15">10 gelir</string>
+    <string name="fragment_tutorial_text_16">4 gelir</string>
+    <string name="fragment_tutorial_text_17">5 gider</string>
+    <string name="fragment_tutorial_text_18">10 gelir</string>
+    <string name="fragment_tutorial_text_19">Çıkarılacak sayı</string>
+    <string name="fragment_tutorial_text_20">Kardeşi</string>
+    <string name="fragment_tutorial_extraction_ten_rule_description_text">10 gider. Kardeş gelir</string>
+    <string name="fragment_tutorial_text_21">Çıkarılacak sayı</string>
+    <string name="fragment_tutorial_text_22">İşlem</string>
+    <string name="fragment_tutorial_text_23">1 gider</string>
+    <string name="fragment_tutorial_text_24">5 gelir</string>
+    <string name="fragment_tutorial_text_25">10 gider</string>
+    <string name="fragment_tutorial_text_26">2 gider</string>
+    <string name="fragment_tutorial_text_27">5 gelir</string>
+    <string name="fragment_tutorial_text_28">10 gider</string>
+    <string name="fragment_tutorial_text_29">3 gider</string>
+    <string name="fragment_tutorial_text_30">5 gelir</string>
+    <string name="fragment_tutorial_text_31">10 gider</string>
+    <string name="fragment_tutorial_text_32">4 gider</string>
+    <string name="fragment_tutorial_text_33">5 gelir</string>
+    <string name="fragment_tutorial_text_34">10 gider</string>
+    <string name="fragment_tutorial_tutorial_text">Deneme</string>
+    <string name="fragment_tutorial_question_text">Deneme</string>
+    <string name="fragment_tutorial_kontrol_button">Kontrol Et</string>
+    <string name="fragment_tutorial_text_35">Eğitimi atla</string>
+    <string name="fragment_tutorial_options_check_button">Kontrol Et</string>
+    <string name="fragment_tutorial_devam_button">Devam Et</string>
+    <string name="fragment_tutorial_incorrect_text">Yanlış</string>
+    <string name="fragment_tutorial_correct_answer_label">Talimata uygun işlemi yap</string>
+    <string name="fragment_tutorial_okay_button">Tekrar Dene</string>
+    <string name="fragment_tutorial_correct_text">Aferin!</string>
+    <string name="fragment_tutorial_continue_button">Devam et</string>
+
+    <!-- layout/fragment_tutorial_question_panel.xml -->
+    <string name="fragment_tutorial_question_panel_question_panel_title">Eğitim geri bildirimi</string>
+    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Görüşleriniz eğitimlerin geliştirilmesine katkı sağlar.</string>
+    <string name="fragment_tutorial_question_panel_question1_title">1) Bu eğitim konuyu öğrenmeniz için yeterli miydi?</string>
+    <string name="fragment_tutorial_question_panel_q1_option1_text">Kesinlikle yetersizdi</string>
+    <string name="fragment_tutorial_question_panel_q1_option2_text">Yetersizdi</string>
+    <string name="fragment_tutorial_question_panel_q1_option3_text">Ne yeterli ne yetersizdi</string>
+    <string name="fragment_tutorial_question_panel_q1_option4_text">Yeterliydi</string>
+    <string name="fragment_tutorial_question_panel_q1_option5_text">Tamamen yeterliydi</string>
+    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Eklemek istediğiniz başka bir şey var mı?</string>
+    <string name="fragment_tutorial_question_panel_question2_title">2) Eğitimde çözülen örnekler anlaşılır mıydı?</string>
+    <string name="fragment_tutorial_question_panel_q2_option1_text">Hiç anlaşılır değildi</string>
+    <string name="fragment_tutorial_question_panel_q2_option2_text">Pek anlaşılır değildi</string>
+    <string name="fragment_tutorial_question_panel_q2_option3_text">Kısmen anlaşılırdı</string>
+    <string name="fragment_tutorial_question_panel_q2_option4_text">Anlaşılırdı</string>
+    <string name="fragment_tutorial_question_panel_q2_option5_text">Çok anlaşılırdı</string>
+    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Açıklamak istediğiniz bir şey var mı?</string>
+    <string name="fragment_tutorial_question_panel_question3_title">3) Takıldığınız veya geliştirilmesini önerdiğiniz bir bölüm varsa lütfen yazın.</string>
+    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Buraya yazabilirsiniz…</string>
+    <string name="fragment_tutorial_question_panel_skip_button">Atla</string>
+    <string name="fragment_tutorial_question_panel_send_button">Gönder</string>
+
+    <!-- layout/fragment_user_info.xml -->
+    <string name="fragment_user_info_et_age_hint">Yaş</string>
+    <string name="fragment_user_info_challenge_intro_text">Şimdi bir öğrenme alışkanlığı kazanmana yardım edelim.</string>
+    <string name="fragment_user_info_btn_continue">Devam Et</string>
+    <string name="fragment_user_info_btn_later">Şimdi değil</string>
+
+    <!-- layout/item_back_part.xml -->
+    <string name="item_back_part_section_title">1. Kısım</string>
+    <string name="item_back_part_fast_forward_button">GERİ GİT!</string>
+
+    <!-- layout/item_badge_detail_award.xml -->
+    <string name="item_badge_detail_award_award_badge_title">Ödül Başlığı</string>
+
+    <!-- layout/item_badge_detail_record.xml -->
+    <string name="item_badge_detail_record_record_badge_title">Rozet Başlığı</string>
+    <string name="item_badge_detail_record_record_badge_subtext">Varsayılan</string>
+
+    <!-- layout/item_bulletin_card.xml -->
+    <string name="item_bulletin_card_bulletin_card_title">Abaküs</string>
+    <string name="item_bulletin_card_bulletin_card_subtitle">Abaküste pratik yaparak kendini geliştir.</string>
+    <string name="item_bulletin_card_bulletin_card_chevron_desc">Aç</string>
+
+    <!-- layout/item_follow_user.xml -->
+    <string name="item_follow_user_btn_follow_back_desc">Takip Et</string>
+    <string name="item_follow_user_btn_unfollow_desc">Takibi Bırak</string>
+
+    <!-- layout/item_friend_result.xml -->
+    <string name="item_friend_result_btn_add_friend_desc">Arkadaş Ekle</string>
+
+    <!-- layout/item_header.xml -->
+    <string name="item_header_header_text">5\'lik toplama giriş</string>
+
+    <!-- layout/item_message.xml -->
+    <string name="item_message_audio_label">Ses kaydı</string>
+    <string name="item_message_video_size_text">0 KB</string>
+    <string name="item_message_image_size_text">0 KB</string>
+
+    <!-- layout/item_parent_lesson.xml -->
+    <string name="item_parent_lesson_lesson_chevron_desc">Adımları göster</string>
+
+    <!-- layout/item_parent_part.xml -->
+    <string name="item_parent_part_part_chevron_desc">Üniteleri göster</string>
+
+    <!-- layout/item_parent_section.xml -->
+    <string name="item_parent_section_section_chevron_desc">Dersleri göster</string>
+
+    <!-- layout/item_parent_summary.xml -->
+    <string name="item_parent_summary_text">Biten ders</string>
+    <string name="item_parent_summary_text_2">Bugün</string>
+    <string name="item_parent_summary_text_3">Günlük seri</string>
+    <string name="item_parent_summary_text_4">Son 7 gün</string>
+
+    <!-- layout/item_part.xml -->
+    <string name="item_part_section_title">2. Kısım</string>
+    <string name="item_part_section_description">Basit konuşmalar için kelime, ifade ve dil bilgisi konseptlerini öğren</string>
+    <string name="item_part_fast_forward_button">İLERİ SAR!</string>
+
+    <!-- layout/item_part_card.xml -->
+    <string name="item_part_card_part_card_label">Part : 1</string>
+
+    <!-- layout/item_part_open.xml -->
+    <string name="item_part_open_section_title">2. Kısım</string>
+    <string name="item_part_open_section_description">Basit konuşmalar için kelime, ifade ve dil bilgisi konseptlerini öğren</string>
+    <string name="item_part_open_fast_forward_button">Devam ET</string>
+
+    <!-- layout/item_profile_cup_card.xml -->
+    <string name="item_profile_cup_card_card_title">Title</string>
+
+    <!-- layout/item_question.xml -->
+    <string name="item_question_question_thumbnail_desc">Önizleme</string>
+    <string name="item_question_question_status_icon_desc">Durum ikonu</string>
+
+    <!-- layout/item_race_list.xml -->
+    <string name="item_race_list_race_name">Race Name</string>
+    <string name="item_race_list_race_status">BAŞLA</string>
+
+    <!-- layout/item_restricted_user.xml -->
+    <string name="item_restricted_user_text_desc">Detayları gör</string>
+
+    <!-- layout/layout_tab1_bead_options.xml -->
+    <string name="layout_tab1_bead_options_text">Boncuk Tipi Seç</string>
+    <string name="layout_tab1_bead_options_text_2">Soroban</string>
+    <string name="layout_tab1_bead_options_text_3">Gökkuşağı</string>
+    <string name="layout_tab1_bead_options_text_4">Bulut</string>
+    <string name="layout_tab1_bead_options_text_5">Bowling</string>
+    <string name="layout_tab1_bead_options_text_6">Tenis</string>
+    <string name="layout_tab1_bead_options_text_7">Bilardo</string>
+    <string name="layout_tab1_bead_options_text_8">Basketbol</string>
+    <string name="layout_tab1_bead_options_text_9">Futbol</string>
+    <string name="layout_tab1_bead_options_text_10">Birto</string>
+    <string name="layout_tab1_bead_options_text_11">Golf</string>
+    <string name="layout_tab1_bead_options_text_12">Futbol</string>
+    <string name="layout_tab1_bead_options_text_13">Plaj Topu</string>
+    <string name="layout_tab1_bead_options_text_14">Bowling</string>
+    <string name="layout_tab1_bead_options_text_15">Basketbol</string>
+    <string name="layout_tab1_bead_options_text_16">Tenis</string>
+    <string name="layout_tab1_bead_options_text_17">Beyzbol</string>
+    <string name="layout_tab1_bead_options_text_18">Buz Hokeyi</string>
+    <string name="layout_tab1_bead_options_text_19">Köpek</string>
+    <string name="layout_tab1_bead_options_text_20">Maymun</string>
+    <string name="layout_tab1_bead_options_text_21">Ördek</string>
+    <string name="layout_tab1_bead_options_text_22">Tilki</string>
+    <string name="layout_tab1_bead_options_text_23">Fil</string>
+    <string name="layout_tab1_bead_options_text_24">Panda</string>
+    <string name="layout_tab1_bead_options_text_25">Kedi</string>
+    <string name="layout_tab1_bead_options_text_26">Mors</string>
+    <string name="layout_tab1_bead_options_text_27">Kaplan</string>
+
+    <!-- layout/layout_tab2_bead_color.xml -->
+    <string name="layout_tab2_bead_color_text">Normal</string>
+    <string name="layout_tab2_bead_color_text_2">Seçili</string>
+
+    <!-- layout/layout_tab3_frame_options.xml -->
+    <string name="layout_tab3_frame_options_text">Çerçeve Tipi Seç</string>
+    <string name="layout_tab3_frame_options_text_2">Ahşap</string>
+    <string name="layout_tab3_frame_options_text_3">Kalpli</string>
+    <string name="layout_tab3_frame_options_text_4">Yıldızlı</string>
+    <string name="layout_tab3_frame_options_text_5">Gradyanlı</string>
+
+    <!-- layout/lesson_popover.xml -->
+    <string name="lesson_popover_text">Adımlar</string>
+    <string name="lesson_popover_again_tutorial">Eğitimi tekrarla</string>
+
+    <!-- layout/multiplication_table_1.xml -->
+    <string name="multiplication_table_1_text">Çarpım Tablosu 1x</string>
+    <string name="multiplication_table_1_text_2">1 x 1 = 1</string>
+    <string name="multiplication_table_1_text_3">1 x 2 = 2</string>
+    <string name="multiplication_table_1_text_4">1 x 3 = 3</string>
+    <string name="multiplication_table_1_text_5">1 x 4 = 4</string>
+    <string name="multiplication_table_1_text_6">1 x 5 = 5</string>
+    <string name="multiplication_table_1_text_7">1 x 6 = 6</string>
+    <string name="multiplication_table_1_text_8">1 x 7 = 7</string>
+    <string name="multiplication_table_1_text_9">1 x 8 = 8</string>
+    <string name="multiplication_table_1_text_10">1 x 9 = 9</string>
+
+    <!-- layout/multiplication_table_2.xml -->
+    <string name="multiplication_table_2_text">Çarpım Tablosu 2x</string>
+    <string name="multiplication_table_2_text_2">2 x 1 = 2</string>
+    <string name="multiplication_table_2_text_3">2 x 2 = 4</string>
+    <string name="multiplication_table_2_text_4">2 x 3 = 6</string>
+    <string name="multiplication_table_2_text_5">2 x 4 = 8</string>
+    <string name="multiplication_table_2_text_6">2 x 5 = 10</string>
+    <string name="multiplication_table_2_text_7">2 x 6 = 12</string>
+    <string name="multiplication_table_2_text_8">2 x 7 = 14</string>
+    <string name="multiplication_table_2_text_9">2 x 8 = 16</string>
+    <string name="multiplication_table_2_text_10">2 x 9 = 18</string>
+
+    <!-- layout/multiplication_table_3.xml -->
+    <string name="multiplication_table_3_text">Çarpım Tablosu 3x</string>
+    <string name="multiplication_table_3_text_2">3 x 1 = 3</string>
+    <string name="multiplication_table_3_text_3">3 x 2 = 6</string>
+    <string name="multiplication_table_3_text_4">3 x 3 = 9</string>
+    <string name="multiplication_table_3_text_5">3 x 4 = 12</string>
+    <string name="multiplication_table_3_text_6">3 x 5 = 15</string>
+    <string name="multiplication_table_3_text_7">3 x 6 = 18</string>
+    <string name="multiplication_table_3_text_8">3 x 7 = 21</string>
+    <string name="multiplication_table_3_text_9">3 x 8 = 24</string>
+    <string name="multiplication_table_3_text_10">3 x 9 = 27</string>
+
+    <!-- layout/multiplication_table_4.xml -->
+    <string name="multiplication_table_4_text">Çarpım Tablosu 4x</string>
+    <string name="multiplication_table_4_text_2">4 x 1 = 4</string>
+    <string name="multiplication_table_4_text_3">4 x 2 = 8</string>
+    <string name="multiplication_table_4_text_4">4 x 3 = 12</string>
+    <string name="multiplication_table_4_text_5">4 x 4 = 16</string>
+    <string name="multiplication_table_4_text_6">4 x 5 = 20</string>
+    <string name="multiplication_table_4_text_7">4 x 6 = 24</string>
+    <string name="multiplication_table_4_text_8">4 x 7 = 28</string>
+    <string name="multiplication_table_4_text_9">4 x 8 = 32</string>
+    <string name="multiplication_table_4_text_10">4 x 9 = 36</string>
+
+    <!-- layout/multiplication_table_5.xml -->
+    <string name="multiplication_table_5_text">Çarpım Tablosu 5x</string>
+    <string name="multiplication_table_5_text_2">5 x 1 = 5</string>
+    <string name="multiplication_table_5_text_3">5 x 2 = 10</string>
+    <string name="multiplication_table_5_text_4">5 x 3 = 15</string>
+    <string name="multiplication_table_5_text_5">5 x 4 = 20</string>
+    <string name="multiplication_table_5_text_6">5 x 5 = 25</string>
+    <string name="multiplication_table_5_text_7">5 x 6 = 30</string>
+    <string name="multiplication_table_5_text_8">5 x 7 = 35</string>
+    <string name="multiplication_table_5_text_9">5 x 8 = 40</string>
+    <string name="multiplication_table_5_text_10">5 x 9 = 45</string>
+
+    <!-- layout/multiplication_table_6.xml -->
+    <string name="multiplication_table_6_text">Çarpım Tablosu 6x</string>
+    <string name="multiplication_table_6_text_2">6 x 1 = 6</string>
+    <string name="multiplication_table_6_text_3">6 x 2 = 12</string>
+    <string name="multiplication_table_6_text_4">6 x 3 = 18</string>
+    <string name="multiplication_table_6_text_5">6 x 4 = 24</string>
+    <string name="multiplication_table_6_text_6">6 x 5 = 30</string>
+    <string name="multiplication_table_6_text_7">6 x 6 = 36</string>
+    <string name="multiplication_table_6_text_8">6 x 7 = 42</string>
+    <string name="multiplication_table_6_text_9">6 x 8 = 48</string>
+    <string name="multiplication_table_6_text_10">6 x 9 = 54</string>
+
+    <!-- layout/multiplication_table_7.xml -->
+    <string name="multiplication_table_7_text">Çarpım Tablosu 7x</string>
+    <string name="multiplication_table_7_text_2">7 x 1 = 7</string>
+    <string name="multiplication_table_7_text_3">7 x 2 = 14</string>
+    <string name="multiplication_table_7_text_4">7 x 3 = 21</string>
+    <string name="multiplication_table_7_text_5">7 x 4 = 28</string>
+    <string name="multiplication_table_7_text_6">7 x 5 = 35</string>
+    <string name="multiplication_table_7_text_7">7 x 6 = 42</string>
+    <string name="multiplication_table_7_text_8">7 x 7 = 49</string>
+    <string name="multiplication_table_7_text_9">7 x 8 = 56</string>
+    <string name="multiplication_table_7_text_10">7 x 9 = 63</string>
+
+    <!-- layout/multiplication_table_8.xml -->
+    <string name="multiplication_table_8_text">Çarpım Tablosu 8x</string>
+    <string name="multiplication_table_8_text_2">8 x 1 = 8</string>
+    <string name="multiplication_table_8_text_3">8 x 2 = 16</string>
+    <string name="multiplication_table_8_text_4">8 x 3 = 24</string>
+    <string name="multiplication_table_8_text_5">8 x 4 = 32</string>
+    <string name="multiplication_table_8_text_6">8 x 5 = 40</string>
+    <string name="multiplication_table_8_text_7">8 x 6 = 48</string>
+    <string name="multiplication_table_8_text_8">8 x 7 = 56</string>
+    <string name="multiplication_table_8_text_9">8 x 8 = 64</string>
+    <string name="multiplication_table_8_text_10">8 x 9 = 72</string>
+
+    <!-- layout/multiplication_table_9.xml -->
+    <string name="multiplication_table_9_text">Çarpım Tablosu 9x</string>
+    <string name="multiplication_table_9_text_2">9 x 1 = 9</string>
+    <string name="multiplication_table_9_text_3">9 x 2 = 18</string>
+    <string name="multiplication_table_9_text_4">9 x 3 = 27</string>
+    <string name="multiplication_table_9_text_5">9 x 4 = 36</string>
+    <string name="multiplication_table_9_text_6">9 x 5 = 45</string>
+    <string name="multiplication_table_9_text_7">9 x 6 = 54</string>
+    <string name="multiplication_table_9_text_8">9 x 7 = 63</string>
+    <string name="multiplication_table_9_text_9">9 x 8 = 72</string>
+    <string name="multiplication_table_9_text_10">9 x 9 = 81</string>
+
+    <!-- layout/panel_bead_skin_select.xml -->
+    <string name="panel_bead_skin_select_bead_slot_select_title">Hangi boncuğun yerine kullanmak istiyorsun?</string>
+    <string name="panel_bead_skin_select_bead_slot_inventory_text">x5</string>
+
+    <!-- layout/panel_cup_difficulty.xml -->
+    <string name="panel_cup_difficulty_cup_difficulty_title">Zorluk Seviyesi</string>
+    <string name="panel_cup_difficulty_cup_difficulty_message">Seviyeyi Ayarla</string>
+    <string name="panel_cup_difficulty_text">Basamak Sayısı:</string>
+    <string name="panel_cup_difficulty_cup_difficulty_start_button">BAŞLAT</string>
+
+    <!-- layout/panel_cup_path.xml -->
+    <string name="panel_cup_path_text">Kupa Yolu</string>
+    <string name="panel_cup_path_panel_cup_path_energy_icon_desc">Can</string>
+    <string name="panel_cup_path_card1_title">Toplama Kupa Yolu</string>
+    <string name="panel_cup_path_card2_title">Çıkarma Kupa Yolu</string>
+    <string name="panel_cup_path_card3_title">Çarpma Kupa Yolu</string>
+    <string name="panel_cup_path_card4_title">Toplama Kupa Yolu - Körleme</string>
+    <string name="panel_cup_path_card5_title">Çıkarma Kupa Yolu - Körleme</string>
+    <string name="panel_cup_path_card6_title">Çarpma Kupa Yolu - Körleme</string>
+
+    <!-- layout/panel_profile_abacus.xml -->
+    <string name="panel_profile_abacus_text">Profil ikonunu değiştir</string>
+
+    <!-- layout/race_bottom_sheet.xml -->
+    <string name="race_bottom_sheet_race_title">Ustalık Yolu</string>
+
+    <!-- layout/result_panel_correct.xml -->
+    <string name="result_panel_correct_correct_text">Aferin!</string>
+    <string name="result_panel_correct_continue_button">Devam et</string>
+
+    <!-- layout/result_panel_incorrect.xml -->
+    <string name="result_panel_incorrect_incorrect_text">Yanlış</string>
+    <string name="result_panel_incorrect_correct_answer_label">Doğru cevap:</string>
+    <string name="result_panel_incorrect_correct_answer_text">Doğru cevap burada gösterilecek</string>
+    <string name="result_panel_incorrect_okay_button">DEVAM</string>
+
+    <!-- layout/view_drawing_controls_overlay.xml -->
+    <string name="view_drawing_controls_overlay_pencil_button_desc">Kalem</string>
+    <string name="view_drawing_controls_overlay_undo_button_desc">Geri al</string>
+    <string name="view_drawing_controls_overlay_drawer_button_desc">Çizim panelini aç/kapat</string>
+
+    <!-- layout/view_guide_panel.xml -->
+    <string name="view_guide_panel_tv_guide_text">Test Text</string>
+    <string name="view_guide_panel_btn_back_desc">Geri</string>
+    <string name="view_guide_panel_btn_forward_desc">İleri</string>
+
+    <!-- layout/view_recording_overlay.xml -->
+    <string name="view_recording_overlay_recording_btn_pause_resume_desc">Durdur</string>
+    <string name="view_recording_overlay_recording_btn_cancel_desc">İptal</string>
+    <string name="view_recording_overlay_recording_btn_save_desc">Kaydet</string>
+</resources>

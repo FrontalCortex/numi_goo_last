@@ -532,7 +532,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                     focusLabel.visibility = View.GONE
                 } else {
                     focusLabel.visibility = View.VISIBLE
-                    val rateText = state.globalSuccessRate?.let { " - Başarı: %$it" } ?: ""
+                    val rateText = state.globalSuccessRate?.let { appString(R.string.ui_basari_x, it) } ?: ""
                     focusLabel.text = ctx.getString(
                         R.string.daily_question_focus_format,
                         state.difficulty + rateText,
@@ -834,8 +834,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 add(
                     BulletinRow.Standard(
                         id = "daily_card",
-                        title = "Abaküs",
-                        subtitle = "Abaküste pratik yaparak kendini geliştir.",
+                        title = appString(R.string.ui_abakus),
+                        subtitle = appString(R.string.ui_abakuste_pratik_yaparak_kendini_gelistir),
                         iconRes = R.drawable.abacus_svg_ic,
                     )
                 )
@@ -847,8 +847,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                     add(
                         BulletinRow.Standard(
                             id = "mascot_animation",
-                            title = "Karakter Animasyonu",
-                            subtitle = "Maskotun bütün hareketlerini dene.",
+                            title = appString(R.string.ui_karakter_animasyonu),
+                            subtitle = appString(R.string.ui_maskotun_butun_hareketlerini_dene),
                             colorRes = android.R.color.holo_purple
                         )
                     )
@@ -858,8 +858,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             listOf(
                 BulletinRow.Standard(
                     id = "cup_path",
-                    title = "Kupa Yolu",
-                    subtitle = "Başarılarını kupalarla ölç, seviyeni yükselt ve yeni zorluklara ilerle.",
+                    title = appString(R.string.ui_kupa_yolu),
+                    subtitle = appString(R.string.ui_basarilarini_kupalarla_olc_seviyeni_yukselt),
                     iconRes = R.drawable.infinity_cup_ic,
                     colorRes = R.color.lesson_header_yellow
                 ),
@@ -1789,7 +1789,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
 
         // Çarpma modunda seekBar, thumbLabel, message gizle ve başlığı değiştir
         if (isMultiplicationMode) {
-            contentView.findViewById<TextView>(R.id.cupDifficultyTitle)?.text = "Çarpma Kupa Yolu"
+            contentView.findViewById<TextView>(R.id.cupDifficultyTitle)?.text = appString(R.string.ui_carpma_kupa_yolu)
             contentView.findViewById<View>(R.id.cupDifficultyMessage)?.visibility = View.GONE
         }
 
@@ -3183,12 +3183,12 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
 
     /** Kilitli kartın açılması için bitirilmesi gereken bölüm, [cupCardViewIds] sırasıyla. */
     private val cupCardUnlockRequirements = listOf(
-        "Abaküsün Temeli ve Toplama",
-        "Abaküste Çıkarma",
-        "Abaküste Çarpma",
-        "Körleme Toplama",
-        "Körleme Çıkarma",
-        "Körleme Çarpma",
+        appString(R.string.ui_abakusun_temeli_ve_toplama),
+        appString(R.string.ui_abakuste_cikarma),
+        appString(R.string.ui_abakuste_carpma),
+        appString(R.string.ui_korleme_toplama),
+        appString(R.string.ui_korleme_cikarma),
+        appString(R.string.ui_korleme_carpma),
     )
 
     /**
@@ -3199,7 +3199,7 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         if (card.getTag(R.id.cupCardLockedTag) != true) return false
         Toast.makeText(
             card.context,
-            "Burayı açmak için ${cupCardUnlockRequirements[index]}'yı bitir.",
+            appString(R.string.ui_burayi_acmak_icin_x_yi_bitir, cupCardUnlockRequirements[index]),
             Toast.LENGTH_SHORT,
         ).show()
         return true

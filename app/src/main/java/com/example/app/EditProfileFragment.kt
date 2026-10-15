@@ -62,7 +62,7 @@ class EditProfileFragment : Fragment() {
 
     private fun validateName(name: String): String? {
         return when {
-            name.length < 1 -> "Ad boş bırakılamaz."
+            name.length < 1 -> appString(R.string.ui_ad_bos_birakilamaz)
             name.length > 25 -> "Ad en fazla 25 karakter olabilir."
             else -> null
         }
@@ -112,7 +112,7 @@ class EditProfileFragment : Fragment() {
         }
 
         binding.btnSave.isEnabled = false
-        binding.btnSave.text = "KAYDEDİLİYOR..."
+        binding.btnSave.text = appString(R.string.ui_kaydediliyor)
 
         // İsim güncellemesi
         val profileUpdates = UserProfileChangeRequest.Builder()
@@ -133,11 +133,11 @@ class EditProfileFragment : Fragment() {
                         }
                     }
                     .addOnFailureListener {
-                        Toast.makeText(requireContext(), "Firestore güncellenemedi.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_firestore_guncellenemedi), Toast.LENGTH_SHORT).show()
                         resetSaveButton()
                     }
             } else {
-                Toast.makeText(requireContext(), "Auth profil güncellenemedi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_auth_profil_guncellenemedi), Toast.LENGTH_SHORT).show()
                 resetSaveButton()
             }
         }
@@ -146,23 +146,23 @@ class EditProfileFragment : Fragment() {
     private fun updatePassword(newPassword: String) {
         val user = auth.currentUser ?: return
         if (newPassword.length < 6) {
-            Toast.makeText(requireContext(), "Parola en az 6 karakter olmalıdır.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_parola_en_az_6_karakter_olmalidir), Toast.LENGTH_SHORT).show()
             resetSaveButton()
             return
         }
 
         user.updatePassword(newPassword).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                Toast.makeText(requireContext(), "Parola başarıyla güncellendi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_parola_basariyla_guncellendi), Toast.LENGTH_SHORT).show()
                 binding.etPassword.text?.clear()
                 finishSaving()
             } else {
                 val exception = task.exception
                 if (exception is FirebaseAuthRecentLoginRequiredException) {
-                    Toast.makeText(requireContext(), "Güvenlik nedeniyle parolayı değiştirmek için lütfen tekrar giriş yapın.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_guvenlik_nedeniyle_parolayi_degistirmek_icin), Toast.LENGTH_LONG).show()
                     logoutAndRedirect()
                 } else {
-                    Toast.makeText(requireContext(), "Parola güncellenemedi: ${exception?.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_parola_guncellenemedi_x, exception?.message), Toast.LENGTH_SHORT).show()
                     resetSaveButton()
                 }
             }
@@ -171,7 +171,7 @@ class EditProfileFragment : Fragment() {
 
     private fun finishSaving() {
         if (!isAdded) return
-        Toast.makeText(requireContext(), "Değişiklikler kaydedildi.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), appString(R.string.ui_degisiklikler_kaydedildi), Toast.LENGTH_SHORT).show()
         resetSaveButton()
         parentFragmentManager.popBackStack()
     }
@@ -179,21 +179,21 @@ class EditProfileFragment : Fragment() {
     private fun resetSaveButton() {
         if (!isAdded) return
         binding.btnSave.isEnabled = true
-        binding.btnSave.text = "DEĞİŞİKLİKLERİ KAYDET"
+        binding.btnSave.text = appString(R.string.ui_degisiklikleri_kaydet)
     }
 
     private fun showDeleteConfirmationDialog() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Hesabı Sil")
-            .setMessage("Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")
-            .setPositiveButton("SİL") { _, _ -> deleteAccount() }
-            .setNegativeButton("İPTAL", null)
+            .setTitle(appString(R.string.ui_hesabi_sil))
+            .setMessage(appString(R.string.ui_hesabinizi_kalici_olarak_silmek_istediginize))
+            .setPositiveButton(appString(R.string.ui_sil)) { _, _ -> deleteAccount() }
+            .setNegativeButton(appString(R.string.ui_iptal), null)
             .show()
     }
 
     private fun deleteAccount() {
         val progressDialog = android.app.ProgressDialog(requireContext()).apply {
-            setMessage("Hesabınız ve ilişkili verileriniz siliniyor...")
+            setMessage(appString(R.string.ui_hesabiniz_ve_iliskili_verileriniz_siliniyor))
             setCancelable(false)
             show()
         }
@@ -204,17 +204,17 @@ class EditProfileFragment : Fragment() {
                 firestore = firestore,
                 onSuccess = {
                     progressDialog.dismiss()
-                    Toast.makeText(requireContext(), "Hesabınız başarıyla silindi.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_hesabiniz_basariyla_silindi), Toast.LENGTH_SHORT).show()
                     logoutAndRedirect()
                 },
                 onRequiresRecentLogin = {
                     progressDialog.dismiss()
-                    Toast.makeText(requireContext(), "Güvenlik nedeniyle hesabı silmek için lütfen tekrar giriş yapıp hemen silmeyi deneyin.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen), Toast.LENGTH_LONG).show()
                     logoutAndRedirect()
                 },
                 onFailure = { e ->
                     progressDialog.dismiss()
-                    Toast.makeText(requireContext(), "Hata: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.message), Toast.LENGTH_LONG).show()
                 }
             )
         }

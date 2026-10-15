@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="fitCenter"
-            android:contentDescription="Resim" />
+            android:contentDescription="@string/dialog_image_annotate_annotate_image_desc" />
 
         <com.example.app.DrawingOverlayView
             android:id="@+id/annotateDrawingOverlay"
@@ -43,7 +43,7 @@
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_close_black"
-        android:contentDescription="Kaydet ve kapat"
+        android:contentDescription="@string/dialog_image_annotate_annotate_done_button_desc"
         app:tint="@android:color/white" />
 
 </FrameLayout>

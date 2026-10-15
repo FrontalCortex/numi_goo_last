@@ -58,7 +58,7 @@ object TeacherApprovalGate {
                 SupportContactHelper.openSupportEmail(
                     context,
                     subject = context.getString(R.string.teacher_not_approved_support_subject),
-                    body = if (uid != null) "Merhaba,\n\n\n\nKullanıcı ID: $uid\n" else null,
+                    body = if (uid != null) appString(R.string.ui_merhaba_kullanici_id_x, uid) else null,
                 )
             }
             .show()

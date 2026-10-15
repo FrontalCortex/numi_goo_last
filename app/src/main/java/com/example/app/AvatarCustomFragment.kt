@@ -79,7 +79,7 @@ class AvatarCustomFragment : Fragment() {
             )
             AvatarStore.save(requireContext(), config)
             (activity as? MainActivity)?.refreshProfileNavIcon()
-            Toast.makeText(requireContext(), "Avatarın kaydedildi", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_avatarin_kaydedildi), Toast.LENGTH_SHORT).show()
             close()
         }
         binding.btnRandom.setOnClickListener {

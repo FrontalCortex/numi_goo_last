@@ -59,7 +59,7 @@ class RaceAdapter(
                     lock.visibility = View.GONE
                 }
                 2 -> {
-                    raceStatus.text = "KİLİTLİ"
+                    raceStatus.text = appString(R.string.ui_kilitli_2)
                     lock.visibility = View.VISIBLE
                     buttonBackground.setBackgroundResource(R.drawable.race_button_background)
                     raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_locked))
@@ -67,14 +67,14 @@ class RaceAdapter(
                     raceStatus.alpha = 0.8f
                 }
                 1 -> {
-                    raceStatus.text = "BAŞLA"
+                    raceStatus.text = appString(R.string.ui_basla_2)
                     lock.visibility = View.GONE
                     buttonBackground.setBackgroundResource(R.drawable.button_background)
                     raceStatus.setBackgroundResource(R.drawable.button_background)
                     raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
                 }
                 else -> {
-                    raceStatus.text = "BAŞLA"
+                    raceStatus.text = appString(R.string.ui_basla_2)
                     lock.visibility = View.GONE
                     buttonBackground.setBackgroundResource(R.drawable.button_background)
                     raceStatus.setBackgroundResource(R.drawable.button_background)

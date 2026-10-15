@@ -48,7 +48,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:maxLines="2"
-        android:text="Ödül Başlığı"
+        android:text="@string/item_badge_detail_award_award_badge_title"
         android:textColor="#E5EDF2"
         android:textSize="20sp"
         android:textStyle="bold"

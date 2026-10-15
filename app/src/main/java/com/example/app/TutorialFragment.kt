@@ -43,8 +43,6 @@ import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.abacus.AbacusBeadRenderer
 import com.example.app.abacus.AbacusPreferences
 import com.example.app.model.BeadAnimation
-import org.json.JSONArray
-import org.json.JSONObject
 import com.example.app.model.LessonItem
 import com.example.app.auth.AuthManager
 import kotlin.math.roundToInt
@@ -1663,741 +1661,4068 @@ class TutorialFragment : Fragment() {
         createTutorialSteps26()
     }
     
-    // 1–5 ve 100–103. öğreticiler JSON olarak yazılı; içerik yalnızca buradan okunur.
-    //
-    // Eskiden Remote Config'ten geliyordu (tutorial_step_<no>), bu metinler yalnızca yedekti.
-    // Ekim 2026'da bırakıldı: sesler uygulamanın içinde olduğu için anlamlı her içerik
-    // değişikliği zaten sürüm gerektiriyordu, buna karşılık Splash her açılışta fetch için
-    // 8 saniyeye kadar bekliyordu ve konsoldaki hatalı bir düzenleme ilk öğreticiyi bütün
-    // yeni kullanıcılar için anında bozabilirdi. Konsoldaki parametreler eski sürümler
-    // kullanımdan kalkana kadar duruyor; yeni sürüm onları okumaz.
-    private val TUTORIAL_1_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial1_1","sound":"tutorial1_1","typewriterSpeed":40,"actions":[{"op":"hide","target":"abacusLinear"},{"op":"hide","target":"abacusContainer"},{"op":"hide","target":"backButton"},{"op":"show","target":"skipTutorialButton"}]},
-        {"text":"@string/tutorial1_2","sound":"tutorial1_2","typewriterSpeed":40,"actions":[{"op":"show","target":"backButton"}]},
-        {"text":"@string/tutorial1_4","sound":"tutorial1_4","typewriterSpeed":40,"actions":[{"op":"show","target":"abacusLinear"},{"op":"show","target":"abacusContainer"}]},
-        {"text":"@string/tutorial1_5","sound":"tutorial1_5","typewriterSpeed":40},
-        {"text":"@string/tutorial1_6","sound":"tutorial1_6","typewriterSpeed":40},
-        {"text":"@string/tutorial1_7","sound":"tutorial1_7","typewriterSpeed":40,"actions":[{"op":"showFocus"},{"op":"focusToColumn","column":0}]},
-        {"text":"@string/tutorial1_8","sound":"tutorial1_8","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":1}]},
-        {"text":"@string/tutorial1_9","sound":"tutorial1_9","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":2}]},
-        {"text":"@string/tutorial1_10","sound":"tutorial1_10","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":3}]},
-        {"text":"@string/tutorial1_11","sound":"tutorial1_11","typewriterSpeed":40,"actions":[{"op":"focusToColumn","column":4}]},
-        {"text":"@string/tutorial1_12","sound":"tutorial1_12","typewriterSpeed":40,"actions":[{"op":"focusMarginLiteral","value":1},{"op":"focusSizeTo","target":"columnHighlight"}],"recordSizeHistory":true},
-        {"text":"@string/tutorial1_13","sound":"tutorial1_13","typewriterSpeed":40,"actions":[{"op":"focusChangeMargin","marginRight":1,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline","clearBottom":true},{"op":"focusSizeTo","target":"topBand"}],"recordSizeHistory":true},
-        {"text":"@string/tutorial1_14","sound":"tutorial1_14","typewriterSpeed":40,"actions":[{"op":"focusMarginLiteral","value":1},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusSizeTo","target":"bottomBand"}],"recordSizeHistory":true},
-        {"text":"@string/tutorial1_15","sound":"tutorial1_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}],"actions":[{"op":"hideFocus"}],"recordSizeHistory":true},
-        {"text":"@string/tutorial1_100","sound":"tutorial1_100","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1}]},
-        {"text":"@string/tutorial1_101","sound":"tutorial1_101","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1}]},
-        {"text":"@string/tutorial1_102","sound":"tutorial1_102","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1}]},
-        {"text":"@string/tutorial1_103","sound":"tutorial1_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
-        {"text":"@string/tutorial1_104","sound":"tutorial1_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}]},
-        {"text":"@string/tutorial1_17","sound":"tutorial1_17","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}]},
-        {"text":"@string/tutorial1_105","sound":"tutorial1_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1}]},
-        {"text":"@string/tutorial1_106","sound":"tutorial1_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1}]},
-        {"text":"@string/tutorial1_107","sound":"tutorial1_107","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1}]},
-        {"text":"@string/tutorial1_108","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"abacusReset":true},
-        {"id":"t1_1_asagidaki","text":"@string/tutorial1_109","sound":"tutorial1_109","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1","answerNumber":1,"requestText":"@string/tutorial_ipucu_001","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"id":"t1_2_yaz","text":"@string/tutorial1_110","sound":"tutorial1_110","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"2","answerNumber":2,"requestText":"@string/tutorial_ipucu_002","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"id":"t1_5_yaz","text":"@string/tutorial1_111","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"5","answerNumber":5,"requestText":"@string/tutorial_ipucu_003","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"id":"t1_6_yaz","text":"@string/tutorial1_111","sound":"tutorial1_111","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"6","answerNumber":6,"requestText":"@string/tutorial_ipucu_004","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"id":"t1_8_yaz","text":"@string/tutorial1_113","sound":"tutorial1_113","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"8","answerNumber":8,"requestText":"@string/tutorial_ipucu_005","abacusClickable":true,"nextStepAvailable":false,"nextStepAbacusReset":true}},
-        {"text":"@string/tutorial1_21","sound":"tutorial1_21","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
-
-    // TUTORIAL_1_JSON gibi bir öğretici JSON'unu gerçek TutorialStep listesine çevirir.
-    // Buradaki "op" kodları (hide/show/focusToColumn vb.) sabit bir sözlüktür: JSON sadece
-    // hangi aksiyonun hangi parametreyle çalışacağını söyler, gerçek View mantığı burada kalır.
-    private fun parseTutorialStepsFromJson(json: String): List<TutorialStep> {
-        fun resolveView(name: String): View = when (name) {
-            "abacusLinear" -> binding.abacusLinear
-            "abacusContainer" -> binding.abacusContainer
-            "backButton" -> binding.backButton
-            "skipTutorialButton" -> binding.skipTutorialButton
-            "focusView" -> focusView
-            else -> throw IllegalArgumentException("Bilinmeyen view anahtarı: $name")
-        }
-        // Metinler "@string/<anahtar>" olarak yazılı (strings_tutorial.xml); düz metin de kabul
-        // ediliyor. Anahtar bulunamazsa sessizce boş göstermek yerine çöker: eksik çeviri ya da
-        // yazım hatası ilk açılışta görülsün.
-        fun resolveText(value: String?): String? {
-            if (value == null || !value.startsWith("@string/")) return value
-            val key = value.removePrefix("@string/")
-            val id = resources.getIdentifier(key, "string", requireContext().packageName)
-            if (id == 0) throw IllegalArgumentException("Bilinmeyen metin anahtarı: $key")
-            return getString(id)
-        }
-        fun resolveSound(name: String?): Int? {
-            if (name.isNullOrEmpty()) return null
-            val id = resources.getIdentifier(name, "raw", requireContext().packageName)
-            if (id == 0) {
-                Log.w("Tutorial", "Ses kaynağı bulunamadı: $name")
-                return null
-            }
-            return id
-        }
-        // rulesStepTextTopToBottomOf / widgetVisibilityMap gibi "bir view'e bağlan" alanları için
-        // genel isimden-id'ye çözümleyici (BeadAnimation'daki resources.getIdentifier tekniğiyle aynı).
-        fun resolveIdByName(name: String): Int {
-            val id = resources.getIdentifier(name, "id", requireContext().packageName)
-            if (id == 0) throw IllegalArgumentException("Bilinmeyen view id: $name")
-            return id
-        }
-        fun parseVisibility(value: String): Int = when (value) {
-            "visible" -> View.VISIBLE
-            "invisible" -> View.INVISIBLE
-            "gone" -> View.GONE
-            else -> throw IllegalArgumentException("Bilinmeyen visibility değeri: $value")
-        }
-        // [{"position":0,"color":"#00BFFF"}, ...] -> List<Pair<Int, Int>> (questionTextColorPositions formatı)
-        fun parseColorPositions(arr: JSONArray?): List<Pair<Int, Int>>? {
-            arr ?: return null
-            return (0 until arr.length()).map { idx ->
-                val posJson = arr.getJSONObject(idx)
-                posJson.getInt("position") to Color.parseColor(posJson.getString("color"))
-            }
-        }
-        val recordSizeHistoryStep: (View) -> Unit = { view ->
-            sizeHistory.add(Pair(view.width, view.height))
-            Log.d("Tutorial", "Eklendi: ${view.width} x ${view.height}")
-        }
-        // onStepComplete rastgele kod olamayacağı için (onStep'teki recordSizeHistory gibi),
-        // kod tabanında bugüne kadar kullanılan tek sabit davranış adlandırılmış bir aksiyon olarak sunuluyor.
-        fun resolveOnStepComplete(name: String?): (() -> Unit)? = when {
-            name.isNullOrEmpty() -> null
-            name == "resetAbacus" -> ({ resetAbacus("onStepComplete_callback") })
-            else -> throw IllegalArgumentException("Bilinmeyen onStepComplete: $name")
-        }
-
-        val root = JSONObject(json)
-        val stepsArray = root.getJSONArray("steps")
-        val result = mutableListOf<TutorialStep>()
-
-        for (i in 0 until stepsArray.length()) {
-            val stepJson = stepsArray.getJSONObject(i)
-
-            val beadAnimations: List<BeadAnimation>? = stepJson.optJSONArray("beadAnimations")?.let { arr ->
-                (0 until arr.length()).map { idx ->
-                    val beadJson = arr.getJSONObject(idx)
-                    BeadAnimation(this, beadJson.getString("beadId"), beadJson.getInt("type"))
-                }
-            }
-
-            val widgetOperations: List<() -> WidgetOperation>? = stepJson.optJSONArray("actions")?.let { arr ->
-                (0 until arr.length()).map { idx ->
-                    val actionJson = arr.getJSONObject(idx)
-                    when (actionJson.getString("op")) {
-                        "hide" -> {
-                            val target = resolveView(actionJson.getString("target"))
-                            ({ WidgetOperation.ChangeVisibility(target, View.INVISIBLE) })
-                        }
-                        "show" -> {
-                            val target = resolveView(actionJson.getString("target"))
-                            // İlk açılış akışında "eğitimi atla" hiç gösterilmez.
-                            ({
-                                val hidden = target === binding.skipTutorialButton && isFirstRunTutorial
-                                WidgetOperation.ChangeVisibility(target, if (hidden) View.INVISIBLE else View.VISIBLE)
-                            })
-                        }
-                        "showFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) })
-                        "hideFocus" -> ({ WidgetOperation.ChangeVisibility(focusView, View.GONE) })
-                        "focusToColumn" -> {
-                            val column = actionJson.getInt("column")
-                            ({
-                                WidgetOperation.AnimateMargin(
-                                    view = focusView,
-                                    fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                                    toMarginRight = focusMarginRightPx(column),
-                                    fromMarginLeft = 0,
-                                    toMarginLeft = 0,
-                                    duration = 200
-                                )
-                            })
-                        }
-                        "focusMarginLiteral" -> {
-                            val value = actionJson.getInt("value")
-                            ({
-                                WidgetOperation.AnimateMargin(
-                                    view = focusView,
-                                    fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
-                                    toMarginRight = value,
-                                    fromMarginLeft = 0,
-                                    toMarginLeft = 0,
-                                    duration = 200
-                                )
-                            })
-                        }
-                        "focusChangeMargin" -> {
-                            // marginRight ya sabit bir sayı (marginRight) ya da sütun bazlı hesaplanan
-                            // bir değer (marginRightColumn -> focusMarginRightPx) olabilir.
-                            val marginRight = if (actionJson.has("marginRightColumn")) {
-                                focusMarginRightPx(actionJson.getInt("marginRightColumn"))
-                            } else {
-                                actionJson.getInt("marginRight")
-                            }
-                            val marginLeft = actionJson.getInt("marginLeft")
-                            val marginTop = if (actionJson.has("marginTopDp")) dpToPx(actionJson.getInt("marginTopDp")) else null
-                            ({ WidgetOperation.ChangeMargin(focusView, marginRight, marginLeft, marginTop) })
-                        }
-                        "focusSizeToDp" -> {
-                            val widthDp = actionJson.getInt("widthDp")
-                            val heightDp = actionJson.getInt("heightDp")
-                            ({
-                                WidgetOperation.AnimateSize(
-                                    view = focusView,
-                                    fromWidth = focusView.width,
-                                    toWidth = dpToPx(widthDp),
-                                    fromHeight = focusView.height,
-                                    toHeight = dpToPx(heightDp),
-                                    duration = 400
-                                )
-                            })
-                        }
-                        "focusConstraintTop" -> {
-                            val targetId = when (actionJson.getString("target")) {
-                                "guideline" -> R.id.guideline
-                                "guideline2" -> R.id.guideline2
-                                else -> throw IllegalArgumentException("Bilinmeyen constraint hedefi: ${actionJson.getString("target")}")
-                            }
-                            val clearBottom = actionJson.optBoolean("clearBottom", false)
-                            ({
-                                if (clearBottom) {
-                                    WidgetOperation.ChangeConstraints(
-                                        view = focusView,
-                                        topToTop = targetId,
-                                        bottomToBottom = ConstraintLayout.LayoutParams.UNSET
-                                    )
-                                } else {
-                                    WidgetOperation.ChangeConstraints(view = focusView, topToTop = targetId)
-                                }
-                            })
-                        }
-                        "focusSizeTo" -> {
-                            val toHeightDimen = when (actionJson.getString("target")) {
-                                "columnHighlight" -> R.dimen.tutorial_focus_column_highlight_height
-                                "topBand" -> R.dimen.tutorial_focus_top_bead_band_height
-                                "bottomBand" -> R.dimen.tutorial_focus_bottom_bead_band_height
-                                else -> throw IllegalArgumentException("Bilinmeyen boyut hedefi: ${actionJson.getString("target")}")
-                            }
-                            ({
-                                WidgetOperation.AnimateSize(
-                                    view = focusView,
-                                    fromWidth = focusView.width,
-                                    toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
-                                    fromHeight = focusView.height,
-                                    toHeight = focusDimenPx(toHeightDimen),
-                                    duration = 400
-                                )
-                            })
-                        }
-                        else -> throw IllegalArgumentException("Bilinmeyen aksiyon: ${actionJson.getString("op")}")
-                    }
-                }
-            }
-
-            val questionJson = stepJson.optJSONObject("question")
-
-            // Çoktan seçmeli soru (options/correctOptionIndex/multipleChoice/optionText) - "question"
-            // (sayı yazma) bloğundan ayrı, çünkü kod tabanında ikisi hiç birlikte kullanılmıyor.
-            val choiceQuestionJson = stepJson.optJSONObject("choiceQuestion")
-            val options: List<String>? = choiceQuestionJson?.optJSONArray("options")?.let { arr ->
-                (0 until arr.length()).map { resolveText(arr.getString(it))!! }
-            }
-            val correctOptionIndex: List<Int>? = choiceQuestionJson?.optJSONArray("correctOptionIndex")?.let { arr ->
-                (0 until arr.length()).map { arr.getInt(it) }
-            }
-            // updateOptionsPanelForStep() içinde "step.multipleChoice!!" ile null kontrolsüz kullanılıyor,
-            // bu yüzden choiceQuestion varsa multipleChoice'ı asla null bırakmıyoruz (crash'i önlemek için).
-            val multipleChoice: Boolean? = choiceQuestionJson?.optBoolean("multipleChoice", false)
-
-            val rulesStepTextJson = stepJson.optJSONObject("rulesStepText")
-
-            // Gömülü olmayan (yeni eklenen) sesler için Firebase Storage yolu. Adım kullanılmaya
-            // başlamadan önce indirilebilsin diye aşağıda tüm adımlar toplandıktan sonra prefetch edilir.
-            val soundStoragePath: String? = stepJson.optString("soundUrl").takeIf { it.isNotEmpty() }
-
-            val widgetVisibilityMap: Map<Int, Int>? = stepJson.optJSONObject("widgetVisibilityMap")?.let { obj ->
-                val map = mutableMapOf<Int, Int>()
-                val keysIterator = obj.keys()
-                while (keysIterator.hasNext()) {
-                    val key = keysIterator.next() as String
-                    map[resolveIdByName(key)] = parseVisibility(obj.getString(key))
-                }
-                map
-            }
-
-            result.add(
-                TutorialStep(
-                    text = resolveText(stepJson.getString("text"))!!,
-                    animation = beadAnimations,
-                    widgetOperations = widgetOperations,
-                    onStep = if (stepJson.optBoolean("recordSizeHistory", false)) recordSizeHistoryStep else null,
-                    questionText = questionJson?.optString("questionText"),
-                    questionTextVisibility = if (questionJson != null) View.VISIBLE else View.INVISIBLE,
-                    // Varsayılanlar TutorialStep'in kendi varsayılanlarıyla aynı olmalı (true/false) -
-                    // "question" bloğu her zaman etkileşimli demek değil, bazı adımlar sadece
-                    // ekranda sayı gösterir (örn. tutorial100'deki ara adımlar), cevap istemez.
-                    nextStepAvailable = questionJson?.optBoolean("nextStepAvailable", true) ?: true,
-                    abacusClickable = questionJson?.optBoolean("abacusClickable", false) ?: false,
-                    answerNumber = if (questionJson?.has("answerNumber") == true) questionJson.getInt("answerNumber") else null,
-                    onStepComplete = resolveOnStepComplete(stepJson.optString("onStepComplete", "")),
-                    rulesPanelVisibility = parseVisibility(stepJson.optString("rulesPanelVisibility", "visible")),
-                    rulesStepTextVisibility = rulesStepTextJson?.optString("visibility")?.let { parseVisibility(it) },
-                    rulesStepTextTopToBottomOf = rulesStepTextJson?.optString("topToBottomOf")
-                        ?.takeIf { it.isNotEmpty() }?.let { resolveIdByName(it) },
-                    rulesStepTextContent = resolveText(rulesStepTextJson?.optString("content")),
-                    questionTextColorPositions = parseColorPositions(stepJson.optJSONArray("questionTextColorPositions")),
-                    soundResource = resolveSound(stepJson.optString("sound")),
-                    soundStoragePath = soundStoragePath,
-                    // Orijinal kodda "useTypewriterEffect" belirtilmeyen adımlarda kural netti (1256
-                    // adımdan 1255'i): ses varsa true, ses yoksa false. JSON'da alan hiç yazılmazsa
-                    // bu kurala göre varsayılır - tek tek her adıma yazmaya gerek kalmaz.
-                    useTypewriterEffect = stepJson.optBoolean(
-                        "useTypewriterEffect",
-                        stepJson.optString("sound").isNotEmpty()
-                    ),
-                    typewriterSpeed = stepJson.optLong("typewriterSpeed", 40L),
-                    abacusReset = if (stepJson.has("abacusReset")) stepJson.getBoolean("abacusReset") else null,
-                    // requestText'teki gibi: yazar üst seviyeye de, "question" içine de koymuş olabilir - ikisini de kabul et.
-                    nextStepAbacusReset = when {
-                        stepJson.has("nextStepAbacusReset") -> stepJson.getBoolean("nextStepAbacusReset")
-                        questionJson?.has("nextStepAbacusReset") == true -> questionJson.getBoolean("nextStepAbacusReset")
-                        else -> null
-                    },
-                    // requestText, "question" ile ilişkili olmayabilir (örn. sadece anlatım + ipucu
-                    // metni). Yeni JSON'lar üst seviyeye yazsın; tutorial1'in zaten yayınlanmış
-                    // JSON'unda "question" içinde kaldığı için oradan da okunur (geriye dönük uyum).
-                    requestText = resolveText(stepJson.optString("requestText").takeIf { it.isNotEmpty() }
-                        ?: questionJson?.optString("requestText")),
-                    backAnimationOff = if (stepJson.has("backAnimationOff")) stepJson.getBoolean("backAnimationOff") else null,
-                    resetAndWaith = if (stepJson.has("resetAndWaith")) stepJson.getBoolean("resetAndWaith") else null,
-                    backAnswerNumber = if (stepJson.has("backAnswerNumber")) stepJson.getInt("backAnswerNumber") else null,
-                    widgetVisibilityMap = widgetVisibilityMap,
-                    options = options,
-                    correctOptionIndex = correctOptionIndex,
-                    multipleChoice = multipleChoice,
-                    optionText = resolveText(choiceQuestionJson?.optString("optionText")),
-                    id = stepJson.optString("id").takeIf { it.isNotEmpty() },
-                )
-            )
-        }
-        // Uzaktan sesleri, kullanıcı o adıma gelmeden önce arka planda indirmeye başla.
-        result.mapNotNull { it.soundStoragePath }.distinct().forEach { path ->
-            RemoteAudioCache.prefetch(requireContext(), path)
-        }
-
-        return result
-    }
+    // 1–5 ve 100–103. öğreticiler Ekim 2026'ya kadar Remote Config'ten JSON olarak geliyordu
+    // (tutorial_step_<no>). Sesler uygulamanın içinde olduğu için her içerik değişikliği zaten
+    // sürüm gerektiriyordu; Splash ise fetch için 8 sn bekliyordu. Diğerleri gibi Kotlin'e
+    // çevrildi. Konsoldaki parametreler eski sürümler kullanımdan kalkana kadar duruyor.
 
     private fun createTutorialSteps1(){
-        tutorialSteps = parseTutorialStepsFromJson(TUTORIAL_1_JSON)
+        tutorialSteps = listOf(
+            TutorialStep(
+                getString(R.string.tutorial1_1),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.INVISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.backButton, View.INVISIBLE) },
+                    {
+                        // İlk açılış akışında "eğitimi atla" hiç gösterilmez.
+                        WidgetOperation.ChangeVisibility(binding.skipTutorialButton, if (isFirstRunTutorial) View.INVISIBLE else View.VISIBLE)
+                    }
+                ),
+                soundResource = R.raw.tutorial1_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_2),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(binding.backButton, View.VISIBLE) }
+                ),
+                soundResource = R.raw.tutorial1_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_4),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(binding.abacusLinear, View.VISIBLE) },
+                    { WidgetOperation.ChangeVisibility(binding.abacusContainer, View.VISIBLE) }
+                ),
+                soundResource = R.raw.tutorial1_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_5),
+                soundResource = R.raw.tutorial1_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_6),
+                soundResource = R.raw.tutorial1_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_7),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(0),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                ),
+                soundResource = R.raw.tutorial1_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_8),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(1),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                ),
+                soundResource = R.raw.tutorial1_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_9),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(2),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                ),
+                soundResource = R.raw.tutorial1_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_10),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(3),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                ),
+                soundResource = R.raw.tutorial1_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_11),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(4),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    }
+                ),
+                soundResource = R.raw.tutorial1_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_12),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = 1,
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
+                            fromHeight = focusView.height,
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_column_highlight_height),
+                            duration = 400
+                        )
+                    }
+                ),
+                onStep = { view -> sizeHistory.add(Pair(view.width, view.height)) },
+                soundResource = R.raw.tutorial1_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_13),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeMargin(focusView, 1, 0, null) },
+                    {
+                        WidgetOperation.ChangeConstraints(
+                            view = focusView,
+                            topToTop = R.id.guideline,
+                            bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+                        )
+                    },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
+                            fromHeight = focusView.height,
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_top_bead_band_height),
+                            duration = 400
+                        )
+                    }
+                ),
+                onStep = { view -> sizeHistory.add(Pair(view.width, view.height)) },
+                soundResource = R.raw.tutorial1_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_14),
+                widgetOperations = listOf(
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = 1,
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    },
+                    { WidgetOperation.ChangeConstraints(view = focusView, topToTop = R.id.guideline2) },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = focusDimenPx(R.dimen.tutorial_focus_column_highlight_width),
+                            fromHeight = focusView.height,
+                            toHeight = focusDimenPx(R.dimen.tutorial_focus_bottom_bead_band_height),
+                            duration = 400
+                        )
+                    }
+                ),
+                onStep = { view -> sizeHistory.add(Pair(view.width, view.height)) },
+                soundResource = R.raw.tutorial1_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_15),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1)
+                ),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.GONE) }
+                ),
+                onStep = { view -> sizeHistory.add(Pair(view.width, view.height)) },
+                soundResource = R.raw.tutorial1_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_100),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                soundResource = R.raw.tutorial1_100,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_101),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                soundResource = R.raw.tutorial1_101,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_102),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                soundResource = R.raw.tutorial1_102,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_103),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                soundResource = R.raw.tutorial1_103,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_104),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                soundResource = R.raw.tutorial1_104,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_17),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1)
+                ),
+                soundResource = R.raw.tutorial1_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_105),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                soundResource = R.raw.tutorial1_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_106),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                soundResource = R.raw.tutorial1_106,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_107),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                soundResource = R.raw.tutorial1_107,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_109),
+                id = "t1_1_asagidaki",
+                questionText = "1",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 1,
+                soundResource = R.raw.tutorial1_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_001),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_110),
+                id = "t1_2_yaz",
+                questionText = "2",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 2,
+                soundResource = R.raw.tutorial1_110,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_002),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_111),
+                id = "t1_5_yaz",
+                questionText = "5",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 5,
+                soundResource = R.raw.tutorial1_111,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_003),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_111),
+                id = "t1_6_yaz",
+                questionText = "6",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 6,
+                soundResource = R.raw.tutorial1_111,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_004),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_113),
+                id = "t1_8_yaz",
+                questionText = "8",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 8,
+                soundResource = R.raw.tutorial1_113,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_005),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_21),
+                soundResource = R.raw.tutorial1_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
-    private val TUTORIAL_100_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial3_100","sound":"tutorial3_100","typewriterSpeed":40},
-        {"text":"@string/tutorial1_3","sound":"tutorial1_3","typewriterSpeed":40},
-        {"text":"@string/tutorial3_101","sound":"tutorial3_101","typewriterSpeed":40},
-        {"text":"@string/tutorial3_102","sound":"tutorial3_102","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}]},
-        {"text":"@string/tutorial3_103","sound":"tutorial3_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom2","type":1}]},
-        {"text":"@string/tutorial3_104","sound":"tutorial3_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}]},
-        {"text":"@string/tutorial3_105","sound":"tutorial3_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}]},
-        {"text":"@string/tutorial3_106","sound":"tutorial3_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":3}]},
-        {"text":"@string/tutorial3_107","sound":"tutorial3_107","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}]},
-        {"text":"@string/tutorial3_108","sound":"tutorial3_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom2","type":1}]},
-        {"text":"@string/tutorial3_109","sound":"tutorial3_109","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}]},
-        {"text":"@string/tutorial3_110","sound":"tutorial3_110","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}]},
-        {"text":"@string/tutorial1_108","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4}],"abacusReset":true,"resetAndWaith":true,"requestText":"@string/tutorial_ipucu_006"},
-        {"id":"t100_70_yaz","text":"@string/tutorial3_111","sound":"tutorial3_111","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_006","question":{"questionText":"70","nextStepAvailable":false,"abacusClickable":true,"answerNumber":70,"nextStepAbacusReset":true}},
-        {"text":"@string/tutorial3_112","sound":"tutorial3_112","typewriterSpeed":40,"abacusReset":true},
-        {"text":"@string/tutorial3_113","sound":"tutorial3_113","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"12"}},
-        {"text":"@string/tutorial3_114","sound":"tutorial3_114","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"question":{"questionText":"12"}},
-        {"text":"@string/tutorial3_115","sound":"tutorial3_115","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2}],"question":{"questionText":"24"}},
-        {"text":"@string/tutorial3_116","sound":"tutorial3_116","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1}],"question":{"questionText":"24"}},
-        {"text":"@string/tutorial3_117","sound":"tutorial3_117","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"question":{"questionText":"24"}},
-        {"text":"@string/tutorial3_118","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"abacusReset":true,"question":{"questionText":"32"}},
-        {"id":"t100_32_onlar_30u","text":"@string/tutorial3_119","sound":"tutorial3_119","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_007","question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":30}},
-        {"id":"t100_32_birler_2yi","text":"@string/tutorial3_120","sound":"tutorial3_120","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_008","backAnswerNumber":30,"question":{"questionText":"32","nextStepAvailable":false,"abacusClickable":true,"answerNumber":32,"nextStepAbacusReset":true}},
-        {"text":"@string/tutorial3_121","sound":"tutorial3_121","typewriterSpeed":40,"question":{"questionText":"78"}},
-        {"text":"@string/tutorial3_122","sound":"tutorial3_122","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_top","type":3}],"question":{"questionText":"78"}},
-        {"text":"@string/tutorial3_123","sound":"tutorial3_123","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_top","type":3},{"beadId":"rod4_bead_bottom3","type":1}],"question":{"questionText":"78"}},
-        {"text":"@string/tutorial3_124","sound":"tutorial3_124","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_top","type":4}],"abacusReset":true,"question":{"questionText":"94"}},
-        {"id":"t100_94_onlar","text":"@string/tutorial3_125","sound":"tutorial3_125","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_009","question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":90}},
-        {"id":"t100_94_birler_4u","text":"@string/tutorial3_126","sound":"tutorial3_126","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_010","backAnswerNumber":90,"question":{"questionText":"94","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94,"nextStepAbacusReset":true}},
-        {"text":"@string/tutorial3_127","sound":"tutorial3_127","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps100(){
-        tutorialSteps100 = parseTutorialStepsFromJson(TUTORIAL_100_JSON)
+        tutorialSteps100 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial3_100),
+                soundResource = R.raw.tutorial3_100,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_3),
+                soundResource = R.raw.tutorial1_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_101),
+                soundResource = R.raw.tutorial3_101,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_102),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                soundResource = R.raw.tutorial3_102,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_103),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom2", 1)
+                ),
+                soundResource = R.raw.tutorial3_103,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_104),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)
+                ),
+                soundResource = R.raw.tutorial3_104,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_105),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                ),
+                soundResource = R.raw.tutorial3_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_106),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                soundResource = R.raw.tutorial3_106,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_107),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                soundResource = R.raw.tutorial3_107,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom2", 1)
+                ),
+                soundResource = R.raw.tutorial3_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_109),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)
+                ),
+                soundResource = R.raw.tutorial3_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_110),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                ),
+                soundResource = R.raw.tutorial3_110,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_006),
+                resetAndWaith = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_111),
+                id = "t100_70_yaz",
+                questionText = "70",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 70,
+                soundResource = R.raw.tutorial3_111,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_006),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_112),
+                soundResource = R.raw.tutorial3_112,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_113),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "12",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_113,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_114),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                questionText = "12",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_114,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_115),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2)
+                ),
+                questionText = "24",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_115,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_116),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1)
+                ),
+                questionText = "24",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_116,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_117),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "24",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_117,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_118),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                questionText = "32",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_118,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_119),
+                id = "t100_32_onlar_30u",
+                questionText = "32",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 30,
+                soundResource = R.raw.tutorial3_119,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_007),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_120),
+                id = "t100_32_birler_2yi",
+                questionText = "32",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 32,
+                soundResource = R.raw.tutorial3_120,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_008),
+                backAnswerNumber = 30,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_121),
+                questionText = "78",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_121,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_122),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "78",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_122,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_123),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                questionText = "78",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_123,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_124),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4)
+                ),
+                questionText = "94",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_124,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_125),
+                id = "t100_94_onlar",
+                questionText = "94",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 90,
+                soundResource = R.raw.tutorial3_125,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_009),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_126),
+                id = "t100_94_birler_4u",
+                questionText = "94",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 94,
+                soundResource = R.raw.tutorial3_126,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_010),
+                backAnswerNumber = 90,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_127),
+                soundResource = R.raw.tutorial3_127,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
 
-    private val TUTORIAL_101_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial4_100","sound":"tutorial4_100","typewriterSpeed":40},
-        {"text":"@string/tutorial4_101","sound":"tutorial4_101","typewriterSpeed":40},
-        {"text":"@string/tutorial4_102","sound":"tutorial4_102","typewriterSpeed":40,"question":{"questionText":"154"}},
-        {"text":"@string/tutorial4_103","sound":"tutorial4_103","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"154"}},
-        {"text":"@string/tutorial4_104","sound":"tutorial4_104","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"154"}},
-        {"text":"@string/tutorial4_105","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"154"}},
-        {"text":"@string/tutorial3_118","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"abacusReset":true,"question":{"questionText":"687"}},
-        {"id":"t101_687_yuzler_3","text":"@string/tutorial4_107","sound":"tutorial4_107","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"@string/tutorial_ipucu_011","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":600}},
-        {"id":"t101_687_onlar_2","text":"@string/tutorial4_108","sound":"tutorial4_108","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":600,"requestText":"@string/tutorial_ipucu_012","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":680}},
-        {"id":"t101_687_birler","text":"@string/tutorial4_109","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":680,"requestText":"@string/tutorial_ipucu_013","question":{"questionText":"687","nextStepAvailable":false,"abacusClickable":true,"answerNumber":687,"nextStepAbacusReset":true}},
-        {"text":"@string/tutorial4_3000","sound":"tutorial4_3000","typewriterSpeed":40,"question":{"questionText":"7319"}},
-        {"text":"@string/tutorial4_3001","sound":"tutorial4_3001","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod1_bead_bottom1","type":1},{"beadId":"rod1_bead_bottom2","type":1},{"beadId":"rod1_bead_top","type":3}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
-        {"text":"@string/tutorial4_3002","sound":"tutorial4_3002","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
-        {"text":"@string/tutorial4_2008","sound":"tutorial4_2008","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
-        {"text":"@string/tutorial4_105","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"question":{"questionText":"7319"}},
-        {"text":"@string/tutorial3_118","sound":"tutorial3_118","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod1_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom2","type":2},{"beadId":"rod1_bead_top","type":4}],"abacusReset":true,"question":{"questionText":"4813"}},
-        {"id":"t101_4813_binler_4","text":"@string/tutorial4_3003","sound":"tutorial4_3003","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"@string/tutorial_ipucu_014","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4000}},
-        {"id":"t101_4813_yuzler_3","text":"@string/tutorial4_3004","sound":"tutorial4_3004","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":4000,"requestText":"@string/tutorial_ipucu_012","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4800}},
-        {"id":"t101_4813_onlar_2","text":"@string/tutorial4_108","sound":"tutorial4_108","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":4800,"requestText":"@string/tutorial_ipucu_015","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4810}},
-        {"id":"t101_4813_birler","text":"@string/tutorial4_109","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"backAnswerNumber":4810,"nextStepAbacusReset":true,"requestText":"@string/tutorial_ipucu_016","question":{"questionText":"4813","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4813}},
-        {"id":"t101_soru_sayilari_hangi_basamaktan","text":"@string/tutorial101_0","sound":"tutorial101_0","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_017","choiceQuestion":{"options":["@string/tutorial_sik_001","@string/tutorial_sik_002","@string/tutorial_sik_003"],"correctOptionIndex":[2],"multipleChoice":false,"optionText":"@string/tutorial101_0"}},
-        {"text":"@string/tutorial4_3000","sound":"tutorial4_3000","typewriterSpeed":40,"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial4_3005","sound":"tutorial4_3005","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod0_bead_bottom1","type":1},{"beadId":"rod0_bead_bottom2","type":1},{"beadId":"rod0_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial4_2006","sound":"tutorial4_2006","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod1_bead_bottom1","type":1},{"beadId":"rod1_bead_bottom2","type":1},{"beadId":"rod1_bead_bottom3","type":1},{"beadId":"rod1_bead_bottom4","type":1},{"beadId":"rod1_bead_top","type":3}],"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial4_2007","sound":"tutorial4_2007","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial4_2008","sound":"tutorial4_2008","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial4_105","sound":"tutorial4_105","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"39125"}},
-        {"text":"@string/tutorial3_118","sound":"tutorial4_106","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom1","type":2},{"beadId":"rod1_bead_bottom2","type":2},{"beadId":"rod1_bead_bottom3","type":2},{"beadId":"rod1_bead_bottom4","type":2},{"beadId":"rod1_bead_top","type":4},{"beadId":"rod0_bead_bottom1","type":2},{"beadId":"rod0_bead_bottom2","type":2},{"beadId":"rod0_bead_bottom3","type":2}],"abacusReset":true,"question":{"questionText":"84192"}},
-        {"id":"t101_84192_on_binler_5","text":"@string/tutorial4_2009","sound":"tutorial4_2009","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"abacusReset":true,"requestText":"@string/tutorial_ipucu_012","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":80000}},
-        {"id":"t101_84192_binler_4","text":"@string/tutorial4_3003","sound":"tutorial4_3003","typewriterSpeed":40,"questionTextColorPositions":[{"position":1,"color":"#00BFFF"}],"backAnswerNumber":80000,"requestText":"@string/tutorial_ipucu_014","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84000}},
-        {"id":"t101_84192_yuzler_3","text":"@string/tutorial4_107","sound":"tutorial4_107","typewriterSpeed":40,"questionTextColorPositions":[{"position":2,"color":"#00BFFF"}],"backAnswerNumber":84000,"requestText":"@string/tutorial_ipucu_015","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84100}},
-        {"id":"t101_84192_onlar_2","text":"@string/tutorial4_2010","sound":"tutorial4_2010","typewriterSpeed":40,"questionTextColorPositions":[{"position":3,"color":"#00BFFF"}],"backAnswerNumber":84100,"requestText":"@string/tutorial_ipucu_018","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84190}},
-        {"id":"t101_84192_birler","text":"@string/tutorial4_109","sound":"tutorial4_109","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"backAnswerNumber":84190,"nextStepAbacusReset":true,"requestText":"@string/tutorial_ipucu_019","question":{"questionText":"84192","nextStepAvailable":false,"abacusClickable":true,"answerNumber":84192}},
-        {"text":"@string/tutorial4_110","sound":"tutorial4_110","typewriterSpeed":40},
-        {"text":"@string/tutorial15_27","sound":"tutorial15_27","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps101(){
-        tutorialSteps101 = parseTutorialStepsFromJson(TUTORIAL_101_JSON)
+        tutorialSteps101 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial4_100),
+                soundResource = R.raw.tutorial4_100,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_101),
+                soundResource = R.raw.tutorial4_101,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_102),
+                questionText = "154",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_102,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_103),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1)
+                ),
+                questionText = "154",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_103,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_104),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "154",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_104,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_105),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "154",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_118),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                questionText = "687",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_118,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_107),
+                id = "t101_687_yuzler_3",
+                questionText = "687",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 600,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_107,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_011),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_108),
+                id = "t101_687_onlar_2",
+                questionText = "687",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 680,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_012),
+                backAnswerNumber = 600,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_109),
+                id = "t101_687_birler",
+                questionText = "687",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 687,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_013),
+                backAnswerNumber = 680,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3000),
+                questionText = "7319",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_3000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3001),
+                animation = listOf(
+                    BeadAnimation(this, "rod1_bead_bottom1", 1),
+                    BeadAnimation(this, "rod1_bead_bottom2", 1),
+                    BeadAnimation(this, "rod1_bead_top", 3)
+                ),
+                questionText = "7319",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3001,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3002),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod2_bead_bottom2", 1),
+                    BeadAnimation(this, "rod2_bead_bottom3", 1)
+                ),
+                questionText = "7319",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3002,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2008),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "7319",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2008,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_105),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "7319",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(3 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_118),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom3", 2),
+                    BeadAnimation(this, "rod1_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom2", 2),
+                    BeadAnimation(this, "rod1_bead_top", 4)
+                ),
+                questionText = "4813",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_118,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3003),
+                id = "t101_4813_binler_4",
+                questionText = "4813",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4000,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3003,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_014),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3004),
+                id = "t101_4813_yuzler_3",
+                questionText = "4813",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4800,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3004,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_012),
+                backAnswerNumber = 4000,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_108),
+                id = "t101_4813_onlar_2",
+                questionText = "4813",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4810,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_015),
+                backAnswerNumber = 4800,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_109),
+                id = "t101_4813_birler",
+                questionText = "4813",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4813,
+                questionTextColorPositions = listOf(3 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_016),
+                backAnswerNumber = 4810,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial101_0),
+                id = "t101_soru_sayilari_hangi_basamaktan",
+                soundResource = R.raw.tutorial101_0,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_017),
+                options = listOf(
+                    getString(R.string.tutorial_sik_001),
+                    getString(R.string.tutorial_sik_002),
+                    getString(R.string.tutorial_sik_003)
+                ),
+                correctOptionIndex = listOf(2),
+                multipleChoice = false,
+                optionText = getString(R.string.tutorial101_0),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3000),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_3000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3005),
+                animation = listOf(
+                    BeadAnimation(this, "rod0_bead_bottom1", 1),
+                    BeadAnimation(this, "rod0_bead_bottom2", 1),
+                    BeadAnimation(this, "rod0_bead_bottom3", 1)
+                ),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3005,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2006),
+                animation = listOf(
+                    BeadAnimation(this, "rod1_bead_bottom1", 1),
+                    BeadAnimation(this, "rod1_bead_bottom2", 1),
+                    BeadAnimation(this, "rod1_bead_bottom3", 1),
+                    BeadAnimation(this, "rod1_bead_bottom4", 1),
+                    BeadAnimation(this, "rod1_bead_top", 3)
+                ),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2006,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2007),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1)
+                ),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2007,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2008),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1)
+                ),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(3 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2008,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_105),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "39125",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_118),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom1", 2),
+                    BeadAnimation(this, "rod1_bead_bottom2", 2),
+                    BeadAnimation(this, "rod1_bead_bottom3", 2),
+                    BeadAnimation(this, "rod1_bead_bottom4", 2),
+                    BeadAnimation(this, "rod1_bead_top", 4),
+                    BeadAnimation(this, "rod0_bead_bottom1", 2),
+                    BeadAnimation(this, "rod0_bead_bottom2", 2),
+                    BeadAnimation(this, "rod0_bead_bottom3", 2)
+                ),
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_106,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2009),
+                id = "t101_84192_on_binler_5",
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 80000,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2009,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_012),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3003),
+                id = "t101_84192_binler_4",
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84000,
+                questionTextColorPositions = listOf(1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3003,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_014),
+                backAnswerNumber = 80000,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_107),
+                id = "t101_84192_yuzler_3",
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84100,
+                questionTextColorPositions = listOf(2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_107,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_015),
+                backAnswerNumber = 84000,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2010),
+                id = "t101_84192_onlar_2",
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84190,
+                questionTextColorPositions = listOf(3 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2010,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_018),
+                backAnswerNumber = 84100,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_109),
+                id = "t101_84192_birler",
+                questionText = "84192",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 84192,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_109,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_019),
+                backAnswerNumber = 84190,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_110),
+                soundResource = R.raw.tutorial4_110,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial15_27),
+                soundResource = R.raw.tutorial15_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
 
-    private val TUTORIAL_2_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial2_1","sound":"tutorial2_1","typewriterSpeed":40},
-        {"text":"@string/tutorial2_3","sound":"tutorial2_3","typewriterSpeed":40,"question":{"questionText":"3 + 5"}},
-        {"text":"@string/tutorial2_4","sound":"tutorial2_4","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 5"}},
-        {"text":"@string/tutorial2_5","sound":"tutorial2_5","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 5"}},
-        {"text":"@string/tutorial2_6","sound":"tutorial2_6","typewriterSpeed":40,"question":{"questionText":"3 + 5"}},
-        {"text":"@string/tutorial12_9","sound":"tutorial12_9","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"question":{"questionText":"1 + 7"}},
-        {"text":"@string/tutorial2_101","sound":"tutorial2_101","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
-        {"text":"@string/tutorial2_102","sound":"tutorial2_102","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
-        {"text":"@string/tutorial2_102","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 7"}},
-        {"text":"@string/tutorial2_6","sound":"tutorial2_6","typewriterSpeed":40,"question":{"questionText":"1 + 7"}},
-        {"text":"@string/tutorial2_7","sound":"tutorial2_7","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"abacusReset":true,"question":{"questionText":"2 + 6"}},
-        {"id":"t2_2p6_2_ete","text":"@string/tutorial2_8","sound":"tutorial2_8","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_020","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"2 + 6","nextStepAvailable":false,"abacusClickable":true,"answerNumber":2}},
-        {"id":"t2_2p6_6yi_ekleyip_ete","text":"@string/tutorial2_9","sound":"tutorial2_9","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":2,"requestText":"@string/tutorial_ipucu_021","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 6","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
-        {"text":"@string/tutorial2_103","sound":"tutorial2_103","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"1 + 8"}},
-        {"id":"t2_1p8_1_ete","text":"@string/tutorial2_104","sound":"tutorial2_104","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_022","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"1 + 8","nextStepAvailable":false,"abacusClickable":true,"answerNumber":1}},
-        {"id":"t2_1p8_8i_ekleyip_ete","text":"@string/tutorial2_105","sound":"tutorial2_105","typewriterSpeed":40,"backAnswerNumber":1,"nextStepAbacusReset":true,"requestText":"@string/tutorial_ipucu_023","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"1 + 8","nextStepAvailable":false,"abacusClickable":true,"answerNumber":9}},
-        {"text":"@string/tutorial15_27","sound":"tutorial15_27","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps2(){
-        tutorialSteps2 = parseTutorialStepsFromJson(TUTORIAL_2_JSON)
+        tutorialSteps2 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial2_1),
+                soundResource = R.raw.tutorial2_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_3),
+                questionText = "3 + 5",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_4),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                questionText = "3 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_5),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "3 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_6),
+                questionText = "3 + 5",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial12_9),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2)
+                ),
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial12_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_101),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1)
+                ),
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_101,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_102),
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_102,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_102),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_6),
+                questionText = "1 + 7",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_7),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2)
+                ),
+                questionText = "2 + 6",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_8),
+                id = "t2_2p6_2_ete",
+                questionText = "2 + 6",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 2,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_020),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_9),
+                id = "t2_2p6_6yi_ekleyip_ete",
+                questionText = "2 + 6",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 8,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_021),
+                backAnswerNumber = 2,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_103),
+                questionText = "1 + 8",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_103,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_104),
+                id = "t2_1p8_1_ete",
+                questionText = "1 + 8",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 1,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_104,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_022),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_105),
+                id = "t2_1p8_8i_ekleyip_ete",
+                questionText = "1 + 8",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 9,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_105,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_023),
+                backAnswerNumber = 1,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial15_27),
+                soundResource = R.raw.tutorial15_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
 
-    private val TUTORIAL_102_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial2_11","sound":"tutorial2_11","typewriterSpeed":40},
-        {"text":"@string/tutorial2_12","sound":"tutorial2_12","typewriterSpeed":40,"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_13","sound":"tutorial2_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_13","useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_14","sound":"tutorial2_14","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_14","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_14","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial2_15","sound":"tutorial2_15","typewriterSpeed":40,"question":{"questionText":"21 + 13"}},
-        {"text":"@string/tutorial1_108","sound":"tutorial2_16","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
-        {"text":"@string/tutorial2_17","sound":"tutorial2_17","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"16 + 21"}},
-        {"id":"t102_16p21_16_ete","text":"@string/tutorial2_18","sound":"tutorial2_18","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_024","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":16}},
-        {"id":"t102_16p21_21i_eklemek_20yi","text":"@string/tutorial2_19","sound":"tutorial2_19","typewriterSpeed":40,"backAnswerNumber":16,"requestText":"@string/tutorial_ipucu_025","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":36}},
-        {"id":"t102_16p21_1i_birler","text":"@string/tutorial2_20","sound":"tutorial2_20","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":36,"requestText":"@string/tutorial_ipucu_026","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"16 + 21","nextStepAvailable":false,"abacusClickable":true,"answerNumber":37}},
-        {"text":"@string/tutorial10_6","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_0","sound":"tutorial102_0","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_0","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_1","sound":"tutorial102_1","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_1","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1},{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_1","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"36 + 63"}},
-        {"text":"@string/tutorial102_2","sound":"tutorial102_2","typewriterSpeed":40},
-        {"text":"@string/tutorial1_108","sound":"tutorial1_108","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}]},
-        {"text":"@string/tutorial2_17","sound":"tutorial2_17","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"23 + 71"}},
-        {"id":"t102_23p71_ilk_sayi","text":"@string/tutorial102_3","sound":"tutorial102_3","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_027","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":23}},
-        {"id":"t102_23p71_71i_eklemek_70i","text":"@string/tutorial102_4","sound":"tutorial102_4","typewriterSpeed":40,"backAnswerNumber":23,"requestText":"@string/tutorial_ipucu_028","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":93}},
-        {"id":"t102_23p71_1i_birler","text":"@string/tutorial102_5","sound":"tutorial102_5","typewriterSpeed":40,"backAnswerNumber":93,"requestText":"@string/tutorial_ipucu_026","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"23 + 71","nextStepAvailable":false,"abacusClickable":true,"answerNumber":94}},
-        {"text":"@string/tutorial15_27","sound":"tutorial15_27","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps102(){
-        tutorialSteps102 = parseTutorialStepsFromJson(TUTORIAL_102_JSON)
+        tutorialSteps102 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial2_11),
+                soundResource = R.raw.tutorial2_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_12),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_13),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1)
+                ),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_14),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_14),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)
+                ),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_14),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_15),
+                questionText = "21 + 13",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                soundResource = R.raw.tutorial2_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_17),
+                questionText = "16 + 21",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_18),
+                id = "t102_16p21_16_ete",
+                questionText = "16 + 21",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 16,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_024),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_19),
+                id = "t102_16p21_21i_eklemek_20yi",
+                questionText = "16 + 21",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 36,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_025),
+                backAnswerNumber = 16,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_20),
+                id = "t102_16p21_1i_birler",
+                questionText = "16 + 21",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 37,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial2_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_026),
+                backAnswerNumber = 36,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial10_6),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial10_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_0),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial102_0,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_0),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_1),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial102_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_1),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 1),
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_1),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                questionText = "36 + 63",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_2),
+                soundResource = R.raw.tutorial102_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_17),
+                questionText = "23 + 71",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial2_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_3),
+                id = "t102_23p71_ilk_sayi",
+                questionText = "23 + 71",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 23,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial102_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_027),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_4),
+                id = "t102_23p71_71i_eklemek_70i",
+                questionText = "23 + 71",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 93,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial102_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_028),
+                backAnswerNumber = 23,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial102_5),
+                id = "t102_23p71_1i_birler",
+                questionText = "23 + 71",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 94,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial102_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_026),
+                backAnswerNumber = 93,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial15_27),
+                soundResource = R.raw.tutorial15_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
-    private val TUTORIAL_103_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial103_0","sound":"tutorial103_0","typewriterSpeed":40},
-        {"text":"@string/tutorial103_1","sound":"tutorial103_1","typewriterSpeed":40},
-        {"text":"@string/tutorial10_6","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_2","sound":"tutorial103_2","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_2","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod3_bead_bottom4","type":1},{"beadId":"rod4_bead_bottom1","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_3","sound":"tutorial103_3","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_4","sound":"tutorial103_4","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_5","sound":"tutorial103_5","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_6","sound":"tutorial103_6","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial103_7","sound":"tutorial103_7","typewriterSpeed":40,"question":{"questionText":"241 + 153"}},
-        {"text":"@string/tutorial1_108","sound":"tutorial1_108","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
-        {"id":"t103_222p126_222_ete","text":"@string/tutorial103_8","sound":"tutorial103_8","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_029","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":222}},
-        {"text":"@string/tutorial103_9","sound":"tutorial103_9","typewriterSpeed":40,"backAnswerNumber":222,"requestText":"@string/tutorial_ipucu_025","questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"222 + 126"}},
-        {"id":"t103_222p126_100","text":"@string/tutorial103_4","sound":"tutorial103_4","typewriterSpeed":40,"backAnswerNumber":222,"requestText":"@string/tutorial_ipucu_030","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":322}},
-        {"id":"t103_222p126_20","text":"@string/tutorial103_10","sound":"tutorial103_10","typewriterSpeed":40,"backAnswerNumber":322,"requestText":"@string/tutorial_ipucu_025","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":342}},
-        {"id":"t103_222p126_6","text":"@string/tutorial103_11","sound":"tutorial103_11","typewriterSpeed":40,"backAnswerNumber":342,"requestText":"@string/tutorial_ipucu_031","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"222 + 126","nextStepAvailable":false,"abacusClickable":true,"answerNumber":348}},
-        {"text":"@string/tutorial103_348","sound":"tutorial103_348","typewriterSpeed":40,"nextStepAbacusReset":true,"question":{"questionText":"222 + 126"}},
-        {"text":"@string/tutorial10_6","sound":"tutorial10_6","typewriterSpeed":40,"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_12","sound":"tutorial103_12","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_12","typewriterSpeed":40,"useTypewriterEffect":false,"beadAnimations":[{"beadId":"rod2_bead_top","type":3},{"beadId":"rod3_bead_top","type":3},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_13","sound":"tutorial103_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_14","sound":"tutorial103_14","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod2_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_15","sound":"tutorial103_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_11","sound":"tutorial103_11","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial103_17","sound":"tutorial103_17","typewriterSpeed":40,"question":{"questionText":"582 + 316"}},
-        {"text":"@string/tutorial1_108","sound":"tutorial1_108","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2},{"beadId":"rod2_bead_bottom3","type":2},{"beadId":"rod2_bead_top","type":4},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod3_bead_bottom4","type":2},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_top","type":4}]},
-        {"id":"t103_723p266_723_ete","text":"@string/tutorial103_18","sound":"tutorial103_18","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_032","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":723}},
-        {"text":"@string/tutorial103_19","sound":"tutorial103_19","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"@string/tutorial_ipucu_025","questionTextColorPositions":[{"position":6,"color":"#00BFFF"},{"position":7,"color":"#00BFFF"},{"position":8,"color":"#00BFFF"}],"question":{"questionText":"723 + 266"}},
-        {"id":"t103_723p266_200","text":"@string/tutorial103_20","sound":"tutorial103_20","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"@string/tutorial_ipucu_033","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":923}},
-        {"id":"t103_723p266_60","text":"@string/tutorial103_21","sound":"tutorial103_21","typewriterSpeed":40,"backAnswerNumber":923,"requestText":"@string/tutorial_ipucu_034","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":983}},
-        {"id":"t103_723p266_6","text":"@string/tutorial103_11","sound":"tutorial103_11","typewriterSpeed":40,"backAnswerNumber":983,"requestText":"@string/tutorial_ipucu_031","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"723 + 266","nextStepAvailable":false,"abacusClickable":true,"answerNumber":989}},
-        {"text":"@string/tutorial103_22","sound":"tutorial103_22","typewriterSpeed":40,"nextStepAbacusReset":true,"backAnswerNumber":989,"requestText":"@string/tutorial_ipucu_026","question":{"questionText":"723 + 266"}},
-        {"text":"@string/tutorial15_27","sound":"tutorial15_27","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps103(){
-        tutorialSteps103 = parseTutorialStepsFromJson(TUTORIAL_103_JSON)
+        tutorialSteps103 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial103_0),
+                soundResource = R.raw.tutorial103_0,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_1),
+                soundResource = R.raw.tutorial103_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial10_6),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial10_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_2),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_2),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod2_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1)
+                ),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_3),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF"), 7 to Color.parseColor("#00BFFF"), 8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_4),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom3", 1)
+                ),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_5),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_6),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_7),
+                questionText = "241 + 153",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial103_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_8),
+                id = "t103_222p126_222_ete",
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 222,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_029),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_9),
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF"), 7 to Color.parseColor("#00BFFF"), 8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_025),
+                backAnswerNumber = 222,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_4),
+                id = "t103_222p126_100",
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 322,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_030),
+                backAnswerNumber = 222,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_10),
+                id = "t103_222p126_20",
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 342,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_025),
+                backAnswerNumber = 322,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_11),
+                id = "t103_222p126_6",
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 348,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_031),
+                backAnswerNumber = 342,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_348),
+                questionText = "222 + 126",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial103_348,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial10_6),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial10_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_12),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_12),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_top", 3),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_13),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF"), 7 to Color.parseColor("#00BFFF"), 8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_14),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod2_bead_bottom2", 1),
+                    BeadAnimation(this, "rod2_bead_bottom3", 1)
+                ),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_15),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                ),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_11),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_17),
+                questionText = "582 + 316",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial103_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom2", 2),
+                    BeadAnimation(this, "rod2_bead_bottom3", 2),
+                    BeadAnimation(this, "rod2_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod3_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial1_108,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_18),
+                id = "t103_723p266_723_ete",
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 723,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_032),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_19),
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF"), 7 to Color.parseColor("#00BFFF"), 8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_025),
+                backAnswerNumber = 723,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_20),
+                id = "t103_723p266_200",
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 923,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_033),
+                backAnswerNumber = 723,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_21),
+                id = "t103_723p266_60",
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 983,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_034),
+                backAnswerNumber = 923,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_11),
+                id = "t103_723p266_6",
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 989,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial103_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_031),
+                backAnswerNumber = 983,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial103_22),
+                questionText = "723 + 266",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial103_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_026),
+                backAnswerNumber = 989,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial15_27),
+                soundResource = R.raw.tutorial15_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
 
-    private val TUTORIAL_3_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial3_1","sound":"tutorial3_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial3000_1","sound":"tutorial3000_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial3000_2","sound":"tutorial3000_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3000_3","sound":"tutorial3000_3","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3000_4","sound":"tutorial3000_4","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}]},
-        {"text":"@string/tutorial3_2","sound":"tutorial3_2","typewriterSpeed":40},
-        {"text":"@string/tutorial3_3","sound":"tutorial3_3","typewriterSpeed":40},
-        {"text":"@string/tutorial3_4","sound":"tutorial3_4","typewriterSpeed":40},
-        {"text":"@string/tutorial3_5","sound":"tutorial3_5","typewriterSpeed":40},
-        {"text":"@string/tutorial3_6","sound":"tutorial3_6","typewriterSpeed":40},
-        {"text":"@string/tutorial3000_5","sound":"tutorial3000_5","typewriterSpeed":40},
-        {"text":"@string/tutorial3_7","sound":"tutorial3_7","typewriterSpeed":40,"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_8","sound":"tutorial3_8","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_9","sound":"tutorial3_9","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_10","sound":"tutorial3_10","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_11","sound":"tutorial3_11","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_3","sound":"tutorial3_12","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_14","sound":"tutorial3_14","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_14","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial3_15","sound":"tutorial3_15","typewriterSpeed":40,"question":{"questionText":"4 + 1"}},
-        {"text":"@string/tutorial2_17","sound":"tutorial3_16","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_17","sound":"tutorial3_17","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_18","sound":"tutorial3_18","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_19","sound":"tutorial3_19","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_20","sound":"tutorial3_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_21","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_22","sound":"tutorial3_22","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_22","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 2"}},
-        {"text":"@string/tutorial3_23","sound":"tutorial3_23","typewriterSpeed":40},
-        {"text":"@string/tutorial2_17","sound":"tutorial3_24","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_25","sound":"tutorial3_25","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_26","sound":"tutorial3_26","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_19","sound":"tutorial3_27","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_28","sound":"tutorial3_28","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_30","sound":"tutorial3_30","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_30","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 3"}},
-        {"text":"@string/tutorial3_23","sound":"tutorial3_31","typewriterSpeed":40},
-        {"id":"t3_soru_cevap_6","text":"@string/tutorial3_23","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_035","choiceQuestion":{"options":["@string/tutorial_ipucu_035","@string/tutorial_sik_004","@string/tutorial_sik_005"],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"@string/tutorial_soru_001"}},
-        {"text":"@string/tutorial3_32","sound":"tutorial3_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_33","sound":"tutorial3_33","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_34","sound":"tutorial3_34","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_19","sound":"tutorial3_35","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_6","sound":"tutorial3_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_37","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_37","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2}],"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"2 + 4"}},
-        {"text":"@string/tutorial3_23","sound":"tutorial3_38","typewriterSpeed":40,"question":{"questionText":"2 + 4"}},
-        {"id":"t3_soru_cevap_6_2","text":"@string/tutorial3_23","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_036","question":{"questionText":"2 + 4"},"choiceQuestion":{"options":["@string/tutorial_sik_006","@string/tutorial_sik_007","@string/tutorial_sik_008"],"correctOptionIndex":[1],"multipleChoice":false,"optionText":"@string/tutorial_soru_002"}},
-        {"text":"@string/tutorial3_39","sound":"tutorial3_39","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_top","type":4},{"beadId":"rod4_bead_bottom1","type":2}]},
-        {"text":"@string/tutorial3_40","sound":"tutorial3_40","typewriterSpeed":40,"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_41","sound":"tutorial3_41","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_42","sound":"tutorial3_42","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_19","sound":"tutorial3_43","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_6","sound":"tutorial3_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_37","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_37","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom3","type":2}],"questionTextColorPositions":[{"position":5,"color":"#00BFFF"},{"position":6,"color":"#00BFFF"}],"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial3_44","sound":"tutorial3_44","typewriterSpeed":40,"question":{"questionText":"30 + 40"}},
-        {"text":"@string/tutorial1_108","sound":"tutorial3_45","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_top","type":4}]},
-        {"id":"t3_4p4_ilk_sayi","text":"@string/tutorial3_46","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_037","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":4}},
-        {"text":"@string/tutorial3_47","sound":"tutorial3_47","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
-        {"text":"@string/tutorial3_48","sound":"tutorial3_48","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
-        {"text":"@string/tutorial3_6","sound":"tutorial3_36","typewriterSpeed":40,"backAnswerNumber":4,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4"}},
-        {"id":"t3_4p4_5_gelir","text":"@string/tutorial3_13","sound":"tutorial3_13","typewriterSpeed":40,"backAnswerNumber":4,"requestText":"@string/tutorial_ipucu_038","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":9}},
-        {"id":"t3_4p4_kardesi_1_gider","text":"@string/tutorial3_37","sound":"tutorial3_37","typewriterSpeed":40,"backAnswerNumber":9,"requestText":"@string/tutorial_ipucu_039","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"4 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
-        {"text":"@string/tutorial3_49","sound":"tutorial3_49","typewriterSpeed":40,"backAnswerNumber":8,"nextStepAbacusReset":true,"question":{"questionText":"4 + 4"}},
-        {"text":"@string/tutorial3000_6","sound":"tutorial3000_6","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"3 + 2"}},
-        {"id":"t3_3p2_ilk_sayi","text":"@string/tutorial3_46","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_040","questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":3}},
-        {"text":"@string/tutorial3000_7","sound":"tutorial3000_7","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
-        {"text":"@string/tutorial3_48","sound":"tutorial3_48","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
-        {"text":"@string/tutorial3_20","sound":"tutorial3_20","typewriterSpeed":40,"backAnswerNumber":3,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2"}},
-        {"id":"t3_3p2_5_gelir","text":"@string/tutorial3_13","sound":"tutorial3_13","typewriterSpeed":40,"backAnswerNumber":3,"requestText":"@string/tutorial_ipucu_038","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":8}},
-        {"id":"t3_3p2_kardesi_3_gider","text":"@string/tutorial3_22","sound":"tutorial3_22","typewriterSpeed":40,"backAnswerNumber":8,"requestText":"@string/tutorial_ipucu_041","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"3 + 2","nextStepAvailable":false,"abacusClickable":true,"answerNumber":5}},
-        {"text":"@string/tutorial3_15","sound":"tutorial3_15","typewriterSpeed":40,"question":{"questionText":"3 + 2"}},
-        {"text":"@string/tutorial3_50","sound":"tutorial3_50","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps3(){
-        tutorialSteps3 = parseTutorialStepsFromJson(TUTORIAL_3_JSON)
+        tutorialSteps3 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial3_1),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial3_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_1),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial3000_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_2),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3000_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_3),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3000_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_4),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial3000_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_2),
+                soundResource = R.raw.tutorial3_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_3),
+                soundResource = R.raw.tutorial3_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_4),
+                soundResource = R.raw.tutorial3_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_5),
+                soundResource = R.raw.tutorial3_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_6),
+                soundResource = R.raw.tutorial3_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_5),
+                soundResource = R.raw.tutorial3000_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_7),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_8),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_9),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_10),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_11),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_3),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_14),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_14),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_15),
+                questionText = "4 + 1",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_17),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_17),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1)
+                ),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_18),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_19),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_20),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_22),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_22),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2)
+                ),
+                questionText = "4 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_23),
+                soundResource = R.raw.tutorial3_23,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial2_17),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2)
+                ),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_24,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_25),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1)
+                ),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_25,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_26),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_26,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_19),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_28),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_28,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_30),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_30,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_30),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2)
+                ),
+                questionText = "3 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_23),
+                soundResource = R.raw.tutorial3_31,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_23),
+                id = "t3_soru_cevap_6",
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_035),
+                options = listOf(
+                    getString(R.string.tutorial_ipucu_035),
+                    getString(R.string.tutorial_sik_004),
+                    getString(R.string.tutorial_sik_005)
+                ),
+                correctOptionIndex = listOf(0),
+                multipleChoice = false,
+                optionText = getString(R.string.tutorial_soru_001),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_32),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2)
+                ),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_32,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_33),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1)
+                ),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_33,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_34),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_34,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_19),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_35,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_6),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2)
+                ),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_23),
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_38,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_23),
+                id = "t3_soru_cevap_6_2",
+                questionText = "2 + 4",
+                questionTextVisibility = View.VISIBLE,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_036),
+                options = listOf(
+                    getString(R.string.tutorial_sik_006),
+                    getString(R.string.tutorial_sik_007),
+                    getString(R.string.tutorial_sik_008)
+                ),
+                correctOptionIndex = listOf(1),
+                multipleChoice = false,
+                optionText = getString(R.string.tutorial_soru_002),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_39),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_bottom1", 2)
+                ),
+                soundResource = R.raw.tutorial3_39,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_40),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_40,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_41),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1)
+                ),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_41,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_42),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_42,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_19),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_43,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_6),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom3", 2)
+                ),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF"), 6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_44),
+                questionText = "30 + 40",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_44,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial3_45,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_46),
+                id = "t3_4p4_ilk_sayi",
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 4,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_46,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_037),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_47),
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_47,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_48),
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_48,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_6),
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 4,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                id = "t3_4p4_5_gelir",
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 9,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_038),
+                backAnswerNumber = 4,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                id = "t3_4p4_kardesi_1_gider",
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 8,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_039),
+                backAnswerNumber = 9,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_49),
+                questionText = "4 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_49,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                backAnswerNumber = 8,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_6),
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3000_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_46),
+                id = "t3_3p2_ilk_sayi",
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 3,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_46,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_040),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_7),
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3000_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_48),
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_48,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_20),
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 3,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                id = "t3_3p2_5_gelir",
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 8,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_038),
+                backAnswerNumber = 3,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_22),
+                id = "t3_3p2_kardesi_3_gider",
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 5,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_041),
+                backAnswerNumber = 8,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_15),
+                questionText = "3 + 2",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_50),
+                soundResource = R.raw.tutorial3_50,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
     
-    private val TUTORIAL_4_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial4_1000","sound":"tutorial4_1000","typewriterSpeed":40,"rulesPanelVisibility":"visible"},
-        {"text":"@string/tutorial4_2","sound":"tutorial4_2","typewriterSpeed":40,"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_3","sound":"tutorial4_3","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod2_bead_bottom1","type":1},{"beadId":"rod2_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom1","type":1},{"beadId":"rod3_bead_bottom2","type":1},{"beadId":"rod3_bead_bottom3","type":1},{"beadId":"rod3_bead_bottom4","type":1}],"questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_1001","sound":"tutorial4_1001","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_1010","sound":"tutorial4_1010","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_top","type":3}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_1002","sound":"tutorial4_1002","typewriterSpeed":40,"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_1002","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod2_bead_bottom1","type":2},{"beadId":"rod2_bead_bottom2","type":2}],"questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_1003","sound":"tutorial4_1003","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_2000","sound":"tutorial4_2000","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_13","sound":"tutorial3_13","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_13","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_top","type":3}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_37","sound":"tutorial3_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial3_37","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom4","type":2}],"questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_2001","sound":"tutorial4_2001","typewriterSpeed":40,"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_2001","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"243 + 346"}},
-        {"text":"@string/tutorial4_2002","sound":"tutorial4_2002","typewriterSpeed":40,"question":{"questionText":"243 + 346"}},
-        {"id":"t4_soru_cevap_589","text":"@string/tutorial4_2002","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_042","question":{"questionText":"243 + 346"},"choiceQuestion":{"options":["@string/tutorial_sik_009","@string/tutorial_sik_010"],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"@string/tutorial_soru_003"}},
-        {"text":"@string/tutorial1_108","sound":"tutorial3_45","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod3_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom3","type":2},{"beadId":"rod2_bead_top","type":4},{"beadId":"rod3_bead_top","type":4},{"beadId":"rod4_bead_top","type":4}]},
-        {"id":"t4_423p322_ilk_sayi","text":"@string/tutorial3_46","sound":"tutorial3_46","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_043","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"},{"position":2,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":423}},
-        {"text":"@string/tutorial4_1005","sound":"tutorial4_1005","typewriterSpeed":40,"backAnswerNumber":423,"question":{"questionText":"423 + 322"}},
-        {"id":"t4_423p322_300u_ekleyip","text":"@string/tutorial4_1006","sound":"tutorial4_1006","typewriterSpeed":40,"backAnswerNumber":423,"requestText":"@string/tutorial_ipucu_044","questionTextColorPositions":[{"position":6,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":723}},
-        {"id":"t4_423p322_20yi_ekleyip","text":"@string/tutorial4_2003","sound":"tutorial4_2003","typewriterSpeed":40,"backAnswerNumber":723,"requestText":"@string/tutorial_ipucu_025","questionTextColorPositions":[{"position":7,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":743}},
-        {"id":"t4_423p322_2yi_ekleyip","text":"@string/tutorial4_2004","sound":"tutorial4_2004","typewriterSpeed":40,"backAnswerNumber":743,"requestText":"@string/tutorial_ipucu_045","questionTextColorPositions":[{"position":8,"color":"#00BFFF"}],"question":{"questionText":"423 + 322","nextStepAvailable":false,"abacusClickable":true,"answerNumber":745}},
-        {"text":"@string/tutorial4_2005","sound":"tutorial4_2005","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_039","question":{"questionText":"423 + 322"}},
-        {"text":"@string/tutorial15_27","sound":"tutorial15_27","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps4(){
-        tutorialSteps4 = parseTutorialStepsFromJson(TUTORIAL_4_JSON)
+        tutorialSteps4 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial4_1000),
+                soundResource = R.raw.tutorial4_1000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_3),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod2_bead_bottom1", 1),
+                    BeadAnimation(this, "rod2_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom1", 1),
+                    BeadAnimation(this, "rod3_bead_bottom2", 1),
+                    BeadAnimation(this, "rod3_bead_bottom3", 1),
+                    BeadAnimation(this, "rod3_bead_bottom4", 1)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1001),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_1001,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1010),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_1010,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_top", 3)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1002),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_1002,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1002),
+                animation = listOf(
+                    BeadAnimation(this, "rod2_bead_bottom1", 2),
+                    BeadAnimation(this, "rod2_bead_bottom2", 2)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1003),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_1003,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2000),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_13),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_top", 3)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_37),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom4", 2)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2001),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2001,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2001),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2002),
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_2002,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2002),
+                id = "t4_soru_cevap_589",
+                questionText = "243 + 346",
+                questionTextVisibility = View.VISIBLE,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_042),
+                options = listOf(
+                    getString(R.string.tutorial_sik_009),
+                    getString(R.string.tutorial_sik_010)
+                ),
+                correctOptionIndex = listOf(0),
+                multipleChoice = false,
+                optionText = getString(R.string.tutorial_soru_003),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial1_108),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom3", 2),
+                    BeadAnimation(this, "rod2_bead_top", 4),
+                    BeadAnimation(this, "rod3_bead_top", 4),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                soundResource = R.raw.tutorial3_45,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3_46),
+                id = "t4_423p322_ilk_sayi",
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 423,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF"), 2 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial3_46,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_043),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1005),
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_1005,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 423,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_1006),
+                id = "t4_423p322_300u_ekleyip",
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 723,
+                questionTextColorPositions = listOf(6 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_1006,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_044),
+                backAnswerNumber = 423,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2003),
+                id = "t4_423p322_20yi_ekleyip",
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 743,
+                questionTextColorPositions = listOf(7 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2003,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_025),
+                backAnswerNumber = 723,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2004),
+                id = "t4_423p322_2yi_ekleyip",
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 745,
+                questionTextColorPositions = listOf(8 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial4_2004,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_045),
+                backAnswerNumber = 743,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial4_2005),
+                questionText = "423 + 322",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial4_2005,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_039),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial15_27),
+                soundResource = R.raw.tutorial15_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
     
-    private val TUTORIAL_5_JSON = """
-    {
-      "steps": [
-        {"text":"@string/tutorial5_1","sound":"tutorial5_1","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial5_2","sound":"tutorial5_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial5_3","sound":"tutorial5_3","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_4","sound":"tutorial5_4","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"showFocus"},{"op":"focusToColumn","column":0},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusChangeMargin","marginRightColumn":0,"marginLeft":0,"marginTopDp":-10},{"op":"focusSizeToDp","widthDp":55,"heightDp":200}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_5","sound":"tutorial5_5","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"focusChangeMargin","marginRight":0,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline"},{"op":"focusSizeToDp","widthDp":55,"heightDp":100}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_6","sound":"tutorial5_6","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_7","sound":"tutorial5_7","typewriterSpeed":40,"rulesPanelVisibility":"invisible","questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5000_2","sound":"tutorial5000_2","typewriterSpeed":40,"rulesPanelVisibility":"invisible","beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"actions":[{"op":"hideFocus"}]},
-        {"text":"@string/tutorial5_8","sound":"tutorial5_8","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial5_9","sound":"tutorial5_9","typewriterSpeed":40,"rulesPanelVisibility":"invisible"},
-        {"text":"@string/tutorial5_10","sound":"tutorial5_10","typewriterSpeed":40},
-        {"text":"@string/tutorial5_11","sound":"tutorial5_11","typewriterSpeed":40},
-        {"text":"@string/tutorial5_12","sound":"tutorial5_12","typewriterSpeed":40},
-        {"text":"@string/tutorial5_13","sound":"tutorial5_13","typewriterSpeed":40},
-        {"text":"@string/tutorial5_14","sound":"tutorial5_14","typewriterSpeed":40},
-        {"text":"@string/tutorial5_15","sound":"tutorial5_15","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_16","sound":"tutorial5_16","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_17","sound":"tutorial5_17","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"recordSizeHistory":true,"actions":[{"op":"showFocus"},{"op":"focusMarginLiteral","value":0},{"op":"focusConstraintTop","target":"guideline2"},{"op":"focusSizeToDp","widthDp":55,"heightDp":200},{"op":"focusChangeMargin","marginRight":0,"marginLeft":0,"marginTopDp":-10}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_18","sound":"tutorial5_18","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"focusChangeMargin","marginRight":0,"marginLeft":0},{"op":"focusConstraintTop","target":"guideline"},{"op":"focusSizeToDp","widthDp":55,"heightDp":100}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_19","sound":"tutorial5_19","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"actions":[{"op":"hideFocus"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_20","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_21","sound":"tutorial5_21","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_21","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_22","sound":"tutorial5_22","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5000_1","sound":"tutorial5000_1","typewriterSpeed":40,"question":{"questionText":"9 + 1"}},
-        {"text":"@string/tutorial5_23","sound":"tutorial5_23","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_24","sound":"tutorial5_24","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_25","sound":"tutorial5_25","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_26","sound":"tutorial5_26","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_20","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_27","sound":"tutorial5_27","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_27","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_22","sound":"tutorial5_22","typewriterSpeed":40,"question":{"questionText":"8 + 2"}},
-        {"text":"@string/tutorial5_28","sound":"tutorial5_28","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_29","sound":"tutorial5_29","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_bottom3","type":1},{"beadId":"rod4_bead_bottom4","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_20","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_30","sound":"tutorial5_30","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_30","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom3","type":2},{"beadId":"rod4_bead_bottom4","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_31","sound":"tutorial5_31","typewriterSpeed":40,"question":{"questionText":"9 + 3"}},
-        {"text":"@string/tutorial5_28","sound":"tutorial5_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_33","sound":"tutorial5_33","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_bottom2","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_20","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_34","sound":"tutorial5_34","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_34","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom2","type":2},{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_35","sound":"tutorial5_35","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"7 + 4"}},
-        {"text":"@string/tutorial5_28","sound":"tutorial5_32","typewriterSpeed":40,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_36","sound":"tutorial5_36","typewriterSpeed":40,"questionTextColorPositions":[{"position":0,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":1},{"beadId":"rod4_bead_top","type":3}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_20","sound":"tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_20","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod3_bead_bottom1","type":1}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_37","sound":"tutorial5_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_37","typewriterSpeed":40,"questionTextColorPositions":[{"position":4,"color":"#00BFFF"}],"beadAnimations":[{"beadId":"rod4_bead_top","type":4}],"question":{"questionText":"6 + 5"}},
-        {"text":"@string/tutorial5_38","sound":"tutorial5_38","typewriterSpeed":40,"question":{"questionText":"6 + 5"}},
-        {"id":"t5_soru_10luk_kurali_hangi","text":"@string/tutorial5_46","sound":"tutorial5_46","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_046","choiceQuestion":{"options":["@string/tutorial_sik_011","@string/tutorial_sik_012","@string/tutorial_sik_013"],"correctOptionIndex":[0,1],"multipleChoice":true,"optionText":"@string/tutorial5_46"}},
-        {"text":"@string/tutorial5_39","sound":"tutorial5_39","typewriterSpeed":40,"abacusReset":true,"beadAnimations":[{"beadId":"rod4_bead_bottom1","type":2},{"beadId":"rod3_bead_bottom1","type":2}],"question":{"questionText":"18 + 4"}},
-        {"id":"t5_18p4_ilk_sayi","text":"@string/tutorial5_40","sound":"tutorial5_40","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_047","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":18}},
-        {"text":"@string/tutorial5_41","sound":"tutorial5_41","typewriterSpeed":40,"backAnswerNumber":18,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4"}},
-        {"id":"t5_18p4_yaz","text":"@string/tutorial5_42","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":18,"nextStepAbacusReset":true,"requestText":"@string/tutorial_ipucu_048","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"18 + 4","nextStepAvailable":false,"abacusClickable":true,"answerNumber":22}},
-        {"text":"@string/tutorial5_43","sound":"tutorial5_43","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"18 + 4"}},
-        {"text":"@string/tutorial3000_6","sound":"tutorial3000_6","typewriterSpeed":40,"abacusReset":true,"question":{"questionText":"17 + 3"}},
-        {"id":"t5_17p3_ilk_sayi","text":"@string/tutorial_txt_001","sound":"tutorial9_1000","typewriterSpeed":40,"abacusReset":true,"requestText":"@string/tutorial_ipucu_049","questionTextColorPositions":[{"position":0,"color":"#00BFFF"},{"position":1,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":17}},
-        {"text":"@string/tutorial5000_3","sound":"tutorial5000_3","typewriterSpeed":40,"backAnswerNumber":17,"questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3"}},
-        {"id":"t5_17p3_yaz","text":"@string/tutorial5_42","sound":"tutorial5_42","typewriterSpeed":40,"backAnswerNumber":17,"requestText":"@string/tutorial_ipucu_050","questionTextColorPositions":[{"position":5,"color":"#00BFFF"}],"question":{"questionText":"17 + 3","nextStepAvailable":false,"abacusClickable":true,"answerNumber":20}},
-        {"id":"t5_soru_10luk_kurali_nasil","text":"@string/tutorial5_45","sound":"tutorial5_45","typewriterSpeed":40,"requestText":"@string/tutorial_ipucu_051","choiceQuestion":{"options":["@string/tutorial_ipucu_051","@string/tutorial_sik_014","@string/tutorial_sik_015"],"correctOptionIndex":[0],"multipleChoice":false,"optionText":"@string/tutorial5_45"}},
-        {"text":"@string/tutorial5_44","sound":"tutorial5_44","typewriterSpeed":40}
-      ]
-    }
-    """.trimIndent()
 
     private fun createTutorialSteps5(){
-        tutorialSteps5 = parseTutorialStepsFromJson(TUTORIAL_5_JSON)
+        tutorialSteps5 = listOf(
+            TutorialStep(
+                getString(R.string.tutorial5_1),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_2),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_3),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_4),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = focusMarginRightPx(0),
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    },
+                    { WidgetOperation.ChangeConstraints(view = focusView, topToTop = R.id.guideline2) },
+                    { WidgetOperation.ChangeMargin(focusView, focusMarginRightPx(0), 0, dpToPx(-10)) },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(55),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(200),
+                            duration = 400
+                        )
+                    }
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_4,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_5),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeMargin(focusView, 0, 0, null) },
+                    { WidgetOperation.ChangeConstraints(view = focusView, topToTop = R.id.guideline) },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(55),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(100),
+                            duration = 400
+                        )
+                    }
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_5,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_6),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_7),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                rulesPanelVisibility = View.INVISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_7,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5000_2),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.GONE) }
+                ),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5000_2,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_8),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5_8,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_9),
+                rulesPanelVisibility = View.INVISIBLE,
+                soundResource = R.raw.tutorial5_9,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_10),
+                soundResource = R.raw.tutorial5_10,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_11),
+                soundResource = R.raw.tutorial5_11,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_12),
+                soundResource = R.raw.tutorial5_12,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_13),
+                soundResource = R.raw.tutorial5_13,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_14),
+                soundResource = R.raw.tutorial5_14,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_15),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_15,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_16),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_16,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_17),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.VISIBLE) },
+                    {
+                        WidgetOperation.AnimateMargin(
+                            view = focusView,
+                            fromMarginRight = (focusView.layoutParams as ViewGroup.MarginLayoutParams).rightMargin,
+                            toMarginRight = 0,
+                            fromMarginLeft = 0,
+                            toMarginLeft = 0,
+                            duration = 200
+                        )
+                    },
+                    { WidgetOperation.ChangeConstraints(view = focusView, topToTop = R.id.guideline2) },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(55),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(200),
+                            duration = 400
+                        )
+                    },
+                    { WidgetOperation.ChangeMargin(focusView, 0, 0, dpToPx(-10)) }
+                ),
+                onStep = { view -> sizeHistory.add(Pair(view.width, view.height)) },
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_17,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_18),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeMargin(focusView, 0, 0, null) },
+                    { WidgetOperation.ChangeConstraints(view = focusView, topToTop = R.id.guideline) },
+                    {
+                        WidgetOperation.AnimateSize(
+                            view = focusView,
+                            fromWidth = focusView.width,
+                            toWidth = dpToPx(55),
+                            fromHeight = focusView.height,
+                            toHeight = dpToPx(100),
+                            duration = 400
+                        )
+                    }
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_18,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_19),
+                widgetOperations = listOf(
+                    { WidgetOperation.ChangeVisibility(focusView, View.GONE) }
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_19,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_21),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_21,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_21),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_22),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5000_1),
+                questionText = "9 + 1",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5000_1,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_23),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)
+                ),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_23,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_24),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_24,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_25),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_25,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_26),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_26,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_27),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_27,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_27),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_22),
+                questionText = "8 + 2",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_22,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_28),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)
+                ),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_28,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_29),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_bottom3", 1),
+                    BeadAnimation(this, "rod4_bead_bottom4", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_29,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_30),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_30,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_30),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom3", 2),
+                    BeadAnimation(this, "rod4_bead_bottom4", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_31),
+                questionText = "9 + 3",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_31,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_28),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)
+                ),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_32,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_33),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_bottom2", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_33,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_34),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_34,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_34),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom2", 2),
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_35),
+                questionText = "7 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_35,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_28),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)
+                ),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_32,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_36),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 1),
+                    BeadAnimation(this, "rod4_bead_top", 3)
+                ),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_36,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_20,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_20),
+                animation = listOf(
+                    BeadAnimation(this, "rod3_bead_bottom1", 1)
+                ),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_37),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_37,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_37),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_top", 4)
+                ),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(4 to Color.parseColor("#00BFFF")),
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_38),
+                questionText = "6 + 5",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_38,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_46),
+                id = "t5_soru_10luk_kurali_hangi",
+                soundResource = R.raw.tutorial5_46,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_046),
+                options = listOf(
+                    getString(R.string.tutorial_sik_011),
+                    getString(R.string.tutorial_sik_012),
+                    getString(R.string.tutorial_sik_013)
+                ),
+                correctOptionIndex = listOf(0,1),
+                multipleChoice = true,
+                optionText = getString(R.string.tutorial5_46),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_39),
+                animation = listOf(
+                    BeadAnimation(this, "rod4_bead_bottom1", 2),
+                    BeadAnimation(this, "rod3_bead_bottom1", 2)
+                ),
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_39,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_40),
+                id = "t5_18p4_ilk_sayi",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 18,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_40,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_047),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_41),
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_41,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 18,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_42),
+                id = "t5_18p4_yaz",
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 22,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_42,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                nextStepAbacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_048),
+                backAnswerNumber = 18,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_43),
+                questionText = "18 + 4",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial5_43,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial3000_6),
+                questionText = "17 + 3",
+                questionTextVisibility = View.VISIBLE,
+                soundResource = R.raw.tutorial3000_6,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial_txt_001),
+                id = "t5_17p3_ilk_sayi",
+                questionText = "17 + 3",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 17,
+                questionTextColorPositions = listOf(0 to Color.parseColor("#00BFFF"), 1 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial9_1000,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                abacusReset = true,
+                requestText = getString(R.string.tutorial_ipucu_049),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5000_3),
+                questionText = "17 + 3",
+                questionTextVisibility = View.VISIBLE,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5000_3,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                backAnswerNumber = 17,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_42),
+                id = "t5_17p3_yaz",
+                questionText = "17 + 3",
+                questionTextVisibility = View.VISIBLE,
+                nextStepAvailable = false,
+                abacusClickable = true,
+                answerNumber = 20,
+                questionTextColorPositions = listOf(5 to Color.parseColor("#00BFFF")),
+                soundResource = R.raw.tutorial5_42,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_050),
+                backAnswerNumber = 17,
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_45),
+                id = "t5_soru_10luk_kurali_nasil",
+                soundResource = R.raw.tutorial5_45,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+                requestText = getString(R.string.tutorial_ipucu_051),
+                options = listOf(
+                    getString(R.string.tutorial_ipucu_051),
+                    getString(R.string.tutorial_sik_014),
+                    getString(R.string.tutorial_sik_015)
+                ),
+                correctOptionIndex = listOf(0),
+                multipleChoice = false,
+                optionText = getString(R.string.tutorial5_45),
+            ),
+            TutorialStep(
+                getString(R.string.tutorial5_44),
+                soundResource = R.raw.tutorial5_44,
+                useTypewriterEffect = true,
+                typewriterSpeed = 40L,
+            )
+        )
     }
     private fun createTutorialSteps6(){
         tutorialSteps6 = listOf(
@@ -16191,7 +19516,7 @@ class TutorialFragment : Fragment() {
         mediaPlayer?.start()
     }
     // Ses çalma fonksiyonu. soundResource: gömülü (res/raw) ses. soundStoragePath doluysa ve
-    // soundResource yoksa: JSON'da "soundUrl" ile verilmiş, Firebase Storage'dan RemoteAudioCache
+    // soundResource yoksa: adımda soundStoragePath ile verilmiş, Firebase Storage'dan RemoteAudioCache
     // tarafından indirilmiş sesi çalar. Dosya henüz inmemişse (ilk sefer/internet yok) sessizce
     // atlanır ve indirme tekrar tetiklenir - hiçbir zaman çökme veya bekleme olmaz.
     private fun playSound(soundResource: Int?, soundStoragePath: String? = null) {

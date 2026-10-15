@@ -199,8 +199,8 @@ class AbacusPracticeFragment : Fragment() {
         if (isCorrect) {
             showResultPanel(binding.correctPanel)
         } else {
-            binding.correctAnswerLabel.text = "Doğru cevap: $expected"
-            binding.correctAnswerText.text = "Senin cevabın: $abacusValue"
+            binding.correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x_2, expected)
+            binding.correctAnswerText.text = appString(R.string.ui_senin_cevabin_x_2, abacusValue)
             showResultPanel(binding.incorrectPanel)
         }
     }

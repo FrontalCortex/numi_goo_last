@@ -51,7 +51,7 @@
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_marginStart="8dp"
-        android:contentDescription="Adımları göster"
+        android:contentDescription="@string/item_parent_lesson_lesson_chevron_desc"
         android:src="@drawable/dualingo_arrow_ic"
         app:tint="#607887" />
 </LinearLayout>

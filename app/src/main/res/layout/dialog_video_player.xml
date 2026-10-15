@@ -21,7 +21,7 @@
         android:layout_gravity="top|end"
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Kapat"
+        android:contentDescription="@string/dialog_video_player_dialog_video_close_desc"
         android:src="@drawable/ic_close_black"
         android:padding="8dp"
         app:tint="@android:color/white" />

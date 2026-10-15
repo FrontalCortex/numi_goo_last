@@ -57,7 +57,7 @@ object LearningPathPlan {
             add(Calendar.DAY_OF_YEAR, daysToMentalMath(goalMinutes))
         }
         return listOf(
-            "BUGÜN",
+            appString(R.string.ui_bugun),
             SimpleDateFormat("d MMMM", TR).format(week.time).uppercase(TR),
             // LLLL: ayın tek başına kullanılan adı (bazı dillerde "d MMMM"deki hâlinden farklı).
             SimpleDateFormat("LLLL yyyy", TR).format(target.time).uppercase(TR),

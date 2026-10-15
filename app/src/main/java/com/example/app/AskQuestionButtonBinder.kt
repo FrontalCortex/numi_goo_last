@@ -165,21 +165,21 @@ object AskQuestionButtonBinder {
         val banned = doc.getBoolean("banned") == true
         val restrictedUntil = doc.getTimestamp("restrictedUntil")
         val message = when {
-            banned -> "Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır."
+            banned -> appString(R.string.ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar)
             restrictedUntil != null -> {
                 val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedUntil.toDate())
-                "Hesabınız kural ihlali nedeniyle $dateText tarihine kadar kısıtlanmıştır."
+                appString(R.string.ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine, dateText)
             }
             else -> fragment.getString(R.string.ask_question_account_restricted)
         }
         AlertDialog.Builder(fragment.requireContext())
             .setMessage(message)
             .setPositiveButton(R.string.ask_question_alert_ok, null)
-            .setNegativeButton("İtiraz Et") { _, _ ->
+            .setNegativeButton(appString(R.string.ui_itiraz_et)) { _, _ ->
                 SupportContactHelper.openSupportEmail(
                     fragment,
-                    subject = "Hesap kısıtlaması itirazı",
-                    body = "Merhaba,\n\nHesabımın kısıtlanmasına itiraz etmek istiyorum.\n\nKullanıcı ID: ${doc.id}\n\n"
+                    subject = appString(R.string.ui_hesap_kisitlamasi_itirazi),
+                    body = appString(R.string.ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme, doc.id)
                 )
             }
             .show()

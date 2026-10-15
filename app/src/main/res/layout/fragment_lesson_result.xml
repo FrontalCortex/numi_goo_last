@@ -31,7 +31,7 @@
         android:id="@+id/resultTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ders Bitti!"
+        android:text="@string/fragment_lesson_result_result_title"
         android:textColor="#FFF200"
         android:textSize="28sp"
         android:textStyle="bold"
@@ -62,7 +62,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TOPLAM PUAN"
+                android:text="@string/fragment_lesson_result_text"
                 android:textColor="#FFD600"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -94,7 +94,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BAŞARI"
+                android:text="@string/fragment_lesson_result_text_2"
                 android:textColor="#7ED321"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -116,7 +116,7 @@
         android:layout_height="60dp"
         android:layout_marginTop="16dp"
         android:backgroundTint="#8CC63F"
-        android:text="Devam et"
+        android:text="@string/fragment_lesson_result_claim_button"
         android:layout_marginHorizontal="10dp"
         android:textAllCaps="false"
         android:textColor="#000000"

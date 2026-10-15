@@ -92,7 +92,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Adımlar"
+                    android:text="@string/lesson_popover_text"
                     android:textColor="@color/lesson_card_locked_text"
                     android:textSize="13sp" />
 
@@ -183,7 +183,7 @@
             android:background="?attr/selectableItemBackground"
             android:gravity="center"
             android:paddingVertical="8dp"
-            android:text="Eğitimi tekrarla"
+            android:text="@string/lesson_popover_again_tutorial"
             android:textColor="@color/lesson_card_locked_text"
             android:textSize="14sp"
             android:visibility="gone" />

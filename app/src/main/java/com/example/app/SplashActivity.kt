@@ -50,7 +50,7 @@ class SplashActivity : AppCompatActivity() {
             //
             // Eskiden burada öğretici içeriği için Remote Config indiriliyor ve açılış onu
             // 8 saniyeye kadar bekliyordu; öğreticiler artık uygulamanın içinden okunuyor
-            // (bkz. TutorialFragment.TUTORIAL_1_JSON), Remote Config'ten okunan başka bir şey yok.
+            // (bkz. TutorialFragment.createTutorialSteps1), Remote Config'ten okunan başka bir şey yok.
             Handler(Looper.getMainLooper()).postDelayed({
                 if (proceededPastSplash) return@postDelayed
                 proceededPastSplash = true

@@ -61,7 +61,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:src="@drawable/heart_ic"
-                        android:contentDescription="Can" />
+                        android:contentDescription="@string/fragment_shop_shop_energy_icon_desc" />
 
                     <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
                     <TextView
@@ -99,7 +99,7 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/gold_ic"
-                    android:contentDescription="Altın" />
+                    android:contentDescription="@string/fragment_shop_text_desc" />
 
                 <TextView
                     android:id="@+id/shopCurrencyText"
@@ -124,7 +124,7 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/key"
-                    android:contentDescription="Anahtar" />
+                    android:contentDescription="@string/fragment_shop_text_desc_2" />
 
                 <TextView
                     android:id="@+id/shopKeyText"
@@ -148,7 +148,7 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/chat_credit_ic3"
-                    android:contentDescription="Danışma kredisi" />
+                    android:contentDescription="@string/fragment_shop_text_desc_3" />
 
                 <TextView
                     android:id="@+id/shopCreditText"
@@ -211,7 +211,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_shop_super_badge"
-                    android:text="PRO"
+                    android:text="@string/fragment_shop_super_badge"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:paddingHorizontal="8dp"
@@ -225,7 +225,7 @@
                     android:id="@+id/superTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Öğrenmeyi\n hızlandıran \n özellikler"
+                    android:text="@string/fragment_shop_super_title"
                     android:textColor="@android:color/white"
                     android:textSize="20sp"
                     android:textStyle="bold"
@@ -239,7 +239,7 @@
                     android:id="@+id/superSubtitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Sınırsız enerji ve reklamsız\n deneyimin"
+                    android:text="@string/fragment_shop_super_subtitle"
                     android:textColor="#E0E0E0"
                     android:textSize="13sp"
                     android:layout_marginTop="12dp"
@@ -253,7 +253,7 @@
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:background="@drawable/bg_white_rounded_16dp"
-                    android:text="1 HAFTA ÜCRETSİZ DENE"
+                    android:text="@string/fragment_shop_super_button"
                     android:textColor="#000000"
                     android:textSize="14sp"
                     android:textStyle="bold"
@@ -284,7 +284,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Özel Teklifler"
+                android:text="@string/fragment_shop_text"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -317,7 +317,7 @@
                             android:layout_width="64dp"
                             android:layout_height="64dp"
                             android:src="@drawable/new_chest_close_ic1"
-                            android:contentDescription="Kristal" />
+                            android:contentDescription="@string/fragment_shop_text_desc_4" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -329,7 +329,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Ücretsiz Sandık"
+                                android:text="@string/fragment_shop_text_2"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
@@ -338,7 +338,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Bir reklam izleyerek sandık kazan."
+                                android:text="@string/fragment_shop_text_3"
                                 android:textColor="#B0BEC5"
                                 android:textSize="13sp" />
 
@@ -370,7 +370,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="SANDIK KAZAN"
+                            android:text="@string/fragment_shop_text_4"
                             android:textColor="#29B6F6"
                             android:textSize="13sp"
                             android:textStyle="bold"
@@ -417,7 +417,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Ücretsiz Can"
+                                android:text="@string/fragment_shop_text_5"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
@@ -426,7 +426,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Bir reklam izleyerek can kazan."
+                                android:text="@string/fragment_shop_text_6"
                                 android:textColor="#B0BEC5"
                                 android:textSize="13sp" />
 
@@ -458,7 +458,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CAN KAZAN"
+                            android:text="@string/fragment_shop_text_7"
                             android:textColor="#29B6F6"
                             android:textSize="13sp"
                             android:textStyle="bold"
@@ -502,7 +502,7 @@
                             android:layout_width="64dp"
                             android:layout_height="64dp"
                             android:src="@drawable/streak_freeze_ic"
-                            android:contentDescription="Seri dondurma" />
+                            android:contentDescription="@string/fragment_shop_text_desc_5" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -514,7 +514,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Seri Dondurma"
+                                android:text="@string/fragment_shop_text_8"
                                 android:textColor="@android:color/white"
                                 android:textSize="16sp"
                                 android:textStyle="bold"
@@ -524,7 +524,7 @@
                                 android:id="@+id/shopStreakFreezeDesc"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!"
+                                android:text="@string/fragment_shop_shop_streak_freeze_desc"
                                 android:textColor="#B0BEC5"
                                 android:textSize="13sp" />
 
@@ -579,7 +579,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Can"
+                android:text="@string/fragment_shop_text_9"
                 android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -621,7 +621,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:src="@drawable/heart_pro_ic"
-                            android:contentDescription="Sınırsız can" />
+                            android:contentDescription="@string/fragment_shop_text_desc_6" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -643,7 +643,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Sınırsız"
+                            android:text="@string/fragment_shop_text_10"
                             android:textColor="@android:color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -652,7 +652,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Pro ile canın hiç tükenmesin"
+                            android:text="@string/fragment_shop_text_11"
                             android:textColor="#B0BEC5"
                             android:textSize="13sp"
                             android:layout_marginBottom="12dp" />
@@ -661,7 +661,7 @@
                             android:id="@+id/shopProPriceText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="aylık ₺99,00"
+                            android:text="@string/fragment_shop_shop_pro_price_text"
                             android:textColor="#E91E63"
                             android:textSize="14sp"
                             android:textStyle="bold"
@@ -704,7 +704,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ekstra Can"
+                            android:text="@string/fragment_shop_text_12"
                             android:textColor="@android:color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"
@@ -713,7 +713,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Daha fazla dersin üstesinden gelmek için 1 can al."
+                            android:text="@string/fragment_shop_text_13"
                             android:textColor="#B0BEC5"
                             android:textSize="13sp"
                             android:layout_marginBottom="12dp" />
@@ -766,7 +766,7 @@
                                 android:id="@+id/shopLifeTimerText"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="DOLU"
+                                android:text="@string/fragment_shop_shop_life_timer_text"
                                 android:textColor="#B0BEC5"
                                 android:textSize="13sp"
                                 android:textStyle="bold"
@@ -788,7 +788,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Öğretmene Sor"
+                android:text="@string/fragment_shop_text_14"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -798,7 +798,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/shopCreditBalanceText"
-                android:text="Her kredi, bir sorunu öğretmene sorma hakkı verir."
+                android:text="@string/fragment_shop_shop_credit_balance_text"
                 android:textColor="#B0BEC5"
                 android:textSize="12sp"
                 android:layout_marginBottom="12dp" />
@@ -831,7 +831,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_teacher_ic"
-                            android:contentDescription="Danışma kredisi" />
+                            android:contentDescription="@string/fragment_shop_text_desc_7" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -887,7 +887,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_teacher_ic"
-                            android:contentDescription="Danışma kredisi" />
+                            android:contentDescription="@string/fragment_shop_text_desc_8" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -955,7 +955,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_teacher_ic"
-                            android:contentDescription="Danışma kredisi" />
+                            android:contentDescription="@string/fragment_shop_text_desc_9" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1007,7 +1007,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Altın"
+                android:text="@string/fragment_shop_text_15"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -1042,7 +1042,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_coin_ic1"
-                            android:contentDescription="Altın" />
+                            android:contentDescription="@string/fragment_shop_text_desc_10" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1099,7 +1099,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_coin_ic2"
-                            android:contentDescription="Altın" />
+                            android:contentDescription="@string/fragment_shop_text_desc_11" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1156,7 +1156,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/shop_coin_ic3"
-                            android:contentDescription="Altın" />
+                            android:contentDescription="@string/fragment_shop_text_desc_12" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1197,7 +1197,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Anahtar"
+                android:text="@string/fragment_shop_text_16"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -1232,7 +1232,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/key"
-                            android:contentDescription="Anahtar" />
+                            android:contentDescription="@string/fragment_shop_text_desc_13" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1289,7 +1289,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/key"
-                            android:contentDescription="Anahtar" />
+                            android:contentDescription="@string/fragment_shop_text_desc_14" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -1346,7 +1346,7 @@
                             android:layout_width="72dp"
                             android:layout_height="72dp"
                             android:src="@drawable/key"
-                            android:contentDescription="Anahtar" />
+                            android:contentDescription="@string/fragment_shop_text_desc_15" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"

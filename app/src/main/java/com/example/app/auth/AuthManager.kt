@@ -1,5 +1,7 @@
 package com.example.app.auth
 
+import com.example.app.appString
+import com.example.app.R
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -98,13 +100,13 @@ class AuthManager {
     fun sendPasswordResetEmail(email: String, callback: (Boolean, String?) -> Unit) {
         val trimmed = email.trim()
         if (trimmed.isEmpty()) {
-            callback(false, "E-posta adresi girin")
+            callback(false, appString(R.string.ui_e_posta_adresi_girin))
             return
         }
         auth.sendPasswordResetEmail(trimmed)
             .addOnSuccessListener { callback(true, null) }
             .addOnFailureListener { e ->
-                val msg = e.localizedMessage ?: e.message ?: "E-posta gönderilemedi"
+                val msg = e.localizedMessage ?: e.message ?: appString(R.string.ui_e_posta_gonderilemedi)
                 callback(false, msg)
             }
     }
@@ -119,7 +121,7 @@ class AuthManager {
     fun sendTeacherPasswordResetCode(email: String, callback: (Boolean, String?) -> Unit) {
         val trimmed = email.trim().lowercase()
         if (trimmed.isEmpty()) {
-            callback(false, "E-posta adresi girin")
+            callback(false, appString(R.string.ui_e_posta_adresi_girin))
             return
         }
         sendStudentVerificationCode(trimmed, OTP_PURPOSE_TEACHER_RESET) { success, error ->
@@ -142,7 +144,7 @@ class AuthManager {
             .addOnFailureListener { e ->
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
-                callback(false, msg ?: "Kod doğrulanamadı")
+                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -162,7 +164,7 @@ class AuthManager {
             .addOnFailureListener { e ->
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
-                callback(false, msg ?: "Şifre güncellenemedi")
+                callback(false, msg ?: appString(R.string.ui_sifre_guncellenemedi))
             }
     }
 
@@ -313,7 +315,7 @@ class AuthManager {
     fun createPendingRegistrationForOTP(email: String, callback: (Boolean, String?) -> Unit) {
         val normalizedEmail = email.trim().lowercase()
         if (normalizedEmail.isEmpty()) {
-            callback(false, "Geçersiz bilgiler")
+            callback(false, appString(R.string.ui_gecersiz_bilgiler))
             return
         }
         rememberPendingRegistration(normalizedEmail, name = "", password = "", role = ROLE_STUDENT)
@@ -332,7 +334,7 @@ class AuthManager {
     ) {
         val normalizedEmail = email.trim().lowercase()
         if (normalizedEmail.isEmpty() || name.isBlank() || password.length < 6) {
-            callback(false, "Geçersiz bilgiler")
+            callback(false, appString(R.string.ui_gecersiz_bilgiler))
             return
         }
         rememberPendingRegistration(normalizedEmail, name.trim(), password, ROLE_TEACHER)
@@ -369,13 +371,13 @@ class AuthManager {
                 val data = result.data as? Map<String, Any>
                 val token = data?.get("token") as? String
                 if (token.isNullOrBlank()) {
-                    callback(false, "Token alınamadı")
+                    callback(false, appString(R.string.ui_token_alinamadi))
                     return@addOnSuccessListener
                 }
                 auth.signInWithCustomToken(token)
                     .addOnSuccessListener {
                         val user = auth.currentUser ?: run {
-                            callback(false, "Oturum açılamadı")
+                            callback(false, appString(R.string.ui_oturum_acilamadi))
                             return@addOnSuccessListener
                         }
                         firestore.collection("users").document(user.uid)
@@ -384,7 +386,7 @@ class AuthManager {
                                 val role = doc.getString("role") ?: ROLE_STUDENT
                                 if (role != ROLE_STUDENT) {
                                     auth.signOut()
-                                    callback(false, "Bu hesap öğretmen hesabı. Öğrenci giriş ekranından giriş yapılamaz.")
+                                    callback(false, appString(R.string.ui_bu_hesap_ogretmen_hesabi_ogrenci_giris))
                                     return@addOnSuccessListener
                                 }
                                 val name = doc.getString("name") ?: ""
@@ -399,7 +401,7 @@ class AuthManager {
             .addOnFailureListener { e ->
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
-                callback(false, msg ?: "Kod doğrulanamadı")
+                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -412,7 +414,7 @@ class AuthManager {
     ) {
         if (account.idToken == null) {
             android.util.Log.e("AuthManager", "Google Sign-In account idToken is null")
-            callback(false, "Google hesap bilgisi alınamadı. Lütfen tekrar deneyin.")
+            callback(false, appString(R.string.ui_google_hesap_bilgisi_alinamadi_lutfen_tekrar))
             return
         }
         
@@ -440,11 +442,11 @@ class AuthManager {
                     val errorMessage = when {
                         errorCode == "ERROR_NETWORK_REQUEST_FAILED" || 
                         errorMessageFull.contains("network", ignoreCase = true) -> 
-                            "Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin."
+                            appString(R.string.ui_ag_baglanti_hatasi_internet_baglantinizi_kon)
                         
                         errorCode == "ERROR_INVALID_CREDENTIAL" || 
                         errorMessageFull.contains("invalid", ignoreCase = true) -> 
-                            "Geçersiz kimlik bilgisi. Web Client ID doğru mu kontrol edin."
+                            appString(R.string.ui_gecersiz_kimlik_bilgisi_web_client_id)
                         
                         errorCode == "ERROR_OPERATION_NOT_ALLOWED" || 
                         errorMessageFull.contains("permission", ignoreCase = true) || 
@@ -470,10 +472,10 @@ class AuthManager {
                         
                         errorCode == "ERROR_DEVELOPER_ERROR" ||
                         errorMessageFull.contains("DEVELOPER_ERROR", ignoreCase = true) ->
-                            "Yapılandırma hatası:\n\n1. Web Client ID doğru mu? (strings.xml)\n2. SHA-1 fingerprint Firebase Console'a eklendi mi?\n3. Google Sign-In Firebase Console'da etkin mi?\n\nHata: $errorMessageFull"
+                            appString(R.string.ui_yapilandirma_hatasi_1_web_client_id, errorMessageFull)
                         
                         else -> {
-                            "Giriş başarısız (Code: $errorCode)\n\n$errorMessageFull\n\nLogcat'te detaylı bilgi için 'AuthManager' tag'ini kontrol edin."
+                            appString(R.string.ui_giris_basarisiz_code_x_x_logcat, errorCode, errorMessageFull)
                         }
                     }
                     
@@ -483,7 +485,7 @@ class AuthManager {
                 
                 val user = auth.currentUser
                 if (user == null) {
-                    callback(false, "Kullanıcı bulunamadı")
+                    callback(false, appString(R.string.ui_kullanici_bulunamadi))
                     return@addOnCompleteListener
                 }
                 
@@ -498,7 +500,7 @@ class AuthManager {
                             // Öğretmen hesabı ise Google ile giriş yapılmasına izin verme
                             if (role == ROLE_TEACHER) {
                                 auth.signOut()
-                                callback(false, "Giriş bilgileri doğrulanamadı.")
+                                callback(false, appString(R.string.ui_giris_bilgileri_dogrulanamadi))
                                 return@addOnSuccessListener
                             }
 
@@ -657,7 +659,7 @@ class AuthManager {
                 signInWithGoogle(account, autoRegister, birthYear, acquisitionSource, callback)
             } else {
                 android.util.Log.e("AuthManager", "Google hesabı null")
-                callback(false, "Google hesabı seçilemedi")
+                callback(false, appString(R.string.ui_google_hesabi_secilemedi))
             }
         } catch (e: ApiException) {
             android.util.Log.e(
@@ -669,15 +671,15 @@ class AuthManager {
             // Kullanıcı iptal ettiyse (12501) sessizce dön
             if (e.statusCode == 12501) {
                 android.util.Log.d("AuthManager", "Kullanıcı Google Sign-In'i iptal etti")
-                callback(false, "Kullanıcı girişi iptal edildi")
+                callback(false, appString(R.string.ui_kullanici_girisi_iptal_edildi))
                 return
             }
             
             val errorMessage = when (e.statusCode) {
-                10 -> "Yapılandırma hatası: Web Client ID eksik veya yanlış. Firebase Console'dan Web Client ID'yi alıp strings.xml'e ekleyin."
-                7 -> "Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin."
-                8 -> "İstek limiti aşıldı. Lütfen daha sonra tekrar deneyin."
-                else -> "Google girişi başarısız (Hata: ${e.statusCode}): ${e.localizedMessage ?: e.message}"
+                10 -> appString(R.string.ui_yapilandirma_hatasi_web_client_id_eksik)
+                7 -> appString(R.string.ui_ag_baglanti_hatasi_internet_baglantinizi_kon)
+                8 -> appString(R.string.ui_istek_limiti_asildi_lutfen_daha_sonra)
+                else -> appString(R.string.ui_google_girisi_basarisiz_hata_x_x, e.statusCode, e.localizedMessage ?: e.message)
             }
             
             callback(false, errorMessage)
@@ -698,13 +700,13 @@ class AuthManager {
 
                 val user = auth.currentUser
                 if (user == null) {
-                    callback(false, "Kullanıcı bulunamadı")
+                    callback(false, appString(R.string.ui_kullanici_bulunamadi))
                     return@addOnCompleteListener
                 }
 
                 fetchUserRole(user.uid) { role ->
                     if (role != ROLE_STUDENT) {
-                        callback(false, "Bu hesap öğrenci değil")
+                        callback(false, appString(R.string.ui_bu_hesap_ogrenci_degil))
                         return@fetchUserRole
                     }
                     
@@ -717,7 +719,7 @@ class AuthManager {
                             if (!verified) {
                                 callback(
                                     false,
-                                    "E-posta doğrulaması gerekli. Lütfen e-postanızı doğrulayın."
+                                    appString(R.string.ui_e_posta_dogrulamasi_gerekli_lutfen_e)
                                 )
         } else {
                                 cacheBasicUser(email, ROLE_STUDENT, user.displayName ?: "", userId)
@@ -725,7 +727,7 @@ class AuthManager {
                             }
                         }
                         .addOnFailureListener {
-                            callback(false, "Kullanıcı bilgileri alınamadı")
+                            callback(false, appString(R.string.ui_kullanici_bilgileri_alinamadi))
                         }
                 }
             }
@@ -735,12 +737,12 @@ class AuthManager {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (!task.isSuccessful) {
-                    callback(false, "Şifre veya e-posta hatalı")
+                    callback(false, appString(R.string.ui_sifre_veya_e_posta_hatali))
                     return@addOnCompleteListener
                 }
                 val user = auth.currentUser
                 if (user == null) {
-                    callback(false, "Şifre veya e-posta hatalı")
+                    callback(false, appString(R.string.ui_sifre_veya_e_posta_hatali))
                     return@addOnCompleteListener
                 }
                 firestore.collection("users").document(user.uid)
@@ -752,11 +754,11 @@ class AuthManager {
                             cacheBasicUser(email, role, user.displayName ?: "", userId)
                         callback(true, null)
         } else {
-                        callback(false, "Bu hesap öğretmen değil")
+                        callback(false, appString(R.string.ui_bu_hesap_ogretmen_degil))
                     }
                 }
                     .addOnFailureListener {
-                        callback(false, "Şifre veya e-posta hatalı")
+                        callback(false, appString(R.string.ui_sifre_veya_e_posta_hatali))
                     }
             }
     }
@@ -779,16 +781,16 @@ class AuthManager {
                             "email address is already in use",
                             ignoreCase = true
                         ) == true ->
-                            "Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın."
+                            appString(R.string.ui_bu_e_posta_adresi_zaten_kayitli)
 
                         exception?.message?.contains("weak password", ignoreCase = true) == true -> 
-                            "Şifre çok zayıf. Daha güçlü bir şifre seçin."
+                            appString(R.string.ui_sifre_cok_zayif_daha_guclu_bir)
 
                         exception?.message?.contains("invalid email", ignoreCase = true) == true -> 
-                            "Geçersiz e-posta adresi."
+                            appString(R.string.ui_gecersiz_e_posta_adresi)
 
                         else -> exception?.localizedMessage
-                            ?: "Kayıt başarısız. Lütfen tekrar deneyin."
+                            ?: appString(R.string.ui_kayit_basarisiz_lutfen_tekrar_deneyin)
                     }
                     android.util.Log.e("AuthManager", "Kayıt başarısız: $errorMessage")
                     callback(false, errorMessage)
@@ -798,7 +800,7 @@ class AuthManager {
                 val user = auth.currentUser
                 if (user == null) {
                     android.util.Log.e("AuthManager", "Kullanıcı oluşturulamadı")
-                    callback(false, "Kullanıcı oluşturulamadı")
+                    callback(false, appString(R.string.ui_kullanici_olusturulamadi))
                     return@addOnCompleteListener
                 }
                 
@@ -839,7 +841,7 @@ class AuthManager {
                         // Firebase Auth'da hesap oluşturuldu ama Firestore'a yazılamadı
                         // Kullanıcıyı sil
                         user.delete()
-                        callback(false, "Kayıt başarısız: ${e.localizedMessage}")
+                        callback(false, appString(R.string.ui_kayit_basarisiz_x, e.localizedMessage))
                         }
                 }
             }
@@ -862,7 +864,7 @@ class AuthManager {
                 val now = com.google.firebase.Timestamp.now()
 
                 if (!exists || used || (expiresAt != null && expiresAt < now)) {
-                    callback(false, "Geçersiz veya süresi dolmuş kod")
+                    callback(false, appString(R.string.ui_gecersiz_veya_suresi_dolmus_kod))
                     return@addOnSuccessListener
                 }
 
@@ -874,7 +876,7 @@ class AuthManager {
                         }
                         val user = auth.currentUser
                         if (user == null) {
-                            callback(false, "Kullanıcı oluşturulamadı")
+                            callback(false, appString(R.string.ui_kullanici_olusturulamadi))
                             return@addOnCompleteListener
                         }
 
@@ -979,7 +981,7 @@ class AuthManager {
                 )
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
-                callback(false, msg ?: "Kod gönderilemedi")
+                callback(false, msg ?: appString(R.string.ui_kod_gonderilemedi))
             }
     }
 
@@ -1034,7 +1036,7 @@ class AuthManager {
                 val data = result.data as? Map<String, Any>
                 val token = data?.get("token") as? String
                 if (token.isNullOrBlank()) {
-                    callback(false, "Token alınamadı")
+                    callback(false, appString(R.string.ui_token_alinamadi))
                     return@addOnSuccessListener
                 }
                 
@@ -1047,7 +1049,7 @@ class AuthManager {
                         }
                         
                         val user = auth.currentUser ?: run {
-                            callback(false, "Oturum açılamadı")
+                            callback(false, appString(R.string.ui_oturum_acilamadi))
                             return@addOnSuccessListener
                         }
                         firestore.collection("users").document(user.uid)
@@ -1066,7 +1068,7 @@ class AuthManager {
             .addOnFailureListener { e ->
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
-                callback(false, msg ?: "Kod doğrulanamadı")
+                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
             }
     }
     

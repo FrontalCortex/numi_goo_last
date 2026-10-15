@@ -29,7 +29,7 @@
             android:textColor="@android:color/white"
             android:maxLines="2"
             android:ellipsize="end"
-            android:text="Part : 1" />
+            android:text="@string/item_part_card_part_card_label" />
 
         <Space
             android:layout_width="match_parent"

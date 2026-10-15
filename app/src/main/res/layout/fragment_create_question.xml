@@ -38,7 +38,7 @@
                 android:id="@+id/titleText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sorunu gönder"
+                android:text="@string/fragment_create_question_title_text"
                 android:textSize="@dimen/create_question_title_text_size"
                 android:textStyle="bold"
                 android:textColor="@android:color/white"
@@ -64,7 +64,7 @@
                     android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
                     android:scaleType="centerInside"
-                    android:contentDescription="Ekran görüntüsü" />
+                    android:contentDescription="@string/fragment_create_question_screenshot_image_desc" />
 
                 <androidx.media3.ui.PlayerView
                     android:id="@+id/videoPreview"
@@ -83,7 +83,7 @@
                     android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_fullscreen"
-                    android:contentDescription="Tam ekran"
+                    android:contentDescription="@string/fragment_create_question_video_fullscreen_button_desc"
                     app:tint="@android:color/white" />
 
                 <ImageButton
@@ -95,7 +95,7 @@
                     android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/question_pencil_ic"
-                    android:contentDescription="Çizim yap"
+                    android:contentDescription="@string/fragment_create_question_screenshot_annotate_button_desc"
                     app:tint="@android:color/white" />
             </FrameLayout>
 
@@ -103,7 +103,7 @@
                 android:id="@+id/headerLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sorunuza başlık giriniz"
+                android:text="@string/fragment_create_question_header_label"
                 android:textSize="@dimen/create_question_label_text_size"
                 android:textColor="@android:color/white"
                 android:layout_marginTop="@dimen/create_question_section_margin_top"
@@ -116,7 +116,7 @@
                 android:minLines="1"
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
-                android:hint="5'lik kural mantığı"
+                android:hint="@string/fragment_create_question_header_input_hint"
                 android:textSize="@dimen/create_question_input_text_size"
                 android:padding="@dimen/create_question_input_padding"
                 android:background="@drawable/hint_background"
@@ -130,7 +130,7 @@
                 android:id="@+id/descriptionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sorunuzu kısaca açıklayın"
+                android:text="@string/fragment_create_question_description_label"
                 android:textSize="@dimen/create_question_label_text_size"
                 android:textColor="@android:color/white"
                 android:layout_marginTop="@dimen/create_question_section_margin_top"
@@ -144,7 +144,7 @@
                 android:minLines="4"
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
-                android:hint="Örnek: Bu sayfadaki şu soruyu anlamadım..."
+                android:hint="@string/fragment_create_question_description_input_hint"
                 android:textSize="@dimen/create_question_input_text_size"
                 android:padding="@dimen/create_question_input_padding"
                 android:background="@drawable/hint_background"
@@ -170,7 +170,7 @@
                     android:id="@+id/sendButton"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:text="Gönder"
+                    android:text="@string/fragment_create_question_send_button"
                     android:textAllCaps="false"
                     android:textSize="@dimen/create_question_send_text_size"
                     android:backgroundTint="@color/lesson_completed"

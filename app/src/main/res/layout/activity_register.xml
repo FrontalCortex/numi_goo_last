@@ -11,7 +11,7 @@
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@android:color/transparent"
-        android:contentDescription="Geri"
+        android:contentDescription="@string/activity_register_btn_back_desc"
         android:tint="@color/dark_text"
         app:srcCompat="@drawable/ic_back_arrow"
         app:layout_constraintTop_toTopOf="parent"
@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="54dp"
-        android:text="Hesap Oluştur"
+        android:text="@string/activity_register_tv_title"
         android:textColor="@color/dark_text"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Eğitim yolculuğuna başla"
+        android:text="@string/activity_register_tv_subtitle"
         android:textColor="@color/dark_text_secondary"
         android:textSize="16sp"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
@@ -68,7 +68,7 @@
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="E-posta"
+                android:hint="@string/activity_register_et_email_hint"
                 android:inputType="textEmailAddress"
                 android:textColor="@color/dark_text" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -78,7 +78,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="16dp"
-            android:text="Devam Et"
+            android:text="@string/activity_register_btn_continue"
             android:textSize="16sp"
             app:backgroundTint="@color/dark_primary"
             app:cornerRadius="8dp" />
@@ -130,7 +130,7 @@
                     android:id="@+id/etName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Kullanıcı adı"
+                    android:hint="@string/activity_register_et_name_hint"
                     android:inputType="textPersonName"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -148,7 +148,7 @@
                     android:id="@+id/etTeacherEmail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="E-posta"
+                    android:hint="@string/activity_register_et_teacher_email_hint"
                     android:inputType="textEmailAddress"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -166,7 +166,7 @@
                     android:id="@+id/etPassword"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Şifre"
+                    android:hint="@string/activity_register_et_password_hint"
                     android:inputType="textPassword"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -186,7 +186,7 @@
                     android:id="@+id/etApprovalCode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Şifreyi tekrar girin"
+                    android:hint="@string/activity_register_et_approval_code_hint"
                     android:inputType="textPassword"
                     android:textColor="@color/dark_text" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -196,7 +196,7 @@
                 android:id="@+id/btnRegister"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:text="Devam Et"
+                android:text="@string/activity_register_btn_register"
                 android:textSize="16sp"
                 app:backgroundTint="@color/dark_primary"
                 app:cornerRadius="8dp" />
@@ -217,7 +217,7 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:layout_marginTop="6dp"
-        android:text="Google ile Kayıt Ol"
+        android:text="@string/activity_register_btn_google_sign_in"
         android:textSize="16sp"
         android:textColor="#453535"
         app:backgroundTint="@android:color/white"

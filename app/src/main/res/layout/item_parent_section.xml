@@ -38,7 +38,7 @@
         android:layout_width="18dp"
         android:layout_height="18dp"
         android:layout_marginStart="10dp"
-        android:contentDescription="Dersleri göster"
+        android:contentDescription="@string/item_parent_section_section_chevron_desc"
         android:src="@drawable/dualingo_arrow_ic"
         app:tint="#607887" />
 </LinearLayout>

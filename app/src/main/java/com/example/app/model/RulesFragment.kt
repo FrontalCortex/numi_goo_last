@@ -1,5 +1,6 @@
 package com.example.app.model
 
+import com.example.app.appString
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -253,7 +254,7 @@ class RulesFragment : Fragment() {
 
     /** Toplama + çıkarma tablo başlık hücrelerini güncelle. */
     fun applyRulesTableHeaderTexts(isSubtractionPart: Boolean) {
-        val label = if (isSubtractionPart) "Çıkarılacak Sayı" else "Eklenecek Sayı"
+        val label = if (isSubtractionPart) appString(R.string.ui_cikarilacak_sayi) else appString(R.string.ui_eklenecek_sayi_2)
         binding.fiveText.text = label
         binding.tenText.text = label
         binding.tenTextSecond.text = label

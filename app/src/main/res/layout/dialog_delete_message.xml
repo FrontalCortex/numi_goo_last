@@ -25,7 +25,7 @@
                 android:layout_gravity="center"
                 android:src="@drawable/info_ic"
                 app:tint="@color/dark_text"
-                android:contentDescription="Sil" />
+                android:contentDescription="@string/dialog_delete_message_text_desc" />
         </FrameLayout>
 
         <LinearLayout
@@ -38,7 +38,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mesaj silinsin mi?"
+                android:text="@string/dialog_delete_message_text"
                 android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/dark_text" />
@@ -46,7 +46,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bu işlem geri alınamaz"
+                android:text="@string/dialog_delete_message_text_2"
                 android:textSize="12sp"
                 android:textColor="@color/dark_text_secondary"
                 android:layout_marginTop="1dp" />
@@ -60,7 +60,7 @@
             android:background="@drawable/bg_report_action_row"
             android:src="@drawable/ic_close_black"
             app:tint="@color/dark_text_secondary"
-            android:contentDescription="Kapat" />
+            android:contentDescription="@string/dialog_delete_message_delete_message_close_desc" />
     </LinearLayout>
 
     <View
@@ -84,13 +84,13 @@
             android:layout_height="16dp"
             android:src="@drawable/ic_delete"
             app:tint="@color/dark_error"
-            android:contentDescription="Herkesten sil" />
+            android:contentDescription="@string/dialog_delete_message_text_desc_2" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Herkesten sil"
+            android:text="@string/dialog_delete_message_text_3"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="@color/dark_error" />
@@ -112,14 +112,14 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_delete"
             app:tint="@color/dark_error"
-            android:contentDescription="Benden sil" />
+            android:contentDescription="@string/dialog_delete_message_text_desc_3" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Benden sil"
+            android:text="@string/dialog_delete_message_text_4"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -140,14 +140,14 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_flag_outline"
             app:tint="@color/dark_primary"
-            android:contentDescription="Bildir" />
+            android:contentDescription="@string/dialog_delete_message_text_desc_4" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="14dp"
-            android:text="Bildir"
+            android:text="@string/dialog_delete_message_text_5"
             android:textSize="15sp"
             android:textColor="@color/dark_text" />
     </LinearLayout>
@@ -158,7 +158,7 @@
         android:layout_height="44dp"
         android:layout_marginTop="8dp"
         android:gravity="center"
-        android:text="İptal"
+        android:text="@string/dialog_delete_message_delete_cancel"
         android:textSize="14sp"
         android:textColor="@color/dark_text_secondary"
         android:background="?attr/selectableItemBackground" />

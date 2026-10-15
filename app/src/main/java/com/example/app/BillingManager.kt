@@ -313,7 +313,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         val details = productDetails[productId]
         if (details == null) {
             endPurchaseFlow()
-            onError?.invoke("Ürün şu anda alınamıyor. Daha sonra tekrar deneyin.")
+            onError?.invoke(appString(R.string.ui_urun_su_anda_alinamiyor_daha_sonra))
             // Ürün bilgisi eksikse bağlantı kopmuş olabilir; sessizce tazele.
             start()
             return
@@ -384,7 +384,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             val offerToken = bestOffer(details)?.offerToken
             if (offerToken == null) {
                 endPurchaseFlow()
-                onError?.invoke("Abonelik teklifi bulunamadı.")
+                onError?.invoke(appString(R.string.ui_abonelik_teklifi_bulunamadi))
                 return
             }
             paramsBuilder.setOfferToken(offerToken)
@@ -427,7 +427,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
             endPurchaseFlow()
             Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
-            onError?.invoke("Satın alma başlatılamadı.")
+            onError?.invoke(appString(R.string.ui_satin_alma_baslatilamadi))
             return
         }
         // Ölçüm, ekranın gerçekten açıldığı yerde: yukarıdaki erken çıkışlar (ürün bilgisi yok,
@@ -460,7 +460,7 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             }
             else -> {
                 Log.w(TAG, "Satın alma hatası: ${result.responseCode} ${result.debugMessage}")
-                onError?.invoke("Satın alma tamamlanamadı.")
+                onError?.invoke(appString(R.string.ui_satin_alma_tamamlanamadi))
             }
         }
     }
@@ -572,14 +572,14 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
                     Log.w(TAG, "Abonelik başka bir hesaba tanımlı: $productId")
                     main.post {
                         onError?.invoke(
-                            "Bu abonelik bu cihazdaki Google Play hesabının başka bir Sorobit " +
-                                "hesabına tanımlı. Aboneliği o hesapla kullanabilirsiniz."
+                            appString(R.string.ui_bu_abonelik_bu_cihazdaki_google_play) +
+                                appString(R.string.ui_hesabina_tanimli_aboneligi_o_hesapla_kullana)
                         )
                     }
                     return@addOnFailureListener
                 }
                 Log.e(TAG, "Satın alma sunucuda işlenemedi: $productId", e)
-                main.post { onError?.invoke("Satın alma doğrulanamadı. Uygulamayı tekrar açtığınızda denenecek.") }
+                main.post { onError?.invoke(appString(R.string.ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a)) }
             }
     }
 

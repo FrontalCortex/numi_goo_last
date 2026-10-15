@@ -74,7 +74,7 @@
                         android:layout_marginStart="@dimen/item_message_inline_gap"
                         android:textSize="@dimen/item_message_secondary_text_size"
                         android:textColor="@android:color/white"
-                        android:text="Ses kaydı" />
+                        android:text="@string/item_message_audio_label" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -170,7 +170,7 @@
                                 android:layout_marginStart="@dimen/item_message_inline_gap"
                                 android:textSize="@dimen/item_message_secondary_text_size"
                                 android:textColor="@android:color/white"
-                                android:text="0 KB" />
+                                android:text="@string/item_message_video_size_text" />
                         </LinearLayout>
 
                     </FrameLayout>
@@ -315,7 +315,7 @@
                                 android:layout_marginStart="8dp"
                                 android:textSize="14sp"
                                 android:textColor="@android:color/white"
-                                android:text="0 KB" />
+                                android:text="@string/item_message_image_size_text" />
                         </LinearLayout>
 
                     </FrameLayout>

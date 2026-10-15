@@ -172,7 +172,7 @@ class ShopFragment : Fragment() {
                     },
                     onFailure = {
                         if (!isAdded) return@claimAdEnergy
-                        Toast.makeText(requireContext(), "Can alınamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_can_alinamadi_tekrar_deneyin), Toast.LENGTH_SHORT).show()
                     },
                 )
             }
@@ -210,7 +210,7 @@ class ShopFragment : Fragment() {
             view.findViewById<TextView>(labelId)?.text = price
         }
         billing.formattedPrice(BillingCatalog.SUB_PRO)?.let { price ->
-            view.findViewById<TextView>(R.id.shopProPriceText)?.text = "aylık $price"
+            view.findViewById<TextView>(R.id.shopProPriceText)?.text = appString(R.string.ui_aylik_x, price)
         }
         // "1 HAFTA ÜCRETSİZ DENE" layout'ta sabitti; denemeye uygun olmayan kullanıcıya
         // yanlış vaat oluyordu.
@@ -231,7 +231,7 @@ class ShopFragment : Fragment() {
 
         val currentKey = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
         if (currentKey < LIFE_KEY_COST) {
-            Toast.makeText(ctx, "Yetersiz anahtar!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, appString(R.string.ui_yetersiz_anahtar_2), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -262,9 +262,9 @@ class ShopFragment : Fragment() {
                 val dailyLimitReached = (e as? FirebaseFunctionsException)?.code ==
                     FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED
                 val message = if (dailyLimitReached) {
-                    "Günlük sınıra ulaşıldı. Yarın tekrar deneyin."
+                    appString(R.string.ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin)
                 } else {
-                    "İşlem tamamlanamadı. Tekrar deneyin."
+                    appString(R.string.ui_islem_tamamlanamadi_tekrar_deneyin)
                 }
                 Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
             },
@@ -324,10 +324,10 @@ class ShopFragment : Fragment() {
         val desc = view.findViewById<TextView>(R.id.shopStreakFreezeDesc)
 
         if (held) {
-            desc.text = "Serin korunuyor. Kullanınca yenisini alabilirsin."
+            desc.text = appString(R.string.ui_serin_korunuyor_kullaninca_yenisini_alabilir)
             button.setCardBackgroundColor(Color.parseColor("#17394B"))
             icon.visibility = View.GONE
-            text.text = "✓  HAZIR"
+            text.text = appString(R.string.ui_hazir)
             text.setTextColor(Color.parseColor("#4FC3F7"))
             button.isClickable = false
         } else {
@@ -340,7 +340,7 @@ class ShopFragment : Fragment() {
                         StreakRepository.FREEZE_COST_GOLD,
                 )
             }
-            desc.text = "Serini 1 gün boyunca korur. Serin bozulsa bile ilerlemeye devam et!"
+            desc.text = appString(R.string.ui_serini_1_gun_boyunca_korur_serin)
             button.setCardBackgroundColor(Color.parseColor("#37474F"))
             icon.visibility = View.VISIBLE
             text.text = StreakRepository.FREEZE_COST_GOLD.toString()
@@ -366,21 +366,21 @@ class ShopFragment : Fragment() {
         val gold = currencyText?.text?.toString()?.toIntOrNull()
             ?: UserWalletFirestore.getCachedCurrency(ctx)
         if (gold < cost) {
-            Toast.makeText(ctx, "Yetersiz altın!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, appString(R.string.ui_yetersiz_altin_2), Toast.LENGTH_SHORT).show()
             return
         }
 
         val dialogView = layoutInflater.inflate(R.layout.dialog_streak_options, null)
         val dialog = AlertDialog.Builder(ctx).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialogView.findViewById<TextView>(R.id.streakOptionsTitle).text = "Seri Dondurma"
+        dialogView.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_seri_dondurma)
         dialogView.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
-            "Bir gün çalışamazsan serin bozulmaz. $cost altın harcanacak."
+            appString(R.string.ui_bir_gun_calisamazsan_serin_bozulmaz_x, cost)
         StreakViews.buildOptionRows(
             container = dialogView.findViewById(R.id.streakOptionsContainer),
             values = listOf(CONFIRM_BUY, CONFIRM_CANCEL),
-            labels = listOf("Satın al", "Vazgeç"),
-            trailing = listOf("$cost altın", ""),
+            labels = listOf(appString(R.string.ui_satin_al), appString(R.string.ui_vazgec)),
+            trailing = listOf(appString(R.string.ui_x_altin, cost), ""),
             selected = CONFIRM_BUY,
             trailingColor = StreakViews.COLOR_GOLD,
         ) { choice ->
@@ -610,7 +610,7 @@ class ShopFragment : Fragment() {
             v.findViewById<TextView>(amountId)?.text =
                 (if (isPro) base + bonus else base).toString()
             v.findViewById<TextView>(bonusId)?.apply {
-                text = if (isPro) "bonus dahil" else "Pro'da +$bonus"
+                text = if (isPro) appString(R.string.ui_bonus_dahil) else appString(R.string.ui_pro_da_x, bonus)
                 visibility = View.VISIBLE
             }
         }

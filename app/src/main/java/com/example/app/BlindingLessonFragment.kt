@@ -311,7 +311,7 @@ class BlindingLessonFragment : Fragment() {
                 // soruya ait oldukları ayırt edilemezdi.
                 stableId = "daily_p${dailyQuestionPartId}_i$dailyQuestionItemIndex",
                 type = LessonItem.TYPE_LESSON,
-                title = dailyQuestionTitleUnit.ifEmpty { "Günlük Soru" },
+                title = dailyQuestionTitleUnit.ifEmpty { appString(R.string.ui_gunluk_soru) },
                 offset = 0,
                 isCompleted = false,
                 stepCount = 1,
@@ -326,14 +326,14 @@ class BlindingLessonFragment : Fragment() {
                     // Kalıcı değil: kupa modu item'ı bulunamazsa son çare.
                     stableId = "transient_cup_mode_fallback",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kupa Modu",
+                    title = appString(R.string.ui_kupa_modu),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     raceBusyLevel = 1,
-                    raceTitle = "Kupa Zorluğu",
+                    raceTitle = appString(R.string.ui_kupa_zorlugu),
                 )
         } else {
             LessonManager.getLessonItem(mapFragmentStepIndex)!!
@@ -1053,8 +1053,8 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun fillIncorrectPanelAnswers() {
-        correctAnswerLabel.text = "Doğru cevap $answerNumber"
-        correctAnswerText.text = "Senin cevabın $controlNumber"
+        correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
+        correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
     }
 
     private fun cupWay(){
@@ -1422,11 +1422,11 @@ class BlindingLessonFragment : Fragment() {
     private fun applyRulesPanelFiveText() {
         val index = lessonItem.mapFragmentIndex ?: return
         if ((globalPartId == 2 && index > 5) || globalPartId == 5) {
-            binding.fiveText.text = "Çıkarılacak Sayı"
-            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
+            binding.fiveText.text = appString(R.string.ui_cikarilacak_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gider_kardes_gelir)
         } else {
-            binding.fiveText.text = "Eklenecek sayı"
-            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
+            binding.fiveText.text = appString(R.string.ui_eklenecek_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gelir_kardes_gider)
         }
     }
 

@@ -90,11 +90,11 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 val email = binding.etEmail.text?.toString()?.trim() ?: ""
 
                 if (email.isEmpty()) {
-                    showError("Lütfen e-posta girin")
+                    showError(appString(R.string.ui_lutfen_e_posta_girin))
                     return@requireOnlineOrShowOffline
                 }
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    showError("Geçerli bir e-posta adresi girin")
+                    showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_girin))
                     return@requireOnlineOrShowOffline
                 }
 
@@ -145,12 +145,12 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 override fun onFinish() {
                     resendCooldownTimer = null
                     binding.btnContinue.isEnabled = true
-                    binding.btnContinue.text = "Devam Et"
+                    binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 }
             }.start()
         } else {
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
         }
     }
 
@@ -219,13 +219,13 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
 
         binding.btnContinue.isEnabled = false
-        binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnContinue.text = appString(R.string.ui_gonderiliyor)
         binding.btnBack.isEnabled = false
         binding.btnGoogleSignIn.isEnabled = false
 
         authManager.sendLoginCodeOnly(email) { success, error ->
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
             binding.btnBack.isEnabled = true
             binding.btnGoogleSignIn.isEnabled = true
 
@@ -241,7 +241,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (error == "Kullanıcı bulunamadı") {
                     showUserInfoFragment(prefillEmail = email)
                 } else {
-                    showError(error ?: "Kod gönderilemedi")
+                    showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                 }
             }
         }
@@ -257,12 +257,12 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     } else {
                         setScreenEnabled(true)
                         isGoogleFlowInProgress = false
-                        showError("Google girişi başlatılamadı")
+                        showError(appString(R.string.ui_google_girisi_baslatilamadi))
                     }
                 } catch (e: Exception) {
                     setScreenEnabled(true)
                     isGoogleFlowInProgress = false
-                    showError("Google girişi başlatılamadı: ${e.localizedMessage}")
+                    showError(appString(R.string.ui_google_girisi_baslatilamadi_x, e.localizedMessage))
                 }
             }
     }
@@ -292,7 +292,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (!reason.contains("kullanıcı geri tuşuna basmış olabilir")
                     && !reason.contains("statusCode=12501")
                 ) {
-                    showError("Google girişi başarısız: $reason")
+                    showError(appString(R.string.ui_google_girisi_basarisiz_x, reason))
                 }
                 return
             }
@@ -324,8 +324,8 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                             googleEmail = googleEmail,
                             googleName = googleName
                         )
-                    } else if (error != "Kullanıcı girişi iptal edildi") {
-                        showError(error ?: "Google girişi başarısız")
+                    } else if (error != appString(R.string.ui_kullanici_girisi_iptal_edildi)) {
+                        showError(error ?: appString(R.string.ui_google_girisi_basarisiz))
                     }
                 }
             }

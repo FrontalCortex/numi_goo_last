@@ -261,7 +261,7 @@ class LessonAdapter(
             setStroke((2f * density).toInt(), palette.border)
         }
         panelArrow.setColors(screenBg, palette.border)
-        kindText.text = if (isChest) "ÜNİTE MARATONU" else "DERS"
+        kindText.text = if (isChest) appString(R.string.ui_unite_maratonu) else appString(R.string.ui_ders)
         kindText.setTextColor(palette.accentText)
         titleText.text = item.title
         titleText.setTextColor(
@@ -291,21 +291,21 @@ class LessonAdapter(
                     // Rekor satırı (4. ve 5. bölümde yok). Maraton rehberinin son adımı bunu gösteriyor.
                     if (globalPartId !in setOf(4, 5)) {
                         recordLayout.visibility = View.VISIBLE
-                        record.text = "Rekor: ${item.record ?: "—"}"
+                        record.text = appString(R.string.ui_rekor_x, item.record ?: "—")
                     }
-                    actionButton.text = "Tekrar dene"
+                    actionButton.text = appString(R.string.ui_tekrar_dene)
                 } else {
-                    actionButton.text = "Gözden geçir"
+                    actionButton.text = appString(R.string.ui_gozden_gecir)
                 }
             } else {
-                actionButton.text = if (doneSteps > 0) "Devam et" else "Başla"
+                actionButton.text = if (doneSteps > 0) appString(R.string.ui_devam_et) else appString(R.string.ui_basla)
             }
             actionButton.isEnabled = true
         } else {
             descriptionText.visibility = View.VISIBLE
-            descriptionText.text = "Kilidi açmak için önceki dersleri tamamla."
+            descriptionText.text = appString(R.string.ui_kilidi_acmak_icin_onceki_dersleri_tamamla)
             againTutorial.visibility = View.GONE
-            actionButton.text = "Kilitli"
+            actionButton.text = appString(R.string.ui_kilitli)
             actionButton.isEnabled = false
         }
 
@@ -874,7 +874,7 @@ class LessonAdapter(
         } else {
             String.format(Locale.US, "%.1f", seconds).replace('.', ',')
         }
-        return "Sayı gösterilme periyodu $secondsText saniye"
+        return appString(R.string.ui_sayi_gosterilme_periyodu_x_saniye, secondsText)
     }
 
     private fun applyRaceKeyUnlockButtonStyle(button: MaterialButton) {
@@ -997,7 +997,7 @@ class LessonAdapter(
             applyRaceStartButtonStyle(actionButton)
             when (raceItem.raceBusyLevel) {
                 0 -> {
-                    actionButton.text = "Tekrar dene"
+                    actionButton.text = appString(R.string.ui_tekrar_dene)
                     actionButton.isAllCaps = false
                     actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     actionButton.backgroundTintList =
@@ -1005,7 +1005,7 @@ class LessonAdapter(
                     actionButton.setTextColor(ContextCompat.getColor(context, R.color.panel_background))
                 }
                 else -> {
-                    actionButton.text = "BAŞLAT"
+                    actionButton.text = appString(R.string.ui_baslat)
                     actionButton.isAllCaps = true
                     actionButton.textAlignment = View.TEXT_ALIGNMENT_CENTER
                     actionButton.backgroundTintList =

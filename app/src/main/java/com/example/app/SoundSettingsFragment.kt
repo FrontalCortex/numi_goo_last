@@ -129,7 +129,7 @@ class SoundSettingsFragment : Fragment() {
         textAbacusSoundCurrent = view.findViewById(R.id.textAbacusSoundCurrent)
 
         selectedAbacusSound = AbacusSoundPlayer.getSelectedIndex(requireContext())
-        textAbacusSoundCurrent.text = "Ses $selectedAbacusSound"
+        textAbacusSoundCurrent.text = appString(R.string.ui_ses_x, selectedAbacusSound)
 
         rowAbacusSoundPicker.setOnClickListener {
             showAbacusSoundPickerDialog()
@@ -173,7 +173,7 @@ class SoundSettingsFragment : Fragment() {
                 selectedAbacusSound = soundNumber
                 AbacusSoundPlayer.choose(ctx, soundNumber)
                 refreshDialogVisuals()
-                textAbacusSoundCurrent.text = "Ses $soundNumber"
+                textAbacusSoundCurrent.text = appString(R.string.ui_ses_x, soundNumber)
             }
         }
 

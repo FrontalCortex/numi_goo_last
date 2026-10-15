@@ -19,7 +19,7 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
         type = ChestRewardType.GOLD,
         amount = 0,
         iconRes = R.drawable.open_chest,
-        label = "0 altın",
+        label = appString(R.string.ui_0_altin),
     )
     private var onDismissCallback: (() -> Unit)? = null
     private var onRewardClaimedCallback: (() -> Unit)? = null
@@ -67,7 +67,7 @@ class MissionRewardRevealDialogFragment : DialogFragment() {
                 if (!isAdded || _binding == null) return@openCrystal
                 android.widget.Toast.makeText(
                     requireContext(),
-                    "Ödül alınamadı. Tekrar deneyin.",
+                    appString(R.string.ui_odul_alinamadi_tekrar_deneyin),
                     android.widget.Toast.LENGTH_SHORT,
                 ).show()
                 dismissAllowingStateLoss()

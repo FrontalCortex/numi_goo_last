@@ -33,7 +33,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Kupa Yolu"
+                android:text="@string/panel_cup_path_text"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
@@ -58,7 +58,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:src="@drawable/heart_ic"
-                        android:contentDescription="Can" />
+                        android:contentDescription="@string/panel_cup_path_panel_cup_path_energy_icon_desc" />
 
                     <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
                     <TextView
@@ -133,7 +133,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Toplama Kupa Yolu"
+                            android:text="@string/panel_cup_path_card1_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -313,7 +313,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çıkarma Kupa Yolu"
+                            android:text="@string/panel_cup_path_card2_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -493,7 +493,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çarpma Kupa Yolu"
+                            android:text="@string/panel_cup_path_card3_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -672,7 +672,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Toplama Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card4_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -851,7 +851,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çıkarma Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card5_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -1030,7 +1030,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çarpma Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card6_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />

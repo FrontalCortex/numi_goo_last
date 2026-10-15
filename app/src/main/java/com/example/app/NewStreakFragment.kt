@@ -132,10 +132,10 @@ class NewStreakFragment : DialogFragment() {
 
     private fun renderIntro() {
         asking = false
-        binding.newStreakTitle.text = "Şimdi bir öğrenme alışkanlığı kazanmana yardım edelim."
+        binding.newStreakTitle.text = appString(R.string.ui_simdi_bir_ogrenme_aliskanligi_kazanmana_yard)
         binding.newStreakSubtitle.visibility = View.GONE
         binding.newStreakOptions.visibility = View.GONE
-        binding.newStreakContinue.text = "Devam et"
+        binding.newStreakContinue.text = appString(R.string.ui_devam_et)
         setContinueEnabled(true)
         // Niyet sayfasında maskot iki kez selam verip beklemeye geçiyor; alev gün sorusunda.
         binding.newStreakMascot.play(BunnyMascotView.Emote.GREET, times = 2)
@@ -146,12 +146,12 @@ class NewStreakFragment : DialogFragment() {
         AnalyticsLogger.logStreakSetupStep(AnalyticsLogger.STREAK_STAGE_NEW_RUN_CHALLENGE)
 
         val goal = StreakRepository.goalMinutes(requireContext())
-        binding.newStreakTitle.text = "Kaç gün üst üste öğreneceksin?"
+        binding.newStreakTitle.text = appString(R.string.ui_kac_gun_ust_uste_ogreneceksin)
         binding.newStreakSubtitle.text =
-            "Günde $goal dakika. Bu seçim seri boyunca değişmiyor."
+            appString(R.string.ui_gunde_x_dakika_bu_secim_seri, goal)
         binding.newStreakSubtitle.visibility = View.VISIBLE
         binding.newStreakOptions.visibility = View.VISIBLE
-        binding.newStreakContinue.text = "Başla"
+        binding.newStreakContinue.text = appString(R.string.ui_basla)
         // Bilerek ön seçimsiz: söz kullanıcının kendisinin olmalı.
         setContinueEnabled(false)
         renderOptions()
@@ -173,11 +173,11 @@ class NewStreakFragment : DialogFragment() {
         StreakViews.buildOptionRows(
             container = binding.newStreakOptions,
             values = StreakRepository.CHALLENGE_OPTIONS,
-            labels = StreakRepository.CHALLENGE_OPTIONS.map { "$it gün" },
+            labels = StreakRepository.CHALLENGE_OPTIONS.map { appPlural(R.plurals.ui_x_gun, it, it) },
             // Ödül burada yazıyor çünkü seçim burada yapılıyor ve seri boyunca
             // değişmiyor: neyin karşılığında söz verdiğini seçerken görmeli.
             trailing = StreakRepository.CHALLENGE_OPTIONS.map {
-                "+${StreakMilestones.challengeReward(it)} altın"
+                appString(R.string.ui_x_altin_2, StreakMilestones.challengeReward(it))
             },
             selected = picked,
             trailingColor = StreakViews.COLOR_GOLD,

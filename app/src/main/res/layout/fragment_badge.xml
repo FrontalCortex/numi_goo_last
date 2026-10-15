@@ -116,7 +116,7 @@
             android:gravity="center"
             android:maxLines="4"
             android:singleLine="false"
-            android:text="Daily detay metni"
+            android:text="@string/fragment_badge_badge_reward_detail_text"
             android:textAlignment="center"
             android:textColor="#E6FFFFFF"
             android:textSize="20sp"
@@ -224,7 +224,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Ünite"
+                        android:text="@string/fragment_badge_tv_badge_piece_header_unit_medal"
                         android:textColor="#E6FFFFFF"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -240,7 +240,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="14dp"
-                        android:text="Sezon"
+                        android:text="@string/fragment_badge_tv_badge_piece_header_season_medal"
                         android:textColor="#93A5B3"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -262,7 +262,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Ünite"
+                        android:text="@string/fragment_badge_tv_badge_piece_header_unit_cup"
                         android:textColor="#E6FFFFFF"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -278,7 +278,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="14dp"
-                        android:text="Sezon"
+                        android:text="@string/fragment_badge_tv_badge_piece_header_season_cup"
                         android:textColor="#93A5B3"
                         android:textSize="16sp"
                         android:textStyle="bold" />

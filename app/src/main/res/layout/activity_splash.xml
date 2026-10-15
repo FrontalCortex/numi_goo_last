@@ -18,7 +18,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="Sorobit"
+        android:text="@string/activity_splash_text"
         android:textColor="@color/dark_text"
         android:textSize="24sp"
         android:textStyle="bold" />
@@ -28,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Öğrenmeye hazır mısın?"
+        android:text="@string/activity_splash_text_2"
         android:textColor="@color/dark_text"
         android:textSize="16sp" />
 

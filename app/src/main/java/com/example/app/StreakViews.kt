@@ -39,8 +39,8 @@ object StreakViews {
      */
     fun reminderHourLabel(hour: Int): String = when (hour) {
         16 -> "Okuldan sonra"
-        18 -> "Akşamüstü"
-        19 -> "Akşam"
+        18 -> appString(R.string.ui_aksamustu)
+        19 -> appString(R.string.ui_aksam)
         20 -> "Yemekten sonra"
         else -> hourText(hour)
     }
@@ -68,9 +68,9 @@ object StreakViews {
         buildOptionRows(
             container = container,
             values = hours + CUSTOM_HOUR_ROW,
-            labels = hours.map { reminderHourLabel(it) } + "Başka bir saat",
+            labels = hours.map { reminderHourLabel(it) } + appString(R.string.ui_baska_bir_saat),
             trailing = hours.map { hourText(it) } +
-                (if (custom && selected in 0..23) hourText(selected) else "Seç ›"),
+                (if (custom && selected in 0..23) hourText(selected) else appString(R.string.ui_sec)),
             selected = if (custom) CUSTOM_HOUR_ROW else selected,
         ) { value -> if (value == CUSTOM_HOUR_ROW) onCustom() else onPick(value) }
     }
@@ -92,9 +92,9 @@ object StreakViews {
         val view = inflater.inflate(R.layout.dialog_streak_options, null)
         val dialog = AlertDialog.Builder(context).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Saat seç"
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_saat_sec)
         view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
-            "Sobi sana her gün bu saatte hatırlatsın"
+            appString(R.string.ui_sobi_sana_her_gun_bu_saatte)
 
         val container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer)
         val density = context.resources.displayMetrics.density
@@ -244,7 +244,7 @@ object StreakViews {
             }
             texts.addView(
                 TextView(context).apply {
-                    text = "$milestone gün"
+                    text = appPlural(R.plurals.ui_x_gun, milestone, milestone)
                     setTextColor(Color.WHITE)
                     textSize = 15f
                     setTypeface(typeface, Typeface.BOLD)
@@ -256,7 +256,7 @@ object StreakViews {
             if (claimable) {
                 row.addView(
                     TextView(context).apply {
-                        text = "Topla"
+                        text = appString(R.string.ui_topla)
                         setTextColor(Color.parseColor("#1B2B31"))
                         textSize = 14f
                         setTypeface(typeface, Typeface.BOLD)
@@ -272,7 +272,7 @@ object StreakViews {
                 row.addView(
                     TextView(context).apply {
                         val left = milestone - streak
-                        text = "$left gün kaldı"
+                        text = appPlural(R.plurals.ui_x_gun_kaldi, left, left)
                         setTextColor(Color.parseColor(COLOR_MUTED))
                         textSize = 13f
                     },
@@ -364,7 +364,8 @@ object StreakViews {
         val shift = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
         cal.add(Calendar.DAY_OF_YEAR, -shift)
 
-        val letters = listOf("P", "S", "Ç", "P", "C", "C", "P")
+        // Pazartesiden başlayan gün baş harfleri, boşlukla ayrılmış (çeviride de 7 harf).
+        val letters = appString(R.string.ui_week_initials_monday_first).split(" ")
         for (i in 0 until 7) {
             val dayId = format.format(Date(cal.timeInMillis))
             val done = dayId in achievedDays
@@ -393,7 +394,7 @@ object StreakViews {
                             else -> R.drawable.bg_streak_day_empty
                         },
                     )
-                    if (frozen) contentDescription = "Seri dondurma kullanıldı"
+                    if (frozen) contentDescription = appString(R.string.ui_seri_dondurma_kullanildi)
                     layoutParams = LinearLayout.LayoutParams(
                         (28 * density).toInt(),
                         (28 * density).toInt(),

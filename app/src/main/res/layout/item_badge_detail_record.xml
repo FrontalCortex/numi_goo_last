@@ -61,7 +61,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center"
             android:maxLines="2"
-            android:text="Rozet Başlığı"
+            android:text="@string/item_badge_detail_record_record_badge_title"
             android:textColor="#E5EDF2"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -73,7 +73,7 @@
             android:layout_marginTop="4dp"
             android:gravity="center"
             android:maxLines="1"
-            android:text="Varsayılan"
+            android:text="@string/item_badge_detail_record_record_badge_subtext"
             android:textColor="#6F8595"
             android:textSize="13sp" />
     </LinearLayout>

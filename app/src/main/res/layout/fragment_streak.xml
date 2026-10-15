@@ -29,7 +29,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_streak_btn_streak_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Günlük Seri"
+            android:text="@string/fragment_streak_text"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -128,7 +128,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Bugün"
+                    android:text="@string/fragment_streak_text_2"
                     android:textColor="@android:color/white"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -338,7 +338,7 @@
                     android:gravity="center"
                     android:paddingTop="11dp"
                     android:paddingBottom="11dp"
-                    android:text="Ödülü topla"
+                    android:text="@string/fragment_streak_streak_challenge_claim"
                     android:textColor="#1B2B31"
                     android:textSize="15sp"
                     android:textStyle="bold"
@@ -354,7 +354,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="22dp"
                 android:layout_marginBottom="2dp"
-                android:text="Seri Ödülleri"
+                android:text="@string/fragment_streak_streak_rewards_title"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -379,7 +379,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="En uzun serin"
+                    android:text="@string/fragment_streak_text_3"
                     android:textColor="@android:color/white"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -424,7 +424,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Seri dondurma"
+                    android:text="@string/fragment_streak_text_4"
                     android:textColor="@android:color/white"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -462,7 +462,7 @@
                 android:layout_marginTop="20dp"
                 android:background="@drawable/bg_streak_option"
                 android:gravity="center"
-                android:text="Günlük hedefi değiştir"
+                android:text="@string/fragment_streak_streak_change_goal"
                 android:textColor="@android:color/white"
                 android:textSize="15sp" />
 
@@ -475,7 +475,7 @@
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_streak_option"
                 android:gravity="center"
-                android:text="Bildirim saatini değiştir"
+                android:text="@string/fragment_streak_streak_change_reminder"
                 android:textColor="@android:color/white"
                 android:textSize="15sp" />
 

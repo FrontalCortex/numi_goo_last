@@ -129,9 +129,9 @@ class OtpVerificationFragment : Fragment() {
         })
         authManager = AuthManager().also { it.initialize(requireContext()) }
         binding.tvTitle.text = when {
-            forPasswordReset -> "Şifre sıfırlama"
-            isRegistration -> "Hesap oluştur"
-            else -> "E-postanı doğrula"
+            forPasswordReset -> appString(R.string.ui_sifre_sifirlama)
+            isRegistration -> appString(R.string.ui_hesap_olustur)
+            else -> appString(R.string.ui_e_postani_dogrula)
         }
         binding.tvEmail.text = email
         binding.btnVerify.setOnClickListener { verify() }
@@ -200,7 +200,7 @@ class OtpVerificationFragment : Fragment() {
                     ?.remove(OTP_COOLDOWN_EMAIL)
                     ?.apply()
                 binding.btnVerify.isEnabled = true
-                binding.btnVerify.text = "Doğrula"
+                binding.btnVerify.text = appString(R.string.ui_dogrula)
                 updateResendButtonState()
                 Toast.makeText(requireContext(), getString(R.string.otp_can_retry), Toast.LENGTH_SHORT).show()
             }
@@ -212,11 +212,11 @@ class OtpVerificationFragment : Fragment() {
         binding.btnResend.isEnabled = false
         val sendCode: (Boolean, String?) -> Unit = { success, error ->
             if (success) {
-                Toast.makeText(requireContext(), "Kod tekrar gönderildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_kod_tekrar_gonderildi), Toast.LENGTH_SHORT).show()
                 startResendCooldown()
             } else {
                 updateResendButtonState()
-                Toast.makeText(requireContext(), error ?: "Kod gönderilemedi", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
             }
         }
         if (forPasswordReset) {
@@ -235,12 +235,12 @@ class OtpVerificationFragment : Fragment() {
         }
         val code = binding.etCode.text?.toString()?.trim().orEmpty()
         if (code.length != 6) {
-            Toast.makeText(requireContext(), "Kod 6 haneli olmalıdır", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_kod_6_haneli_olmalidir), Toast.LENGTH_SHORT).show()
             return
         }
 
         binding.btnVerify.isEnabled = false
-        binding.btnVerify.text = "Doğrulanıyor..."
+        binding.btnVerify.text = appString(R.string.ui_dogrulaniyor)
         if (forPasswordReset) binding.btnResend.isEnabled = false
         (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
 
@@ -258,13 +258,13 @@ class OtpVerificationFragment : Fragment() {
                 updateResendButtonState()
             }
             wrongAttempts++
-            binding.btnVerify.text = "Doğrula"
+            binding.btnVerify.text = appString(R.string.ui_dogrula)
             binding.btnVerify.isEnabled = wrongAttempts < MAX_WRONG_ATTEMPTS
             if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
                 startWrongAttemptCooldown()
                 Toast.makeText(requireContext(), getString(R.string.otp_too_many_wrong), Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(requireContext(), error ?: "Kod doğrulanamadı", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_dogrulanamadi), Toast.LENGTH_LONG).show()
             }
             // Sunucu 15 dk cooldown döndüyse istemcide de kilidi başlat
             if (error != null && (error.contains("15 dakika") || error.contains("Çok fazla yanlış"))) {

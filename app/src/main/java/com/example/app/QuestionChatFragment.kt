@@ -418,7 +418,7 @@ class QuestionChatFragment : Fragment() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { grants ->
         if (grants[Manifest.permission.RECORD_AUDIO] == true) startAudioRecording()
-        else Toast.makeText(requireContext(), "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
+        else Toast.makeText(requireContext(), appString(R.string.ui_ses_kaydi_icin_izin_gerekli), Toast.LENGTH_SHORT).show()
     }
 
     override fun onCreateView(
@@ -523,18 +523,18 @@ class QuestionChatFragment : Fragment() {
                         binding.inputBar.visibility = View.GONE
                         binding.restrictionMessage.visibility = View.VISIBLE
                         binding.restrictionMessageText.text = when {
-                            banned -> "Hesabınız kural ihlali nedeniyle kalıcı olarak kısıtlanmıştır. Mesaj gönderemezsiniz."
+                            banned -> appString(R.string.ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar_2)
                             restrictedUntil != null -> {
                                 val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedUntil.toDate())
-                                "Hesabınız kural ihlali nedeniyle $dateText tarihine kadar kısıtlanmıştır. Mesaj gönderemezsiniz."
+                                appString(R.string.ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine_2, dateText)
                             }
-                            else -> "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz."
+                            else -> appString(R.string.ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin)
                         }
                         binding.restrictionAppealButton.setOnClickListener {
                             SupportContactHelper.openSupportEmail(
                                 this@QuestionChatFragment,
-                                subject = "Hesap kısıtlaması itirazı",
-                                body = "Merhaba,\n\nHesabımın kısıtlanmasına itiraz etmek istiyorum.\n\nKullanıcı ID: $currentUidForRestriction\n\n"
+                                subject = appString(R.string.ui_hesap_kisitlamasi_itirazi),
+                                body = appString(R.string.ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme, currentUidForRestriction)
                             )
                         }
                     }
@@ -615,7 +615,7 @@ class QuestionChatFragment : Fragment() {
                     )
                     submitMergedList()
                 } else {
-                    Toast.makeText(requireContext(), "Tekrar gönderilemedi.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_tekrar_gonderilemedi), Toast.LENGTH_SHORT).show()
                 }
             },
             onPlayVideo = { url: String -> showVideoDialog(url) },
@@ -876,27 +876,27 @@ class QuestionChatFragment : Fragment() {
     private fun deleteMessageForEveryone(messageId: String) {
         if (messageId.startsWith("pending_")) {
             cancelPendingSend(messageId)
-            Toast.makeText(requireContext(), "Gönderim iptal edildi.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_gonderim_iptal_edildi), Toast.LENGTH_SHORT).show()
             return
         }
         firestore.collection("questions").document(questionId)
             .collection("messages").document(messageId).delete()
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Mesaj herkesten silindi.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "Silinemedi: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_mesaj_herkesten_silindi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_silinemedi_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun deleteMessageForMe(messageId: String) {
         if (messageId.startsWith("pending_")) {
             cancelPendingSend(messageId)
-            Toast.makeText(requireContext(), "Gönderim iptal edildi.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_gonderim_iptal_edildi), Toast.LENGTH_SHORT).show()
             return
         }
         val uid = auth.currentUser?.uid ?: return
         firestore.collection("questions").document(questionId)
             .collection("messages").document(messageId)
             .update("deletedForUids", FieldValue.arrayUnion(uid))
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Mesaj sizden silindi.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "Silinemedi: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_mesaj_sizden_silindi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_silinemedi_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun showReportReasonDialog(message: QuestionMessage) {
@@ -930,7 +930,7 @@ class QuestionChatFragment : Fragment() {
         val reportedByUid = auth.currentUser?.uid ?: return
         val messagePreview = when (message.type) {
             QuestionMessage.TYPE_TEXT -> (message.textContent?.take(100) ?: "").ifEmpty { "-" }
-            QuestionMessage.TYPE_IMAGE -> "Fotoğraf"
+            QuestionMessage.TYPE_IMAGE -> appString(R.string.ui_fotograf)
             QuestionMessage.TYPE_VIDEO -> "Video"
             QuestionMessage.TYPE_AUDIO -> "Ses"
             else -> message.textContent?.take(100) ?: message.type
@@ -952,11 +952,11 @@ class QuestionChatFragment : Fragment() {
         val reportId = "${reportedByUid}_${message.id}"
         firestore.collection("messageReports").document(reportId).set(report)
             .addOnSuccessListener {
-                Toast.makeText(requireContext(), "Bildiriminiz alındı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_bildiriminiz_alindi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 val alreadyReported = (e as? FirebaseFirestoreException)?.code == FirebaseFirestoreException.Code.PERMISSION_DENIED
-                val text = if (alreadyReported) "Bu mesajı zaten bildirdiniz." else "Bildirim gönderilemedi: ${e.message}"
+                val text = if (alreadyReported) appString(R.string.ui_bu_mesaji_zaten_bildirdiniz) else appString(R.string.ui_bildirim_gonderilemedi_x, e.message)
                 Toast.makeText(requireContext(), text, Toast.LENGTH_SHORT).show()
             }
     }
@@ -966,7 +966,7 @@ class QuestionChatFragment : Fragment() {
 
     private fun openGalleryBottomSheet() {
         if (isUserRestrictedOrBanned) {
-            Toast.makeText(requireContext(), "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
             return
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -998,7 +998,7 @@ class QuestionChatFragment : Fragment() {
         if (requestCode == 100 && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
             openGalleryBottomSheet()
         } else if (requestCode == 100) {
-            Toast.makeText(requireContext(), "Galeriye erişim izni gerekli.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_galeriye_erisim_izni_gerekli), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1027,7 +1027,7 @@ class QuestionChatFragment : Fragment() {
 
     private fun showVideoDialog(url: String) {
         if (url.isBlank()) {
-            Toast.makeText(requireContext(), "Video adresi bulunamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_video_adresi_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         videoDialog?.dismiss()
@@ -1066,7 +1066,7 @@ class QuestionChatFragment : Fragment() {
         player.playWhenReady = true
         player.addListener(object : androidx.media3.common.Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                Toast.makeText(requireContext(), "Video oynatılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_video_oynatilamadi), Toast.LENGTH_SHORT).show()
                 dialog.dismiss()
             }
         })
@@ -1134,7 +1134,7 @@ class QuestionChatFragment : Fragment() {
             }
             setOnCompletionListener { releaseAudioAndHideBar() }
             setOnErrorListener { _, _, _ ->
-                Toast.makeText(requireContext(), "Ses oynatılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_ses_oynatilamadi), Toast.LENGTH_SHORT).show()
                 releaseAudioAndHideBar()
                 true
             }
@@ -1205,7 +1205,7 @@ class QuestionChatFragment : Fragment() {
 
     private fun toggleAudioRecording() {
         if (isUserRestrictedOrBanned) {
-            Toast.makeText(requireContext(), "Hesabınız kısıtlanmıştır. Mesaj gönderemezsiniz.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
             return
         }
         // Kayıt paneli varken kontrol panelden yapılır; mic'e tekrar basmayı yok say.
@@ -1317,7 +1317,7 @@ class QuestionChatFragment : Fragment() {
         addPendingMessage(pending)
         val dest = copyToUploadsDir(file, null, "audio", "m4a") ?: run {
             removePendingByClientId(clientId)
-            Toast.makeText(requireContext(), "Ses kopyalanamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_ses_kopyalanamadi), Toast.LENGTH_SHORT).show()
             return
         }
         // Offline yok: cache/audio altındaki ham kaydı artık tutmaya gerek yok.
@@ -1345,7 +1345,7 @@ class QuestionChatFragment : Fragment() {
         addPendingMessage(pending)
         val dest = copyToUploadsDir(null, uri, "video", "mp4") ?: run {
             removePendingByClientId(clientId)
-            Toast.makeText(requireContext(), "Video açılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_video_acilamadi), Toast.LENGTH_SHORT).show()
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_VIDEO, filePath = dest.absolutePath, caption = caption.takeIf { it.isNotEmpty() })
@@ -1373,7 +1373,7 @@ class QuestionChatFragment : Fragment() {
         addPendingMessage(pending)
         val dest = copyToUploadsDir(null, uri, "img", "jpg") ?: run {
             removePendingByClientId(clientId)
-            Toast.makeText(requireContext(), "Resim açılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_resim_acilamadi), Toast.LENGTH_SHORT).show()
             return
         }
         startUploadService(clientId, QuestionMessage.TYPE_IMAGE, filePath = dest.absolutePath, caption = caption.takeIf { it.isNotEmpty() })
@@ -1400,23 +1400,23 @@ class QuestionChatFragment : Fragment() {
 
     private fun showResolveConfirmationDialog() {
         AlertDialog.Builder(requireContext())
-            .setMessage("Bu soruyu çözüldü olarak işaretlemek istiyor musun? Eğer işaretlersen öğrenci mesaj gönderemeyecek.")
-            .setNegativeButton("İşaretle") { dialog, _ ->
+            .setMessage(appString(R.string.ui_bu_soruyu_cozuldu_olarak_isaretlemek_istiyor))
+            .setNegativeButton(appString(R.string.ui_isaretle)) { dialog, _ ->
                 dialog.dismiss()
                 markResolved()
             }
-            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
     private fun showUnresolveConfirmationDialog() {
         AlertDialog.Builder(requireContext())
-            .setMessage("Bu soru çözüldü olarak işaretli. Tekrar aktifleştirmek istiyor musunuz?")
-            .setNegativeButton("Aktifleştir") { dialog, _ ->
+            .setMessage(appString(R.string.ui_bu_soru_cozuldu_olarak_isaretli_tekrar))
+            .setNegativeButton(appString(R.string.ui_aktiflestir)) { dialog, _ ->
                 dialog.dismiss()
                 markUnresolved()
             }
-            .setPositiveButton("İptal") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 
@@ -1426,7 +1426,7 @@ class QuestionChatFragment : Fragment() {
             action()
             return
         }
-        Toast.makeText(requireContext(), "Çözülen sorulara mesaj gönderemezsin.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), appString(R.string.ui_cozulen_sorulara_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
         if (isTeacher) showUnresolveConfirmationDialog()
     }
 
@@ -1443,7 +1443,7 @@ class QuestionChatFragment : Fragment() {
             .addOnSuccessListener {
                 questionStatus = StudentQuestion.STATUS_RESOLVED
                 applyResolveButtonIcon(questionStatus)
-                Toast.makeText(requireContext(), "Soru çözüldü olarak işaretlendi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_soru_cozuldu_olarak_isaretlendi), Toast.LENGTH_SHORT).show()
                 requireActivity().supportFragmentManager.popBackStack()
             }
     }
@@ -1453,7 +1453,7 @@ class QuestionChatFragment : Fragment() {
             .addOnSuccessListener {
                 questionStatus = StudentQuestion.STATUS_CLAIMED
                 applyResolveButtonIcon(questionStatus)
-                Toast.makeText(requireContext(), "Soru tekrar aktifleştirildi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_soru_tekrar_aktiflestirildi), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -1504,7 +1504,7 @@ class QuestionChatFragment : Fragment() {
                 binding.teacherClaimButton.visibility = View.GONE
                 binding.inputBar.visibility = View.GONE
                 binding.restrictionMessage.visibility = View.VISIBLE
-                binding.restrictionMessageText.text = "Bu soru başka bir öğretmen tarafından sahiplenildi."
+                binding.restrictionMessageText.text = appString(R.string.ui_bu_soru_baska_bir_ogretmen_tarafindan)
                 binding.restrictionAppealButton.visibility = View.GONE
                 binding.resolveButton.visibility = View.GONE
             }
@@ -1538,14 +1538,14 @@ class QuestionChatFragment : Fragment() {
         )
         firestore.collection("questions").document(questionId).update(updates)
             .addOnSuccessListener {
-                Toast.makeText(requireContext(), "Soruyu sahiplendiniz.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_soruyu_sahiplendiniz), Toast.LENGTH_SHORT).show()
                 questionStatus = StudentQuestion.STATUS_CLAIMED
                 claimedByTeacherUid = uid
                 applyResolveButtonIcon(questionStatus)
                 updateTeacherClaimUi()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(requireContext(), "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
 

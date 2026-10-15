@@ -51,7 +51,7 @@ class FeedbackFragment : Fragment() {
 
         binding.sendFeedbackButton.setOnClickListener {
             if (!canSendFeedback()) {
-                Toast.makeText(requireContext(), "Son 1 saat içinde çok fazla bildirim gönderdiniz. Lütfen daha sonra tekrar deneyin.", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_son_1_saat_icinde_cok_fazla), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
@@ -94,13 +94,13 @@ class FeedbackFragment : Fragment() {
                 if (!isAdded) return@addOnSuccessListener
                 binding.sendBlockingOverlay.visibility = View.GONE
                 recordFeedbackTimestamp()
-                Toast.makeText(requireContext(), "Görüşleriniz başarıyla iletildi. Teşekkürler!", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_gorusleriniz_basariyla_iletildi_tesekkurler), Toast.LENGTH_LONG).show()
                 closeFragment()
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.sendBlockingOverlay.visibility = View.GONE
-                Toast.makeText(requireContext(), "Gönderilemedi: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_gonderilemedi_x, e.message), Toast.LENGTH_LONG).show()
             }
     }
 

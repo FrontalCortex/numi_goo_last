@@ -36,14 +36,14 @@ class PartCardAdapter(
             
             // Set Title
             val title = when (partId) {
-                1 -> "Abaküsün Temeli ve Toplama"
-                2 -> "Abaküste Çıkarma"
-                3 -> "Abaküste Çarpma"
-                4 -> "Körleme Toplama"
-                5 -> "Körleme Çıkarma"
-                6 -> "Körleme Çarpma"
-                7 -> "Ustalık Yolu - Toplama"
-                8 -> "Ustalık Yolu - Çıkarma"
+                1 -> appString(R.string.ui_abakusun_temeli_ve_toplama)
+                2 -> appString(R.string.ui_abakuste_cikarma)
+                3 -> appString(R.string.ui_abakuste_carpma)
+                4 -> appString(R.string.ui_korleme_toplama)
+                5 -> appString(R.string.ui_korleme_cikarma)
+                6 -> appString(R.string.ui_korleme_carpma)
+                7 -> appString(R.string.ui_ustalik_yolu_toplama)
+                8 -> appString(R.string.ui_ustalik_yolu_cikarma)
                 else -> "Part : $partId"
             }
             label.text = title

@@ -191,10 +191,10 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             bindWeekStrip(s.lastWeek)
 
             val note = buildString {
-                append("Müfredattaki ${s.totalLessons} dersten ${s.finishedLessons} tanesi tamamlandı.")
-                append(" Toplam çalışma süresi ${formatDuration(s.totalTimeSeconds)}.")
+                append(appString(R.string.ui_mufredattaki_x_dersten_x_tanesi_tamamlandi, s.totalLessons, s.finishedLessons))
+                append(appString(R.string.ui_toplam_calisma_suresi_x, formatDuration(s.totalTimeSeconds)))
                 s.hardestLesson?.let {
-                    append(" En çok denemeyi gerektiren ders: ${it.title} (${it.totalKnownAttempts} deneme).")
+                    append(appString(R.string.ui_en_cok_denemeyi_gerektiren_ders_x, it.title, it.totalKnownAttempts))
                 }
             }
             b.summaryNote.text = note
@@ -255,9 +255,9 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         fun bind(part: PartGroup, isExpanded: Boolean) {
             // Adı tanımsız bir part için "Bölüm 7 - null" yazmaktansa sade başlık.
             b.partTitle.text =
-                if (part.name.isNullOrBlank()) "Bölüm ${part.partId}"
-                else "Bölüm ${part.partId} - ${part.name}"
-            b.partProgress.text = "${part.finishedLessons}/${part.totalLessons} ders bitti"
+                if (part.name.isNullOrBlank()) appString(R.string.ui_bolum_x, part.partId)
+                else appString(R.string.ui_bolum_x_x, part.partId, part.name)
+            b.partProgress.text = appString(R.string.ui_x_x_ders_bitti, part.finishedLessons, part.totalLessons)
             b.partChevron.rotation = if (isExpanded) 90f else 0f
         }
     }
@@ -269,7 +269,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         fun bind(section: SectionGroup, isExpanded: Boolean) {
             b.sectionTitle.text = section.title.orEmpty().uppercase(TR)
-            b.sectionProgress.text = "${section.finishedLessons}/${section.totalLessons} ders"
+            b.sectionProgress.text = appString(R.string.ui_x_x_ders, section.finishedLessons, section.totalLessons)
             b.sectionChevron.rotation = if (isExpanded) 90f else 0f
         }
     }
@@ -291,9 +291,9 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
 
         private fun lessonSubtitle(lesson: LessonRow): String {
-            val stepWord = "${lesson.stepCount} adım"
+            val stepWord = appPlural(R.plurals.ui_x_adim, lesson.stepCount, lesson.stepCount)
             if (!lesson.isFinished) {
-                return "Devam ediyor · ${lesson.passedSteps}/${lesson.stepCount} adım geçildi"
+                return appString(R.string.ui_devam_ediyor_x_x_adim_gecildi, lesson.passedSteps, lesson.stepCount)
             }
             val known = lesson.steps.count { it.attempts != null }
             return when {
@@ -310,7 +310,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private class StepHolder(val b: ItemParentStepBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(step: StepRow) {
             val ctx = b.root.context
-            b.stepLabel.text = "Adım ${step.step}"
+            b.stepLabel.text = appString(R.string.ui_adim_x, step.step)
 
             val colorRes = when (step.state) {
                 StepState.PASSED -> R.color.parent_step_passed
@@ -330,15 +330,15 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         private fun stepDetail(step: StepRow): String = when (step.state) {
             StepState.PASSED -> when (step.attempts) {
-                null -> "Tamamlandı"
-                1 -> "İlk denemede geçti"
-                else -> "${step.attempts}. denemede geçti"
+                null -> appString(R.string.ui_tamamlandi_2)
+                1 -> appString(R.string.ui_ilk_denemede_gecti)
+                else -> appString(R.string.ui_x_denemede_gecti, step.attempts)
             }
             StepState.IN_PROGRESS -> when {
-                step.attempts == null || step.attempts == 0 -> "Başlandı"
-                else -> "Deniyor · ${step.attempts} başarısız deneme"
+                step.attempts == null || step.attempts == 0 -> appString(R.string.ui_baslandi)
+                else -> appPlural(R.plurals.ui_deniyor_x_basarisiz_deneme, step.attempts, step.attempts)
             }
-            StepState.NOT_REACHED -> "Sırası gelmedi"
+            StepState.NOT_REACHED -> appString(R.string.ui_sirasi_gelmedi)
         }
     }
 }

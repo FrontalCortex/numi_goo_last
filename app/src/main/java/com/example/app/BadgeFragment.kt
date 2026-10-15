@@ -61,48 +61,48 @@ class BadgeFragment : Fragment() {
          * unlocked=true olduğunda gösterilecek metinler.
          */
         private val unlockedDetailTextOverrides = mapOf(
-            BadgeAnimMode.DAILY_ONLY to "x dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.",
-            BadgeAnimMode.ROCKET_WITH_BASE to "x dersi 1 günde tamamlayarak Sınır Tanımaz rozetini kazandın.",
-            BadgeAnimMode.BOWLING_WITH_BASE to "x günlük görev tamamlayarak Strike Ustası rozetini kazandın.",
-            BadgeAnimMode.GOLF_WITH_BASE to "x kere eğitmene danışarak Nokta Atışı rozetini kazandın.",
-            BadgeAnimMode.FISHING_WITH_BASE to "x gün üst üste Günlük Soru mücadelesini tamamlayarak Derin Avcı rozetini kazandın.",
-            BadgeAnimMode.DINO to "Toplama Kupa Yolunda x kupa kazanarak Dino rozetini kazandın.",
-            BadgeAnimMode.TORNADO to "x Toplama Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
-            BadgeAnimMode.VOLCANO to "x Çıkarma Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
-            BadgeAnimMode.CROCODILE to "Çıkarma Kupa Yolunda x kupa kazanarak Timo rozetini kazandın.",
-            BadgeAnimMode.GOAT to "Çarpma Kupa Yolunda x kupa kazanarak Keço rozetini kazandın.",
-            BadgeAnimMode.EAGLE to "Toplama Kupa Yolu - Körleme'de x kupa kazanarak Karti rozetini kazandın.",
-            BadgeAnimMode.FLY to "Çıkarma Kupa Yolu - Körleme'de x kupa kazanarak Sino rozetini kazandın.",
-            BadgeAnimMode.TURTLE to "Çarpma Kupa Yolu - Körleme'de x kupa kazanarak Kapi rozetini kazandın.",
-            BadgeAnimMode.CUP_GOOGLE to "Ünite Maratonunda x. olarak Elit Seviye kupasını kazandın.",
-            BadgeAnimMode.KARATE to "x Ünite Maratonunu 3 yıldız ile tamamlayarak Siyah Kuşak rozetini kazandın.",
-            BadgeAnimMode.GOLD_MEDAL to "Ünite maratonunda 1. olarak Altın Madalya kazandın.",
-            BadgeAnimMode.SILVER_MEDAL to "Ünite maratonunda 2. olarak Gümüş Madalya kazandın.",
-            BadgeAnimMode.BRONZE_MEDAL to "Ünite maratonunda 3. olarak Bronz Madalya kazandın.",
+            BadgeAnimMode.DAILY_ONLY to appString(R.string.ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak),
+            BadgeAnimMode.ROCKET_WITH_BASE to appString(R.string.ui_x_dersi_1_gunde_tamamlayarak_sinir),
+            BadgeAnimMode.BOWLING_WITH_BASE to appString(R.string.ui_x_gunluk_gorev_tamamlayarak_strike_ustasi),
+            BadgeAnimMode.GOLF_WITH_BASE to appString(R.string.ui_x_kere_egitmene_danisarak_nokta_atisi),
+            BadgeAnimMode.FISHING_WITH_BASE to appString(R.string.ui_x_gun_ust_uste_gunluk_soru),
+            BadgeAnimMode.DINO to appString(R.string.ui_toplama_kupa_yolunda_x_kupa_kazanarak),
+            BadgeAnimMode.TORNADO to appString(R.string.ui_x_toplama_ustalik_yolu_adimini_tamamlayarak),
+            BadgeAnimMode.VOLCANO to appString(R.string.ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak),
+            BadgeAnimMode.CROCODILE to appString(R.string.ui_cikarma_kupa_yolunda_x_kupa_kazanarak),
+            BadgeAnimMode.GOAT to appString(R.string.ui_carpma_kupa_yolunda_x_kupa_kazanarak),
+            BadgeAnimMode.EAGLE to appString(R.string.ui_toplama_kupa_yolu_korleme_de_x),
+            BadgeAnimMode.FLY to appString(R.string.ui_cikarma_kupa_yolu_korleme_de_x),
+            BadgeAnimMode.TURTLE to appString(R.string.ui_carpma_kupa_yolu_korleme_de_x),
+            BadgeAnimMode.CUP_GOOGLE to appString(R.string.ui_unite_maratonunda_x_olarak_elit_seviye),
+            BadgeAnimMode.KARATE to appString(R.string.ui_x_unite_maratonunu_3_yildiz_ile),
+            BadgeAnimMode.GOLD_MEDAL to appString(R.string.ui_unite_maratonunda_1_olarak_altin_madalya),
+            BadgeAnimMode.SILVER_MEDAL to appString(R.string.ui_unite_maratonunda_2_olarak_gumus_madalya),
+            BadgeAnimMode.BRONZE_MEDAL to appString(R.string.ui_unite_maratonunda_3_olarak_bronz_madalya),
         )
 
         /**
          * unlocked=false olduğunda gösterilecek metinler.
          */
         private val lockedDetailTextOverrides = mapOf(
-            BadgeAnimMode.DAILY_ONLY to "Bu rozeti kazanmak için 3 dersi hatasız tamamlayarak başarı elde et.",
-            BadgeAnimMode.ROCKET_WITH_BASE to "Bu rozeti kazanmak için 3 dersi 1 günde tamamlayarak başarı elde et.",
-            BadgeAnimMode.BOWLING_WITH_BASE to "Bu rozeti kazanmak için 5 günlük görevi tamamlayarak başarı elde et.",
-            BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 3 kere öğretmene danış.",
-            BadgeAnimMode.FISHING_WITH_BASE to "Bu rozeti kazanmak için 3 gün üst üste Günlük Soru mücadelesini çözerek başarı elde et.",
-            BadgeAnimMode.DINO to "Bu rozeti kazanmak için Toplama Kupa Yolunda 500 kupaya ulaş.",
-            BadgeAnimMode.TORNADO to "Bu rozeti kazanmak için Toplama Ustalık Yolunda 1 adımı tamamla.",
-            BadgeAnimMode.VOLCANO to "Bu rozeti kazanmak için Çıkarma Ustalık Yolunda 1 adımı tamamla.",
-            BadgeAnimMode.CROCODILE to "Bu rozeti kazanmak için Çıkarma Kupa Yolunda 500 kupa kazan.",
-            BadgeAnimMode.GOAT to "Bu rozeti kazanmak için Çarpma Kupa Yolunda 500 kupa kazan.",
-            BadgeAnimMode.EAGLE to "Bu rozeti kazanmak için Toplama Kupa Yolu - Körleme'de 500 kupa kazan.",
-            BadgeAnimMode.FLY to "Bu rozeti kazanmak için Çıkarma Kupa Yolu - Körleme'de 500 kupa kazan.",
-            BadgeAnimMode.TURTLE to "Bu rozeti kazanmak için Çarpma Kupa Yolu - Körleme'de 500 kupa kazan.",
-            BadgeAnimMode.CUP_GOOGLE to "Bu kupayı kazanmak için ünite maratonunda ilk 100'e girerek başarı elde et.",
-            BadgeAnimMode.KARATE to "Bu rozeti kazanmak için ünite maratonunu 3 yıldız ile tamamlayarak başarı elde et.",
-            BadgeAnimMode.GOLD_MEDAL to "Bu madalyayı kazanmak için bir ünite maratonu liderliğinde birinci ol.",
-            BadgeAnimMode.SILVER_MEDAL to "Bu madalyayı kazanmak için bir ünite maratonu liderliğinde ikinci ol.",
-            BadgeAnimMode.BRONZE_MEDAL to "Bu madalyayı kazanmak için bir ünite maratonu liderliğinde üçüncü ol.",
+            BadgeAnimMode.DAILY_ONLY to appString(R.string.ui_bu_rozeti_kazanmak_icin_3_dersi),
+            BadgeAnimMode.ROCKET_WITH_BASE to appString(R.string.ui_bu_rozeti_kazanmak_icin_3_dersi_2),
+            BadgeAnimMode.BOWLING_WITH_BASE to appString(R.string.ui_bu_rozeti_kazanmak_icin_5_gunluk),
+            BadgeAnimMode.GOLF_WITH_BASE to appString(R.string.ui_bu_rozeti_kazanmak_icin_3_kere),
+            BadgeAnimMode.FISHING_WITH_BASE to appString(R.string.ui_bu_rozeti_kazanmak_icin_3_gun),
+            BadgeAnimMode.DINO to appString(R.string.ui_bu_rozeti_kazanmak_icin_toplama_kupa),
+            BadgeAnimMode.TORNADO to appString(R.string.ui_bu_rozeti_kazanmak_icin_toplama_ustalik),
+            BadgeAnimMode.VOLCANO to appString(R.string.ui_bu_rozeti_kazanmak_icin_cikarma_ustalik),
+            BadgeAnimMode.CROCODILE to appString(R.string.ui_bu_rozeti_kazanmak_icin_cikarma_kupa),
+            BadgeAnimMode.GOAT to appString(R.string.ui_bu_rozeti_kazanmak_icin_carpma_kupa),
+            BadgeAnimMode.EAGLE to appString(R.string.ui_bu_rozeti_kazanmak_icin_toplama_kupa_2),
+            BadgeAnimMode.FLY to appString(R.string.ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2),
+            BadgeAnimMode.TURTLE to appString(R.string.ui_bu_rozeti_kazanmak_icin_carpma_kupa_2),
+            BadgeAnimMode.CUP_GOOGLE to appString(R.string.ui_bu_kupayi_kazanmak_icin_unite_maratonunda),
+            BadgeAnimMode.KARATE to appString(R.string.ui_bu_rozeti_kazanmak_icin_unite_maratonunu),
+            BadgeAnimMode.GOLD_MEDAL to appString(R.string.ui_bu_madalyayi_kazanmak_icin_bir_unite),
+            BadgeAnimMode.SILVER_MEDAL to appString(R.string.ui_bu_madalyayi_kazanmak_icin_bir_unite_2),
+            BadgeAnimMode.BRONZE_MEDAL to appString(R.string.ui_bu_madalyayi_kazanmak_icin_bir_unite_3),
         )
 
         fun newInstance(initialMode: BadgeAnimMode, unlocked: Boolean = true): BadgeFragment {
@@ -1304,7 +1304,9 @@ class BadgeFragment : Fragment() {
         } else {
             BadgeProgressRepository.getProgressValueByMode(mode) ?: return template
         }
-        return template.replace("x", progress.toString())
+        // Metindeki %1$s, ilerleme sayısıyla değişir. Eskiden "x" harfiydi; çeviride "next" gibi
+        // kelimelerdeki x de değişirdi.
+        return template.replace("%1\$s", progress.toString())
     }
 
     private fun showLockedStaticBadge(mode: BadgeAnimMode, rewardAmount: Int?) {
@@ -1653,7 +1655,7 @@ class BadgeFragment : Fragment() {
                     Log.d(TAG, "celebration progress finished -> applying new colors and starting animations")
                     BadgeSoundPlayer.play(requireContext())
                     val doneText = b.badgeLockedProgressText
-                    doneText.text = "Tamamlandı !"
+                    doneText.text = appString(R.string.ui_tamamlandi)
                     applyMissionProgressOverlay(
                         widthHost = b.badgeLockedProgressTrack,
                         fill = b.badgeLockedProgressFill,

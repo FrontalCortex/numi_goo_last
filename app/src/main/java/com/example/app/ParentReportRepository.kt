@@ -45,12 +45,12 @@ object ParentReportRepository {
      * satır eklenmeli; eksikse panel sadece "Bölüm N" yazar, çökmez.
      */
     private val PART_NAMES = mapOf(
-        1 to "Abaküsün Temeli ve Toplama",
-        2 to "Abaküste Çıkarma",
-        3 to "Abaküste Çarpma",
-        4 to "Körleme Toplama",
-        5 to "Körleme Çıkarma",
-        6 to "Körleme Çarpma",
+        1 to appString(R.string.ui_abakusun_temeli_ve_toplama),
+        2 to appString(R.string.ui_abakuste_cikarma),
+        3 to appString(R.string.ui_abakuste_carpma),
+        4 to appString(R.string.ui_korleme_toplama),
+        5 to appString(R.string.ui_korleme_cikarma),
+        6 to appString(R.string.ui_korleme_carpma),
     )
 
     enum class StepState {
@@ -385,7 +385,7 @@ object ParentReportRepository {
     }
 
     /** Kısa gün adları; [Calendar.DAY_OF_WEEK] 1=Pazar olduğu için dizi de öyle başlıyor. */
-    private val DAY_LABELS = arrayOf("Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt")
+    private val DAY_LABELS = arrayOf(appString(R.string.ui_paz), appString(R.string.ui_pzt), appString(R.string.ui_sal), appString(R.string.ui_car), appString(R.string.ui_per), appString(R.string.ui_cum), appString(R.string.ui_cmt))
 
     /**
      * Eskiden yeniye 7 gün. Veri olmayan gün 0 saniyeyle yer tutar: boşluk da bilgidir

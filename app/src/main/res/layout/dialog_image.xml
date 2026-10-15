@@ -19,7 +19,7 @@
         android:layout_gravity="top|end"
         android:layout_margin="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Kapat"
+        android:contentDescription="@string/dialog_image_dialog_image_close_desc"
         android:src="@android:drawable/ic_menu_close_clear_cancel"
         android:padding="8dp" />
 </FrameLayout>

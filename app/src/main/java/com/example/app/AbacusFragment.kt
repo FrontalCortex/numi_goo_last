@@ -1323,12 +1323,12 @@ class AbacusFragment : Fragment() {
 
     private fun applyRulesPanelFiveText() {
         if ((globalPartId == 2 && lessonItem.mapFragmentIndex!! > 5) || globalPartId == 5) {
-            binding.fiveText.text = "Çıkarılacak Sayı"
-            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
+            binding.fiveText.text = appString(R.string.ui_cikarilacak_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gider_kardes_gelir)
 
         }else{
-            binding.fiveText.text = "Eklenecek sayı"
-            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
+            binding.fiveText.text = appString(R.string.ui_eklenecek_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gelir_kardes_gider)
         }
     }
 
@@ -1722,7 +1722,7 @@ class AbacusFragment : Fragment() {
                             controlNumber = 0
                         } else if (ctx != null) {
                             (activity as? MainActivity)?.showOfflineFragment()
-                                ?: android.widget.Toast.makeText(ctx, "İnternet bağlantınız yok.", android.widget.Toast.LENGTH_SHORT).show()
+                                ?: android.widget.Toast.makeText(ctx, appString(R.string.ui_internet_baglantiniz_yok), android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                     true
@@ -1824,8 +1824,8 @@ class AbacusFragment : Fragment() {
     }
 
     private fun incorrectText() {
-        correctAnswerText.text = "Senin cevabın $controlNumber"
-        correctAnswerLabel.text = "Doğru cevap $answerNumber"
+        correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
+        correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
     }
 
     private fun setupQuitButton() {

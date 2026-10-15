@@ -90,7 +90,7 @@ class StreakFragment : Fragment() {
 
     private fun render() {
         val b = _binding ?: return
-        b.streakChangeReminder.text = "Bildirim saatini değiştir · " +
+        b.streakChangeReminder.text = appString(R.string.ui_bildirim_saatini_degistir) +
             StreakViews.hourText(StreakRepository.reminderHour(requireContext()))
         val state = StreakRepository.refresh(requireContext())
         val alive = state.current > 0
@@ -112,17 +112,17 @@ class StreakFragment : Fragment() {
 
         b.streakBigNumber.text = state.current.toString()
         b.streakBigNumber.setTextColor(Color.parseColor(if (alive) COLOR_ACCENT else COLOR_DEAD))
-        b.streakBigLabel.text = if (alive) "gün üst üste" else "Serin şu anda kırık"
+        b.streakBigLabel.text = if (alive) appString(R.string.ui_gun_ust_uste) else appString(R.string.ui_serin_su_anda_kirik)
         b.streakBigSubtitle.text = when {
-            state.goalReachedToday -> "Bugünkü hedefini tamamladın. Yarın da bekleriz!"
-            alive -> "Bugün ${state.minutesLeft} dakika daha çalış, serin devam etsin."
-            else -> "Bugün ${state.goalMinutes} dakika çalış, yeni serini başlat."
+            state.goalReachedToday -> appString(R.string.ui_bugunku_hedefini_tamamladin_yarin_da_bekleri)
+            alive -> appString(R.string.ui_bugun_x_dakika_daha_calis_serin, state.minutesLeft)
+            else -> appString(R.string.ui_bugun_x_dakika_calis_yeni_serini, state.goalMinutes)
         }
 
         val minutesToday = state.secondsToday / 60
         b.streakTodayText.text =
-            if (state.goalReachedToday) "Hedef tamamlandı ✓"
-            else "$minutesToday / ${state.goalMinutes} dakika"
+            if (state.goalReachedToday) appString(R.string.ui_hedef_tamamlandi)
+            else appString(R.string.ui_x_x_dakika, minutesToday, state.goalMinutes)
         // Çubuğun genişliği ölçüm bitmeden bilinmiyor; kupa yolundaki ile aynı yol.
         val zone = b.streakTodayZone
         zone.post {
@@ -141,12 +141,12 @@ class StreakFragment : Fragment() {
 
         renderChallenge(b, state)
 
-        b.streakLongest.text = "${state.longest} gün"
+        b.streakLongest.text = appPlural(R.plurals.ui_x_gun, state.longest, state.longest)
 
         // Dondurma mağazadan alınıyor ama koruduğu şey burada; alındıktan sonra görülebildiği
         // tek yer mağaza kartı olsaydı çocuk "korunuyor muyum" sorusunun cevabını seriye
         // baktığı ekranda bulamazdı.
-        b.streakFreezeStatus.text = if (state.freezeHeld) "Hazır" else "Yok"
+        b.streakFreezeStatus.text = if (state.freezeHeld) appString(R.string.ui_hazir_2) else appString(R.string.ui_yok)
         b.streakFreezeStatus.setTextColor(
             Color.parseColor(if (state.freezeHeld) COLOR_FREEZE else COLOR_DEAD),
         )
@@ -229,13 +229,13 @@ class StreakFragment : Fragment() {
         val complete = state.current >= days
         val claimable = claimedDays <= 0 && serverStreak >= days
 
-        b.streakChallengeTitle.text = "$days Günlük Meydan Okuma"
+        b.streakChallengeTitle.text = appString(R.string.ui_x_gunluk_meydan_okuma, days)
         b.streakChallengeSub.text = when {
             claimedDays > 0 -> "TAMAMLANDI ✓"
-            claimable -> "TAMAMLANDI — ödülünü topla"
-            complete -> "TAMAMLANDI — ödülün hazırlanıyor"
-            state.current <= 0 -> "BUGÜN BAŞLIYOR"
-            else -> "$days GÜNÜN $done. GÜNÜ"
+            claimable -> appString(R.string.ui_tamamlandi_odulunu_topla)
+            complete -> appString(R.string.ui_tamamlandi_odulun_hazirlaniyor)
+            state.current <= 0 -> appString(R.string.ui_bugun_basliyor)
+            else -> appString(R.string.ui_x_gunun_x_gunu, days, done)
         }
 
         // Ödül alındıysa rozet kalkıyor: artık bir vaat değil, olmuş bitmiş bir şey.
@@ -247,7 +247,7 @@ class StreakFragment : Fragment() {
         // 3 günlük bir meydan okumada birinci ile ikinci günün doluluğu gözle ayırt
         // edilemiyordu. Tamamlanınca sayı yerine durum yazıyor: "3 / 3" teknik olarak doğru
         // ama kutlama değil.
-        b.streakChallengeProgressText.text = if (complete) "Tamamlandı" else "$done / $days"
+        b.streakChallengeProgressText.text = if (complete) appString(R.string.ui_tamamlandi_2) else "$done / $days"
 
         val fraction = (done.toFloat() / days).coerceIn(0f, 1f)
         val zone = b.streakChallengeZone
@@ -313,14 +313,14 @@ class StreakFragment : Fragment() {
         val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Günlük hedefin"
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_gunluk_hedefin)
         view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
-            "Her gün ne kadar öğrenmek istersin?"
+            appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
         StreakViews.buildOptionRows(
             container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
             values = StreakRepository.GOAL_OPTIONS,
-            labels = listOf("Rahat", "Düzenli", "Ciddi"),
-            trailing = StreakRepository.GOAL_OPTIONS.map { "$it dakika" },
+            labels = listOf(appString(R.string.ui_rahat), appString(R.string.ui_duzenli), appString(R.string.ui_ciddi)),
+            trailing = StreakRepository.GOAL_OPTIONS.map { appPlural(R.plurals.ui_x_dakika, it, it) },
             selected = StreakRepository.goalMinutes(requireContext()),
         ) { value ->
             // Aynı değere tekrar dokunmak bir değişiklik değil; ölçüme de öyle gitmemeli.
@@ -361,9 +361,9 @@ class StreakFragment : Fragment() {
         val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        view.findViewById<TextView>(R.id.streakOptionsTitle).text = "Bildirim saatin"
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_bildirim_saatin)
         view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
-            "Sobi sana her gün ne zaman hatırlatsın?"
+            appString(R.string.ui_sobi_sana_her_gun_ne_zaman)
         val current = StreakRepository.reminderHour(requireContext())
         StreakViews.buildReminderRows(
             view.findViewById<LinearLayout>(R.id.streakOptionsContainer),

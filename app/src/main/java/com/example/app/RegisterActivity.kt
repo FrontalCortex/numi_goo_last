@@ -161,11 +161,11 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 val email = binding.etEmail.text?.toString()?.trim() ?: ""
 
                 if (email.isEmpty()) {
-                    showError("Lütfen e-posta girin")
+                    showError(appString(R.string.ui_lutfen_e_posta_girin))
                     return@requireOnlineOrShowOffline
                 }
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    showError("Geçerli bir e-posta adresi giriniz.")
+                    showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_giriniz))
                     return@requireOnlineOrShowOffline
                 }
 
@@ -197,11 +197,11 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     }
 
     private fun setupTermsAndPrivacyText() {
-        val fullText = "Hesap oluşturarak Kullanım Şartlarını ve Gizlilik Politikasını kabul etmiş olursunuz."
+        val fullText = appString(R.string.ui_hesap_olusturarak_kullanim_sartlarini_ve_giz)
         val spannable = SpannableStringBuilder(fullText)
 
-        val termsText = "Kullanım Şartlarını"
-        val privacyText = "Gizlilik Politikasını"
+        val termsText = appString(R.string.ui_kullanim_sartlarini)
+        val privacyText = appString(R.string.ui_gizlilik_politikasini)
         // Tek sayfada birleşik: privacy-policy.html hem Gizlilik Politikası (Part I) hem
         // Kullanım Şartları (Part II) içeriyor, çapa (#pp-1 / #tos-1) doğru bölüme atlıyor.
         val termsUrl = "https://numigo-new.web.app/privacy-policy.html#tos-1"
@@ -341,12 +341,12 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 override fun onFinish() {
                     resendCooldownTimer = null
                     binding.btnContinue.isEnabled = true
-                    binding.btnContinue.text = "Devam Et"
+                    binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 }
             }.start()
         } else {
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
         }
     }
 
@@ -383,21 +383,21 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
 
         binding.btnContinue.isEnabled = false
-        binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnContinue.text = appString(R.string.ui_gonderiliyor)
         binding.btnBack.isEnabled = false
         binding.btnGoogleSignIn.isEnabled = false
 
         authManager.isEmailRegistered(email) { alreadyRegistered, uid, role ->
             fun reenableBackAndContinue() {
                 binding.btnContinue.isEnabled = true
-                binding.btnContinue.text = "Devam Et"
+                binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 binding.btnBack.isEnabled = true
                 binding.btnGoogleSignIn.isEnabled = true
             }
             if (alreadyRegistered && !uid.isNullOrEmpty()) {
                 if (role == AuthManager.ROLE_TEACHER) {
                     reenableBackAndContinue()
-                    showError("Bu e-posta ile öğrenci hesabı açılamaz.")
+                    showError(appString(R.string.ui_bu_e_posta_ile_ogrenci_hesabi))
                     return@isEmailRegistered
                 }
                 // Zaten kayıtlı (öğrenci): giriş için kod gönder
@@ -413,18 +413,18 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                             .addToBackStack("otp")
                             .commit()
                     } else {
-                        showError(error ?: "Kod gönderilemedi")
+                        showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                     }
                 }
             } else if (alreadyRegistered) {
                 reenableBackAndContinue()
-                showError("Kod gönderilemedi")
+                showError(appString(R.string.ui_kod_gonderilemedi))
             } else {
                 // Yeni kayıt: pending oluştur, kod gönder, isRegistration = true
                 authManager.createPendingRegistrationForOTP(email) { createSuccess, createError ->
                     if (!createSuccess) {
                         reenableBackAndContinue()
-                        showError(createError ?: "İşlem başarısız")
+                        showError(createError ?: appString(R.string.ui_islem_basarisiz))
                         return@createPendingRegistrationForOTP
                     }
                     authManager.resendStudentVerificationCode(email, isRegistration = true) { success, error ->
@@ -445,7 +445,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                                 .addToBackStack("otp")
                                 .commit()
                         } else {
-                            showError(error ?: "Kod gönderilemedi")
+                            showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                         }
                     }
                 }
@@ -499,13 +499,13 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         android.util.Log.e("RegisterActivity", "Google Sign-In Intent null!")
                         setScreenEnabled(true)
                         isGoogleFlowInProgress = false
-                        showError("Google kaydı başlatılamadı")
+                        showError(appString(R.string.ui_google_kaydi_baslatilamadi))
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("RegisterActivity", "Google Sign-In başlatılırken hata oluştu", e)
                     setScreenEnabled(true)
                     isGoogleFlowInProgress = false
-                    showError("Google kaydı başlatılamadı: ${e.localizedMessage}")
+                    showError(appString(R.string.ui_google_kaydi_baslatilamadi_x, e.localizedMessage))
                 }
             }
     }
@@ -529,7 +529,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (!reason.contains("kullanıcı geri tuşuna basmış olabilir")
                     && !reason.contains("statusCode=12501")
                 ) {
-                    showError("Google kaydı başarısız: $reason")
+                    showError(appString(R.string.ui_google_kaydi_basarisiz_x, reason))
                 }
                 return
             }
@@ -555,8 +555,8 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     finish()
                 } else {
                     // Sadece gerçek hataları göster, kullanıcı iptal ettiyse sessizce dön
-                    if (error != "Kullanıcı girişi iptal edildi") {
-                        showError(error ?: "Google kaydı başarısız")
+                    if (error != appString(R.string.ui_kullanici_girisi_iptal_edildi)) {
+                        showError(error ?: appString(R.string.ui_google_kaydi_basarisiz))
                     }
                 }
             }
@@ -570,19 +570,19 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         val passwordConfirm = binding.etApprovalCode.text.toString()
         
         if (email.isEmpty() || name.isEmpty() || password.isEmpty() || passwordConfirm.isEmpty()) {
-            showError("Lütfen tüm alanları doldurun")
+            showError(appString(R.string.ui_lutfen_tum_alanlari_doldurun))
             return
         }
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            showError("Geçerli bir e-posta adresi giriniz.")
+            showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_giriniz))
             return
         }
         if (password.length < 6) {
-            showError("Şifre en az 6 karakter olmalı")
+            showError(appString(R.string.ui_sifre_en_az_6_karakter_olmali))
             return
         }
         if (password != passwordConfirm) {
-            showError("Şifreler eşleşmiyor")
+            showError(appString(R.string.ui_sifreler_eslesmiyor))
             return
         }
         
@@ -590,9 +590,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         authManager.isEmailRegistered(email) { alreadyRegistered, _, role ->
             if (alreadyRegistered) {
                 if (role == AuthManager.ROLE_TEACHER) {
-                    showError("Bu e-posta zaten bir öğretmen hesabı ile kayıtlı. Lütfen öğretmen giriş ekranını kullanın.")
+                    showError(appString(R.string.ui_bu_e_posta_zaten_bir_ogretmen))
                 } else {
-                    showError("Bu e-posta başka bir hesapta kullanılıyor.")
+                    showError(appString(R.string.ui_bu_e_posta_baska_bir_hesapta))
                 }
                 return@isEmailRegistered
             }
@@ -604,7 +604,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (!success) {
                     binding.btnBack.isEnabled = true
                     binding.btnRegister.isEnabled = true
-                    showError(error ?: "İşlem başarısız")
+                    showError(error ?: appString(R.string.ui_islem_basarisiz))
                     return@createPendingTeacherRegistrationForOTP
                 }
                 authManager.resendStudentVerificationCode(email, isRegistration = true) { codeSuccess, codeError ->
@@ -619,7 +619,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                             .addToBackStack("otp")
                             .commit()
                     } else {
-                        showError(codeError ?: "Kod gönderilemedi")
+                        showError(codeError ?: appString(R.string.ui_kod_gonderilemedi))
                     }
                 }
             }

@@ -77,19 +77,19 @@ class PartSelectionFragment : Fragment() {
             }
             when (partId) {
                 1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
-                2 -> PartState(2, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                3 -> PartState(3, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                4 -> PartState(4, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                5 -> PartState(5, visualActive = part2ChestComplete, functionalActive = part2ChestComplete, inactiveMessage = "Abaküste Çıkarma kısmını bitir.")
-                6 -> PartState(6, visualActive = part3ChestComplete, functionalActive = part3ChestComplete, inactiveMessage = "Abaküste Çarpma kısmını bitir.")
+                2 -> PartState(2, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = appString(R.string.ui_abakusun_temeli_ve_toplama_kismini_bitir))
+                3 -> PartState(3, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = appString(R.string.ui_abakusun_temeli_ve_toplama_kismini_bitir))
+                4 -> PartState(4, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = appString(R.string.ui_abakusun_temeli_ve_toplama_kismini_bitir))
+                5 -> PartState(5, visualActive = part2ChestComplete, functionalActive = part2ChestComplete, inactiveMessage = appString(R.string.ui_abakuste_cikarma_kismini_bitir))
+                6 -> PartState(6, visualActive = part3ChestComplete, functionalActive = part3ChestComplete, inactiveMessage = appString(R.string.ui_abakuste_carpma_kismini_bitir))
                 7 -> {
                     val functional = hasProPlan && part1ChestComplete
-                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Toplama kısmını bitir."
+                    val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_toplama_kismini_bitir)
                     PartState(7, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 8 -> {
                     val functional = hasProPlan && part2ChestComplete
-                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Çıkarma kısmını bitir."
+                    val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_cikarma_kismini_bitir)
                     PartState(8, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 else -> PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
@@ -115,7 +115,7 @@ class PartSelectionFragment : Fragment() {
                 // Kalıcı değil: yalnızca yarış haritasını açmak için taşıyıcı.
                 stableId = "transient_race_part$partId",
                 type = LessonItem.TYPE_RACE,
-                title = if (partId == 7) "Toplama Ustalığı" else "Çıkarma Ustalığı",
+                title = if (partId == 7) appString(R.string.ui_toplama_ustaligi) else appString(R.string.ui_cikarma_ustaligi),
                 offset = 0,
                 isCompleted = false,
                 stepCount = 0,

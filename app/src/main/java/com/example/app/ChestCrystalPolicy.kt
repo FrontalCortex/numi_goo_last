@@ -41,7 +41,7 @@ object ChestCrystalPolicy {
                 type = ChestRewardType.GOLD,
                 amount = amount,
                 iconRes = R.drawable.open_chest,
-                label = "$amount altın",
+                label = appString(R.string.ui_x_altin, amount),
             )
         }
 }

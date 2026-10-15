@@ -29,14 +29,14 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:contentDescription="Kapat"
+            android:contentDescription="@string/bottom_sheet_gallery_gallery_sheet_close_desc"
             app:tint="@android:color/white" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Son kullanılanlar"
+            android:text="@string/bottom_sheet_gallery_text"
             android:textSize="16sp"
             android:textColor="@android:color/white"
             android:gravity="center" />

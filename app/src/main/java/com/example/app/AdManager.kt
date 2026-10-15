@@ -149,7 +149,7 @@ class AdManager(private val context: Context) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             Log.w(TAG, "Oturum acik degil; odullu reklam gosterilmiyor.")
-            Toast.makeText(context, "Odul icin giris yapmalisiniz.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_odul_icin_giris_yapmalisiniz), Toast.LENGTH_SHORT).show()
             return
         }
         // custom_data = "<uid>:<nonce>" - AdMob bunu imzali callback ile geri gonderir.
@@ -205,7 +205,7 @@ class AdManager(private val context: Context) {
             Log.d(TAG, "The rewarded ad wasn't ready yet.")
             // Çocuk canını/sandığını alamadı; ekranda "Reklam henüz yüklenmedi" yazısını görüyor.
             AnalyticsLogger.logAdNotReady(AnalyticsLogger.AD_TYPE_REWARDED)
-            Toast.makeText(context, "Reklam henüz yüklenmedi, lütfen bekleyin.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_reklam_henuz_yuklenmedi_lutfen_bekleyin), Toast.LENGTH_SHORT).show()
             preloadAd() // Attempt to load it again
         }
     }

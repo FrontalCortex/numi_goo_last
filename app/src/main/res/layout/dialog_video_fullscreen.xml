@@ -21,6 +21,6 @@
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_close_black"
-        android:contentDescription="Kapat"
+        android:contentDescription="@string/dialog_video_fullscreen_fullscreen_close_button_desc"
         app:tint="@android:color/white" />
 </FrameLayout>

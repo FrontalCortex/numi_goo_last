@@ -27,7 +27,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_pencil_circle"
-                android:contentDescription="Kalem"
+                android:contentDescription="@string/view_drawing_controls_overlay_pencil_button_desc"
                 android:src="@drawable/question_pencil_ic"
                 app:tint="@color/message_buttons" />
 
@@ -65,7 +65,7 @@
             android:layout_height="40dp"
             android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri al"
+            android:contentDescription="@string/view_drawing_controls_overlay_undo_button_desc"
             android:src="@drawable/undo_drawing_ic"
             app:tint="@color/message_buttons" />
 
@@ -79,7 +79,7 @@
         android:layout_gravity="top"
         android:background="@drawable/bg_drawer_button_right_rounded"
         android:clickable="true"
-        android:contentDescription="Çizim panelini aç/kapat"
+        android:contentDescription="@string/view_drawing_controls_overlay_drawer_button_desc"
         android:focusable="true">
 
         <ImageView
