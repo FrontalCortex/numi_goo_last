@@ -56,6 +56,7 @@ service cloud.firestore {
           'energy_full_time',            // can → yalnız spendEnergy/claimAdEnergy/buyEnergyWithKeys
           'questionCredits',             // danışma kredisi → yalnız satın alma / askTeacherQuestion
           'teacherApproved',             // öğretmen onayı → yalnız admin
+          'admin',                       // admin yetkisi → yalnız Console (syncTeacherClaim claim'e kopyalar)
           // yalnız doğrulanmış Play aboneliği
           'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
           'planTrialEndsAt',             // deneme bitişi → yalnız syncSubscriptionForToken
@@ -77,7 +78,7 @@ service cloud.firestore {
         && request.resource.data.currency == 0
         // keys/currency yukarıda değeriyle sabitlendi; geri kalan sunucu alanları yasak.
         && !request.resource.data.keys().hasAny([
-             'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved',
+             'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'teacherApproved', 'admin',
              'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
              'planTrialEndsAt',
              'followersCount', 'followingCount', 'longestStreak',

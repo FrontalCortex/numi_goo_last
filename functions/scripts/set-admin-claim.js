@@ -1,6 +1,11 @@
 /**
  * Bir hesaba admin yetkisi verir ya da geri alır (Auth custom claim: `admin: true`).
  *
+ * OLAĞAN YOL BU BETİK DEĞİL: Firebase Console'da users/{uid} dokümanına `admin: true`
+ * (boolean) eklemek yetiyor; syncTeacherClaim alanı claim'e kopyalıyor. Bu betik, Console'a
+ * erişim yokken ya da alanı eklemeden claim vermek gerektiğinde yedek. Not: betikle verilen
+ * claim, dokümandaki `admin` alanı sonradan true→false değişirse silinir.
+ *
  * Admin yetkisi Firestore'daki bir alanla DEĞİL, ID token'daki custom claim ile veriliyor:
  * claim'i yalnızca Admin SDK yazabilir, istemci hiçbir yoldan değiştiremez; ayrıca Storage
  * kuralları da onu doğrudan okuyabiliyor (hata bildirimi ekran görüntüleri yalnız admin'e

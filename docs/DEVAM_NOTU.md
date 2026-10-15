@@ -31,9 +31,11 @@ topla" ile toplanır (onayda otomatik verilmez); admin onaylarken kademe seçer 
 danışma + 10.000 altın + 200 anahtar, küçük: 1.000 altın + 20 anahtar); aynı hatayı ilk
 bildiren tam ödülü alır (sonrakini admin reddeder ya da küçük ödül verir); panel uygulama içinde.
 
-- **Admin yetkisi = Auth custom claim `admin: true`**, Firestore alanı DEĞİL (istemci yazamaz,
-  Storage kuralları da okuyabiliyor). Verme: `cd functions; node scripts/set-admin-claim.js <uid|e-posta>`
-  (geri alma `$env:REVOKE="1"`). Etkin olması için uygulamada çıkış/giriş.
+- **Admin yetkisi = Auth custom claim `admin: true`** (istemci yazamaz, Storage kuralları da
+  okuyabiliyor). Verme: Console'da `users/{uid}` dokümanına `admin: true` (boolean) ekle →
+  `syncTeacherClaim` claim'e kopyalar (`admin` alanı kurallarda sunucu alanı, kullanıcı kendine
+  yazamaz). Geri alma: alanı `false` yap. Etkin olması için uygulamada çıkış/giriş. Yedek yol:
+  `node scripts/set-admin-claim.js <uid|e-posta>`. (Deploy edildi: 06983ab + sonraki commit.)
 - `syncTeacherClaim` ve `backfill-teacher-claims.js` artık mevcut claim'leri KORUYOR; eskiden
   `setCustomUserClaims(uid, { teacherApproved })` tüm claim'leri eziyordu, admin'i silerdi.
 - Sunucu: `functions/bugReports.js` (saf karar, `npm run test:bug-reports` 25 test) +

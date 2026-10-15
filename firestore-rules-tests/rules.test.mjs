@@ -167,6 +167,16 @@ await check('sahibi bildirimi silemiyor', assertFails(
   deleteDoc(doc(ali, 'bugReports/r1'))));
 await check('gonderim sayaci istemciye kapali', assertFails(
   setDoc(doc(ali, 'bugReportGuards/ali'), { dayKey: '2026-10-15', count: 0 })));
+// admin alani claim'e kopyalaniyor (syncTeacherClaim); istemci kendine yazabilseydi
+// kendini admin yapardi.
+await check('kullanici kendine admin alani yazamiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali'), { admin: true })));
+await check('admin alaniyla kayit olunamiyor', assertFails(
+  setDoc(doc(veli, 'users/veli'), {
+    uid: 'veli', role: 'STUDENT', keys: 1, currency: 0, admin: true,
+  })));
+await check('admin alani olmadan kayit olunuyor', assertSucceeds(
+  setDoc(doc(veli, 'users/veli'), { uid: 'veli', role: 'STUDENT', keys: 1, currency: 0 })));
 
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(

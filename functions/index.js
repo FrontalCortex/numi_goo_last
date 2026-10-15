@@ -1088,20 +1088,40 @@ exports.mirrorPublicProfile = functions.firestore
 // olduğunu doğrulayamıyor, başka öğrencinin soru medyasını indiremiyordu). Storage
 // Rules'ın doğrudan ve güvenilir okuyabildiği tek yer ID token'ın kendisi olduğu için
 // `teacherApproved`'ı buraya bir custom claim olarak da yazıyoruz.
+//
+// `admin` da aynı yoldan: Console'da users/{uid} dokümanına `admin: true` eklemek hesabı
+// admin yapıyor (hata bildirimi paneli; bkz. bugReports.js). Yetkinin kendisi yine claim —
+// kurallar ve reviewBugReport ona bakıyor; alan yalnızca Console'dan yönetmeyi kolaylaştırıyor.
+// İkisi de firestore.rules'ta sunucu alanı: istemci kendine yazamıyor.
+// Fonksiyonun adı geriye dönük uyum için değişmedi (yeniden adlandırmak sil + yeniden oluştur
+// demek, arada tetiklenmeyen yazımlar kaçardı).
 exports.syncTeacherClaim = functions.firestore
   .document('users/{uid}')
   .onWrite(async (change, context) => {
     const uid = context.params.uid;
     if (!change.after.exists) return null;
 
-    const before = change.before.exists ? change.before.data().teacherApproved === true : null;
-    const after = change.after.data().teacherApproved === true;
-    if (before === after) return null;
+    const beforeData = change.before.exists ? change.before.data() : null;
+    const afterData = change.after.data();
+    const updates = {};
 
-    // setCustomUserClaims claim'lerin TAMAMINI değiştiriyor; mevcut olanlar (ör. `admin`,
-    // bkz. scripts/set-admin-claim.js) korunmazsa öğretmen onayı değişince silinirdi.
+    // Öğretmen: doküman ilk oluştuğunda da (before yokken) claim yazılıyor — eski davranış.
+    const teacherBefore = beforeData ? beforeData.teacherApproved === true : null;
+    const teacherAfter = afterData.teacherApproved === true;
+    if (teacherBefore !== teacherAfter) updates.teacherApproved = teacherAfter;
+
+    // Admin: alan yokken "false" sayılıyor; yoksa her yeni kayıtta boşuna claim yazılırdı.
+    const adminBefore = !!beforeData && beforeData.admin === true;
+    const adminAfter = afterData.admin === true;
+    if (adminBefore !== adminAfter) updates.admin = adminAfter;
+
+    if (!Object.keys(updates).length) return null;
+
+    // setCustomUserClaims claim'lerin TAMAMINI değiştiriyor; değişmeyenler korunmazsa
+    // öğretmen onayı değişince admin'lik (ya da tersi) silinirdi.
     const record = await admin.auth().getUser(uid);
-    const claims = Object.assign({}, record.customClaims || {}, { teacherApproved: after });
+    const claims = Object.assign({}, record.customClaims || {}, updates);
+    if (claims.admin === false) delete claims.admin;
     await admin.auth().setCustomUserClaims(uid, claims);
     return null;
   });
