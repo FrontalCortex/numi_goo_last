@@ -23,6 +23,24 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Öğretici adım kimlikleri + Remote Config bırakıldı (15.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+- `TutorialStep.id`: 160 soru adımının hepsine elle kimlik verildi (`t16_23m6_5_gelir_4un`
+  gibi; kurallar `TutorialStep.id` KDoc'unda). Analytics `step_key` artık bu. Eski başlık
+  tabanlı kimlik yalnızca yedek (`TutorialStepAnalytics.legacyStepKey`). Kullanıcı kararı:
+  **temiz başlangıç** — Explore'daki eski satırlar (t16_1_…) ayrı kalır, veri zaten testti.
+- `buildStepAnalyticsInfo` denetliyor: kimliksiz / biçimi hatalı / tekrarlı soru adımı
+  **debug'da eğitimi açarken çökertir**, release'te Crashlytics'e non-fatal. Yeni soru adımı
+  eklerken `id` vermek ZORUNLU.
+- 1–5 ve 100–103 artık Remote Config'ten değil koddaki `TUTORIAL_<no>_JSON`'dan okunuyor
+  (konsol ile kod aynıydı, kullanıcı doğruladı). JSON'da soru adımlarına `"id"` eklendi.
+- Splash'teki Remote Config fetch + 8 sn bekleme kaldırıldı; yalnızca 2 sn animasyon.
+  `firebase-config-ktx` bağımlılığı bilerek duruyor (ileride küçük bayraklar için).
+  Konsoldaki `tutorial_step_*` parametreleri eski sürümler bitene kadar silinmemeli.
+- Sıradaki: dil yapısı (metinler `strings.xml`, sesler `raw-xx`, kimlik = anahtar).
+- **Cihazda denenecek:** 9 JSON öğreticisi (özellikle 1) ve birkaç Kotlin öğreticisi açılıp
+  soru adımları geçilmeli; debug'da çökme olmamalı.
+
 ## Öğretici ölçümü: `tutorial_started` olayı (11–14.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
 
 **Karar (kullanıcı, 14.10.2026):** Öğretici A/B testi YAPILMAYACAK. Önce yazılan Remote Config

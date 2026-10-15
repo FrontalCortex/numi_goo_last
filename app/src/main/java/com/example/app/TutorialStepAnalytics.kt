@@ -60,20 +60,15 @@ object TutorialStepAnalytics {
     }
 
     /**
-     * Bir soru adımının kalıcı kimliği.
+     * YEDEK kimlik: yalnızca [TutorialFragment.TutorialStep.id]'si eksik ya da hatalı bir soru
+     * adımı release derlemesine sızarsa kullanılır (debug derlemesi o durumda zaten çöker).
      *
-     * ## Neden başlık + sıra, neden adımın index'i değil
-     * Adımın listedeki index'i, araya yeni bir adım eklendiğinde kayar. O zaman eski
-     * kullanıcıların verisi sessizce başka bir adımın satırına karışır — GA4'te bunu fark
-     * etmenin bir yolu yoktur. Başlık ise adımın kendisiyle birlikte taşınır: araya adım
-     * eklemek mevcut satırları bozmaz, başlığı değiştirmek ise zaten yeni bir soru demektir
-     * ve yeni satır olması doğrudur.
-     *
-     * [occurrence], aynı öğretici içinde **aynı başlığın** kaçıncı kullanımı olduğudur.
-     * Buna ihtiyaç var: örneğin tutorial 20'de "Hangi basamağa ekleyeceksin?" başlığı aynı
-     * soruyla 4 kez geçiyor (birler, onlar, yüzler...) ve bunlar farklı adımlar.
+     * Asıl kimlik artık adıma elle verilen `id`. Bu başlık + sıra yöntemi Ekim 2026'ya kadar
+     * tek yöntemdi ve iki zaafı vardı: başlıktaki bir harfi düzeltmek yeni bir satır açıyordu,
+     * aynı başlıklı bir soru araya eklenince ([occurrence] kaydığı için) sonrakilerin verisi
+     * sessizce başka adımın satırına geçiyordu.
      */
-    fun stepKey(tutorialNumber: Int, occurrence: Int, title: String): String {
+    fun legacyStepKey(tutorialNumber: Int, occurrence: Int, title: String): String {
         val slug = slug(title).ifEmpty { "adim" }
         return "t${tutorialNumber}_${occurrence}_$slug"
     }
