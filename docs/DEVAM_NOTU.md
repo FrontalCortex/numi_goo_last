@@ -23,7 +23,7 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, commit/deploy EDİLMEDİ)
+## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, cf05dd8 ile DEPLOY EDİLDİ)
 
 Ekranda seri 0 iken "Bugün 20 dakika çalış, 1 günlük serin devam etsin" bildirimi geldi.
 Sebep: sunucu kırılmayı yazmıyor, `streak.current` yeni gün bildirilene kadar bayat kalıyor;
