@@ -15,10 +15,10 @@
       </SelectionState>
       <SelectionState runConfigName="Sorobit.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-10-15T20:06:26.992266500Z">
+        <DropdownSelection timestamp="2026-10-11T06:39:57.219729600Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\ASUS\.android\avd\New_Device.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\ASUS\.android\avd\Pixel_3.avd" />
             </handle>
           </Target>
         </DropdownSelection>
