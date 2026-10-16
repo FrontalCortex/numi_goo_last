@@ -23,34 +23,46 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Kapalı test sürümü: versionCode 10 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
+## Kapalı test sürümü: versionCode 11 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
 
 `app/build/outputs/bundle/release/app-release.aab` (69 MB, versionName hâlâ "1.0"), yükleme
-anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 9 ile aynı anahtar). R8 mapping dosyası
-AAB'nin içinde, Play kendisi alıyor. 9'dan (bc5d267) bu yana yalnızca iki istemci değişikliği
-var: ders sonu anketi kaldırıldı (27565db) ve ipucu paneli konuşma balonu oldu (ec3f934); ikisi
-de aşağıda kendi başlıklarında. Sunucu tarafında (functions, kurallar) değişiklik yok.
-Sonraki yayın: versionCode 11.
+anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 10 ile aynı anahtar; `keytool -printcert
+-jarfile` ile bakıldı). R8 mapping dosyası AAB'nin içinde, Play kendisi alıyor. 10'dan bu yana
+tek istemci değişikliği: uygulama ikonu Sobi oldu (mor zemin) ve bildirimler tek renkli küçük ikon
+kullanıyor (45c5a50 + zemin rengi commit'i; aşağıda "Uygulama ikonu" başlığı). AAB içindeki
+mipmap PNG'si açılıp mor olduğu görüldü. Sunucu tarafında (functions, kurallar) değişiklik yok.
+**Play Console'da ayrıca:** Ana mağaza girişi → Uygulama simgesi'ne
+`app/src/main/ic_launcher-playstore.png` (512×512) yüklenmeli; mağaza ikonu AAB'den gelmiyor.
+Sonraki yayın: versionCode 12.
 
-Önceki: versionCode 9 (bc5d267, aynı gün) 8'den (e6df925, 07.10.2026) bu yana gelen her şeyi
+Önceki: versionCode 10 (1fcbbd7, aynı gün): ders sonu anketi kaldırıldı (27565db) ve ipucu paneli
+konuşma balonu oldu (ec3f934).
+
+Daha önce: versionCode 9 (bc5d267, aynı gün) 8'den (e6df925, 07.10.2026) bu yana gelen her şeyi
 4bc317a'ya kadar taşıdı: öğretici ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı +
 admin paneli, seri hatırlatması düzeltmesi, Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
 "commit edilmedi" yazan eski başlıkların hepsi commit'li ve bu sürümlerde.
 
-## Uygulama ikonu: Sobi'nin kafası, sarı zemin (16.10.2026 — derlendi, emülatörde görüldü, telefonda DENENMEDİ, commit edilmedi)
+## Uygulama ikonu: Sobi'nin kafası, mor zemin (16.10.2026 — commit'li, emülatörde görüldü, telefonda DENENMEDİ)
 
-Emülatöre (Android 14) kuruldu, uygulama çekmecesinde "Sorobit" adıyla Sobi ikonu görünüyor.
+Emülatöre (Android 14) sarı zeminli hâli kuruldu, uygulama çekmecesinde "Sorobit" adıyla Sobi ikonu
+görünüyor; mor hâli (yalnızca zemin rengi değişti) emülatörde ayrıca görülmedi.
 Telefona kurulamadı: telefondaki Play kapalı test sürümü (versionCode 9) farklı imzalı, debug
 APK üstüne kurulmuyor (INSTALL_FAILED_UPDATE_INCOMPATIBLE); kaldırmak yerel veriyi siler, sormadan
 yapılmadı. Telefonda versionCode 11 AAB'si Play'den gelince görülecek.
 
 Varsayılan Android robotu yerine Sobi'nin bekleme hâlindeki kafası (kullanıcı 7 ifade × 5 zemin
-arasından "sakin + sarı"yı seçti). Katmanlar `BunnyMascotArt`'taki yollardan bir betikle üretildi
-(kulaklar, kafa, gözler, ağız, kafa ışığı; çizim sırası `drawBunny` ile aynı), elle çizilmedi:
+arasından "sakin"i seçti; zemin önce sarıydı, sonra mor oldu, aşağıda). Katmanlar
+`BunnyMascotArt`'taki yollardan bir betikle üretildi (kulaklar, kafa, gözler, ağız, kafa ışığı;
+çizim sırası `drawBunny` ile aynı), elle çizilmedi:
 - `drawable/ic_launcher_foreground.xml`: 800'lük çizim koordinatları korunup tek bir grupla
   (ölçek 0.36) 108'lik ikona taşındı; kafa ortası (388,134) → (54,55), kulak uçları 72'lik görünen
   alanın içinde (daire, yuvarlak kare, damla maskelerinde denendi).
-- `drawable/ic_launcher_background.xml`: düz `#FFCF4D`.
+- `drawable/ic_launcher_background.xml`: düz mor `#5B3FD9`. İlk seçim sarı `#FFCF4D`ti; kullanıcı
+  "Sobi belirgin durmuyor" dedi. Sebep ton değil açıklık: Sobi açık pastel mavi (`#91D8FF`), sarı da
+  aynı açıklıkta, kontrast 1.1:1. Karşılaştırılan zeminler (WCAG kontrastı): turuncu `#FF8A2B` 1.5,
+  pembe `#E5487A` 2.4, mor 4.3, lacivert `#1E3A6B` 7.2. Mor seçildi: yeterli kontrast, sarı iç
+  kulaklar da öne çıkıyor; lacivert çocuk uygulaması için ağır bulundu.
 - `drawable/ic_launcher_monochrome.xml` (yeni): Android 13+ temalı ikon. Eskiden `monochrome`
   da foreground'a bakıyordu; renkli ön katmanla sistem bütün kafayı tek renk leke yapardı. Yeni
   katmanda kafa/kulak/tüy dolu, gözler-burun-iç kulaklar `evenOdd` ile delik.
@@ -62,8 +74,7 @@ arasından "sakin + sarı"yı seçti). Katmanlar `BunnyMascotArt`'taki yollardan
 alınma; Freepik koşulları (madde 8.1) içeriğin tamamen ya da kısmen bir markada kullanılmasını,
 aslıyla karıştırılmayacak kadar değiştirilmedikçe yasaklıyor; ikon fiilen logo. Marka planı da
 "logo/marka olarak kullanılamaz" diyor. Bu ikon geçici: herkese açık yayından önce Sobi özgün
-olarak yeniden çizdirilecek, yukarıdaki dosyalar o çizimden yeniden üretilecek. Ayrıca sarı
-zeminde Sobi'nin sarı iç kulakları zeminle karışıyor (kullanıcı bilerek sarıyı seçti).
+olarak yeniden çizdirilecek, yukarıdaki dosyalar o çizimden yeniden üretilecek.
 
 Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
 Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi
