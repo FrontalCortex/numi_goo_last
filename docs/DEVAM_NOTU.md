@@ -23,15 +23,19 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Kapalı test sürümü: versionCode 9 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
+## Kapalı test sürümü: versionCode 10 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
 
 `app/build/outputs/bundle/release/app-release.aab` (69 MB, versionName hâlâ "1.0"), yükleme
-anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1). R8 mapping dosyası AAB'nin içinde, Play
-kendisi alıyor. 8'den (e6df925, 07.10.2026) bu yana giren her şey 4bc317a'ya kadar: öğretici
-ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı + admin paneli (sunucusu deploy
-edildi), seri hatırlatması düzeltmesi (sunucu), Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
-"commit edilmedi" yazan başlıkların hepsi commit'li ve bu sürümde; "cihazda DENENMEDİ" olanlar
-kapalı testte ilk kez gerçek cihazlarda çalışacak. Sonraki yayın: versionCode 10.
+anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 9 ile aynı anahtar). R8 mapping dosyası
+AAB'nin içinde, Play kendisi alıyor. 9'dan (bc5d267) bu yana yalnızca iki istemci değişikliği
+var: ders sonu anketi kaldırıldı (27565db) ve ipucu paneli konuşma balonu oldu (ec3f934); ikisi
+de aşağıda kendi başlıklarında. Sunucu tarafında (functions, kurallar) değişiklik yok.
+Sonraki yayın: versionCode 11.
+
+Önceki: versionCode 9 (bc5d267, aynı gün) 8'den (e6df925, 07.10.2026) bu yana gelen her şeyi
+4bc317a'ya kadar taşıdı: öğretici ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı +
+admin paneli, seri hatırlatması düzeltmesi, Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
+"commit edilmedi" yazan eski başlıkların hepsi commit'li ve bu sürümlerde.
 
 ## İpucu düğmesi: panel konuşma balonu oldu (16.10.2026 — kullanıcı telefonda baktı, iyi; commit edildi)
 
