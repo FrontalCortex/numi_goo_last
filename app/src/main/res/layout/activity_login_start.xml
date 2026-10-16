@@ -7,6 +7,11 @@
 
   Eski düzende iki eşit soru vardı ("Hesabın mı var?" / "İlk defa mı giriyorsun?"). Yeni
   düzende ekran ilk kez gelen çocuğa konuşuyor: ana eylem kayıt, giriş ikincil bir bağlantı.
+
+  fitsSystemWindows: Android 15+ (targetSdk 35+) pencereyi zorla çubukların altına uzatıyor;
+  kayıt sorularının ilerleme çubuğu durum çubuğunun (saat, pil) altında kalıyordu. Kök,
+  çubuk yükseklikleri kadar dolgu alıyor; zemin rengi çubukların arkasına yine uzanıyor.
+  Daha eski sürümlerde pencere zaten çubukların altına girmediği için etkisi yok.
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -14,7 +19,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_color">
+    android:background="@color/background_color"
+    android:fitsSystemWindows="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/loginStartContent"

@@ -23,6 +23,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+Annenin ve kardeşin telefonlarında (Android 15+ olmalı) `fragment_user_info`'nun üstündeki
+çubuk saat/pil şeridinin altında kalıyordu. Sebep: `targetSdk 36` ile Android 15+ pencereyi
+zorla kenardan kenara çiziyor; `LoginStartActivity` ve `LoginActivity` buna hazır değildi
+(geliştiricinin telefonu daha eski sürüm olduğu için orada görünmüyordu). Düzeltme:
+`activity_login_start.xml` ve `activity_login.xml` köklerine `fitsSystemWindows="true"`
+(MainActivity'deki `activity_main` ile aynı yöntem). Alt düğmeler de artık gezinme çubuğunun
+üstünde kalıyor. Denenecek: Android 15+ cihazda giriş ekranı, kayıt soruları (yaş adımında
+klavye açıkken "Devam Et" görünüyor mu), e-posta giriş ekranındaki geri oku.
+
 ## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, cf05dd8 ile DEPLOY EDİLDİ)
 
 Ekranda seri 0 iken "Bugün 20 dakika çalış, 1 günlük serin devam etsin" bildirimi geldi.
