@@ -23,6 +23,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, commit/deploy EDİLMEDİ)
+
+Ekranda seri 0 iken "Bugün 20 dakika çalış, 1 günlük serin devam etsin" bildirimi geldi.
+Sebep: sunucu kırılmayı yazmıyor, `streak.current` yeni gün bildirilene kadar bayat kalıyor;
+istemci ise kırılmayı okurken hesaplayıp 0 gösteriyor. Hatırlatma saklanan `current`'ı
+olduğu gibi kullanıyordu. Düzeltme `functions/streakReminder.js` → `liveStreak`: lastDay
+bugün/dün değilse seri 0 sayılıyor (evvelsi gün + uygun dondurma varsa canlı, dondurma
+harcanmış sayılır). Birinci hatırlatma kırık seride "Bugün başlamaya ne dersin?" metnine
+düşüyor; ikinci şans ("N günlük serin bugün kırılabilir") kırık seriye hiç gitmiyor.
+Tarama `freezeDay`'i de karara geçiriyor (index.js). Test: `node functions/scripts/test-streak-reminder.js`.
+
 ## Hata bildirimi ("Hata Avcısı") + admin paneli (15.10.2026 — derlendi, cihaza KURULDU; sunucu DEPLOY EDİLMEDİ, commit edilmedi)
 
 Kapalı test için: kullanıcı uygulamada gördüğü hatayı ekran görüntüsüyle bildiriyor, admin

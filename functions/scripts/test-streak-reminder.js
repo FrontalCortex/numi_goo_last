@@ -107,6 +107,29 @@ const withFreeze = streakReminderDecision(
 check('dondurma varsa metin değişiyor', withFreeze.text.body.includes('dondurmanı yarına sakla'), true);
 check('dondurma metninde seri sayısı yok', withFreeze.text.body.includes('12 günlük'), false);
 
+console.log('\n=== KIRILMIŞ SERİ (sunucuda `current` bayat) ===');
+// Sunucu kırılmayı yazmıyor: 3 gün önce çalışmış kullanıcının kaydında current hâlâ 1.
+// Ekranda 0 görünüyor; bildirim "1 günlük serin devam etsin" dememeli.
+const broken = streakReminderDecision(
+  { utcOffsetMinutes: OFFSET, lastDay: '2026-09-20', current: 1, goalMinutes: 20, lastSeenMs: daysAgo(3) },
+  NOW
+);
+check('kırık seri: "başla" metni gidiyor', broken.text.title, 'Bugün başlamaya ne dersin?');
+check('kırık seri: metinde seri sayısı yok', broken.text.body.includes('günlük serin'), false);
+// Evvelsi gün çalışmış + dondurma: dün dondurmayla kapanacak, seri canlı. Dondurma ise
+// artık harcanmış; "dondurmanı sakla" demek yanlış olur.
+const bridged = streakReminderDecision(
+  { utcOffsetMinutes: OFFSET, lastDay: '2026-09-21', current: 6, goalMinutes: 5, lastSeenMs: daysAgo(2), freezes: 1 },
+  NOW
+);
+check('dondurmayla köprülenen seri canlı', bridged.text.body.includes('6 günlük serin'), true);
+// Dondurma kaçan günden SONRA alınmışsa kurtarmıyor (settleStreakFreeze ile aynı).
+const lateFreeze = streakReminderDecision(
+  { utcOffsetMinutes: OFFSET, lastDay: '2026-09-21', current: 6, goalMinutes: 5, lastSeenMs: daysAgo(2), freezes: 1, freezeDay: TODAY },
+  NOW
+);
+check('geç alınan dondurma kırık seriyi kurtarmıyor', lateFreeze.text.title, 'Bugün başlamaya ne dersin?');
+
 console.log('\n=== İKİNCİ ŞANS: SAAT ===');
 check(
   `yerel ${SECOND_CHANCE_LOCAL_HOUR}:00 → UTC (Türkiye +3)`,
@@ -153,6 +176,8 @@ check('dondurması var', why({ freezes: 1 }), 'has_freeze');
 check('birinci hatırlatma bugün gitmemiş', why({ reminderSentDay: '' }), 'no_first');
 check('bir haftadır uygulamayı açmamış', why({ lastSeenMs: daysAgo(9) }), 'idle');
 check('saat dilimi bilinmiyor', why({ utcOffsetMinutes: undefined }), 'no_offset');
+check('kırılmış seri "bugün kırılabilir" almıyor', why({ lastDay: '2026-09-19' }), 'short_streak');
+check('dondurmayla köprülenen seri (dondurma harcandı) alıyor', why({ lastDay: '2026-09-21', freezes: 1 }), 'send');
 
 const second = secondChanceDecision(base, NOW);
 check('metin seri sayısını söylüyor', second.text.title.includes('5 günlük'), true);

@@ -5866,6 +5866,8 @@ async function runStreakReminderPass(pass, hourUtc, nowMs, deadline) {
             // Birinci hatırlatmanın metni dondurma varsa değişiyor, ikinci hatırlatma ise
             // dondurması olana hiç gitmiyor.
             freezes: Math.max(0, Math.trunc(Number(d.freezes) || 0)),
+            // Dondurmanın dünü kurtarıp kurtarmayacağı alındığı güne bağlı (bkz. liveStreak).
+            freezeDay: typeof d.freezeDay === 'string' ? d.freezeDay : '',
           },
           nowMs
         );

@@ -48,6 +48,44 @@ function reminderHourUtc(utcOffsetMinutes, localHour = STREAK_REMINDER_LOCAL_HOU
   return Math.floor(utcMinutes / 60);
 }
 
+/** `yyyy-MM-dd` → epoch gün sayısı; geçersizse null. */
+function dayNumber(dayId) {
+  if (typeof dayId !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayId)) return null;
+  const ms = Date.parse(`${dayId}T00:00:00Z`);
+  return Number.isFinite(ms) ? Math.floor(ms / 86400000) : null;
+}
+
+/**
+ * Serinin BUGÜN gerçekte ne durumda olduğu: `{ current, freezes }`.
+ *
+ * Sunucu kırılmayı yazmıyor — `current` yeni bir gün bildirilene kadar eski değerinde
+ * duruyor (bkz. index.js → settleStreakFreeze). İstemci ise kırılmayı okurken hesaplıyor
+ * ve 0 gösteriyor (StreakRepository.refresh). Bu yüzden saklanan `current`'ı olduğu gibi
+ * kullanmak, ekranda serisi 0 olan çocuğa "1 günlük serin devam etsin" yazdırıyordu.
+ *
+ * Kurallar istemciyle ve settleStreakFreeze ile aynı:
+ *   • lastDay bugün ya da dün → seri canlı.
+ *   • lastDay evvelsi gün ve dondurma var (kaçan günden önce alınmamış değil) → dün
+ *     dondurmayla kapanacak; seri canlı ama dondurma artık harcanmış sayılır.
+ *   • aksi halde seri kırık → 0.
+ */
+function liveStreak(state, today) {
+  const current = Math.max(0, Math.trunc(Number(state.current) || 0));
+  const freezes = Math.max(0, Math.trunc(Number(state.freezes) || 0));
+  const todayNo = dayNumber(today);
+  const lastNo = dayNumber(state.lastDay);
+  if (current <= 0 || todayNo === null || lastNo === null) return { current: 0, freezes };
+
+  const gap = todayNo - lastNo;
+  if (gap <= 1) return { current, freezes };
+  if (gap === 2 && freezes > 0) {
+    // Dondurma, satın alındığı günden öncesini kurtarmaz (settleStreakFreeze ile aynı şart).
+    const boughtNo = dayNumber(state.freezeDay);
+    if (boughtNo === null || lastNo + 1 >= boughtNo) return { current, freezes: freezes - 1 };
+  }
+  return { current: 0, freezes };
+}
+
 /**
  * Bildirim metni.
  *
@@ -134,8 +172,10 @@ function secondChanceDecision(state, nowMs) {
   const today = localDayId(nowMs, offset);
   if (state.lastDay === today) return { send: false, reason: 'goal_done' };
   if (state.secondReminderSentDay === today) return { send: false, reason: 'already_sent' };
-  if (!(state.current >= SECOND_CHANCE_MIN_STREAK)) return { send: false, reason: 'short_streak' };
-  if (state.freezes > 0) return { send: false, reason: 'has_freeze' };
+  // Kırılmış seri "bugün kırılabilir" diye hatırlatılmasın (bkz. liveStreak).
+  const live = liveStreak(state, today);
+  if (!(live.current >= SECOND_CHANCE_MIN_STREAK)) return { send: false, reason: 'short_streak' };
+  if (live.freezes > 0) return { send: false, reason: 'has_freeze' };
   if (state.reminderSentDay !== today) return { send: false, reason: 'no_first' };
 
   if (state.lastSeenMs) {
@@ -146,7 +186,7 @@ function secondChanceDecision(state, nowMs) {
   return {
     send: true,
     today,
-    text: secondChanceText(state.current, state.goalMinutes),
+    text: secondChanceText(live.current, state.goalMinutes),
   };
 }
 
@@ -174,10 +214,13 @@ function streakReminderDecision(state, nowMs) {
     if (idleDays > STREAK_REMINDER_MAX_IDLE_DAYS) return { send: false, reason: 'idle' };
   }
 
+  // Saklanan `current` kırılmış seride bayat kalıyor; metin ekranda görünen seriyle
+  // aynı sayıyı söylemeli (bkz. liveStreak).
+  const live = liveStreak(state, today);
   return {
     send: true,
     today,
-    text: streakReminderText(state.current, state.goalMinutes, state.freezes),
+    text: streakReminderText(live.current, state.goalMinutes, live.freezes),
   };
 }
 
@@ -188,6 +231,7 @@ module.exports = {
   SECOND_CHANCE_MIN_STREAK,
   normalizeReminderHour,
   localDayId,
+  liveStreak,
   reminderHourUtc,
   streakReminderText,
   streakReminderDecision,
