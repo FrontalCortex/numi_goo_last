@@ -28,6 +28,14 @@ class QuestionDownloadForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Sohbete giden bütün yayınlar buradan, pakete kilitli gidiyor. QuestionChatFragment alıcıyı
+     * RECEIVER_NOT_EXPORTED ile kaydediyor; paketsiz (implicit) yayınlar Android 14+ ve bazı
+     * üretici ROM'larında o alıcıya teslim edilmiyor (ScreenRecordingService.broadcastToApp
+     * aynı sorunu yaşamıştı). Sonuç: indirme durumu sohbette hiç güncellenmiyordu.
+     */
+    private fun sendAppBroadcast(intent: Intent) = sendBroadcast(intent.setPackage(packageName))
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
@@ -67,7 +75,7 @@ class QuestionDownloadForegroundService : Service() {
                 queue.removeIf { it.messageId == messageId }
 
                 // Fragment'e "iptal edildi" bilgisini gönder (doğru sohbeti bulabilsin diye questionId de ekleniyor)
-                sendBroadcast(Intent(ACTION_DOWNLOAD_CANCELED).apply {
+                sendAppBroadcast(Intent(ACTION_DOWNLOAD_CANCELED).apply {
                     putExtra(EXTRA_MESSAGE_ID, messageId)
                     if (questionId != null) {
                         putExtra(EXTRA_QUESTION_ID, questionId)
@@ -114,7 +122,7 @@ class QuestionDownloadForegroundService : Service() {
             val item = queue.poll() ?: break
             if (canceledMessageIds.remove(item.messageId)) continue
             startForeground(NOTIFICATION_ID, buildBaseNotification(appString(R.string.ui_indiriliyor)))
-            sendBroadcast(Intent(ACTION_DOWNLOAD_STARTED).apply {
+            sendAppBroadcast(Intent(ACTION_DOWNLOAD_STARTED).apply {
                 putExtra(EXTRA_MESSAGE_ID, item.messageId)
                 putExtra(EXTRA_QUESTION_ID, item.questionId)
             })
@@ -161,7 +169,7 @@ class QuestionDownloadForegroundService : Service() {
                 updateProgress(transferredBytes, totalBytes, remainingMs, item.messageId, item.questionId)
 
                 val percent = ((transferredBytes.toDouble() / totalBytes.toDouble()) * 100).toInt().coerceIn(0, 100)
-                sendBroadcast(Intent(ACTION_DOWNLOAD_PROGRESS).apply {
+                sendAppBroadcast(Intent(ACTION_DOWNLOAD_PROGRESS).apply {
                     putExtra(EXTRA_MESSAGE_ID, item.messageId)
                     putExtra(EXTRA_QUESTION_ID, item.questionId)
                     putExtra(EXTRA_PROGRESS, percent)
@@ -174,7 +182,7 @@ class QuestionDownloadForegroundService : Service() {
                     GlobalValues.downloadedMediaByMessageId[item.messageId] = file.absolutePath
                     GlobalValues.persistDownloadedMediaCache(this)
 
-                    sendBroadcast(Intent(ACTION_DOWNLOAD_COMPLETED).apply {
+                    sendAppBroadcast(Intent(ACTION_DOWNLOAD_COMPLETED).apply {
                         putExtra(EXTRA_MESSAGE_ID, item.messageId)
                         putExtra(EXTRA_QUESTION_ID, item.questionId)
                     })
@@ -183,7 +191,7 @@ class QuestionDownloadForegroundService : Service() {
             .addOnFailureListener {
                 activeTasks.remove(item.messageId)
                 if (!canceledMessageIds.contains(item.messageId)) {
-                    sendBroadcast(Intent(ACTION_DOWNLOAD_FAILED).apply {
+                    sendAppBroadcast(Intent(ACTION_DOWNLOAD_FAILED).apply {
                         putExtra(EXTRA_MESSAGE_ID, item.messageId)
                         putExtra(EXTRA_QUESTION_ID, item.questionId)
                     })

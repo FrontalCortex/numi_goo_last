@@ -58,6 +58,30 @@ Taramada kalan, düzeltilmeyenler (Android 15+):
 - `MissionRewardRevealDialogFragment`, `EmailVerificationActivity`, `TeacherOtpActivity` aynı
   sorunu taşıyor ama hiçbir yerden açılmıyor (ölü kod).
 
+## Android 14–16 taraması (16.10.2026 — geliştiricinin telefonu Android 13, bunların hiçbiri orada görünmez)
+
+Düzeltilen (derlendi, cihazda DENENMEDİ): soru sohbetinde yükleme/indirme durumu. Yükleme ve
+indirme servisleri yayınları paketsiz gönderiyordu; `QuestionChatFragment` alıcısı
+RECEIVER_NOT_EXPORTED. Android 14+ bu yayınları teslim etmeyebiliyor (ekran kaydı aynı hatayı
+yaşamış, `ScreenRecordingService.broadcastToApp`). İki serviste `sendAppBroadcast` artık
+`setPackage(packageName)` ile gönderiyor. Denenecek (Android 14+): soru sohbetinde resim/video
+gönderirken yüzde ilerliyor mu, iptal sohbete yansıyor mu, gelen medya indirilince açılıyor mu?
+
+Bulunup kullanıcı kararıyla ŞİMDİLİK bırakılanlar:
+- **Android 16 tabletler:** en kısa kenarı ≥600dp cihazlarda `screenOrientation="portrait"`
+  yok sayılıyor; tablet/yatay düzen yok (en büyük `values-sw480dp`). Geçici çıkış: manifeste
+  `android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` (targetSdk 37'de kalkıyor).
+- **Galeri izni:** Android 14+ "yalnızca seçilen fotoğraflar"da kendi galeri paneli yalnızca
+  onları gösteriyor, izin her seferinde soruluyor. Play, `READ_MEDIA_IMAGES/VIDEO` için gerekçe
+  istiyor; ara sıra seçim yapan uygulamalardan Photo Picker bekliyor (BugReportFragment zaten
+  kullanıyor). Kapalı test incelemesinde sorun çıkarabilir.
+- **Ders paneli karartması:** `LessonAdapter.dimSystemBars` 15+'da şeritleri karartmıyor;
+  `SystemBarStrips` ile çözülebilir.
+
+Temiz çıkanlar: geri tuşu (Android 16'nın öngörülü geri hareketi; yalnızca ölü koddaki dialog
+KEYCODE_BACK kullanıyor), ön plan servis türleri, MediaProjection sırası, PendingIntent ve alıcı
+kayıt bayrakları, tam zamanlı alarm yok, native kütüphane yok (16 KB sayfa şartı sorun değil).
+
 ## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, cf05dd8 ile DEPLOY EDİLDİ)
 
 Ekranda seri 0 iken "Bugün 20 dakika çalış, 1 günlük serin devam etsin" bildirimi geldi.

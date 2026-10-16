@@ -42,6 +42,13 @@ class QuestionUploadForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Sohbete giden bütün yayınlar buradan, pakete kilitli gidiyor. Paketsiz (implicit) yayınlar
+     * Android 14+ ve bazı üretici ROM'larında RECEIVER_NOT_EXPORTED alıcıya teslim edilmiyor;
+     * yükleme yüzdesi ve iptal sohbete hiç ulaşmıyordu (ayrıntı QuestionDownloadForegroundService).
+     */
+    private fun sendAppBroadcast(intent: Intent) = sendBroadcast(intent.setPackage(packageName))
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
@@ -167,7 +174,7 @@ class QuestionUploadForegroundService : Service() {
             item.textContent?.let { putExtra(KEY_TEXT_CONTENT, it) }
             item.caption?.let { putExtra(KEY_CAPTION, it) }
         }
-        sendBroadcast(startedIntent)
+        sendAppBroadcast(startedIntent)
 
         // Global buffer'da da aktif upload'lar listesine ekle
         GlobalValues.activeUploadIdsByQuestion
@@ -204,7 +211,7 @@ class QuestionUploadForegroundService : Service() {
                     putExtra(KEY_CLIENT_ID, clientId)
                     putExtra(KEY_UPLOAD_PROGRESS, percent)
                 }
-                sendBroadcast(progressIntent)
+                sendAppBroadcast(progressIntent)
             }
         }.addOnCompleteListener {
             activeTasks.remove(clientId)
@@ -248,7 +255,7 @@ class QuestionUploadForegroundService : Service() {
         val intent = Intent(ACTION_UPLOAD_CANCELED).apply {
             putExtra(KEY_CLIENT_ID, clientId)
         }
-        sendBroadcast(intent)
+        sendAppBroadcast(intent)
 
         // Kuyrukta ve aktif görevlerde başka upload kalmadıysa bildirimi de kapat.
         if (queue.isEmpty() && activeTasks.isEmpty()) {
