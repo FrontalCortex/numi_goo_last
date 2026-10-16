@@ -38,12 +38,23 @@ Aynı sorun `RegisterActivity` ve `TeacherLoginActivity`'de de vardı (24dp dolg
 Oralarda kök 24dp dolgulu olduğu için nitelik doğrudan köke konmadı (dolguyu silerdi); kök
 `fitsSystemWindows`'lu bir FrameLayout ile sarıldı.
 
-Taramada kalan, düzeltilmeyenler (Android 15+):
+Taramada çıkıp sonradan düzeltilenler (derlendi, cihazda DENENMEDİ, commit edilmedi):
 - Resim/video önizlemeleri (`dialog_image`, `dialog_video_player`, `dialog_video_fullscreen`):
-  pencere kamera deliğine kadar uzuyor; sağ üstteki X düğmesi deliğe denk gelebilir, video
-  kontrolleri gezinme tuşlarının arkasında kalabilir. Cihazda görülmedi.
-- `NewChestFragment` şerit rengini `window.statusBarColor` ile veriyor; 15+ yok sayıyor, şeritler
-  zemin renginde kalıyor (yalnızca görünüş). Çözüm `MainActivity.setStatusBarTint` gibi olabilir.
+  pencere kamera deliğine kadar uzuyor, X deliğe denk gelebiliyor, video kontrolleri gezinme
+  tuşlarının arkasında kalabiliyordu. `PreviewSafeArea.apply` X'in kenar boşluğuna, oynatıcının
+  `exo_controller` katmanına da iç dolgu olarak çubuk + kamera deliği payını ekliyor; görsel ve
+  video tam ekran kalıyor. Yalnızca Android 15+'da çalışıyor. Soru sohbetindeki çubukları
+  gizleyen video gizli kalıyor, orada X yalnızca delikten uzaklaşıyor; `ImageAnnotateDialogFragment`'a
+  dokunulmadı. Denenecek: galeri önizlemesi (uzun bas), bildirim ve soru sohbeti resimleri,
+  soru sohbeti videosu, rapor videosu. X basılabiliyor mu, oynat/ilerleme çubuğu gezinme
+  tuşlarının üstünde mi?
+- `NewChestFragment` şerit rengini `window.statusBarColor` ile veriyordu, 15+ yok sayıyordu.
+  Android 15+'da `SystemBarStrips` üst ve alt çubuğun arkasına renkli şerit koyuyor (nadirlik
+  rengi + açılıştaki zemine geçiş), ekran kapanınca kaldırıyor. Eski sürümlerde şerit yok, eski
+  yol aynen çalışıyor. Denenecek: nadirlik yükselirken şeritler renk değiştiriyor mu, sandık
+  açılınca zemin rengine geçiyor mu, ekran kapanınca alttaki ekranın görünüşü geri geliyor mu?
+
+Taramada kalan, düzeltilmeyenler (Android 15+):
 - `MissionRewardRevealDialogFragment`, `EmailVerificationActivity`, `TeacherOtpActivity` aynı
   sorunu taşıyor ama hiçbir yerden açılmıyor (ölü kod).
 

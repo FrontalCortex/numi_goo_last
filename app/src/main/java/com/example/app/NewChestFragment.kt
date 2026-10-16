@@ -4,6 +4,7 @@ import android.animation.AnimatorSet
 import android.animation.Keyframe
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -176,6 +177,8 @@ class NewChestFragment : Fragment() {
 
     private var originalStatusBarColor: Int? = null
     private var originalNavigationBarColor: Int? = null
+    /** Android 15+'da çubukları sandık rengine boyayan şeritler; eski sürümlerde null. */
+    private var barStrips: SystemBarStrips? = null
 
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
@@ -194,6 +197,13 @@ class NewChestFragment : Fragment() {
 
         originalStatusBarColor = requireActivity().window.statusBarColor
         originalNavigationBarColor = requireActivity().window.navigationBarColor
+        // Android 15+ window.statusBarColor/navigationBarColor'ı yok sayıyor: çubuklar sandığın
+        // nadirlik renginden kopuk, uygulamanın zemin renginde kalıyordu. Orada renk çubukların
+        // arkasına konan şeritlerle veriliyor. Eski sürümlerde pencere rengi zaten çalışıyor;
+        // şerit eklenmiyor ki davranışları birebir aynı kalsın.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            barStrips = SystemBarStrips(requireActivity())
+        }
 
         // Sunucu beklemesi de kullanıcının beklediği süreye dahil; sayaç burada başlar.
         screenOpenedAtMs = android.os.SystemClock.elapsedRealtime()
@@ -364,6 +374,7 @@ class NewChestFragment : Fragment() {
             w.statusBarColor = rarity.theme.bgColor
             w.navigationBarColor = rarity.theme.bgColor
         }
+        barStrips?.color = rarity.theme.bgColor
 
         binding.chestRarityLabel.text = rarity.label
         binding.chestRarityLabel.setTextColor(rarity.labelColor)
@@ -577,11 +588,15 @@ class NewChestFragment : Fragment() {
 
             val bgColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.background_color)
             activity?.window?.let { w ->
-                val colorAnim = android.animation.ValueAnimator.ofArgb(w.statusBarColor, bgColor)
+                // Şerit varsa geçiş onun renginden başlar: Android 15+ pencereye yazılan rengi yok
+                // saydığı için w.statusBarColor ekrandaki rengi göstermiyor.
+                val fromColor = barStrips?.color ?: w.statusBarColor
+                val colorAnim = android.animation.ValueAnimator.ofArgb(fromColor, bgColor)
                 colorAnim.addUpdateListener { animator ->
                     val color = animator.animatedValue as Int
                     w.statusBarColor = color
                     w.navigationBarColor = color
+                    barStrips?.color = color
                 }
                 hideAnims.add(colorAnim)
             }
@@ -752,6 +767,8 @@ class NewChestFragment : Fragment() {
             originalStatusBarColor?.let { w.statusBarColor = it }
             originalNavigationBarColor?.let { w.navigationBarColor = it }
         }
+        barStrips?.remove()
+        barStrips = null
         hintHandler.removeCallbacks(hintRunnable)
         starHandler.removeCallbacks(starSpawner)
         stopIdleAnimation()

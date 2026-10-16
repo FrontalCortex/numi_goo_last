@@ -653,6 +653,7 @@ class NotificationFragment : Fragment() {
         val imageView = dialog.findViewById<ImageView>(R.id.dialogImageView)
         Glide.with(this).load(url).into(imageView)
         dialog.findViewById<View>(R.id.dialogImageClose).setOnClickListener { dialog.dismiss() }
+        PreviewSafeArea.apply(dialog.findViewById(R.id.dialogImageClose))
         dialog.show()
     }
 

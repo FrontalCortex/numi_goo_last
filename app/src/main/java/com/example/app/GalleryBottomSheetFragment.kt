@@ -82,6 +82,7 @@ class GalleryBottomSheetFragment : BottomSheetDialogFragment() {
             val imageView = dialog.findViewById<ImageView>(R.id.dialogImageView)
             Glide.with(this).load(item.uri).into(imageView)
             dialog.findViewById<View>(R.id.dialogImageClose).setOnClickListener { dialog.dismiss() }
+            PreviewSafeArea.apply(dialog.findViewById(R.id.dialogImageClose))
             dialog.show()
         } else {
             previewDialog?.dismiss()
@@ -106,6 +107,7 @@ class GalleryBottomSheetFragment : BottomSheetDialogFragment() {
                 previewPlayer = null
                 playerView.player = null
             }
+            PreviewSafeArea.apply(dialog.findViewById(R.id.dialogVideoClose), playerView)
             dialog.show()
             previewDialog = dialog
         }

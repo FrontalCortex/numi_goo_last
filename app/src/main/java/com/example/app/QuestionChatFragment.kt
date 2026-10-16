@@ -1075,6 +1075,8 @@ class QuestionChatFragment : Fragment() {
             releaseVideoPlayer()
             playerView.player = null
         }
+        // Çubuklar gizli kalıyor; Android 15+'da X ve kontroller yalnızca kamera deliğinden uzak tutuluyor.
+        PreviewSafeArea.apply(dialog.findViewById(R.id.dialogVideoClose), playerView)
         dialog.show()
         videoDialog = dialog
     }
@@ -1092,6 +1094,7 @@ class QuestionChatFragment : Fragment() {
         val imageView = dialog.findViewById<android.widget.ImageView>(R.id.dialogImageView)
         Glide.with(this).load(url).transition(DrawableTransitionOptions.withCrossFade()).into(imageView)
         dialog.findViewById<View>(R.id.dialogImageClose).setOnClickListener { dialog.dismiss() }
+        PreviewSafeArea.apply(dialog.findViewById(R.id.dialogImageClose))
         dialog.show()
     }
 
