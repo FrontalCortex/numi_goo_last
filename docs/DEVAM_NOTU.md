@@ -23,7 +23,7 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ; 642fe78 + kayıt/öğretmen girişi düzeltmesi)
 
 Annenin ve kardeşin telefonlarında (Android 15+ olmalı) `fragment_user_info`'nun üstündeki
 çubuk saat/pil şeridinin altında kalıyordu. Sebep: `targetSdk 36` ile Android 15+ pencereyi
@@ -33,6 +33,19 @@ zorla kenardan kenara çiziyor; `LoginStartActivity` ve `LoginActivity` buna haz
 (MainActivity'deki `activity_main` ile aynı yöntem). Alt düğmeler de artık gezinme çubuğunun
 üstünde kalıyor. Denenecek: Android 15+ cihazda giriş ekranı, kayıt soruları (yaş adımında
 klavye açıkken "Devam Et" görünüyor mu), e-posta giriş ekranındaki geri oku.
+
+Aynı sorun `RegisterActivity` ve `TeacherLoginActivity`'de de vardı (24dp dolgu şeritten kısa).
+Oralarda kök 24dp dolgulu olduğu için nitelik doğrudan köke konmadı (dolguyu silerdi); kök
+`fitsSystemWindows`'lu bir FrameLayout ile sarıldı.
+
+Taramada kalan, düzeltilmeyenler (Android 15+):
+- Resim/video önizlemeleri (`dialog_image`, `dialog_video_player`, `dialog_video_fullscreen`):
+  pencere kamera deliğine kadar uzuyor; sağ üstteki X düğmesi deliğe denk gelebilir, video
+  kontrolleri gezinme tuşlarının arkasında kalabilir. Cihazda görülmedi.
+- `NewChestFragment` şerit rengini `window.statusBarColor` ile veriyor; 15+ yok sayıyor, şeritler
+  zemin renginde kalıyor (yalnızca görünüş). Çözüm `MainActivity.setStatusBarTint` gibi olabilir.
+- `MissionRewardRevealDialogFragment`, `EmailVerificationActivity`, `TeacherOtpActivity` aynı
+  sorunu taşıyor ama hiçbir yerden açılmıyor (ölü kod).
 
 ## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, cf05dd8 ile DEPLOY EDİLDİ)
 
