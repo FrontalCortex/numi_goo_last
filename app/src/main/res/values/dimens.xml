@@ -334,12 +334,19 @@
     <dimen name="abacus_fragment_hint_container_height">56dp</dimen>
     <dimen name="abacus_fragment_hint_container_margin_end">16dp</dimen>
     <dimen name="abacus_fragment_hint_container_margin_bottom">20dp</dimen>
-    <dimen name="abacus_fragment_hint_tv_height">55dp</dimen>
-    <dimen name="abacus_fragment_hint_tv_margin_end">15dp</dimen>
-    <dimen name="abacus_fragment_hint_tv_padding_left">10dp</dimen>
-    <dimen name="abacus_fragment_hint_tv_padding_vertical">0dp</dimen>
-    <dimen name="abacus_fragment_hint_tv_padding_right">30dp</dimen>
+    <!-- İpucu balonu (hint_bubble_background). Ampul düğmesi kabın sağ kenarından 25dp taşıyor,
+         yani kabın son 23dp'si düğmenin altında. 26dp: balonun kuyruğu düğmeye ~3dp kala bitsin. -->
+    <dimen name="abacus_fragment_hint_tv_margin_end">26dp</dimen>
+    <dimen name="abacus_fragment_hint_tv_padding_start">16dp</dimen>
+    <dimen name="abacus_fragment_hint_tv_padding_vertical">10dp</dimen>
+    <!-- 16dp iç boşluk + balonun 9dp'lik kuyruğu -->
+    <dimen name="abacus_fragment_hint_tv_padding_end">25dp</dimen>
     <dimen name="abacus_fragment_hint_tv_text_size">16sp</dimen>
+    <dimen name="abacus_fragment_hint_tv_line_spacing">2dp</dimen>
+    <!-- Balon düğmeden (48dp) uzun. Kap 48dp kalmalı ki düğme yerinden oynamasın; FrameLayout
+         wrap_content çocuğu kabın yüksekliğiyle sınırlıyor. Üst ve alttaki eşit negatif kenar
+         boşluğu bu sınırı 48 + 2×48dp'ye çıkarır, ortalamayı bozmaz (iki boşluk birbirini götürür). -->
+    <dimen name="abacus_fragment_hint_bubble_overflow">-48dp</dimen>
     <dimen name="abacus_fragment_hint_fab_size">56dp</dimen>
     <dimen name="abacus_fragment_hint_fab_padding">5dp</dimen>
     <dimen name="abacus_fragment_hint_fab_margin_end">-25dp</dimen>

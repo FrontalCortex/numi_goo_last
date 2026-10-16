@@ -33,6 +33,23 @@ edildi), seri hatırlatması düzeltmesi (sunucu), Android 14–15+ çubuk/yayı
 "commit edilmedi" yazan başlıkların hepsi commit'li ve bu sürümde; "cihazda DENENMEDİ" olanlar
 kapalı testte ilk kez gerçek cihazlarda çalışacak. Sonraki yayın: versionCode 10.
 
+## İpucu düğmesi: panel konuşma balonu oldu (16.10.2026 — kullanıcı telefonda baktı, iyi; commit edildi)
+
+Ders ekranında (`fragment_abacus.xml`, `fragment_blinding_lesson.xml`) ampule basınca açılan
+panel, ampulün solunda bir konuşma balonuna dönüştü (`drawable/hint_bubble_background.xml`):
+düğmeyle aynı koyu yeşil (yeni `@color/side_button_background` = eski `#263C31`;
+`fab_background` da artık buna bakıyor, renk değişmedi), 16dp yuvarlak köşe, ampule bakan küçük
+kuyruk, rahat iç boşluk. Eski panelin altı düz kesikti: 55dp'lik metin 48dp'lik kabın içinde
+kırpılıyordu. Balon artık metne göre uzuyor ve düğmeye göre dikeyde ortalanıyor (kap 48dp kaldı,
+negatif dikey kenar boşluğu hilesi `dimens.xml`'de anlatılıyor). Açılış: kuyruğun ucundan küçük
+bir zıplamayla büyüme (`anim/hint_bubble_in.xml`), kapanış: ampule doğru küçülme
+(`hint_bubble_out.xml`). `slide_out_right_hint.xml` artık kullanılmadığı için silindi.
+`slide_in_right` başka ekranlarda da geçtiği için ona dokunulmadı. Ampul düğmesinin boyutu ve
+yeri, dokunma alanı, rehberin (guide) düğmeyi göstermesi ve `AbacusSideButtonFit` aynı kaldı.
+Kullanıcı telefonda (Android 13) baktı, "iyi görünüyor" dedi. Ayrıca denendiği söylenmeyenler:
+uzun ipuçları (ör. ilk dersin 91 harflik ipucu) 3–4 satıra çıkınca balonun tahtanın alt kenarına
+ya da abaküsün üstüne binip binmediği, Blinding dersindeki görünüm.
+
 ## Ders sonu anketi kaldırıldı, yalnızca tutorial anketi kaldı (16.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
 
 Kullanıcı isteği: anket yalnızca tutorial'dan sonra çıksın. `AbacusFragment` ve

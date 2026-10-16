@@ -2225,12 +2225,15 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- İpucu balonu düğmeden uzun ve açılırken kuyruğundan büyüyüp biraz taşıyor; kesilmesin diye
+         bu kap ve içindeki düzen çocuklarını kırpmıyor. -->
     <FrameLayout
         android:id="@+id/hintContainer"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginEnd="@dimen/abacus_fragment_hint_container_margin_end"
         android:layout_marginBottom="@dimen/abacus_fragment_hint_container_margin_bottom"
+        android:clipChildren="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage">
 
@@ -2238,21 +2241,24 @@
             android:id="@+id/fabLayoutId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:clipChildren="true"
-            android:clipToPadding="true"
+            android:layout_marginTop="@dimen/abacus_fragment_hint_bubble_overflow"
+            android:layout_marginBottom="@dimen/abacus_fragment_hint_bubble_overflow"
+            android:clipChildren="false"
             android:layout_gravity="center">
             <TextView
                 android:id="@+id/tvHint"
                 android:layout_width="wrap_content"
-                android:layout_height="@dimen/abacus_fragment_hint_tv_height"
-                android:background="@drawable/hint_background"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/abacus_side_button_size"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_bubble_background"
                 android:textColor="@android:color/white"
                 android:layout_marginEnd="@dimen/abacus_fragment_hint_tv_margin_end"
-                android:paddingLeft="@dimen/abacus_fragment_hint_tv_padding_left"
-                android:paddingVertical="@dimen/abacus_fragment_hint_tv_padding_vertical"
-                android:clipChildren="true"
-                android:clipToPadding="true"
-                android:paddingRight="@dimen/abacus_fragment_hint_tv_padding_right"
+                android:paddingStart="@dimen/abacus_fragment_hint_tv_padding_start"
+                android:paddingTop="@dimen/abacus_fragment_hint_tv_padding_vertical"
+                android:paddingEnd="@dimen/abacus_fragment_hint_tv_padding_end"
+                android:paddingBottom="@dimen/abacus_fragment_hint_tv_padding_vertical"
+                android:lineSpacingExtra="@dimen/abacus_fragment_hint_tv_line_spacing"
                 android:visibility="invisible"
                 android:textSize="@dimen/abacus_fragment_hint_tv_text_size"
                 app:layout_constraintStart_toStartOf="parent"

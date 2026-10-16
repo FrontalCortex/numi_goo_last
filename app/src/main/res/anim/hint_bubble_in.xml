@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- İpucu balonu ampulden büyüyerek çıkar: ölçeğin merkezi kuyruğun ucu (sağ kenarın ortası).
+     Saydamlık kısa tutuldu ki balon ilk anda soluk değil, büyürken görünsün. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <scale
+        android:duration="350"
+        android:fromXScale="0.5"
+        android:fromYScale="0.5"
+        android:interpolator="@anim/hint_bubble_overshoot"
+        android:pivotX="100%"
+        android:pivotY="50%"
+        android:toXScale="1.0"
+        android:toYScale="1.0" />
+    <alpha
+        android:duration="150"
+        android:fromAlpha="0.0"
+        android:interpolator="@android:anim/decelerate_interpolator"
+        android:toAlpha="1.0" />
+</set>

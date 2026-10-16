@@ -1553,21 +1553,21 @@ class AbacusFragment : Fragment() {
         fabHint.playAnimation()
         fabHint.setFrame(25)
 
-        // Show and animate TextView
+        // Balon ampulün yanından, kuyruğundan büyüyerek açılır
         tvHint.visibility = View.VISIBLE
-        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.slide_in_right))
+        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.hint_bubble_in))
 
         isHintVisible = true
     }
     private fun hideHint() {
-        // Sağa kayma animasyonunu başlat
+        // Balon ampule doğru küçülerek kapanır
         fabHint.cancelAnimation()
         fabHint.setFrame(0)
 
-        val slideOutAnimation = AnimationUtils.loadAnimation(context, R.anim.slide_out_right_hint)
+        val closeAnimation = AnimationUtils.loadAnimation(context, R.anim.hint_bubble_out)
 
         // Animasyon bittiğinde TextView'ı gizle
-        slideOutAnimation.setAnimationListener(object : Animation.AnimationListener {
+        closeAnimation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationStart(animation: Animation?) {}
 
             override fun onAnimationEnd(animation: Animation?) {
@@ -1578,7 +1578,7 @@ class AbacusFragment : Fragment() {
         })
 
         // Animasyonu başlat
-        tvHint.startAnimation(slideOutAnimation)
+        tvHint.startAnimation(closeAnimation)
         isHintVisible = false
     }
     private fun uploadLessonData(){

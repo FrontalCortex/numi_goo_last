@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ders ekranındaki ipucu balonu: ampul düğmesinin solunda açılıyor, kuyruğu düğmeye bakıyor.
+     Rengi düğmeyle aynı, ikisi bir bütün görünsün diye. Kuyruk sağdan 9dp yer kaplıyor; metnin
+     sağ iç boşluğu (abacus_fragment_hint_tv_padding_end) bunu içeriyor. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:right="9dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/side_button_background" />
+            <!-- 16dp: tek satırlık balon (48dp) da kuyruğun tabanını köşeye taşırmadan alıyor -->
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+
+    <!-- Kuyruk: 45° döndürülmüş kare. Merkezi gövdenin sağ kenarında (9dp), köşegeninin yarısı
+         ~8.5dp olduğu için sivri ucu balonun sağ kenarına denk geliyor. -->
+    <item
+        android:width="12dp"
+        android:height="12dp"
+        android:gravity="end|center_vertical"
+        android:right="3dp">
+        <rotate
+            android:fromDegrees="45"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/side_button_background" />
+                <corners android:radius="2dp" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>
