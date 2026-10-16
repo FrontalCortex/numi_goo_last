@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Temalı ikon katmanı (Android 13+): sistem bu şekli kendi rengine boyuyor. Kafa, kulaklar ve
+  tepedeki tüy dolu; gözler, burun ve iç kulaklar boşluk (evenOdd).
+
+  Kaynak: BunnyMascotArt'taki Sobi çizimi (Freepik "Animal Collection"dan alınmış yollar),
+  bekleme hâli; koordinatlar o çizimin 800'lük koordinatları, grup 108'lik ikona taşıyor.
+  Freepik koşulları (madde 8.1) içeriğin marka/logo olarak kullanılmasına izin vermiyor:
+  herkese açık yayından önce Sobi özgün olarak yeniden çizdirilip bu dosya yenilenecek
+  (docs/MARKA_VE_PAZAR_PLANI.md).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.36"
+        android:scaleY="0.36"
+        android:translateX="-85.68"
+        android:translateY="6.76">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M356.23,125.9c-7.66,2.13 -12.78,4.68 -25.98,-17.46c-13.2,-22.15 -10.65,-33.64 -6.39,-45.14c4.26,-11.5 20.44,-10.65 27.25,0c6.81,10.65 15.33,50.97 11.92,57.21C359.64,126.76 356.23,125.9 356.23,125.9z M352.4,122.5c-3.85,1.21 -5.96,-3.83 -11.92,-18.31c-5.96,-14.48 -9.8,-28.08 -4.26,-29.58c5.54,-1.5 13.63,-2.78 16.18,14.68C354.96,106.74 361.2,119.72 352.4,122.5z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M420.11,130.16c-4.34,-0.16 -7.66,-8.94 -7.24,-33.22c0.43,-24.27 9.37,-35.35 19.16,-40.88c9.8,-5.54 18.74,-0.85 20.87,10.22c2.13,11.07 -2.98,35.35 -10.22,45.99C435.44,122.92 431.61,130.59 420.11,130.16z M419.68,125.05c-2.15,-0.8 -2.13,-11.92 0,-27.25c2.13,-15.33 10.65,-24.7 16.18,-23c5.53,1.7 6.81,15.33 0,31.51C429.46,121.53 424.49,126.84 419.68,125.05z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M384.34,115.26c-10.2,0.57 -47.7,5.11 -54.08,22.15c-6.39,17.03 -11.5,51.53 14.48,64.73c25.98,13.2 69.42,17.46 86.02,-1.28c16.61,-18.74 23,-38.33 14.06,-57.92C435.87,123.35 422.24,113.13 384.34,115.26z M368.21,143.33c0,2.82 -1.62,5.11 -3.62,5.11c-2,0 -3.62,-2.29 -3.62,-5.11c0,-2.82 1.62,-5.11 3.62,-5.11C366.59,138.22 368.21,140.51 368.21,143.33z M410.11,143.33c0,2.82 -1.62,5.11 -3.62,5.11c-2,0 -3.62,-2.29 -3.62,-5.11c0,-2.82 1.62,-5.11 3.62,-5.11C408.49,138.22 410.11,140.51 410.11,143.33z M387.75,149.54c-4.04,0.2 -10.01,3.19 -6.39,5.96c3.62,2.77 9.79,3.62 11.5,0.64C394.56,153.16 392.01,149.33 387.75,149.54z" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M374.25,117.5c0,0 3.5,-5.75 4.75,-9.75s6.5,-4 6.25,-1.5s-4,6 -4,6s10,-11.25 13,-7s-7,12 -12,13S374.25,117.5 374.25,117.5z" />
+    </group>
+</vector>

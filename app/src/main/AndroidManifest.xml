@@ -44,6 +44,11 @@
         <meta-data
             android:name="com.google.firebase.analytics.collection_enabled"
             android:value="true" />
+        <!-- FCM, uygulama arka plandayken "notification" yüklü mesajları kendisi gösteriyor; küçük
+             ikon verilmezse uygulama ikonunu kullanıyor (durum çubuğunda düz leke olur). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
         <activity
             android:name=".SplashActivity"
             android:exported="true"

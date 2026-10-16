@@ -433,7 +433,7 @@ class ScreenRecordingService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(appString(R.string.ui_ekran_kaydi_yapiliyor))
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pending)
             .setOngoing(true)
             .build()

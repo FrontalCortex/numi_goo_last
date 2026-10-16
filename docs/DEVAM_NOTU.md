@@ -37,6 +37,51 @@ Sonraki yayın: versionCode 11.
 admin paneli, seri hatırlatması düzeltmesi, Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
 "commit edilmedi" yazan eski başlıkların hepsi commit'li ve bu sürümlerde.
 
+## Uygulama ikonu: Sobi'nin kafası, sarı zemin (16.10.2026 — derlendi, emülatörde görüldü, telefonda DENENMEDİ, commit edilmedi)
+
+Emülatöre (Android 14) kuruldu, uygulama çekmecesinde "Sorobit" adıyla Sobi ikonu görünüyor.
+Telefona kurulamadı: telefondaki Play kapalı test sürümü (versionCode 9) farklı imzalı, debug
+APK üstüne kurulmuyor (INSTALL_FAILED_UPDATE_INCOMPATIBLE); kaldırmak yerel veriyi siler, sormadan
+yapılmadı. Telefonda versionCode 11 AAB'si Play'den gelince görülecek.
+
+Varsayılan Android robotu yerine Sobi'nin bekleme hâlindeki kafası (kullanıcı 7 ifade × 5 zemin
+arasından "sakin + sarı"yı seçti). Katmanlar `BunnyMascotArt`'taki yollardan bir betikle üretildi
+(kulaklar, kafa, gözler, ağız, kafa ışığı; çizim sırası `drawBunny` ile aynı), elle çizilmedi:
+- `drawable/ic_launcher_foreground.xml`: 800'lük çizim koordinatları korunup tek bir grupla
+  (ölçek 0.36) 108'lik ikona taşındı; kafa ortası (388,134) → (54,55), kulak uçları 72'lik görünen
+  alanın içinde (daire, yuvarlak kare, damla maskelerinde denendi).
+- `drawable/ic_launcher_background.xml`: düz `#FFCF4D`.
+- `drawable/ic_launcher_monochrome.xml` (yeni): Android 13+ temalı ikon. Eskiden `monochrome`
+  da foreground'a bakıyordu; renkli ön katmanla sistem bütün kafayı tek renk leke yapardı. Yeni
+  katmanda kafa/kulak/tüy dolu, gözler-burun-iç kulaklar `evenOdd` ile delik.
+- `mipmap-*/ic_launcher(.png|_round.png)`: API 24–25 için 48/72/96/144/192 px PNG (eski webp'ler
+  silindi; aynı adla ikisi birden olamıyor). `app/src/main/ic_launcher-playstore.png`: Play
+  Console → Ana mağaza girişi → Uygulama simgesi için 512×512 (APK'ya girmiyor).
+
+**Lisans uyarısı (kullanıcıya söylendi, kararı o verdi):** Sobi'nin çizimi Freepik'ten birebir
+alınma; Freepik koşulları (madde 8.1) içeriğin tamamen ya da kısmen bir markada kullanılmasını,
+aslıyla karıştırılmayacak kadar değiştirilmedikçe yasaklıyor; ikon fiilen logo. Marka planı da
+"logo/marka olarak kullanılamaz" diyor. Bu ikon geçici: herkese açık yayından önce Sobi özgün
+olarak yeniden çizdirilecek, yukarıdaki dosyalar o çizimden yeniden üretilecek. Ayrıca sarı
+zeminde Sobi'nin sarı iç kulakları zeminle karışıyor (kullanıcı bilerek sarıyı seçti).
+
+Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
+Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi
+(dahili testte paket adı her zaman görünür). `applicationId` DEĞİŞTİRİLMEMELİ.
+
+**Bildirim küçük ikonu da düzeltildi** (aynı gün): bildirimler `setSmallIcon(R.mipmap.ic_launcher)`
+kullanıyordu (`MyFirebaseMessagingService` 2 yer, `ScreenRecordingService`). Küçük ikon tek renkli
+olmalı; renkli uyarlanabilir ikon durum çubuğunda düz bir daire/kare lekesi oluyordu (Android
+8.0'da SystemUI'yi çökertebildiği de biliniyor). Yeni `drawable/ic_notification.xml`: monochrome
+katmanın yolları, görüntü alanı kafaya göre daraltılmış 24dp silüet; gözler/burun/iç kulaklar
+delik (delikli ve deliksiz hâl 24/48/72 px'te karşılaştırıldı, 48+ px'te delikli daha iyi
+okunuyor). Manifest'e `com.google.firebase.messaging.default_notification_icon` da eklendi:
+uygulama arka plandayken FCM "notification" yüklü mesajı kendisi gösteriyor ve ikon verilmezse
+uygulama ikonunu kullanıyordu. Soru yükleme/indirme servislerindeki
+`android.R.drawable.ic_menu_upload` zaten tek renkli, dokunulmadı. Derlendi, emülatörde uygulama
+çökmeden açılıyor; ikon durum çubuğunda henüz GÖRÜLMEDİ (emülatörde FCM ya da ekran kaydı
+bildirimi tetiklenemedi). İlk gerçek bildirimde bakılmalı.
+
 ## İpucu düğmesi: panel konuşma balonu oldu (16.10.2026 — kullanıcı telefonda baktı, iyi; commit edildi)
 
 Ders ekranında (`fragment_abacus.xml`, `fragment_blinding_lesson.xml`) ampule basınca açılan
