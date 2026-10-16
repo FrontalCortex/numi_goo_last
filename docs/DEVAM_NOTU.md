@@ -23,6 +23,16 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Kapalı test sürümü: versionCode 9 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
+
+`app/build/outputs/bundle/release/app-release.aab` (69 MB, versionName hâlâ "1.0"), yükleme
+anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1). R8 mapping dosyası AAB'nin içinde, Play
+kendisi alıyor. 8'den (e6df925, 07.10.2026) bu yana giren her şey 4bc317a'ya kadar: öğretici
+ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı + admin paneli (sunucusu deploy
+edildi), seri hatırlatması düzeltmesi (sunucu), Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
+"commit edilmedi" yazan başlıkların hepsi commit'li ve bu sürümde; "cihazda DENENMEDİ" olanlar
+kapalı testte ilk kez gerçek cihazlarda çalışacak. Sonraki yayın: versionCode 10.
+
 ## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ; 642fe78 + kayıt/öğretmen girişi düzeltmesi)
 
 Annenin ve kardeşin telefonlarında (Android 15+ olmalı) `fragment_user_info`'nun üstündeki
@@ -93,7 +103,7 @@ harcanmış sayılır). Birinci hatırlatma kırık seride "Bugün başlamaya ne
 düşüyor; ikinci şans ("N günlük serin bugün kırılabilir") kırık seriye hiç gitmiyor.
 Tarama `freezeDay`'i de karara geçiriyor (index.js). Test: `node functions/scripts/test-streak-reminder.js`.
 
-## Hata bildirimi ("Hata Avcısı") + admin paneli (15.10.2026 — derlendi, cihaza KURULDU; sunucu DEPLOY EDİLMEDİ, commit edilmedi)
+## Hata bildirimi ("Hata Avcısı") + admin paneli (15.10.2026 — cihaza KURULDU; 06983ab ile commit + DEPLOY EDİLDİ)
 
 Kapalı test için: kullanıcı uygulamada gördüğü hatayı ekran görüntüsüyle bildiriyor, admin
 onaylarsa ödülü Görevler'deki karttan topluyor. Kullanıcı kararları: ödül kartta "Ödülünü
