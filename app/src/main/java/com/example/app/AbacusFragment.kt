@@ -88,7 +88,8 @@ class AbacusFragment : Fragment() {
 
     // --- Teşhis: fragment_lesson_result'a giden akışın hızlı çoklu tıklamayla iki kez tetiklenip
     // tetiklenmediğini görmek için ---
-    private var questionPanelShown = false
+    /** Teşhisin yanında kapı da: [finishLesson] ikinci kez sonuç ekranı açmasın. */
+    private var lessonFinishStarted = false
     private var lessonResultShown = false
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
@@ -3030,8 +3031,7 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                //ders sonu soru paneli burada gelecek.
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -3126,8 +3126,7 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                //ders sonu soru paneli burada gelecek.
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -3207,50 +3206,36 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    /** Ders sonu soru panelini açar; geçiş mantığı FragmentResult API ile AbacusFragment'e geri döner. */
-    private fun showQuestionPanel() {
+    /**
+     * Son soru bitince sonuç ekranına geçer.
+     *
+     * Eskiden önce ders sonu anketi ([QuestionPanelFragment]) açılıyor, sonuç ekranı anket
+     * kapanınca geliyordu. Anket artık yalnızca tutorial sonunda var
+     * ([TutorialQuestionPanelFragment]); buradan doğrudan sonuca geçiliyor.
+     *
+     * Anket araya girerken bu fragment gizleniyordu, ikinci bir dokunma buraya ulaşamıyordu.
+     * Artık öyle bir kalkan yok; ikinci çağrı ikinci bir sonuç ekranı açmasın diye kapı var.
+     */
+    private fun finishLesson() {
         LessonProgressDiag.log(
-            "AbacusFragment.showQuestionPanel",
-            "CALLED alreadyShown=$questionPanelShown mapIdx=$mapFragmentStepIndex " +
+            "AbacusFragment.finishLesson",
+            "CALLED alreadyFinished=$lessonFinishStarted mapIdx=$mapFragmentStepIndex " +
                 "part=${GlobalLessonData.globalPartId} currentIndex=$currentIndex totalQuestions=$totalQuestions" +
-                if (questionPanelShown) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
+                if (lessonFinishStarted) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
         )
-        questionPanelShown = true
-        stopTimer() // Soru panelindeyken timer çalışmasın diye durduruyoruz.
-        val successRate = currentSuccessRate()
-        val dersPuani = (successRate * 5f).toInt()
-        val (carpan, toplamPuan) = calculateChestScore(successRate, currentTime)
-        val worstCupTime = resolveWorstCupTimeFallback()
-        val fragment = QuestionPanelFragment.newInstance(
-            correctAnswers = correctAnswer,
-            totalQuestions = totalQuestions,
-            successRate = successRate,
-            dersPuani = dersPuani,
-            globalPartId = GlobalLessonData.globalPartId,
-            lessonId = lessonItem.stableId,
-            lessonType = lessonItem.type,
-            currentTime = currentTime,
-            worstCupTime = worstCupTime
-        )
-
-        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
-            // Soru paneli bittiğinde çalışacak orijinal kod:
-            if (lessonItem.type == LessonItem.TYPE_CHEST) {
-                if (toplamPuan < 500) { 
-                    showLessonResultFalseOnly(true)
-                } else {
-                    showChestResult(carpan, toplamPuan)
-                }
+        if (lessonFinishStarted) return
+        lessonFinishStarted = true
+        stopTimer() // Sonuç ekranındayken timer çalışmasın diye durduruyoruz.
+        if (lessonItem.type == LessonItem.TYPE_CHEST) {
+            val (carpan, toplamPuan) = calculateChestScore(currentSuccessRate(), currentTime)
+            if (toplamPuan < 500) {
+                showLessonResultFalseOnly(true)
             } else {
-                showLessonResult()
+                showChestResult(carpan, toplamPuan)
             }
+        } else {
+            showLessonResult()
         }
-
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
-            .add(R.id.abacusFragmentContainer, fragment)
-            .hide(this)
-            .commit()
     }
 
     private fun currentSuccessRate(): Float {

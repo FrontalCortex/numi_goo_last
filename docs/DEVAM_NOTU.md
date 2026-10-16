@@ -33,6 +33,22 @@ edildi), seri hatırlatması düzeltmesi (sunucu), Android 14–15+ çubuk/yayı
 "commit edilmedi" yazan başlıkların hepsi commit'li ve bu sürümde; "cihazda DENENMEDİ" olanlar
 kapalı testte ilk kez gerçek cihazlarda çalışacak. Sonraki yayın: versionCode 10.
 
+## Ders sonu anketi kaldırıldı, yalnızca tutorial anketi kaldı (16.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+Kullanıcı isteği: anket yalnızca tutorial'dan sonra çıksın. `AbacusFragment` ve
+`BlindingLessonFragment`'teki `showQuestionPanel` → `finishLesson` oldu; `QuestionPanelFragment`
+açılmıyor, son sorudan sonra doğrudan LessonResult / ChestResult / LessonResultFalse'a (ya da
+kupa modu, günlük soru, yarış dallarında eskiden anketten sonra ne oluyorsa ona) geçiliyor.
+Dallanma mantığı aynen korundu, yalnızca araya giren anket çıktı. `TutorialFragment` →
+`TutorialQuestionPanelFragment` akışına dokunulmadı.
+
+Anket açılırken ders fragment'i gizleniyordu, ikinci dokunma sonuca ulaşamıyordu; o kalkan
+gittiği için iki `finishLesson`'a da tek seferlik kapı (`lessonFinishStarted`) kondu.
+`QuestionPanelFragment`, `fragment_question_panel.xml` ve `SURVEY_LESSON` kodda duruyor ama
+kullanılmıyor (geri getirmek kolay olsun diye silinmedi). Denenecek: normal ders, sandık
+(500 puan altı/üstü), %75 altı ders, günlük soru doğru/yanlış, yarış dersi yanlış, kupa modu.
+Sonuç ekranı tek kez mi geliyor, ders ekranı düzgün kayarak mı çıkıyor?
+
 ## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ; 642fe78 + kayıt/öğretmen girişi düzeltmesi)
 
 Annenin ve kardeşin telefonlarında (Android 15+ olmalı) `fragment_user_info`'nun üstündeki

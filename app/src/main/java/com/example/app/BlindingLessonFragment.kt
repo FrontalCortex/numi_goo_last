@@ -1251,6 +1251,9 @@ class BlindingLessonFragment : Fragment() {
     /** Kapanış kayması sürüyor mu; ikinci bir çıkış hareketi araya girmesin. */
     private var isBlindingClosing = false
 
+    /** [finishLesson] bir kez çalışsın; ikinci çağrı ikinci bir sonuç ekranı açmasın. */
+    private var lessonFinishStarted = false
+
     /** Kapanış kaymasının süresi; [AbacusFragment] ve çizimlerle aynı. */
     private val blindingDismissSlideMs = 400L
 
@@ -1690,7 +1693,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -1784,7 +1787,7 @@ class BlindingLessonFragment : Fragment() {
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
                                           incorrectPanel.visibility = View.GONE
-                                          showQuestionPanel(isWrongDailyQuestion = true)
+                                          finishLesson(isWrongDailyQuestion = true)
                                       }
                                     .start()
                                 return@setOnTouchListener true
@@ -1803,7 +1806,7 @@ class BlindingLessonFragment : Fragment() {
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
                                           incorrectPanel.visibility = View.GONE
-                                          showQuestionPanel(isWrongRaceLesson = true)
+                                          finishLesson(isWrongRaceLesson = true)
                                       }
                                     .start()
                                 return@setOnTouchListener true
@@ -1844,7 +1847,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -2086,10 +2089,23 @@ class BlindingLessonFragment : Fragment() {
     private fun raceLessonPassed(): Boolean =
         totalQuestions > 0 && correctAnswer == totalQuestions
 
-    private fun showQuestionPanel(
+    /**
+     * Son soru (ya da dersi bitiren yanlış cevap) sonrası sonuç akışını başlatır.
+     *
+     * Eskiden önce ders sonu anketi ([QuestionPanelFragment]) açılıyor, aşağıdaki dallar anket
+     * kapanınca çalışıyordu. Anket artık yalnızca tutorial sonunda var
+     * ([TutorialQuestionPanelFragment]); buradan doğrudan sonuca geçiliyor.
+     *
+     * Anket araya girerken bu fragment gizleniyordu, ikinci bir dokunma buraya ulaşamıyordu.
+     * Artık öyle bir kalkan yok; ikinci çağrı ikinci bir sonuç ekranı açmasın diye kapı var.
+     */
+    private fun finishLesson(
         isWrongDailyQuestion: Boolean = false,
         isWrongRaceLesson: Boolean = false
     ) {
+        if (!isAdded || lessonFinishStarted) return
+        lessonFinishStarted = true
+
         releaseLaunchTouchBlocker()
         try {
             if (::runnable.isInitialized) {
@@ -2097,42 +2113,13 @@ class BlindingLessonFragment : Fragment() {
             }
         } catch (e: Exception) {}
 
-        val successRate = if (totalQuestions > 0) {
-            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        if (isWrongDailyQuestion) {
+            handleDailyQuestionWrongAnswer()
+        } else if (isWrongRaceLesson) {
+            showLessonResultFalse()
         } else {
-            0f
+            finishLessonAfterLastQuestion()
         }
-        val dersPuani = (successRate * 5f).toInt()
-        val worstCupTime = com.example.app.LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
-
-        val fragment = QuestionPanelFragment.newInstance(
-            correctAnswers = correctAnswer,
-            totalQuestions = totalQuestions,
-            successRate = successRate,
-            dersPuani = dersPuani,
-            globalPartId = globalPartId,
-            lessonId = lessonItem.stableId,
-            lessonType = lessonItem.type,
-            lessonTitle = if (isDailyQuestionMode) dailyQuestionTitleUnit else "",
-            currentTime = currentTime,
-            worstCupTime = worstCupTime
-        )
-
-        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
-            if (isWrongDailyQuestion) {
-                handleDailyQuestionWrongAnswer()
-            } else if (isWrongRaceLesson) {
-                showLessonResultFalse()
-            } else {
-                finishLessonAfterLastQuestion()
-            }
-        }
-
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
-            .add(R.id.abacusFragmentContainer, fragment)
-            .hide(this)
-            .commit()
     }
 
     private fun finishLessonAfterLastQuestion() {

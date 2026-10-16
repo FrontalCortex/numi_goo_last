@@ -18,9 +18,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 /**
  * Ders sonu anket ekranı.
- * AbacusFragment tüm soruları bitirince bu fragment açılır; kullanıcı
- * gönder veya atla'ya bastıktan sonra LessonResult / ChestResult / LessonResultFalse
- * fragment'ine geçilir.
+ *
+ * ŞU AN HİÇBİR YERDEN AÇILMIYOR: anket yalnızca tutorial sonunda kaldı
+ * ([TutorialQuestionPanelFragment]). AbacusFragment ve BlindingLessonFragment son sorudan
+ * sonra doğrudan sonuç ekranına geçiyor (ikisinde de `finishLesson`). Geri getirilirse
+ * kullanıcı gönder veya atla'ya bastıktan sonra "questionPanelResult" yayınlanır ve
+ * LessonResult / ChestResult / LessonResultFalse fragment'ine geçilir.
  *
  * ## Cevaplar nereye gidiyor
  * Anket iki farklı türde veri üretir ve ikisi ayrı yerlere yazılır:
