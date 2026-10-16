@@ -38,7 +38,7 @@ Aynı sorun `RegisterActivity` ve `TeacherLoginActivity`'de de vardı (24dp dolg
 Oralarda kök 24dp dolgulu olduğu için nitelik doğrudan köke konmadı (dolguyu silerdi); kök
 `fitsSystemWindows`'lu bir FrameLayout ile sarıldı.
 
-Taramada çıkıp sonradan düzeltilenler (derlendi, cihazda DENENMEDİ, commit edilmedi):
+Taramada çıkıp sonradan düzeltilenler (derlendi, cihazda DENENMEDİ; fe60ecf):
 - Resim/video önizlemeleri (`dialog_image`, `dialog_video_player`, `dialog_video_fullscreen`):
   pencere kamera deliğine kadar uzuyor, X deliğe denk gelebiliyor, video kontrolleri gezinme
   tuşlarının arkasında kalabiliyordu. `PreviewSafeArea.apply` X'in kenar boşluğuna, oynatıcının
