@@ -75,6 +75,11 @@ alınma; Freepik koşulları (madde 8.1) içeriğin tamamen ya da kısmen bir ma
 aslıyla karıştırılmayacak kadar değiştirilmedikçe yasaklıyor; ikon fiilen logo. Marka planı da
 "logo/marka olarak kullanılamaz" diyor. Bu ikon geçici: herkese açık yayından önce Sobi özgün
 olarak yeniden çizdirilecek, yukarıdaki dosyalar o çizimden yeniden üretilecek.
+Ressam brifi hazır (17.10.2026, Claude Docs'ta "Sobi Çizim Brifi", bağlantı
+`docs/MARKA_VE_PAZAR_PLANI.md`'de); ressam henüz seçilmedi. Brif parçaları `BunnyMascotView`'deki
+kanallara göre istiyor (kulaklar, 4 göz, 7 ağız, 2 kaş, kollar ayrı; dönme noktaları işaretli,
+tek SVG). Yeni çizim gelince `BunnyMascotArt` yeniden üretilecek ve `BunnyMascotView`'deki
+koordinat sabitleri (omuz, boyun, kulak kökü, kalça; eşyaların yerleri) yeni çizime uyarlanacak.
 
 Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
 Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi

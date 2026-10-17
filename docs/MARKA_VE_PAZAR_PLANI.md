@@ -10,7 +10,13 @@ Hukuki ya da mali danışmanlık değil; genel değerlendirme. Karar anlarında 
   - ABD'de Swedish Orphan Biovitrum'un aktif "SOBI" markaları var (5, 35, 42, 45. sınıflar; "HELLO SOBI" 41'de iptal).
   - App Store'da "Sobi: Sobriety Tracker" (maskotu da Sobi, seri/rozet/XP var; ABD'de tescili yok).
   - Kural: Sobi'yi mağaza başlığında, ikonda, reklamın merkezinde kullanma. İsim kodda tek yerde: `strings.xml` → `mascot_name`.
-- Tavşan çizimi Freepik "Animal Collection"dan uyarlandı → logo/marka olarak kullanılamaz; özgün yeniden çizim (hak devri sözleşmesiyle) gerekli. Freepik lisans türü ve atıf yükümlülüğü netleştirilecek.
+- Tavşan çizimi Freepik "Animal Collection"dan uyarlandı → logo/marka olarak kullanılamaz; özgün yeniden çizim (hak devri sözleşmesiyle) gerekli.
+  - Lisans (17.10.2026, Freepik artık Magnific; koşullar magnific.com/legal/terms-of-use): madde 8.1/6 içeriğin
+    tamamen ya da kısmen bir markada kullanılmasını yasaklıyor (istisna: aslıyla karıştırılmayacak kadar yeni bir
+    içerik olması). Ücretsiz lisans atıf istiyor (8.1); Premium yalnızca atfı kaldırıyor (9.3.2), marka yasağını
+    kaldırmıyor. Başka bir stok tavşana geçmek sorunu çözmez.
+  - Ressam brifi (karakter, 48 hâlin parçaları, renkler, ikon ölçüleri, teslim, FSEK 52'ye uygun hak devri maddesi):
+    Claude Docs'ta "Sobi Çizim Brifi" — https://claude.ai/code/artifact/c757ff75-14d6-42d7-bf42-415e5687412f
 
 ## Araştırma sonuçları (Sorobit)
 
