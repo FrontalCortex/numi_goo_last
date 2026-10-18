@@ -50,6 +50,14 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
 5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
    soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
    mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
+6. **Analytics reklam kimliği — YAPILDI (18.10.2026, derlendi, cihazda DENENMEDİ):** Aileler politikası
+   gereği manifest'te `google_analytics_default_allow_ad_storage` / `_ad_user_data` /
+   `_ad_personalization_signals` = false (birleşmiş manifest'te var). `AgeConsentManager` yaş TEEN
+   (rıza yaşı üstü) çıkınca `setConsent` ile üçünü GRANTED, CHILD/bilinmiyorsa DENIED yapıyor;
+   `NumiGooApplication`'da kurulan FirebaseAuth dinleyicisi hesap değişince/çıkışta DENIED'a
+   döndürüyor (izin diskte kalıcı). AdMob TFCD/TFUA ve `analytics_storage` değişmedi. AD_ID izni
+   manifest'te kalıyor (`adid_collection_enabled=false` bilerek konmadı, yetişkinlerde kalıcı
+   kapatırdı). Cihazda: `adb logcat -s AgeConsentManager` → "Analytics ad consent=..." satırı.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:

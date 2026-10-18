@@ -48,6 +48,21 @@
         <meta-data
             android:name="com.google.firebase.analytics.collection_enabled"
             android:value="true" />
+        <!-- Reklam verisi (consent mode) varsayılan olarak KAPALI: hedef kitle çocuk olduğu için
+             Aileler politikası çocuklardan ve yaşı bilinmeyenlerden reklam kimliği gönderilmesini
+             yasaklıyor. Yaşı rıza yaşının üstünde çıkan kullanıcıda AgeConsentManager bunları
+             setConsent ile açıyor. analytics_storage'a dokunulmuyor, GA4 ölçümü sürmeli.
+             `google_analytics_adid_collection_enabled=false` BİLEREK kullanılmadı: o çalışma
+             anında geri açılamıyor, yetişkinlerde de reklam ölçümünü kalıcı kapatırdı. -->
+        <meta-data
+            android:name="google_analytics_default_allow_ad_storage"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_user_data"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
         <!-- FCM, uygulama arka plandayken "notification" yüklü mesajları kendisi gösteriyor; küçük
              ikon verilmezse uygulama ikonunu kullanıyor (durum çubuğunda düz leke olur). -->
         <meta-data

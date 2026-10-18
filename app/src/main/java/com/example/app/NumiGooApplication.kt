@@ -264,6 +264,12 @@ class NumiGooApplication : Application() {
         } catch (e: Throwable) {
             Log.w(TAG, "Ekran takibi kurulamadı", e)
         }
+        // Hesaptan çıkılınca Analytics reklam izni kapansın (izin diskte kalıcı); ayrıntı orada.
+        try {
+            AgeConsentManager.watchAccountChangesForAnalyticsConsent(this)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Analytics reklam izni dinleyicisi kurulamadı", e)
+        }
         // İlk olaylardan önce yazılsın ki geliştiricinin denemeleri baştan işaretli olsun.
         AnalyticsLogger.setBuildType(BuildConfig.DEBUG)
 
