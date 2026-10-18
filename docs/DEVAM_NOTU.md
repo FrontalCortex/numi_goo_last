@@ -93,6 +93,24 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    kullanıyor (yalnızca istemci, sunucuya dokunulmadı). E-posta yolunda sorun yok: Auth kaydı
    veli koduyla birlikte sunucuda açılıyor. Telefonda: 2013 doğumla Google kaydı, kodu 10+ dk
    sonra gir → hedef kayıtta seçilen olmalı, ilk ders sonunda yeni seri ekranı çıkmamalı.
+8. **OTP gönderim sınırları (18.10.2026 — sahte Firestore ile sınandı, DEPLOY EDİLMEDİ, cihazda
+   DENENMEDİ):** `functions/index.js` `checkOtpRateLimits` tek transaction'da: e-posta 5/saat ve
+   20/gün (değişmedi) + aynı alıcıya 30 sn bekleme (yeni; eskiden yalnızca istemcide 45 sn),
+   IP 10 → 40/saat (okul Wi-Fi'ı/CGNAT), günlük toplam 400 (kişisel Gmail ~500/gün) ve App Check
+   jetonsuz isteklere ayrı 100/gün kova (`context.app`; zorlama hâlâ kapalı). Tavan dolunca log'da
+   `OTP_GLOBAL_LIMIT` (Cloud Logging uyarısı kurulabilir; %80'de uyarı satırı). IP artık
+   `x-forwarded-for`'un SON değeri (ilki istemcinin uydurabileceği değerdi). Deploy sonrası
+   loglarda normal girişte "x-forwarded-for birden fazla değer" görünüyorsa seçim yanlış, bak.
+   Sınır artık hesap kontrollerinden sonra sayılıyor ("zaten kayıtlı" denemesi hak harcamıyor).
+   Veli kodunda bekleme veli adresinde, çocuk adresi yalnızca sayılıyor; adresler aynıysa tek sayım.
+   Öğrenci kodu 2 → 10 dk; kod `crypto.randomInt`, belge `create` ile (aynı kod çıkınca başkasının
+   kodu eziliyordu). **TTL hatası:** `otpRateLimits`/`otpWrongAttempts` TTL'i `updatedAt`
+   üzerindeydi, yani belge yazıldığı an silinmeye aday oluyordu (günlük sınır ve 15 dk kilit erken
+   kalkabiliyordu). Artık `expireAt` (sayaç 2 gün, kilit 1 gün) ve `firestore.indexes.json`
+   güncellendi; eski `updatedAt` alanı yazılırken siliniyor. Push iki workflow'u tetikler
+   (functions + kurallar/indeksler). Yapılmayanlar: `checkEmailRegistered` /
+   `findTeacherEmailByUserId` sınırsız ve kimliksiz; yanlış deneme kilidi başkasını dışarıda
+   bırakmakta kullanılabiliyor; sunucu hata mesajları Türkçe sabit.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:

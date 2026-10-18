@@ -29,8 +29,16 @@ Bu projede kapattığı somut açıklar:
 | `app/src/debug/.../AppCheckInstaller.kt` | Hata ayıklama sağlayıcısı |
 | `AndroidManifest.xml` | `android:name=".NumiGooApplication"` |
 
-Cloud Functions ve kurallar tarafında **hiçbir değişiklik yok** — zorlama koddan değil,
-Firebase Console'dan açılır (aşağı bkz.).
+Kurallar tarafında **hiçbir değişiklik yok**; Firestore ve Storage zorlaması Firebase
+Console'dan açılır (aşağı bkz.). Cloud Functions'ta zorlama konsoldan değil koddan açılır
+(`runWith({ enforceAppCheck: true })`), şu an hiçbir fonksiyonda açık değil.
+
+Tek istisna, zorlamadan bağımsız bir yumuşak kullanım: kod e-postası gönderen fonksiyonlar
+(`checkOtpRateLimits`) jetonu olmayan istekleri (`context.app` boş) günde 100 e-postalık ayrı
+bir kovaya sayıyor. Script ile gelen saldırı bu kovayı doldurabilir ama uygulamadan gelen
+kullanıcılar etkilenmez. Play Integrity konsolda kayıtlı değilse **bütün** kullanıcılar
+jetonsuz sayılır ve bu 100'ü paylaşır; yayından önce konsoldaki doğrulanmış istek oranına bak,
+düşükse `OTP_UNVERIFIED_PER_DAY`'i artır.
 
 ## Konsol adımları (elle yapılacak)
 

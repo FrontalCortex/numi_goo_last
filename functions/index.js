@@ -42,11 +42,46 @@ exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFina
 // Config yükleme kontrolü için
 
 function generateCode(length = 6) {
-  // Sadece sayılar kullan (0-9) - daha kullanıcı dostu ve standart OTP formatı
-  const digits = '0123456789';
+  // Sadece sayılar kullan (0-9) - daha kullanıcı dostu ve standart OTP formatı.
+  // Math.random tahmin edilebilir bir üreteç; giriş kodu için kriptografik üreteç şart.
+  const crypto = require('crypto');
   let code = '';
-  for (let i = 0; i < length; i++) code += digits[Math.floor(Math.random() * digits.length)];
+  for (let i = 0; i < length; i++) code += String(crypto.randomInt(10));
   return code;
+}
+
+// Öğrenci kodu eskiden 2 dakikaydı; Gmail teslimi bazen bir dakikayı geçiyor ve kodu
+// bekleyen kullanıcı tekrar isteyerek saatlik hakkını kendisi bitiriyordu. Yanlış deneme
+// sınırı (5 / 15 dk) varken 10 dakikada kodu tahmin etmek hâlâ pratikte imkânsız.
+const STUDENT_CODE_TTL_MS = 10 * 60 * 1000;
+// Firestore'un "belge zaten var" hata kodu (gRPC ALREADY_EXISTS).
+const FIRESTORE_ALREADY_EXISTS = 6;
+
+/**
+ * Yeni bir doğrulama kodu üretip `studentVerificationCodes/{kod}` olarak kaydeder.
+ * Belge kimliği kodun kendisi; eskiden `set` ile yazıldığı için aynı kod iki kişiye
+ * düşünce ilk kişinin kodu sessizce eziliyordu. `create` çakışmada hata verir, yeni kod
+ * denenir (süresi dolmuş ama henüz silinmemiş kodlarla çakışma da böyle atlanır).
+ */
+async function createVerificationCode(fields, ttlMs) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateCode(6);
+    const now = admin.firestore.Timestamp.now();
+    const ref = db.collection('studentVerificationCodes').doc(code);
+    try {
+      await ref.create({
+        code,
+        ...fields,
+        createdAt: now,
+        expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + ttlMs),
+        used: false,
+      });
+      return { code, ref };
+    } catch (err) {
+      if (err.code !== FIRESTORE_ALREADY_EXISTS) throw err;
+    }
+  }
+  throw new functions.https.HttpsError('internal', 'Doğrulama kodu oluşturulamadı.');
 }
 
 // E-posta kayıtlı mı kontrolü (Giriş / Kayıt öncesi güvenli kontrol)
@@ -94,109 +129,149 @@ exports.findTeacherEmailByUserId = functions.https.onCall(async (data, context) 
 
 const OTP_EMAIL_PER_HOUR = 5;
 const OTP_EMAIL_PER_DAY = 20;
-const OTP_IP_PER_HOUR = 10;
+// Okul Wi-Fi'ında bir sınıf, mobil operatörde (CGNAT) yüzlerce kullanıcı aynı IP'yi paylaşıyor;
+// eskiden 10'du ve 11. öğrencinin kaydı duruyordu. Asıl koruma e-posta ve toplam sınırlar.
+const OTP_IP_PER_HOUR = 40;
+// Aynı adrese iki kod arasında en az bu kadar. Uygulama 45 sn bekletiyor ama o yalnızca
+// istemcide; fonksiyonu doğrudan çağıran biri saatlik hakkı aynı saniyede gönderebiliyordu.
+// İstemciden kısa tutuldu ki saat farkı yüzünden uygulamanın izin verdiği istek reddedilmesin.
+const OTP_EMAIL_COOLDOWN_MS = 30 * 1000;
+// Bütün uygulama için günlük e-posta tavanı. Kodlar kişisel Gmail hesabıyla gidiyor (günde
+// ~500 e-posta); o dolarsa o gün kimseye kod gitmez ve hesap spam diye kapatılabilir.
+// Tavan onun altında kalıyor. Dolunca log'a `OTP_GLOBAL_LIMIT` yazılır (uyarı kuralı için).
+const OTP_GLOBAL_PER_DAY = 400;
+// Geçerli App Check jetonu olmayan istekler için ayrı, küçük kova (toplamın içinden sayılır).
+// Uygulama dışından gelen script jeton üretemez; en fazla bu kovayı doldurur, uygulamadan
+// gelen kullanıcılar kod almaya devam eder. Jetonsuz istemciler (App Check'ten önceki sürüm,
+// konsolda kayıtlı olmayan debug kurulumu) bu kovayı paylaşır; bkz. docs/APP_CHECK.md.
+const OTP_UNVERIFIED_PER_DAY = 100;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+// Sayaç belgelerinin silinme zamanı (TTL alanı `expireAt`). Eskiden TTL `updatedAt`
+// üzerindeydi: TTL alandaki zaman geçince siler, yani sayaç yazıldığı an silinmeye aday
+// oluyordu ve günlük sınır erken sıfırlanabiliyordu.
+const OTP_LIMIT_DOC_TTL_MS = 2 * DAY_MS;
 
+// x-forwarded-for'u istemci de yazabiliyor: Google'ın ön ucu gördüğü adresi listenin SONUNA
+// ekliyor, öndeki değerler uydurma olabilir. Eskiden ilk değer alınıyordu; her istekte başka
+// bir sahte IP yazarak IP sınırı tamamen atlanabiliyordu. Uygulama bu başlığı göndermediği
+// için normalde tek değer gelir.
 function getClientIp(context) {
   if (!context.rawRequest) return null;
   const forwarded = context.rawRequest.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return context.rawRequest.connection?.remoteAddress || null;
+  if (forwarded) {
+    const parts = String(forwarded).split(',').map((s) => s.trim()).filter(Boolean);
+    // Doğrulama için: uygulamanın normal isteklerinde bu satır görünüyorsa Google sona kendi
+    // adresini de ekliyor demektir ve buradaki seçim yeniden düşünülmeli. IP yazılmıyor.
+    if (parts.length > 1) console.log('x-forwarded-for birden fazla değer', { count: parts.length });
+    if (parts.length) return parts[parts.length - 1];
   }
+  return context.rawRequest.connection?.remoteAddress || null;
+}
 
 function getWindowStart(nowMs, windowMs) {
   return Math.floor(nowMs / windowMs) * windowMs;
 }
 
-async function checkOtpRateLimits(email, ip) {
-  const normalizedEmail = (email || '').trim().toLowerCase();
-  if (!normalizedEmail) return { ok: true };
+/**
+ * Kod e-postası göndermeden önce bütün sınırları tek transaction'da kontrol edip sayar;
+ * herhangi biri aşılırsa hiçbir sayaç artmaz.
+ *   recipient   kodun gittiği adres: saatlik/günlük sınır + iki gönderim arası bekleme
+ *   alsoCount   kodun ilgili olduğu ama gitmediği adresler (veli akışında çocuğun adresi):
+ *               yalnızca saatlik/günlük sınır. Bekleme yok, çünkü çocuk kendi kodunu doğrulayıp
+ *               hemen ardından veli kodunu istiyor.
+ *   ip          null ise IP sınırı uygulanmaz
+ *   appVerified istek geçerli bir App Check jetonu taşıyor mu (`Boolean(context.app)`)
+ */
+async function checkOtpRateLimits({ recipient, alsoCount = [], ip, appVerified }) {
+  const normalize = (e) => String(e || '').trim().toLowerCase();
+  const recipientEmail = normalize(recipient);
+  if (!recipientEmail) return;
+  const emails = [...new Set([recipientEmail, ...alsoCount.map(normalize)].filter(Boolean))];
 
-  const emailDocId = 'email:' + normalizedEmail.replace(/\//g, '_');
-  const emailRef = db.collection('otpRateLimits').doc(emailDocId);
+  const limits = db.collection('otpRateLimits');
+  const emailRefs = emails.map((e) => limits.doc('email:' + e.replace(/\//g, '_')));
+  const ipRef = ip
+    ? limits.doc('ip:' + String(ip).replace(/[^a-fA-F0-9.:]/g, '_').slice(0, 64))
+    : null;
+  const globalRef = limits.doc('global:all');
+  const unverifiedRef = appVerified ? null : limits.doc('global:unverified');
 
-  let ipRef = null;
-  if (ip) {
-    const safeIp = String(ip).replace(/[^a-fA-F0-9.:]/g, '_').slice(0, 64);
-    const ipDocId = 'ip:' + safeIp;
-    ipRef = db.collection('otpRateLimits').doc(ipDocId);
-  }
+  // Aynı anda gelen istekler sınırı delmesin diye okuma, kontrol ve yazma tek transaction'da.
+  await db.runTransaction(async (tx) => {
+    const refs = [...emailRefs, ipRef, globalRef, unverifiedRef].filter(Boolean);
+    const snaps = await tx.getAll(...refs);
+    const dataByPath = new Map(snaps.map((s) => [s.ref.path, s.exists ? s.data() : {}]));
+    const dataOf = (ref) => dataByPath.get(ref.path) || {};
 
-  // Tüm okuma ve yazma işlemlerini tek bir Atomik Transaction (İşlem) içine alıyoruz.
-  // Bu, aynı anda gelen yüzlerce isteğin (Race Condition) sistemi delmesini imkansız hale getirir.
-  await db.runTransaction(async (transaction) => {
-    // 1. Transaction Kuralları: Önce tüm OKUMA (get) işlemleri yapılmalı
-    const emailSnap = await transaction.get(emailRef);
-    let ipSnap = null;
-    if (ipRef) {
-      ipSnap = await transaction.get(ipRef);
-    }
-
-    const now = admin.firestore.Timestamp.now();
-    const nowMs = now.toMillis();
+    const nowMs = admin.firestore.Timestamp.now().toMillis();
     const hourStart = getWindowStart(nowMs, HOUR_MS);
     const dayStart = getWindowStart(nowMs, DAY_MS);
+    const hourCount = (d) => (d.lastHourStart === hourStart ? d.hourCount : 0) || 0;
+    const dayCount = (d) => (d.lastDayStart === dayStart ? d.dayCount : 0) || 0;
+    const waitMin = (untilMs) => Math.max(1, Math.ceil((untilMs - nowMs) / 60000));
+    const exhausted = (message) => new functions.https.HttpsError('resource-exhausted', message);
 
-    // 2. E-posta limitlerini kontrol et
-    const emailData = emailSnap.exists ? emailSnap.data() : {};
-    let emailHourCount = (emailData.lastHourStart === hourStart ? emailData.hourCount : 0) || 0;
-    let emailDayCount = (emailData.lastDayStart === dayStart ? emailData.dayCount : 0) || 0;
-
-    if (emailHourCount >= OTP_EMAIL_PER_HOUR) {
-      const nextHourMs = hourStart + HOUR_MS;
-      const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
-      throw new functions.https.HttpsError(
-        'resource-exhausted',
-        `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin} dakika sonra tekrar deneyin.`
-      );
-    }
-    if (emailDayCount >= OTP_EMAIL_PER_DAY) {
-      const nextDayMs = dayStart + DAY_MS;
-      const waitMin = Math.ceil((nextDayMs - nowMs) / 60000);
-      throw new functions.https.HttpsError(
-        'resource-exhausted',
-        `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin / 60)} saat sonra tekrar deneyin.`
-      );
-    }
-
-    // 3. IP limitlerini kontrol et
-    let ipHourCount = 0;
-    const ipHourStart = getWindowStart(nowMs, HOUR_MS);
-    
-    if (ipSnap) {
-      const ipData = ipSnap.exists ? ipSnap.data() : {};
-      ipHourCount = (ipData.lastHourStart === ipHourStart ? ipData.hourCount : 0) || 0;
-
-      if (ipHourCount >= OTP_IP_PER_HOUR) {
-        const nextHourMs = ipHourStart + HOUR_MS;
-        const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
-        throw new functions.https.HttpsError(
-          'resource-exhausted',
-          `Bu cihazdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin} dakika sonra tekrar deneyin.`
+    for (let i = 0; i < emails.length; i++) {
+      const d = dataOf(emailRefs[i]);
+      if (emails[i] === recipientEmail) {
+        const sinceLastMs = nowMs - (Number(d.lastSentAtMs) || 0);
+        if (sinceLastMs < OTP_EMAIL_COOLDOWN_MS) {
+          const waitSec = Math.ceil((OTP_EMAIL_COOLDOWN_MS - sinceLastMs) / 1000);
+          throw exhausted(`Yeni kod istemeden önce ${waitSec} saniye bekleyin.`);
+        }
+      }
+      if (hourCount(d) >= OTP_EMAIL_PER_HOUR) {
+        throw exhausted(
+          `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin(hourStart + HOUR_MS)} dakika sonra tekrar deneyin.`
+        );
+      }
+      if (dayCount(d) >= OTP_EMAIL_PER_DAY) {
+        throw exhausted(
+          `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin(dayStart + DAY_MS) / 60)} saat sonra tekrar deneyin.`
         );
       }
     }
 
-    // 4. Transaction Kuralları: Okumalar ve kontroller bittikten sonra YAZMA (set) işlemleri
-    transaction.set(emailRef, {
-      lastHourStart: hourStart,
-      hourCount: emailHourCount + 1,
-      lastDayStart: dayStart,
-      dayCount: emailDayCount + 1,
-      updatedAt: now
-    }, { merge: true });
-
-    if (ipRef) {
-      transaction.set(ipRef, {
-        lastHourStart: ipHourStart,
-        hourCount: ipHourCount + 1,
-        updatedAt: now
-      }, { merge: true });
+    if (ipRef && hourCount(dataOf(ipRef)) >= OTP_IP_PER_HOUR) {
+      throw exhausted(
+        `Bu ağdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin(hourStart + HOUR_MS)} dakika sonra tekrar deneyin.`
+      );
     }
-  });
 
-  return { ok: true };
+    const globalCount = dayCount(dataOf(globalRef));
+    const unverifiedCount = unverifiedRef ? dayCount(dataOf(unverifiedRef)) : 0;
+    if (globalCount >= OTP_GLOBAL_PER_DAY || (unverifiedRef && unverifiedCount >= OTP_UNVERIFIED_PER_DAY)) {
+      console.error('OTP_GLOBAL_LIMIT günlük kod tavanı doldu', {
+        globalCount,
+        unverifiedCount,
+        appVerified: Boolean(appVerified),
+      });
+      throw exhausted('Şu anda doğrulama kodu gönderilemiyor. Lütfen birkaç saat sonra tekrar deneyin.');
+    }
+    if (globalCount + 1 === Math.floor(OTP_GLOBAL_PER_DAY * 0.8)) {
+      console.warn('OTP_GLOBAL_LIMIT günlük kod tavanının %80\'i kullanıldı', { globalCount: globalCount + 1 });
+    }
+
+    const expireAt = admin.firestore.Timestamp.fromMillis(nowMs + OTP_LIMIT_DOC_TTL_MS);
+    const bump = (ref, extra = {}) => {
+      const d = dataOf(ref);
+      tx.set(ref, {
+        lastHourStart: hourStart,
+        hourCount: hourCount(d) + 1,
+        lastDayStart: dayStart,
+        dayCount: dayCount(d) + 1,
+        expireAt,
+        // Eski TTL alanı; kalırsa eski politika belgeyi yine erken silebilir.
+        updatedAt: admin.firestore.FieldValue.delete(),
+        ...extra,
+      }, { merge: true });
+    };
+    emailRefs.forEach((ref, i) => bump(ref, emails[i] === recipientEmail ? { lastSentAtMs: nowMs } : {}));
+    if (ipRef) bump(ipRef);
+    bump(globalRef);
+    if (unverifiedRef) bump(unverifiedRef);
+  });
 }
 
 // ─── OTP gönderimi ──────────────────────────────────────────────────────────
@@ -248,9 +323,6 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     return sendParentalRegistrationCode(email, data, context);
   }
 
-  const ip = getClientIp(context);
-  await checkOtpRateLimits(email, ip);
-
   // uid'i SUNUCUDA çöz — istemcinin gönderdiği değere asla güvenme.
   const existing = await findUserByEmail(email);
   let uid;
@@ -273,19 +345,13 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     uid = existing.uid;
   }
 
-  const code = generateCode(6);
-  const now = admin.firestore.Timestamp.now();
-  const expiresAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + 2 * 60 * 1000); // 2 dk
+  // Sınırlar hesap kontrollerinden SONRA sayılıyor: yalnızca gerçekten giden e-posta sayılsın.
+  // Önce sayılınca "zaten kayıtlı" uyarısı alıp hemen giriş ekranından kod isteyen kullanıcı
+  // iki gönderim arası beklemeye takılırdı. (Kayıtlı mı sorusu checkEmailRegistered ile zaten
+  // sınırsız; o sınırlanırsa buradaki not-found yanıtı da sınırlanmalı.)
+  await checkOtpRateLimits({ recipient: email, ip: getClientIp(context), appVerified: Boolean(context.app) });
 
-  // Firestore'a kodu kaydet
-  await db.collection('studentVerificationCodes').doc(code).set({
-    code,
-    email,
-    uid,
-    createdAt: now,
-    expiresAt,
-    used: false
-  });
+  const { code } = await createVerificationCode({ email, uid }, STUDENT_CODE_TTL_MS);
 
   // Try to get email config from environment variables first, then fallback to functions.config()
   const user = process.env.EMAIL_USER || functions.config()?.email?.user;
@@ -321,11 +387,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
       <p>Merhaba,</p>
       <p>Sorobit hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
       <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
-        <p>Bu kod 2 dakika içinde geçerlidir.</p>
+        <p>Bu kod 10 dakika içinde geçerlidir.</p>
       <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
       <p>İyi çalışmalar,<br>Sorobit Ekibi</p>
     `,
-      text: `Sorobit E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 2 dakika içinde geçerlidir.`
+      text: `Sorobit E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 10 dakika içinde geçerlidir.`
   };
 
     console.log('Attempting to send email to:', email);
@@ -405,10 +471,13 @@ async function recordWrongAttempt(email) {
       count = 1;
     }
     
-    transaction.set(ref, { 
-      count, 
-      windowStart: admin.firestore.Timestamp.fromMillis(windowStart), 
-      updatedAt: now 
+    transaction.set(ref, {
+      count,
+      windowStart: admin.firestore.Timestamp.fromMillis(windowStart),
+      // TTL alanı. Eskiden TTL `updatedAt` üzerindeydi; kilit belgesi yazıldığı an silinmeye
+      // aday oluyor, 15 dakikalık kilit erken kalkabiliyordu (bkz. OTP_LIMIT_DOC_TTL_MS).
+      expireAt: admin.firestore.Timestamp.fromMillis(nowMs + DAY_MS),
+      updatedAt: admin.firestore.FieldValue.delete(),
     }, { merge: true });
   });
 }
@@ -797,7 +866,7 @@ const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
 const PARENTAL_CONSENT_VERSION = '2026-10-18.2';
-// Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 2 dakikası
+// Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
 // Velinin hak talepleri (görme, silme, onayı geri alma) için; gizlilik politikasındaki adres.
@@ -889,11 +958,11 @@ function parentalConsentEmail(code, childEmail, parentEmail) {
  * Veli onay kodunu üretip veliye gönderir. [uid] e-posta yolunda `pending_…`, Google
  * yolunda çocuğun gerçek Auth uid'idir.
  */
-async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip }) {
+async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip, appVerified }) {
   // Sınır hem çocuğun hem velinin e-postasına işler: biri başkasının adresini sınırsız
-  // e-postayla dolduramasın.
-  await checkOtpRateLimits(childEmail, ip);
-  await checkOtpRateLimits(parentEmail, null);
+  // e-postayla dolduramasın. Kod veliye gittiği için gönderim arası bekleme veli adresinde;
+  // adresler aynıysa bir kez sayılır.
+  await checkOtpRateLimits({ recipient: parentEmail, alsoCount: [childEmail], ip, appVerified });
 
   const mailUser = process.env.EMAIL_USER || functions.config()?.email?.user;
   const mailPass = process.env.EMAIL_PASS || functions.config()?.email?.pass;
@@ -902,11 +971,7 @@ async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYea
     throw new functions.https.HttpsError('internal', 'Doğrulama kodu gönderilemedi.');
   }
 
-  const code = generateCode(6);
-  const now = admin.firestore.Timestamp.now();
-  const codeRef = db.collection('studentVerificationCodes').doc(code);
-  await codeRef.set({
-    code,
+  const { code, ref: codeRef } = await createVerificationCode({
     email: childEmail,
     uid,
     kind: 'parental',
@@ -914,10 +979,7 @@ async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYea
     birthYear,
     acquisitionSource: acquisitionSource || '',
     consentVersion: PARENTAL_CONSENT_VERSION,
-    createdAt: now,
-    expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + PARENTAL_CODE_TTL_MS),
-    used: false,
-  });
+  }, PARENTAL_CODE_TTL_MS);
 
   try {
     const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: mailUser, pass: mailPass } });
@@ -979,6 +1041,7 @@ async function sendParentalRegistrationCode(childEmail, data, context) {
     birthYear,
     acquisitionSource,
     ip: getClientIp(context),
+    appVerified: Boolean(context.app),
   });
 }
 
@@ -1036,6 +1099,7 @@ async function sendGoogleParentalCode(data, context) {
     birthYear,
     acquisitionSource,
     ip: getClientIp(context),
+    appVerified: Boolean(context.app),
   });
 }
 
