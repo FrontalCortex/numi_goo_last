@@ -23,6 +23,39 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## SIRADAKİ İŞLER: kapalı teste (Alpha) geçiş (18.10.2026)
+
+11 yalnızca **Dahili test**te; Alpha'da eski 7'lik taslak duruyordu. Alpha'ya ilk sürüm Google
+incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
+1. **Fotoğraf/video izinleri — YAPILDI (18.10.2026, derlendi, cihazda DENENMEDİ, commit edilmedi):**
+   soru ekranındaki kendi galeri (`GalleryBottomSheetFragment` + iki düzen + string'leri) silindi;
+   `QuestionChatFragment.openMediaPicker()` artık `PickVisualMedia(ImageAndVideo)` açıyor, tür MIME'den.
+   `READ_MEDIA_IMAGES`/`READ_MEDIA_VIDEO`/`READ_EXTERNAL_STORAGE` manifest'te `tools:node="remove"`;
+   birleşmiş manifest'te üçü de yok. Cihazda bakılacak: fotoğraf ve video seçilip gönderilebiliyor mu.
+2. **Uygulama ikonu — ERTELENDİ (kullanıcı kararı 18.10.2026):** Sobi kafası (Freepik) logo olarak
+   kullanılamıyor (koşullar 8.1) ama kapalı testte böyle kalıyor; herkese açık yayından önce
+   düzeltilecek. Özgün abaküs ikonu denendi, kullanıcı istemedi (çizilmeyecek). `abacus_svg_ic`
+   (Flaticon) da logo olamaz, yedek plan olarak sayılmamalı. Bildirim ve 512 mağaza ikonu da ertelendi.
+   Atıf (3), versionCode 12 (4) ve ön plan hizmeti beyanı (5) da şimdilik ertelendi.
+   **Play inceleme hesabı (18.10.2026 — kod yazıldı, DEPLOY EDİLMEDİ, sınanmadı):** öğrenci girişi
+   yalnızca Google/e-posta koduyla olduğu için inceleyici giremiyordu. `functions/index.js`
+   `tryReviewLogin`: `serverConfig/reviewLogin` dokümanındaki (`email`, `codeSha256`) tek e-posta
+   için sabit kod kabul ediliyor, yalnızca var olan STUDENT hesabına token. İnceleme e-postası
+   `seasa7961@gmail.com`; kod ve özeti depo kökündeki `inceleme_hesabi.txt`'de (git dışı,
+   `.git/info/exclude`). Yapılacaklar: o e-postayla uygulamada öğrenci hesabı açmak, dokümanı
+   Console'dan eklemek, deploy sonrası kodla girişi denemek, Play formuna yazmak.
+3. **Atıf (KOD):** Uygulamada hiç atıf yok; "Abaküs ikonu: Flaticon (Magnific) · Karakter çizimi: Freepik"
+   uygulama içinde (Hakkında/künye) gösterilmeli.
+4. **versionCode 12** ile AAB → Alpha taslağına "Kitaplıktan ekle", 7'yi kaldır, incelemeye gönder.
+5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
+   soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
+   mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
+Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
+gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
+`https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:
+`C:\Users\ASUS\Videos\Sorobit_tanitim\` (`MONTAJ_NOTU.txt`, `magaza\`, `montaj\betikler\`).
+Facebook paylaşımı Alpha sürümü "Yayınlandı" olunca yapılacak.
+
 ## Kapalı test sürümü: versionCode 11 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
 
 `app/build/outputs/bundle/release/app-release.aab` (69 MB, versionName hâlâ "1.0"), yükleme
@@ -80,6 +113,12 @@ Ressam brifi hazır (17.10.2026, Claude Docs'ta "Sobi Çizim Brifi", bağlantı
 kanallara göre istiyor (kulaklar, 4 göz, 7 ağız, 2 kaş, kollar ayrı; dönme noktaları işaretli,
 tek SVG). Yeni çizim gelince `BunnyMascotArt` yeniden üretilecek ve `BunnyMascotView`'deki
 koordinat sabitleri (omuz, boyun, kulak kökü, kalça; eşyaların yerleri) yeni çizime uyarlanacak.
+Karar (17.10.2026): ikon kapalı testte böyle kalıyor; ressam herkese açık yayına yakın başlatılacak
+(çizim + koda uyarlama ~1–1,5 ay sürer, yayın tarihinden geriye sayılmalı). Kullanıcının yedek
+fikri: ressam yetişmezse ikon `abacus_svg_ic` olur. O dosyanın kaynağı bilinmiyor (27afba1'de
+eklendi, not yok); bir ikon sitesindense lisansı logo kullanımına izin vermeyebilir. İçinde kendi
+yuvarlak köşeli çerçevesi var, ikon katmanına alınırken atılmalı. Herkese açık yayında Sobi hâlâ
+Freepik çizimiyse uygulama içinde Freepik atfı gerekli (ücretsiz lisans, madde 8.1); şu an hiç yok.
 
 Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
 Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi

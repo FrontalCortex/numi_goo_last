@@ -342,9 +342,6 @@
     <string name="ui_iptal_2">İptal</string>
     <string name="ui_x_takipten_cikarildi">%1$s takipten çıkarıldı</string>
 
-    <!-- GalleryBottomSheetFragment.kt -->
-    <string name="ui_galeriye_erisim_izni_gerekli">Galeriye erişim izni gerekli.</string>
-
     <!-- GuideHelper.kt -->
     <string name="ui_bu_testte_toplama_islemini_abakuste_yapacaks">Bu testte toplama işlemini abaküste yapacaksın.</string>
     <string name="ui_once_abakuse_ilk_sayiyi_yazip">Önce abaküse ilk sayıyı yazıp...</string>

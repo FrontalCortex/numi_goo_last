@@ -411,6 +411,41 @@ async function clearWrongAttempts(email) {
 }
 
 // OTP ile giriş: kodu doğrula ve custom token döndür
+// ─── Play inceleme hesabı ───────────────────────────────────────────────────
+//
+// Öğrenci girişi yalnızca Google hesabıyla ya da e-postaya giden kodla yapılıyor; Play
+// inceleyicisinin ikisine de erişimi yok (Google, kod/iki adımlı doğrulama isteyen giriş
+// bilgilerini kabul etmiyor). Bu yüzden TEK bir inceleme hesabı için sabit bir kod kabul
+// ediliyor; Play Console → Uygulama erişimi formunda "şifre" olarak bu kod veriliyor.
+//
+// GÜVENLİK
+//   • Ayar `serverConfig/reviewLogin` dokümanında (alanlar: `email`, `codeSha256`). Kural
+//     dosyasındaki son eşleşme bu yolu istemcilere kapatıyor; yalnızca Admin SDK okur.
+//     Kodun kendisi hiçbir yerde durmuyor, yalnızca SHA-256 özeti; doküman sızsa da kod çıkmaz.
+//     Ayar .env'de değil, çünkü CI deploy'u .env görmüyor ve her push'ta silinirdi.
+//   • Yalnızca o e-postanın, zaten var olan bir STUDENT hesabı için token üretir: hesap
+//     açılmaz, rol yükseltilmez. Doküman yoksa ya da silinirse istisna tamamen kapanır.
+//   • Yanlış kod normal akışa düşer; orada yanlış deneme sayılıyor ve bekleme süresi
+//     (checkWrongAttemptCooldown) bu e-posta için de geçerli, kaba kuvvet denemesi yavaşlıyor.
+async function tryReviewLogin(email, code) {
+  const snap = await db.collection('serverConfig').doc('reviewLogin').get();
+  if (!snap.exists) return null;
+  const reviewEmail = String(snap.get('email') || '').trim().toLowerCase();
+  const expected = String(snap.get('codeSha256') || '').trim().toLowerCase();
+  if (!reviewEmail || !/^[0-9a-f]{64}$/.test(expected) || email !== reviewEmail) return null;
+
+  const crypto = require('crypto');
+  const actual = crypto.createHash('sha256').update(String(code)).digest();
+  if (!crypto.timingSafeEqual(actual, Buffer.from(expected, 'hex'))) return null;
+
+  const existing = await findUserByEmail(email);
+  if (!existing || existing.role !== 'STUDENT') {
+    throw new functions.https.HttpsError('not-found', 'İnceleme hesabı bulunamadı');
+  }
+  console.log('Review account login', { uid: existing.uid });
+  return admin.auth().createCustomToken(existing.uid);
+}
+
 exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
   const rawEmail = (data && data.email) || '';
   const email = String(rawEmail).trim().toLowerCase();
@@ -421,6 +456,12 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
   }
 
   await checkWrongAttemptCooldown(email);
+
+  const reviewToken = await tryReviewLogin(email, code);
+  if (reviewToken) {
+    await clearWrongAttempts(email);
+    return { token: reviewToken };
+  }
 
   const codeRef = db.collection('studentVerificationCodes').doc(code);
   const codeDoc = await codeRef.get();

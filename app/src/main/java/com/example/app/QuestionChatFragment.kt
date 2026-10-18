@@ -32,6 +32,7 @@ import android.widget.ProgressBar
 import android.annotation.SuppressLint
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -693,7 +694,7 @@ class QuestionChatFragment : Fragment() {
         }
         binding.galleryButton.setOnClickListener {
             requireOnlineAndLoggedInOrLogin {
-                handleResolvedBlockOrRun { openGalleryBottomSheet() }
+                handleResolvedBlockOrRun { openMediaPicker() }
             }
         }
         binding.resolveButton.setOnClickListener {
@@ -964,42 +965,34 @@ class QuestionChatFragment : Fragment() {
     private var pendingMediaUri: Uri? = null
     private var pendingMediaType: String? = null
 
-    private fun openGalleryBottomSheet() {
+    /**
+     * Soru sohbetine fotoğraf/video Android'in fotoğraf seçicisiyle ekleniyor. Eskiden kendi
+     * galeri ızgaramız vardı (MediaStore'u tarayan bir alt sayfa), bu yüzden
+     * READ_MEDIA_IMAGES/READ_MEDIA_VIDEO istiyorduk; Play, medya ana işlev olmadıkça bu izinleri
+     * reddediyor (kapalı test incelemesinde takıldı). Seçici izin istemez, yalnızca seçilen
+     * dosyaya geçici erişim verir; Android 11 ve öncesinde Play hizmetleri üzerinden çalışır.
+     * Seçilen dosya gönderilirken önbelleğe kopyalandığı için geçici erişim yetiyor.
+     */
+    private val pickMediaLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri == null || _binding == null) return@registerForActivityResult
+        // Seçici neyin seçildiğini söylemiyor; tür MIME'den çıkarılıyor.
+        val mime = requireContext().contentResolver.getType(uri).orEmpty()
+        pendingMediaUri = uri
+        pendingMediaType = if (mime.startsWith("video/")) QuestionMessage.TYPE_VIDEO else QuestionMessage.TYPE_IMAGE
+        Glide.with(this).load(uri).centerCrop().into(binding.captionBarThumb)
+        binding.captionInput.text.clear()
+        binding.captionBar.visibility = View.VISIBLE
+        binding.inputBar.visibility = View.GONE
+    }
+
+    private fun openMediaPicker() {
         if (isUserRestrictedOrBanned) {
             Toast.makeText(requireContext(), appString(R.string.ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO), 100)
-                return
-            }
-        } else {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 100)
-                return
-            }
-        }
-        val sheet = GalleryBottomSheetFragment.newInstance()
-        sheet.onMediaSelected = { uri, type ->
-            pendingMediaUri = uri
-            pendingMediaType = type
-            Glide.with(this).load(uri).centerCrop().into(binding.captionBarThumb)
-            binding.captionInput.text.clear()
-            binding.captionBar.visibility = View.VISIBLE
-            binding.inputBar.visibility = View.GONE
-        }
-        sheet.show(parentFragmentManager, "gallery")
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 100 && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            openGalleryBottomSheet()
-        } else if (requestCode == 100) {
-            Toast.makeText(requireContext(), appString(R.string.ui_galeriye_erisim_izni_gerekli), Toast.LENGTH_SHORT).show()
-        }
+        pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
     }
 
     private fun clearSelectedMediaAndHideCaptionBar() {
@@ -1019,8 +1012,8 @@ class QuestionChatFragment : Fragment() {
             if (last >= 0) binding.messagesRecyclerView.smoothScrollToPosition(last)
         }
         when (type) {
-            GalleryMediaItem.TYPE_IMAGE -> uploadImageUriAndSendWithCaption(uri, caption, null)
-            GalleryMediaItem.TYPE_VIDEO -> uploadVideoAndSendWithCaption(uri, caption, null)
+            QuestionMessage.TYPE_IMAGE -> uploadImageUriAndSendWithCaption(uri, caption, null)
+            QuestionMessage.TYPE_VIDEO -> uploadVideoAndSendWithCaption(uri, caption, null)
             else -> { }
         }
     }

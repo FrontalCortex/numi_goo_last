@@ -58,10 +58,6 @@
     <string name="activity_teacher_login_btn_student_login">Öğrenci Girişi</string>
     <string name="activity_teacher_login_btn_register">Hesabın yok mu? Kayıt Ol</string>
 
-    <!-- layout/bottom_sheet_gallery.xml -->
-    <string name="bottom_sheet_gallery_gallery_sheet_close_desc">Kapat</string>
-    <string name="bottom_sheet_gallery_text">Son kullanılanlar</string>
-
     <!-- layout/bottom_sheet_operator_picker.xml -->
     <string name="bottom_sheet_operator_picker_title">Operatör Seç</string>
     <string name="bottom_sheet_operator_picker_cancel_button">İptal</string>
