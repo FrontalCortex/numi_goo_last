@@ -53,8 +53,12 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    bağlı, 13 yaş altı veli onayı, Google veli onayında seri cevapları düzeltmesi (kullanıcı telefonda
    denedi, sorunsuz). Kullanıcı yükleyecek: Alpha taslağında 7'yi kaldır, 12'yi ekle, sürüm notu.
    Play Console formları (uygulama erişimi, reklam, içerik derecelendirme, hedef kitle 6-8/9-12/13-15,
-   veri güvenliği, Öğretmen Onaylı katılımı) dolduruldu. Kalan: ön plan hizmeti beyanı (5), sonra
-   önizle → incelemeye gönder.
+   veri güvenliği, Öğretmen Onaylı katılımı) dolduruldu. 12 Alpha'da ve Dahili testte (11'in yerine).
+   Ön plan hizmeti beyanı dolduruldu: dataSync → Ağ işleme/Diğer, mediaProjection → Medya ve içerik
+   projeksiyonu, microphone → Diğer (yalnızca ekran kaydı; sohbetteki sesli mesaj FGS kullanmıyor,
+   yazılmadı). Tek video, YouTube liste dışı `https://www.youtube.com/watch?v=QDiJmHQB34Q`
+   (öğrenci ekran kaydı → gönder; sistem izin penceresi videoda YOK, Google isterse yeniden çekilecek).
+   Önizlemede hata kalmadı (18.10.2026). Kalan: Yayınlama özeti → incelemeye gönder.
 5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
    soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
    mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
@@ -217,6 +221,11 @@ uygulama ikonunu kullanıyordu. Soru yükleme/indirme servislerindeki
 `android.R.drawable.ic_menu_upload` zaten tek renkli, dokunulmadı. Derlendi, emülatörde uygulama
 çökmeden açılıyor; ikon durum çubuğunda henüz GÖRÜLMEDİ (emülatörde FCM ya da ekran kaydı
 bildirimi tetiklenemedi). İlk gerçek bildirimde bakılmalı.
+
+18.10.2026: Telefonda (MIUI 14) bildirimin AÇIK hâlinde küçük ikon doğru (Sobi silüeti), KAPALI
+hâlinde ise eski Android robotu görünüyor. MIUI kapalı bildirimde küçük ikonu değil uygulamanın
+kendi (renkli) ikonunu gösteriyor ve onu kendi önbelleğinden alıyor; 45c5a50'dan önceki ikon
+varsayılan robottu. Kod değişmedi; telefonu yeniden başlatmak önbelleği yenilemeli (doğrulanmadı).
 
 ## İpucu düğmesi: panel konuşma balonu oldu (16.10.2026 — kullanıcı telefonda baktı, iyi; commit edildi)
 
