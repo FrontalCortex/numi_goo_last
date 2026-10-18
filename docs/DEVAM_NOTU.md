@@ -86,6 +86,13 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    Google veli kodu da `sendStudentVerificationCode(google=true)` üzerinden gidiyor: EMAIL_USER /
    EMAIL_PASS depoda değil, yalnızca o fonksiyonun ortamında tanımlı; yeni fonksiyondan e-posta
    gitmiyordu. Yeni bir fonksiyon e-posta gönderecekse aynı sorun çıkar.
+   Google yolunda Auth kaydı hesap seçilince, `users` belgesi veli onayında açılıyor: veli kodu
+   10 dk'dan geç girilince kayıt sorularının seri cevapları "mevcut hesap" sayılıp atılıyordu.
+   Artık `confirmGoogleParentalConsent` başarılı olunca `StreakRepository.markAccountCreated(uid)`
+   onay anını işaretliyor, `applyPendingSignup(uid, …)` aynı uid için Auth zamanı yerine onu
+   kullanıyor (yalnızca istemci, sunucuya dokunulmadı). E-posta yolunda sorun yok: Auth kaydı
+   veli koduyla birlikte sunucuda açılıyor. Telefonda: 2013 doğumla Google kaydı, kodu 10+ dk
+   sonra gir → hedef kayıtta seçilen olmalı, ilk ders sonunda yeni seri ekranı çıkmamalı.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:

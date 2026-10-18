@@ -476,6 +476,8 @@ object StreakRepository {
     private const val KEY_P_CHALLENGE = "challenge_days"
     private const val KEY_P_REMINDER = "reminder_hour"
     private const val KEY_P_SAVED_AT = "saved_at"
+    private const val KEY_P_CREATED_UID = "account_created_uid"
+    private const val KEY_P_CREATED_AT = "account_created_at"
 
     private fun pendingPrefs(context: Context) = try {
         context.applicationContext.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
@@ -495,32 +497,67 @@ object StreakRepository {
     }
 
     /**
+     * Sunucu bu cihazdaki oturum için hesabı AZ ÖNCE açtı: [applyPendingSignup] yeni hesap
+     * kararını Auth açılış zamanı yerine bu andan veriyor.
+     *
+     * ## Neden gerekiyordu
+     * 13 yaş altı Google kaydında Firebase Auth kaydı Google hesabı seçildiği anda açılıyor,
+     * `users` belgesi ise veli kodu girilince sunucuda yazılıyor (kod 30 dk geçerli). Veli kodu
+     * 10 dakikadan geç girilince Auth açılış zamanı pencerenin dışında kalıyordu: kayıt
+     * cevapları "mevcut hesap" sayılıp atılıyor, hesap varsayılan hedefle açılıyor ve çocuk
+     * ilk dersinin sonunda yeni seri sorusunu bir kez daha görüyordu.
+     *
+     * ## Neden yerel işaret, users.createdAt değil
+     * `confirmParentalConsent` başarılı döndüyse hesap kesin yeni: sunucu belge zaten varsa
+     * transaction'ı reddediyor. Bilgi o anda istemcide hazır; `users` belgesini okumak ise
+     * eşzamanlı çalışan ve sık çağrılan [applyPendingSignup]'a ağ beklemesi, çevrimdışıyken de
+     * "henüz bilinmiyor" durumu (cevapları ne zaman atacağız?) getirirdi. İşaret uid'ye bağlı:
+     * başka bir hesaba girilirse işe yaramıyor, mevcut hesap koruması bozulmuyor.
+     */
+    fun markAccountCreated(context: Context, uid: String) {
+        pendingPrefs(context)?.edit()
+            ?.putString(KEY_P_CREATED_UID, uid)
+            ?.putLong(KEY_P_CREATED_AT, System.currentTimeMillis())
+            ?.apply()
+        StreakDiag.log("Repo.kayitCevaplari", "HESAP_ACILDI_ISARETI uid=${uid.take(8)}")
+    }
+
+    /**
      * Oturum açıldıktan sonra ([bindToUser]'dan hemen sonra) çağrılıyor: bekleyen kayıt
      * cevapları varsa hesap yeniyse uygulanıyor, değilse atılıyor; her durumda siliniyor.
      *
      * Yeni hesap ayrımı Firebase Auth'un hesap açılış zamanından (RegisterActivity'deki kayıt
      * ölçümüyle aynı yöntem): yeni açılan hesapta dakikalar, mevcut hesapta günler öncesi.
+     * Hesabı Auth kaydından sonra sunucu açtıysa (13 yaş altı Google kaydı) bu oturumun uid'si
+     * için [markAccountCreated] ile konan işaretin zamanı esas alınıyor.
      *
+     * @param uid oturumdaki hesap; [markAccountCreated] işaretiyle eşleştirmek için.
      * @param accountCreatedAtMs `FirebaseUser.metadata.creationTimestamp`; bilinmiyorsa null
      *   (o zaman mevcut hesap sayılıyor — yanlışlıkla başkasının ayarını ezmektense kayıt
      *   cevabını kaybetmek daha az zararlı, hedef seri ekranından değiştirilebiliyor).
      */
-    fun applyPendingSignup(context: Context, accountCreatedAtMs: Long?) {
+    fun applyPendingSignup(context: Context, uid: String, accountCreatedAtMs: Long?) {
         val pending = pendingPrefs(context) ?: return
         val savedAt = pending.getLong(KEY_P_SAVED_AT, 0L)
         if (savedAt == 0L) return
         val goal = pending.getInt(KEY_P_GOAL, 0)
         val challenge = pending.getInt(KEY_P_CHALLENGE, 0)
         val reminder = pending.getInt(KEY_P_REMINDER, -1)
+        // İşaret yalnızca bu oturumun hesabına aitse geçerli; başka hesaba girildiyse Auth
+        // zamanına dönülüyor ve mevcut hesap yine korunuyor.
+        val markedCreatedAt = pending.getLong(KEY_P_CREATED_AT, 0L)
+            .takeIf { it > 0L && pending.getString(KEY_P_CREATED_UID, null) == uid }
         pending.edit().clear().apply()
 
         val now = System.currentTimeMillis()
         val fresh = now - savedAt in 0..PENDING_SIGNUP_MAX_AGE_MS
-        val newAccount = accountCreatedAtMs != null && now - accountCreatedAtMs in 0..NEW_ACCOUNT_WINDOW_MS
+        val createdAt = markedCreatedAt ?: accountCreatedAtMs
+        val source = if (markedCreatedAt != null) "veli_onayi" else "auth"
+        val newAccount = createdAt != null && now - createdAt in 0..NEW_ACCOUNT_WINDOW_MS
         if (!fresh || !newAccount) {
             StreakDiag.log(
                 "Repo.kayitCevaplari",
-                "ATILDI neden=${if (!fresh) "eski" else "mevcut_hesap"} hedef=$goal gun=$challenge saat=$reminder",
+                "ATILDI neden=${if (!fresh) "eski" else "mevcut_hesap"} kaynak=$source hedef=$goal gun=$challenge saat=$reminder",
             )
             return
         }
@@ -532,7 +569,7 @@ object StreakRepository {
         // yoksa" diye açılıyor. İşaretlenmeseydi çocuk, az önce cevapladığı soruyu ilk dersinin
         // sonunda bir kez daha görürdü.
         markNewStreakPromptShown(context)
-        StreakDiag.log("Repo.kayitCevaplari", "UYGULANDI hedef=$goal gun=$challenge saat=$reminder")
+        StreakDiag.log("Repo.kayitCevaplari", "UYGULANDI kaynak=$source hedef=$goal gun=$challenge saat=$reminder")
     }
 
     private fun wipe(context: Context) {

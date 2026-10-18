@@ -2323,7 +2323,7 @@ class MainActivity : AppCompatActivity() {
         // Kayıt sorularının seri cevapları: hesap yeni açıldıysa uygulanıyor, kayıt ekranında
         // mevcut bir hesaba girildiyse atılıyor (o hesabın kendi ayarları geçerli).
         auth.currentUser?.let {
-            StreakRepository.applyPendingSignup(this, it.metadata?.creationTimestamp)
+            StreakRepository.applyPendingSignup(this, it.uid, it.metadata?.creationTimestamp)
         }
         val state = StreakRepository.refresh(this)
         // refresh() hedefi tutturan günü burada ilerletiyor; kutlama da aynı yerden

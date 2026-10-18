@@ -20,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.functions.FirebaseFunctions
 import com.example.app.UserWalletFirestore
+import com.example.app.StreakRepository
 
 class AuthManager {
     private val auth = FirebaseAuth.getInstance()
@@ -1130,6 +1131,12 @@ class AuthManager {
                 val user = auth.currentUser ?: run {
                     callback(false, appString(R.string.ui_oturum_acilamadi))
                     return@addOnSuccessListener
+                }
+                // Hesap şimdi açıldı ama Auth kaydı Google hesabı seçildiğinde açılmıştı; veli
+                // kodu geç girildiyse Auth zamanına bakan kayıt cevapları "mevcut hesap" deyip
+                // atılırdı. Yeni hesap kararı bu andan verilsin (bkz. markAccountCreated).
+                if (::appContext.isInitialized) {
+                    StreakRepository.markAccountCreated(appContext, user.uid)
                 }
                 firestore.collection("users").document(user.uid)
                     .get()
