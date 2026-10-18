@@ -1053,20 +1053,21 @@ class AuthManager {
         acquisitionSource: String?,
         callback: (Boolean, String?) -> Unit
     ) {
-        val payload = hashMapOf<String, Any>(
+        // Ayrı `requestParentalConsent` fonksiyonu değil, OTP gönderen eski fonksiyon: e-posta
+        // hesabının bilgileri yalnızca onun ortamında tanımlı, yeni fonksiyondan kod gitmiyordu.
+        // `email` yalnızca alan zorunlu olduğu için gidiyor; sunucu çocuğun adresini oturumdan alır.
+        val childEmail = auth.currentUser?.email.orEmpty().trim().lowercase()
+        if (childEmail.isEmpty()) {
+            callback(false, appString(R.string.ui_oturum_acilamadi))
+            return
+        }
+        val extras = mutableMapOf<String, Any>(
             "parentEmail" to parentEmail.trim().lowercase(),
             "birthYear" to birthYear,
+            "google" to true,
         )
-        acquisitionSource?.let { payload["acquisitionSource"] = it }
-        FirebaseFunctions.getInstance()
-            .getHttpsCallable("requestParentalConsent")
-            .call(payload)
-            .addOnSuccessListener { callback(true, null) }
-            .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_gonderilemedi))
-            }
+        acquisitionSource?.let { extras["acquisitionSource"] = it }
+        sendStudentVerificationCode(childEmail, OTP_PURPOSE_REGISTER_PARENTAL, extras, callback)
     }
 
     /**

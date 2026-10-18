@@ -240,6 +240,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     throw new functions.https.HttpsError('invalid-argument', 'geçersiz purpose');
   }
   if (purpose === 'register_parental') {
+    // Google yolu da buradan geçiyor (bkz. sendGoogleParentalCode): e-posta hesabının
+    // bilgileri yalnızca bu fonksiyonun ortamında tanımlı.
+    if (data && data.google === true) {
+      return sendGoogleParentalCode(data, context);
+    }
     return sendParentalRegistrationCode(email, data, context);
   }
 
@@ -747,7 +752,8 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 //   • E-posta ile kayıt: sendStudentVerificationCode(purpose = register_parental) kodu
 //     üretir; verifyRegistrationCode hesabı açar. Onaya kadar Auth kaydı bile yoktur.
 //   • Google ile kayıt: Google girişi Firebase Auth kaydını kendiliğinden açar ama `users`
-//     dokümanı yazılmaz. requestParentalConsent kodu üretir, confirmParentalConsent dokümanı
+//     dokümanı yazılmaz. Kodu sendStudentVerificationCode (register_parental, google = true)
+//     üretir, confirmParentalConsent dokümanı
 //     sunucuda yazar. (Family Link'in Google'a verdiği izin bizim uygulamamız için onay
 //     sayılmaz; bu yüzden Google yolunda da aynı adım var.)
 //
@@ -962,7 +968,15 @@ function writeParentalConsent(batch, uid, codeData, userData) {
 }
 
 /** Google ile kayıt: oturum açmış ama henüz `users` dokümanı olmayan çocuk için kod ister. */
-exports.requestParentalConsent = functions.https.onCall(async (data, context) => {
+//
+// Uygulama bunu artık `sendStudentVerificationCode(purpose = register_parental, google = true)`
+// üzerinden çağırıyor. Ayrı fonksiyon olarak çağrılınca kod e-postası gitmedi ("Doğrulama
+// kodu gönderilemedi"): EMAIL_USER / EMAIL_PASS depoda değil, eski fonksiyonun ortamına elle
+// tanımlanmış; bu yeni fonksiyonda yoklar. Dışa aktarım kalıyor, çünkü silinirse CI deploy'u
+// --force olmadan durur.
+exports.requestParentalConsent = functions.https.onCall((data, context) => sendGoogleParentalCode(data, context));
+
+async function sendGoogleParentalCode(data, context) {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum gerekli');
   }
@@ -983,7 +997,7 @@ exports.requestParentalConsent = functions.https.onCall(async (data, context) =>
     acquisitionSource,
     ip: getClientIp(context),
   });
-});
+}
 
 /** Google ile kayıt: veli kodunu doğrular, `users` dokümanını SUNUCUDA oluşturur. */
 exports.confirmParentalConsent = functions.https.onCall(async (data, context) => {
