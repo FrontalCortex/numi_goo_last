@@ -805,6 +805,4 @@
     <string name="ui_gunde_x_dakika_bu_secim_sonradan">Günde %1$s dakika. Bu seçim sonradan değişmiyor, iyi düşün.</string>
     <string name="ui_veli_onayi">Veli onayı</string>
     <string name="ui_veli_e_postasi_x">Velinin e-postası: %1$s</string>
-    <string name="ui_veli_e_postasina_gelen_kodu_gir">Velinin e-postasına gelen 6 haneli kodu gir. Kod 30 dakika geçerli. Kodu girmek, velinin onay verdiği anlamına gelir.</string>
-    <string name="ui_veli_e_postasi_farkli_olmali">Velinin e-postası senin e-postandan farklı olmalı.</string>
-</resources>
+    <string name="ui_veli_e_postasina_gelen_kodu_gir">Velinin e-postasına gelen 6 haneli kodu gir. Kod 30 dakika geçerli. Kodu girmek, velinin onay verdiği anlamına gelir.</string></resources>

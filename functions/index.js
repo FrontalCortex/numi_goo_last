@@ -772,7 +772,7 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
-const PARENTAL_CONSENT_VERSION = '2026-10-18';
+const PARENTAL_CONSENT_VERSION = '2026-10-18.2';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 2 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
@@ -809,8 +809,16 @@ function escapeHtml(s) {
  * Veliye giden onay e-postası. Metin değişirse PARENTAL_CONSENT_VERSION da değişmeli.
  * Liste gizlilik politikasıyla aynı kalmalı (public/privacy-policy.html, Children bölümü).
  */
-function parentalConsentEmail(code, childEmail) {
+function parentalConsentEmail(code, childEmail, parentEmail) {
   const child = escapeHtml(childEmail);
+  // Hesap velinin kendi adresiyle açılıyorsa "çocuğunuz sizin e-postanızı verdi" demek yanlış olur.
+  const sameAddress = childEmail === parentEmail;
+  const introHtml = sameAddress
+    ? `Bu e-posta adresiyle (<b>${child}</b>) çocuğunuz için bir Sorobit hesabı açılmak isteniyor.`
+    : `<b>${child}</b> adresiyle Sorobit'e kayıt olmak isteyen çocuğunuz, velisi olarak sizin e-postanızı verdi.`;
+  const introText = sameAddress
+    ? `Bu e-posta adresiyle (${childEmail}) çocuğunuz için bir Sorobit hesabı açılmak isteniyor. `
+    : `${childEmail} adresiyle kayıt olmak isteyen çocuğunuz velisi olarak sizin e-postanızı verdi. `;
   const collected = [
     'Çocuğunuzun e-posta adresi, uygulamada görünen adı ve doğum yılı',
     'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
@@ -827,7 +835,7 @@ function parentalConsentEmail(code, childEmail) {
     html: `
       <h2>Sorobit veli onayı</h2>
       <p>Merhaba,</p>
-      <p><b>${child}</b> adresiyle Sorobit'e kayıt olmak isteyen çocuğunuz, velisi olarak sizin e-postanızı verdi.
+      <p>${introHtml}
       Sorobit, çocuklara soroban (abaküs) ile zihinden aritmetik öğreten bir uygulamadır.
       13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.</p>
       <p>Hesap açılırsa şu bilgiler toplanır ve saklanır:</p>
@@ -843,7 +851,7 @@ function parentalConsentEmail(code, childEmail) {
       <p>Sorobit Ekibi</p>
     `,
     text:
-      `Sorobit veli onayı\n\n${childEmail} adresiyle kayıt olmak isteyen çocuğunuz velisi olarak sizin e-postanızı verdi. ` +
+      `Sorobit veli onayı\n\n${introText}` +
       `13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.\n\n` +
       `Hesap açılırsa toplanacak bilgiler:\n${listText}\n\nAyrıntılar: ${policyUrl}\n` +
       `Bilgileri görmek, sildirmek ya da onayı geri almak için: ${SUPPORT_EMAIL}\n\n` +
@@ -889,7 +897,7 @@ async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYea
 
   try {
     const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: mailUser, pass: mailPass } });
-    const mail = parentalConsentEmail(code, childEmail);
+    const mail = parentalConsentEmail(code, childEmail, parentEmail);
     await transporter.sendMail({ from: `Sorobit <${mailUser}>`, to: parentEmail, ...mail });
   } catch (error) {
     console.error('Error sending parental consent email:', { message: error.message, code: error.code });
@@ -906,9 +914,10 @@ function validateParentalRequest(childEmail, data) {
   if (!parentEmail) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçerli bir veli e-postası girin.');
   }
-  if (parentEmail === childEmail) {
-    throw new functions.https.HttpsError('invalid-argument', 'Veli e-postası senin e-postandan farklı olmalı.');
-  }
+  // Veli e-postası çocuğunkiyle AYNI olabilir: küçük çocukların çoğunun kendi e-postası
+  // yok, hesabı veli kendi adresiyle açıyor. Kod iki durumda da o adrese gidiyor; farklı
+  // adres zorunluluğu yalnızca bu aileleri takıyordu (isteyen çocuk ikinci bir adres
+  // açarak onu zaten aşabilirdi).
   const birthYear = parseBirthYear(data && data.birthYear);
   // Yaş eşiğinin üstündeki biri bu yolu kullanamaz; kullanabilseydi onay kaydı anlamsızlaşırdı.
   if (birthYear === null || !requiresParentalConsent(birthYear)) {

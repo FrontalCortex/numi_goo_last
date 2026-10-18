@@ -83,11 +83,7 @@ class ParentConsentFragment : Fragment() {
             toast(appString(R.string.ui_gecerli_bir_e_posta_adresi_giriniz))
             return
         }
-        // Çocuk kendi adresini "veli" diye veremesin; sunucu da aynı kontrolü yapıyor.
-        if (parentEmail == childEmail) {
-            toast(appString(R.string.ui_veli_e_postasi_farkli_olmali))
-            return
-        }
+        // Hesap e-postasıyla aynı olabilir: hesabı veli kendi adresiyle açıyor olabilir.
 
         binding.btnSendParentCode.isEnabled = false
         binding.btnSendParentCode.text = appString(R.string.ui_gonderiliyor)
