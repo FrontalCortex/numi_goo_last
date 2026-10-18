@@ -49,6 +49,13 @@ class OtpVerificationFragment : Fragment() {
     private val parentEmail: String? by lazy {
         requireArguments().getString(ARG_PARENT_EMAIL)?.takeIf { it.isNotBlank() }
     }
+    /**
+     * Doluysa bu, 13 yaş altı kayıtta çocuğun KENDİ adresinin kodu: doğrulanınca hesap
+     * açılmaz, bu adrese veli kodu gönderilip veli kod ekranına geçilir.
+     */
+    private val pendingParentEmail: String? by lazy {
+        requireArguments().getString(ARG_PENDING_PARENT_EMAIL)?.takeIf { it.isNotBlank() }
+    }
     /** Veli kodu Google kaydı için mi; öyleyse hesap confirmParentalConsent ile açılır. */
     private val googleParental: Boolean by lazy {
         requireArguments().getBoolean(ARG_GOOGLE_PARENTAL, false)
@@ -62,6 +69,7 @@ class OtpVerificationFragment : Fragment() {
         private const val ARG_ACQUISITION_SOURCE = "arg_acquisition_source"
         private const val ARG_PARENT_EMAIL = "arg_parent_email"
         private const val ARG_GOOGLE_PARENTAL = "arg_google_parental"
+        private const val ARG_PENDING_PARENT_EMAIL = "arg_pending_parent_email"
         private const val RESEND_COOLDOWN_MS = 45_000L   // 45 saniye
         private const val MAX_WRONG_ATTEMPTS = 5
         private const val WRONG_ATTEMPT_COOLDOWN_MS = 15 * 60 * 1000L // 15 dk
@@ -110,7 +118,8 @@ class OtpVerificationFragment : Fragment() {
             birthYear: Int? = null,
             acquisitionSource: String? = null,
             parentEmail: String? = null,
-            googleParental: Boolean = false
+            googleParental: Boolean = false,
+            pendingParentEmail: String? = null
         ): OtpVerificationFragment {
             return OtpVerificationFragment().apply {
                 arguments = Bundle().apply {
@@ -121,6 +130,7 @@ class OtpVerificationFragment : Fragment() {
                     acquisitionSource?.let { putString(ARG_ACQUISITION_SOURCE, it) }
                     parentEmail?.let { putString(ARG_PARENT_EMAIL, it) }
                     putBoolean(ARG_GOOGLE_PARENTAL, googleParental)
+                    pendingParentEmail?.let { putString(ARG_PENDING_PARENT_EMAIL, it) }
                 }
             }
         }
@@ -148,6 +158,7 @@ class OtpVerificationFragment : Fragment() {
         binding.tvTitle.text = when {
             forPasswordReset -> appString(R.string.ui_sifre_sifirlama)
             parentEmail != null -> appString(R.string.ui_veli_onayi)
+            pendingParentEmail != null -> appString(R.string.ui_e_postani_dogrula)
             isRegistration -> appString(R.string.ui_hesap_olustur)
             else -> appString(R.string.ui_e_postani_dogrula)
         }
@@ -157,6 +168,9 @@ class OtpVerificationFragment : Fragment() {
             binding.tvInstruction.text = appString(R.string.ui_veli_e_postasina_gelen_kodu_gir)
         } else {
             binding.tvEmail.text = email
+            if (pendingParentEmail != null) {
+                binding.tvInstruction.text = appString(R.string.ui_once_kendi_e_postana_gelen_kodu_gir)
+            }
         }
         binding.btnVerify.setOnClickListener { verify() }
         binding.btnResend.setOnClickListener { resend() }
@@ -332,6 +346,51 @@ class OtpVerificationFragment : Fragment() {
                         requireActivity().finish()
                     } else {
                         onVerifyFailed(error)
+                    }
+                }
+            }
+            pendingParentEmail != null && birthYear != null -> {
+                val parent = pendingParentEmail!!
+                val year = birthYear!!
+                authManager.verifyChildEmailForParentalConsent(email, code, year) { success, error ->
+                    if (!success) {
+                        onVerifyFailed(error)
+                        return@verifyChildEmailForParentalConsent
+                    }
+                    // Çocuğun adresi doğrulandı; şimdi veli kodu. Hesap veli kodu girilince açılır.
+                    authManager.sendParentalRegistrationCode(email, parent, year, acquisitionSource) { sent, sendError ->
+                        if (_binding == null || !isAdded) return@sendParentalRegistrationCode
+                        (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+                        // Bu ekran yığından çıkıyor; sonrasında fragment'a dokunmamak için önce al.
+                        val fm = parentFragmentManager
+                        val containerId = id
+                        val ctx = requireContext().applicationContext
+                        // Bu kod kullanıldı; geri dönüş bu ekrana değil veli e-postası ekranına
+                        // olmalı. Doğrulama 30 dk geçerli, oradan yeniden göndermek ikinci kez
+                        // çocuğun adresine kod istemez.
+                        fm.popBackStack()
+                        if (!sent) {
+                            Toast.makeText(ctx, sendError ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
+                            return@sendParentalRegistrationCode
+                        }
+                        AnalyticsLogger.logSignupStep(
+                            AnalyticsLogger.SIGNUP_OTP_SENT,
+                            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                        )
+                        fm.beginTransaction()
+                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                            .replace(
+                                containerId,
+                                newInstance(
+                                    email = email,
+                                    isRegistration = true,
+                                    birthYear = year,
+                                    acquisitionSource = acquisitionSource,
+                                    parentEmail = parent,
+                                )
+                            )
+                            .addToBackStack("otp")
+                            .commit()
                     }
                 }
             }

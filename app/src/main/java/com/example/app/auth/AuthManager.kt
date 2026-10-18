@@ -47,6 +47,12 @@ class AuthManager {
         const val PARENTAL_CONSENT_REQUIRED = "PARENTAL_CONSENT_REQUIRED"
 
         /**
+         * Veli e-postası çocuğunkinden farklı ve çocuğun adresi henüz doğrulanmadı: önce
+         * çocuğun adresine normal kayıt kodu gider ([verifyChildEmailForParentalConsent]).
+         */
+        const val CHILD_EMAIL_NOT_VERIFIED = "CHILD_EMAIL_NOT_VERIFIED"
+
+        /**
          * Kayıt sırasında girilen ad/şifre/rol bilgisini, kod doğrulama adımına kadar
          * SADECE BELLEKTE taşır.
          *
@@ -999,6 +1005,11 @@ class AuthManager {
                     "sendStudentVerificationCode hatası: ${e.message}",
                     e
                 )
+                val details = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.details as? Map<*, *>
+                if (details?.get("reason") == "child_email_unverified") {
+                    callback(false, CHILD_EMAIL_NOT_VERIFIED)
+                    return@addOnFailureListener
+                }
                 val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
                     ?: e.localizedMessage
                 callback(false, msg ?: appString(R.string.ui_kod_gonderilemedi))
@@ -1041,6 +1052,38 @@ class AuthManager {
             extras,
             callback
         )
+    }
+
+    /**
+     * 13 yaş altı e-posta kaydı, veli adresi farklıyken: çocuğun KENDİ adresine giden normal
+     * kayıt kodunu doğrular. Hesap açılmaz; sunucu adresin doğrulandığını 30 dakikalığına
+     * kaydeder, veli kodu ancak ondan sonra gönderilir. Bellekteki kayıt bilgisi
+     * ([rememberPendingRegistration]) burada TÜKETİLMEZ, veli kodu girilince kullanılacak.
+     */
+    fun verifyChildEmailForParentalConsent(
+        email: String,
+        code: String,
+        birthYear: Int,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        val payload = hashMapOf<String, Any>(
+            "email" to email.trim().lowercase(),
+            "code" to code,
+            "birthYear" to birthYear,
+            "parentalStep" to true,
+        )
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("verifyRegistrationCode")
+            .call(payload)
+            .addOnSuccessListener { result ->
+                val verified = (result.data as? Map<*, *>)?.get("emailVerified") == true
+                callback(verified, if (verified) null else appString(R.string.ui_kod_dogrulanamadi))
+            }
+            .addOnFailureListener { e ->
+                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
+                    ?: e.localizedMessage
+                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+            }
     }
 
     /**

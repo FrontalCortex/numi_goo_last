@@ -615,6 +615,22 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
   // Onaysız 13 yaş altı hesap AÇILMAZ. Eski sürümler doğum yılını normal kayıt koduyla
   // gönderiyor; onları burada durduruyoruz ki güncellemeyen istemci de onayı atlayamasın.
   if (!isParental && docUid.startsWith('pending_') && requiresParentalConsent(reqBirthYear)) {
+    // Yeni istemci: çocuğun KENDİ e-postasını doğrulama adımı (veli e-postası farklıysa).
+    // Hesap açılmaz; yalnızca adresin çocuğa ait olduğu kısa süreliğine kaydedilir ve veli
+    // kodu bu kayıt varsa gönderilir (sendParentalRegistrationCode). Eskiden çocuğun adresi
+    // hiç doğrulanmıyordu: yanlış yazılan adresle açılan hesaba bir daha girilemiyordu.
+    if (data && data.parentalStep === true) {
+      await clearWrongAttempts(email);
+      const now = admin.firestore.Timestamp.now();
+      await codeRef.update({ used: true, verifiedAt: now });
+      await verifiedChildEmailRef(email).set({
+        email,
+        birthYear: reqBirthYear,
+        verifiedAt: now,
+        expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + PARENTAL_CODE_TTL_MS),
+      });
+      return { emailVerified: true };
+    }
     throw new functions.https.HttpsError(
       'failed-precondition',
       '13 yaşından küçükler için veli onayı gerekiyor. Lütfen uygulamayı güncelleyin.'
@@ -721,6 +737,8 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
         const batch = db.batch();
         writeParentalConsent(batch, tokenUid, d, baseData);
         batch.set(userRef, baseData);
+        // Amacı bitti: hesap açıldı.
+        batch.delete(verifiedChildEmailRef(email));
         await batch.commit();
       } else {
         await userRef.set(baseData);
@@ -940,6 +958,20 @@ async function sendParentalRegistrationCode(childEmail, data, context) {
   if (await findUserByEmail(childEmail)) {
     throw new functions.https.HttpsError('already-exists', 'Bu e-posta zaten kayıtlı. Lütfen giriş yapın.');
   }
+  // Veli adresi farklıysa çocuğun kendi adresi önce doğrulanmış olmalı (verifyRegistrationCode,
+  // parentalStep). Aynıysa veli kodu o adrese gittiği için adresi de doğrular; ayrı adım yok.
+  if (parentEmail !== childEmail) {
+    const snap = await verifiedChildEmailRef(childEmail).get();
+    const exp = snap.exists ? snap.get('expiresAt') : null;
+    if (!exp || exp.toMillis() < Date.now()) {
+      // `details.reason` ile uygulama bunu tanıyıp çocuğun adresine kod gönderiyor.
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Önce kendi e-postanı doğrula.',
+        { reason: 'child_email_unverified' }
+      );
+    }
+  }
   return issueParentalConsentCode({
     uid: 'pending_' + require('crypto').randomUUID(),
     childEmail,
@@ -948,6 +980,14 @@ async function sendParentalRegistrationCode(childEmail, data, context) {
     acquisitionSource,
     ip: getClientIp(context),
   });
+}
+
+/**
+ * 13 yaş altı kayıtta çocuğun kendi e-postasının doğrulandığı kısa süreli kayıt
+ * (PARENTAL_CODE_TTL_MS). Hesap açılınca ya da temizlik görevinde silinir; istemci erişemez.
+ */
+function verifiedChildEmailRef(email) {
+  return db.collection('verifiedChildEmails').doc(String(email).replace(/\//g, '_'));
 }
 
 /** Onay kaydını ve `users` dokümanındaki onay işaretlerini aynı batch'e ekler. */
@@ -1110,6 +1150,20 @@ async function runExpiredCodeCleanup(nowMs = Date.now()) {
       }
     }
 
+    const batch = db.batch();
+    snap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    deletedCodes += snap.size;
+    if (snap.size < 300) break;
+  }
+
+  // Çocuk e-postası doğrulandı ama veli onayı gelmedi: adres kaydı da kalmasın.
+  for (;;) {
+    const snap = await db.collection('verifiedChildEmails')
+      .where('expiresAt', '<', cutoff)
+      .limit(300)
+      .get();
+    if (snap.empty) break;
     const batch = db.batch();
     snap.docs.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();

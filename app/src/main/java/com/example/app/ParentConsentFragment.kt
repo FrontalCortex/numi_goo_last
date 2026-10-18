@@ -91,6 +91,12 @@ class ParentConsentFragment : Fragment() {
             if (_binding == null || !isAdded) return@onSent
             binding.btnSendParentCode.isEnabled = true
             binding.btnSendParentCode.text = getString(R.string.fragment_parent_consent_btn_send)
+            if (error == AuthManager.CHILD_EMAIL_NOT_VERIFIED) {
+                // Veli adresi farklı: önce çocuğun KENDİ adresi doğrulanmalı (yanlış yazılan
+                // adresle açılan hesaba bir daha girilemezdi). Veli kodu o adımdan sonra gider.
+                sendChildEmailCode(parentEmail)
+                return@onSent
+            }
             if (!success) {
                 toast(error ?: appString(R.string.ui_kod_gonderilemedi))
                 return@onSent
@@ -119,6 +125,36 @@ class ParentConsentFragment : Fragment() {
             authManager.requestGoogleParentalConsent(parentEmail, birthYear, acquisitionSource, onSent)
         } else {
             authManager.sendParentalRegistrationCode(childEmail, parentEmail, birthYear, acquisitionSource, onSent)
+        }
+    }
+
+    /** Çocuğun kendi adresine normal kayıt kodu; kod ekranı doğrulayınca veli kodunu gönderir. */
+    private fun sendChildEmailCode(parentEmail: String) {
+        binding.btnSendParentCode.isEnabled = false
+        binding.btnSendParentCode.text = appString(R.string.ui_gonderiliyor)
+        authManager.resendStudentVerificationCode(childEmail, isRegistration = true) sent@{ success, error ->
+            if (_binding == null || !isAdded) return@sent
+            binding.btnSendParentCode.isEnabled = true
+            binding.btnSendParentCode.text = getString(R.string.fragment_parent_consent_btn_send)
+            if (!success) {
+                toast(error ?: appString(R.string.ui_kod_gonderilemedi))
+                return@sent
+            }
+            OtpVerificationFragment.startResendCooldownInPrefs(requireContext(), childEmail)
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                .replace(
+                    id,
+                    OtpVerificationFragment.newInstance(
+                        email = childEmail,
+                        isRegistration = true,
+                        birthYear = birthYear,
+                        acquisitionSource = acquisitionSource,
+                        pendingParentEmail = parentEmail,
+                    )
+                )
+                .addToBackStack("otp_child")
+                .commit()
         }
     }
 

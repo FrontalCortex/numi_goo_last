@@ -80,6 +80,12 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    `public/privacy-policy.html` 5. bölüm yeniden yazıldı (Effective date 18.10.2026); hosting CI'da
    değil, elle `firebase deploy --only hosting`. Sıra: önce functions + kurallar deploy, sonra cihazda
    iki yolu da (e-posta, Google) 2013 doğumla dene. Veli e-postası çocuğunkiyle aynı olabilir (hesabı veli kendi adresiyle açıyor olabilir; kullanıcı kararı 18.10.2026).
+   Farklıysa önce çocuğun adresi doğrulanıyor: veli ekranı → sunucu `child_email_unverified` →
+   çocuğa normal kayıt kodu → `verifyRegistrationCode(parentalStep=true)` hesap açmadan
+   `verifiedChildEmails/{email}` yazar (30 dk) → veli kodu → hesap. Aynıysa tek kod (veli kodu).
+   Google veli kodu da `sendStudentVerificationCode(google=true)` üzerinden gidiyor: EMAIL_USER /
+   EMAIL_PASS depoda değil, yalnızca o fonksiyonun ortamında tanımlı; yeni fonksiyondan e-posta
+   gitmiyordu. Yeni bir fonksiyon e-posta gönderecekse aynı sorun çıkar.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:
