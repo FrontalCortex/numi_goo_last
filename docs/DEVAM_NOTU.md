@@ -93,8 +93,8 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    kullanıyor (yalnızca istemci, sunucuya dokunulmadı). E-posta yolunda sorun yok: Auth kaydı
    veli koduyla birlikte sunucuda açılıyor. Telefonda: 2013 doğumla Google kaydı, kodu 10+ dk
    sonra gir → hedef kayıtta seçilen olmalı, ilk ders sonunda yeni seri ekranı çıkmamalı.
-8. **OTP gönderim sınırları (18.10.2026 — sahte Firestore ile sınandı, DEPLOY EDİLMEDİ, cihazda
-   DENENMEDİ):** `functions/index.js` `checkOtpRateLimits` tek transaction'da: e-posta 5/saat ve
+8. **OTP gönderim sınırları (18.10.2026 — 1f718d1 ile DEPLOY EDİLDİ, telefondan giriş kodu
+   geldi):** `functions/index.js` `checkOtpRateLimits` tek transaction'da: e-posta 5/saat ve
    20/gün (değişmedi) + aynı alıcıya 30 sn bekleme (yeni; eskiden yalnızca istemcide 45 sn),
    IP 10 → 40/saat (okul Wi-Fi'ı/CGNAT), günlük toplam 400 (kişisel Gmail ~500/gün) ve App Check
    jetonsuz isteklere ayrı 100/gün kova (`context.app`; zorlama hâlâ kapalı). Tavan dolunca log'da
@@ -111,6 +111,12 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    (functions + kurallar/indeksler). Yapılmayanlar: `checkEmailRegistered` /
    `findTeacherEmailByUserId` sınırsız ve kimliksiz; yanlış deneme kilidi başkasını dışarıda
    bırakmakta kullanılabiliyor; sunucu hata mesajları Türkçe sabit.
+   Deploy notu: tek koleksiyonda yalnızca BİR TTL alanı olabiliyor; CI indeks deploy'u bu yüzden
+   düştü (429). Yerelden iki adımda yapıldı: önce `updatedAt` için `ttl: false`, sonra `expireAt`.
+   Canlıda `updatedAt` override'ları (TTL kapalı) duruyor, dosyada yok; CLI yalnızca uyarı verir.
+   x-forwarded-for doğrulandı: deploy sonrası istekte başlıkta tek değer vardı, seçim doğru.
+   Debug sürüm App Check jetonu göndermiyor (`"app":"MISSING"`, debug jetonu konsolda kayıtlı
+   değil); Play'den kurulan sürümde de MISSING görünürse App Check kurulumu incelenmeli.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:
