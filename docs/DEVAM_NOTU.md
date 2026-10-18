@@ -59,6 +59,12 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    yazılmadı). Tek video, YouTube liste dışı `https://www.youtube.com/watch?v=QDiJmHQB34Q`
    (öğrenci ekran kaydı → gönder; sistem izin penceresi videoda YOK, Google isterse yeniden çekilecek).
    Önizlemede hata kalmadı (18.10.2026). Kalan: Yayınlama özeti → incelemeye gönder.
+   Yayın özeti iki sorun gösterdi: (a) Reklam kimliği beyanı eksik (Uygulama içeriği; Evet →
+   Reklamcılık, Analiz, Sahtekarlık önleme) — kullanıcı dolduracak; (b) **reCAPTCHA 18.1.2 güvenlik
+   açığı uyarısı:** `firebase-bom 32.7.0 → firebase-auth 22.3.0 → recaptcha 18.1.2`. Gönderimi
+   engellemiyor; incelemeye gönderdikten sonra **90 gün** içinde düzelmeli, yoksa yayın engelleniyor.
+   versionCode 13'te: ya `com.google.android.recaptcha:recaptcha` ≥18.4.0'ı açıkça ekle ya da BoM'u
+   yükselt (o zaman giriş/Google/veli onayı/bildirimler telefonda yeniden denenmeli).
 5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
    soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
    mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
