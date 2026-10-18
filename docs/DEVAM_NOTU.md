@@ -46,7 +46,15 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    Console'dan eklemek, deploy sonrası kodla girişi denemek, Play formuna yazmak.
 3. **Atıf (KOD):** Uygulamada hiç atıf yok; "Abaküs ikonu: Flaticon (Magnific) · Karakter çizimi: Freepik"
    uygulama içinde (Hakkında/künye) gösterilmeli.
-4. **versionCode 12** ile AAB → Alpha taslağına "Kitaplıktan ekle", 7'yi kaldır, incelemeye gönder.
+4. **versionCode 12 — AAB DERLENDİ (18.10.2026):** `app/build/outputs/bundle/release/app-release.aab`
+   (69 MB, versionName hâlâ "1.0"), yükleme anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 11 ile
+   aynı). Birleşmiş release manifest'te READ_MEDIA_*/READ_EXTERNAL_STORAGE yok, consent mode
+   varsayılanları var. İçinde: fotoğraf seçicisi, inceleme hesabı girişi, Analytics reklam izni yaşa
+   bağlı, 13 yaş altı veli onayı, Google veli onayında seri cevapları düzeltmesi (kullanıcı telefonda
+   denedi, sorunsuz). Kullanıcı yükleyecek: Alpha taslağında 7'yi kaldır, 12'yi ekle, sürüm notu.
+   Play Console formları (uygulama erişimi, reklam, içerik derecelendirme, hedef kitle 6-8/9-12/13-15,
+   veri güvenliği, Öğretmen Onaylı katılımı) dolduruldu. Kalan: ön plan hizmeti beyanı (5), sonra
+   önizle → incelemeye gönder.
 5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
    soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
    mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
