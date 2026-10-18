@@ -19,6 +19,7 @@ import android.text.style.StyleSpan
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.example.app.auth.AuthManager
+import com.example.app.auth.ParentalConsentPolicy
 import com.example.app.databinding.ActivityRegisterBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -104,8 +105,18 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Eğer bu activity kapatılırken FirebaseAuth'ta bir kullanıcı varsa
-        // ve Firestore'da buna ait tam bir profil yoksa, bu yarım oluşmuş hesabı sil.
+        // Yeniden oluşturmada (tema/dil değişimi) kayıt sürüyor: veli onayı beklenirken
+        // açık Google kaydını silmek, onay gelince hesabı açılamaz hale getirirdi.
+        if (isChangingConfigurations) return
+        deleteIncompleteAuthUser()
+    }
+
+    /**
+     * FirebaseAuth'ta bir kullanıcı varsa ve Firestore'da buna ait tam bir profil yoksa, bu
+     * yarım oluşmuş hesabı siler. Google ile kayıtta veli onayı beklenirken (13 yaş altı)
+     * vazgeçilirse de bu yoldan silinir; sunucudaki saatlik temizlik ikinci emniyet.
+     */
+    private fun deleteIncompleteAuthUser() {
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser ?: return
         val uid = currentUser.uid
@@ -141,6 +152,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                                 if (currentForcedRole == ForcedRole.TEACHER) {
                                     showTeacherStep()
                                 } else {
+                                    // Google ile veli onayı ekranından dönüldüyse açık kalan
+                                    // yarım Google kaydı burada silinir; e-posta adımında başka
+                                    // bir yol seçilirse arkada sahipsiz kalmasın.
+                                    deleteIncompleteAuthUser()
                                     showEmailStep()
                                 }
                             }, 350)
@@ -427,6 +442,14 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         showError(createError ?: appString(R.string.ui_islem_basarisiz))
                         return@createPendingRegistrationForOTP
                     }
+                    val year = birthYear
+                    if (ParentalConsentPolicy.requiresParentalConsent(year) && year != null) {
+                        // 13 yaş altı: kod çocuğa değil veliye gidecek; önce velinin
+                        // e-postasını soruyoruz. Kod o ekrandan gönderiliyor.
+                        reenableBackAndContinue()
+                        showParentConsentStep(normalizedEmail, isGoogle = false, birthYear = year)
+                        return@createPendingRegistrationForOTP
+                    }
                     authManager.resendStudentVerificationCode(email, isRegistration = true) { success, error ->
                         reenableBackAndContinue()
                         if (success) {
@@ -553,6 +576,17 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     setResult(RESULT_OK)
                     startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                     finish()
+                } else if (error == AuthManager.PARENTAL_CONSENT_REQUIRED) {
+                    // 13 yaş altı: Google oturumu açık, hesap henüz yok. Velinin onayıyla
+                    // sunucu açacak.
+                    val childEmail = FirebaseAuth.getInstance().currentUser?.email
+                    val year = birthYear
+                    if (childEmail.isNullOrBlank() || year == null) {
+                        deleteIncompleteAuthUser()
+                        showError(appString(R.string.ui_google_kaydi_basarisiz))
+                    } else {
+                        showParentConsentStep(childEmail, isGoogle = true, birthYear = year)
+                    }
                 } else {
                     // Sadece gerçek hataları göster, kullanıcı iptal ettiyse sessizce dön
                     if (error != appString(R.string.ui_kullanici_girisi_iptal_edildi)) {
@@ -563,6 +597,20 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
     }
     
+    /** 13 yaş altı kayıt: velinin e-postasını soran ekran (bkz. [ParentConsentFragment]). */
+    private fun showParentConsentStep(childEmail: String, isGoogle: Boolean, birthYear: Int) {
+        hideKeyboard()
+        showCodeStep()
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(
+                R.id.fragmentContainer,
+                ParentConsentFragment.newInstance(childEmail, isGoogle, birthYear, acquisitionSource)
+            )
+            .addToBackStack("parent_consent")
+            .commit()
+    }
+
     private fun registerTeacherWithOtp() {
         val name = binding.etName.text.toString().trim()
         val email = binding.etTeacherEmail.text.toString().trim()

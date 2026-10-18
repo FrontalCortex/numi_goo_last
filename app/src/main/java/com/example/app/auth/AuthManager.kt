@@ -37,6 +37,14 @@ class AuthManager {
         const val OTP_PURPOSE_REGISTER = "register"
         const val OTP_PURPOSE_LOGIN = "login"
         const val OTP_PURPOSE_TEACHER_RESET = "teacher_reset"
+        /** 13 yaş altı e-posta kaydı: kod çocuğa değil veliye gider (bkz. [sendParentalRegistrationCode]). */
+        const val OTP_PURPOSE_REGISTER_PARENTAL = "register_parental"
+
+        /**
+         * Google ile kayıtta 13 yaş altı çocuk için `users` dokümanı yazılmadı, veli onayı
+         * bekleniyor. Firebase oturumu AÇIK bırakılır: onay çağrıları kimliği oradan alıyor.
+         */
+        const val PARENTAL_CONSENT_REQUIRED = "PARENTAL_CONSENT_REQUIRED"
 
         /**
          * Kayıt sırasında girilen ad/şifre/rol bilgisini, kod doğrulama adımına kadar
@@ -289,7 +297,7 @@ class AuthManager {
      */
     @Suppress("UNUSED_PARAMETER")
     fun sendLoginCode(email: String, uid: String, callback: (Boolean, String?) -> Unit) {
-        sendStudentVerificationCode(email.trim().lowercase(), OTP_PURPOSE_LOGIN, callback)
+        sendStudentVerificationCode(email.trim().lowercase(), OTP_PURPOSE_LOGIN, callback = callback)
     }
 
     /**
@@ -582,7 +590,13 @@ class AuthManager {
                             }
                         } else {
                             // Firestore'da kullanıcı yok
-                            if (autoRegister) {
+                            if (autoRegister && ParentalConsentPolicy.requiresParentalConsent(birthYear)) {
+                                // 13 yaş altı: hesabı burada AÇMIYORUZ. Doküman veli onayından
+                                // sonra sunucuda yazılır (confirmGoogleParentalConsent); kurallar
+                                // da bu yaşla istemci yazımını reddediyor. Oturum açık kalıyor,
+                                // çünkü onay çağrıları çocuğun kimliğini oturumdan alıyor.
+                                callback(false, PARENTAL_CONSENT_REQUIRED)
+                            } else if (autoRegister) {
                                 // Kayıt ekranından çağrıldıysa otomatik kayıt yap
                                 android.util.Log.d(
                                     "AuthManager",
@@ -628,11 +642,15 @@ class AuthManager {
                                     "Firestore'da kullanıcı bulunamadı ama Firebase Auth'da var. Kullanıcı çıkış yaptırılıyor."
                                 )
                                 
-                                // Firebase Auth'dan çıkış yap
-                                auth.signOut()
-                                
-                                // Özel bir hata kodu döndür ki UI'da kayıt ekranına yönlendirilebilsin
-                                callback(false, "ACCOUNT_NOT_REGISTERED")
+                                // Google girişi Auth kaydını kendiliğinden açtı ama hesap yok.
+                                // Kaydı silip çıkıyoruz: yoksa çocuğun Google e-postası ve adı
+                                // hesap hiç açılmadan süresiz kalırdı. Kayıt ekranında Google
+                                // yeniden seçilince kayıt yeniden oluşur.
+                                user.delete().addOnCompleteListener {
+                                    auth.signOut()
+                                    // Özel bir hata kodu döndür ki UI'da kayıt ekranına yönlendirilebilsin
+                                    callback(false, "ACCOUNT_NOT_REGISTERED")
+                                }
                             }
                         }
                     }
@@ -954,12 +972,14 @@ class AuthManager {
     private fun sendStudentVerificationCode(
         email: String,
         purpose: String,
+        extras: Map<String, Any> = emptyMap(),
         callback: (Boolean, String?) -> Unit
     ) {
         val payload = hashMapOf<String, Any>(
             "email" to email,
             "purpose" to purpose
         )
+        payload.putAll(extras)
 
         android.util.Log.d(
             "AuthManager",
@@ -995,6 +1015,97 @@ class AuthManager {
         sendStudentVerificationCode(normalizedEmail, purpose) { success, error ->
             callback(success, error)
         }
+    }
+
+    /**
+     * 13 yaş altı e-posta kaydı: kayıt kodunu VELİNİN e-postasına gönderir; e-postada
+     * uygulamanın ne topladığı ve onay metni var. Kod sonra normal kayıt gibi
+     * [verifyStudentCode] ile girilir — sunucu kodun veli kodu olduğunu kendi kaydından
+     * bilir, doğum yılını da oradan alır (çocuk sonradan değiştiremesin diye).
+     */
+    fun sendParentalRegistrationCode(
+        childEmail: String,
+        parentEmail: String,
+        birthYear: Int,
+        acquisitionSource: String?,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        val extras = mutableMapOf<String, Any>(
+            "parentEmail" to parentEmail.trim().lowercase(),
+            "birthYear" to birthYear,
+        )
+        acquisitionSource?.let { extras["acquisitionSource"] = it }
+        sendStudentVerificationCode(
+            childEmail.trim().lowercase(),
+            OTP_PURPOSE_REGISTER_PARENTAL,
+            extras,
+            callback
+        )
+    }
+
+    /**
+     * 13 yaş altı Google kaydı: veli koduna istek. Çocuğun e-postasını sunucu açık Google
+     * oturumundan alır; bu yüzden [PARENTAL_CONSENT_REQUIRED] sonrası oturum kapatılmıyor.
+     */
+    fun requestGoogleParentalConsent(
+        parentEmail: String,
+        birthYear: Int,
+        acquisitionSource: String?,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        val payload = hashMapOf<String, Any>(
+            "parentEmail" to parentEmail.trim().lowercase(),
+            "birthYear" to birthYear,
+        )
+        acquisitionSource?.let { payload["acquisitionSource"] = it }
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("requestParentalConsent")
+            .call(payload)
+            .addOnSuccessListener { callback(true, null) }
+            .addOnFailureListener { e ->
+                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
+                    ?: e.localizedMessage
+                callback(false, msg ?: appString(R.string.ui_kod_gonderilemedi))
+            }
+    }
+
+    /**
+     * 13 yaş altı Google kaydı: veli kodunu doğrular. Hesabın `users` dokümanını sunucu
+     * yazar (kurallar bu yaşla istemci yazımını reddediyor); burada yalnızca okunup
+     * yerel önbelleğe alınır.
+     */
+    fun confirmGoogleParentalConsent(code: String, callback: (Boolean, String?) -> Unit) {
+        val payload = hashMapOf<String, Any>(
+            "code" to code,
+            "firstTutorialShown" to currentLocalFirstTutorialShown(),
+        )
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("confirmParentalConsent")
+            .call(payload)
+            .addOnSuccessListener {
+                val user = auth.currentUser ?: run {
+                    callback(false, appString(R.string.ui_oturum_acilamadi))
+                    return@addOnSuccessListener
+                }
+                firestore.collection("users").document(user.uid)
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        cacheBasicUser(
+                            user.email ?: "",
+                            ROLE_STUDENT,
+                            doc.getString("name") ?: (user.displayName ?: ""),
+                            doc.getString("userId") ?: ""
+                        )
+                        callback(true, null)
+                    }
+                    // Hesap sunucuda açıldı; önbellek MainActivity'de yeniden dolar.
+                    .addOnFailureListener { callback(true, null) }
+            }
+            .addOnFailureListener { e ->
+                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
+                    ?: e.localizedMessage
+                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+            }
     }
 
     fun verifyStudentCode(email: String, code: String, callback: (Boolean, String?) -> Unit) {

@@ -213,6 +213,8 @@ async function checkOtpRateLimits(email, ip) {
 //       register      → e-posta KAYITLI OLMAMALI
 //       login         → kayıtlı olmalı ve rolü STUDENT olmalı
 //       teacher_reset → kayıtlı olmalı ve rolü TEACHER olmalı
+//       register_parental → kayıtlı olmamalı ve doğum yılı veli onayı gerektirmeli;
+//                       kod çocuğa değil VELİYE gider (bkz. "Veli onayı" bölümü)
 
 /** E-postaya karşılık gelen users dokümanını döndürür (yoksa null). */
 async function findUserByEmail(email) {
@@ -234,8 +236,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
   if (!email) {
     throw new functions.https.HttpsError('invalid-argument', 'email required');
   }
-  if (!['register', 'login', 'teacher_reset'].includes(purpose)) {
+  if (!['register', 'login', 'teacher_reset', 'register_parental'].includes(purpose)) {
     throw new functions.https.HttpsError('invalid-argument', 'geçersiz purpose');
+  }
+  if (purpose === 'register_parental') {
+    return sendParentalRegistrationCode(email, data, context);
   }
 
   const ip = getClientIp(context);
@@ -484,7 +489,10 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
 
   await clearWrongAttempts(email);
 
-  if (uid.startsWith('pending_')) {
+  // Veli onay kodu giriş kodu değildir. Google ile kayıt bekleyen çocuğun kodu gerçek bir
+  // uid taşıdığı için aşağıdaki pending_ kontrolüne takılmaz; burada ayrıca reddedilmezse
+  // onay ekranını atlayıp o hesaba token almak mümkün olurdu.
+  if (uid.startsWith('pending_') || d.kind === 'parental') {
     throw new functions.https.HttpsError('invalid-argument', 'Bu kod kayıt için. Giriş için e-postanıza gelen kodu kullanın.');
   }
 
@@ -593,6 +601,21 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
   }
 
+  // Veli onayı (bkz. "Veli onayı" bölümü). Google ile kayıt bekleyen çocuğun kodu gerçek
+  // bir uid taşır ve yalnızca confirmParentalConsent ile kullanılır.
+  const isParental = d.kind === 'parental';
+  if (isParental && !docUid.startsWith('pending_')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kod');
+  }
+  // Onaysız 13 yaş altı hesap AÇILMAZ. Eski sürümler doğum yılını normal kayıt koduyla
+  // gönderiyor; onları burada durduruyoruz ki güncellemeyen istemci de onayı atlayamasın.
+  if (!isParental && docUid.startsWith('pending_') && requiresParentalConsent(reqBirthYear)) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      '13 yaşından küçükler için veli onayı gerekiyor. Lütfen uygulamayı güncelleyin.'
+    );
+  }
+
   await clearWrongAttempts(email);
 
   await codeRef.update({
@@ -604,7 +627,8 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 
   if (docUid.startsWith('pending_')) {
     const name = reqName;
-    const roleForUser = reqRole;
+    // Veli koduyla açılan hesap her zaman öğrenci; rolü istemciye bırakmıyoruz.
+    const roleForUser = isParental ? 'STUDENT' : reqRole;
     // Şifre verilmediyse (OTP-only öğrenci kaydı) sunucu rastgele üretir; kullanıcı zaten
     // her girişte OTP kullanacak. Şifre hiçbir zaman Firestore'a yazılmaz.
     const password = reqPassword || require('crypto').randomUUID().replace(/-/g, '').slice(0, 16);
@@ -671,11 +695,15 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
       // birthYear artık SUNUCUDA yazılıyor. Eskiden kayıt sonrası istemci kendi
       // dokümanına update atıyordu; bu alan reklam yaş korumasını (TFCD/TFUA) belirlediği
       // için istemci yazımına kapatıldı (bkz. firestore.rules).
-      if (Number.isFinite(reqBirthYear) && reqBirthYear > 1900 && reqBirthYear <= new Date().getFullYear()) {
-        baseData.birthYear = reqBirthYear;
+      // Veli onaylı kayıtta doğum yılı ve kaynak, kod istenirken kod dokümanına yazılanlardır:
+      // veli o yılı gören e-postayı onayladı, çocuk sonradan değiştiremesin.
+      const birthYearForUser = isParental ? d.birthYear : reqBirthYear;
+      const sourceForUser = isParental ? (d.acquisitionSource || '') : reqAcquisitionSource;
+      if (Number.isFinite(birthYearForUser) && birthYearForUser > 1900 && birthYearForUser <= new Date().getFullYear()) {
+        baseData.birthYear = birthYearForUser;
       }
-      if (reqAcquisitionSource) {
-        baseData.acquisitionSource = reqAcquisitionSource;
+      if (sourceForUser) {
+        baseData.acquisitionSource = sourceForUser;
       }
 
       if (roleForUser === 'STUDENT') {
@@ -684,7 +712,14 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
         baseData.teacherApproved = false;
       }
 
-      await userRef.set(baseData);
+      if (isParental) {
+        const batch = db.batch();
+        writeParentalConsent(batch, tokenUid, d, baseData);
+        batch.set(userRef, baseData);
+        await batch.commit();
+      } else {
+        await userRef.set(baseData);
+      }
     }
 
     // Eski sürümlerden kalmış olabilecek düz metin şifreli kayıt dokümanını temizle.
@@ -700,6 +735,374 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
   const token = await admin.auth().createCustomToken(tokenUid);
   return { token };
 });
+
+// ─── Veli onayı (13 yaş altı) ───────────────────────────────────────────────
+//
+// COPPA / GDPR / KVKK: 13 yaşından küçük çocuğun hesabı, VELİSİNİN doğrulanabilir onayı
+// olmadan açılmaz. Yöntem "e-posta + kod": kayıt kodu çocuğa değil veliye gider, e-postada
+// uygulamanın ne topladığı yazar; veli kodu çocuğa verdiğinde (ya da kendisi girdiğinde)
+// onay verilmiş olur. Kod girilmeden HİÇBİR hesap açılmaz.
+//
+// İKİ YOL
+//   • E-posta ile kayıt: sendStudentVerificationCode(purpose = register_parental) kodu
+//     üretir; verifyRegistrationCode hesabı açar. Onaya kadar Auth kaydı bile yoktur.
+//   • Google ile kayıt: Google girişi Firebase Auth kaydını kendiliğinden açar ama `users`
+//     dokümanı yazılmaz. requestParentalConsent kodu üretir, confirmParentalConsent dokümanı
+//     sunucuda yazar. (Family Link'in Google'a verdiği izin bizim uygulamamız için onay
+//     sayılmaz; bu yüzden Google yolunda da aynı adım var.)
+//
+// GÜVENLİK
+//   • Onaysız 13 yaş altı `users` dokümanı istemciden yazılamaz (firestore.rules,
+//     `noUnconsentedChild`); verifyRegistrationCode da veli kodu olmayan 13 yaş altı
+//     kaydı reddeder. Yani hesap yalnızca bu bölümdeki yollarla açılabilir.
+//   • Doğum yılı kod dokümanından okunur, hesap açılırken istemciden alınmaz: veli e-postada
+//     hangi yılı gördüyse hesap o yılla açılır.
+//   • Veli onay kodu giriş kodu olarak kullanılamaz (verifyLoginCode `kind` kontrolü).
+//
+// SAKLAMA
+//   • Onay kaydı `parentalConsents/{uid}` dokümanında: veli e-postası, metin sürümü, zaman.
+//     `users` dokümanına veli e-postası YAZILMAZ, çünkü onu onaylı öğretmenler de okuyabiliyor.
+//   • Onay gelmezse: kod 30 dk sonra geçersiz olur, cleanupExpiredVerificationCodes onu
+//     (ve Google yolunda yarım kalan Auth kaydını) bir saat içinde siler.
+
+// Yalnızca doğum yılını biliyoruz. "Bu yıl − doğum yılı ≤ 13" olan çocuk yılın bir kısmında
+// hâlâ 12 yaşında olabilir; temkinli tarafta kalıp onu da onaya sokuyoruz. Uygulamadaki
+// ParentalConsentPolicy ve firestore.rules aynı formülü (UTC yılıyla) kullanıyor — biri
+// değişirse üçü birlikte değişmeli.
+const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
+// E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
+// onayladığını bu alanla taşıyor.
+const PARENTAL_CONSENT_VERSION = '2026-10-18';
+// Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 2 dakikası
+// burada yetmiyor.
+const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
+// Velinin hak talepleri (görme, silme, onayı geri alma) için; gizlilik politikasındaki adres.
+const SUPPORT_EMAIL = 'sorobit.support@gmail.com';
+
+function requiresParentalConsent(birthYear) {
+  if (!Number.isFinite(birthYear)) return false;
+  return new Date().getUTCFullYear() - birthYear <= PARENTAL_CONSENT_MAX_AGE_DIFF;
+}
+
+/** İstemciden gelen doğum yılını doğrular; geçersizse null. */
+function parseBirthYear(raw) {
+  const year = Number.parseInt(raw, 10);
+  if (!Number.isFinite(year) || year <= 1900 || year > new Date().getUTCFullYear()) return null;
+  return year;
+}
+
+function normalizeEmailInput(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
+  return email;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Veliye giden onay e-postası. Metin değişirse PARENTAL_CONSENT_VERSION da değişmeli.
+ * Liste gizlilik politikasıyla aynı kalmalı (public/privacy-policy.html, Children bölümü).
+ */
+function parentalConsentEmail(code, childEmail) {
+  const child = escapeHtml(childEmail);
+  const collected = [
+    'Çocuğunuzun e-posta adresi, uygulamada görünen adı ve doğum yılı',
+    'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
+    'Adı ve avatarı diğer kullanıcılara görünür (profil, sıralama tabloları, takip listeleri)',
+    'Öğretmene soru sohbetinde gönderdiği mesajlar, fotoğraflar, videolar ve mikrofon sesi içeren ekran kayıtları (öğretmen bunları görür)',
+    'Bildirim göndermek için cihaz bildirim kimliği',
+    'Uygulama kullanım istatistikleri; reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
+  ];
+  const listHtml = collected.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  const listText = collected.map((item) => `- ${item}`).join('\n');
+  const policyUrl = 'https://numigo-new.web.app/privacy-policy.html#pp-5';
+  return {
+    subject: 'Sorobit - Çocuğunuzun hesabı için veli onayı',
+    html: `
+      <h2>Sorobit veli onayı</h2>
+      <p>Merhaba,</p>
+      <p><b>${child}</b> adresiyle Sorobit'e kayıt olmak isteyen çocuğunuz, velisi olarak sizin e-postanızı verdi.
+      Sorobit, çocuklara soroban (abaküs) ile zihinden aritmetik öğreten bir uygulamadır.
+      13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.</p>
+      <p>Hesap açılırsa şu bilgiler toplanır ve saklanır:</p>
+      <ul>${listHtml}</ul>
+      <p>Ayrıntılar: <a href="${policyUrl}">Gizlilik Politikası</a>. Dilediğiniz zaman çocuğunuzdan toplanan
+      bilgileri görmeyi, silinmesini ya da onayınızı geri almayı (hesabın silinmesi) isteyebilirsiniz:
+      bu e-posta adresinden <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> adresine yazın. Hesap uygulamadaki
+      Hesap Ayarları'ndan da silinebilir; silinince bu bilgiler de silinir.</p>
+      <p><b>Onaylıyorsanız</b> aşağıdaki kodu uygulamadaki veli onayı ekranına girin. Kodu girmek, yukarıdaki bilgilerin
+      toplanmasına veli olarak onay verdiğiniz anlamına gelir.</p>
+      <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
+      <p>Bu kod 30 dakika geçerlidir. Onaylamıyorsanız hiçbir şey yapmayın: hesap açılmaz, kayıt isteği kendiliğinden silinir.</p>
+      <p>Sorobit Ekibi</p>
+    `,
+    text:
+      `Sorobit veli onayı\n\n${childEmail} adresiyle kayıt olmak isteyen çocuğunuz velisi olarak sizin e-postanızı verdi. ` +
+      `13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.\n\n` +
+      `Hesap açılırsa toplanacak bilgiler:\n${listText}\n\nAyrıntılar: ${policyUrl}\n` +
+      `Bilgileri görmek, sildirmek ya da onayı geri almak için: ${SUPPORT_EMAIL}\n\n` +
+      `Onaylıyorsanız şu kodu uygulamaya girin: ${code}\n` +
+      `Kodu girmek bu bilgilerin toplanmasına onay verdiğiniz anlamına gelir. Kod 30 dakika geçerlidir. ` +
+      `Onaylamıyorsanız hiçbir şey yapmayın; hesap açılmaz.`,
+  };
+}
+
+/**
+ * Veli onay kodunu üretip veliye gönderir. [uid] e-posta yolunda `pending_…`, Google
+ * yolunda çocuğun gerçek Auth uid'idir.
+ */
+async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip }) {
+  // Sınır hem çocuğun hem velinin e-postasına işler: biri başkasının adresini sınırsız
+  // e-postayla dolduramasın.
+  await checkOtpRateLimits(childEmail, ip);
+  await checkOtpRateLimits(parentEmail, null);
+
+  const mailUser = process.env.EMAIL_USER || functions.config()?.email?.user;
+  const mailPass = process.env.EMAIL_PASS || functions.config()?.email?.pass;
+  if (!mailUser || !mailPass) {
+    console.error('Email credentials not set; cannot deliver parental consent code.');
+    throw new functions.https.HttpsError('internal', 'Doğrulama kodu gönderilemedi.');
+  }
+
+  const code = generateCode(6);
+  const now = admin.firestore.Timestamp.now();
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  await codeRef.set({
+    code,
+    email: childEmail,
+    uid,
+    kind: 'parental',
+    parentEmail,
+    birthYear,
+    acquisitionSource: acquisitionSource || '',
+    consentVersion: PARENTAL_CONSENT_VERSION,
+    createdAt: now,
+    expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + PARENTAL_CODE_TTL_MS),
+    used: false,
+  });
+
+  try {
+    const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: mailUser, pass: mailPass } });
+    const mail = parentalConsentEmail(code, childEmail);
+    await transporter.sendMail({ from: `Sorobit <${mailUser}>`, to: parentEmail, ...mail });
+  } catch (error) {
+    console.error('Error sending parental consent email:', { message: error.message, code: error.code });
+    // Kod yalnızca e-postayla ulaşır; gidemediyse kullanılamaz, bekletmeden silinir.
+    await codeRef.delete().catch(() => {});
+    throw new functions.https.HttpsError('internal', 'Doğrulama kodu gönderilemedi.');
+  }
+  return { emailed: true };
+}
+
+/** Veli onayı istenecek kayıt için ortak giriş kontrolü; doğrulanmış değerleri döndürür. */
+function validateParentalRequest(childEmail, data) {
+  const parentEmail = normalizeEmailInput(data && data.parentEmail);
+  if (!parentEmail) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçerli bir veli e-postası girin.');
+  }
+  if (parentEmail === childEmail) {
+    throw new functions.https.HttpsError('invalid-argument', 'Veli e-postası senin e-postandan farklı olmalı.');
+  }
+  const birthYear = parseBirthYear(data && data.birthYear);
+  // Yaş eşiğinin üstündeki biri bu yolu kullanamaz; kullanabilseydi onay kaydı anlamsızlaşırdı.
+  if (birthYear === null || !requiresParentalConsent(birthYear)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz doğum yılı.');
+  }
+  const acquisitionSource =
+    typeof (data && data.acquisitionSource) === 'string' ? data.acquisitionSource.trim().slice(0, 64) : '';
+  return { parentEmail, birthYear, acquisitionSource };
+}
+
+/** sendStudentVerificationCode(purpose = register_parental): e-posta ile kayıt yolu. */
+async function sendParentalRegistrationCode(childEmail, data, context) {
+  const { parentEmail, birthYear, acquisitionSource } = validateParentalRequest(childEmail, data);
+  if (await findUserByEmail(childEmail)) {
+    throw new functions.https.HttpsError('already-exists', 'Bu e-posta zaten kayıtlı. Lütfen giriş yapın.');
+  }
+  return issueParentalConsentCode({
+    uid: 'pending_' + require('crypto').randomUUID(),
+    childEmail,
+    parentEmail,
+    birthYear,
+    acquisitionSource,
+    ip: getClientIp(context),
+  });
+}
+
+/** Onay kaydını ve `users` dokümanındaki onay işaretlerini aynı batch'e ekler. */
+function writeParentalConsent(batch, uid, codeData, userData) {
+  const now = admin.firestore.Timestamp.now();
+  userData.parentalConsentAt = now;
+  userData.parentalConsentVersion = codeData.consentVersion || PARENTAL_CONSENT_VERSION;
+  batch.set(db.collection('parentalConsents').doc(uid), {
+    uid,
+    childEmail: codeData.email || '',
+    parentEmail: codeData.parentEmail || '',
+    birthYear: codeData.birthYear,
+    consentVersion: userData.parentalConsentVersion,
+    method: 'email_code',
+    requestedAt: codeData.createdAt || now,
+    grantedAt: now,
+  });
+}
+
+/** Google ile kayıt: oturum açmış ama henüz `users` dokümanı olmayan çocuk için kod ister. */
+exports.requestParentalConsent = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum gerekli');
+  }
+  const uid = context.auth.uid;
+  const childEmail = String(context.auth.token.email || '').trim().toLowerCase();
+  if (!childEmail) {
+    throw new functions.https.HttpsError('failed-precondition', 'Hesapta e-posta yok');
+  }
+  const { parentEmail, birthYear, acquisitionSource } = validateParentalRequest(childEmail, data);
+  if ((await db.collection('users').doc(uid).get()).exists) {
+    throw new functions.https.HttpsError('already-exists', 'Bu hesap zaten açılmış.');
+  }
+  return issueParentalConsentCode({
+    uid,
+    childEmail,
+    parentEmail,
+    birthYear,
+    acquisitionSource,
+    ip: getClientIp(context),
+  });
+});
+
+/** Google ile kayıt: veli kodunu doğrular, `users` dokümanını SUNUCUDA oluşturur. */
+exports.confirmParentalConsent = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum gerekli');
+  }
+  const uid = context.auth.uid;
+  const childEmail = String(context.auth.token.email || '').trim().toLowerCase();
+  const code = String((data && data.code) || '').trim();
+  if (!childEmail || !code) {
+    throw new functions.https.HttpsError('invalid-argument', 'code required');
+  }
+
+  await checkWrongAttemptCooldown(childEmail);
+
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  const userRef = db.collection('users').doc(uid);
+  const codeDoc = await codeRef.get();
+  const d = codeDoc.exists ? codeDoc.data() : null;
+  const expiresAt = d && d.expiresAt && d.expiresAt.toMillis ? d.expiresAt.toMillis() : 0;
+  if (!d || d.used === true || expiresAt < Date.now() || d.kind !== 'parental'
+      || d.uid !== uid || d.email !== childEmail) {
+    await recordWrongAttempt(childEmail);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+  }
+  await clearWrongAttempts(childEmail);
+
+  let displayName = '';
+  try {
+    displayName = (await admin.auth().getUser(uid)).displayName || '';
+  } catch (err) {
+    // Temizlik görevi yarım kaydı silmiş olabilir; hayalet doküman yazmayalım.
+    throw new functions.https.HttpsError('failed-precondition', 'Kayıt süresi doldu. Lütfen baştan başlayın.');
+  }
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const userId = `${Math.floor(100000 + Math.random() * 900000)}`
+    + letters[Math.floor(Math.random() * 26)] + letters[Math.floor(Math.random() * 26)];
+
+  // Alanlar istemcinin Google kaydında yazdıklarının aynısı (AuthManager.signInWithGoogle).
+  const userData = {
+    uid,
+    userId,
+    email: childEmail,
+    name: displayName.slice(0, 80) || userId,
+    role: 'STUDENT',
+    verified: true,
+    first_tutorial_shown: (data && data.firstTutorialShown) === true,
+    createdAt: admin.firestore.Timestamp.now(),
+    birthYear: d.birthYear,
+    keys: 1,
+    currency: 0,
+  };
+  if (d.acquisitionSource) userData.acquisitionSource = d.acquisitionSource;
+
+  // Kod iki kez kullanılamasın ve doküman iki kez yazılmasın diye tek transaction.
+  await db.runTransaction(async (tx) => {
+    const [freshCode, existingUser] = await Promise.all([tx.get(codeRef), tx.get(userRef)]);
+    if (!freshCode.exists || freshCode.get('used') === true) {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+    }
+    if (existingUser.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Bu hesap zaten açılmış.');
+    }
+    writeParentalConsent(tx, uid, d, userData);
+    tx.set(userRef, userData);
+    tx.update(codeRef, { used: true, verifiedAt: admin.firestore.Timestamp.now() });
+  });
+  return { ok: true };
+});
+
+/**
+ * Süresi dolmuş doğrulama kodlarını siler. Eskiden kodlar hiç silinmiyordu; her doküman bir
+ * e-posta adresi taşıdığı için süresiz saklanıyordu.
+ *
+ * Google yolunda onay gelmeden süresi dolan veli kodu, arkasında yarım bir Auth kaydı
+ * (çocuğun Google e-postası ve adı) bırakır; `users` dokümanı yoksa o kayıt da silinir.
+ * Aynı uid için hâlâ geçerli bir kod varsa (veli kodu yeniden istendi) dokunulmaz.
+ */
+async function runExpiredCodeCleanup(nowMs = Date.now()) {
+  // Süresi yeni dolan kod bir süre daha dursun: "süresi dolmuş" hatası doğru mesajla dönsün.
+  const cutoff = admin.firestore.Timestamp.fromMillis(nowMs - HOUR_MS);
+  let deletedCodes = 0;
+  let deletedAuthUsers = 0;
+  for (;;) {
+    const snap = await db.collection('studentVerificationCodes')
+      .where('expiresAt', '<', cutoff)
+      .limit(300)
+      .get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const uid = String(d.uid || '');
+      if (d.kind !== 'parental' || d.used === true || !uid || uid.startsWith('pending_')) continue;
+      try {
+        if ((await db.collection('users').doc(uid).get()).exists) continue;
+        const siblings = await db.collection('studentVerificationCodes').where('uid', '==', uid).get();
+        const stillPending = siblings.docs.some((s) => {
+          const exp = s.get('expiresAt');
+          return s.id !== doc.id && exp && exp.toMillis() > nowMs;
+        });
+        if (stillPending) continue;
+        await admin.auth().deleteUser(uid);
+        deletedAuthUsers++;
+      } catch (err) {
+        if (err.code !== 'auth/user-not-found') {
+          console.error('Yarım veli onayı kaydı silinemedi', { uid, message: err.message });
+        }
+      }
+    }
+
+    const batch = db.batch();
+    snap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    deletedCodes += snap.size;
+    if (snap.size < 300) break;
+  }
+  console.log('Süresi dolmuş doğrulama kodları temizlendi', { deletedCodes, deletedAuthUsers });
+  return { deletedCodes, deletedAuthUsers };
+}
+
+exports.cleanupExpiredVerificationCodes = functions.pubsub
+  .schedule('every 1 hours')
+  .onRun(() => runExpiredCodeCleanup());
+
+exports._requiresParentalConsent = requiresParentalConsent;
+exports._parentalConsentEmail = parentalConsentEmail;
 
 // Öğretmen şifre sıfırlama: kodu sadece doğrula, used işaretleme (sonra resetTeacherPassword kullanılacak)
 exports.verifyTeacherPasswordResetCode = functions.https.onCall(async (data, context) => {
@@ -1301,6 +1704,13 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
     console.log(`Successfully deleted users/${uid} and all subcollections.`);
   } catch (error) {
     console.error(`Error deleting user data for ${uid}:`, error);
+  }
+
+  // Veli onayı kaydı üst seviyede; hesapla birlikte amacı bitiyor, veli e-postası kalmasın.
+  try {
+    await db.collection('parentalConsents').doc(uid).delete();
+  } catch (error) {
+    console.error(`Error deleting parental consent for ${uid}:`, error);
   }
 
   // Aktif (henüz finalize edilmemiş) lessonLeaderboards tahtalarındaki entries/{uid} kaydı

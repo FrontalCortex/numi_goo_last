@@ -41,7 +41,7 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    yalnızca Google/e-posta koduyla olduğu için inceleyici giremiyordu. `functions/index.js`
    `tryReviewLogin`: `serverConfig/reviewLogin` dokümanındaki (`email`, `codeSha256`) tek e-posta
    için sabit kod kabul ediliyor, yalnızca var olan STUDENT hesabına token. İnceleme e-postası
-   `seasa7961@gmail.com`; kod ve özeti depo kökündeki `inceleme_hesabi.txt`'de (git dışı,
+   öğrenci `seasa7961+@gmail.com` (öğretmen inceleme hesabı `seasa7961@gmail.com`, şifreyle); kod ve özeti depo kökündeki `inceleme_hesabi.txt`'de (git dışı,
    `.git/info/exclude`). Yapılacaklar: o e-postayla uygulamada öğrenci hesabı açmak, dokümanı
    Console'dan eklemek, deploy sonrası kodla girişi denemek, Play formuna yazmak.
 3. **Atıf (KOD):** Uygulamada hiç atıf yok; "Abaküs ikonu: Flaticon (Magnific) · Karakter çizimi: Freepik"
@@ -58,6 +58,28 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    döndürüyor (izin diskte kalıcı). AdMob TFCD/TFUA ve `analytics_storage` değişmedi. AD_ID izni
    manifest'te kalıyor (`adid_collection_enabled=false` bilerek konmadı, yetişkinlerde kalıcı
    kapatırdı). Cihazda: `adb logcat -s AgeConsentManager` → "Analytics ad consent=..." satırı.
+7. **13 yaş altı veli onayı (18.10.2026 — derlendi, DEPLOY EDİLMEDİ, cihazda DENENMEDİ):**
+   Eşik temkinli: `UTC yılı − doğum yılı ≤ 13` → onay (2026'da 2013 doğumlular dahil). Formül
+   üç yerde aynı: `auth/ParentalConsentPolicy.kt`, `functions/index.js` `requiresParentalConsent`,
+   `firestore.rules` `noUnconsentedChild`. Biri değişirse üçü birden değişmeli. `AgeConsentManager`
+   reklam için hâlâ `yıl farkı < 13` kullanıyor (başka oturumun dosyası, hizalanmadı).
+   Onay olmadan hesap açılmıyor: kayıt kodu VELİYE gidiyor (30 dk), e-postada toplanan veriler ve
+   onay metni var (`parentalConsentEmail`, sürüm `PARENTAL_CONSENT_VERSION`; metin değişirse sürüm
+   de değişmeli). E-posta yolu: `RegisterActivity` → `ParentConsentFragment` →
+   `sendStudentVerificationCode(purpose=register_parental)` → `OtpVerificationFragment` (veli kipi) →
+   `verifyRegistrationCode` (doğum yılını kod dokümanından alıyor). Google yolu: `signInWithGoogle`
+   doküman yazmıyor, `PARENTAL_CONSENT_REQUIRED` dönüyor, oturum açık kalıyor →
+   `requestParentalConsent` / `confirmParentalConsent` dokümanı sunucuda yazıyor. Kurallar 13 yaş altı
+   doğum yılıyla istemci yazımını reddediyor; sunucu da veli kodu olmayan 13 yaş altı kaydı reddediyor
+   (eski sürümler artık 13 yaş altı hesap açamaz, mesaj "uygulamayı güncelleyin"). Onay kaydı
+   `parentalConsents/{uid}`'de (veli e-postası `users`'a yazılmıyor, öğretmenler okuyabildiği için);
+   hesap silinince `cleanupUserOnDelete` siliyor. Yeni saatlik `cleanupExpiredVerificationCodes`:
+   süresi 1 saatten eski BÜTÜN kodları siliyor (eskiden hiç silinmiyordu) ve onaysız kalan Google
+   Auth kaydını siliyor. Giriş ekranında Google seçilip hesap yoksa (`ACCOUNT_NOT_REGISTERED`) Auth
+   kaydı artık siliniyor. Veli Paneli'ne dokunulmadı (kullanıcı kararı). Gizlilik politikası
+   `public/privacy-policy.html` 5. bölüm yeniden yazıldı (Effective date 18.10.2026); hosting CI'da
+   değil, elle `firebase deploy --only hosting`. Sıra: önce functions + kurallar deploy, sonra cihazda
+   iki yolu da (e-posta, Google) 2013 doğumla dene; veli e-postası çocuğunkinden farklı olmalı.
 Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
 gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
 `https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:
@@ -127,6 +149,12 @@ fikri: ressam yetişmezse ikon `abacus_svg_ic` olur. O dosyanın kaynağı bilin
 eklendi, not yok); bir ikon sitesindense lisansı logo kullanımına izin vermeyebilir. İçinde kendi
 yuvarlak köşeli çerçevesi var, ikon katmanına alınırken atılmalı. Herkese açık yayında Sobi hâlâ
 Freepik çizimiyse uygulama içinde Freepik atfı gerekli (ücretsiz lisans, madde 8.1); şu an hiç yok.
+Lisans sertifikası (18.10.2026, kullanıcının elinde PDF): öğe "selection of cute animals in flat
+design" (magnific.com, no. 1040416), lisans alan "KreyzMen", tür "Free for commercial use WITH
+ATTRIBUTION". Sertifika uygulamada kullanıma izin veriyor ama logo/marka konusunu hiç anmıyor ve
+"kullanım koşulları bu belgenin önüne geçer" diyor; yani 8.1'deki marka yasağı sertifikayla
+kalkmıyor. İstenen atıf metni: "designed by Freepik - Magnific.com" (görselin yanında, olmazsa
+künyede). Kesin cevap istenirse Magnific desteğine yazılı sorulabilir (www.magnific.com/ai/support).
 
 Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
 Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi

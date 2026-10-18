@@ -351,6 +351,12 @@ object AnalyticsLogger {
     /** Öğretmen kayıt formu göründü. */
     const val SIGNUP_TEACHER_FORM = "teacher_form"
     /**
+     * Veli e-postası ekranı göründü (13 yaş altı, e-posta veya Google yolu). Ardından gelen
+     * otp_sent kodun VELİYE gittiğini gösterir; bu adımla otp_sent arasındaki fark, veli
+     * e-postası veremeyen çocuklar.
+     */
+    const val SIGNUP_PARENT_CONSENT = "parent_consent"
+    /**
      * Doğrulama kodu gönderildi.
      *
      * Yalnızca YENİ kayıtta gönderilir. Zaten kayıtlı bir e-posta yazılırsa aynı ekran koda

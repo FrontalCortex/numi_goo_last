@@ -449,6 +449,15 @@
     <string name="fragment_otp_verification_btn_verify">Doğrula</string>
     <string name="fragment_otp_verification_btn_resend">Kodu tekrar gönder</string>
 
+    <!-- layout/fragment_parent_consent.xml -->
+    <string name="fragment_parent_consent_title">Velinin onayı gerekiyor</string>
+    <string name="fragment_parent_consent_message">13 yaşından küçükler için hesap açmadan önce annenin, babanın ya da velinin onayı gerekiyor. Velinin e-posta adresini yaz; ona bir kod göndereceğiz. Kodu velinden alıp sonraki ekrana gir.</string>
+    <string name="fragment_parent_consent_collected_title">Velin e-postada şunları görecek:</string>
+    <string name="fragment_parent_consent_collected_list">• E-posta adresin, adın ve doğum yılın\n• Ders ilerlemen, puanların, serin ve kupaların\n• Adın ve avatarın diğer kullanıcılara görünür (profil, sıralama, takip)\n• Öğretmene gönderdiğin mesajlar, fotoğraflar, videolar ve sesli ekran kayıtları\n• Bildirimler için cihaz kimliği ve kullanım istatistikleri</string>
+    <string name="fragment_parent_consent_et_hint">Velinin e-posta adresi</string>
+    <string name="fragment_parent_consent_btn_send">Veliye kod gönder</string>
+    <string name="fragment_parent_consent_note">Velin onaylamazsa hesap açılmaz ve kayıt isteğin kendiliğinden silinir.</string>
+
     <!-- layout/fragment_parent_panel.xml -->
     <string name="fragment_parent_panel_parent_panel_header_title">Veli Paneli</string>
     <string name="fragment_parent_panel_btn_back_desc">Geri</string>

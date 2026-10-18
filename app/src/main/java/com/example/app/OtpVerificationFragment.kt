@@ -42,6 +42,17 @@ class OtpVerificationFragment : Fragment() {
     private val acquisitionSource: String? by lazy {
         requireArguments().getString(ARG_ACQUISITION_SOURCE)
     }
+    /**
+     * Doluysa bu bir VELİ onay kodudur (13 yaş altı kayıt, bkz. [ParentConsentFragment]):
+     * kod bu adrese gitti, "tekrar gönder" de buraya gönderir.
+     */
+    private val parentEmail: String? by lazy {
+        requireArguments().getString(ARG_PARENT_EMAIL)?.takeIf { it.isNotBlank() }
+    }
+    /** Veli kodu Google kaydı için mi; öyleyse hesap confirmParentalConsent ile açılır. */
+    private val googleParental: Boolean by lazy {
+        requireArguments().getBoolean(ARG_GOOGLE_PARENTAL, false)
+    }
 
     companion object {
         private const val ARG_EMAIL = "arg_email"
@@ -49,6 +60,8 @@ class OtpVerificationFragment : Fragment() {
         private const val ARG_FOR_PASSWORD_RESET = "arg_for_password_reset"
         private const val ARG_BIRTH_YEAR = "arg_birth_year"
         private const val ARG_ACQUISITION_SOURCE = "arg_acquisition_source"
+        private const val ARG_PARENT_EMAIL = "arg_parent_email"
+        private const val ARG_GOOGLE_PARENTAL = "arg_google_parental"
         private const val RESEND_COOLDOWN_MS = 45_000L   // 45 saniye
         private const val MAX_WRONG_ATTEMPTS = 5
         private const val WRONG_ATTEMPT_COOLDOWN_MS = 15 * 60 * 1000L // 15 dk
@@ -95,7 +108,9 @@ class OtpVerificationFragment : Fragment() {
             isRegistration: Boolean,
             forPasswordReset: Boolean = false,
             birthYear: Int? = null,
-            acquisitionSource: String? = null
+            acquisitionSource: String? = null,
+            parentEmail: String? = null,
+            googleParental: Boolean = false
         ): OtpVerificationFragment {
             return OtpVerificationFragment().apply {
                 arguments = Bundle().apply {
@@ -104,6 +119,8 @@ class OtpVerificationFragment : Fragment() {
                     putBoolean(ARG_FOR_PASSWORD_RESET, forPasswordReset)
                     birthYear?.let { putInt(ARG_BIRTH_YEAR, it) }
                     acquisitionSource?.let { putString(ARG_ACQUISITION_SOURCE, it) }
+                    parentEmail?.let { putString(ARG_PARENT_EMAIL, it) }
+                    putBoolean(ARG_GOOGLE_PARENTAL, googleParental)
                 }
             }
         }
@@ -130,10 +147,17 @@ class OtpVerificationFragment : Fragment() {
         authManager = AuthManager().also { it.initialize(requireContext()) }
         binding.tvTitle.text = when {
             forPasswordReset -> appString(R.string.ui_sifre_sifirlama)
+            parentEmail != null -> appString(R.string.ui_veli_onayi)
             isRegistration -> appString(R.string.ui_hesap_olustur)
             else -> appString(R.string.ui_e_postani_dogrula)
         }
-        binding.tvEmail.text = email
+        val parent = parentEmail
+        if (parent != null) {
+            binding.tvEmail.text = appString(R.string.ui_veli_e_postasi_x, parent)
+            binding.tvInstruction.text = appString(R.string.ui_veli_e_postasina_gelen_kodu_gir)
+        } else {
+            binding.tvEmail.text = email
+        }
         binding.btnVerify.setOnClickListener { verify() }
         binding.btnResend.setOnClickListener { resend() }
         startResendCooldown()
@@ -219,8 +243,18 @@ class OtpVerificationFragment : Fragment() {
                 Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
             }
         }
+        val parent = parentEmail
+        val year = birthYear
         if (forPasswordReset) {
             authManager.sendTeacherPasswordResetCode(email, sendCode)
+        } else if (parent != null && year != null) {
+            // Veli kodu yeniden VELİYE gider; normal kayıt koduna düşseydi sunucu 13 yaş
+            // altı kaydı reddederdi.
+            if (googleParental) {
+                authManager.requestGoogleParentalConsent(parent, year, acquisitionSource, sendCode)
+            } else {
+                authManager.sendParentalRegistrationCode(email, parent, year, acquisitionSource, sendCode)
+            }
         } else {
             authManager.resendStudentVerificationCode(email, isRegistration, sendCode)
         }
@@ -284,7 +318,26 @@ class OtpVerificationFragment : Fragment() {
                     }
                 }
             }
+            googleParental -> {
+                // 13 yaş altı Google kaydı: hesabı sunucu açar (users dokümanı onayla yazılır).
+                authManager.confirmGoogleParentalConsent(code) { success, error ->
+                    if (success) {
+                        AnalyticsLogger.logSignupStep(
+                            AnalyticsLogger.SIGNUP_COMPLETED,
+                            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                        )
+                        acquisitionSource?.let { AppStatisticsManager.incrementAcquisitionSource(it) }
+                        requireActivity().setResult(Activity.RESULT_OK)
+                        startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
+                        requireActivity().finish()
+                    } else {
+                        onVerifyFailed(error)
+                    }
+                }
+            }
             isRegistration -> {
+                // Veli kodu da (e-posta yolu) buradan doğrulanır: sunucu kodun veli kodu
+                // olduğunu kendi kaydından bilir, doğum yılını da oradan alır.
                 // birthYear / acquisitionSource artık SUNUCUYA gönderiliyor; hesap
                 // oluşturulurken Cloud Function yazıyor. Eskiden kayıt sonrası istemci
                 // kendi dokümanına update atıyordu — birthYear reklam yaş korumasını

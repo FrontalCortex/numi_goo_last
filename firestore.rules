@@ -64,8 +64,17 @@ service cloud.firestore {
           'longestStreak',               // en uzun seri → yalnız submitStreakDay
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
-          'restrictedAt', 'restrictedByUid'
+          'restrictedAt', 'restrictedByUid',
+          'parentalConsentAt', 'parentalConsentVersion'  // veli onayı → yalnız onay CF'leri
         ];
+      }
+
+      // 13 yaş altı hesabı yalnızca sunucu, veli onayıyla açar (functions/index.js "Veli
+      // onayı"). Elimizde yalnız doğum yılı var; "UTC yılı − doğum yılı ≤ 13" olan çocuk
+      // hâlâ 12 yaşında olabileceği için temkinli tarafta kalıyoruz. Uygulamadaki
+      // ParentalConsentPolicy ve sunucudaki requiresParentalConsent aynı formülü kullanıyor.
+      function noUnconsentedChild(year) {
+        return request.time.year() - year > 13;
       }
 
       allow read: if isSelf(userId) || isTeacher();
@@ -84,14 +93,16 @@ service cloud.firestore {
              'followersCount', 'followingCount', 'longestStreak',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
-             'restrictedAt', 'restrictedByUid'
+             'restrictedAt', 'restrictedByUid',
+             'parentalConsentAt', 'parentalConsentVersion'
            ])
         // birthYear yalnızca KAYIT ANINDA yazılabilir (reklam yaş koruması bu alana bakıyor);
         // sonradan değiştirilemez, bkz. aşağıdaki update kuralı.
         && (!('birthYear' in request.resource.data)
             || (request.resource.data.birthYear is int
                 && request.resource.data.birthYear > 1900
-                && request.resource.data.birthYear < 2100));
+                && request.resource.data.birthYear < 2100
+                && noUnconsentedChild(request.resource.data.birthYear)));
 
       // birthYear reklam yaş korumasını (TFCD/TFUA) belirlediği için BİR KEZ yazılabilir,
       // sonra DEĞİŞTİRİLEMEZ. Aksi halde çocuk, doğum yılını büyüterek çocuk korumasından
@@ -102,7 +113,8 @@ service cloud.firestore {
           || (!('birthYear' in resource.data)
               && request.resource.data.birthYear is int
               && request.resource.data.birthYear > 1900
-              && request.resource.data.birthYear < 2100);
+              && request.resource.data.birthYear < 2100
+              && noUnconsentedChild(request.resource.data.birthYear));
       }
 
       allow update: if
@@ -384,6 +396,14 @@ service cloud.firestore {
 
     match /studentVerificationCodes/{code} {
       allow read, write: if false; // Sadece Cloud Functions
+    }
+
+    // Veli onayı kayıtları (veli e-postası, metin sürümü, zaman). Yalnızca onay CF'leri
+    // yazar; çocuk kendi kaydını okuyabilir. Öğretmenler `users` dokümanını okuyabildiği için
+    // veli e-postası oraya değil buraya yazılıyor.
+    match /parentalConsents/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
     }
 
     // Bekleyen kayıtlar: TAMAMEN KAPALI.
