@@ -2527,6 +2527,10 @@ class MainActivity : AppCompatActivity() {
                     )
                     // Geliştiricinin test hesabı; alan konsoldan elle yazılır (bkz. setTester).
                     AnalyticsLogger.setTester(doc.getBoolean("isTester") == true)
+                    // Kapalı test kırılımları (bkz. setAgeGroup, SorobanLevel): her okumada,
+                    // bu sürümden önce kaydolanlarda da dolsun ve hesap değişince yenilensin.
+                    AnalyticsLogger.setAgeGroup(doc.getLong("birthYear")?.toInt())
+                    SorobanLevel.applyFromUserDoc(applicationContext, currentUser.uid, doc)
                     // Onaylı öğretmenin dersleri ilk seferde açılır; bayrak aynı dokümanda,
                     // ayrı okuma yok.
                     if (role == AuthManager.ROLE_TEACHER && teacherApproved &&

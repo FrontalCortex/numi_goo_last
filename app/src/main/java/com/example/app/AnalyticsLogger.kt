@@ -346,6 +346,8 @@ object AnalyticsLogger {
     const val SIGNUP_AGE = "age"
     /** "Bizi nereden duydun" soruldu. */
     const val SIGNUP_SOURCE = "source"
+    /** "Abaküs kullanmayı biliyor musun" soruldu (yalnızca öğrenci). */
+    const val SIGNUP_SOROBAN = "soroban"
     /** Öğrenci e-posta formu göründü. */
     const val SIGNUP_EMAIL = "email"
     /** Öğretmen kayıt formu göründü. */
@@ -458,6 +460,12 @@ object AnalyticsLogger {
 
     /** Bkz. [setTester]. */
     private const val USER_PROPERTY_TESTER = "tester"
+
+    /** Bkz. [setAgeGroup]. */
+    private const val USER_PROPERTY_AGE_GROUP = "age_group"
+
+    /** Bkz. [setSorobanLevel]. */
+    private const val USER_PROPERTY_SOROBAN_LEVEL = "soroban_level"
 
     /** Firebase kullanıcı özelliği: değer en fazla 36 karakter olabilir. */
     private const val USER_PROPERTY_MAX = 36
@@ -698,6 +706,58 @@ object AnalyticsLogger {
      */
     fun setTester(isTester: Boolean) = safe { fa ->
         fa.setUserProperty(USER_PROPERTY_TESTER, if (isTester) "true" else "false")
+    }
+
+    /**
+     * Yaş grubu, doğum yılından: [ageGroupFor]. Kapalı testin ilk sorusu "uygulama hangi yaşta
+     * tutuyor?"; yaş yalnızca Firestore'da (`birthYear`) duruyordu ve `setUserId` çağrılmadığı
+     * için Analytics verisiyle birleştirilemiyordu.
+     *
+     * Kayıtta (hesap açılmadan, kayıttan vazgeçenler de görünsün) ve her kullanıcı dokümanı
+     * okumasında yeniden yazılıyor: bu sürümden önce kaydolanlarda da dolsun, yaş grubu yıl
+     * dönünce değişsin, hesap değişince eski hesabın değeri yapışmasın. Doğum yılı yoksa
+     * özellik temizleniyor (null).
+     *
+     * Ham yaş değil grup gönderiliyor: çocuk verisini gereğinden ince göndermemek için, ve
+     * raporlar zaten bu dilimlerle okunacak. Metin, çünkü bu mülkte sayı gönderilen boyutlar
+     * "(not set)" çıkıyor.
+     *
+     * GA4'te `age_group` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     */
+    fun setAgeGroup(birthYear: Int?) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_AGE_GROUP, birthYear?.let(::ageGroupFor))
+    }
+
+    /**
+     * "UTC yılı − doğum yılı" ile yaş dilimi. Yalnızca yıl bilindiği için çocuk bir yaş küçük
+     * olabilir; dilimler kaba karşılaştırma için, kesin yaş için değil.
+     */
+    fun ageGroupFor(birthYear: Int): String {
+        val age = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+            .get(java.util.Calendar.YEAR) - birthYear
+        return when {
+            age <= 3 -> "0-3"
+            age <= 6 -> "4-6"
+            age <= 8 -> "7-8"
+            age <= 10 -> "9-10"
+            age <= 14 -> "11-14"
+            age <= 17 -> "15-17"
+            else -> "18+"
+        }
+    }
+
+    /**
+     * Kayıtta sorulan "Abaküs kullanmayı biliyor musun?" cevabı: [SorobanLevel] değerleri.
+     * Abaküsü bilen ve bilmeyen çocuğun dersleri aynı hızda geçmesi beklenmez; bu kırılım
+     * olmadan "4. derste bırakıyorlar" gibi sonuçlar iki grubu karıştırıyor.
+     *
+     * [setAgeGroup] gibi her kullanıcı dokümanı okumasında yeniden yazılıyor; alanı olmayan
+     * hesapta (bu sürümden önce kaydolanlar, öğretmenler) temizleniyor.
+     *
+     * GA4'te `soroban_level` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     */
+    fun setSorobanLevel(level: String?) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_SOROBAN_LEVEL, level?.let { sanitize(it).take(USER_PROPERTY_MAX) })
     }
 
     // ── Ders sonu anketi ────────────────────────────────────────────────────

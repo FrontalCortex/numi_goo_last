@@ -33,7 +33,7 @@ android {
         applicationId = "com.numigo.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12
+        versionCode = 13
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -174,6 +174,11 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+    // BoM 32.7.0'daki firebase-auth 22.3.0, reCAPTCHA 18.1.2 getiriyor; Play bu sürüm için
+    // güvenlik açığı uyarısı veriyor (incelemeden itibaren 90 gün, sonra yayın engelleniyor).
+    // BoM yükseltmek Kotlin 1.9 uyumunu bozabildiği için yalnızca bu kütüphane yükseltiliyor;
+    // Gradle iki sürümden büyüğünü seçer. BoM yükseltildiğinde bu satır kaldırılabilir.
+    implementation("com.google.android.recaptcha:recaptcha:18.4.0")
 
     // App Check: "bu istek gerçekten benim uygulamamdan mı geliyor?" sorusunu yanıtlar.
     // Kurallar (firestore.rules) ve context.auth "kim" sorusunu çözüyor; App Check

@@ -865,7 +865,7 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
-const PARENTAL_CONSENT_VERSION = '2026-10-18.2';
+const PARENTAL_CONSENT_VERSION = '2026-10-19.1';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
@@ -914,11 +914,12 @@ function parentalConsentEmail(code, childEmail, parentEmail) {
     : `${childEmail} adresiyle kayıt olmak isteyen çocuğunuz velisi olarak sizin e-postanızı verdi. `;
   const collected = [
     'Çocuğunuzun e-posta adresi, uygulamada görünen adı ve doğum yılı',
+    'Kayıtta verdiği iki cevap: Sorobit\'i nereden duyduğu ve abaküs bilgisi (hiç / biraz / iyi)',
     'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
     'Adı ve avatarı diğer kullanıcılara görünür (profil, sıralama tabloları, takip listeleri)',
     'Öğretmene soru sohbetinde gönderdiği mesajlar, fotoğraflar, videolar ve mikrofon sesi içeren ekran kayıtları (öğretmen bunları görür)',
     'Bildirim göndermek için cihaz bildirim kimliği',
-    'Uygulama kullanım istatistikleri; reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
+    'Uygulama kullanım istatistikleri (yaş grubu ve abaküs bilgisiyle birlikte, adı ve e-postası olmadan); reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
   ];
   const listHtml = collected.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
   const listText = collected.map((item) => `- ${item}`).join('\n');

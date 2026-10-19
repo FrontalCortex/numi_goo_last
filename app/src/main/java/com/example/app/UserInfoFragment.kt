@@ -52,6 +52,8 @@ class UserInfoFragment : Fragment() {
         BRIEF(isIntro = true),
         AGE(asks = true),
         SOURCE(asks = true),
+        /** Abaküs bilgisi; yalnızca öğrenciye (öğretmen akışı AGE + SOURCE). Bkz. [SorobanLevel]. */
+        SOROBAN(asks = true),
         GOAL(asks = true),
         ROADMAP,
         CHALLENGE_INTRO,
@@ -85,6 +87,8 @@ class UserInfoFragment : Fragment() {
 
     private var currentStep = Step.AGE
     private var selectedSource: String? = null
+    /** [SorobanLevel] değerlerinden biri; ön seçim yok, çocuk kendisi seçmeli. */
+    private var selectedSorobanLevel: String? = null
     private var validatedBirthYear: Int? = null
 
     /** Seri adımları bu akışta sorulacak mı; akışın başında bir kez belirleniyor. */
@@ -307,7 +311,9 @@ class UserInfoFragment : Fragment() {
 
                 val currentYear = Calendar.getInstance().get(Calendar.YEAR)
                 validatedBirthYear = currentYear - age
-                
+                // Hesap açılmadan: kayıttan vazgeçenlerin yaşı da kırılımda görünsün.
+                AnalyticsLogger.setAgeGroup(validatedBirthYear)
+
                 hideKeyboard()
 
                 AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_SOURCE, signupRole)
@@ -319,7 +325,19 @@ class UserInfoFragment : Fragment() {
                 if (validatedBirthYear == null || selectedSource == null) return@setOnClickListener
                 hideKeyboard()
                 writeAnswer()
-                if (streakStepsEnabled) showStep(Step.GOAL) else finishUserInfo()
+                if (streakStepsEnabled) {
+                    AnalyticsLogger.logSignupStep(AnalyticsLogger.SIGNUP_SOROBAN, signupRole)
+                    showStep(Step.SOROBAN)
+                } else {
+                    finishUserInfo()
+                }
+
+            } else if (currentStep == Step.SOROBAN) {
+                val level = selectedSorobanLevel ?: return@setOnClickListener
+                // Hesap henüz yok: cevap cihazda bekliyor, hesap açılınca yazılıyor.
+                SorobanLevel.savePending(requireContext(), level)
+                writeAnswer()
+                showStep(Step.GOAL)
 
             } else if (currentStep == Step.GOAL) {
                 writeAnswer()
@@ -581,7 +599,9 @@ class UserInfoFragment : Fragment() {
     private fun containerFor(step: Step): View = when (step) {
         Step.MEET, Step.BRIEF -> binding.introContainer
         Step.AGE -> binding.ageContainer
-        Step.SOURCE -> binding.sourceContainer
+        // Abaküs sorusu kaynakla aynı satır listesini kullanıyor; aynı kap çıkıp yeni
+        // seçeneklerle geri giriyor (bkz. slideTo).
+        Step.SOURCE, Step.SOROBAN -> binding.sourceContainer
         Step.ROADMAP -> binding.roadmapContainer
         Step.CHALLENGE_INTRO -> binding.challengeIntroContainer
         // Hedef ve meydan okuma AYNI kabı kullanıyor; geçişte kap önce çıkıp sonra yeni
@@ -735,6 +755,7 @@ class UserInfoFragment : Fragment() {
                 updateContinueButton(enabled = age != null && age in 1..120)
             }
             Step.SOURCE -> renderSourceStep()
+            Step.SOROBAN -> renderSorobanStep()
             Step.GOAL -> renderGoalStep()
             // Düğme yol çizimi bitene kadar kapalı: ekranın anlattığı şey o sıralı belirme,
             // çizim bitmeden geçilirse çocuk tabloyu hiç görmeden atlıyordu.
@@ -814,6 +835,7 @@ class UserInfoFragment : Fragment() {
         val question: CharSequence? = when (step) {
             Step.AGE -> appString(R.string.ui_kac_yasindasin)
             Step.SOURCE -> "Bizi nereden duydun?"
+            Step.SOROBAN -> appString(R.string.ui_abakus_kullanmayi_biliyor_musun)
             Step.GOAL -> appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
             Step.ROADMAP -> withGoal(appString(R.string.ui_her_gun), appString(R.string.ui_buraya_varacaksin))
             Step.MEET, Step.BRIEF, Step.CHALLENGE_INTRO, Step.CHALLENGE, Step.REMINDER -> null
@@ -1007,6 +1029,25 @@ class UserInfoFragment : Fragment() {
             renderSourceStep()
         }
         updateContinueButton(enabled = selectedSource != null)
+    }
+
+    /** Abaküs bilgisi: kaynak sorusundaki satırların aynısı, sırası [SorobanLevel.VALUES]. */
+    private fun renderSorobanStep() {
+        StreakViews.buildOptionRows(
+            container = binding.sourceOptions,
+            values = SorobanLevel.VALUES.indices.toList(),
+            labels = listOf(
+                appString(R.string.ui_abakus_hic_bilmiyorum),
+                appString(R.string.ui_abakus_biraz_biliyorum),
+                appString(R.string.ui_abakus_iyi_biliyorum),
+            ),
+            trailing = emptyList(),
+            selected = SorobanLevel.VALUES.indexOf(selectedSorobanLevel),
+        ) { index ->
+            selectedSorobanLevel = SorobanLevel.VALUES[index]
+            renderSorobanStep()
+        }
+        updateContinueButton(enabled = selectedSorobanLevel != null)
     }
 
     private fun updateContinueButton(enabled: Boolean) {

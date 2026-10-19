@@ -792,6 +792,10 @@
     <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">Sobi sana her gün hatırlatsın mı?</string>
     <string name="ui_saati_istedigin_zaman_degistirebilirsin">Saati istediğin zaman değiştirebilirsin</string>
     <string name="ui_kac_yasindasin">Kaç yaşındasın?</string>
+    <string name="ui_abakus_kullanmayi_biliyor_musun">Abaküs kullanmayı biliyor musun?</string>
+    <string name="ui_abakus_hic_bilmiyorum">Hiç bilmiyorum</string>
+    <string name="ui_abakus_biraz_biliyorum">Biraz biliyorum</string>
+    <string name="ui_abakus_iyi_biliyorum">İyi biliyorum</string>
     <string name="ui_her_gun">"Her gün "</string>
     <string name="ui_buraya_varacaksin">" buraya varacaksın!"</string>
     <string name="ui_ilk_dersinden_once_seni_tanimak_icin">"İlk dersinden önce seni tanımak için sadece "</string>

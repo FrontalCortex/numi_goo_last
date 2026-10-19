@@ -23,7 +23,34 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı, kod DEĞİŞMEDİ)
+## versionCode 13: yaş grubu, abaküs bilgisi, reCAPTCHA (19.10.2026 — derlendi, cihazda DENENMEDİ: telefon bağlı değildi; functions DEPLOY EDİLMEDİ)
+
+- **Analytics:** `AnalyticsLogger.setAgeGroup(birthYear)` (`age_group`: 0-3/4-6/7-8/9-10/11-14/15-17/18+,
+  UTC yılı − doğum yılı) ve `setSorobanLevel` (`soroban_level`: none/some/good). İkisi de kayıtta
+  (hesap açılmadan) ve `MainActivity.checkSubscriptionAndUpdateEnergy`'deki kullanıcı dokümanı
+  okumasında her seferinde yazılıyor; alan yoksa temizleniyor. **GA4'te ikisi için kullanıcı
+  kapsamlı özel boyut tanımlanmalı (kullanıcı yapacak).**
+- **Kayıt:** öğrenci akışına `Step.SOROBAN` eklendi (kaynaktan sonra, hedeften önce; öğretmende yok),
+  `sourceContainer`'ı kullanıyor, ön seçim yok. Huni adımı `signup_stage = soroban`. Tanışmadaki
+  "N kısa sorum var" kendiliğinden bir arttı.
+- **Saklama (`SorobanLevel.kt`):** cevap kayıt zincirinden (sunucu fonksiyonları) GEÇMİYOR; cihazda
+  bekliyor, hesap açıldıktan sonra ilk doküman okumasında `users/{uid}.sorobanLevel`'a istemci yazıyor
+  (kurallar izin veriyor, kural değişikliği yok). Alan doluysa bekleyen cevap yazılmıyor; 24 saatten
+  eski bekleyen cevap atılıyor.
+- **Eski hesaplara sorulmuyor (bilinçli):** açılışa açılır pencere eklemek ana ekranın kutlama/ders
+  dönüşü kuyruğuyla çakışma riski taşıyordu ve gerçek eski hesap yok denecek kadar az. 12 ile katılan
+  testçilerin abaküs bilgisi 1. gün formundan alınacak; Analytics'te `(not set)` görünürler.
+- **Gizlilik:** `public/privacy-policy.html` (2, 5.2; tarih 19.10.2026): doğum yılı artık "yalnızca reklam
+  için" değil, Analytics'e yaş grubu olarak da gidiyor; kayıt cevapları eklendi. Veli onayı e-postası
+  (`functions/index.js` `collected`) ve uygulamadaki liste (`fragment_parent_consent_collected_list`)
+  güncellendi, `PARENTAL_CONSENT_VERSION = '2026-10-19.1'`. Hosting elle deploy:
+  `firebase deploy --only hosting`. Functions push'la deploy olur (BÜTÜN fonksiyonlar).
+- **reCAPTCHA:** `com.google.android.recaptcha:recaptcha:18.4.0` açıkça eklendi; çözülen sürüm
+  18.1.2 → 18.4.0 (BoM 32.7.0 kaldı). Telefonda denenmeli: e-posta kodu, Google girişi, veli onayı.
+- Telefonda bakılacak: öğrenci kaydında abaküs sorusu (geçiş animasyonu, geri tuşu), kayıttan sonra
+  Firestore'da `sorobanLevel`, DebugView'da `age_group`/`soroban_level`.
+
+## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı; Faz 0 kodu 13'te yazıldı)
 
 Öneri: testçileri 12 ile HEMEN davet et (12 testçi × 14 gün sayacı katılımla başlıyor, darboğaz bu);
 13 ilk günlerde güncelleme olarak gelsin. Kapalı test boyunca yeni özellik yok, yalnızca engelleyici
@@ -31,7 +58,7 @@ hata düzeltmesi.
 - **Faz 0 — versionCode 13 (en geç ~1 hafta):**
   a. `age_group` + `soroban_level` kullanıcı özellikleri (aşağıda 1. madde). Yalnızca kayıtta değil,
      her açılışta Firestore'daki `birthYear`'dan yeniden yazılmalı (`setUserRole` gibi); yoksa 13'ten
-     önce kaydolan testçilerde boş kalır. `soroban_level` eski hesaplara bir kez sorulmalı (alan yoksa).
+     önce kaydolan testçilerde boş kalır. `soroban_level` eski hesaplara SORULMUYOR (yukarıda, karar).
      Yeni toplanan alan gizlilik politikasına ve veli onayı e-postasındaki veri listesine eklenmeli
      (metin değişirse `PARENTAL_CONSENT_VERSION` de).
   b. reCAPTCHA ≥18.4.0 (aşağıda SIRADAKİ İŞLER 4. madde; 90 gün sınırı, 13'e zaten planlı).
