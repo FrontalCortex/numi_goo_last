@@ -52,9 +52,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 
 ## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı; Faz 0 kodu 13'te yazıldı)
 
-Öneri: testçileri 12 ile HEMEN davet et (12 testçi × 14 gün sayacı katılımla başlıyor, darboğaz bu);
-13 ilk günlerde güncelleme olarak gelsin. Kapalı test boyunca yeni özellik yok, yalnızca engelleyici
-hata düzeltmesi.
+**Güncel (19.10.2026 akşam):** 13 debug sürümüyle telefonda doğrulandı (logda `age_group 11-14`,
+`soroban_level some`; GA4'te `age_group`, `soroban_level`, `tester` kullanıcı boyutları kullanıcı
+tarafından oluşturuldu). Testçiler 12 ile değil, **13 Alpha'da onaylandıktan sonra** davet edilecek.
+Kapalı testin amacı sırasıyla: (1) Play üretim şartı, (2) çocuk tek başına öğrenebiliyor mu / nerede
+takılıyor → düzeltme, (3) hedef kitle için HİPOTEZ (kesin karar yayından sonraki reklam testinde).
+Testçi grupları (kullanıcı kararı): soroban bilmeyen 5–14 yaş (~2/3) ve kursa giden çocuk (~1/3);
+iki grup ayrı değerlendirilir. Hedef 20–25 testçi (12 şartı kesintisiz katılım istiyor, kopanlar
+için pay), en fazla yarısı tanıdık. Kriterler veri gelmeden yazılacak (ör. bilmeyen grubun yarısı
+14 günde 1. part'ı bitiriyor mu). Üretim başvurusunda Play testçi bulma ve geri bildirim sorularını
+soruyor: geri bildirim kayıtları tutulmalı.
+Kapalı test boyunca yeni özellik yok, yalnızca engelleyici hata düzeltmesi.
 - **Faz 0 — versionCode 13 (en geç ~1 hafta):**
   a. `age_group` + `soroban_level` kullanıcı özellikleri (aşağıda 1. madde). Yalnızca kayıtta değil,
      her açılışta Firestore'daki `birthYear`'dan yeniden yazılmalı (`setUserRole` gibi); yoksa 13'ten
