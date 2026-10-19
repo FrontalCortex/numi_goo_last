@@ -81,7 +81,7 @@ Formlar `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` (Apps Script; `formlariOlustur` 1
 kullanıcının hesabında ÇALIŞTIRILDI, bağlantılar rehberde; bir daha çalıştırılmamalı). Sonra iki karar:
 telefon görüşmesi YOK (Form 1'deki soru ve tablodaki "Görüşme yapıldı" sütunu kaldırıldı), fiyat
 soruları açıkça "Pro üyelik" diyor (Lite ile karışmasın; gerçek fiyat yazılmıyor). Yayındaki formlara
-bu ikisi `duzeltme1` ile uygulanacak (kullanıcı çalıştıracak; HENÜZ ÇALIŞTIRILMADI) ve günlük rutin
+bu ikisi `duzeltme1` ile uygulandı (19.10.2026, kullanıcı çalıştırdı; formlar tarayıcıda kontrol edildi) ve günlük rutin
 `docs/KAPALI_TEST_FORMLARI.md` başında. DİKKAT: `dailyTimeSpent` yalnız son 14 günü tutuyor; CSV'de
 `son_kullanim_gunu` boş gelirse tablodaki eski tarih SİLİNMEMELİ (yoksa B olan C'ye düşer).
 **Toplu dışa aktarma (19.10.2026 — yazıldı, kullanıcının makinesinde çalıştı, 9 öğrenci):**
