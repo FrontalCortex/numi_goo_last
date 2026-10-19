@@ -71,6 +71,13 @@ her şehirden, Facebook "N. sınıf anneleri" grupları (kullanıcı Bursa'da); 
 yalnızca katılım az olursa. Öneri: sayacı hemen başlatmak için önce 5-8 kişilik güvenilir çekirdek
 grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon görüşmesi seçilmiş
 10-15 kişiye (A ve B'den).
+**Formlar ve takip tablosu (19.10.2026):** Google Forms metinleri `docs/KAPALI_TEST_FORMLARI.md`
+(1. gün, 7-10. gün, bırakanlar + telefon görüşmesi rehberi; kullanıcı Google Forms'a kendisi girecek).
+Takip tablosu `docs/kapali_test/Sorobit_kapali_test_takip.xlsx` (GIT DIŞI, `.git/info/exclude`: veli
+adı/telefon içerecek; yeniden üretmek için aynı klasörde `takip_tablosu_uret.ps1`, Excel COM ile).
+A/B/C, Firestore `users/{uid}/streak.lastDay` ile hesaplanıyor (katılımdan sonra kaç gün daha
+çalıştı: A ≥ 7, B ≥ 1, eşikler Özet!C4:C5). Günlük açılış Firestore'da tutulmuyor; 100 testçide
+lastDay/totalTimeSpent'i elle bakmak zahmetli olacak, toplu dışa aktarma (admin) iyi olur.
 
 **Güncel (19.10.2026 akşam):** 13 debug sürümüyle telefonda doğrulandı (logda `age_group 11-14`,
 `soroban_level some`; GA4'te `age_group`, `soroban_level`, `tester` kullanıcı boyutları kullanıcı
