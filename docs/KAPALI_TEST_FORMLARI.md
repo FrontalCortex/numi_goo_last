@@ -15,6 +15,17 @@ Formları elle girmek yerine `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` üçünü bi
    düzenleme bağlantısı (yalnızca sen) ve cevap tablosu. Drive'da "Sorobit kapalı test" klasörü oluşur.
 6. Annelere gidecek üç bağlantıyı bir yere not et.
 
+## Annelere gidecek bağlantılar (19.10.2026'da oluşturuldu)
+
+| Form | Bağlantı |
+|---|---|
+| Form 1 — 1. gün | https://forms.gle/xKspcdRLuLCzMHpU7 |
+| Form 2 — 7–10. gün | https://forms.gle/vcY9sk4H2dzez7tR6 |
+| Form 3 — Bırakanlar | https://forms.gle/bgpYYKut36opWCoa8 |
+
+Düzenleme bağlantıları ve cevap tabloları Drive'da **"Sorobit kapalı test"** klasöründe (yalnızca
+formları oluşturan hesap görür). Form 1 ve 2'nin oturum açmadan açıldığı kontrol edildi.
+
 ## Günlük kullanım (rutin)
 
 Üç araç var: **formlar** (anneler doldurur), **dışa aktarma betiği** (uygulamadaki ilerlemeyi çeker),
