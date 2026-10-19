@@ -62,6 +62,16 @@ düşüyor (13'le ilgisi yok, uygulama yerelde derleniyor); ayrıca bakılmalı.
 
 ## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı; Faz 0 kodu 13'te yazıldı)
 
+**13 (1.0) Alpha'da YAYINDA (19.10.2026 20:55, gönderim 2; veri güvenliği anketi de güncellendi).**
+Katılım videosu hazır: `C:\Users\ASUS\Videos\Sorobit_tanitim\katilim\Sorobit_katilim.mp4` (34 sn;
+betikler `montaj\betikler\katilim_grafik.ps1`, `katilim_montaj.ps1`, açıklama `NASIL_KULLANILIR.txt`).
+Testçi bulma kararları (kullanıcı, 19.10.2026): hedef ~100 testçi, uygun kriterdeki herkese yazarak;
+kurslara SOĞUK mesaj (tanıdık mental aritmetik kursuna yazılmayacak); soroban bilmeyen grup için
+her şehirden, Facebook "N. sınıf anneleri" grupları (kullanıcı Bursa'da); teşvik (ücretsiz Pro)
+yalnızca katılım az olursa. Öneri: sayacı hemen başlatmak için önce 5-8 kişilik güvenilir çekirdek
+grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon görüşmesi seçilmiş
+10-15 kişiye (A ve B'den).
+
 **Güncel (19.10.2026 akşam):** 13 debug sürümüyle telefonda doğrulandı (logda `age_group 11-14`,
 `soroban_level some`; GA4'te `age_group`, `soroban_level`, `tester` kullanıcı boyutları kullanıcı
 tarafından oluşturuldu). Testçiler 12 ile değil, **13 Alpha'da onaylandıktan sonra** davet edilecek.
