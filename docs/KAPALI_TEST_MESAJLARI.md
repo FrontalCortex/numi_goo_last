@@ -123,6 +123,7 @@ Notlar:
 
 - **WhatsApp grubu kurma**: yabancı aileler birbirinin numarasını görür. Hep birebir yaz.
 - Hedef yaş **7–14** (ilkokul ve ortaokul; kullanıcı kararı 19.10.2026), tanıtım videosundaki
-  "7–14 YAŞ İÇİN" ile aynı. Videonun son karesi **"20 aile arıyorum"** diyor; hedef ~100 aile.
-  "20" kalırsa erken dolmuş gibi algılanabilir (grafikler `montaj\betikler\grafik_uret.ps1`).
+  "7–14 YAŞ İÇİN" ile aynı. Son kare 19.10.2026'da "20 aile arıyorum" yerine **"Deneyecek aileler
+  arıyorum"** oldu (sayı yok, ~100 aile hedefiyle çelişmiyor; eski sürüm
+  `Sorobit_tanitim_taslak_20aile_yedek.mp4`).
 - Gece geç saatte ya da sabah çok erken mesaj atma; hızlı yanıtlarla bile kişiye özel bir selam ekle.
