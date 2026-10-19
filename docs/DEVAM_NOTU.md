@@ -23,6 +23,32 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Hedef kitle ve pazarlama: sıradaki adımlar (19.10.2026 — konuşuldu, kod DEĞİŞMEDİ, "sonra yapalım")
+
+Hedef: Türkiye, orta-üst gelir, büyükşehir anneleri; çocuk oynar, reklamı anne görür. Yaş aralığı
+(5–10 mu, 11–14 mü) ve soroban bilen/bilmeyen ayrımı henüz bilinmiyor, test edilecek. Kapalı testte
+~12 testçi var: gruplara bölüp istatistik çıkarılamaz, yalnızca sert sinyallere bakılır, asıl bilgi
+annelerle görüşmeden gelir. Online ders uygulamasına dönüşülmeyecek (öneri): uygulama tek başına
+öğretir, öğretmene soru ve online ders üst katman.
+1. **versionCode 13 — `age_group` ve `soroban_level` kullanıcı özellikleri (kullanıcı kararı: soroban_level
+   kesin).** Yaş şu an yalnızca Firestore'da (`birthYear`); Analytics'e gitmiyor ve `setUserId` olmadığı
+   için birleştirilemiyor. GA4'teki `signup_stage` boyutu yaş DEĞİL, kayıt hunisindeki adımın adı
+   (`age` = "yaş ekranına gelindi"). Değerler metin: `age_group` "4-6/7-8/9-10/11-14/15+",
+   `soroban_level` "none/some/good" (kayıtta tek soru: "Abaküs kullanmayı biliyor musun? Hiç / Biraz /
+   İyi"). İkisi de GA4'te kullanıcı kapsamlı özel boyut olarak tanımlanmalı (orada yer var).
+2. **Testçi annelerle 15 dk görüşme:** "Neden denediniz?" (şıksız), çocuğun yaşı/sınıfı, abaküs
+   geçmişi, fiyat (Van Westendorp: "hangi fiyatta çok pahalı / şüpheli ucuz"), "arkadaşınıza nasıl
+   anlatırdınız?" (ilk reklam metni). Soru listesi henüz hazırlanmadı.
+3. **2–3 abaküs kursu + öğretmenle ön görüşme:** teklif = kursa ücretsiz öğretmen paneli, öğrencilerine
+   indirim, gelen abonelikten pay (%20–30). Öğretmen kendi öğrencilerini görme paneli istenip
+   istenmediği sorulacak, kurmadan önce.
+4. **Yayından sonra mesaj testi:** aynı görsel/bütçe, 5 başlık (matematik korkusu, faydalı ekran
+   süresi, kursa gitmeden evde, kursta öğrendiğini unutmasın, zihinden hızlı hesap). Her reklam ve her
+   mikro-influencer için ayrı UTM'li Play bağlantısı. Reklamda "Duolingo" adı kullanılmaz.
+5. **Ölçüm:** kurulum → ödeme dönüşümü ve ödeyenin kaç ay kaldığı (LTV); ödeyen başına harcama (CAC)
+   LTV'nin ~1/3'ünü geçmemeli. Huni olayları hazır (`pro_panel_shown` → `plan_shown` →
+   `purchase_started` → `purchase`), kaynak `acquisition_source` ile kırılıyor.
+
 ## SIRADAKİ İŞLER: kapalı teste (Alpha) geçiş (18.10.2026)
 
 **SONUÇ (19.10.2026): 12 (1.0) Alpha'da YAYINDA** — "Belirli test kullanıcıları tarafından
