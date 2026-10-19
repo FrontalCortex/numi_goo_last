@@ -23,7 +23,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## versionCode 13: yaş grubu, abaküs bilgisi, reCAPTCHA (19.10.2026 — derlendi, cihazda DENENMEDİ: telefon bağlı değildi; functions DEPLOY EDİLMEDİ)
+## versionCode 13: yaş grubu, abaküs bilgisi, reCAPTCHA (19.10.2026 — Alpha İNCELEMESİNE GÖNDERİLDİ)
+
+**Durum (19.10.2026 akşam):** debug sürümü telefonda e-posta kaydıyla doğrulandı (yukarıdaki yol
+haritası notu). AAB (19.10 18:28) doğrudan Kapalı test - Alpha'ya yüklendi (Dahili test atlandı) ve
+Veri güvenliği güncellemesiyle birlikte "2 değişikliği incelemeye gönder" ile gönderildi. Veri
+güvenliği: Kişisel bilgiler → "Diğer bilgiler" zaten beyanlıydı (yaş); amaçlarına Analiz ve
+Sahtekarlığı önleme/güvenlik/uyumluluk eklendi (Hesap yönetimi + Uygulama işlevleri vardı).
+Release sürümde Google girişi ve 13 yaş altı veli onayı (yeni e-posta metni) henüz DENENMEDİ.
+"Deploy Cloud Functions" (428dc8c) BAŞARILI; hosting deploy edildi ve canlıda doğrulandı.
+Not: GitHub "Build Debug APK" iş akışı uzun süredir her push'ta "Setup Android SDK" adımında
+düşüyor (13'le ilgisi yok, uygulama yerelde derleniyor); ayrıca bakılmalı.
 
 - **Analytics:** `AnalyticsLogger.setAgeGroup(birthYear)` (`age_group`: 0-3/4-6/7-8/9-10/11-14/15-17/18+,
   UTC yılı − doğum yılı) ve `setSorobanLevel` (`soroban_level`: none/some/good). İkisi de kayıtta
