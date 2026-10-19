@@ -75,9 +75,30 @@ grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon 
 (1. gün, 7-10. gün, bırakanlar + telefon görüşmesi rehberi; kullanıcı Google Forms'a kendisi girecek).
 Takip tablosu `docs/kapali_test/Sorobit_kapali_test_takip.xlsx` (GIT DIŞI, `.git/info/exclude`: veli
 adı/telefon içerecek; yeniden üretmek için aynı klasörde `takip_tablosu_uret.ps1`, Excel COM ile).
-A/B/C, Firestore `users/{uid}/streak.lastDay` ile hesaplanıyor (katılımdan sonra kaç gün daha
-çalıştı: A ≥ 7, B ≥ 1, eşikler Özet!C4:C5). Günlük açılış Firestore'da tutulmuyor; 100 testçide
-lastDay/totalTimeSpent'i elle bakmak zahmetli olacak, toplu dışa aktarma (admin) iyi olur.
+A/B/C, tablodaki "Son kullanım günü"nden hesaplanıyor (katılımdan kaç gün sonra hâlâ kullanıyordu:
+A ≥ 7, B ≥ 1, eşikler Özet!C4:C5); bu sütun dışa aktarma CSV'sinin `son_kullanim_gunu`'su (aşağıda).
+Formlar `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` (Apps Script, üç formu + cevap tablolarını tek seferde
+kurar; kullanıcı script.google.com'da çalıştıracak, HENÜZ ÇALIŞTIRILMADI) ve günlük rutin
+`docs/KAPALI_TEST_FORMLARI.md` başında. DİKKAT: `dailyTimeSpent` yalnız son 14 günü tutuyor; CSV'de
+`son_kullanim_gunu` boş gelirse tablodaki eski tarih SİLİNMEMELİ (yoksa B olan C'ye düşer).
+**Toplu dışa aktarma (19.10.2026 — yazıldı, kullanıcının makinesinde çalıştı, 9 öğrenci):**
+`node tools/kapali-test/ilerleme_disa_aktar.js` → `docs/kapali_test/ilerleme_<tarih>.csv` (git dışı;
+noktalı virgüllü + BOM, Türkçe Excel'de çift tıkla açılıyor, tarihler gg.aa.yyyy). Yalnız `role`
+STUDENT; `--testci-haric` isTester'ları atar (varsayılan: `test_hesabi=evet`, en altta),
+`--kayit-sonrasi YYYY-AA-GG` süzer. Sütunlar: kullanıcı adı, yaş grubu (`ageGroupFor` dilimleri),
+doğum yılı, abaküs, kaynak, kayıt tarihi, `seri_son_gun` (streak/state.lastDay), seri,
+`hedef_gunu_son21` (recentDays), `son_kullanim_gunu` / `kullanim_gunu_son14` (`dailyTimeSpent`,
+hedef tamamlanmasa da; yalnız son 14 gün tutuluyor; `son_kullanim_gunu` → tablodaki "Son kullanım günü"), `toplam_sure_dk` (tablodaki
+"Toplam süre"), biten ders / maraton (`lessonProgress/{1..8}/items` içinde `stepIsFinish == true`;
+maraton = stableId `_unite_maratonu`, dokümanda tür alanı yok), en ileri biten stableId, uid.
+Deploy GEREKTİRMEZ: betik `functions/` dışında (orada olsaydı push BÜTÜN fonksiyonları deploy
+ederdi), firebase-admin'i `functions/node_modules`'tan alıyor; kimlik `~/.config/numigo/` altındaki
+servis hesabı anahtarı (ya da `GOOGLE_APPLICATION_CREDENTIALS`). Okuma maliyeti öğrenci başına ~10 +
+biten ders sayısı. İlk çıktıda görülen: **hiçbir hesapta `isTester` yok** (Faz 0c yapılmadı; 1960/
+2003/2004/2008 doğumlu 18+ hesaplar büyük ihtimalle geliştiricinin, Console'dan `isTester=true`
+yazılmalı); iki hesapta biten ders 0 ama maraton bitmiş (maraton dersleri atlayıp açılabiliyor
+olabilir, BAKILMADI). lastDay yalnız günlük hedef tamamlanınca ilerliyor; bu yüzden tablo
+A/B/C için `son_kullanim_gunu`'nu kullanıyor (19.10.2026'da değiştirildi).
 
 **Güncel (19.10.2026 akşam):** 13 debug sürümüyle telefonda doğrulandı (logda `age_group 11-14`,
 `soroban_level some`; GA4'te `age_group`, `soroban_level`, `tester` kullanıcı boyutları kullanıcı
