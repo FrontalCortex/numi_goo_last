@@ -77,8 +77,11 @@ Takip tablosu `docs/kapali_test/Sorobit_kapali_test_takip.xlsx` (GIT DIŞI, `.gi
 adı/telefon içerecek; yeniden üretmek için aynı klasörde `takip_tablosu_uret.ps1`, Excel COM ile).
 A/B/C, tablodaki "Son kullanım günü"nden hesaplanıyor (katılımdan kaç gün sonra hâlâ kullanıyordu:
 A ≥ 7, B ≥ 1, eşikler Özet!C4:C5); bu sütun dışa aktarma CSV'sinin `son_kullanim_gunu`'su (aşağıda).
-Formlar `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` (Apps Script, üç formu + cevap tablolarını tek seferde
-kurar; kullanıcı script.google.com'da çalıştıracak, HENÜZ ÇALIŞTIRILMADI) ve günlük rutin
+Formlar `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` (Apps Script; `formlariOlustur` 19.10.2026 22:09'da
+kullanıcının hesabında ÇALIŞTIRILDI, bağlantılar rehberde; bir daha çalıştırılmamalı). Sonra iki karar:
+telefon görüşmesi YOK (Form 1'deki soru ve tablodaki "Görüşme yapıldı" sütunu kaldırıldı), fiyat
+soruları açıkça "Pro üyelik" diyor (Lite ile karışmasın; gerçek fiyat yazılmıyor). Yayındaki formlara
+bu ikisi `duzeltme1` ile uygulanacak (kullanıcı çalıştıracak; HENÜZ ÇALIŞTIRILMADI) ve günlük rutin
 `docs/KAPALI_TEST_FORMLARI.md` başında. DİKKAT: `dailyTimeSpent` yalnız son 14 günü tutuyor; CSV'de
 `son_kullanim_gunu` boş gelirse tablodaki eski tarih SİLİNMEMELİ (yoksa B olan C'ye düşer).
 **Toplu dışa aktarma (19.10.2026 — yazıldı, kullanıcının makinesinde çalıştı, 9 öğrenci):**

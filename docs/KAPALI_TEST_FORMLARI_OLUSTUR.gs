@@ -87,12 +87,17 @@ function cokSecim(form, baslik, zorunlu, secenekler, digerVar) {
   return s;
 }
 
+// Uygulamada iki üyelik var: Pro (reklamsız, sınırsız enerji) ve Lite (reklamlı). Fiyat soruları
+// Pro'yu soruyor; karışmasın diye açıklamada ayrıca yazıyor. Gerçek fiyat bilerek yazılmıyor.
+const PRO_YARDIM = 'Pro üyelik: reklamsız, sınırsız enerji, Ustalık Yolu (reklamlı Lite üyelik değil). ' +
+  'TL olarak, yalnızca sayı yazın.';
+
 function tlSorusu(form, baslik) {
   const dogrulama = FormApp.createTextValidation()
     .requireWholeNumber()
     .setHelpText('Yalnızca sayı yazın (ör. 250).')
     .build();
-  return kisa(form, baslik, false, 'TL olarak, yalnızca sayı yazın.').setValidation(dogrulama);
+  return kisa(form, baslik, false, PRO_YARDIM).setValidation(dogrulama);
 }
 
 function kullaniciAdi(form, aciklamaliMi) {
@@ -142,8 +147,7 @@ function form1(klasor) {
   ], true);
   tekSecim(form, 'Matematik için ayda yaklaşık ne kadar harcıyorsunuz?', false,
     ['0 TL', '1–500 TL', '501–1.500 TL', '1.501–3.000 TL', '3.000 TL üstü', 'Söylemek istemiyorum']);
-  tekSecim(form, 'Birkaç gün sonra 10 dakikalık kısa bir telefon görüşmesine açık mısınız?', true,
-    ['Evet', 'Hayır']);
+  // Telefon görüşmesi sorusu yok (kullanıcı kararı 19.10.2026: telefonla görüşme yapılmayacak).
 
   return bitir(klasor, form, 'Form 1 - 1. gün');
 }
@@ -173,14 +177,42 @@ function form2(klasor) {
     .setLabels('Hiç önermem', 'Kesinlikle öneririm')
     .setRequired(true);
   // Fiyat: Pro aboneliğin aylık fiyatı. Gerçek fiyat söylenmiyor (cevaplar ona yaslanır).
-  tlSorusu(form, 'Uygulamanın aylık üyeliği hangi fiyatta "bu çok pahalı, almam" derdiniz?');
-  tlSorusu(form, 'Hangi fiyatta "bu kadar ucuzsa bir sorunu vardır" diye şüphelenirdiniz?');
+  tlSorusu(form, 'Pro üyeliğin aylık fiyatı ne olursa "bu çok pahalı, almam" derdiniz?');
+  tlSorusu(form, 'Pro üyeliğin aylık fiyatı ne olursa "bu kadar ucuzsa bir sorunu vardır" diye şüphelenirdiniz?');
   paragraf(form, 'Uygulamada en çok neyi değiştirirdiniz?', false);
 
   return bitir(klasor, form, 'Form 2 - 7-10. gün');
 }
 
 // ---------- Form 3: bırakanlar ----------
+
+// ---------- Düzeltme 1 (19.10.2026): yayındaki formları yerinde düzeltir ----------
+// formlariOlustur 19.10.2026'da bir kez çalıştırıldı; sonra iki değişiklik istendi. Formlar yeniden
+// oluşturulmasın (bağlantılar değişir) diye mevcut formlar kimlikleriyle açılıp düzeltiliyor.
+// Yalnızca BİR KEZ çalıştır; ikinci çalıştırma bir şey değiştirmez, zararsızdır.
+
+function duzeltme1() {
+  const f1 = FormApp.openById('12gIa79McdHD35UBGCPW1Uisoz6v5SIfix0eh9oLf9Pc');
+  let silinen = 0;
+  f1.getItems().forEach(function (it) {
+    if (it.getTitle().indexOf('telefon görüşmesine') !== -1) { f1.deleteItem(it); silinen++; }
+  });
+  const f2 = FormApp.openById('1imp0fqNXnWJuKcd6JsWI7qW2hwhJUNy7Iw3pjhi4isk');
+  let degisen = 0;
+  f2.getItems().forEach(function (it) {
+    const t = it.getTitle();
+    if (t.indexOf('çok pahalı, almam') !== -1) {
+      it.setTitle('Pro üyeliğin aylık fiyatı ne olursa "bu çok pahalı, almam" derdiniz?').setHelpText(PRO_YARDIM);
+      degisen++;
+    } else if (t.indexOf('bir sorunu vardır') !== -1) {
+      it.setTitle('Pro üyeliğin aylık fiyatı ne olursa "bu kadar ucuzsa bir sorunu vardır" diye şüphelenirdiniz?')
+        .setHelpText(PRO_YARDIM);
+      degisen++;
+    }
+  });
+  Logger.log('Form 1: silinen soru = ' + silinen + ' (beklenen 1)');
+  Logger.log('Form 2: değişen soru = ' + degisen + ' (beklenen 2)');
+}
 
 function form3(klasor) {
   const ad = 'Sorobit: kısa bir soru';

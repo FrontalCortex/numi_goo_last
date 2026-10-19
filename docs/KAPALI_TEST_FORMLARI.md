@@ -1,7 +1,7 @@
 # Kapalı test formları (19.10.2026)
 
-Üç form var: **1. gün**, **7–10. gün**, **bırakanlar**. Ayrıca seçilen 10–15 aileyle yapılacak telefon
-görüşmesi için kısa bir rehber var (en altta).
+Üç form var: **1. gün**, **7–10. gün**, **bırakanlar**. Telefon görüşmesi YAPILMAYACAK (kullanıcı kararı
+19.10.2026); bütün bilgi formlardan ve uygulama verisinden geliyor.
 
 ## Kurulum (bir kez, ~2 dakika)
 
@@ -14,6 +14,13 @@ Formları elle girmek yerine `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` üçünü bi
 5. Alttaki **Yürütme günlüğü**nde her form için üç bağlantı yazar: annelere gönderilecek bağlantı,
    düzenleme bağlantısı (yalnızca sen) ve cevap tablosu. Drive'da "Sorobit kapalı test" klasörü oluşur.
 6. Annelere gidecek üç bağlantıyı bir yere not et.
+
+`formlariOlustur` 19.10.2026'da çalıştırıldı; **bir daha çalıştırma** (ikinci kopya oluşur).
+
+**Düzeltme 1 (bir kez):** telefon görüşmesi sorusunu siler, fiyat sorularına "Pro" ekler. Apps Script
+projesinde `Kod.gs`'nin içini tamamen sil, `.gs` dosyasının güncel hâlini yapıştır, Ctrl+S, üstteki
+listeden **`duzeltme1`**'i seç, **Çalıştır**. Günlükte "silinen soru = 1" ve "değişen soru = 2" yazmalı.
+Bağlantılar değişmez.
 
 ## Annelere gidecek bağlantılar (19.10.2026'da oluşturuldu)
 
@@ -39,7 +46,6 @@ hesaplar). Hepsi **kullanıcı adı** ile eşleşir.
 | 2–3 günde bir | Proje kökünde `node tools/kapali-test/ilerleme_disa_aktar.js --testci-haric` çalıştır. `docs/kapali_test/ilerleme_<tarih>.csv` oluşur. Her testçi için `son_kullanim_gunu` → "Son kullanım günü", `toplam_sure_dk` → "Toplam süre (dk)". |
 | "Uyarı" sütununda **Form 3 gönder** çıkınca | O anneye **Form 3** bağlantısını kısa bir mesajla gönder; cevabı "Bırakma sebebi"ne yaz. |
 | Katılımdan 7–10 gün sonra | **Form 2**'yi gönder. Cevaptan tavsiye puanı, çok pahalı ve şüpheli ucuz fiyatları tabloya yaz. "7-10. gün formu" = Evet. |
-| Form 2'den sonra | "Görüşmeye açığım" diyenlerden A ve B grubundan birkaçıyla telefonla konuş (rehber en altta). Notu "Görüşme notu"na yaz. |
 | Ayrıldığını söyleyen olursa | "Testte mi" = Ayrıldı (Play'in 12 kişi şartını Özet sayfası takip ediyor). |
 | Haftada bir | **Özet** sekmesine bak: Play şartı tamam mı, hangi grup / yaş / dert / kanal A oranı yüksek. |
 
@@ -109,8 +115,6 @@ soru o ve zorunlu.
     Ücretli eğitim uygulaması · Ücretsiz eğitim uygulaması · Hiçbiri · Diğer: ___
 11. **Matematik için ayda yaklaşık ne kadar harcıyorsunuz?** *(Çoktan seçmeli, isteğe bağlı)*
     0 TL · 1–500 TL · 501–1.500 TL · 1.501–3.000 TL · 3.000 TL üstü · Söylemek istemiyorum
-12. **Birkaç gün sonra 10 dakikalık kısa bir telefon görüşmesine açık mısınız?** *(Çoktan seçmeli, zorunlu)*
-    Evet · Hayır
 
 ---
 
@@ -133,14 +137,14 @@ soru o ve zorunlu.
 7. **Sorobit'i bir arkadaşınıza tek cümleyle nasıl anlatırdınız?** *(Paragraf, zorunlu)*
 8. **Sorobit'i bir arkadaşınıza ne kadar önerirsiniz?** *(Doğrusal ölçek 0–10, zorunlu)*
    0 = "Hiç önermem", 10 = "Kesinlikle öneririm"
-9. **Uygulamanın aylık üyeliği hangi fiyatta "bu çok pahalı, almam" derdiniz?** *(Kısa yanıt, sayı doğrulama, isteğe bağlı)*
-   Açıklama: "TL olarak, yalnızca sayı yazın."
-10. **Hangi fiyatta "bu kadar ucuzsa bir sorunu vardır" diye şüphelenirdiniz?** *(Kısa yanıt, sayı doğrulama, isteğe bağlı)*
-    Açıklama: "TL olarak, yalnızca sayı yazın."
+9. **Pro üyeliğin aylık fiyatı ne olursa "bu çok pahalı, almam" derdiniz?** *(Kısa yanıt, sayı doğrulama, isteğe bağlı)*
+   Açıklama: "Pro üyelik: reklamsız, sınırsız enerji, Ustalık Yolu (reklamlı Lite üyelik değil). TL olarak, yalnızca sayı yazın."
+10. **Pro üyeliğin aylık fiyatı ne olursa "bu kadar ucuzsa bir sorunu vardır" diye şüphelenirdiniz?** *(Kısa yanıt, sayı doğrulama, isteğe bağlı)*
+    Açıklama: (9. ile aynı)
 11. **Uygulamada en çok neyi değiştirirdiniz?** *(Paragraf, isteğe bağlı)*
 
-Not (forma girmez): 9–10. sorularda gerçek fiyatı söyleme; cevaplar söylenen fiyata yaslanır.
-Fiyat, Pro aboneliğin aylık fiyatıdır (altın paketleri değil).
+Not (forma girmez): 9–10. sorularda gerçek fiyatı (Pro aylık ₺99, Lite aylık ₺49) söyleme; cevaplar
+söylenen fiyata yaslanır. Soru Pro'yu soruyor; Lite ve altın paketleri değil.
 
 ---
 
@@ -166,19 +170,3 @@ olur, 1 dakikalık form:"). 14. günü bekleme; o zamana kadar sebep unutulur.
 5. **İleride tekrar denemek ister misiniz?** *(Çoktan seçmeli, isteğe bağlı)*
    Evet · Belki · Hayır
 
----
-
-## Telefon görüşmesi rehberi (10 dakika, seçilen 10–15 aile)
-
-Kime: A grubundan (devam eden, tavsiye puanı 9–10) en istekliler + B grubundan (bırakan) birkaç kişi.
-Yalnızca 1. gün formunda "görüşmeye açığım" diyenler.
-
-1. "Sorobit'i ilk duyduğunuzda aklınızdan ne geçti?" (kendi kelimeleri; reklam dili için birebir not al)
-2. "Son bir haftada çocuğunuz uygulamayı nasıl kullandı? Bir gününü anlatır mısınız?"
-3. "Takıldığı bir an oldu mu? O an ne yaptı?" (öğretmene soru sordu mu, bıraktı mı)
-4. Kursa giden çocukta: "Kurstaki öğretmeninin anlattığıyla uygulamanın anlattığı arasında fark var mı?"
-5. "Bu uygulama olmasaydı onun yerine ne yapardınız?" (asıl rakibi bulmak için)
-6. "Para ödemeyi düşündüren ne olurdu? Ne olursa asla ödemezdiniz?"
-
-Kural: Övgüyü değil geçmişteki davranışı dinle ("ne yaptınız", "ne harcadınız"). Görüşme notlarını
-takip tablosundaki "Görüşme notu" sütununa yaz.
