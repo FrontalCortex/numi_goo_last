@@ -71,6 +71,10 @@ her şehirden, Facebook "N. sınıf anneleri" grupları (kullanıcı Bursa'da); 
 yalnızca katılım az olursa. Öneri: sayacı hemen başlatmak için önce 5-8 kişilik güvenilir çekirdek
 grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon görüşmesi seçilmiş
 10-15 kişiye (A ve B'den).
+**Facebook sınıf grubu metinleri (19.10.2026, kullanıcı onayladı):** `docs/KAPALI_TEST_MESAJLARI.md`
+9. bölüm — 2–8. sınıf için kanca tablosu, ortak gövde, ilk yorum, yönetici izin mesajı. Vaat "10 kısa
+derste abaküste 5 basamaklı toplama" (`p1_i09`; "ilk haftasında" test verisiyle doğrulanacak). Genel
+taslaktaki "hiçbir ödeme yok" → "2 haftalık test için hiçbir ödeme gerekmiyor" (reklam + Pro var).
 **Formlar ve takip tablosu (19.10.2026):** Google Forms metinleri `docs/KAPALI_TEST_FORMLARI.md`
 (1. gün, 7-10. gün, bırakanlar + telefon görüşmesi rehberi; kullanıcı Google Forms'a kendisi girecek).
 Takip tablosu `docs/kapali_test/Sorobit_kapali_test_takip.xlsx` (GIT DIŞI, `.git/info/exclude`: veli
