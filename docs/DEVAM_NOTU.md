@@ -108,7 +108,7 @@ A/B/C için `son_kullanim_gunu`'nu kullanıyor (19.10.2026'da değiştirildi).
 tarafından oluşturuldu). Testçiler 12 ile değil, **13 Alpha'da onaylandıktan sonra** davet edilecek.
 Kapalı testin amacı sırasıyla: (1) Play üretim şartı, (2) çocuk tek başına öğrenebiliyor mu / nerede
 takılıyor → düzeltme, (3) hedef kitle için HİPOTEZ (kesin karar yayından sonraki reklam testinde).
-Testçi grupları (kullanıcı kararı): soroban bilmeyen 5–14 yaş (~2/3) ve kursa giden çocuk (~1/3);
+Testçi grupları (kullanıcı kararı): soroban bilmeyen 7–14 yaş (~2/3; 19.10.2026 akşamı 5–14 yerine 7–14 = ilk ve ortaokul) ve kursa giden çocuk (~1/3);
 iki grup ayrı değerlendirilir. Hedef 20–25 testçi (12 şartı kesintisiz katılım istiyor, kopanlar
 için pay), en fazla yarısı tanıdık. Kriterler veri gelmeden yazılacak (ör. bilmeyen grubun yarısı
 14 günde 1. part'ı bitiriyor mu). Üretim başvurusunda Play testçi bulma ve geri bildirim sorularını

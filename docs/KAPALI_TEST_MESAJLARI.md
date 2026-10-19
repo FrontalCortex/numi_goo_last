@@ -52,7 +52,7 @@ tek adım ekliyor ama iletişim kanalını baştan açıyor; birebir konuşulan 
 > Merhaba! Çocuklara abaküsü (soroban) adım adım, oyun gibi öğreten **Sorobit** adlı bir uygulama
 > geliştirdim. Yayına çıkmadan önce **ücretsiz deneyecek aileler** arıyorum.
 >
-> 👧🧒 5–14 yaş arası çocuğu olan, **Android** telefonu olan aileler
+> 👧🧒 7–14 yaş (ilkokul ve ortaokul) çocuğu olan, **Android** telefonu olan aileler
 > 🎯 Abaküsü hiç bilmeyen çocuklar da, kursa giden çocuklar da katılabilir
 > 💸 Tamamen ücretsiz, hiçbir ödeme yok
 > 🗓️ Tek ricam: 2 hafta kullanıp birkaç kısa soruya cevap vermeniz
@@ -72,7 +72,7 @@ Notlar:
 > Kurulum yaklaşık 1 dakika sürüyor, birazdan kısa bir video gönderiyorum.
 > Bu arada çocuğunuzun kaç yaşında olduğunu yazar mısınız?
 
-(Yaşı sormak hem sohbeti başlatır hem 5–14 dışını baştan ayırır. Cevap gelince `/katilim` gönder.)
+(Yaşı sormak hem sohbeti başlatır hem 7–14 dışını baştan ayırır. Cevap gelince `/katilim` gönder.)
 
 ## 4. `/katilim` — katılım talimatı (+ katılım videosu)
 
@@ -122,7 +122,7 @@ Notlar:
 ## Dikkat
 
 - **WhatsApp grubu kurma**: yabancı aileler birbirinin numarasını görür. Hep birebir yaz.
-- Tanıtım videosu (`Sorobit_tanitim_taslak.mp4`) **"7–14 YAŞ İÇİN"** ve son karede **"20 aile arıyorum"**
-  diyor; hedef artık 5–14 yaş ve ~100 aile. Paylaşmadan önce video güncellenmeli (grafikler
-  `montaj\betikler\grafik_uret.ps1`, montaj `montaj.ps1`).
+- Hedef yaş **7–14** (ilkokul ve ortaokul; kullanıcı kararı 19.10.2026), tanıtım videosundaki
+  "7–14 YAŞ İÇİN" ile aynı. Videonun son karesi **"20 aile arıyorum"** diyor; hedef ~100 aile.
+  "20" kalırsa erken dolmuş gibi algılanabilir (grafikler `montaj\betikler\grafik_uret.ps1`).
 - Gece geç saatte ya da sabah çok erken mesaj atma; hızlı yanıtlarla bile kişiye özel bir selam ekle.
