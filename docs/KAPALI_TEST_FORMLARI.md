@@ -36,6 +36,10 @@ hesaplar). Hepsi **kullanıcı adı** ile eşleşir.
 - Takip tablosunda **mor başlıklı** sütunları sen doldurursun; **gri** olanlar otomatik, dokunma.
 - Asıl sonuçlar Özet'teki **"tanıdıklar hariç"** tablolarda (tanıdıkların cevabı iyimser olur).
 - İlk 7 gün herkes "Erken" görünür; A/B/C ancak 7. günden sonra anlam kazanır.
+- CSV yalnızca **son 14 günün** kullanımını bilir. Bir testçinin `son_kullanim_gunu` CSV'de **boş**
+  geldiyse tablodaki eski tarihi **silme**, olduğu gibi bırak (silersen B olan C'ye düşer).
+- Kendi denemelerin karışmasın: Firebase Console'da kendi hesaplarına `isTester = true` yaz ve
+  betiği `--testci-haric` ile çalıştır (ilk çıktıda hiçbir hesapta yoktu).
 - Kullanıcı adı formda "@" ile ya da büyük/küçük harf farkıyla gelebilir; tabloya CSV'deki
   `kullanici_adi` ile aynı yaz (ör. `716706IG`), yoksa eşleştirirken karışır.
 
