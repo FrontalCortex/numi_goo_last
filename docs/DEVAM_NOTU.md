@@ -23,6 +23,37 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı, kod DEĞİŞMEDİ)
+
+Öneri: testçileri 12 ile HEMEN davet et (12 testçi × 14 gün sayacı katılımla başlıyor, darboğaz bu);
+13 ilk günlerde güncelleme olarak gelsin. Kapalı test boyunca yeni özellik yok, yalnızca engelleyici
+hata düzeltmesi.
+- **Faz 0 — versionCode 13 (en geç ~1 hafta):**
+  a. `age_group` + `soroban_level` kullanıcı özellikleri (aşağıda 1. madde). Yalnızca kayıtta değil,
+     her açılışta Firestore'daki `birthYear`'dan yeniden yazılmalı (`setUserRole` gibi); yoksa 13'ten
+     önce kaydolan testçilerde boş kalır. `soroban_level` eski hesaplara bir kez sorulmalı (alan yoksa).
+     Yeni toplanan alan gizlilik politikasına ve veli onayı e-postasındaki veri listesine eklenmeli
+     (metin değişirse `PARENTAL_CONSENT_VERSION` de).
+  b. reCAPTCHA ≥18.4.0 (aşağıda SIRADAKİ İŞLER 4. madde; 90 gün sınırı, 13'e zaten planlı).
+  c. Kendi hesaplarına `isTester=true`, gerçek testçilere dokunma.
+  d. UTM için kod gerekmez (Firebase Play yükleme yönlendiricisini kendisi okur); bir deneme bağlantısıyla
+     `first_open` kaynağında göründüğü doğrulanmalı.
+- **Faz 1 — test günleri 0–14:** 1. gün form (neden denediniz, yaş/sınıf, abaküs geçmişi, son bir yıl
+  matematik harcaması), 7–10. gün telefon (nasıl kullanıyor, fark, arkadaşa anlatım cümlesi, Van
+  Westendorp fiyat), bırakanlara ayrıca (neden bıraktı, ne olsaydı devam ederdi). Formda kullanıcı adı
+  sorulur (Firestore ilerlemesiyle eşleştirmek için, veliye açıkça söylenerek). Haftada bir: takılınan
+  dersler (`lesson_step_fail`, `lesson_abandon`), öğretmene soru, Pro ekranına bakan var mı.
+  Paralelde 2–3 abaküs kursu/öğretmen görüşmesi.
+- **Faz 2 — gün 14–21, karar:** aile başına tablo, A (devam eden) / B (bırakan) / C (başlamayan). A'nın
+  yaş + abaküs geçmişi + önceki harcaması = hedef kitle; A'nın tekrar eden kelimeleri = mesaj adayları;
+  pahalı/ucuz eşikleri = fiyat bandı; B'nin sebepleri = ürün düzeltmeleri (reklamdan önce).
+- **Faz 3 — herkese açık yayın öncesi:** özgün ikon (Freepik kafası logo olamaz), uygulama içi atıf,
+  TÜRKPATENT başvurusu (yayından birkaç gün önce), mağaza sayfası metni kazanan dertle uyumlu.
+  Aday özellikler (kapalı test sonucuna göre): haftalık veli özeti (Veli Paneli var ama veli kendisi
+  açmalı; ödeyen anne değeri görmeli), "arkadaşına öner" paylaşımı (şu an yok).
+- **Faz 4 — yayın:** 5 mesajlık reklam testi (3–5 bin TL), mikro-influencer'lara ayrı bağlantı,
+  CAC/LTV takibi.
+
 ## Hedef kitle ve pazarlama: sıradaki adımlar (19.10.2026 — konuşuldu, kod DEĞİŞMEDİ, "sonra yapalım")
 
 Hedef: Türkiye, orta-üst gelir, büyükşehir anneleri; çocuk oynar, reklamı anne görür. Yaş aralığı
@@ -38,7 +69,7 @@ annelerle görüşmeden gelir. Online ders uygulamasına dönüşülmeyecek (ön
    İyi"). İkisi de GA4'te kullanıcı kapsamlı özel boyut olarak tanımlanmalı (orada yer var).
 2. **Testçi annelerle 15 dk görüşme:** "Neden denediniz?" (şıksız), çocuğun yaşı/sınıfı, abaküs
    geçmişi, fiyat (Van Westendorp: "hangi fiyatta çok pahalı / şüpheli ucuz"), "arkadaşınıza nasıl
-   anlatırdınız?" (ilk reklam metni). Soru listesi henüz hazırlanmadı.
+   anlatırdınız?" (ilk reklam metni). Üç tura bölündü (yukarıda Faz 1); form metni henüz yazılmadı.
 3. **2–3 abaküs kursu + öğretmenle ön görüşme:** teklif = kursa ücretsiz öğretmen paneli, öğrencilerine
    indirim, gelen abonelikten pay (%20–30). Öğretmen kendi öğrencilerini görme paneli istenip
    istenmediği sorulacak, kurmadan önce.
