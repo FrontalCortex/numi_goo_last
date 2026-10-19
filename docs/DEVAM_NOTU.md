@@ -25,6 +25,11 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 
 ## SIRADAKİ İŞLER: kapalı teste (Alpha) geçiş (18.10.2026)
 
+**SONUÇ (19.10.2026): 12 (1.0) Alpha'da YAYINDA** — "Belirli test kullanıcıları tarafından
+kullanılabilir", 18 Eki 20:17'de sunuldu; inceleme aynı gün bitti. Kanal: 1 ülke/bölge. Sırada:
+testçilere katılım bağlantısını göndermek (üretim şartı 12 testçi × 14 gün kesintisiz, sayaç
+katılımla başlar), Facebook paylaşımı, reCAPTCHA 90 gün süresi (aşağıda 4. madde → versionCode 13).
+
 11 yalnızca **Dahili test**te; Alpha'da eski 7'lik taslak duruyordu. Alpha'ya ilk sürüm Google
 incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
 1. **Fotoğraf/video izinleri — YAPILDI (18.10.2026, derlendi, cihazda DENENMEDİ, commit edilmedi):**
