@@ -1,13 +1,49 @@
 # Kapalı test formları (19.10.2026)
 
-Google Forms'a yapıştırılacak metinler. Üç form var: **1. gün**, **7–10. gün**, **bırakanlar**.
-Ayrıca seçilen 10–15 aileyle yapılacak telefon görüşmesi için kısa bir rehber var (en altta).
+Üç form var: **1. gün**, **7–10. gün**, **bırakanlar**. Ayrıca seçilen 10–15 aileyle yapılacak telefon
+görüşmesi için kısa bir rehber var (en altta).
+
+## Kurulum (bir kez, ~2 dakika)
+
+Formları elle girmek yerine `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` üçünü birden oluşturur:
+1. https://script.google.com → **Yeni proje**.
+2. Editördeki her şeyi sil, `.gs` dosyasının tamamını yapıştır, **Ctrl+S**.
+3. Üstte `formlariOlustur` seçiliyken **Çalıştır**.
+4. İzin ekranı: hesabını seç → **Gelişmiş** → **"… projesine git (güvenli değil)"** → **İzin ver**.
+   (Uyarı, betiği Google değil sen yazdığın için çıkıyor.)
+5. Alttaki **Yürütme günlüğü**nde her form için üç bağlantı yazar: annelere gönderilecek bağlantı,
+   düzenleme bağlantısı (yalnızca sen) ve cevap tablosu. Drive'da "Sorobit kapalı test" klasörü oluşur.
+6. Annelere gidecek üç bağlantıyı bir yere not et.
+
+## Günlük kullanım (rutin)
+
+Üç araç var: **formlar** (anneler doldurur), **dışa aktarma betiği** (uygulamadaki ilerlemeyi çeker),
+**takip tablosu** (`docs/kapali_test/Sorobit_kapali_test_takip.xlsx`, ikisini birleştirir ve A/B/C'yi
+hesaplar). Hepsi **kullanıcı adı** ile eşleşir.
+
+| Ne zaman | Ne yap |
+|---|---|
+| Bir anne katılınca | Tabloya yeni satır: katılım tarihi, veli adı, telefon, kanal, tanıdık mı. Anneye **Form 1** bağlantısını gönder. |
+| Form 1 cevabı gelince | Cevap tablosundan takip tablosuna kopyala: kullanıcı adı, şehir, yaş, sınıf, abaküs geçmişi, en büyük dert. "1. gün formu" = Evet. |
+| 2–3 günde bir | Proje kökünde `node tools/kapali-test/ilerleme_disa_aktar.js --testci-haric` çalıştır. `docs/kapali_test/ilerleme_<tarih>.csv` oluşur. Her testçi için `son_kullanim_gunu` → "Son kullanım günü", `toplam_sure_dk` → "Toplam süre (dk)". |
+| "Uyarı" sütununda **Form 3 gönder** çıkınca | O anneye **Form 3** bağlantısını kısa bir mesajla gönder; cevabı "Bırakma sebebi"ne yaz. |
+| Katılımdan 7–10 gün sonra | **Form 2**'yi gönder. Cevaptan tavsiye puanı, çok pahalı ve şüpheli ucuz fiyatları tabloya yaz. "7-10. gün formu" = Evet. |
+| Form 2'den sonra | "Görüşmeye açığım" diyenlerden A ve B grubundan birkaçıyla telefonla konuş (rehber en altta). Notu "Görüşme notu"na yaz. |
+| Ayrıldığını söyleyen olursa | "Testte mi" = Ayrıldı (Play'in 12 kişi şartını Özet sayfası takip ediyor). |
+| Haftada bir | **Özet** sekmesine bak: Play şartı tamam mı, hangi grup / yaş / dert / kanal A oranı yüksek. |
+
+İpuçları:
+- Takip tablosunda **mor başlıklı** sütunları sen doldurursun; **gri** olanlar otomatik, dokunma.
+- Asıl sonuçlar Özet'teki **"tanıdıklar hariç"** tablolarda (tanıdıkların cevabı iyimser olur).
+- İlk 7 gün herkes "Erken" görünür; A/B/C ancak 7. günden sonra anlam kazanır.
+- Kullanıcı adı formda "@" ile ya da büyük/küçük harf farkıyla gelebilir; tabloya CSV'deki
+  `kullanici_adi` ile aynı yaz (ör. `716706IG`), yoksa eşleştirirken karışır.
 
 Cevaplar takip tablosuyla (`docs/kapali_test/Sorobit_kapali_test_takip.xlsx`, git dışı) **kullanıcı
 adı** üzerinden eşleşir. Kullanıcı adı olmadan A/B/C grupları ayrılamaz, bu yüzden her formda ilk
 soru o ve zorunlu.
 
-## Google Forms ayarları (üç form için de)
+## Google Forms ayarları (betik bunları kendisi yapar; elle kuracaksan)
 
 - Ayarlar → Yanıtlar: **E-posta adreslerini toplama: Hayır**. Kullanıcı adı ve isteğe bağlı telefon yeter.
 - Ayarlar → Yanıtlar: **Yanıtları 1 ile sınırla: Kapalı** (Google hesabı zorunlu olmasın, anneler takılmasın).
