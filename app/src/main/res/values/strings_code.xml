@@ -810,4 +810,10 @@
     <string name="ui_veli_onayi">Veli onayı</string>
     <string name="ui_veli_e_postasi_x">Velinin e-postası: %1$s</string>
     <string name="ui_once_kendi_e_postana_gelen_kodu_gir">Önce kendi e-postana gelen 6 haneli kodu gir. Sonra velinin e-postasına onay kodu göndereceğiz.</string>
-    <string name="ui_veli_e_postasina_gelen_kodu_gir">Velinin e-postasına gelen 6 haneli kodu gir. Kod 30 dakika geçerli. Kodu girmek, velinin onay verdiği anlamına gelir.</string></resources>
+    <string name="ui_veli_e_postasina_gelen_kodu_gir">Velinin e-postasına gelen 6 haneli kodu gir. Kod 30 dakika geçerli. Kodu girmek, velinin onay verdiği anlamına gelir.</string>
+    <!-- Zorunlu güncelleme penceresi (ForceUpdateManager) -->
+    <string name="ui_guncelleme_gerekli">Güncelleme gerekli</string>
+    <string name="ui_bu_surum_artik_kullanilamiyor">Sorobit\'in bu sürümü artık kullanılamıyor. Devam etmek için uygulamayı güncelle.</string>
+    <string name="ui_guncelle">Güncelle</string>
+    <string name="ui_cik">Çık</string>
+</resources>

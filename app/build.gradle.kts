@@ -208,6 +208,10 @@ dependencies {
     implementation("com.google.android.play:review:2.0.1")
     implementation("com.google.android.play:review-ktx:2.0.1")
 
+    // In-App Updates API: zorunlu güncelleme penceresindeki "Güncelle" düğmesi
+    // (bkz. ForceUpdateManager). Kilit kararı Remote Config'teki min_version_code'dan gelir.
+    implementation("com.google.android.play:app-update:2.1.0")
+
     // Google Play Billing (mağaza satın almaları) — bkz. docs/SATIN_ALMA_ENTEGRASYONU.md
     implementation("com.android.billingclient:billing:8.0.0")
 

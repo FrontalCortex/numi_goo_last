@@ -3748,6 +3748,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         currentActivity = this
+        // Arka plandan dönen kullanıcı splash'ten geçmiyor; zorunlu güncelleme burada da bakılır.
+        ForceUpdateManager.checkOnResume(this)
         // Güvenlik ağı: kuyruk reklam açıkken (activity duraklatılmışken) dürtüldüyse
         // "not_resumed" deyip durmuş olabilir. Reklam kapanınca buradan devam ediyor.
         pumpPostLessonQueue("MainActivity.onResume")

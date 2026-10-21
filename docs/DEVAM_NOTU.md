@@ -23,6 +23,27 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Zorunlu güncelleme: Remote Config `min_version_code` (21.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Play Console'da kurulu eski sürümü durdurmanın yolu yok; karar uygulamanın içinde veriliyor.
+`ForceUpdateManager.kt`: Remote Config'teki `min_version_code` (sayı, varsayılan 0) bu derlemenin
+`versionCode`'undan büyükse kapatılamayan "Güncelleme gerekli" penceresi çıkar (Güncelle / Çık).
+"Güncelle" önce Play In-App Update IMMEDIATE'i dener, olmazsa mağaza sayfasını açar
+(`com.google.android.play:app-update:2.1.0` eklendi).
+
+- **Nerede bakılıyor:** `SplashActivity` (çekme animasyonla paralel başlar; animasyondan sonra en
+  fazla 1 sn, bildirimden gelen açılışta 1,5 sn bekler, sonra önbellekteki değerle karar verir) ve
+  `MainActivity.onResume` (arka plandan dönen kullanıcı için; hiç bekletmez).
+- **Çekme aralığı:** release 15 dk, debug her açılış.
+- **Kullanım:** Firebase Console → Remote Config → `min_version_code` parametresi oluştur (Number).
+  **Yalnızca o sürüm %100 yayına çıktıktan sonra** yükselt: kademeli yayında sürümü alamayan ya da
+  henüz yayınlanmamış bir versionCode yazılınca herkes kilitlenir.
+- **Yalnızca bu kodu içeren sürümden (14+) itibaren çalışır**; 13 ve öncesi uzaktan durdurulamaz.
+- Cihazda denenecek: debug'da `min_version_code`'u mevcut versionCode'un üstüne koy → splash'te
+  pencere çıkmalı; uygulama açıkken değiştirip arka plana atıp dönünce de çıkmalı. Debug Play'den
+  kurulmadığı için "Güncelle" mağaza sayfasını açar; IMMEDIATE akışı ancak Play'den (dahili
+  uygulama paylaşımı ya da kapalı test) kurulmuş sürümde görülebilir. Sonra değeri 0'a geri al.
+
 ## versionCode 13: yaş grubu, abaküs bilgisi, reCAPTCHA (19.10.2026 — Alpha İNCELEMESİNE GÖNDERİLDİ)
 
 **Durum (19.10.2026 akşam):** debug sürümü telefonda e-posta kaydıyla doğrulandı (yukarıdaki yol

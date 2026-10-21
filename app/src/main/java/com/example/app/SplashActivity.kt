@@ -19,6 +19,11 @@ class SplashActivity : AppCompatActivity() {
     companion object {
         // Splash animasyonunun minimum süresi (mevcut davranış).
         private const val SPLASH_ANIMATION_MS = 2000L
+        // Zorunlu güncelleme kontrolü animasyon bittikten sonra en fazla bu kadar bekletir;
+        // çekme genelde animasyon sürerken biter. Bkz. ForceUpdateManager.runIfAllowed.
+        private const val FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS = 1000L
+        // Bildirimden gelen açılışta animasyon beklenmediği için süre biraz daha uzun.
+        private const val FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS = 1500L
     }
 
     private var proceededPastSplash = false
@@ -43,18 +48,26 @@ class SplashActivity : AppCompatActivity() {
         val hasDeepLinkQuestion =
             intent?.getStringExtra(MainActivity.EXTRA_OPEN_QUESTION_ID)?.isNullOrEmpty() == false
 
+        // Zorunlu güncelleme için Remote Config'i animasyonla paralel çekmeye başla.
+        ForceUpdateManager.startFetch()
+
         if (hasDeepLinkQuestion) {
-            checkLoginStatus()
+            ForceUpdateManager.runIfAllowed(this, FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS) {
+                checkLoginStatus()
+            }
         } else {
-            // Normal açılış: yalnızca splash animasyonu kadar beklenir.
+            // Normal açılış: splash animasyonu kadar beklenir.
             //
             // Eskiden burada öğretici içeriği için Remote Config indiriliyor ve açılış onu
             // 8 saniyeye kadar bekliyordu; öğreticiler artık uygulamanın içinden okunuyor
-            // (bkz. TutorialFragment.createTutorialSteps1), Remote Config'ten okunan başka bir şey yok.
+            // (bkz. TutorialFragment.createTutorialSteps1). Remote Config'ten yalnızca zorunlu
+            // güncelleme eşiği okunuyor ve o da açılışı en fazla ~1 sn uzatabiliyor.
             Handler(Looper.getMainLooper()).postDelayed({
                 if (proceededPastSplash) return@postDelayed
                 proceededPastSplash = true
-                checkLoginStatus()
+                ForceUpdateManager.runIfAllowed(this, FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS) {
+                    checkLoginStatus()
+                }
             }, SPLASH_ANIMATION_MS)
         }
     }
