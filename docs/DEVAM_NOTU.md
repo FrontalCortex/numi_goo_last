@@ -23,7 +23,7 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Zorunlu güncelleme: Remote Config `min_version_code` (21.10.2026 — derlendi, cihazda DENENMEDİ)
+## Zorunlu güncelleme: Remote Config `min_version_code` (21.10.2026 — debug'da telefonda doğrulandı; versionCode 14 AAB derlendi, kapalı teste yüklenecek)
 
 Play Console'da kurulu eski sürümü durdurmanın yolu yok; karar uygulamanın içinde veriliyor.
 `ForceUpdateManager.kt`: Remote Config'teki `min_version_code` (sayı, varsayılan 0) bu derlemenin
@@ -38,7 +38,7 @@ Play Console'da kurulu eski sürümü durdurmanın yolu yok; karar uygulamanın 
 - **Kullanım:** Firebase Console → Remote Config → `min_version_code` parametresi oluştur (Number).
   **Yalnızca o sürüm %100 yayına çıktıktan sonra** yükselt: kademeli yayında sürümü alamayan ya da
   henüz yayınlanmamış bir versionCode yazılınca herkes kilitlenir.
-- **Yalnızca bu kodu içeren sürümden (14+) itibaren çalışır**; 13 ve öncesi uzaktan durdurulamaz.
+- **Yalnızca bu kodu içeren sürümden (14+) itibaren çalışır**. 14, 13'e göre yalnızca bu değişikliği içeriyor (veri/Room/kural değişikliği yok); release'de IMMEDIATE akışı Play'den kurulunca denenmeli; 13 ve öncesi uzaktan durdurulamaz.
 - Cihazda denenecek: debug'da `min_version_code`'u mevcut versionCode'un üstüne koy → splash'te
   pencere çıkmalı; uygulama açıkken değiştirip arka plana atıp dönünce de çıkmalı. Debug Play'den
   kurulmadığı için "Güncelle" mağaza sayfasını açar; IMMEDIATE akışı ancak Play'den (dahili
