@@ -1128,7 +1128,7 @@ class NotificationFragment : Fragment() {
                     }
                     val title = if (question.previewText.isNotEmpty()) question.previewText else question.message
                     adapter.setTeacherSelectionMode(true, question.id)
-                    (activity as? MainActivity)?.onTeacherChatSelectedFromNotification(question.id, title)
+                    (activity as? MainActivity)?.onTeacherChatSelectedFromNotification(question.id, title, question.studentUid)
                 } else {
                     openChatAfterPreload(question.id)
                 }

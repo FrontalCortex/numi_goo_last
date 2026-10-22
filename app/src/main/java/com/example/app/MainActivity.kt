@@ -388,6 +388,8 @@ class MainActivity : AppCompatActivity() {
     private var teacherPendingAbacusContainerWasVisible: Boolean = false
     private var teacherSelectedQuestionId: String? = null
     private var teacherSelectedQuestionTitle: String? = null
+    // Seçilen sorunun sahibi öğrenci; yüklenen medyanın studentUid metadata'sına yazılır (bkz. storage.rules).
+    private var teacherSelectedQuestionStudentUid: String? = null
     private var notificationPermissionRequestInFlight = false
 
     private var seasonLeaderboardPendingListener: ListenerRegistration? = null
@@ -1194,6 +1196,7 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = description
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
         // 2) Alt panel + geri butonu; soru seçilirken alt navigasyon gizlensin
         binding.teacherSendToQuestionBar.visibility = View.VISIBLE
@@ -1240,9 +1243,10 @@ class MainActivity : AppCompatActivity() {
      * NotificationFragment'te bir sohbet seçildiğinde çağrılır.
      * Seçilen soru alt panelde gösterilir ve send butonu aktifleşir.
      */
-    fun onTeacherChatSelectedFromNotification(questionId: String, title: String) {
+    fun onTeacherChatSelectedFromNotification(questionId: String, title: String, studentUid: String) {
         teacherSelectedQuestionId = questionId
         teacherSelectedQuestionTitle = title
+        teacherSelectedQuestionStudentUid = studentUid
         binding.teacherSendQuestionTitle.text = title
         binding.teacherSendButton.isEnabled = true
         binding.teacherSendButton.alpha = 1f
@@ -1262,6 +1266,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigationID.visibility = View.VISIBLE
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
         // CreateQuestion'a geri dön (medya ve açıklama korunur, düzenlenebilir)
         val mediaPath = teacherPendingMediaPath
@@ -1281,6 +1286,7 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = null
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
         binding.teacherSendToQuestionBar.visibility = View.GONE
         binding.teacherSendTopBar.visibility = View.GONE
         binding.teacherSendBackButton.visibility = View.GONE
@@ -1297,7 +1303,10 @@ class MainActivity : AppCompatActivity() {
         val mediaType = teacherPendingMediaType
         val mediaPath = teacherPendingMediaPath
         val description = teacherPendingDescription
-        if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty()) {
+        val studentUid = teacherSelectedQuestionStudentUid
+        // studentUid olmadan gönderilirse servis gönderenin (öğretmenin) uid'sini metadata'ya yazar
+        // ve storage.rules öğrencinin bu medyayı indirmesini reddeder.
+        if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty() || studentUid.isNullOrEmpty()) {
             Toast.makeText(this, appString(R.string.ui_lutfen_bir_soru_secin), Toast.LENGTH_SHORT).show()
             return
         }
@@ -1342,6 +1351,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(QuestionUploadForegroundService.KEY_CLIENT_ID, mediaClientId)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_UID, uid)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_ROLE, role)
+            putExtra(QuestionUploadForegroundService.KEY_STUDENT_UID, studentUid)
             putExtra(QuestionUploadForegroundService.KEY_FILE_PATH, mediaPath)
             if (!description.isNullOrBlank()) {
                 putExtra(QuestionUploadForegroundService.KEY_CAPTION, description)
@@ -1376,6 +1386,7 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = null
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
         Toast.makeText(this, appString(R.string.ui_sohbete_gonderildi), Toast.LENGTH_SHORT).show()
 
