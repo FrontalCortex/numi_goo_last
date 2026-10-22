@@ -23,6 +23,21 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Liderlik tablosuna gerçekçi sahte oyuncular (22.10.2026 — canlı Firestore'a yazıldı)
+
+`functions/scripts/seed-lesson-leaderboard-realistic.js`: tahtaya `seed_lb_000…` kimlikli, Türk/yabancı
+karışık isimli (çoğu yalnızca ad, yarısı küçük harf — gerçek profiller öyle) oyuncular yazar; her birine
+`publicProfiles/{seed_lb_xxx}.avatarConfig` ile rastgele Personas avatarı verir (`name`/`userId` yazılmaz →
+arkadaş aramasında çıkmazlar). Varsayılan puanlar en düşük gerçek puanın altında; `ALLOW_ABOVE_REAL=1`
+bu sınırı kaldırır. Geri alma: `REMOVE=1` (girişler + avatar dokümanları). Madalyalar `seed_lb_`'ye
+verilmez ama sıralamada sayılırlar.
+
+- 22.10.2026: `part_1_lesson_p1_i04_unite_maratonu_season_9` tahtasına 40 kişi, 400–1700, bilerek
+  `ALLOW_ABOVE_REAL=1` ile. Tek gerçek oyuncu Ted (1448) 1.'likten 6.'lığa indi; sezon sonunda
+  madalya değil 6. sıra kupası alacak (kullanıcı bunu bilerek seçti). Sezon kapanınca tahta silinir;
+  `publicProfiles/seed_lb_*` dokümanları kalır (zararsız, `REMOVE=1` tahta silinmeden önce çalışmalı).
+- Script commit edildi ama push edilmedi; `functions/` push'u bütün fonksiyonları deploy ediyor.
+
 ## Zorunlu güncelleme: Remote Config `min_version_code` (21.10.2026 — debug'da telefonda doğrulandı; versionCode 14 AAB derlendi, kapalı teste yüklenecek)
 
 Play Console'da kurulu eski sürümü durdurmanın yolu yok; karar uygulamanın içinde veriliyor.
