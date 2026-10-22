@@ -51,6 +51,14 @@ Form 1 kurs dışı testçiler için DEĞİŞMEDİ (kullanıcı önce Form 1'i k
 istedi). Çıkarılanlar: telefon, şehir, son bir yıl, harcama; "neden denediniz" → "beklentiniz nedir";
 abaküs geçmişi → kursa gitme süresi; dert sorusu kullanıcı onayıyla kaldı. Hata, öneri ve istek
 için tek form (Ö2); ayrı öneri formu açılmadı (kullanıcıya önerildi, 11. bölümde gerekçe).
+**Kurs öğrencilerine elle Pro (22.10.2026 — betik yazıldı, canlı Firestore'da 1 hesapta denendi):**
+`tools/kapali-test/kurs_pro_ver.js` kullanıcı adı listesine `plan=Pro`, `planExpiresAt` (sayı, ms;
+varsayılan 30.11.2026 23:59 TR) ve `questionCredits` en az 999 yazar; varsayılan kuru çalışma, `--yaz`
+ile yazar, `--geri-al` ile Free + kredi 0. Yeni sürüm/deploy gerekmez: soru düğmesi yalnızca kredi ≥ 1'e,
+plan `plan`/`planExpiresAt`'e bakıyor; sunucuda kredi üst sınırı yok. Play abonesi
+(`planProductId`/`planPurchaseTokenHash` dolu) ve öğretmen atlanır. Kullanıcının kendi hesabı
+`835398VV` ("Ted") Pro yapıldı (önce Free, kredi 5); uygulamada
+görünüp görünmediği kullanıcıda. Kullanım: `docs/KAPALI_TEST_FORMLARI.md` son bölüm.
 
 ## Liderlik tablosuna gerçekçi sahte oyuncular (22.10.2026 — canlı Firestore'a yazıldı)
 

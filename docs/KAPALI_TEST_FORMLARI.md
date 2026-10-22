@@ -243,6 +243,30 @@ yaz; şehir boş kalır.
 
 ---
 
+## Kurs öğrencilerine Pro ve sınırsız soru (`tools/kapali-test/kurs_pro_ver.js`)
+
+Kurs öğrencileri test boyunca Pro (ödeme yok) ve öğretmene soru için 999 kredi alır. Yeni sürüm ya
+da deploy gerekmez. Form 1K'dan kullanıcı adları geldikçe:
+
+1. Kullanıcı adlarını `docs/kapali_test/kurs_ogrencileri.txt`'ye satır satır yaz (git dışı klasör).
+2. Kuru çalıştır, listeye bak: `node tools/kapali-test/kurs_pro_ver.js --dosya docs/kapali_test/kurs_ogrencileri.txt`
+3. Doğruysa aynı komutu sonuna `--yaz` ekleyerek çalıştır. Yeni öğrenci geldikçe tekrar çalıştırmak
+   zararsız: zaten Pro olanların yalnızca tarihi ve kredisi aynı değere yazılır.
+4. Öğrenci uygulamayı tamamen kapatıp açsın.
+
+Pro **30.11.2026 23:59**'da kendiliğinden kapanır (`--bitis YYYY-AA-GG` ile değişir; uzatmak için
+yeni tarihle tekrar çalıştır). **Kredi kendiliğinden kapanmaz:** test bitince aynı listeyle
+`--geri-al --yaz` çalıştır (plan Free, kredi 0; eski kredi bakiyesi geri yüklenmez).
+
+Dikkat: betik **kullanıcı adını** (`userId`, profilde @ ile başlayan, ör. `835398VV`) arar, görünen adı
+(ör. "Ted") değil. Gerçek Play abonelerine ve öğretmen hesaplarına dokunmaz.
+
+İlk deneme (22.10.2026): kullanıcının kendi öğrenci hesabı `835398VV` ("Ted") Pro yapıldı
+(önce Free, kredi 5 → Pro, 30.11.2026, kredi 999). Firestore'dan geri okundu: `planExpiresAt`
+sayı türünde.
+
+---
+
 ## Form Ö1: "Sorobit öğretmen görüşü" (10–12. gün)
 
 **Form açıklaması:**
