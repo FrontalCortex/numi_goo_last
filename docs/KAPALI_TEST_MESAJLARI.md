@@ -224,6 +224,115 @@ Gönderiye "ben de" diye yorum yazana: *"Teşekkürler 🙏 WhatsApp'tan yazarsa
 
 ---
 
+## 11. Mental aritmetik kursu (22.10.2026)
+
+Formlar ve görüşme soru listesi: `docs/KAPALI_TEST_FORMLARI.md` "Kursla test" bölümü. Form Ö1 (öğretmen
+görüşü): https://forms.gle/ij9QM6BcjgzsFi8Q9 · Form Ö2 (sorun/istek): https://forms.gle/FgjRYeBeuWqBW1A88
+
+**Göndermeden önce:**
+- **versionCode 15 kapalı testte onaylanmış olmalı.** 14'te öğretmenin uygulama içinde kaydettiği
+  cevabı öğrenci indiremiyor.
+- Öğretmen kaydolunca hesabını **aynı gün onayla**. Onaysız öğretmen uygulamada hiçbir şey yapamıyor.
+- Öğretmenlere baştan söyle: öğrenci soruları şimdilik bütün öğretmenlerin gördüğü **ortak havuza**
+  düşüyor, kendi öğrencisinin sorusunu ayrı göremiyor.
+
+Eğitim videolarıyla giden ilk mesaj, kaç öğretmen ve öğrenciyle başlanacağını ve sorunları kimin
+toplayacağını sordu. Cevap gelince 11.1 gönderilir. 11.2 ve 11.3 ayrı mesajlar olarak gider ki sorumlu
+olduğu gibi iletebilsin; ikisine de katılım videosunu ekle
+(`C:\Users\ASUS\Videos\Sorobit_tanitim\katilim\Sorobit_katilim.mp4`).
+
+Hata, öneri ve istekler için **tek form** var (Form Ö2); ayrı bir öneri formu bilerek açılmadı
+(22.10.2026). Formdaki "Ne bildiriyorsunuz?" sorusunda "İstek ya da öneri" şıkkı zaten var. İki form
+olunca insanlar hangisini dolduracağını düşünüp çoğu zaman hiçbirini doldurmuyor. Veliler ve öğretmenler
+formu doğrudan doldurur: ayrıntıyı yaşayan kişi en iyi bilir, sorumlu da aracı olmaktan kurtulur.
+
+### 11.1 Kurs sorumlusuna, cevap gelince (ör. "3 öğretmen, 20 öğrenci, sorunları ben iletirim")
+
+```
+Harika, çok teşekkürler! 🙏 Bu sayıyla başlamak çok iyi. Kurulum mesajlarını aşağıya ayrı ayrı yazıyorum; öğretmenlere ve velilere olduğu gibi iletebilirsiniz.
+
+Birkaç küçük not:
+• Öğretmen hesaplarını ben elle onaylıyorum. Öğretmenler kaydolunca bana kullanıcı adlarını yazsınlar, aynı gün açarım.
+• 13 yaş ve altındaki çocuklarda kayıt sırasında velinin e-postasına bir onay kodu gidiyor, bu yüzden kaydı veliyle birlikte yapmaları gerekiyor.
+• Hata, öneri ya da istek olursa öğretmenler ve veliler bu formu doğrudan doldurabilir, hepsi bana geliyor: https://forms.gle/FgjRYeBeuWqBW1A88
+  Size ulaşan bir şey olursa siz de bu formdan iletebilir ya da bana doğrudan yazabilirsiniz.
+• Test süresince hataları hemen düzelteceğim; öneri ve istekleri not alıp testten sonra sizin önceliklerinize göre sıralayacağım.
+• Google Play'in yayın şartı gereği katılanların 14 gün boyunca uygulamayı silmemesi ve testten ayrılmaması gerekiyor.
+• Velilere katılınca ve bir hafta sonra 3'er dakikalık iki kısa form gidiyor. 10. gün civarında öğretmenler için kısa bir form göndereceğim, sonrasında da sizinle 20-30 dakikalık bir görüşme yapmak isterim.
+
+Takıldığınız her şeyde bana yazabilirsiniz.
+```
+
+### 11.2 Öğretmenlere iletilecek
+
+```
+Sorobit kurulumu (yalnızca Android, ~2 dakika) 👩‍🏫
+
+1️⃣ Gruba katılın: https://groups.google.com/g/sorobit-test → "Gruba katıl"
+2️⃣ Bu bağlantıyı açın: https://play.google.com/apps/testing/com.numigo.app → "Test kullanıcısı ol", sonra "Google Play'den indir"
+3️⃣ Uygulamayı yükleyin, açın ve sağ üstten "Öğretmen"i seçerek kaydolun
+4️⃣ Kaydolunca Başar'a WhatsApp'tan kullanıcı adınızı yazın (profilde @ ile başlayan ad). Öğretmen hesapları elle onaylanıyor; onaydan önce uygulama kapalı görünür, aynı gün onaylanır.
+
+⚠️ Gruba, telefondaki Play Store'da açık olan Gmail hesabıyla katılın; yoksa uygulama görünmez.
+
+ℹ️ Öğrencilerin uygulamadan gönderdiği sorular şimdilik bütün öğretmenlerin gördüğü ortak bir listeye düşüyor.
+🛠️ Hata, öneri ya da istekleriniz için: https://forms.gle/FgjRYeBeuWqBW1A88
+🙏 14 gün boyunca uygulamayı silmeyin ve testten ayrılmayın (Google Play'in yayın şartı).
+```
+
+### 11.3 Velilere iletilecek
+
+```
+Sorobit kurulumu (yalnızca Android, ~2 dakika) 🧮
+
+1️⃣ Gruba katılın: https://groups.google.com/g/sorobit-test → "Gruba katıl"
+2️⃣ Bu bağlantıyı açın: https://play.google.com/apps/testing/com.numigo.app → "Test kullanıcısı ol", sonra "Google Play'den indir"
+3️⃣ Uygulamayı yükleyin, çocuğunuz açıp "Öğrenci" olarak kendi hesabını oluştursun
+
+⚠️ Gruba, telefondaki Play Store'da açık olan Gmail hesabıyla katılın; yoksa uygulama görünmez.
+📧 13 yaş ve altındaki çocuklarda kayıt sırasında velinin e-postasına bir onay kodu gelir; kod girilmeden hesap açılmaz. Kaydı çocuğunuzla birlikte yapın, kod 30 dakika geçerli. Gelmezse spam klasörüne bakın.
+
+Hesap açıldıktan sonra 2 dakikalık şu formu doldurabilir misiniz?
+👉 https://forms.gle/b6AaAaUwgc3T1sMX9
+(Kullanıcı adı, uygulamada profil ekranında adın altında @ ile başlayan addır.)
+
+🙏 Lütfen 14 gün boyunca uygulamayı silmeyin ve testten ayrılmayın.
+🛠️ Bir hata, öneriniz ya da isteğiniz olursa: https://forms.gle/FgjRYeBeuWqBW1A88
+```
+
+### 11.4 Kurs sorumlusuna, 7–10. gün (veli Form 2)
+
+```
+Merhaba! Test bir haftayı geçti, çok teşekkürler 🙏 Velilere şu kısa formu iletebilir misiniz? Olumsuz görüşler bizim için en değerlisi:
+👉 https://forms.gle/vcY9sk4H2dzez7tR6
+```
+
+### 11.5 Öğretmenlere, 10–12. gün (Form Ö1)
+
+```
+Merhaba! Sorobit'i öğrencilerinizle denediğiniz için çok teşekkürler 🙏 Bir mental aritmetik öğretmeninin gözünden görüşleriniz, öğretmen özelliklerinden hangisini önce yapacağımı belirleyecek. Yaklaşık 8 dakikalık bir form:
+👉 https://forms.gle/ij9QM6BcjgzsFi8Q9
+Eleştirileriniz en değerlisi, içinizden geldiği gibi yazın.
+```
+
+### 11.6 Görüşme daveti (Ö1 cevapları geldikten sonra)
+
+```
+Form için çok teşekkürler! Cevaplarınızı okudum, birkaç konuyu biraz daha konuşmak isterim. Bu hafta sizin ve 1-2 öğretmenin uygun olduğu 20-30 dakikalık bir zaman var mı? Yüz yüze ya da görüntülü, size hangisi kolaysa.
+```
+
+Notlar:
+- Takip tablosunda bu velilerin "Kanal" sütunu `Kurs: [kurs adı]`. Veliler kendileri yazmadığı için
+  katılım tarihini Form 1 cevabından al.
+- **Form 3 (bırakanlar):** kursun velileriyle doğrudan yazışmıyorsun. "Form 3 gönder" çıkan
+  öğrencinin kullanıcı adını sorumluya bildir, bağlantıyı (https://forms.gle/bgpYYKut36opWCoa8) o iletsin.
+- Haftada bir sorumluya kısa özet gönder: "Şunlar düzeldi, şunlar test sonrasına kaldı" (Form Ö2'deki
+  "Durum" sütunundan). Bildirdiği şeyin karşılık bulduğunu gören kişi bildirmeye devam eder.
+- Ödev sistemi ya da öğretmen paneli için **tarih verme**. "Testten sonra, sizin önceliklerinize göre"
+  demek yeterli.
+
+---
+
 ## Dikkat
 
 - **WhatsApp grubu kurma**: yabancı aileler birbirinin numarasını görür. Hep birebir yaz.

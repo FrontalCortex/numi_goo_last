@@ -237,3 +237,245 @@ function form3(klasor) {
 
   return bitir(klasor, form, 'Form 3 - Bırakanlar');
 }
+
+// ---------- Kurs formları (22.10.2026): öğretmen görüşü + sorun/istek bildirimi ----------
+// Mental aritmetik kursuyla yapılan test için. formlariOlustur'dan AYRI tutuldu: o bir daha
+// çalıştırılırsa veli formlarının ikinci kopyası açılır. Metinler docs/KAPALI_TEST_FORMLARI.md
+// "Kursla test" bölümüyle aynı. Yalnızca BİR KEZ çalıştır (ikinci çalıştırma iki kopya açar).
+// 22.10.2026 22:50'de çalıştırıldı: Ö1 = 1ayq2BpD6q6UOIQZiBfi2GltbAMUs6UmIP_fg5cxp1X0,
+// Ö2 = 16eZTr1OSDiRbYIyQ1kKcg2w0Xl8tGvbVg9mPVK6qMsU. Düzeltme gerekirse duzeltme1 gibi openById ile.
+
+function kursFormlariOlustur() {
+  // Veli formlarının klasörü varsa onu kullan; her şey tek klasörde dursun.
+  const bulunan = DriveApp.getFoldersByName('Sorobit kapalı test');
+  const klasor = bulunan.hasNext() ? bulunan.next() : DriveApp.createFolder('Sorobit kapalı test');
+  const sonuc = [
+    ogretmenFormu(klasor),
+    bildirimFormu(klasor),
+  ];
+  Logger.log('=== HAZIR ===');
+  sonuc.forEach(function (s) {
+    Logger.log(s.ad);
+    Logger.log('  Gönderilecek bağlantı:     ' + s.paylasim);
+    Logger.log('  Düzenleme (yalnızca sen):  ' + s.duzenleme);
+    Logger.log('  Cevap tablosu:             ' + s.tablo);
+  });
+  Logger.log('Klasör: ' + klasor.getUrl());
+  Logger.log('UNUTMA: Form Ö2 → Yanıtlar → ⋮ → "Yeni yanıtlar için e-posta bildirimleri al" (betikle açılamıyor).');
+}
+
+function bolum(form, baslik, aciklama) {
+  const s = form.addSectionHeaderItem().setTitle(baslik);
+  if (aciklama) s.setHelpText(aciklama);
+  return s;
+}
+
+// 17. sorunun satırları ve 18. sorunun şıkları aynı liste: 18, 17'de her şeye "olmazsa olmaz"
+// diyen öğretmeni tek bir seçime zorluyor.
+const OGRETMEN_OZELLIKLERI = [
+  'Öğrencilerimin ilerlemesini görmek (bitirdiği dersler, çalışma süresi, seri)',
+  'Öğrencilerimin en çok hata yaptığı işlemleri görmek',
+  'Ödev vermek ve yapılıp yapılmadığını takip etmek',
+  'Kendi alıştırma setimi hazırlamak (ör. 20 soruluk 3 basamaklı toplama)',
+  'Öğrencilerimi sınıf ya da grup olarak toplamak',
+  // Şu an sorular bütün onaylı öğretmenlerin gördüğü ortak havuza düşüyor (runTeacherPoolNotify).
+  'Soruların yalnızca kendi öğrencilerimden gelmesi',
+  'Velilere haftalık ilerleme özeti gitmesi',
+  'Sınıf içi yarışma ve liderlik tablosu',
+  'Seviye belirleme sınavı',
+];
+
+// ---------- Form Ö1: öğretmen görüşü (10–12. gün) ----------
+
+function ogretmenFormu(klasor) {
+  const ad = 'Sorobit öğretmen görüşü';
+  const form = yeniForm(klasor, ad,
+    "Sorobit'i öğrencilerinizle denediğiniz için çok teşekkürler! Bu form yaklaşık 8 dakika sürer.\n" +
+    'Bir mental aritmetik öğretmeninin gözünden görüşleriniz, uygulamanın ve öğretmen özelliklerinin ' +
+    'nasıl gelişeceğini doğrudan belirleyecek. Eleştirileriniz en değerlisi. Cevaplarınız yalnızca ' +
+    "Sorobit'i geliştirmek için kullanılır, kimseyle paylaşılmaz.",
+    'Çok teşekkürler! Cevaplarınızı okuyup kısa bir görüşme için size ulaşacağım.');
+
+  bolum(form, 'Sizi tanıyalım');
+  kisa(form, 'Adınız soyadınız', true);
+  kisa(form, 'Kursunuzun adı', true);
+  kisa(form, 'Uygulamadaki kullanıcı adınız', false,
+    'Profil ekranında, adın altında @ ile başlayan ad. Cevapladığınız soruları eşleştirmek için.');
+  tekSecim(form, 'Kaç yıldır abaküs / mental aritmetik öğretiyorsunuz?', true,
+    ['1 yıldan az', '1–3 yıl', '4–7 yıl', '8 yıl ve üstü']);
+  cokSecim(form, 'Hangi yaş gruplarına ders veriyorsunuz?', true,
+    ['Okul öncesi (4–6 yaş)', '1–2. sınıf', '3–4. sınıf', '5–6. sınıf', '7–8. sınıf'], true);
+  tekSecim(form, "Testte kaç öğrenciniz Sorobit'i kullandı?", true,
+    ['Hiç', '1–5', '6–10', '11–20', "20'den fazla", 'Bilmiyorum']);
+
+  bolum(form, "Sorobit'i nasıl kullandınız?");
+  cokSecim(form, "Sorobit'i öğrencilerinizle nasıl kullandınız?", true, [
+    'Derste birlikte açtık',
+    'Ev ödevi olarak verdim',
+    'Öğrencilere / velilere önerdim, kendileri kullandı',
+    'Yalnızca kendim denedim',
+    'Henüz kullanmadık',
+  ], true);
+  // Öğretmenin kendisi ne kadar baktı: "yöntem uyumlu değil" gibi cevapları buna göre tartmak için.
+  tekSecim(form, 'Uygulamayı kendiniz ne kadar denediniz?', true, [
+    'Yalnızca birkaç dakika baktım',
+    'Birkaç dersi kendim yaptım',
+    'Bir üniteyi ya da daha fazlasını bitirdim',
+  ]);
+
+  bolum(form, 'Öğrencileriniz');
+  paragraf(form, 'Öğrencileriniz uygulamada nerede takıldı ya da zorlandı?', true,
+    "Ders adını ya da ekranı yazabilirseniz çok yardımcı olur. Takılan olmadıysa 'yok' yazın.");
+  tekSecim(form, 'Sorobit en çok hangi öğrencilerinize uygun?', false, [
+    'Abaküse yeni başlayanlara',
+    'Temel hareketleri bilen orta seviyeye',
+    'İleri seviyeye',
+    'Hepsine aynı ölçüde',
+    'Söylemek için erken',
+  ]);
+
+  bolum(form, 'Abaküs yöntemi');
+  tekSecim(form, 'Uygulamadaki abaküs anlatımı, kursta öğrettiğiniz yöntemle ne kadar uyumlu?', true, [
+    'Tamamen uyumlu',
+    'Büyük ölçüde uyumlu, küçük farklar var',
+    'Önemli farklar var',
+    'Çok farklı, öğrencinin kafasını karıştırır',
+    'Değerlendirecek kadar bakmadım',
+  ]).setHelpText("Örneğin boncuk hareketleri, 5'lik ve 10'luk geçişler, parmak kullanımı, körleme.");
+  paragraf(form, 'Farklı ya da hatalı bulduğunuz yerleri yazar mısınız?', false);
+  tekSecim(form, 'Derslerin sırası ve zorluk artışı nasıl?', false,
+    ['Çok yavaş ilerliyor', 'Uygun', 'Çok hızlı ilerliyor', 'Bazı yerlerde birden zorlaşıyor']);
+
+  bolum(form, 'Öğretmene soru');
+  tekSecim(form, 'Öğrencilerin uygulamadan gönderdiği soruları cevaplayabildiniz mi?', true, [
+    'Evet, soru cevapladım',
+    'Bana soru gelmedi',
+    'Nasıl yapılacağını bulamadım',
+    'Vaktim olmadı',
+    'Hesabım henüz onaylanmamıştı',
+  ]);
+  paragraf(form, 'Soru cevaplarken zorlandığınız ya da eksik bulduğunuz bir şey oldu mu?', false);
+
+  bolum(form, 'Öğretmen özellikleri',
+    'Testten sonra öğretmenlere özel özellikler ekleyeceğim. Hangisini önce yapacağımı sizin ' +
+    'cevaplarınız belirleyecek.');
+  // Açık uçlu soru listeden ÖNCE: liste önce gelirse öğretmen kendi ihtiyacını değil listedekini yazar.
+  paragraf(form, "Öğretmen olarak Sorobit'te en çok neyi görmek ya da yapabilmek isterdiniz? " +
+    'Kendi cümlelerinizle yazın.', true);
+  form.addGridItem()
+    .setTitle('Aşağıdakiler sizin için ne kadar önemli?')
+    .setRows(OGRETMEN_OZELLIKLERI)
+    .setColumns(['Olmazsa olmaz', 'Olsa iyi olur', 'Gerek yok'])
+    .setRequired(true);
+  tekSecim(form, 'Bunlardan yalnızca biri yapılabilseydi hangisi olsun?', true, OGRETMEN_OZELLIKLERI);
+
+  bolum(form, 'Veliler');
+  paragraf(form, "Sorobit'i velilere nasıl anlattınız ya da anlatırdınız? Kullandığınız cümleleri yazın.", true);
+  paragraf(form, 'Velilerden bir soru, itiraz ya da tepki geldi mi?', false);
+
+  bolum(form, 'Genel');
+  tekSecim(form, "Test bittikten sonra Sorobit'i öğrencilerinize kullandırmayı düşünür müsünüz?", true, [
+    'Evet, bütün öğrencilerime',
+    'Evet, bazı öğrencilerime',
+    'Öğretmen özellikleri gelirse',
+    'Emin değilim',
+    'Hayır',
+  ]);
+  form.addScaleItem()
+    .setTitle("Sorobit'i başka bir abaküs öğretmenine ne kadar önerirsiniz?")
+    .setBounds(0, 10)
+    .setLabels('Hiç önermem', 'Kesinlikle öneririm')
+    .setRequired(true);
+  paragraf(form, 'Uygulamada en çok neyi değiştirirdiniz?', false);
+  // Fiyat ve iş birliği bilerek yok: görüşmede, kursun durumuna göre soruluyor.
+
+  return bitir(klasor, form, 'Form Ö1 - Öğretmen görüşü');
+}
+
+// ---------- Form Ö2: sorun ve istek bildirimi (sürekli açık) ----------
+// Dosya yükleme sorusu bilerek yok: Forms'ta dosya yükleme Google girişi istiyor. Ekran
+// görüntüsü WhatsApp'tan geliyor.
+
+function bildirimFormu(klasor) {
+  const ad = 'Sorobit: sorun ve istek bildirimi';
+  const form = yeniForm(klasor, ad,
+    "Sorobit'te bir hata, takıldığınız bir yer ya da bir isteğiniz mi var? Bu form 1–2 dakika sürer.\n" +
+    'Ekran görüntüsü ya da ekran kaydı çok yardımcı olur: formu gönderdikten sonra WhatsApp\'tan ' +
+    "kurs sorumlunuza ya da doğrudan Başar'a iletin.",
+    'Teşekkürler, bildiriminiz ulaştı! Ekran görüntüsü varsa WhatsApp\'tan göndermeyi unutmayın.');
+  // Aynı kişi birden çok sorun bildirebilsin.
+  form.setShowLinkToRespondAgain(true);
+
+  tekSecim(form, 'Bildiren kim?', true, ['Öğretmen', 'Öğrenci / veli', 'Kurs sorumlusu']);
+  kisa(form, 'Adınız', false);
+  tekSecim(form, 'Ne bildiriyorsunuz?', true, [
+    'Hata ya da teknik sorun',
+    'Takılınan / anlaşılmayan bir yer',
+    'İstek ya da öneri',
+    'Soru',
+  ]);
+  kisa(form, 'Sorunu yaşayan kişinin uygulamadaki kullanıcı adı', false,
+    'Profil ekranında @ ile başlayan ad. Hatayı bulmayı çok kolaylaştırır.');
+  paragraf(form, 'Ne oldu? Ne yaparken oldu?', true,
+    "Örnek: '3. bölümün 2. dersinde Devam'a basınca ekran dondu.' İstekse ne olmasını istediğinizi yazın.");
+  form.addDateItem().setTitle('Ne zaman oldu?').setRequired(false);
+  tekSecim(form, 'Bir kez mi oldu, tekrar ediyor mu?', false,
+    ['Bir kez oldu', 'Ara sıra oluyor', 'Her seferinde oluyor']);
+  kisa(form, 'Telefon markası ve modeli', false,
+    "Ayarlar → Telefon hakkında'da yazar (ör. Samsung Galaxy A14).");
+  tekSecim(form, 'Ekran görüntüsü ya da kaydı var mı?', false,
+    ["Var, WhatsApp'tan gönderiyorum", 'Yok']);
+
+  return bitir(klasor, form, 'Form Ö2 - Sorun ve istek bildirimi');
+}
+
+// ---------- Form 1K (22.10.2026): kurs velileri için kısa 1. gün formu ----------
+// Form 1'in kısaltılmış kopyası; Form 1 kurs dışı testçiler için olduğu gibi kaldı. Çıkarılanlar:
+// telefon, şehir, son bir yılda neler yapıldığı, aylık harcama. "Neden denediniz?" yerine
+// "beklentiniz nedir?": kurs velilerinin cevabı hep "öğretmen önerdi" olurdu. Abaküs geçmişi
+// yerine kursa gitme süresi: bu velilerin hepsi zaten kursta, asıl ayrım seviye. Dert sorusu
+// bilerek Form 1'deki gibi (reklam testindeki 5 mesajla aynı şıklar, takip tablosu bu sütunu
+// kullanıyor). Yalnızca BİR KEZ çalıştır (ikinci çalıştırma ikinci kopyayı açar).
+
+function kursVeliFormuOlustur() {
+  const bulunan = DriveApp.getFoldersByName('Sorobit kapalı test');
+  const klasor = bulunan.hasNext() ? bulunan.next() : DriveApp.createFolder('Sorobit kapalı test');
+  const s = form1Kurs(klasor);
+  Logger.log('=== HAZIR ===');
+  Logger.log(s.ad);
+  Logger.log('  Velilere gönderilecek bağlantı: ' + s.paylasim);
+  Logger.log('  Düzenleme (yalnızca sen):       ' + s.duzenleme);
+  Logger.log('  Cevap tablosu:                   ' + s.tablo);
+}
+
+function form1Kurs(klasor) {
+  const ad = 'Sorobit testine hoş geldiniz';
+  const form = yeniForm(klasor, ad,
+    "Sorobit'i denediğiniz için teşekkürler! Bu form yaklaşık 2 dakika sürer.\n" +
+    "Cevaplarınız yalnızca uygulamayı geliştirmek için kullanılacak ve çocuğunuzun uygulamadaki " +
+    "ilerlemesiyle birlikte değerlendirilecek. Kimseyle paylaşılmaz; istediğiniz zaman silinmesini " +
+    "isteyebilirsiniz (sorobit.support@gmail.com).",
+    'Teşekkürler! Bir hafta sonra kısa bir form daha göndereceğiz.');
+
+  kullaniciAdi(form, true);
+  liste(form, 'Çocuğunuz kaç yaşında?', true,
+    ['4 ve altı', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15 ve üstü']);
+  liste(form, 'Çocuğunuz kaçıncı sınıfta?', true,
+    ['Okul öncesi', '1. sınıf', '2. sınıf', '3. sınıf', '4. sınıf', '5. sınıf', '6. sınıf', '7. sınıf', '8. sınıf', 'Diğer']);
+  tekSecim(form, 'Çocuğunuz ne kadar süredir abaküs / mental aritmetik kursuna gidiyor?', true,
+    ['3 aydan az', '3–6 ay', '6–12 ay', '1–2 yıl', '2 yıldan fazla']);
+  // Açık uçlu soru ÖNCE: şıklı dert sorusu cevabı yönlendirmesin.
+  paragraf(form, "Sorobit'ten beklentiniz nedir? Aklınızdan geçeni kendi cümlelerinizle yazın.", true);
+  tekSecim(form, 'Çocuğunuzun matematikle ilgili sizi en çok düşündüren durum hangisi?', true, [
+    'Matematikte zorlanıyor ya da matematikten korkuyor',
+    'Ekranda çok vakit geçiriyor, bari faydalı bir şey yapsın',
+    'Abaküs kursu pahalı ya da uzak, evde öğrenebilsin',
+    'Kursa gidiyor ama evde çalışmıyor',
+    'Zihinden hızlı hesap yapsın, sınavlarda (LGS, bursluluk) avantajı olsun',
+    'Belirli bir derdim yok, merak ettim',
+  ], true);
+  tekSecim(form, 'Çocuğunuz uygulamayı hangi cihazda kullanacak?', true,
+    ['Kendi telefonu ya da tableti', 'Benim telefonum', 'Evde ortak kullanılan bir cihaz']);
+
+  return bitir(klasor, form, 'Form 1K - Kurs velileri 1. gün');
+}

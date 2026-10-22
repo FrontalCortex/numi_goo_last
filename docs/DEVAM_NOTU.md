@@ -23,6 +23,35 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Mental aritmetik kursuyla kapalı test görüşmesi (22.10.2026 — konuşuluyor, anlaşma yok)
+
+Bir kurs (soğuk mesajla ulaşıldı) "ekiple paylaşıp beraber çalışabiliriz" dedi; kullanıcı öğretmen ve
+öğrenci kullanımını anlatan 2 eğitim videosu gönderecek, sonra indirme bağlantısı. Tavsiye edilenler:
+öğretmenler kurs başlamadan önce versionCode 15 kapalı testte olmalı (14'te öğretmen kaydı öğrenciye
+inmiyor, yukarıdaki bölüm); öğretmen hesapları elle onaylanmalı (onaysız öğretmen hiçbir şey yapamaz);
+önce tek sınıf / 1–2 öğretmen; geri bildirim tek kişi (kurs sorumlusu) üzerinden; veliler mevcut 3
+formu alır (kurs grubu = "kursa giden çocuk" grubu, tabloda kurs adıyla işaretlenir), öğretmenlerle
+form yerine 10–14. günde görüşme. Ticari konu (pay, indirim) test verisinden sonra.
+
+**Kurs formları ve mesajları yazıldı (22.10.2026; formlar 22:50'de oluşturuldu, Ö1
+https://forms.gle/ij9QM6BcjgzsFi8Q9, Ö2 https://forms.gle/FgjRYeBeuWqBW1A88; mesajlara yazıldı;
+Ö2 e-posta bildirimi kullanıcı elle açacak):** kullanıcı
+öğretmenler için de form istedi. `docs/KAPALI_TEST_FORMLARI.md` "Kursla test" bölümü: Form Ö1
+öğretmen görüşü (10–12. gün, 23 soru; öncelik sinyali 18. soruda: "yalnızca biri olsa"), Form Ö2
+sorun/istek bildirimi (sürekli açık, dosya yükleme yok çünkü Google girişi istiyor), 20–30 dk
+öğretmen görüşmesi soru listesi (fiyat ve iş birliği yalnızca görüşmede, kendi teklifini söylemeden).
+Betik: `KAPALI_TEST_FORMLARI_OLUSTUR.gs` içinde yeni `kursFormlariOlustur` (sözdizimi `node --check` ile
+denetlendi, Apps Script'te ÇALIŞTIRILMADI; kullanıcı mevcut projede çalıştıracak, bağlantılar
+`[Form Ö1]`/`[Form Ö2]` yerlerine yazılacak). Mesajlar `docs/KAPALI_TEST_MESAJLARI.md` 11. bölüm
+(sorumluya ricalar, öğretmene ve veliye iletilecek kurulum, 7–10. gün, Ö1, görüşme daveti).
+Veli onayı notu: 13 yaş altında kayıtta veliye 30 dk geçerli kod gidiyor, kodsuz hesap açılmıyor.
+**Form 1K (22.10.2026 — 23:28 oluşturuldu, https://forms.gle/b6AaAaUwgc3T1sMX9, 11.3 mesajına yazıldı):** kurs velileri için kısa 1. gün formu,
+`kursVeliFormuOlustur` (çalıştırıldı).
+Form 1 kurs dışı testçiler için DEĞİŞMEDİ (kullanıcı önce Form 1'i kısaltmak istedi, sonra ayrı form
+istedi). Çıkarılanlar: telefon, şehir, son bir yıl, harcama; "neden denediniz" → "beklentiniz nedir";
+abaküs geçmişi → kursa gitme süresi; dert sorusu kullanıcı onayıyla kaldı. Hata, öneri ve istek
+için tek form (Ö2); ayrı öneri formu açılmadı (kullanıcıya önerildi, 11. bölümde gerekçe).
+
 ## Liderlik tablosuna gerçekçi sahte oyuncular (22.10.2026 — canlı Firestore'a yazıldı)
 
 `functions/scripts/seed-lesson-leaderboard-realistic.js`: tahtaya `seed_lb_000…` kimlikli, Türk/yabancı

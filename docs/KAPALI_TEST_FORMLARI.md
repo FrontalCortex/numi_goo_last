@@ -170,3 +170,287 @@ olur, 1 dakikalık form:"). 14. günü bekleme; o zamana kadar sebep unutulur.
 5. **İleride tekrar denemek ister misiniz?** *(Çoktan seçmeli, isteğe bağlı)*
    Evet · Belki · Hayır
 
+---
+
+# Kursla test: öğretmen formları ve görüşme (22.10.2026)
+
+Bir mental aritmetik kursuyla yapılan test için üç form ve bir görüşme var. Kurs velileri 1. günde
+Form 1 yerine kısa **Form 1K**'yı doldurur. Sonrasında yukarıdaki Form 2 ve 3'ü aynen alırlar. Form 1
+kurs dışı testçiler için olduğu gibi kalıyor. Takip tablosunda bu velilerin "Kanal" sütununa
+**`Kurs: [kurs adı]`** yaz. Bu öğrenciler "kursa giden çocuk" grubunda değerlendirilir.
+
+| Ne | Kim doldurur | Ne zaman |
+|---|---|---|
+| **Form 1K: Kurs velileri 1. gün** | Kurs velisi | Hesap açılınca (~2 dk) |
+| **Form Ö1: Öğretmen görüşü** | Her öğretmen | Testin 10–12. günü (~8 dk) |
+| **Form Ö2: Sorun ve istek bildirimi** | Kurs sorumlusu, öğretmen ya da veli | Her sorunda (1–2 dk) |
+| **Öğretmen görüşmesi** (aşağıdaki soru listesi) | Sen + kurs sorumlusu + 1–2 öğretmen | Ö1 cevapları geldikten sonra, 12–14. gün |
+
+Sıra bilinçli: önce form, sonra görüşme. Görüşmeye form cevaplarını ve uygulama verisini okumuş
+olarak girersin; görüşmede yalnızca "neden?" sorusuna vakit kalır.
+
+## Kurulum (bir kez)
+
+1. https://script.google.com → formları oluşturan **mevcut** Apps Script projesini aç.
+2. `Kod.gs`'nin içini tamamen sil, `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs`'nin güncel hâlini yapıştır, **Ctrl+S**.
+3. Üstteki listeden **`kursFormlariOlustur`**'u seç, **Çalıştır**. (`formlariOlustur`'u DEĞİL: o
+   veli formlarının ikinci kopyasını açar.)
+4. **Yürütme günlüğü**nde iki formun gönderilecek bağlantısı yazar; aşağıdaki tabloya ve
+   `docs/KAPALI_TEST_MESAJLARI.md` 11. bölümdeki `[Form Ö1]` / `[Form Ö2]` yerlerine yaz. Formlar
+   Drive'daki "Sorobit kapalı test" klasörüne gider.
+5. **Form Ö2 için bildirim aç:** formu Google Forms'ta aç → **Yanıtlar** → ⋮ → **Yeni yanıtlar
+   için e-posta bildirimleri al**. Bildirim gelince bildirimi hemen görürsün. (Bu ayar betikle yapılamıyor.)
+
+`kursFormlariOlustur` 22.10.2026 22:50'de çalıştırıldı; **bir daha çalıştırma** (ikinci kopya oluşur).
+
+| Form | Bağlantı | Form kimliği (betikle düzeltme için) |
+|---|---|---|
+| Form Ö1: Öğretmen görüşü | https://forms.gle/ij9QM6BcjgzsFi8Q9 | `1ayq2BpD6q6UOIQZiBfi2GltbAMUs6UmIP_fg5cxp1X0` |
+| Form Ö2: Sorun ve istek bildirimi | https://forms.gle/FgjRYeBeuWqBW1A88 | `16eZTr1OSDiRbYIyQ1kKcg2w0Xl8tGvbVg9mPVK6qMsU` |
+
+Cevap tabloları ve düzenleme bağlantıları Drive'da **"Sorobit kapalı test"** klasöründe.
+
+**Form 1K (ayrı işlev, bir kez):** aynı projede `Kod.gs`'nin içini sil, `.gs`'nin güncel hâlini
+yapıştır, Ctrl+S, listeden **`kursVeliFormuOlustur`**'u seç, **Çalıştır**. Günlükte yazan bağlantıyı
+aşağıdaki tabloya ve `docs/KAPALI_TEST_MESAJLARI.md` 11.3'teki `[Form 1K]` yerine yaz.
+
+| Form | Bağlantı |
+|---|---|
+| Form 1K: Kurs velileri 1. gün | https://forms.gle/b6AaAaUwgc3T1sMX9 (kimlik `1ULGn6aIZc9x9Y_SsEkbi3ySnOmjk1o0cviZFZ-FFkKg`; 22.10.2026 23:28 oluşturuldu, bir daha çalıştırma) |
+
+---
+
+## Form 1K: "Sorobit testine hoş geldiniz" (kurs velileri, 1. gün)
+
+Form 1'in kısaltılmışı. Açıklama ve teşekkür metni Form 1'le aynı, yalnızca süre "2 dakika".
+Çıkarılanlar (kullanıcı kararı 22.10.2026): telefon, şehir, son bir yılda neler yapıldığı, aylık
+harcama. Dert sorusu bilerek kaldı: şıkları yayından sonraki 5 mesajlık reklam testiyle aynı, takip
+tablosundaki "en büyük dert" sütunu ve Özet'teki dertlere göre devam oranı bu soruya bağlı.
+
+1. **Çocuğunuzun uygulamadaki kullanıcı adı nedir?** *(Kısa yanıt, zorunlu; Form 1'deki açıklamayla)*
+2. **Çocuğunuz kaç yaşında?** *(Açılır liste, zorunlu; Form 1'le aynı)*
+3. **Çocuğunuz kaçıncı sınıfta?** *(Açılır liste, zorunlu; Form 1'le aynı)*
+4. **Çocuğunuz ne kadar süredir abaküs / mental aritmetik kursuna gidiyor?** *(Çoktan seçmeli, zorunlu)*
+   3 aydan az · 3–6 ay · 6–12 ay · 1–2 yıl · 2 yıldan fazla
+   (Form 1'deki "abaküs geçmişi" yerine: bu velilerin hepsi zaten kursta, asıl ayrım seviye.)
+5. **Sorobit'ten beklentiniz nedir? Aklınızdan geçeni kendi cümlelerinizle yazın.** *(Paragraf, zorunlu)*
+   (Form 1'deki "neden denediniz?" yerine: kurs velilerinin cevabı hep "öğretmen önerdi" olurdu.)
+6. **Çocuğunuzun matematikle ilgili sizi en çok düşündüren durum hangisi?** *(Çoktan seçmeli, zorunlu; Form 1'le aynı şıklar)*
+7. **Çocuğunuz uygulamayı hangi cihazda kullanacak?** *(Çoktan seçmeli, zorunlu; Form 1'le aynı)*
+
+Takip tablosuna: kullanıcı adı, yaş, sınıf, en büyük dert. "Abaküs geçmişi" sütununa "Kursta (süre)"
+yaz; şehir boş kalır.
+
+---
+
+## Form Ö1: "Sorobit öğretmen görüşü" (10–12. gün)
+
+**Form açıklaması:**
+
+> Sorobit'i öğrencilerinizle denediğiniz için çok teşekkürler! Bu form yaklaşık 8 dakika sürer.
+> Bir mental aritmetik öğretmeninin gözünden görüşleriniz, uygulamanın ve öğretmen özelliklerinin
+> nasıl gelişeceğini doğrudan belirleyecek. Eleştirileriniz en değerlisi. Cevaplarınız yalnızca
+> Sorobit'i geliştirmek için kullanılır, kimseyle paylaşılmaz.
+
+**Gönderince:** "Çok teşekkürler! Cevaplarınızı okuyup kısa bir görüşme için size ulaşacağım."
+
+**Sizi tanıyalım**
+1. **Adınız soyadınız** *(Kısa yanıt, zorunlu)*
+2. **Kursunuzun adı** *(Kısa yanıt, zorunlu)*
+3. **Uygulamadaki kullanıcı adınız** *(Kısa yanıt, isteğe bağlı)*
+   Açıklama: "Profil ekranında, adın altında @ ile başlayan ad. Cevapladığınız soruları eşleştirmek için."
+4. **Kaç yıldır abaküs / mental aritmetik öğretiyorsunuz?** *(Çoktan seçmeli, zorunlu)*
+   1 yıldan az · 1–3 yıl · 4–7 yıl · 8 yıl ve üstü
+5. **Hangi yaş gruplarına ders veriyorsunuz?** *(Onay kutuları, zorunlu)*
+   Okul öncesi (4–6 yaş) · 1–2. sınıf · 3–4. sınıf · 5–6. sınıf · 7–8. sınıf · Diğer: ___
+6. **Testte kaç öğrenciniz Sorobit'i kullandı?** *(Çoktan seçmeli, zorunlu)*
+   Hiç · 1–5 · 6–10 · 11–20 · 20'den fazla · Bilmiyorum
+
+**Sorobit'i nasıl kullandınız?**
+
+7. **Sorobit'i öğrencilerinizle nasıl kullandınız?** *(Onay kutuları, zorunlu)*
+   Derste birlikte açtık · Ev ödevi olarak verdim · Öğrencilere / velilere önerdim, kendileri kullandı ·
+   Yalnızca kendim denedim · Henüz kullanmadık · Diğer: ___
+8. **Uygulamayı kendiniz ne kadar denediniz?** *(Çoktan seçmeli, zorunlu)*
+   Yalnızca birkaç dakika baktım · Birkaç dersi kendim yaptım · Bir üniteyi ya da daha fazlasını bitirdim
+
+**Öğrencileriniz**
+
+9. **Öğrencileriniz uygulamada nerede takıldı ya da zorlandı?** *(Paragraf, zorunlu)*
+   Açıklama: "Ders adını ya da ekranı yazabilirseniz çok yardımcı olur. Takılan olmadıysa 'yok' yazın."
+10. **Sorobit en çok hangi öğrencilerinize uygun?** *(Çoktan seçmeli, isteğe bağlı)*
+    Abaküse yeni başlayanlara · Temel hareketleri bilen orta seviyeye · İleri seviyeye ·
+    Hepsine aynı ölçüde · Söylemek için erken
+
+**Abaküs yöntemi**
+
+11. **Uygulamadaki abaküs anlatımı, kursta öğrettiğiniz yöntemle ne kadar uyumlu?** *(Çoktan seçmeli, zorunlu)*
+    Açıklama: "Örneğin boncuk hareketleri, 5'lik ve 10'luk geçişler, parmak kullanımı, körleme."
+    Tamamen uyumlu · Büyük ölçüde uyumlu, küçük farklar var · Önemli farklar var ·
+    Çok farklı, öğrencinin kafasını karıştırır · Değerlendirecek kadar bakmadım
+12. **Farklı ya da hatalı bulduğunuz yerleri yazar mısınız?** *(Paragraf, isteğe bağlı)*
+13. **Derslerin sırası ve zorluk artışı nasıl?** *(Çoktan seçmeli, isteğe bağlı)*
+    Çok yavaş ilerliyor · Uygun · Çok hızlı ilerliyor · Bazı yerlerde birden zorlaşıyor
+
+**Öğretmene soru**
+
+14. **Öğrencilerin uygulamadan gönderdiği soruları cevaplayabildiniz mi?** *(Çoktan seçmeli, zorunlu)*
+    Evet, soru cevapladım · Bana soru gelmedi · Nasıl yapılacağını bulamadım · Vaktim olmadı ·
+    Hesabım henüz onaylanmamıştı
+15. **Soru cevaplarken zorlandığınız ya da eksik bulduğunuz bir şey oldu mu?** *(Paragraf, isteğe bağlı)*
+
+**Öğretmen özellikleri**: bölüm açıklaması: "Testten sonra öğretmenlere özel özellikler
+ekleyeceğim. Hangisini önce yapacağımı sizin cevaplarınız belirleyecek."
+
+16. **Öğretmen olarak Sorobit'te en çok neyi görmek ya da yapabilmek isterdiniz? Kendi cümlelerinizle yazın.** *(Paragraf, zorunlu)*
+17. **Aşağıdakiler sizin için ne kadar önemli?** *(Çoktan seçmeli tablo, zorunlu)*
+    Sütunlar: Olmazsa olmaz · Olsa iyi olur · Gerek yok. Satırlar:
+    - Öğrencilerimin ilerlemesini görmek (bitirdiği dersler, çalışma süresi, seri)
+    - Öğrencilerimin en çok hata yaptığı işlemleri görmek
+    - Ödev vermek ve yapılıp yapılmadığını takip etmek
+    - Kendi alıştırma setimi hazırlamak (ör. 20 soruluk 3 basamaklı toplama)
+    - Öğrencilerimi sınıf ya da grup olarak toplamak
+    - Soruların yalnızca kendi öğrencilerimden gelmesi
+    - Velilere haftalık ilerleme özeti gitmesi
+    - Sınıf içi yarışma ve liderlik tablosu
+    - Seviye belirleme sınavı
+18. **Bunlardan yalnızca biri yapılabilseydi hangisi olsun?** *(Çoktan seçmeli, zorunlu; 17'deki satırlar)*
+
+**Veliler**
+
+19. **Sorobit'i velilere nasıl anlattınız ya da anlatırdınız? Kullandığınız cümleleri yazın.** *(Paragraf, zorunlu)*
+20. **Velilerden bir soru, itiraz ya da tepki geldi mi?** *(Paragraf, isteğe bağlı)*
+
+**Genel**
+
+21. **Test bittikten sonra Sorobit'i öğrencilerinize kullandırmayı düşünür müsünüz?** *(Çoktan seçmeli, zorunlu)*
+    Evet, bütün öğrencilerime · Evet, bazı öğrencilerime · Öğretmen özellikleri gelirse ·
+    Emin değilim · Hayır
+22. **Sorobit'i başka bir abaküs öğretmenine ne kadar önerirsiniz?** *(Doğrusal ölçek 0–10, zorunlu)*
+    0 = "Hiç önermem", 10 = "Kesinlikle öneririm"
+23. **Uygulamada en çok neyi değiştirirdiniz?** *(Paragraf, isteğe bağlı)*
+
+Notlar (forma girmez):
+- 16 (açık uçlu) bilerek 17'den (liste) önce: liste önce gelirse öğretmen kendi ihtiyacını değil
+  listedekini yazar. Veli formlarındaki "neden" sorusuyla aynı kural.
+- 18, 17'de her şeye "olmazsa olmaz" diyen öğretmeni seçim yapmaya zorluyor. Asıl öncelik sinyali 18'de.
+- "Soruların yalnızca kendi öğrencilerimden gelmesi": şu an öğrenci soruları bütün onaylı
+  öğretmenlerin gördüğü **ortak havuza** düşüyor (`functions/index.js` `runTeacherPoolNotify`). Kurs
+  öğretmeni, havuzda kendi öğrencisinin sorusunu ayırt edemiyor. Bunu öğretmenlere baştan söyle.
+- Fiyat ve iş birliği bu formda yok. Bunlar görüşmede konuşulacak, çünkü kursun durumuna göre
+  soru değişiyor.
+- 14'te "Hesabım henüz onaylanmamıştı" çok gelirse onay gecikiyor demektir. Öğretmen kaydolduğu gün onayla.
+
+---
+
+## Form Ö2: "Sorobit: sorun ve istek bildirimi" (sürekli açık)
+
+Hataları ve istekleri tek yerde toplar. Kurs sorumlusu ya da öğretmen doldurur. Velilerin sorunu
+sorumluya gelir, formu sorumlu doldurur. Play üretim başvurusu "geri bildirimi nasıl topladınız"
+diye soruyor; cevap tablosu bunun kaydı olur.
+
+Dosya yükleme sorusu **bilerek yok**: Google Forms'ta dosya yükleme, Google hesabıyla giriş
+istiyor. Ekran görüntüsü ve kayıt WhatsApp'tan gelir.
+
+**Form açıklaması:**
+
+> Sorobit'te bir hata, takıldığınız bir yer ya da bir isteğiniz mi var? Bu form 1–2 dakika sürer.
+> Ekran görüntüsü ya da ekran kaydı çok yardımcı olur: formu gönderdikten sonra WhatsApp'tan
+> kurs sorumlunuza ya da doğrudan Başar'a iletin.
+
+**Gönderince:** "Teşekkürler, bildiriminiz ulaştı! Ekran görüntüsü varsa WhatsApp'tan göndermeyi unutmayın."
+
+1. **Bildiren kim?** *(Çoktan seçmeli, zorunlu)*
+   Öğretmen · Öğrenci / veli · Kurs sorumlusu
+2. **Adınız** *(Kısa yanıt, isteğe bağlı)*
+3. **Ne bildiriyorsunuz?** *(Çoktan seçmeli, zorunlu)*
+   Hata ya da teknik sorun · Takılınan / anlaşılmayan bir yer · İstek ya da öneri · Soru
+4. **Sorunu yaşayan kişinin uygulamadaki kullanıcı adı** *(Kısa yanıt, isteğe bağlı)*
+   Açıklama: "Profil ekranında @ ile başlayan ad. Hatayı bulmayı çok kolaylaştırır."
+5. **Ne oldu? Ne yaparken oldu?** *(Paragraf, zorunlu)*
+   Açıklama: "Örnek: '3. bölümün 2. dersinde Devam'a basınca ekran dondu.' İstekse ne olmasını
+   istediğinizi yazın."
+6. **Ne zaman oldu?** *(Tarih, isteğe bağlı)*
+7. **Bir kez mi oldu, tekrar ediyor mu?** *(Çoktan seçmeli, isteğe bağlı)*
+   Bir kez oldu · Ara sıra oluyor · Her seferinde oluyor
+8. **Telefon markası ve modeli** *(Kısa yanıt, isteğe bağlı)*
+   Açıklama: "Ayarlar → Telefon hakkında'da yazar (ör. Samsung Galaxy A14)."
+9. **Ekran görüntüsü ya da kaydı var mı?** *(Çoktan seçmeli, isteğe bağlı)*
+   Var, WhatsApp'tan gönderiyorum · Yok
+
+Rutin: bildirim e-postası gelince cevap tablosunda yeni bir **"Durum"** sütununa (Yeni / Bakılıyor /
+Düzeltildi (sürüm) / Test sonrasına / Yapılmayacak) not düş. Haftada bir, kurs sorumlusuna
+"şunlar düzeldi, şunlar test sonrasına kaldı" diye kısa bir özet gönder. Bildirimin karşılık
+bulduğunu gören kişi bildirmeye devam eder.
+
+---
+
+## Öğretmen görüşmesi: soru listesi (12–14. gün, 20–30 dk)
+
+Kurs sorumlusu ve 1–2 öğretmenle yüz yüze ya da görüntülü görüşme. Satış değil, öğrenme görüşmesi.
+
+**Hazırlık (görüşmeden önce):**
+- Form Ö1 cevaplarını oku. Her öğretmenin 16–18. sorudaki cevabını ve 11–12'deki yöntem farklarını not et.
+- `node tools/kapali-test/ilerleme_disa_aktar.js --testci-haric` çalıştır, kursun öğrencilerini
+  (takip tablosunda `Kurs: …`) ayır. Kaç kişi başladı, kaç gün kullandı, en çok hangi derste kaldı?
+  Görüşmede göstereceğin 1–2 somut örnek hazırla ("6 öğrenciden 4'ü X dersinde durdu").
+- Form Ö2'de gelen bildirimlerin hangilerinin düzeldiğini bil.
+
+**Görüşme kuralları:**
+- **Gelecek değil, geçmiş sor.** "Kullanır mısınız?" sorusuna herkes kibarlıktan "evet" der. Bunun yerine
+  "En son ne zaman…, ne oldu?" diye sor. (Bu yaklaşım *The Mom Test* kitabındaki yöntem: insanların
+  fikrini değil, yaptığını sor.)
+- **Savunma yapma.** Eleştiriye "aslında şöyle…" diye karşılık verme, "Biraz daha anlatır mısınız?" de.
+- **Az konuş.** Konuşma süresinin üçte birinden fazlası senin olmasın. Sessizliğe dayan; asıl bilgi genelde sessizlikten sonra gelir.
+- **Söylenen cümleyi aynen yaz.** Özellikle velilere anlatım ve şikâyet cümleleri, ileride reklam ve mağaza metni olur.
+- **Söz verme.** "Not aldım, önceliklendireceğim" de, tarih verme.
+
+**1. Açılış (2 dk)**
+- Teşekkür et. Amacı söyle: "Doğru şeyi yapmak için sizden öğrenmek istiyorum, eleştiriler en değerlisi."
+- Not almak için ses kaydına izin iste.
+
+**2. Gerçekte ne oldu (5 dk)**
+- "Sorobit'i öğrencilere ilk nasıl verdiniz? Anlatır mısınız?"
+- "En son ne zaman bir öğrencinin kullandığını gördünüz ya da duydunuz? Ne yapıyordu?"
+- "Kullanmayan öğrenciler sizce neden kullanmadı?"
+- "Derste mi kullandınız, ev ödevi olarak mı? Neden öyle?"
+
+**3. Öğrencilerin takıldığı yerler (5 dk)**
+- Veriyi göster: "[N] öğrenciden [M]'si [ders] dersinde durdu. Sizce neden?"
+- "Bu konuyu kursta nasıl anlatıyorsunuz? Uygulamadaki anlatımdan farkı ne?"
+- Formda yöntem farkı yazdıysa: "Şunu yazmışsınız: [...] Öğrenci bunu görünce ne oluyor?"
+
+**4. Öğretmen özellikleri (7 dk)**: en önemli bölüm
+- "Şu an öğrencilerinizin evde çalışıp çalışmadığını nasıl takip ediyorsunuz?" (WhatsApp, kâğıt
+  ödev, başka bir uygulama? Bugünkü çözüm, rakibin ne olduğunu gösterir.)
+- "Bu takibe haftada ne kadar zaman harcıyorsunuz? En sinir bozucu kısmı ne?"
+- "Bugün ödevi nasıl veriyorsunuz? Sayfa mı, soru sayısı mı, dakika mı?" (Ödev özelliğinin birimini belirler.)
+- "Formda [X]'i seçmişsiniz. Bu olsaydı haftanızda ne değişirdi?"
+- "Öğrencilerin ilerlemesini telefonda mı görmek istersiniz, bilgisayarda mı?"
+- "Öğrenci soruları şu an ortak bir havuza düşüyor. Kendi öğrencinizin sorusunu ayırt etmek sizin için ne kadar önemli?"
+
+**5. Veliler (3 dk)**
+- "Velilere Sorobit'i nasıl anlattınız? Hangi cümle işe yaradı?"
+- "Veliler evde çalışma konusunda size en çok neyden şikâyet ediyor?"
+- "Kurs olarak velilere daha önce ücretli bir kaynak ya da uygulama önerdiniz mi? Nasıl karşılandı?"
+
+**6. İş birliği (5 dk, kurs sorumlusuyla)**
+- "Öğrencilerinize böyle bir uygulama önermek kursa ne kazandırır?"
+- "Daha önce benzer bir uygulama ya da kaynakla çalıştınız mı? Ücret nasıldı, kim ödüyordu?"
+- "Böyle bir uygulamanın ücretini kim öder: kurs mu, veli mi?"
+- "Öğrenci başına aylık hangi fiyat 'bu çok pahalı' olur, hangisi 'bu kadar ucuzsa bir sorunu vardır'?"
+- **Kendi teklifini (kursa ücretsiz öğretmen paneli, öğrencilere indirim, %20–30 pay) burada
+  söyleme.** Önce onların beklentisini dinle. Teklif, test verisiyle ayrı bir görüşmede yapılır.
+
+**7. Kapanış (2 dk)**
+- "Sormamı beklediğiniz ama sormadığım bir şey var mı?"
+- "Konuşmamı önereceğiniz başka bir öğretmen ya da kurs var mı?"
+- Sonraki adımı ve ne zaman tekrar konuşacağınızı belirle.
+
+**Görüşmeden sonra (aynı gün):** 5 satırlık özet yaz ve `docs/DEVAM_NOTU.md`'ye ekle:
+1. En çok tekrar eden 3 sorun
+2. Öncelikli öğretmen özelliği (18. sorudaki cevapla aynı mı?)
+3. Aynen alıntılar (veliye anlatım, şikâyetler)
+4. Fiyat ve ödeme modeli cevapları
+5. Sonraki adım
+
