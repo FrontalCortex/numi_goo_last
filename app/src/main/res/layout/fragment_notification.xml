@@ -222,7 +222,7 @@
 
         <!--
           Sınıfım sekmesinde: sınıf kartı (öğretmenin Sınıflarım kartı gibi; dokununca sınıf ayarları),
-          altında Ödevlerim kartı (dokununca StudentHomeworkListFragment). Sınıftakiler listede.
+          altında Ödevlerim kartı (dokununca StudentHomeworkListFragment). Sınıftakiler sınıf ekranında.
         -->
         <LinearLayout
             android:id="@+id/studentClassInfo"
@@ -356,16 +356,6 @@
                     android:src="@drawable/dualingo_arrow_ic"
                     app:tint="@android:color/white" />
             </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginTop="18dp"
-                android:text="@string/class_student_members_title"
-                android:textColor="@color/dark_text"
-                android:textSize="16sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout

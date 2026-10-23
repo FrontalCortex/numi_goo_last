@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Öğrencinin kurs ve sınıf ekranı: kodla katılma, davetler, şu anki sınıf (bkz. StudentClassFragment). -->
+<!--
+  Öğrencinin sınıf ekranı (bkz. StudentClassFragment): başlıkta sınıfın adı, sağ üstte ayrılma ikonu;
+  altında davetler, kurs bilgisi ve sınıftakiler. Sınıfı yoksa kodla katılma.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -16,7 +19,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
-        android:paddingEnd="16dp">
+        android:paddingEnd="4dp">
 
         <ImageButton
             android:id="@+id/btnBack"
@@ -29,18 +32,29 @@
             app:tint="@android:color/white" />
 
         <TextView
+            android:id="@+id/screenTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:ellipsize="end"
             android:gravity="center"
+            android:maxLines="1"
             android:text="@string/class_student_title"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <View
+        <!-- Sınıftan ayrıl: sınıfı yokken görünmez ama başlığın ortada kalması için yer tutar. -->
+        <ImageButton
+            android:id="@+id/btnLeaveClass"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/class_student_leave"
+            android:padding="12dp"
+            android:src="@drawable/ic_leave_class"
+            android:visibility="invisible"
+            app:tint="@color/dark_error" />
     </LinearLayout>
 
     <View
@@ -84,73 +98,69 @@
                     android:orientation="vertical"
                     android:visibility="gone" />
 
-                <!-- Şu anki sınıf -->
+                <!-- Şu anki sınıf: kurs ve bilgi; sınıfın adı başlıkta, öğretmen listenin başında. -->
                 <LinearLayout
                     android:id="@+id/currentClassCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/hint_background"
                     android:orientation="vertical"
-                    android:padding="16dp"
                     android:visibility="gone">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/class_student_current"
-                        android:textColor="@color/dark_text_secondary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/currentClassName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textColor="@color/dark_text"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        tools:text="Cumartesi 10:00" />
-
-                    <TextView
-                        android:id="@+id/currentCourseName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textColor="@color/dark_text"
-                        android:textSize="15sp"
-                        tools:text="Sennin School" />
-
-                    <TextView
-                        android:id="@+id/currentTeacher"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textColor="@color/dark_text_secondary"
-                        android:textSize="14sp"
-                        tools:text="Öğretmenin: Mehmet Öğretmen" />
-
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/class_student_info"
-                        android:textColor="@color/dark_text_secondary"
-                        android:textSize="13sp" />
+                        android:background="@drawable/hint_background"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/currentCourseName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:textColor="@color/dark_text"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="Sennin School" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/class_student_info"
+                            android:textColor="@color/dark_text_secondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btnLeaveClass"
                         android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_button_outline"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:gravity="center"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:text="@string/class_student_leave"
-                        android:textColor="@color/dark_error"
-                        android:textSize="14sp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/class_student_members_title"
+                        android:textColor="@color/dark_text"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/classmateList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="-16dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginEnd="-16dp"
+                        android:nestedScrollingEnabled="false" />
+
+                    <TextView
+                        android:id="@+id/classmatesEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:padding="16dp"
+                        android:text="@string/hw_classmates_empty"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- Kodla katılma (sınıfı olmayan öğrenci) -->

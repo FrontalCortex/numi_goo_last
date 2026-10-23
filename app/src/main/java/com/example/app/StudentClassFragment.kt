@@ -35,6 +35,22 @@ class StudentClassFragment : Fragment() {
     private var myClass: CourseClasses.MyClass? = null
     private var invites: List<CourseClasses.ClassInvite> = emptyList()
 
+    // Sınıftakiler: önce öğretmen(ler), sonra öğrenciler (Sorularım → Sınıfım kartından gelindi).
+    private var membersListener: ListenerRegistration? = null
+    private var membersClassId: String? = null
+    private var classTeachers: List<CourseClasses.ClassMember> = emptyList()
+    private var lastMembers: List<CourseClasses.ClassMember> = emptyList()
+    private val avatars = HashMap<String, String?>()
+    private val classmateAdapter by lazy {
+        ClassmateAdapter(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid) { member ->
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                .replace(R.id.fragmentContainerID, ProfileFragment.newInstance(member.uid))
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentStudentClassBinding.inflate(inflater, container, false)
         return binding.root
@@ -48,6 +64,8 @@ class StudentClassFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) { joinWithCode(); true } else false
         }
         binding.btnLeaveClass.setOnClickListener { confirmLeave() }
+        binding.classmateList.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        binding.classmateList.adapter = classmateAdapter
 
         invitesListener = CourseClasses.listenMyInvites { list ->
             invites = list
@@ -80,12 +98,50 @@ class StudentClassFragment : Fragment() {
         val c = myClass
         b.currentClassCard.visibility = if (c != null) View.VISIBLE else View.GONE
         b.joinCard.visibility = if (c == null) View.VISIBLE else View.GONE
-        if (c == null) return
-        b.currentClassName.text = c.name
+        b.screenTitle.text = c?.name ?: appString(R.string.class_student_title)
+        b.btnLeaveClass.visibility = if (c != null) View.VISIBLE else View.INVISIBLE
+        if (c == null) {
+            stopMembers()
+            return
+        }
         b.currentCourseName.text = c.courseName
         b.currentCourseName.visibility = if (c.courseName.isBlank()) View.GONE else View.VISIBLE
-        b.currentTeacher.text = appString(R.string.class_student_teacher, c.teacherName)
-        b.currentTeacher.visibility = if (c.teacherName.isBlank()) View.GONE else View.VISIBLE
+        if (membersClassId == c.id) return
+        stopMembers()
+        membersClassId = c.id
+        CourseClasses.loadTeachers(c.teacherUids) { teachers ->
+            classTeachers = teachers
+            showMembers(lastMembers)
+        }
+        membersListener = CourseClasses.listenMembers(c.id) { list -> showMembers(list.orEmpty()) }
+    }
+
+    private fun stopMembers() {
+        membersListener?.remove()
+        membersListener = null
+        membersClassId = null
+        classTeachers = emptyList()
+        lastMembers = emptyList()
+        classmateAdapter.submitList(emptyList())
+    }
+
+    private fun showMembers(members: List<CourseClasses.ClassMember>) {
+        val b = _binding ?: return
+        lastMembers = members
+        val rows = classTeachers + members.filter { m -> classTeachers.none { it.uid == m.uid } }
+        classmateAdapter.teacherUids = classTeachers.map { it.uid }.toSet()
+        classmateAdapter.submitList(rows.map { it to avatars[it.uid] })
+        // Yalnızca kendisi varsa "henüz başka öğrenci yok".
+        val myUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        b.classmatesEmpty.visibility = if (members.none { it.uid != myUid }) View.VISIBLE else View.GONE
+        val missing = rows.map { it.uid }.filterNot { avatars.containsKey(it) }
+        if (missing.isNotEmpty()) {
+            missing.forEach { avatars[it] = null } // okunurken yeniden istenmesin
+            CourseClasses.loadAvatars(missing) { loaded ->
+                avatars.putAll(loaded)
+                if (_binding != null) classmateAdapter.submitList(rows.map { it to avatars[it.uid] })
+            }
+        }
     }
 
     private fun renderInvites() {
@@ -209,6 +265,7 @@ class StudentClassFragment : Fragment() {
 
     override fun onDestroyView() {
         invitesListener?.remove()
+        stopMembers()
         invitesListener = null
         _binding = null
         super.onDestroyView()
