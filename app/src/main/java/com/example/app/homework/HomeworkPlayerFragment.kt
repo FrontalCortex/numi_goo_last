@@ -50,6 +50,7 @@ class HomeworkPlayerFragment : Fragment() {
         private const val GAP_FRACTION = 0.15
         private const val MIN_GAP_MS = 40L
         private const val MAX_GAP_MS = 250L
+        private const val RESULT_PANEL_ANIM_MS = 200L
 
         fun newInstance(homeworkId: String) = HomeworkPlayerFragment().apply {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
@@ -71,6 +72,11 @@ class HomeworkPlayerFragment : Fragment() {
     private var abacusController: AbacusBeadController? = null
     private var abacusMetricsReady = false
     private val handler = Handler(Looper.getMainLooper())
+    /** Sonuç paneli gezinme çubuğunun arkasına kadar uzasın (derslerdeki gibi). */
+    private var navBarPanelExtension: com.example.app.NavBarPanelExtension? = null
+    private var mediaPlayer: android.media.MediaPlayer? = null
+    /** Panel kayarken Devam'a basılıp soru atlanmasın. */
+    private var resultPanelAnimating = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeworkPlayerBinding.inflate(inflater, container, false)
@@ -88,7 +94,8 @@ class HomeworkPlayerFragment : Fragment() {
         binding.answerInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) { onKontrol(); true } else false
         }
-        binding.resultButton.setOnClickListener { nextQuestion() }
+        binding.resultButton.setOnClickListener { if (!resultPanelAnimating) hideResultPanel { nextQuestion() } }
+        navBarPanelExtension = com.example.app.NavBarPanelExtension(binding.root, binding.resultPanel).also { it.attach() }
         setPlayVisible(false)
 
         Homeworks.loadHomework(homeworkId) { hw ->
@@ -254,8 +261,63 @@ class HomeworkPlayerFragment : Fragment() {
         b.resultMessage.visibility = if (correct) View.GONE else View.VISIBLE
         b.resultMessage.text = HomeworkText.questionLine(q) + " = " + q.answer
         b.resultButton.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
-        b.resultPanel.visibility = View.VISIBLE
         b.kontrolButton.isEnabled = false
+        // Ses ve ses düzeyi AbacusFragment.showResultPanel ile aynı.
+        if (correct) playSound(R.raw.correct_answer_sound, 0.3f) else playSound(R.raw.incorrect_answer_sound, 1f)
+        showResultPanel()
+    }
+
+    /** Panel alttan kayarak geliyor: AbacusFragment / BlindingLessonFragment ile aynı süre ve eğri. */
+    private fun showResultPanel() {
+        val panel = _binding?.resultPanel ?: return
+        resultPanelAnimating = true
+        panel.animate().cancel()
+        panel.alpha = 0f
+        panel.visibility = View.VISIBLE
+        // Yükseklik bilinmeden kaydırma mesafesi hesaplanamıyor.
+        panel.post {
+            if (_binding == null) return@post
+            panel.translationY = resultPanelHiddenY(panel)
+            panel.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(RESULT_PANEL_ANIM_MS)
+                .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
+                .withEndAction { resultPanelAnimating = false }
+                .start()
+        }
+    }
+
+    /** Devam'da panel aşağı kayıp gidiyor (abaküs pratiğindeki gibi), sonra sıradaki soru. */
+    private fun hideResultPanel(then: () -> Unit) {
+        val panel = _binding?.resultPanel ?: return then()
+        resultPanelAnimating = true
+        panel.animate()
+            .translationY(resultPanelHiddenY(panel))
+            .setDuration(RESULT_PANEL_ANIM_MS)
+            .setInterpolator(android.view.animation.AccelerateInterpolator())
+            .withEndAction {
+                panel.visibility = View.GONE
+                panel.translationY = 0f
+                resultPanelAnimating = false
+                if (_binding != null) then()
+            }
+            .start()
+    }
+
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
+    /** Uygulamanın ses ayarı ("sound_enabled") kapalıysa çalmıyor; AbacusFragment.playSound ile aynı. */
+    private fun playSound(resId: Int, volume: Float) {
+        val ctx = context ?: return
+        val prefs = ctx.getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
+        mediaPlayer?.release()
+        mediaPlayer = android.media.MediaPlayer.create(ctx, resId)?.apply {
+            setVolume(volume, volume)
+            start()
+        }
     }
 
     private fun nextQuestion() {
@@ -386,6 +448,11 @@ class HomeworkPlayerFragment : Fragment() {
 
     override fun onDestroyView() {
         handler.removeCallbacksAndMessages(null)
+        _binding?.resultPanel?.animate()?.cancel()
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
+        mediaPlayer?.release()
+        mediaPlayer = null
         abacusController = null
         _binding = null
         super.onDestroyView()
