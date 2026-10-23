@@ -21,7 +21,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
 /**
- * Kurs öğretmeninin sınıfları: liste, yeni sınıf açma ve "genel havuza da yardım et" tercihi.
+ * Kurs öğretmeninin sınıfları: liste, yeni sınıf açma ve "genel havuza da yardım et" tercihi
+ * (tercih kartı şimdilik gizli).
  *
  * Giriş Havuz ekranındaki "Sınıflarım" düğmesinden; düğme yalnızca kursa bağlı öğretmende
  * görünüyor (bkz. NotificationFragment). Bir sınıfa dokununca [TeacherClassDetailFragment].
@@ -46,7 +47,7 @@ class TeacherClassesFragment : Fragment() {
         binding.classList.adapter = adapter
         binding.btnNewClass.setOnClickListener { showNewClassDialog() }
         com.example.app.homework.DepthPress.attach(binding.btnNewClass)
-        loadHelpGeneralPool()
+        // "Genel havuza da yardım et" kartı şimdilik gizli; açılınca loadHelpGeneralPool() geri çağrılacak.
 
         classesListener = CourseClasses.listenMyClasses { list ->
             val b = _binding ?: return@listenMyClasses
@@ -138,10 +139,79 @@ class TeacherClassesFragment : Fragment() {
 
         override fun onBindViewHolder(holder: Holder, position: Int) {
             val item = getItem(position)
-            holder.binding.className.text = item.name
-            holder.binding.classMeta.text = appPlural(R.plurals.class_student_count, item.studentCount, item.studentCount) +
-                " · " + appString(R.string.class_code_label, CourseClasses.formatCode(item.joinCode))
-            holder.binding.root.setOnClickListener { onClick(item) }
+            val b = holder.binding
+            b.className.text = item.name
+            b.root.contentDescription = item.name + ", " + appPlural(R.plurals.class_student_count, item.studentCount, item.studentCount)
+            bindFaces(b, item)
+            b.root.setOnClickListener { onClick(item) }
+            com.example.app.homework.DepthPress.attach(b.root)
+        }
+
+        /** Sınıf id → ilk öğrencilerin avatarları (null: avatarı yok). Her sınıf bir kez okunuyor. */
+        private val faces = HashMap<String, List<String?>>()
+        private val loading = HashSet<String>()
+
+        private fun bindFaces(b: ItemTeacherClassBinding, item: CourseClasses.CourseClass) {
+            val row = b.classFaces
+            row.removeAllViews()
+            if (item.studentCount <= 0) {
+                row.visibility = View.GONE
+                b.classMeta.text = appString(R.string.class_card_no_students)
+                b.classMeta.visibility = View.VISIBLE
+                return
+            }
+            row.visibility = View.VISIBLE
+            b.classMeta.visibility = View.GONE
+            val avatars = faces[item.id]
+            if (avatars == null) {
+                if (loading.add(item.id)) {
+                    CourseClasses.loadMemberPreview(item.id, MAX_FACES.toLong()) { uids ->
+                        CourseClasses.loadAvatars(uids) { map ->
+                            loading.remove(item.id)
+                            faces[item.id] = uids.map { map[it] }
+                            val index = currentList.indexOfFirst { it.id == item.id }
+                            if (index >= 0) notifyItemChanged(index)
+                        }
+                    }
+                }
+            }
+            val ctx = row.context
+            val density = ctx.resources.displayMetrics.density
+            val size = (28 * density).toInt()
+            val shown = (avatars ?: List(minOf(item.studentCount, MAX_FACES)) { null }).take(MAX_FACES)
+            shown.forEachIndexed { i, encoded ->
+                val face = android.widget.TextView(ctx).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(size, size).apply {
+                        if (i > 0) marginStart = (-8 * density).toInt() // üst üste binsin
+                    }
+                    gravity = android.view.Gravity.CENTER
+                    background = com.example.app.AvatarView.drawableFor(ctx, encoded, size)
+                        ?: android.graphics.drawable.GradientDrawable().apply {
+                            shape = android.graphics.drawable.GradientDrawable.OVAL
+                            setColor(android.graphics.Color.parseColor(FACE_COLORS[i % FACE_COLORS.size]))
+                            setStroke((2 * density).toInt(), androidx.core.content.ContextCompat.getColor(ctx, R.color.bright_background_color))
+                        }
+                }
+                row.addView(face)
+            }
+            val more = item.studentCount - shown.size
+            if (more > 0) {
+                row.addView(android.widget.TextView(ctx).apply {
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT, size,
+                    ).apply { marginStart = (6 * density).toInt() }
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    text = appString(R.string.class_card_more, more)
+                    setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.dark_text_secondary))
+                    textSize = 13f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                })
+            }
+        }
+
+        companion object {
+            private const val MAX_FACES = 4
+            private val FACE_COLORS = listOf("#1CB0F6", "#CE82FF", "#FF9600", "#00CD9C")
         }
     }
 }

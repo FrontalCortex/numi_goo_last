@@ -122,6 +122,13 @@ object CourseClasses {
                 onChange(list)
             }
 
+    /** Sınıflarım kartındaki avatar dizisi için ilk [limit] öğrencinin uid'i (bir kez okunuyor). */
+    fun loadMemberPreview(classId: String, limit: Long, onResult: (List<String>) -> Unit) {
+        db.collection("classes").document(classId).collection("members").limit(limit).get()
+            .addOnSuccessListener { snap -> onResult(snap.documents.map { it.id }) }
+            .addOnFailureListener { e -> Log.w(TAG, "öğrenci önizlemesi okunamadı", e); onResult(emptyList()) }
+    }
+
     /** Bu sınıftan gönderilmiş, henüz yanıtlanmamış davetlerdeki öğrenci adları. */
     fun listenPendingInvites(classId: String, onChange: (List<String>) -> Unit): ListenerRegistration? {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return null

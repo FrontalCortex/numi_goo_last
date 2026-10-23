@@ -24,6 +24,8 @@
         <item quantity="one">%d öğrenci</item>
         <item quantity="other">%d öğrenci</item>
     </plurals>
+    <string name="class_card_no_students">Henüz öğrenci yok</string>
+    <string name="class_card_more">+%d</string>
     <string name="class_code_label">Kod: %1$s</string>
 
     <!-- Sınıf ayrıntısı -->
