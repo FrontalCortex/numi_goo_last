@@ -41,7 +41,7 @@ class NotificationFragment : Fragment() {
      * Sınıftaki öğrencinin ana sekmeleri: Sorularım (Bekleyen/Çözülen alt sekmeleriyle) |
      * Ödevlerim | Sınıfım. Sınıfı olmayan öğrencide yalnızca sorular (ekran eskisi gibi).
      */
-    private enum class StudentMainTab { QUESTIONS, HOMEWORK, CLASS }
+    private enum class StudentMainTab { QUESTIONS, CLASS }
 
     private var _binding: FragmentNotificationBinding? = null
     private val binding get() = _binding!!
@@ -63,7 +63,7 @@ class NotificationFragment : Fragment() {
      */
     private var poolVisibility: CourseClasses.PoolVisibility? = null
 
-    // Öğrencinin sınıfı ve Ödevlerim / Sınıfım sekmeleri.
+    // Öğrencinin sınıfı ve Sınıfım sekmesi (ödevler oradaki karttan açılıyor).
     private var studentMainTab = StudentMainTab.QUESTIONS
     private var myClass: CourseClasses.MyClass? = null
     private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
@@ -71,12 +71,8 @@ class NotificationFragment : Fragment() {
     private val classmateAvatars = HashMap<String, String?>()
     private var classTeachers: List<CourseClasses.ClassMember> = emptyList()
     private var lastClassmates: List<CourseClasses.ClassMember> = emptyList()
-    private val homeworkAdapter = com.example.app.homework.HomeworkCard.Adapter { item ->
-        // Tam ekran katmanda: çocuk sorunun ortasında alt bardan başka sekmeye geçmesin.
-        (activity as? MainActivity)?.showAbacusOverlayFragment(
-            com.example.app.homework.HomeworkPlayerFragment.newInstance(item.homework.id)
-        )
-    }
+    /** Ödev bildiriminden gelindi: sınıf okununca ödev ekranı bir kez açılacak. */
+    private var openHomeworksWhenReady = false
     private val classmateAdapter by lazy {
         ClassmateAdapter(auth.currentUser?.uid) { member ->
             requireActivity().supportFragmentManager.beginTransaction()
@@ -119,7 +115,7 @@ class NotificationFragment : Fragment() {
         private const val KEY_STUDENT_MAIN_TAB = "student_main_tab"
         private const val ARG_FORCE_STUDENT_HOMEWORK = "force_student_homework"
 
-        /** Yeni ödev bildirimine dokunan öğrenci için: Ödevlerim sekmesi açık gelsin. */
+        /** Yeni ödev bildirimine dokunan öğrenci için: Sınıfım sekmesi ve üstünde ödev ekranı açılsın. */
         fun newForStudentHomework(): NotificationFragment = NotificationFragment().apply {
             arguments = Bundle().apply { putBoolean(ARG_FORCE_STUDENT_HOMEWORK, true) }
         }
@@ -237,7 +233,8 @@ class NotificationFragment : Fragment() {
         // Ödev bildiriminden gelindi. Argüman tüketiliyor: profilden geri dönüşte görünüm yeniden
         // kurulduğunda öğrencinin seçtiği sekme ezilmesin.
         if (arguments?.getBoolean(ARG_FORCE_STUDENT_HOMEWORK) == true) {
-            studentMainTab = StudentMainTab.HOMEWORK
+            studentMainTab = StudentMainTab.CLASS
+            openHomeworksWhenReady = true
             arguments?.putBoolean(ARG_FORCE_STUDENT_HOMEWORK, false)
         }
 
@@ -306,10 +303,9 @@ class NotificationFragment : Fragment() {
             binding.tabBekleyen.setOnClickListener { switchToStudentTab(StudentTab.BEKLEYEN) }
             binding.tabCozulen.setOnClickListener { switchToStudentTab(StudentTab.COZULEN) }
             binding.tabStudentQuestions.setOnClickListener { showStudentMainTab(StudentMainTab.QUESTIONS) }
-            binding.tabStudentHomework.setOnClickListener { showStudentMainTab(StudentMainTab.HOMEWORK) }
             binding.tabStudentClass.setOnClickListener { showStudentMainTab(StudentMainTab.CLASS) }
             // Sorular sınıf beklenmeden açılıyor (sınıfı olmayan öğrencilerin çoğu için tek ekran);
-            // Ödevlerim/Sınıfım isteniyorsa sınıf okununca geçiliyor.
+            // Sınıfım isteniyorsa sınıf okununca geçiliyor.
             if (studentMainTab == StudentMainTab.QUESTIONS) {
                 if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
             }
@@ -317,7 +313,7 @@ class NotificationFragment : Fragment() {
         }
     }
 
-    // ── Öğrenci: Sorularım | Ödevlerim | Sınıfım ───────────────────────────
+    // ── Öğrenci: Sorularım | Sınıfım ──────────────────────────────────────
 
     /**
      * Öğrencinin sınıfını okur. Sınıfı varsa ana sekmeler açılıyor (başlık yerine, öğretmendeki
@@ -331,6 +327,7 @@ class NotificationFragment : Fragment() {
                 b.studentMainTabContainer.visibility = View.GONE
                 b.studentClassInfo.visibility = View.GONE
                 b.notificationTitle.visibility = View.VISIBLE
+                openHomeworksWhenReady = false
                 if (studentMainTab != StudentMainTab.QUESTIONS) showStudentMainTab(StudentMainTab.QUESTIONS, force = true)
                 return@loadMyClass
             }
@@ -338,6 +335,10 @@ class NotificationFragment : Fragment() {
             b.studentMainTabContainer.visibility = View.VISIBLE
             if (studentMainTab == StudentMainTab.QUESTIONS) updateStudentMainTabUi()
             else showStudentMainTab(studentMainTab, force = true)
+            if (openHomeworksWhenReady) {
+                openHomeworksWhenReady = false
+                openStudentScreen(com.example.app.homework.StudentHomeworkListFragment.newInstance(c.id))
+            }
         }
     }
 
@@ -346,7 +347,6 @@ class NotificationFragment : Fragment() {
         val unselectedColor = requireContext().getColor(R.color.dark_text_secondary)
         listOf(
             StudentMainTab.QUESTIONS to binding.tabStudentQuestions,
-            StudentMainTab.HOMEWORK to binding.tabStudentHomework,
             StudentMainTab.CLASS to binding.tabStudentClass,
         ).forEach { (tab, view) ->
             view.setBackgroundResource(if (tab == studentMainTab) R.drawable.bg_segment_selected else 0)
@@ -379,22 +379,27 @@ class NotificationFragment : Fragment() {
                 b.questionsRecyclerView.adapter = adapter
                 if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
             }
-            tab == StudentMainTab.HOMEWORK -> {
-                b.questionsRecyclerView.adapter = homeworkAdapter
-                b.emptyText.text = appString(R.string.hw_student_empty)
-                homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher(c.id) onItems@{ items ->
-                    val bb = _binding ?: return@onItems
-                    homeworkAdapter.submitList(items)
-                    bb.emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-                }
-            }
             else -> {
                 b.questionsRecyclerView.adapter = classmateAdapter
                 b.studentClassName.text = c.name
-                b.studentClassMeta.text = listOf(
-                    c.courseName,
-                    appPlural(R.plurals.class_student_count, c.studentCount, c.studentCount),
-                ).filter { it.isNotBlank() }.joinToString(" · ")
+                b.studentClassMeta.text = c.courseName
+                b.studentClassMeta.visibility = if (c.courseName.isBlank()) View.GONE else View.VISIBLE
+                ClassFaces.bind(b.studentClassFaces, List(minOf(c.studentCount, ClassFaces.MAX)) { null }, c.studentCount)
+                b.studentClassCard.setOnClickListener { openStudentScreen(StudentClassFragment()) }
+                b.studentHomeworkCard.setOnClickListener {
+                    openStudentScreen(com.example.app.homework.StudentHomeworkListFragment.newInstance(c.id))
+                }
+                com.example.app.homework.DepthPress.attach(b.studentClassCard, b.studentHomeworkCard)
+                b.studentHomeworkSubtitle.text = ""
+                homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher(c.id) onItems@{ items ->
+                    val bb = _binding ?: return@onItems
+                    val pending = items.count { !it.done }
+                    bb.studentHomeworkSubtitle.text = when {
+                        items.isEmpty() -> appString(R.string.hw_student_card_none)
+                        pending == 0 -> appString(R.string.hw_student_card_all_done)
+                        else -> appPlural(R.plurals.hw_student_card_pending, pending, pending)
+                    }
+                }
                 b.emptyText.text = appString(R.string.hw_classmates_empty)
                 classTeachers = emptyList()
                 CourseClasses.loadTeachers(c.teacherUids) { teachers ->
@@ -413,6 +418,7 @@ class NotificationFragment : Fragment() {
         val rows = classTeachers + members.filter { m -> classTeachers.none { it.uid == m.uid } }
         classmateAdapter.teacherUids = classTeachers.map { it.uid }.toSet()
         classmateAdapter.submitList(rows.map { it to classmateAvatars[it.uid] })
+        bindClassFaces(members)
         // Yalnızca kendisi varsa "henüz başka öğrenci yok".
         b.emptyText.visibility = if (members.none { it.uid != auth.currentUser?.uid }) View.VISIBLE else View.GONE
         val missing = rows.map { it.uid }.filterNot { classmateAvatars.containsKey(it) }
@@ -421,8 +427,24 @@ class NotificationFragment : Fragment() {
                 classmateAvatars.putAll(avatars)
                 if (_binding == null || studentMainTab != StudentMainTab.CLASS) return@loadAvatars
                 classmateAdapter.submitList(rows.map { it to classmateAvatars[it.uid] })
+                bindClassFaces(members)
             }
         }
+    }
+
+    /** Sınıf kartındaki avatar dizisi: avatarı olanlar önce, en fazla [ClassFaces.MAX]. */
+    private fun bindClassFaces(members: List<CourseClasses.ClassMember>) {
+        val b = _binding ?: return
+        val faces = members.sortedBy { classmateAvatars[it.uid] == null }.take(ClassFaces.MAX).map { classmateAvatars[it.uid] }
+        ClassFaces.bind(b.studentClassFaces, faces, members.size)
+    }
+
+    private fun openStudentScreen(fragment: Fragment) {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(R.id.fragmentContainerID, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun setupTeacherApprovalPendingUi() {

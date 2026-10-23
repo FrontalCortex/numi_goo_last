@@ -153,7 +153,6 @@ class TeacherClassesFragment : Fragment() {
 
         private fun bindFaces(b: ItemTeacherClassBinding, item: CourseClasses.CourseClass) {
             val row = b.classFaces
-            row.removeAllViews()
             if (item.studentCount <= 0) {
                 row.visibility = View.GONE
                 b.classMeta.text = appString(R.string.class_card_no_students)
@@ -165,7 +164,7 @@ class TeacherClassesFragment : Fragment() {
             val avatars = faces[item.id]
             if (avatars == null) {
                 if (loading.add(item.id)) {
-                    CourseClasses.loadMemberPreview(item.id, MAX_FACES.toLong()) { uids ->
+                    CourseClasses.loadMemberPreview(item.id, ClassFaces.MAX.toLong()) { uids ->
                         CourseClasses.loadAvatars(uids) { map ->
                             loading.remove(item.id)
                             faces[item.id] = uids.map { map[it] }
@@ -175,43 +174,7 @@ class TeacherClassesFragment : Fragment() {
                     }
                 }
             }
-            val ctx = row.context
-            val density = ctx.resources.displayMetrics.density
-            val size = (28 * density).toInt()
-            val shown = (avatars ?: List(minOf(item.studentCount, MAX_FACES)) { null }).take(MAX_FACES)
-            shown.forEachIndexed { i, encoded ->
-                val face = android.widget.TextView(ctx).apply {
-                    layoutParams = android.widget.LinearLayout.LayoutParams(size, size).apply {
-                        if (i > 0) marginStart = (-8 * density).toInt() // üst üste binsin
-                    }
-                    gravity = android.view.Gravity.CENTER
-                    background = com.example.app.AvatarView.drawableFor(ctx, encoded, size)
-                        ?: android.graphics.drawable.GradientDrawable().apply {
-                            shape = android.graphics.drawable.GradientDrawable.OVAL
-                            setColor(android.graphics.Color.parseColor(FACE_COLORS[i % FACE_COLORS.size]))
-                            setStroke((2 * density).toInt(), androidx.core.content.ContextCompat.getColor(ctx, R.color.bright_background_color))
-                        }
-                }
-                row.addView(face)
-            }
-            val more = item.studentCount - shown.size
-            if (more > 0) {
-                row.addView(android.widget.TextView(ctx).apply {
-                    layoutParams = android.widget.LinearLayout.LayoutParams(
-                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT, size,
-                    ).apply { marginStart = (6 * density).toInt() }
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    text = appString(R.string.class_card_more, more)
-                    setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.dark_text_secondary))
-                    textSize = 13f
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                })
-            }
-        }
-
-        companion object {
-            private const val MAX_FACES = 4
-            private val FACE_COLORS = listOf("#1CB0F6", "#CE82FF", "#FF9600", "#00CD9C")
+            ClassFaces.bind(row, avatars ?: List(minOf(item.studentCount, ClassFaces.MAX)) { null }, item.studentCount)
         }
     }
 }

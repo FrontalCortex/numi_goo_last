@@ -101,6 +101,12 @@
 
     <!-- Öğrenci: Sorularım → Ödevlerim / Sınıfım -->
     <string name="hw_card_title">Ödevlerim</string>
+    <plurals name="hw_student_card_pending">
+        <item quantity="one">%d ödev seni bekliyor</item>
+        <item quantity="other">%d ödev seni bekliyor</item>
+    </plurals>
+    <string name="hw_student_card_all_done">Hepsini bitirdin</string>
+    <string name="hw_student_card_none">Henüz ödev yok</string>
     <string name="hw_tab_homework">Ödevlerim</string>
     <string name="hw_student_empty">Öğretmenin henüz ödev vermedi.</string>
     <string name="hw_classmates_empty">Sınıfında henüz başka öğrenci yok.</string>
