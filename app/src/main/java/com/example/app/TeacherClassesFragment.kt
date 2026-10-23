@@ -45,6 +45,7 @@ class TeacherClassesFragment : Fragment() {
         binding.classList.layoutManager = LinearLayoutManager(requireContext())
         binding.classList.adapter = adapter
         binding.btnNewClass.setOnClickListener { showNewClassDialog() }
+        com.example.app.homework.DepthPress.attach(binding.btnNewClass)
         loadHelpGeneralPool()
 
         classesListener = CourseClasses.listenMyClasses { list ->

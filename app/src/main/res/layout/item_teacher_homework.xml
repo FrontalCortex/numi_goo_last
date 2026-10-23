@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Öğretmenin ödev listesinde tek ödev (bkz. TeacherHomeworkListFragment). -->
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Öğretmenin ödev listesinde tek ödev (bkz. TeacherHomeworkListFragment). Göçen kart: bg_depth_card, DepthPress. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -9,114 +9,109 @@
     android:layout_marginTop="6dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="6dp"
+    android:background="@drawable/bg_depth_card"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@color/bright_background_color"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="0dp"
-    app:strokeWidth="0dp">
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="20dp">
+
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/hwOpBadge"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_op_badge"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:includeFontPadding="false"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            tools:text="+" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/hwOpBadge"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/bg_op_badge"
-                android:gravity="center"
-                android:importantForAccessibility="no"
-                android:includeFontPadding="false"
-                android:textColor="@android:color/white"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:text="+" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/hwTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:textColor="@color/dark_text"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    tools:text="5'lik ve 10'luk toplama" />
-
-                <TextView
-                    android:id="@+id/hwMeta"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/dark_text_secondary"
-                    android:textSize="13sp"
-                    tools:text="Abaküslü · 2 basamak · 20 soru" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/hwTarget"
+                android:id="@+id/hwTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_chip_soft"
-                android:paddingStart="8dp"
-                android:paddingTop="3dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="3dp"
-                android:textColor="@color/dark_text_secondary"
-                android:textSize="12sp"
-                android:visibility="gone"
-                tools:text="3 öğrenci"
-                tools:visibility="visible" />
-        </LinearLayout>
-
-        <!-- Bitirenler: ince çubuk ve "8/12" -->
-        <LinearLayout
-            android:id="@+id/hwDoneRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.progressindicator.LinearProgressIndicator
-                android:id="@+id/hwDoneBar"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                app:indicatorColor="#8CC63F"
-                app:trackColor="#1AFFFFFF"
-                app:trackCornerRadius="3dp"
-                app:trackThickness="6dp" />
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/dark_text"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                tools:text="5'lik ve 10'luk toplama" />
 
             <TextView
-                android:id="@+id/hwDoneText"
+                android:id="@+id/hwMeta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textColor="@color/dark_text_secondary"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                tools:text="8/12 bitirdi" />
+                android:textSize="13sp"
+                tools:text="Abaküslü · 2 basamak · 20 soru" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/hwTarget"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_chip_soft"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:text="3 öğrenci"
+            tools:visibility="visible" />
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+
+    <!-- Bitirenler: ince çubuk ve "8/12" -->
+    <LinearLayout
+        android:id="@+id/hwDoneRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/hwDoneBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:indicatorColor="#8CC63F"
+            app:trackColor="#1AFFFFFF"
+            app:trackCornerRadius="3dp"
+            app:trackThickness="6dp" />
+
+        <TextView
+            android:id="@+id/hwDoneText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="8/12 bitirdi" />
+    </LinearLayout>
+</LinearLayout>

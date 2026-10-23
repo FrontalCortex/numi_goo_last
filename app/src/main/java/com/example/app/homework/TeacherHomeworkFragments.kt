@@ -12,7 +12,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.app.AvatarView
 import com.example.app.CourseClasses
+import com.example.app.ProfileFragment
 import com.example.app.R
 import com.example.app.appPlural
 import com.example.app.appString
@@ -108,6 +110,7 @@ class TeacherHomeworkListFragment : Fragment() {
                 }
             }
             b.root.setOnClickListener { openScreen(TeacherHomeworkDetailFragment.newInstance(hw.id, classId)) }
+            DepthPress.attach(b.root)
         }
     }
 
@@ -187,7 +190,7 @@ class TeacherHomeworkDetailFragment : Fragment() {
         }
     }
 
-    private data class Row(val uid: String, val name: String, val status: String, val inClass: Boolean)
+    private data class Row(val uid: String, val name: String, val status: String, val inClass: Boolean, val avatar: String?)
 
     private var _binding: FragmentTeacherHomeworkListBinding? = null
     private val binding get() = _binding!!
@@ -195,6 +198,8 @@ class TeacherHomeworkDetailFragment : Fragment() {
     private var homework: Homeworks.Homework? = null
     private var members: List<CourseClasses.ClassMember> = emptyList()
     private var progress: Map<String, Homeworks.Progress> = emptyMap()
+    /** Avatarı okunmuş öğrenciler (null: avatarı yok). Liste her değiştiğinde yeniden okunmasın. */
+    private val avatarCache = HashMap<String, String?>()
 
     private val adapter = object : ListAdapter<Row, RecyclerView.ViewHolder>(
         object : DiffUtil.ItemCallback<Row>() {
@@ -212,13 +217,21 @@ class TeacherHomeworkDetailFragment : Fragment() {
             val b = holder.itemView.tag as ItemFollowUserBinding
             b.tvUserName.text = row.name
             b.tvUserCode.text = row.status
-            b.tvAvatarLetter.text = row.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-            b.tvAvatarLetter.background = android.graphics.drawable.GradientDrawable().apply {
-                shape = android.graphics.drawable.GradientDrawable.OVAL
-                setColor(ContextCompat.getColor(holder.itemView.context, if (row.inClass) R.color.dark_primary else R.color.outline_button_stroke))
+            val avatar = AvatarView.drawableFor(holder.itemView.context, row.avatar, b.tvAvatarLetter.layoutParams.width)
+            if (avatar != null) {
+                b.tvAvatarLetter.text = ""
+                b.tvAvatarLetter.background = avatar
+            } else {
+                b.tvAvatarLetter.text = row.name.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+                b.tvAvatarLetter.background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(ContextCompat.getColor(holder.itemView.context, if (row.inClass) R.color.dark_primary else R.color.outline_button_stroke))
+                }
             }
             b.btnFollowBack.visibility = View.GONE
             b.btnUnfollow.visibility = View.GONE
+            // Sınıf ekranındaki gibi: ada tıklayınca profil; öğretmen ilerlemeyi oradan görüyor.
+            b.root.setOnClickListener { openScreen(ProfileFragment.newInstance(row.uid)) }
         }
     }
 
@@ -275,9 +288,17 @@ class TeacherHomeworkDetailFragment : Fragment() {
                 else -> appString(R.string.hw_detail_progress, p.completedBlocks, hw.blockCount, p.correct, p.answered)
             }
             val name = m?.name?.ifBlank { m.userId } ?: appString(R.string.hw_left_class)
-            Row(uid, name, status, inClass = m != null)
+            Row(uid, name, status, inClass = m != null, avatar = avatarCache[uid])
         }.sortedWith(compareBy({ !it.inClass }, { it.name.lowercase(java.util.Locale("tr")) }))
         adapter.submitList(rows)
+        val missing = all.filterNot { avatarCache.containsKey(it) }
+        if (missing.isNotEmpty()) {
+            missing.forEach { avatarCache[it] = null } // okunurken yeniden istenmesin
+            CourseClasses.loadAvatars(missing) { avatars ->
+                avatarCache.putAll(avatars)
+                render()
+            }
+        }
         b.empty.text = appString(R.string.hw_target_no_students)
         b.empty.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
     }
