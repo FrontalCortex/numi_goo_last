@@ -6,7 +6,8 @@
   "description": "firestore.rules icin regresyon testleri (Firestore emulatoru uzerinde calisir)",
   "scripts": {
     "test": "firebase emulators:exec --only firestore --project demo-numigoo \"node rules.test.mjs\"",
-    "test:pools": "firebase emulators:exec --only firestore --project demo-numigoo \"node class-pools.test.mjs\""
+    "test:pools": "firebase emulators:exec --only firestore --project demo-numigoo \"node class-pools.test.mjs\"",
+    "test:homework": "firebase emulators:exec --only firestore --project demo-numigoo \"node homework.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

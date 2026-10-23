@@ -1,0 +1,125 @@
+/**
+ * Ödevler: GERÇEK fonksiyonlar (createHomework, deleteHomework) Firestore emülatörüne karşı.
+ *
+ * NEDEN VAR
+ *   Ayar doğrulaması (homework.js) ayrı ayrı doğru olsa da gövde yanlış sınıfa, sınıfta
+ *   olmayan öğrenciye ya da başka öğretmenin sınıfına ödev yazabilirdi. Kurallar ödevi
+ *   istemciye kapattığı için tek kapı bu fonksiyon.
+ *
+ * ÇALIŞTIRMA (proje kökünden)
+ *   firebase emulators:exec --only firestore --project numigo-new "node functions/scripts/test-homework-flow.js"
+ */
+const admin = require('firebase-admin');
+
+if (!process.env.FIRESTORE_EMULATOR_HOST && process.env.ALLOW_PRODUCTION !== '1') {
+  console.error('FIRESTORE_EMULATOR_HOST ayarlı değil; çıkılıyor.');
+  process.exit(1);
+}
+delete process.env.FIREBASE_CONFIG;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'numigo-new';
+
+const fns = require('../index');
+if (!admin.apps.length) admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT });
+const db = admin.firestore();
+
+const S = `hw${Date.now().toString(36)}`;
+const T1 = `${S}_t1`;
+const T2 = `${S}_t2`;
+const S1 = `${S}_s1`;
+const S2 = `${S}_s2`;
+const S3 = `${S}_s3`; // sınıfta değil
+const C1 = `${S}_c1`;
+const C2 = `${S}_c2`;
+
+const ctx = (uid) => ({ auth: { uid, token: {} } });
+const call = (fn, uid, data) => fns[fn].run(data || {}, ctx(uid));
+
+let pass = 0;
+let fail = 0;
+function check(name, actual, expected) {
+  const a = JSON.stringify(actual);
+  const e = JSON.stringify(expected);
+  if (a === e) { console.log('  OK   ' + name); pass++; }
+  else { console.log(`  HATA ${name}\n       beklenen ${e}\n       gelen    ${a}`); fail++; }
+}
+async function rejects(name, promise, code) {
+  try {
+    await promise;
+    console.log(`  HATA ${name}\n       beklenen red: ${code}\n       gelen    basari`);
+    fail++;
+  } catch (e) {
+    check(name, e.code, code);
+  }
+}
+
+const ADD = { op: 'add', rules: ['ten', 'five', 'five'], withAbacus: true, digits: 2, numberCount: 5, intervalMs: 1500, questionCount: 25 };
+
+async function main() {
+  await Promise.all([
+    db.doc(`users/${T1}`).set({ role: 'TEACHER', teacherApproved: true, courseId: 'k', name: 'Ayşe Hoca' }),
+    db.doc(`users/${T2}`).set({ role: 'TEACHER', teacherApproved: true, courseId: 'k', name: 'Can Hoca' }),
+    db.doc(`users/${S1}`).set({ role: 'STUDENT', name: 'Ali' }),
+    db.doc(`users/${S2}`).set({ role: 'STUDENT', name: 'Veli' }),
+    db.doc(`users/${S3}`).set({ role: 'STUDENT', name: 'Deniz' }),
+    db.doc(`classes/${C1}`).set({ courseId: 'k', name: 'Cmt', teacherUids: [T1], archived: false, studentCount: 2 }),
+    db.doc(`classes/${C1}/members/${S1}`).set({ uid: S1, name: 'Ali' }),
+    db.doc(`classes/${C1}/members/${S2}`).set({ uid: S2, name: 'Veli' }),
+    db.doc(`classes/${C2}`).set({ courseId: 'k', name: 'Pzt', teacherUids: [T2], archived: false, studentCount: 0 }),
+  ]);
+
+  console.log('\n=== DOĞRULAMA ===');
+  await rejects('oturum yok', fns.createHomework.run({}, {}), 'unauthenticated');
+  await rejects('başkasının sınıfı', call('createHomework', T2, { classId: C1, config: ADD, target: { wholeClass: true } }), 'permission-denied');
+  await rejects('öğrenci ödev veremez', call('createHomework', S1, { classId: C1, config: ADD, target: { wholeClass: true } }), 'permission-denied');
+  await rejects('konu yok', call('createHomework', T1, { classId: C1, config: { ...ADD, rules: [] }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('bilinmeyen konu', call('createHomework', T1, { classId: C1, config: { ...ADD, rules: ['x'] }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('abaküslü 6 basamak', call('createHomework', T1, { classId: C1, config: { ...ADD, digits: 6 }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('hız 0,05 sn', call('createHomework', T1, { classId: C1, config: { ...ADD, intervalMs: 50 }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('201 soru', call('createHomework', T1, { classId: C1, config: { ...ADD, questionCount: 201 }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('çarpma abaküslü 3×3', call('createHomework', T1, { classId: C1, config: { op: 'mul', withAbacus: true, digits: 3, digits2: 3, questionCount: 10 }, target: { wholeClass: true } }), 'invalid-argument');
+  await rejects('öğrenci seçilmedi', call('createHomework', T1, { classId: C1, config: ADD, target: { studentUids: [] } }), 'invalid-argument');
+  await rejects('sınıfta olmayan öğrenci', call('createHomework', T1, { classId: C1, config: ADD, target: { studentUids: [S1, S3] } }), 'failed-precondition');
+
+  console.log('\n=== SINIFA ÖDEV ===');
+  const all = await call('createHomework', T1, { classId: C1, config: ADD, target: { wholeClass: true } });
+  check('sınıftaki 2 öğrenciye', all.recipients, 2);
+  const hw = (await db.doc(`homeworks/${all.homeworkId}`).get()).data();
+  check('kurallar tekrarsız ve sabit sırada', hw.config.rules, ['five', 'ten']);
+  check('adım sayısı 25 soru → 3', hw.blockCount, 3);
+  check('sınıf ödevinde liste boş', [hw.wholeClass, hw.assignedUids], [true, []]);
+  check('bilinmeyen alan saklanmadı', Object.keys(hw.config).sort(), ['digits', 'intervalMs', 'numberCount', 'op', 'questionCount', 'rules', 'withAbacus']);
+  check('öğretmen adı', [hw.teacherName, hw.className, hw.teacherUid], ['Ayşe Hoca', 'Cmt', T1]);
+
+  console.log('\n=== SEÇİLİ ÖĞRENCİLERE ===');
+  const mul = await call('createHomework', T1, {
+    classId: C1,
+    config: { op: 'mul', withAbacus: false, digits: 3, digits2: 3, questionCount: 7, rules: ['five'] },
+    target: { studentUids: [S1, S1] },
+  });
+  const hwMul = (await db.doc(`homeworks/${mul.homeworkId}`).get()).data();
+  check('tekrar eden öğrenci tek', hwMul.assignedUids, [S1]);
+  check('çarpmada yalnızca çarpma alanları', Object.keys(hwMul.config).sort(), ['digits', 'digits2', 'op', 'questionCount', 'withAbacus']);
+  check('7 soru → 1 adım', hwMul.blockCount, 1);
+
+  console.log('\n=== SİLME ===');
+  await db.doc(`homeworks/${all.homeworkId}/studentProgress/${S1}`).set({ uid: S1, completedBlocks: 1, answered: 10, correct: 8, lastBlockCorrect: 8, updatedAtMs: 1 });
+  await rejects('başka öğretmen silemez', call('deleteHomework', T2, { homeworkId: all.homeworkId }), 'permission-denied');
+  const del = await call('deleteHomework', T1, { homeworkId: all.homeworkId });
+  check('silindi', del.deleted, true);
+  check('ilerleme de silindi', (await db.doc(`homeworks/${all.homeworkId}/studentProgress/${S1}`).get()).exists, false);
+  check('olmayan ödev: hata değil', (await call('deleteHomework', T1, { homeworkId: all.homeworkId })).deleted, false);
+
+  console.log('\n=== HESAP SİLME ===');
+  await db.doc(`homeworks/${mul.homeworkId}/studentProgress/${S1}`).set({ uid: S1, completedBlocks: 1, answered: 7, correct: 7, lastBlockCorrect: 7, updatedAtMs: 1 });
+  check('silinen öğrencinin ilerlemesi', await fns._removeDeletedUserHomeworkProgress(S1), 1);
+  check('ödevin kendisi duruyor', (await db.doc(`homeworks/${mul.homeworkId}`).get()).exists, true);
+
+  console.log(`\n${pass} geçti, ${fail} hata`);
+  process.exit(fail ? 1 : 0);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

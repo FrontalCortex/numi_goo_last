@@ -617,6 +617,60 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Ödevler (bkz. functions/homework.js) ─────────────────────────────────
+    // Ödevi yalnızca createHomework yazar. Görebilen: sınıfın öğretmenleri ve — o sınıfta
+    // OLDUĞU sürece — ödevin verildiği öğrenci (sınıfa verildiyse sınıftaki herkes, sonradan
+    // katılan dahil). Sınıftan ayrılan öğrencinin ödevleri listesinden düşer.
+    //
+    // Alanlar KATI okunuyor (`hw.wholeClass`, `hw.assignedUids`), `get(alan, varsayılan)` değil:
+    // varsayılanlı yazım liste sorgusunun kanıtında gevşek (bkz. teacherReaches yorumu).
+    function isTeacherOfClassId(classId) {
+      return request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids;
+    }
+
+    function homeworkVisibleToMe(hw) {
+      return isTeacherOfClassId(hw.classId)
+        || (myUser().get('classId', null) == hw.classId
+            && (hw.wholeClass == true || request.auth.uid in hw.assignedUids));
+    }
+
+    function homeworkOf(hwId) {
+      return get(/databases/$(database)/documents/homeworks/$(hwId)).data;
+    }
+
+    // İlerleme: her yazım tam olarak BİR adım ileri. Cevaplanan ve doğru sayıları yalnızca
+    // artabilir ve ödevin soru sayısını geçemez. Doğru sayısı istemcinin beyanı; ödevde para
+    // yok, kurallar yalnızca saçma değerleri (ör. 10 soruda 50 doğru) engelliyor.
+    function homeworkProgressOk(hw, prevBlocks, prevAnswered, prevCorrect) {
+      let p = request.resource.data;
+      return p.keys().hasOnly(['uid', 'completedBlocks', 'answered', 'correct', 'lastBlockCorrect', 'updatedAtMs'])
+        && p.uid == request.auth.uid
+        && p.completedBlocks is int && p.completedBlocks == prevBlocks + 1
+        && p.completedBlocks <= hw.blockCount
+        && p.answered is int && p.answered > prevAnswered && p.answered <= hw.config.questionCount
+        && p.answered - prevAnswered <= 10
+        && p.correct is int && p.correct >= prevCorrect && p.correct <= p.answered
+        && p.correct - prevCorrect <= p.answered - prevAnswered
+        && p.lastBlockCorrect is int && p.lastBlockCorrect == p.correct - prevCorrect;
+    }
+
+    match /homeworks/{hwId} {
+      allow read: if isSignedIn() && homeworkVisibleToMe(resource.data);
+      allow write: if false;
+
+      match /studentProgress/{studentUid} {
+        allow read: if isSelf(studentUid) || (isSignedIn() && isTeacherOfClassId(homeworkOf(hwId).classId));
+        allow create: if isSelf(studentUid)
+          && homeworkVisibleToMe(homeworkOf(hwId))
+          && homeworkProgressOk(homeworkOf(hwId), 0, 0, 0);
+        allow update: if isSelf(studentUid)
+          && homeworkVisibleToMe(homeworkOf(hwId))
+          && homeworkProgressOk(homeworkOf(hwId), resource.data.completedBlocks,
+                                resource.data.answered, resource.data.correct);
+        allow delete: if false;
+      }
+    }
+
     // ── Bildirilen mesajlar ────────────────────────────────────────────────
     match /messageReports/{reportId} {
       allow create: if isSignedIn()

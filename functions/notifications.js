@@ -100,6 +100,15 @@ const NOTIFICATION_TYPES = {
    * olmazdı: 48 saatlik pencerede geçen her saat önemli.
    */
   pool: { pref: null, capped: false, mutable: false, quiet: 'silence', channel: 'pool' },
+
+  /**
+   * Öğrenciye: kurs öğretmeni yeni ödev verdi (createHomework).
+   *
+   * `pref: null` — ödev öğretmenin verdiği iş; ödül bildirimi gibi kapatılabilir olsa kaçırılır.
+   * `quiet: 'silence'` — öğretmen ödevi gece de verebilir; görünsün ama çocuğu uyandırmasın.
+   * Kanal `account`: öğrencide zaten var, yeni bir Android kanalı açmaya değmez.
+   */
+  homework: { pref: null, capped: false, mutable: false, quiet: 'silence', channel: 'account' },
 };
 
 /** Uygulama içinden kapatılabilen tercihler — istemcideki anahtarların kaynağı. */

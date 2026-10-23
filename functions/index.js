@@ -33,6 +33,8 @@ const {
 // Kurs sınıfları ve soru havuzu ayrımı; karar mantığı orada, Firestore işi "Kurs sınıfları"
 // bölümünde.
 const classes = require('./classes');
+// Ödevler (kurs öğretmeninin sınıfına verdiği); doğrulama orada, Firestore işi "Ödevler" bölümünde.
+const homework = require('./homework');
 // `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
 // geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
 exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
@@ -868,7 +870,7 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
-const PARENTAL_CONSENT_VERSION = '2026-10-19.1';
+const PARENTAL_CONSENT_VERSION = '2026-10-23.1';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
@@ -921,6 +923,7 @@ function parentalConsentEmail(code, childEmail, parentEmail) {
     'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
     'Adı ve avatarı diğer kullanıcılara görünür (profil, sıralama tabloları, takip listeleri)',
     'Öğretmene soru sohbetinde gönderdiği mesajlar, fotoğraflar, videolar ve mikrofon sesi içeren ekran kayıtları (öğretmen bunları görür)',
+    'Öğretmeninin verdiği kodu girerek ya da davetini kabul ederek bir kurs sınıfına katılırsa, o sınıfın öğretmeni adını, kullanıcı adını ve ders ilerlemesini görür, sorularını da o öğretmen cevaplar. Çocuğunuz sınıftan dilediği an ayrılabilir',
     'Bildirim göndermek için cihaz bildirim kimliği',
     'Uygulama kullanım istatistikleri (yaş grubu ve abaküs bilgisiyle birlikte, adı ve e-postası olmadan); reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
   ];
@@ -1903,6 +1906,14 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
     console.log('Silinen kullanıcının sınıf kayıtları temizlendi', { uid, ...counts });
   } catch (error) {
     console.error(`Error removing class records for ${uid}:`, error);
+  }
+
+  // Ödev ilerlemeleri öğretmenin ödev dokümanlarının altında.
+  try {
+    const removed = await removeDeletedUserHomeworkProgress(uid);
+    console.log('Silinen kullanıcının ödev ilerlemeleri temizlendi', { uid, removed });
+  } catch (error) {
+    console.error(`Error removing homework progress for ${uid}:`, error);
   }
 });
 
@@ -4341,6 +4352,118 @@ async function removeDeletedUserFromClasses(uid) {
 
 // Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
 exports._removeDeletedUserFromClasses = removeDeletedUserFromClasses;
+
+// ─── Ödevler ────────────────────────────────────────────────────────────────
+//
+// Kurs öğretmeni sınıfının tamamına ya da seçtiği öğrencilere ödev verir. Ödevde yalnızca
+// ayarlar saklanıyor; soruları öğrencinin telefonu her adımda üretiyor (HomeworkEngine.kt).
+// Model ve doğrulama için homework.js'in başlık yorumuna bakın.
+//
+// Ödevi yalnızca bu fonksiyon yazıyor (kurallarda istemciye kapalı): sınıfın öğretmeni olmak,
+// öğrencilerin gerçekten sınıfta olması ve aralıklar burada denetleniyor. İlerlemeyi ise
+// öğrenci kendisi yazıyor; kurallar yalnızca "bir adım ileri" yazımına izin veriyor.
+
+exports.createHomework = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const { config } = throwIfFailed(homework.normalizeConfig(data && data.config));
+  const target = throwIfFailed(homework.normalizeTarget(data && data.target));
+
+  const [classSnap, teacherSnap, countSnap] = await Promise.all([
+    classRefOf(classId).get(),
+    db.collection('users').doc(uid).get(),
+    db.collection('homeworks').where('classId', '==', classId).count().get(),
+  ]);
+  const classData = classSnap.exists ? classSnap.data() : null;
+  const teacher = teacherSnap.exists ? teacherSnap.data() : null;
+  if (!classes.isApprovedTeacher(teacher) || !classes.isTeacherOfClass(classData, uid) || !classes.classIsActive(classData)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+  }
+  if (countSnap.data().count >= homework.MAX_HOMEWORKS_PER_CLASS) {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      `Bir sınıfta en fazla ${homework.MAX_HOMEWORKS_PER_CLASS} ödev olabilir. Eskilerden birini silin.`
+    );
+  }
+
+  let recipients;
+  if (target.wholeClass) {
+    const members = await classRefOf(classId).collection('members').get();
+    recipients = members.docs.map((d) => d.id);
+  } else {
+    const snaps = await Promise.all(target.studentUids.map((sid) => classMemberRef(classId, sid).get()));
+    if (snaps.some((s) => !s.exists)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Seçilen öğrencilerden biri artık sınıfta değil.');
+    }
+    recipients = target.studentUids;
+  }
+
+  const teacherName = teacher.name || 'Öğretmenin';
+  const ref = db.collection('homeworks').doc();
+  await ref.set({
+    classId,
+    courseId: classData.courseId || null,
+    className: classData.name || '',
+    teacherUid: uid,
+    teacherName,
+    config,
+    blockCount: homework.blockCount(config.questionCount),
+    // Sınıfa verilen ödevde liste boş: sınıfa sonradan katılan da görsün diye kurallar
+    // sınıfa bakıyor (firestore.rules, homeworkVisibleToMe).
+    wholeClass: target.wholeClass,
+    assignedUids: target.wholeClass ? [] : recipients,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAtMs: Date.now(),
+  });
+
+  // Bildirim en iyi çabayla: gitmeyen bildirim ödevi düşürmesin, öğrenci Görevler'de görür.
+  const body = `${teacherName}: ${homework.homeworkSummary(config)}, ${config.questionCount} soru`;
+  await Promise.all(recipients.map((sid) =>
+    sendUserNotification(sid, {
+      type: 'homework',
+      topic: 'homework',
+      title: 'Yeni ödev',
+      body,
+      data: { homeworkId: ref.id },
+    }).catch((e) => console.error('createHomework: bildirim gönderilemedi', { sid, error: e.message }))
+  ));
+
+  console.log('Ödev verildi', { uid, classId, homeworkId: ref.id, recipients: recipients.length });
+  return { success: true, homeworkId: ref.id, recipients: recipients.length };
+});
+
+/** Öğretmen ödevi siler; öğrencilerin ilerlemesi de gider. */
+exports.deleteHomework = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const homeworkId = readDocId(data && data.homeworkId, 'ödev');
+  const ref = db.collection('homeworks').doc(homeworkId);
+  const snap = await ref.get();
+  if (!snap.exists) return { success: true, deleted: false };
+  const classSnap = await classRefOf(snap.get('classId')).get();
+  // Ödevi veren öğretmen ya da sınıfın (şu anki) öğretmenlerinden biri.
+  if (snap.get('teacherUid') !== uid && !classes.isTeacherOfClass(classSnap.exists ? classSnap.data() : null, uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu ödev senin değil.');
+  }
+  await db.recursiveDelete(ref);
+  return { success: true, deleted: true };
+});
+
+/**
+ * Silinen öğrencinin ödev ilerlemeleri (cleanupUserOnDelete). Ödev dokümanları öğretmenin;
+ * yalnızca öğrencinin `studentProgress` kayıtları siliniyor (collection group, bkz.
+ * firestore.indexes.json).
+ */
+async function removeDeletedUserHomeworkProgress(uid) {
+  const snap = await db.collectionGroup('studentProgress').where('uid', '==', uid).get();
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = db.batch();
+    snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return snap.size;
+}
+
+exports._removeDeletedUserHomeworkProgress = removeDeletedUserHomeworkProgress;
 
 /**
  * Abonelik (Pro / Lite) doğrulama ve yenileme.
